@@ -30,13 +30,12 @@ export function SeeSourceButton({
   if (!open) return null;
   return (
     <Button
-      variant="ghost"
-      size="sm"
+      icon={<FileSearch />}
+      variant="quiet"
       className={className ?? "gap-1.5 text-muted-foreground"}
       onClick={open}
       title="Open the exact cited passage in the source"
     >
-      <FileSearch className="h-4 w-4" />
       {label}
     </Button>
   );

@@ -227,40 +227,37 @@ export function AnnotateModeShell({
           </span>
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 shrink-0"
+            icon={<Zap />}
+            variant="quiet"
+            className="shrink-0"
             onClick={handleSuggestAnnotations}
             disabled={aiBusy !== null}
           >
-            <Zap className="h-3.5 w-3.5 mr-1.5" />
             Suggest annotations
           </Button>
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 shrink-0"
+            icon={<ShieldAlert />}
+            variant="quiet"
+            className="shrink-0"
             onClick={handleRedact}
             disabled={aiBusy !== null}
           >
-            <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
             Redact PII
           </Button>
 
           {IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0"
+              icon={aiBusy === "faces" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ShieldAlert />
+              )}
+              variant="quiet"
+              className="shrink-0"
               onClick={handleBlurFaces}
               disabled={aiBusy !== null}
             >
-              {aiBusy === "faces" ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <ShieldAlert className="h-3.5 w-3.5 mr-1.5" />
-              )}
               Detect faces
             </Button>
           )}

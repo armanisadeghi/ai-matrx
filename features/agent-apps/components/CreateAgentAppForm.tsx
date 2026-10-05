@@ -224,7 +224,6 @@ export function CreateAgentAppForm({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleSuggestSlug}
             disabled={!name.trim()}
           >
@@ -262,7 +261,7 @@ export function CreateAgentAppForm({
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={submitting || busy}>
+        <Button variant="primary" type="submit" disabled={submitting || busy}>
           {submitting || busy ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />

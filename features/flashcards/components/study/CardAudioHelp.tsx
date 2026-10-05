@@ -127,8 +127,7 @@ export function CardAudioHelp({
     <>
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         className={cn(STUDY_TOOL_BUTTON, playing && STUDY_TOOL_BUTTON_ACTIVE)}
         onClick={() => void hearCard()}
         disabled={generating}
@@ -139,16 +138,15 @@ export function CardAudioHelp({
         {playing ? "Stop" : "Listen"}
       </Button>
       <Button
+        icon={<Mic />}
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         className={cn(STUDY_TOOL_BUTTON, tutorOpen && STUDY_TOOL_BUTTON_ACTIVE)}
         onClick={() => setTutorOpen((o) => !o)}
         aria-pressed={tutorOpen}
         title="Talk this card through with a voice tutor"
         aria-label="Talk it through"
       >
-        <Mic className="h-3.5 w-3.5" />
         Talk
       </Button>
     </>
@@ -157,8 +155,7 @@ export function CardAudioHelp({
       <Button
         type="button"
         variant="outline"
-        size="sm"
-        className="flex-1 gap-1.5 text-xs"
+        className="flex-1"
         onClick={() => void hearCard()}
         disabled={generating}
       >
@@ -170,13 +167,12 @@ export function CardAudioHelp({
             : "Hear this card"}
       </Button>
       <Button
+        icon={<Mic />}
         type="button"
-        variant={tutorOpen ? "secondary" : "outline"}
-        size="sm"
-        className="flex-1 gap-1.5 text-xs"
+        variant={tutorOpen ? "outline" : "outline"}
+        className="flex-1"
         onClick={() => setTutorOpen((o) => !o)}
       >
-        <Mic className="h-3.5 w-3.5" />
         {tutorOpen ? "Close voice tutor" : "Talk it through"}
       </Button>
     </div>

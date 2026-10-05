@@ -425,11 +425,10 @@ export function GmailComposePanel({
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto p-3">
         <div className="flex items-center justify-between gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<ArrowLeft />}
+            variant="quiet"
             onClick={() => setStep("compose")}
           >
-            <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back to editing
           </Button>
         </div>
@@ -614,15 +613,15 @@ export function GmailComposePanel({
           Nothing sends from this step — the next screen is the one that sends.
         </span>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            size="sm"
+            icon={<Mail />}
+            variant="primary"
             onClick={() => setStep("review")}
             disabled={!composed}
           >
-            <Mail className="mr-1.5 h-4 w-4" />
             Review message
           </Button>
         </div>

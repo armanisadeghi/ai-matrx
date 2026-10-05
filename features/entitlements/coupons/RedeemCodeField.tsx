@@ -71,7 +71,7 @@ export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
             autoComplete="off"
             className="h-8 max-w-56 text-base sm:text-sm"
           />
-          <Button type="submit" size="sm" disabled={pending || !code.trim()}>
+          <Button variant="primary" type="submit" disabled={pending || !code.trim()}>
             {pending ? "Redeeming…" : "Redeem"}
           </Button>
         </form>

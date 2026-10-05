@@ -20,7 +20,7 @@ import type { FolderReference, Note } from "../types";
 import { cn } from "@/lib/utils";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useToastManager } from "@/hooks/useToastManager";
 import dynamic from "next/dynamic";
 

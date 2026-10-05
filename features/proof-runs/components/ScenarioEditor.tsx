@@ -166,10 +166,9 @@ function ExpectationRow({
           ) : null}
         </div>
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onRemove}
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+          className="w-7"
           aria-label="Remove rule"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -442,12 +441,10 @@ export function ScenarioEditor({
           {initial.slug ? `Editing ${initial.slug}` : "New scenario"}
         </h3>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            <X className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<X />} variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button size="sm" onClick={() => void save()} disabled={saving}>
-            <Save className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<Save />} variant="primary" onClick={() => void save()} disabled={saving}>
             {saving ? "Saving…" : "Save scenario"}
           </Button>
         </div>
@@ -624,12 +621,10 @@ export function ScenarioEditor({
             The closed universe — every route that EXISTS in this scenario
           </Label>
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
             onClick={addRoute}
-            className="h-6 px-2 text-[11px]"
           >
-            <Plus className="mr-1 h-3 w-3" />
             Add route
           </Button>
         </div>
@@ -653,15 +648,14 @@ export function ScenarioEditor({
                 className="h-7 font-mono text-[11px]"
               />
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() =>
                   setScenario((s) => ({
                     ...s,
                     allowed_routes: s.allowed_routes.filter((_, j) => j !== i),
                   }))
                 }
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                className="w-7"
                 aria-label="Remove route"
               >
                 <X className="h-3.5 w-3.5" />
@@ -677,12 +671,10 @@ export function ScenarioEditor({
             What a correct answer must look like
           </Label>
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
             onClick={addExpectation}
-            className="h-6 px-2 text-[11px]"
           >
-            <Plus className="mr-1 h-3 w-3" />
             Add rule
           </Button>
         </div>

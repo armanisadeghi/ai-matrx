@@ -49,8 +49,7 @@ export function AgentAppsPanel({
           </div>
           <div className="shrink-0 flex gap-2">
             <AppLink href={`/agent-apps/new?agent_id=${agentId}`}>
-              <Button size="sm">
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
+              <Button icon={<Plus />} type="submit" variant="primary">
                 New app
               </Button>
             </AppLink>
@@ -110,8 +109,7 @@ export function AgentAppsPanel({
               Looking for the platform-wide admin view?
             </div>
             <AppLink href="/administration/agents/agent-apps/apps" target="_blank" rel="noopener noreferrer">
-              <Button size="sm" variant="outline">
-                <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              <Button icon={<ExternalLink />} type="submit" variant="outline">
                 Open admin
               </Button>
             </AppLink>

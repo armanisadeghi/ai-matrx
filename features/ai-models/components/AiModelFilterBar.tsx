@@ -314,17 +314,16 @@ export default function AiModelFilterBar({
 
         {/* Expand/collapse for secondary filters */}
         <Button
-          variant="ghost"
-          size="sm"
+          icon={expanded ? (
+            <ChevronUp />
+          ) : (
+            <ChevronDown />
+          )}
+          variant="quiet"
           className={`h-7 px-2 text-xs gap-1 shrink-0 max-lg:min-h-11 max-sm:w-[calc(50%-0.1875rem)] ${expanded ? "text-primary" : "text-muted-foreground"}`}
           onClick={() => setExpanded((v) => !v)}
           title="More filters"
         >
-          {expanded ? (
-            <ChevronUp className="h-3.5 w-3.5" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5" />
-          )}
           More
           {activeFilterCount >
             (filters.provider ? 1 : 0) +
@@ -342,13 +341,12 @@ export default function AiModelFilterBar({
         {/* Clear */}
         {hasAny && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground shrink-0"
+            icon={<FilterX />}
+            variant="quiet"
+            className="shrink-0"
             onClick={onClearAll}
             title="Clear all filters"
           >
-            <FilterX className="h-3.5 w-3.5" />
             {activeFilterCount > 0 && (
               <Badge variant="secondary" className="h-4 px-1 text-xs">
                 {activeFilterCount + (q ? 1 : 0)}
@@ -374,23 +372,19 @@ export default function AiModelFilterBar({
           />
         )}
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0 max-lg:h-11 max-lg:w-11"
+          icon={<RefreshCcw />} aria-label="Refresh"
+          variant="quiet"
+          className="shrink-0"
           onClick={onRefresh}
           title="Refresh"
-        >
-          <RefreshCcw className="h-3.5 w-3.5" />
-        </Button>
+        />
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0 max-lg:h-11 max-lg:w-11"
+          icon={<Plus />} aria-label="New Model"
+          variant="quiet"
+          className="shrink-0"
           onClick={onCreate}
           title="New Model"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
 
       {/* ── Row 2: expanded filters ──────────────────────────── */}

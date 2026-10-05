@@ -210,27 +210,24 @@ export function GlobalBindAgentGuard({
 
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={onCancel}>
+            <Button variant="quiet" onClick={onCancel}>
               Cancel
             </Button>
             <Button
+              icon={<Link2 />}
               variant="outline"
-              size="sm"
               disabled={!audit}
               onClick={() => {
                 openConvertSystem({ agentId });
                 onCancel();
               }}
-              className="gap-1.5"
             >
-              <Link2 className="h-3.5 w-3.5" />
               Linked Agent Sync…
             </Button>
           </div>
           <div className="flex gap-2">
             <Button
               variant="outline"
-              size="sm"
               disabled={!audit}
               onClick={() => audit && onProceed(agentId)}
             >
@@ -238,7 +235,7 @@ export function GlobalBindAgentGuard({
             </Button>
             {audit?.systemTwin && (
               <Button
-                size="sm"
+                variant="primary"
                 onClick={() => onUseSystemTwin(audit.systemTwin!)}
               >
                 Use system version

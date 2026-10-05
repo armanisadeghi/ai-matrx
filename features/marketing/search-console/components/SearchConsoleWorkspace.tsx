@@ -534,9 +534,12 @@ export function SearchConsoleWorkspace() {
                 disabled={isNavigating}
               />
               <Button
-                size="sm"
+                icon={syncing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
                 variant="outline"
-                className="h-7 gap-1 px-2 text-xs"
                 onClick={() => void runSync()}
                 disabled={syncing || historyRunning || !gscBound}
                 title={
@@ -549,11 +552,6 @@ export function SearchConsoleWorkspace() {
                         : "Bind a Search Console property on the site's Integrations tab first"
                 }
               >
-                {syncing ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3" />
-                )}
                 Sync
               </Button>
               {/* The OTHER direction. Sync walks forward to today and can
@@ -561,20 +559,18 @@ export function SearchConsoleWorkspace() {
                   weeks of history has no way to get sixteen months except
                   waiting ~8 nights for the backfill scheduler. */}
               <Button
-                size="sm"
+                icon={historyRunning ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <History />
+                )}
                 variant="outline"
-                className="h-7 gap-1 px-2 text-xs"
                 onClick={() => void runHistoryToHorizon()}
                 disabled={
                   syncing || historyRunning || serverFetchActive || !gscBound
                 }
                 title="Fetch OLDER data — walks backward until Google's full ~16-month history is stored"
               >
-                {historyRunning ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <History className="h-3 w-3" />
-                )}
                 History
               </Button>
             </div>
@@ -605,37 +601,33 @@ export function SearchConsoleWorkspace() {
                   </div>
                 ) : null}
                 <Button
-                  size="icon"
+                  icon={syncing ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
                   variant="outline"
-                  className="h-7 w-7 shrink-0"
+                  className="shrink-0"
                   onClick={() => void runSync()}
                   disabled={syncing || historyRunning || !gscBound}
                   aria-label="Sync Search Console data"
                   title="Sync Search Console data"
-                >
-                  {syncing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3 w-3" />
-                  )}
-                </Button>
+                />
                 <Button
-                  size="icon"
+                  icon={historyRunning ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <History />
+                  )}
                   variant="outline"
-                  className="h-7 w-7 shrink-0"
+                  className="shrink-0"
                   onClick={() => void runHistoryToHorizon()}
                   disabled={
                     syncing || historyRunning || serverFetchActive || !gscBound
                   }
                   aria-label="Import Search Console history"
                   title="Import older Search Console history"
-                >
-                  {historyRunning ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <History className="h-3 w-3" />
-                  )}
-                </Button>
+                />
               </div>
               <div className="max-w-full overflow-x-auto pb-0.5">
                 <RangeCompareControl
@@ -735,13 +727,11 @@ export function SearchConsoleWorkspace() {
                   yet. History also imports automatically overnight.
                 </p>
                 <Button
-                  size="sm"
+                  icon={<History />}
                   variant="outline"
-                  className="h-7 gap-1 px-2 text-xs"
                   onClick={() => void runHistoryToHorizon()}
                   disabled={syncing || historyRunning || !gscBound}
                 >
-                  <History className="h-3 w-3" />
                   Import history now
                 </Button>
               </div>
@@ -842,24 +832,21 @@ export function SearchConsoleWorkspace() {
                 {gscBound ? (
                   <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
+                      icon={syncing ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <RefreshCw />
+                      )}
+                      variant="primary"
                       onClick={() => void runSync()}
                       disabled={syncing}
                     >
-                      {syncing ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3 w-3" />
-                      )}
                       Sync now
                     </Button>
                     {site ? (
                       <Button
                         asChild
-                        size="sm"
                         variant="outline"
-                        className="h-7 gap-1 text-xs"
                       >
                         <Link
                           href={marketingRoutes.siteSettings(

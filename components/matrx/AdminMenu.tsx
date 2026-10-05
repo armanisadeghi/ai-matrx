@@ -66,18 +66,11 @@ export function AdminMenu() {
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button
-                    variant="ghost"
-                    size="sm"
+                    icon={<Shield />}
+                    variant="quiet"
                     aria-label="Open admin settings"
-                    className={cn(
-                        PUBLIC_HEADER_ICON_BUTTON,
-                        "gap-1 p-0 text-xs",
-                        isLocalhost
-                            ? "text-orange-600 dark:text-orange-400 bg-orange-500/10 hover:bg-orange-500/20"
-                            : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-                    )}
+                    className={PUBLIC_HEADER_ICON_BUTTON}
                 >
-                    <Shield className="h-3 w-3" />
                     <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>

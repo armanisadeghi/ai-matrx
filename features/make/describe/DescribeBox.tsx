@@ -182,10 +182,9 @@ export function DescribeBox() {
           className="min-h-[2.75rem] flex-1 resize-none"
           data-make-describe-input=""
         />
-        <Button type="submit" disabled={running || !sentence.trim()} aria-busy={running || undefined} className="gap-1.5" data-make-describe-go="">
+        <Button iconEnd={running ? null : <ArrowRight aria-hidden />} variant="primary" type="submit" disabled={running || !sentence.trim()} aria-busy={running || undefined} data-make-describe-go="">
           
           {running ? `Making… ${secondsWords(now - run.startedAt)}` : "Make it"}
-          {running ? null : <ArrowRight className="h-4 w-4" aria-hidden />}
         </Button>
       </form>
 

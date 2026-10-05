@@ -489,9 +489,7 @@ export default function TasksTableView() {
         <div className="flex items-center gap-0.5">
           {filtersActive && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[11px]"
+              variant="quiet"
               onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
             >
               Clear all
@@ -735,7 +733,6 @@ export default function TasksTableView() {
                   {filterOrgId ? (
                     <div className="mt-3">
                       <Button
-                        size="sm"
                         variant="outline"
                         onClick={() => dispatch(setFilterOrgId(null))}
                       >

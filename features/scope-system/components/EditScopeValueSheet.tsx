@@ -194,15 +194,14 @@ export function EditScopeValueSheet({
         maxSize={92}
         headerActions={
           <Button
-            size="icon"
-            variant="ghost"
+            icon={<Pencil />}
+            type="submit"
+            variant="quiet"
             onClick={() => setEditingItemDef(true)}
             title="Edit context item definition"
             aria-label="Edit context item definition"
-            className="h-6 w-6 shrink-0"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
+            className="shrink-0"
+          />
         }
       >
         <form className="space-y-5" onSubmit={handleSave}>
@@ -309,14 +308,13 @@ export function EditScopeValueSheet({
             <div className="flex-1" />
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               onClick={() => onOpenChange(false)}
               disabled={busy}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
-              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy}>
               Save value
             </Button>
           </div>

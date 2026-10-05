@@ -383,9 +383,8 @@ export function VariableMappingEditor({
                 {isLiteralMode ? (
                   <Button
                     type="button"
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-1.5 text-[10px] shrink-0"
+                    variant="quiet"
+                    className="shrink-0"
                     onClick={() => {
                       const next = clearAgentVarLiteral(
                         mapping,
@@ -827,22 +826,20 @@ function ExtraInputsManager({
       ))}
       <div className="flex gap-1">
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-6 text-[10px] flex-1"
+          className="flex-1"
           onClick={addTemplateRow}
           disabled={candidateJobs.length === 0}
         >
-          <Plus className="w-3 h-3 mr-1" />
           From template
         </Button>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-6 text-[10px] flex-1"
+          className="flex-1"
           onClick={addLiteralRow}
         >
-          <Plus className="w-3 h-3 mr-1" />
           Literal value
         </Button>
       </div>
@@ -909,9 +906,8 @@ function ExtraInputRow({
           <option value="literal">Value</option>
         </select>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 w-6 p-0 shrink-0 ml-auto text-muted-foreground hover:text-destructive"
+          variant="quiet"
+          className="w-6 shrink-0 ml-auto"
           onClick={onRemove}
           title="Remove this input"
         >

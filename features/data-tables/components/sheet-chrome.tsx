@@ -16,7 +16,7 @@ import { memo, useSyncExternalStore } from "react";
 import type { SheetUndoSource } from "@/features/data-tables/components/sheet-body-row";
 import { createPortal } from "react-dom";
 import { KeyRound, Redo2, RotateCcw, Undo2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { TableHead } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { SavedViewBar } from "@/features/data-tables/saved-views/SavedViewBar";

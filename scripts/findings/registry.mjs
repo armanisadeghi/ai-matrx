@@ -24,6 +24,7 @@ import { SUMMARY as VISIBILITY_SUMMARY, remedyForKey as visibilityRemedyForKey }
 import { featureRegExp } from "../lib/source-roots.cjs";
 import { remedyForKey as uiDriftRemedyForKey } from "../ui-drift/check-ui-drift.mjs";
 import { remedyForKey as oneControlRemedyForKey } from "../one-control/check-one-control.mjs";
+import { remedyForKey as pageTopRemedyForKey } from "../page-top/check-page-top.mjs";
 
 /**
  * accept / noAccept come from accept-rules.json — the ONE declaration the server's Mark OK button
@@ -179,6 +180,15 @@ export const FINDINGS_CHECKS = [
     fix: "Render the package control (@ai-matrx/design-system/controls) as it is; className is placement only.",
     fixFor: oneControlRemedyForKey,
     ...fromRules("one-control"),
+  },
+  {
+    // PAGE-TOP TEMPLATES (features/shell/FEATURE.md § Page-top templates): a raw <PageHeader> row,
+    // or a sentence under a page title. Shrink-only baseline scripts/page-top/baseline.json.
+    id: "page-top",
+    watch: /\.tsx$/,
+    fix: "Use a page-top template (RecordPageHeader / EntityListPage / ModuleLanding / the workspace header); no sentence under a title.",
+    fixFor: pageTopRemedyForKey,
+    ...fromRules("page-top"),
   },
   {
     id: "route-metadata-and-favicons",

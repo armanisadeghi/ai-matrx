@@ -142,30 +142,27 @@ export default function EnginePage() {
               </h2>
               <div className="flex items-center gap-2">
                 <Button
+                  icon={loadingSettings ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
                   onClick={fetchSettings}
                   disabled={loadingSettings}
                 >
-                  {loadingSettings ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3 h-3" />
-                  )}
                   Reload
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
+                  icon={saving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   onClick={saveSettings}
                   disabled={saving || !settingsJson}
                 >
-                  {saving ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Save className="w-3 h-3" />
-                  )}
                   Save
                 </Button>
               </div>

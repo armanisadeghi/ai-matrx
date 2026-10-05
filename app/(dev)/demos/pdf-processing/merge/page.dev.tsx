@@ -111,11 +111,10 @@ export default function MergeDemo() {
               <span className="text-sm font-medium">Source #{idx + 1}</span>
               {sources.length > 1 ? (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<Trash2 />}
+                  variant="quiet"
                   onClick={() => removeSource(idx)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+                > Remove
                 </Button>
               ) : null}
             </div>
@@ -137,8 +136,7 @@ export default function MergeDemo() {
             </label>
           </div>
         ))}
-        <Button variant="outline" onClick={addSource}>
-          <Plus className="h-4 w-4 mr-1" /> Add source
+        <Button icon={<Plus />} variant="outline" onClick={addSource}> Add source
         </Button>
       </div>
 
@@ -151,7 +149,7 @@ export default function MergeDemo() {
       </label>
 
       <div className="flex items-center justify-end">
-        <Button onClick={run} disabled={running} size="lg">
+        <Button variant="primary" onClick={run} disabled={running}>
           {running ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running…

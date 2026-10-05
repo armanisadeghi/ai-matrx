@@ -129,9 +129,7 @@ export function PlanReviewSection({
         <div className="flex items-center gap-1">
           {review && !busy ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground"
+              variant="quiet"
               title="Discard this review — it is saved with your setup until you do."
               onClick={onDismiss}
             >
@@ -139,9 +137,12 @@ export function PlanReviewSection({
             </Button>
           ) : null}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 gap-1.5 px-2 text-xs"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ClipboardCheck />
+            )}
+            variant="quiet"
             disabled={!aiReady || anyBusy}
             title={
               aiReady
@@ -150,11 +151,6 @@ export function PlanReviewSection({
             }
             onClick={onRun}
           >
-            {busy ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <ClipboardCheck className="h-3 w-3" />
-            )}
             {review ? "Re-review" : "Review plan"}
           </Button>
         </div>

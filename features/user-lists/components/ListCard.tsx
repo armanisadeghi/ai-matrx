@@ -147,9 +147,8 @@ export function ListCard({
         </Link>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+          variant="quiet"
+          className="w-11 shrink-0 lg:hidden"
           aria-label={`Actions for ${list.list_name}`}
           aria-haspopup="menu"
           onClick={() => openContextMenuForElement(cardRef.current)}

@@ -24,19 +24,8 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
-import {
-  Badge,
-  Button,
-  Input,
-  SegmentedControl,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Switch,
-  cn,
-} from "@ai-matrx/design-system";
+import { Badge, Input, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, cn } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { formatChars, pagesPhrase } from "@ai-matrx/kit/tokens";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { createSourceRef, type SourceRef, type SourceRefOptions } from "@ai-matrx/agents/sources";
@@ -338,8 +327,7 @@ export function SourceReviewRow({
           )}
 
           <div className="flex justify-end">
-            <Button type="button" variant="ghost" size="sm" onClick={onRemove} className="text-muted-foreground">
-              <Trash2 className="mr-1.5 h-4 w-4" />
+            <Button icon={<Trash2 />} type="button" variant="quiet" onClick={onRemove}>
               Remove
             </Button>
           </div>

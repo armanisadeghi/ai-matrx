@@ -185,17 +185,16 @@ export function PageBlockedChecksCard({ page }: { page: MarketingPage }) {
                   </p>
                 </div>
                 <Button
+                  icon={isRunning ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Wrench />
+                  )}
                   variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0"
+                  className="shrink-0"
                   onClick={() => void run(group)}
                   disabled={running !== null}
                 >
-                  {isRunning ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Wrench className="mr-1.5 h-3.5 w-3.5" />
-                  )}
                   {isRunning ? "Working…" : group.remediation.label}
                 </Button>
               </li>

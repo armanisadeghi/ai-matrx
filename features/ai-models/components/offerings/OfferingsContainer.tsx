@@ -411,9 +411,8 @@ export default function OfferingsContainer() {
                       )}
                     </div>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 shrink-0"
+                      variant="quiet"
+                      className="w-7 shrink-0"
                       onClick={requestClose}
                     >
                       <X className="h-4 w-4" />
@@ -442,32 +441,27 @@ export default function OfferingsContainer() {
                     )}
                     <div className="px-3 py-2 flex items-center justify-between gap-2">
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-3 text-xs gap-1.5"
+                        icon={<X />}
+                        variant="quiet"
                         onClick={requestClose}
                       >
-                        <X className="h-3.5 w-3.5" />
                         Close
                       </Button>
                       <div className="flex items-center gap-2">
                         <Button
-                          size="sm"
+                          icon={<Save />}
                           variant="outline"
-                          className="h-8 px-3 text-xs gap-1.5"
                           onClick={() => handleSave()}
                           disabled={saving || !canSave}
                         >
-                          <Save className="h-3.5 w-3.5" />
                           {saving ? "Saving…" : isNew ? "Create" : "Save"}
                         </Button>
                         <Button
-                          size="sm"
-                          className="h-8 px-3 text-xs gap-1.5 bg-primary hover:bg-primary/90"
+                          icon={<LogOut />}
+                          variant="primary"
                           onClick={handleSaveAndClose}
                           disabled={saving || !canSave}
                         >
-                          <LogOut className="h-3.5 w-3.5" />
                           {saving
                             ? "Saving…"
                             : isNew

@@ -304,9 +304,7 @@ function ChannelBindControl({
           </p>
           <div>
             <Button
-              size="sm"
               variant="outline"
-              className="h-6 px-2 text-[11px]"
               onClick={() =>
                 openConnect({
                   reason: "to read this client's own YouTube channel",
@@ -342,9 +340,8 @@ function ChannelBindControl({
                 ) : null}
               </div>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-6 shrink-0 px-2 text-[11px]"
+                className="shrink-0"
                 disabled={saving !== null}
                 aria-label={`Bind ${candidate.title} (${candidateIdentity(candidate)}) through ${candidate.account}`}
                 onClick={() => void bind(candidate)}
@@ -511,16 +508,14 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
         </h2>
         {bound && brandOrganizationId ? (
           <Button
-            size="sm"
+            icon={<RefreshCw
+              className={cn("h-3 w-3", refreshing && "animate-spin")}
+              aria-hidden
+            />}
             variant="outline"
-            className="h-6 gap-1 px-2 text-[11px]"
             disabled={refreshing}
             onClick={() => void runRefresh()}
           >
-            <RefreshCw
-              className={cn("h-3 w-3", refreshing && "animate-spin")}
-              aria-hidden
-            />
             {refreshing ? "Refreshing…" : "Refresh from YouTube"}
           </Button>
         ) : null}
@@ -557,9 +552,7 @@ export function BrandChannelPanel({ brandId, variant = "card" }: BrandChannelPan
             {(["channel", "video"] as const).map((option) => (
               <Button
                 key={option}
-                size="sm"
-                variant={lane === option ? "default" : "outline"}
-                className="h-6 px-2 text-[11px]"
+                variant={lane === option ? "primary" : "outline"}
                 onClick={() => setLane(option)}
               >
                 {option === "channel" ? "The whole channel" : "Per video"}

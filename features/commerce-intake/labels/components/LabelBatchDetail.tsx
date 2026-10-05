@@ -363,8 +363,8 @@ export function LabelBatchDetail({
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
-              size="sm"
-              className="h-9"
+              icon={<Printer />}
+              variant="primary"
               disabled={printable.length === 0}
               onClick={() => {
                 if (certificationRefusal()) return;
@@ -372,13 +372,11 @@ export function LabelBatchDetail({
                 void triggerPrint();
               }}
             >
-              <Printer className="mr-1.5 h-4 w-4" />
               Print
             </Button>
             <Button
+              icon={<Download />}
               variant="outline"
-              size="sm"
-              className="h-9"
               disabled={printable.length === 0}
               onClick={() => {
                 void stampPrinted();
@@ -393,26 +391,21 @@ export function LabelBatchDetail({
                 });
               }}
             >
-              <Download className="mr-1.5 h-4 w-4" />
               PDF
             </Button>
             <Button
+              icon={<Ruler />}
               variant="outline"
-              size="sm"
-              className="h-9"
               onClick={() => printCalibrationSheet(template)}
             >
-              <Ruler className="mr-1.5 h-4 w-4" />
               Calibration
             </Button>
             {available > 0 && batch.state !== "void" && (
               <Button
+                icon={<Ban />}
                 variant="outline"
-                size="sm"
-                className="h-9 text-destructive"
                 onClick={() => setPendingVoid(true)}
               >
-                <Ban className="mr-1.5 h-4 w-4" />
                 Void remaining
               </Button>
             )}
@@ -437,9 +430,8 @@ export function LabelBatchDetail({
               {pageCount > 1 && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
+                    variant="quiet"
+                    className="w-7"
                     disabled={pageIndex === 0}
                     onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
                   >
@@ -449,9 +441,8 @@ export function LabelBatchDetail({
                     {pageIndex + 1}/{pageCount}
                   </span>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
+                    variant="quiet"
+                    className="w-7"
                     disabled={pageIndex >= pageCount - 1}
                     onClick={() =>
                       setPageIndex((p) => Math.min(pageCount - 1, p + 1))

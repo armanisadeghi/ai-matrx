@@ -50,13 +50,11 @@ export function BlindControls({
           </span>
         )}
         <Button
-          size="sm"
+          icon={<Eye />}
           variant="outline"
           onClick={() => dispatch(revealBlind())}
-          className="h-7 border-violet-500/40 text-violet-500 hover:bg-violet-500/10"
           title="Reveal which column was which"
         >
-          <Eye className="w-3.5 h-3.5" />
           Reveal
         </Button>
       </div>

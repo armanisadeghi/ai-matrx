@@ -40,7 +40,7 @@ import { useEffect, useState, type ReactNode } from "react";
 // copied them, and the third would have copied them differently.
 
 import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";

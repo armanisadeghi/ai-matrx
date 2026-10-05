@@ -120,12 +120,11 @@ export function ShareWithAudienceButton({
   return (
     <>
       <Button
-        size="sm"
+        icon={<Users aria-hidden="true" />}
         variant="outline"
         className={className ?? "h-8 gap-1.5"}
         onClick={() => setOpen(true)}
       >
-        <Users className="h-3.5 w-3.5" aria-hidden="true" />
         {label}
         {offer !== "off" && pending ? (
           <span
@@ -315,14 +314,15 @@ export function ShareWithAudienceDialog({
         ) : null}
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={sharing}>
+          <Button variant="quiet" onClick={onClose} disabled={sharing}>
             Cancel
           </Button>
           <Button
+            icon={sharing ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
             onClick={() => void share()}
             disabled={!plan || toShare.length === 0 || sharing}
           >
-            {sharing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {toShare.length === 0
               ? "Everyone already has it"
               : `Share with ${toShare.length} ${toShare.length === 1 ? "person" : "people"}`}

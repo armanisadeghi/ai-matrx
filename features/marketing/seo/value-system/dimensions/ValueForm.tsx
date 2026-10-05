@@ -96,15 +96,12 @@ export function ValueForm({
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" className="h-7 text-xs" disabled={!canSubmit}>
-          {pending ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : null}
+        <Button icon={pending ? <Loader2 className="animate-spin" /> : null} variant="primary" type="submit" disabled={!canSubmit}>
           {mode === "create" ? "Add answer" : "Save"}
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs"
+          variant="quiet"
           onClick={onCancel}
           disabled={pending}
         >

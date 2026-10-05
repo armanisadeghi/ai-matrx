@@ -318,7 +318,7 @@ export default function PageListView({
           <AlertCircle className="h-8 w-8" />
           <p className="text-sm font-medium">Failed to load pages</p>
           <p className="text-xs text-muted-foreground">{error}</p>
-          <Button variant="outline" size="sm" onClick={onRefresh}>
+          <Button variant="outline" onClick={onRefresh}>
             Retry
           </Button>
           <ErrorAlchemyMenu />

@@ -393,32 +393,28 @@ export function EditSetView({ setId }: { setId: string }) {
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 sm:py-8">
         <div className="mb-4 flex items-center justify-between gap-2">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-2 text-xs text-muted-foreground"
+            icon={<ArrowLeft />}
+            variant="quiet"
             onClick={() => router.back()}
           >
-            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
           {data ? (
             <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<History />}
+                variant="quiet"
                 onClick={() => setHistoryOpen(true)}
                 disabled={isPending}
               >
-                <History className="mr-1.5 h-4 w-4" />
                 History
               </Button>
               <Button
+                icon={<Eye />}
                 variant="outline"
-                size="sm"
                 onClick={goView}
                 disabled={isPending}
               >
-                <Eye className="mr-1.5 h-4 w-4" />
                 View set
               </Button>
             </div>
@@ -528,14 +524,12 @@ export function EditSetView({ setId }: { setId: string }) {
               </h2>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button size="sm" variant="outline" disabled={addingCard}>
-                    {addingCard ? (
-                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  <Button icon={addingCard ? (
+                      <Loader2 className="animate-spin" />
                     ) : (
-                      <Plus className="mr-1.5 h-4 w-4" />
-                    )}
+                      <Plus />
+                    )} iconEnd={<ChevronDown />} variant="outline" disabled={addingCard}>
                     Add card
-                    <ChevronDown className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -756,52 +750,41 @@ function CardEditor({
         </span>
         <div className="flex items-center gap-1">
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7"
+            icon={<ChevronUp />}
+            variant="quiet"
             title="Move up"
             aria-label={`Move card ${index + 1} up`}
             disabled={index === 0 || reordering}
             onClick={() => onMove(-1)}
-          >
-            <ChevronUp className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7"
+            icon={<ChevronDown />}
+            variant="quiet"
             title="Move down"
             aria-label={`Move card ${index + 1} down`}
             disabled={index === count - 1 || reordering}
             onClick={() => onMove(1)}
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </Button>
+          />
           {kind !== CARD_KIND.matching && (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
+              icon={preview ? (
+                <EyeOff />
+              ) : (
+                <Eye />
+              )}
+              variant="quiet"
               onClick={() => setPreview((p) => !p)}
             >
-              {preview ? (
-                <EyeOff className="mr-1 h-3.5 w-3.5" />
-              ) : (
-                <Eye className="mr-1 h-3.5 w-3.5" />
-              )}
               {preview ? "Edit" : "Preview"}
             </Button>
           )}
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            icon={<Trash2 />}
+            variant="quiet"
             title="Delete card"
             aria-label={`Delete card ${index + 1}`}
             onClick={onDelete}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
           <AutosaveIndicator
             status={autosave.status}
             lastSavedAt={autosave.lastSavedAt}
@@ -994,24 +977,20 @@ function MatchingPairsEditor({
               className="flex-1 text-sm"
             />
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+              icon={<X />} aria-label="Remove pair"
+              variant="quiet"
+              className="shrink-0"
               title="Remove pair"
               disabled={pairs.length <= 1}
               onClick={() => removePair(i)}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ))}
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-7 px-2 text-xs"
           onClick={addPair}
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
           Add pair
         </Button>
       </div>
@@ -1128,9 +1107,8 @@ function FormulaFields({
                 aria-label={`Variable ${i + 1} meaning`}
               />
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                icon={<Trash2 />}
+                variant="quiet"
                 aria-label={`Remove variable ${i + 1}`}
                 onClick={() =>
                   onFormulaChange({
@@ -1138,15 +1116,12 @@ function FormulaFields({
                     variables: formula.variables.filter((_, idx) => idx !== i),
                   })
                 }
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
           ))}
           <Button
-            size="sm"
+            icon={<Plus />}
             variant="outline"
-            className="h-7 text-xs"
             onClick={() =>
               onFormulaChange({
                 ...formula,
@@ -1154,7 +1129,6 @@ function FormulaFields({
               })
             }
           >
-            <Plus className="mr-1 h-3 w-3" />
             Add variable
           </Button>
         </div>

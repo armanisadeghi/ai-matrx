@@ -76,8 +76,7 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
             </div>
             {response && (
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 className="ml-2"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -146,10 +145,10 @@ export default function FlashcardGenerator({ onExecute, response, isExecuting, i
 
           {/* Generate Button */}
           <Button
+            variant="primary"
             onClick={handleSubmit}
             disabled={!isFormValid || isExecuting || isStreaming}
-            className="w-full h-11 text-base font-semibold"
-            size="lg"
+            className="w-full"
           >
             {isExecuting ? (
               <>

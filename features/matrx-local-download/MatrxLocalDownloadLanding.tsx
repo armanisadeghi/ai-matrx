@@ -14,6 +14,7 @@ import {
   Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { MATRX_LOCAL_RELEASE, type DesktopPlatform } from "./release";
 
@@ -50,7 +51,7 @@ function DownloadButton({
   variant?: "default" | "outline";
 }) {
   return (
-    <Button
+    <SurfaceButton
       asChild
       size="lg"
       variant={variant}
@@ -60,7 +61,7 @@ function DownloadButton({
         <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
         {children}
       </a>
-    </Button>
+    </SurfaceButton>
   );
 }
 
@@ -194,7 +195,7 @@ export function MatrxLocalDownloadLanding({
               Mac first, Windows and Linux coming.
             </p>
           </div>
-          <Button asChild className="h-10 shrink-0 rounded-xl font-semibold">
+          <Button variant="primary" asChild className="shrink-0">
             <Link href="/desktop">See Matrx Desktop</Link>
           </Button>
         </aside>

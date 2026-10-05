@@ -147,7 +147,7 @@ export function AnalyzeCurationDialog({
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={busy}
           >
@@ -161,15 +161,15 @@ export function AnalyzeCurationDialog({
             Analyze full as-is
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Brain />
+            )}
+            variant="primary"
             onClick={() => onAnalyze(text)}
             disabled={busy || text.trim().length === 0}
-            className="gap-1.5"
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Brain className="h-3.5 w-3.5" />
-            )}
             Analyze curated
           </Button>
         </DialogFooter>

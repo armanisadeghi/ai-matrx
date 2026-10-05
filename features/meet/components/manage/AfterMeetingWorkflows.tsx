@@ -129,15 +129,13 @@ export function AfterMeetingWorkflows({
                 ) : null}
                 {disabled ? null : (
                   <Button
+                    icon={<X aria-hidden="true" />}
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="ml-auto h-7 w-7 shrink-0"
+                    variant="quiet"
+                    className="ml-auto shrink-0"
                     aria-label={`Remove ${names[id] ?? "workflow"}`}
                     onClick={() => onChange(value.filter((v) => v !== id))}
-                  >
-                    <X className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Button>
+                  />
                 )}
               </li>
             );

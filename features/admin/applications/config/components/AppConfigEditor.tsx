@@ -493,8 +493,7 @@ export function AppConfigEditor({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> All applications
+          <Button icon={<ArrowLeft />} type="button" variant="quiet" onClick={onBack}> All applications
           </Button>
           <h2 className="font-mono text-base font-semibold">
             {isNew ? "New application configuration" : appSlug}
@@ -512,15 +511,15 @@ export function AppConfigEditor({
           ) : null}
         </div>
         <Button
+          icon={<Save />}
+          variant="primary"
           type="button"
-          size="sm"
           disabled={saving}
           onClick={() => {
             const pending = validate();
             if (pending) setPendingSave(pending);
           }}
-        >
-          <Save className="mr-1.5 h-4 w-4" /> Save
+        > Save
         </Button>
       </div>
 

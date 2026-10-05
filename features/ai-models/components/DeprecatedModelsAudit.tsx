@@ -686,30 +686,27 @@ export default function DeprecatedModelsAudit({
                   </span>
                 )}
                 <Button
+                  icon={<Settings />}
                   variant="outline"
-                  size="sm"
-                  className="h-6 px-2 text-[11px]"
                   disabled={
                     !entry.replacementId || entry.replacing || entry.loading
                   }
                   onClick={() => handleOpenSettingsReview(entry)}
                 >
-                  <Settings className="h-3 w-3" />
                   Review
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-6 px-2 text-[11px]"
+                  icon={entry.replacing ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <ArrowRightLeft />
+                  )}
+                  variant="primary"
                   disabled={
                     !entry.replacementId || entry.replacing || entry.loading
                   }
                   onClick={() => handleQuickReplace(entry)}
                 >
-                  {entry.replacing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <ArrowRightLeft className="h-3 w-3" />
-                  )}
                   Quick
                 </Button>
               </div>
@@ -763,11 +760,9 @@ export default function DeprecatedModelsAudit({
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
+                        icon={<SlidersHorizontal />}
                         variant="outline"
-                        size="sm"
-                        className="h-8 gap-1 text-xs"
                       >
-                        <SlidersHorizontal className="h-3.5 w-3.5" />
                         Filters
                         {activeDomainFilterCount > 0 && (
                           <Badge
@@ -902,23 +897,21 @@ export default function DeprecatedModelsAudit({
                 )}
                 {entriesReadyForBulk.length > 0 && (
                   <Button
-                    size="sm"
-                    className="gap-1 text-xs"
+                    icon={bulkReplacing ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <ArrowRightLeft />
+                    )}
+                    variant="primary"
                     disabled={bulkReplacing}
                     onClick={() => setBulkConfirmOpen(true)}
                   >
-                    {bulkReplacing ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <ArrowRightLeft className="h-3 w-3" />
-                    )}
                     Replace all ({entriesReadyForBulk.length})
                   </Button>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  variant="quiet"
+                  className="w-8"
                   onClick={onClose}
                   aria-label="Close deprecated models audit"
                 >

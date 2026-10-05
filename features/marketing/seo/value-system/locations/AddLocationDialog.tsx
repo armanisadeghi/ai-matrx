@@ -155,22 +155,20 @@ export function AddLocationDialog({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={onCancel}
             disabled={create.isPending}
           >
             Cancel
           </Button>
           <Button
+            icon={create.isPending ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : null}
+            variant="primary"
             type="button"
-            size="sm"
             onClick={submit}
             disabled={!ready}
-            className="gap-1.5"
           >
-            {create.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : null}
             Add location
           </Button>
         </DialogFooter>

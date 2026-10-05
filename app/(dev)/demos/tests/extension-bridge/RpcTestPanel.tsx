@@ -267,9 +267,7 @@ export function RpcTestPanel({
             </Label>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 text-xs"
+              variant="quiet"
               onClick={() => setPayloadJson(DEFAULT_PAYLOADS[action])}
             >
               Reset to default
@@ -309,6 +307,8 @@ export function RpcTestPanel({
         </div>
 
         <Button
+          icon={<Send />}
+          variant="primary"
           type="button"
           onClick={handleSend}
           disabled={
@@ -318,7 +318,6 @@ export function RpcTestPanel({
           }
           className="w-full sm:w-auto"
         >
-          <Send className="mr-1.5 h-3.5 w-3.5" />
           {sending ? "Sending…" : "Send RPC"}
         </Button>
 

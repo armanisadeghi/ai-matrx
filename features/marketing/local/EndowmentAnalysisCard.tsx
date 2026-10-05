@@ -143,9 +143,7 @@ export function EndowmentAnalysisCard({
       headerExtra={
         <div className="flex items-center gap-1.5">
           <Button
-            size="sm"
             variant="outline"
-            className="h-7 gap-1 px-3 text-xs"
             onClick={() => void handleAnalyze()}
             disabled={running}
           >
@@ -153,12 +151,11 @@ export function EndowmentAnalysisCard({
             {running ? "Analyzing…" : "Read the analysis"}
           </Button>
           <Button
-            size="sm"
-            className="h-7 gap-1 px-3 text-xs"
+            icon={<ListChecks aria-hidden />}
+            variant="primary"
             onClick={() => void handleBuildPortfolio()}
             disabled={portfolioRun.isRunning}
           >
-            <ListChecks className="size-3.5" aria-hidden />
             {portfolioRun.isRunning ? "Building…" : "Build portfolio"}
           </Button>
         </div>

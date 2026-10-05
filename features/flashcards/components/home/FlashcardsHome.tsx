@@ -274,7 +274,7 @@ export function FlashcardsHome() {
             <p className="text-sm text-muted-foreground">
               Sign in to see your flashcard decks and create new ones.
             </p>
-            <Button asChild className="mt-4" size="sm">
+            <Button variant="primary" asChild className="mt-4">
               <Link href={loginHref}>Sign in</Link>
             </Button>
           </div>

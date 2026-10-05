@@ -8,7 +8,7 @@
 // listed those tables as ordinary ones (lane PROOF-DEFECTS, D5). Both now draw this line: absent
 // when the app keeps nothing, one sentence and one button otherwise.
 
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 export interface KeptByTheAppLineProps {
   keptCount: number;
@@ -29,7 +29,7 @@ export function KeptByTheAppLine({ keptCount, showEverything, onToggle }: KeptBy
           ? `Showing everything, including the ${keptCount} ${noun} the app keeps for itself.`
           : `${keptCount} ${noun} the app keeps for itself ${keptCount === 1 ? "is" : "are"} not listed here.`}
       </span>
-      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={onToggle}>
+      <Button variant="quiet" onClick={onToggle}>
         {showEverything ? "Hide what the app keeps" : "Show everything"}
       </Button>
     </div>

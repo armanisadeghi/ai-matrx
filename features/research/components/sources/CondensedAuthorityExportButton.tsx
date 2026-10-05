@@ -211,19 +211,16 @@ export function CondensedAuthorityExportButton({
     >
       <DropdownMenuTrigger asChild>
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FileStack className="text-primary" />
+          )} iconEnd={<ChevronDown className="opacity-60" />}
           variant="outline"
-          size="sm"
           disabled={busy}
-          className="gap-1.5 text-xs"
           title="Export condensed sources ordered by research score"
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <FileStack className="h-3.5 w-3.5 text-primary" />
-          )}
           Condensed
-          <ChevronDown className="h-3 w-3 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">

@@ -63,8 +63,6 @@ function StatusActionButton({
   const button = (
     <Button
       variant="outline"
-      size="sm"
-      className="h-6 gap-1 px-2 text-xs"
       disabled={disabled}
       onClick={onClick}
     >
@@ -184,9 +182,8 @@ export function PlanToolbar({
             : ""}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 shrink-0 px-1.5 text-xs"
+          variant="quiet"
+          className="shrink-0"
           onClick={onBulkDeepenCancel}
         >
           Stop
@@ -206,9 +203,8 @@ export function PlanToolbar({
           — {bulkDeepen.failures[0]?.route}: {bulkDeepen.failures[0]?.error}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 w-5 shrink-0 p-0"
+          variant="quiet"
+          className="w-5 shrink-0"
           aria-label="Dismiss"
           onClick={onBulkDeepenDismiss}
         >
@@ -222,9 +218,8 @@ export function PlanToolbar({
           Plan generation failed: {run.error}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 w-5 shrink-0 p-0"
+          variant="quiet"
+          className="w-5 shrink-0"
           aria-label="Dismiss"
           onClick={onDismiss}
         >
@@ -272,8 +267,7 @@ export function PlanToolbar({
               <span className="flex items-center gap-2 text-xs">
                 <span className="text-foreground">No website yet</span>
                 <Button
-                  size="sm"
-                  className="h-6 px-2 text-xs"
+                  variant="primary"
                   onClick={onOpenSetup}
                 >
                   Set up
@@ -312,8 +306,6 @@ export function PlanToolbar({
             <TooltipTrigger asChild>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-6 gap-1 px-2 text-xs"
                 onClick={onBulkDeepen}
               >
                 <AGENT_ICON className="h-3 w-3" />
@@ -332,9 +324,7 @@ export function PlanToolbar({
               <TooltipTrigger asChild>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={nodeCount === 0 ? "default" : "outline"}
-                    size="sm"
-                    className="h-6 gap-1 px-2 text-xs"
+                    variant={nodeCount === 0 ? "primary" : "outline"}
                   >
                     <AGENT_ICON className="h-3 w-3" />
                     Generate
@@ -396,8 +386,8 @@ export function PlanToolbar({
                 />
               </div>
               <Button
-                size="sm"
-                className="w-full gap-1.5"
+                variant="primary"
+                className="w-full"
                 onClick={() => {
                   setOpen(false);
                   onStart({

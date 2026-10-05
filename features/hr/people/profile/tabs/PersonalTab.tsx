@@ -631,9 +631,7 @@ function NotCollected({
       {canCreate ? (
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           disabled={creating}
           onClick={async () => {
             setCreating(true);

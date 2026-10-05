@@ -255,12 +255,12 @@ function CreateAppWindowBody({
             "flex items-center gap-2 pt-2 flex-wrap justify-center",
           )}
         >
-          <Button asChild variant="default" size="sm" className="gap-1.5">
+          <Button asChild variant="primary">
             <Link href={editorHref} onClick={onClose}>
               Open editor
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link
               href={`/p/${created.slug}`}
               target="_blank"
@@ -270,7 +270,7 @@ function CreateAppWindowBody({
               Preview
             </Link>
           </Button>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Done
           </Button>
         </div>

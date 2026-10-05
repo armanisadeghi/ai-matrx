@@ -1,24 +1,29 @@
 "use client";
 
 /**
- * HOST DOOR ONLY — `Button` lives in `@ai-matrx/design-system`.
+ * HOST DOOR ONLY — THE control Button (`@ai-matrx/design-system/controls`).
  *
- * There used to be a second button in this folder (`ButtonMine.tsx`, 17 call
- * sites), and it existed because the package's size scale stopped at `sm`/`lg`
- * while a dense toolbar needed something smaller. design-system 0.6.0 ships
- * ONE scale — `xs sm default/md lg xl 2xl 3xl` plus `icon`, `icon-sm`,
- * `roundIcon` — and the variants that fork carried (`primary`, `success`), so
- * the fork was deleted on 2026-09-07.
+ * One 28px geometry, locked in `@layer matrx-tap-lock`; tone-only variants
+ * (`primary` · `outline` · `quiet` · `danger` · `success` · `link`); NO `size`
+ * prop — the type refuses it, so a straggler fails `pnpm type-check`. Icon-only
+ * is `icon={<Glyph />}` + `aria-label`; a leading / trailing glyph is `icon` /
+ * `iconEnd`. Call sites own placement only (ui-unification-plan §1b, §2.9;
+ * common-docs/policies/one-ui-system.md).
  *
- * Written as a re-export, not `const Button = PackageButton`, so that
- * `Button` / `buttonVariants` can be registered in `scripts/package-twins.json`
- * and any re-grown local body fails `pnpm check:package-twins`.
+ * Wave 1A (2026-10-05) moved every importer here with
+ * `scripts/ui-rollout/button-door-codemod.mjs`. Sites that are NOT a control —
+ * multi-line rows, cards, tiles, hero CTAs — import the package-root legacy
+ * Button as `SurfaceButton` and are listed in
+ * `scripts/ui-rollout/button-door-census.json` (Wave 2 input).
  *
- * Need a new size, variant, or behavior? Add it to the PACKAGE and release.
+ * `buttonVariants` stays the package root's class recipe for its non-Button
+ * users (calendar, pagination, link-styled anchors).
+ *
+ * Written as a re-export so `Button` / `buttonVariants` stay registered in
+ * `scripts/package-twins.json`. Need a new tone or behaviour? Add it to the
+ * PACKAGE as a named option and release.
  */
 
-export {
-  Button,
-  buttonVariants,
-} from "@ai-matrx/design-system";
-export type { ButtonProps } from "@ai-matrx/design-system";
+export { Button } from "@ai-matrx/design-system/controls";
+export type { ButtonProps, ControlVariant } from "@ai-matrx/design-system/controls";
+export { buttonVariants } from "@ai-matrx/design-system";

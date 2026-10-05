@@ -289,9 +289,8 @@ export function DigRuleEditor({
               aria-label={`Condition ${index + 1} value`}
             />
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+              variant="quiet"
+              className="w-7"
               aria-label={`Remove condition ${index + 1}`}
               onClick={() => {
                 // Drafts are index-keyed; removal shifts indices — drop them
@@ -307,9 +306,8 @@ export function DigRuleEditor({
           </div>
         ))}
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="h-6 gap-1 px-2 text-[11px]"
           onClick={() =>
             setContent({
               conditions: [
@@ -319,7 +317,6 @@ export function DigRuleEditor({
             })
           }
         >
-          <Plus className="h-3 w-3" />
           Add condition
         </Button>
       </div>
@@ -432,9 +429,7 @@ export function DigRuleEditor({
 
       <div className="flex items-center justify-end gap-1.5">
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 text-xs"
+          variant="quiet"
           onClick={onCancel}
           disabled={saving}
         >
@@ -442,16 +437,13 @@ export function DigRuleEditor({
         </Button>
         <Button
           variant="outline"
-          size="sm"
-          className="h-7 text-xs"
           onClick={onPreview}
           disabled={contentErrors.length > 0}
         >
           Preview
         </Button>
         <Button
-          size="sm"
-          className="h-7 text-xs"
+          variant="primary"
           onClick={onSave}
           disabled={saving || errors.length > 0}
         >

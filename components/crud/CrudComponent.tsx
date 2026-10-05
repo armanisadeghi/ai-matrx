@@ -109,21 +109,23 @@ export function CrudComponent<T extends z.ZodType<any, any>>({
         <div className="flex-grow overflow-auto p-4">
           <div className="mb-4 flex space-x-2">
             <Button
+              icon={<PlusCircle />}
+              variant="primary"
               onClick={() => {
                 setSelectedItemId(null);
                 setIsEditing(true);
               }}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" /> Add New
+            > Add New
             </Button>
             <Button
+              icon={<PlusCircle />}
+              variant="primary"
               onClick={() => {
                 if (selectedItemId) {
                   onDeleteMany([selectedItemId]);
                 }
               }}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" /> Delete Selected
+            > Delete Selected
             </Button>
           </div>
           <div>

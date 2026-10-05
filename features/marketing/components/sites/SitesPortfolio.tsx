@@ -344,9 +344,7 @@ export function SitesPortfolio({
                 </div>
                 <Button
                   asChild
-                  size="sm"
                   variant="outline"
-                  className="h-11 gap-1.5 text-xs lg:h-7"
                 >
                   <Link href="/marketing/connections">
                     Connections <ArrowRight className="h-3.5 w-3.5" />

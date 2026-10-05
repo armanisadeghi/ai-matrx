@@ -353,16 +353,16 @@ function AddTargetForm({
         />
       </div>
       <Button
-        size="sm"
-        className="h-9 shrink-0 gap-1.5"
+        icon={submitting ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Plus />
+        )}
+        variant="primary"
+        className="shrink-0"
         disabled={!keyword.trim() || submitting}
         onClick={() => void submit()}
       >
-        {submitting ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Plus className="h-3.5 w-3.5" />
-        )}
         Track
       </Button>
     </div>
@@ -1032,22 +1032,20 @@ export function RanksWorkspace() {
                         })}
                       />
                       <Button
-                        size="sm"
+                        icon={state?.status === "running" ? (
+                          <Loader2 className="animate-spin" />
+                        ) : state?.status === "done" ? (
+                          <CheckCircle2 className="text-emerald-600" />
+                        ) : state?.status === "error" ? (
+                          <AlertTriangle className="text-destructive" />
+                        ) : (
+                          <RefreshCw />
+                        )}
                         variant="outline"
-                        className="h-7 gap-1 px-2 text-xs"
                         disabled={state?.status === "running"}
                         onClick={() => void run(item.target_id)}
                         title={state?.error ?? state?.stage}
                       >
-                        {state?.status === "running" ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : state?.status === "done" ? (
-                          <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-                        ) : state?.status === "error" ? (
-                          <AlertTriangle className="h-3 w-3 text-destructive" />
-                        ) : (
-                          <RefreshCw className="h-3 w-3" />
-                        )}
                         {state?.status === "running"
                           ? "Checking…"
                           : state?.status === "error"
@@ -1055,9 +1053,7 @@ export function RanksWorkspace() {
                             : "Check now"}
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                        variant="quiet"
                         aria-label={`Remove ${item.keyword}`}
                         onClick={async () => {
                           try {

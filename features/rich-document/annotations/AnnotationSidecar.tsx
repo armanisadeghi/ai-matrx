@@ -363,7 +363,7 @@ function AnnotationPanelBody({
         <p className="text-xs text-muted-foreground">Move this {item.kind} to the selected text?</p>
         <div className="flex gap-1">
           <Button
-            size="sm"
+            variant="primary"
             onClick={async () => {
               const err = await api.reattach(item, selection.anchor);
               setPendingReattach(null);
@@ -375,8 +375,7 @@ function AnnotationPanelBody({
             Reattach here
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => {
               setPendingReattach(null);
               ui.closePanel();

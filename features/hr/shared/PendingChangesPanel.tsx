@@ -251,9 +251,8 @@ export function PendingChangesPanel({
                   {row.canCancel && stillAhead ? (
                     <Button
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="min-h-11 shrink-0 sm:min-h-9"
+                      className="shrink-0"
                       onClick={() =>
                         setTarget({
                           kind: row.kind,

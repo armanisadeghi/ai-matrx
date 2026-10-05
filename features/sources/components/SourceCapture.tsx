@@ -280,11 +280,10 @@ export function SourceAddMenu({
               </p>
             ) : null}
             <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" size="sm" onClick={() => setAddMode(null)}>
+              <Button type="button" variant="quiet" onClick={() => setAddMode(null)}>
                 Cancel
               </Button>
-              <Button type="submit" size="sm" disabled={adding || !urlInput.trim()}>
-                {adding ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+              <Button icon={adding ? <Loader2 className="animate-spin" /> : null} variant="primary" type="submit" disabled={adding || !urlInput.trim()}>
                 Read the page
               </Button>
             </div>
@@ -307,11 +306,10 @@ export function SourceAddMenu({
               </p>
             ) : null}
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setAddMode(null)}>
+              <Button type="submit" variant="quiet" onClick={() => setAddMode(null)}>
                 Cancel
               </Button>
-              <Button size="sm" disabled={adding || !textInput.trim()} onClick={() => void handleAddText()}>
-                {adding ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+              <Button icon={adding ? <Loader2 className="animate-spin" /> : null} type="submit" variant="primary" disabled={adding || !textInput.trim()} onClick={() => void handleAddText()}>
                 Add to Sources
               </Button>
             </div>

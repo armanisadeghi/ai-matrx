@@ -58,7 +58,7 @@ import { getAssetForFile, addAssetVariants } from "@/features/files/api/assets";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { extractErrorMessage } from "@/utils/errors";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import {
   Select,

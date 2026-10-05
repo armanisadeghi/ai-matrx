@@ -81,12 +81,12 @@ export function StoreConnectShell() {
                 <p className="text-sm font-medium text-foreground">{step.title}</p>
                 <p className="text-sm text-muted-foreground">{step.detail}</p>
                 {step.href ? (
-                  <Button asChild variant="outline" size="sm" className="mt-1.5">
+                  <Button asChild variant="outline" className="mt-1.5">
                     <Link href={step.href}>Open</Link>
                   </Button>
                 ) : (
                   <Button
-                    size="sm"
+                    variant="primary"
                     className="mt-1.5"
                     onClick={() => void announceComingSoon("commerce.store-connect-oauth")}
                   >

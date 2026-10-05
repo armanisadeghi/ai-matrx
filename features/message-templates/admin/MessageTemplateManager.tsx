@@ -595,8 +595,7 @@ export function MessageTemplateManager({
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               Message Templates
             </h2>
-            <Button onClick={handleCreateNew} size="sm">
-              <Plus className="w-4 h-4 mr-1" />
+            <Button icon={<Plus />} variant="primary" onClick={handleCreateNew}>
               Add
             </Button>
           </div>
@@ -723,42 +722,39 @@ export function MessageTemplateManager({
                 <div className="flex items-center gap-2">
                   {hasUnsavedChanges && (
                     <Button
+                      icon={<X />}
                       variant="outline"
-                      size="sm"
                       onClick={handleDiscardChanges}
                     >
-                      <X className="w-4 h-4 mr-1" />
                       Discard
                     </Button>
                   )}
                   <Button
-                    size="sm"
+                    icon={<Save />}
+                    variant="primary"
                     onClick={handleSaveChanges}
                     disabled={!hasUnsavedChanges}
                   >
-                    <Save className="w-4 h-4 mr-1" />
                     Save Changes
                   </Button>
                   <Button
+                    icon={selectedTemplate.published_to_web ? (
+                      <Lock />
+                    ) : (
+                      <Globe />
+                    )}
                     variant="outline"
-                    size="sm"
                     onClick={() => handleTogglePublic(selectedTemplate)}
                   >
-                    {selectedTemplate.published_to_web ? (
-                      <Lock className="w-4 h-4" />
-                    ) : (
-                      <Globe className="w-4 h-4" />
-                    )}
                     {selectedTemplate.published_to_web
                       ? "Stop publishing to the web"
                       : "Publish to the web"}
                   </Button>
                   <Button
-                    variant="destructive"
-                    size="sm"
+                    icon={<Trash2 />}
+                    variant="danger"
                     onClick={() => handleDeleteTemplate(selectedTemplate)}
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
                     Delete
                   </Button>
                 </div>
@@ -841,6 +837,7 @@ export function MessageTemplateManager({
                         }
                       />
                       <Button
+                        variant="primary"
                         onClick={handleAddTagToEdit}
                         disabled={!editTagInput.trim()}
                       >
@@ -878,46 +875,43 @@ export function MessageTemplateManager({
                       </div>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Button
+                          icon={<PanelLeft />}
                           variant={
-                            previewMode === "editor" ? "default" : "outline"
+                            previewMode === "editor" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setPreviewMode("editor")}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <PanelLeft className="w-4 h-4" />
                           Editor Only
                         </Button>
                         <Button
+                          icon={<Columns2 />}
                           variant={
-                            previewMode === "preview" ? "default" : "outline"
+                            previewMode === "preview" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setPreviewMode("preview")}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <Columns2 className="w-4 h-4" />
                           Split View
                         </Button>
                         <Button
+                          icon={<Cpu />}
                           variant={
-                            previewMode === "json" ? "default" : "outline"
+                            previewMode === "json" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => {
                             setPreviewMode("json");
                             runBlockProcessing("json", editData.content || "");
                           }}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <Cpu className="w-4 h-4" />
                           JSON
                         </Button>
                         <Button
+                          icon={<Waves />}
                           variant={
-                            previewMode === "stream" ? "default" : "outline"
+                            previewMode === "stream" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => {
                             setPreviewMode("stream");
                             runBlockProcessing(
@@ -925,16 +919,14 @@ export function MessageTemplateManager({
                               editData.content || "",
                             );
                           }}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <Waves className="w-4 h-4" />
                           Stream
                         </Button>
                         {(previewMode === "json" ||
                           previewMode === "stream") && (
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={() =>
                               runBlockProcessing(
                                 previewMode,
@@ -945,7 +937,6 @@ export function MessageTemplateManager({
                               isProcessing || !(editData.content || "").trim()
                             }
                             title="Re-run"
-                            className="px-2"
                           >
                             {isProcessing ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1076,11 +1067,9 @@ export function MessageTemplateManager({
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               )}
                               <Button
-                                size="sm"
                                 variant={
-                                  strictServerData ? "destructive" : "ghost"
+                                  strictServerData ? "danger" : "quiet"
                                 }
-                                className="h-6 px-2 text-[10px] font-mono"
                                 onClick={() => setStrictServerData((v) => !v)}
                                 title={
                                   strictServerData
@@ -1091,20 +1080,18 @@ export function MessageTemplateManager({
                                 {strictServerData ? "STRICT" : "strict"}
                               </Button>
                               <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                                icon={rawCopied ? (
+                                  <Check className="text-green-500" />
+                                ) : (
+                                  <Copy />
+                                )}
+                                variant="quiet"
                                 onClick={copyRawApiData}
                                 disabled={
                                   !processedEvents.length && !processError
                                 }
                                 title="Copy raw API response"
                               >
-                                {rawCopied ? (
-                                  <Check className="w-3 h-3 mr-1 text-green-500" />
-                                ) : (
-                                  <Copy className="w-3 h-3 mr-1" />
-                                )}
                                 {rawCopied ? "Copied!" : "Copy raw"}
                               </Button>
                             </div>
@@ -1228,6 +1215,7 @@ export function MessageTemplateManager({
                     }
                   />
                   <Button
+                    variant="primary"
                     onClick={handleAddTagToCreate}
                     disabled={!createTagInput.trim()}
                   >
@@ -1303,7 +1291,7 @@ export function MessageTemplateManager({
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleCreateTemplate}>Create</Button>
+                <Button variant="primary" onClick={handleCreateTemplate}>Create</Button>
               </div>
             </div>
           </div>

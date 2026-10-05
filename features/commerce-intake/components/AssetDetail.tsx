@@ -228,32 +228,27 @@ export function AssetDetail({ assetId }: { assetId: string }) {
         actions={
           <div className="flex gap-2">
             <Button
+              icon={<QrCode />}
               variant="outline"
-              size="sm"
-              className="h-9"
               onClick={() => setPrintOpen(true)}
             >
-              <QrCode className="mr-1.5 h-4 w-4" />
               Print label
             </Button>
             <Button
+              icon={<Camera />}
               variant="outline"
-              size="sm"
-              className="h-9"
               onClick={() =>
                 router.push(`/commerce/intake?asset=${asset.id}`)
               }
             >
-              <Camera className="mr-1.5 h-4 w-4" />
               Capture
             </Button>
             <Button
-              size="sm"
-              className="h-9"
+              icon={<RotateCw />}
+              variant="primary"
               disabled={saving}
               onClick={() => void reprocess()}
             >
-              <RotateCw className="mr-1.5 h-4 w-4" />
               {asset.pipelineState === "captured" ? "Reprocess" : "Mark captured"}
             </Button>
           </div>
@@ -317,9 +312,8 @@ export function AssetDetail({ assetId }: { assetId: string }) {
                   </span>
                 ) : (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto h-6 px-2 text-xs text-muted-foreground"
+                    variant="quiet"
+                    className="ml-auto"
                     onClick={() => setPendingRetire(i)}
                   >
                     Retire

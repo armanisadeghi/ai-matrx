@@ -253,9 +253,8 @@ export function AgentListItem({
           <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
+                variant="quiet"
+                className="w-7"
                 disabled={isDisabled}
               >
                 <MoreVertical className="h-4 w-4" />

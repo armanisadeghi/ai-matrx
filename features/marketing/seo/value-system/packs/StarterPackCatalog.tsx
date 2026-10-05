@@ -328,12 +328,11 @@ function PackSummaryPanel({
           </div>
           {adoption ? null : (
             <Button
+              icon={<Eye aria-hidden />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
               onClick={onPreview}
             >
-              <Eye className="size-3.5" aria-hidden />
               Preview on your data
             </Button>
           )}
@@ -367,10 +366,9 @@ function PackSummaryPanel({
                 See them in the Rulebook
               </Link>
               <Button
+                icon={<Download aria-hidden />}
                 type="button"
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1 text-[11px]"
                 onClick={onPreview}
                 disabled={!canTakeMore}
                 title={
@@ -379,15 +377,13 @@ function PackSummaryPanel({
                     : "Every item of this pack is already on your site."
                 }
               >
-                <Download className="size-3" aria-hidden />
                 Take what&apos;s missing
                 {canTakeMore ? ` (${adoption.missing})` : ""}
               </Button>
               <Button
+                icon={<RotateCcw aria-hidden />}
                 type="button"
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1 text-[11px]"
                 onClick={onReset}
                 disabled={!canReset}
                 title={
@@ -396,7 +392,6 @@ function PackSummaryPanel({
                     : "Nothing you adopted from this pack has been changed or archived, so there is nothing to reset."
                 }
               >
-                <RotateCcw className="size-3" aria-hidden />
                 Reset to pack
                 {canReset ? ` (${adoption.changed + adoption.archived})` : ""}
               </Button>

@@ -248,7 +248,7 @@ export function BrowseEverything() {
   );
 
   const connectLinks = missingProviders.map((provider) => (
-    <Button key={provider} asChild size="sm" variant="ghost" className="h-11 sm:h-8">
+    <Button key={provider} asChild variant="quiet">
       <Link href={INTEGRATIONS_HREF}>
         <Plug className="mr-1.5 h-3.5 w-3.5" />
         Connect {providerName(provider)}
@@ -267,7 +267,7 @@ export function BrowseEverything() {
         operation="List connected sources"
         calls={["/connected-sources/adapters"]}
         actions={
-          <Button size="sm" variant="outline" onClick={retry}>
+          <Button variant="outline" onClick={retry}>
             Try again
           </Button>
         }
@@ -364,13 +364,11 @@ export function BrowseEverything() {
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
+              icon={<Info />}
+              variant="quiet"
+              className="shrink-0"
               aria-label={`What ${chosenAdapter.title} can and cannot reach`}
-            >
-              <Info className="h-4 w-4" />
-            </Button>
+            />
           </PopoverTrigger>
           <PopoverContent /* sizing: fixed — two short sentences about one source */ align="start" className="w-80 space-y-1 text-sm">
             {chosenAdapter.browse_outcome ? <p>{chosenAdapter.browse_outcome}</p> : null}
@@ -422,7 +420,7 @@ export function BrowseEverything() {
         notice={accountBar}
         emptyAction={
           chosen.adapter === "google_picked_files" ? (
-            <Button asChild size="sm" className="h-11 sm:h-8">
+            <Button variant="primary" asChild>
               <Link href={INTEGRATIONS_HREF}>Pick files</Link>
             </Button>
           ) : undefined

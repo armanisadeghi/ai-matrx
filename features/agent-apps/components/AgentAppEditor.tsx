@@ -68,7 +68,7 @@ export function AgentAppEditor({ app, onSave }: AgentAppEditorProps) {
     <div className="h-full flex flex-col gap-3">
       <div className="flex-shrink-0 flex items-center justify-between px-3 py-2 border-b border-border">
         <div className="text-sm font-medium text-foreground">{app.name}</div>
-        <Button size="sm" onClick={handleSave} disabled={saving}>
+        <Button variant="primary" onClick={handleSave} disabled={saving}>
           {saving ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin" />

@@ -98,11 +98,7 @@ export function OccupationCombobox({
           role="combobox"
           aria-expanded={open}
           disabled={disabled || isLoading}
-          className={cn(
-            "h-11 w-full justify-between font-normal text-base",
-            !selected && "text-muted-foreground",
-            className,
-          )}
+          className={cn("w-full justify-between", className)}
         >
           <span className="flex items-center gap-2 min-w-0 truncate">
             <Briefcase className="h-4 w-4 shrink-0 text-muted-foreground" />

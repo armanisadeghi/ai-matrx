@@ -387,8 +387,7 @@ function HeaderSection({ account }: { account: UserAccountData }) {
           </div>
         </div>
         <Button
-          variant="secondary"
-          size="sm"
+          variant="outline"
           onClick={() => setPhotoOpen(true)}
         >
           Change photo
@@ -982,8 +981,7 @@ function SaveBar({ dirty, saving, onSave, onReset }: SaveBarProps) {
       )}
       {onReset && (
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           disabled={!dirty || saving}
           onClick={() => void onReset()}
         >
@@ -991,7 +989,7 @@ function SaveBar({ dirty, saving, onSave, onReset }: SaveBarProps) {
         </Button>
       )}
       <Button
-        size="sm"
+        variant="primary"
         disabled={!dirty || saving}
         onClick={() => void onSave()}
       >
@@ -1050,7 +1048,7 @@ function ErrorPanel({ title, message, onRetry, calls }: ErrorPanelProps) {
         operation={title.replace(/^Couldn't /, "").replace(/^load/, "Load")}
         calls={calls}
         actions={
-          <Button size="sm" variant="outline" onClick={() => void onRetry()}>
+          <Button variant="outline" onClick={() => void onRetry()}>
             Try again
           </Button>
         }

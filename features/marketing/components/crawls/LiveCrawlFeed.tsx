@@ -251,7 +251,7 @@ export function LiveCrawlFeed({
 
       {sessionId && siteId ? (
         <div className="flex shrink-0 justify-end border-t border-border px-3 py-2">
-          <Button asChild variant="outline" size="sm" className="h-8">
+          <Button asChild variant="outline">
             <Link href={marketingRoutes.site(brandId, site.id, `/crawls/${sessionId}`)}>
               Open durable session
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />

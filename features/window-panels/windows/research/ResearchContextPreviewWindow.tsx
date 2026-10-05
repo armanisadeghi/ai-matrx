@@ -225,12 +225,10 @@ function ResearchContextPreviewWindowInner({
         <>
           {stats}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 text-xs text-muted-foreground"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={() => setReloadKey((k) => k + 1)}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Rebuild
           </Button>
         </>

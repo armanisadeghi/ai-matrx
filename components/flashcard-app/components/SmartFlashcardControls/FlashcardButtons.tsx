@@ -14,86 +14,72 @@ import {SmartButtonProps} from "./types";
 
 export const PreviousButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<ArrowLeft/>} aria-label="Previous"
         onClick={flashcardHook.handlePrevious}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="Previous"
-    >
-        <ArrowLeft className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const NextButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<ArrowRight/>} aria-label="Next"
         onClick={flashcardHook.handleNext}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="Next"
-    >
-        <ArrowRight className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const ShuffleButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<Shuffle/>} aria-label="Shuffle"
         onClick={flashcardHook.shuffleCards}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="Shuffle"
-    >
-        <Shuffle className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const DecreaseFontButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<AArrowDown/>} aria-label="Decrease font size"
         onClick={() => flashcardHook.setFontSize((prev) => Math.max(18, prev - 2))}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="Decrease font size"
-    >
-        <AArrowDown className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const IncreaseFontButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<AArrowUp/>} aria-label="Increase font size"
         onClick={() => flashcardHook.setFontSize((prev) => Math.min(36, prev + 2))}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="Increase font size"
-    >
-        <AArrowUp className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const AudioHelpButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<Headphones/>} aria-label="I'm confused (Audio help)"
         onClick={flashcardHook.audioModalActions.playActiveCardAudio}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="I'm confused (Audio help)"
-    >
-        <Headphones className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const ChatHelpButton: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (
     <Button
+        icon={<MessageSquare/>} aria-label="Ask a question (Chat)"
         onClick={flashcardHook.textModalActions.openAiModal}
         variant="outline"
-        size="icon"
         className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
         title="Ask a question (Chat)"
-    >
-        <MessageSquare className="h-6 w-6"/>
-    </Button>
+    />
 );
 
 export const NavigationButtonGroup: React.FC<SmartButtonProps> = ({ flashcardHook, className }) => (

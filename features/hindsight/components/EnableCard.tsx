@@ -74,12 +74,13 @@ export function EnableCard({
       </div>
 
       <Button
+        icon={<Eye />}
+        variant="primary"
         className="mt-4"
         disabled={enable.isPending}
         onClick={() => enable.mutate()}
         data-testid="hindsight-enable"
       >
-        <Eye className="mr-1.5 h-4 w-4" />
         {enable.isPending ? "Turning on…" : "Turn on continuous review"}
       </Button>
     </Card>

@@ -40,7 +40,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Mic, MicOff, Square, RotateCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";

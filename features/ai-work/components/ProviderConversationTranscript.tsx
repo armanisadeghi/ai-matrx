@@ -494,9 +494,8 @@ export function ProviderConversationTranscript({
             </div>
             <Button
               asChild
-              size="sm"
               variant="outline"
-              className="gap-1.5 sm:shrink-0"
+              className="sm:shrink-0"
             >
               <Link href="/chat/new">
                 New AI Matrx chat
@@ -508,18 +507,16 @@ export function ProviderConversationTranscript({
           {hasEarlierAnything ? (
             <div className="flex flex-wrap items-center gap-3 border-b border-border pb-3">
               <Button
+                icon={loadingEarlier ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ChevronUp />
+                )}
                 type="button"
-                size="sm"
                 variant="outline"
-                className="gap-1.5"
                 onClick={loadEarlier}
                 disabled={loadingEarlier}
               >
-                {loadingEarlier ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ChevronUp className="h-3.5 w-3.5" />
-                )}
                 Load earlier
               </Button>
               <p className="min-w-0 flex-1 text-xs text-muted-foreground">

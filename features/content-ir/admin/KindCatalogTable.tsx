@@ -425,10 +425,9 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
         if (!href) return null;
         return (
           <Button
+            icon={<ExternalLink />} aria-label={`Open ${row.kind} in a new tab`}
             asChild
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
+            variant="quiet"
             title={`Open ${row.kind} in a new tab`}
           >
             <Link
@@ -437,9 +436,7 @@ export default function KindCatalogTable({ rows }: { rows: KindBoardRow[] }) {
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}
               aria-label={`Open ${row.kind} in a new tab`}
-            >
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
+            />
           </Button>
         );
       } }]}

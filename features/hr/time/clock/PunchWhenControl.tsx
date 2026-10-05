@@ -67,21 +67,19 @@ export function PunchWhenControl({
       <div className="grid grid-cols-2 gap-2">
         <Button
           type="button"
-          variant={backdating ? "outline" : "default"}
+          variant={backdating ? "outline" : "primary"}
           disabled={disabled}
           onClick={onUseNow}
-          className="min-h-[44px]"
         >
           Now
         </Button>
         <Button
+          icon={<CalendarClock />}
           type="button"
-          variant={backdating ? "default" : "outline"}
+          variant={backdating ? "primary" : "outline"}
           disabled={disabled}
           onClick={onChooseTime}
-          className="min-h-[44px] gap-2"
         >
-          <CalendarClock className="size-4" />
           Another time
         </Button>
       </div>

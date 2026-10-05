@@ -173,14 +173,13 @@ export default function AgentAppsAdminDashboardPage() {
       <div className="flex-shrink-0 p-4 border-b border-border bg-card">
         <div className="flex items-center justify-end gap-3 flex-wrap">
           <Button
+            icon={<RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />}
             variant="outline"
-            size="sm"
             onClick={() => void load()}
             disabled={loading}
           >
-            <RefreshCw
-              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
-            />
             Refresh
           </Button>
         </div>
@@ -330,9 +329,7 @@ export default function AgentAppsAdminDashboardPage() {
               <div className="flex items-center gap-1.5">
                 {allFeaturedApps.length > 6 && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
+                    variant="quiet"
                     onClick={() => setShowAllFeatured((v) => !v)}
                   >
                     {showAllFeatured
@@ -372,15 +369,13 @@ export default function AgentAppsAdminDashboardPage() {
                   />
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
+                  iconEnd={<ArrowRight />}
+                  variant="quiet"
                   onClick={() =>
                     handleNavigate("/administration/agents/agent-apps/apps")
                   }
                 >
                   See all
-                  <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </div>
             </div>
@@ -431,9 +426,7 @@ export default function AgentAppsAdminDashboardPage() {
               <div className="flex items-center gap-1.5">
                 {allRecentlyUpdated.length > 6 && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
+                    variant="quiet"
                     onClick={() => setShowAllRecent((v) => !v)}
                   >
                     {showAllRecent
@@ -475,15 +468,13 @@ export default function AgentAppsAdminDashboardPage() {
                   />
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
+                  iconEnd={<ArrowRight />}
+                  variant="quiet"
                   onClick={() =>
                     handleNavigate("/administration/agents/agent-apps/apps")
                   }
                 >
                   See all
-                  <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               </div>
             </div>

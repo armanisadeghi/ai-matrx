@@ -780,6 +780,7 @@ function ConsentForm({
           )}
         </Button>
         <Button
+          variant="primary"
           className="flex-1"
           onClick={onApprove}
           disabled={actionLoading !== null}

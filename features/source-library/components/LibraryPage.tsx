@@ -27,7 +27,7 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
 import {

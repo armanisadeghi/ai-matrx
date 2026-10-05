@@ -82,20 +82,18 @@ export function AccountAccessSection() {
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
               <label className="sr-only" htmlFor="account-email">New email address</label>
               <Input id="account-email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} disabled={operation !== null} />
-              <Button type="button" onClick={() => void submitEmail()} disabled={operation !== null || emailUnchanged}>
-                {operation === "email" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Mail className="h-4 w-4" aria-hidden />} Change email
+              <Button icon={operation === "email" ? <Loader2 className="animate-spin" aria-hidden /> : <Mail aria-hidden />} variant="primary" type="button" onClick={() => void submitEmail()} disabled={operation !== null || emailUnchanged}> Change email
               </Button>
             </div>
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
               <Button asChild variant="outline"><Link href="/forgot-password?redirectTo=%2Fuser-settings%2Faccount"><KeyRound className="h-4 w-4" aria-hidden />Reset password</Link></Button>
-              <Button type="button" variant="outline" onClick={() => void endOtherSessions()} disabled={operation !== null}>
-                {operation === "sessions" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LogOut className="h-4 w-4" aria-hidden />} Sign out other sessions
+              <Button icon={operation === "sessions" ? <Loader2 className="animate-spin" aria-hidden /> : <LogOut aria-hidden />} type="button" variant="outline" onClick={() => void endOtherSessions()} disabled={operation !== null}> Sign out other sessions
               </Button>
               <InfoHint label="About other sessions" text="Other sessions lose refresh access; issued access tokens remain valid until they expire." />
             </div>
           </>
         ) : null}
-        {error && !account ? <Button type="button" variant="outline" size="sm" onClick={() => { setError(null); setRefreshCount((count) => count + 1); }}>Try again</Button> : null}
+        {error && !account ? <Button type="button" variant="outline" onClick={() => { setError(null); setRefreshCount((count) => count + 1); }}>Try again</Button> : null}
       </div>
     </SettingsSection>
   );

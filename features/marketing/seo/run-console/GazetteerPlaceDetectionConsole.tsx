@@ -217,9 +217,8 @@ export function GazetteerPlaceDetectionConsole({
                 queue to tick.
               </p>
               <Button
-                size="sm"
-                variant="ghost"
-                className="ml-auto h-7 px-1.5"
+                variant="quiet"
+                className="ml-auto"
                 title="Re-read the corpus scoreboard"
                 onClick={() => void status.refetch()}
               >
@@ -284,8 +283,13 @@ export function GazetteerPlaceDetectionConsole({
             ) : null}
 
             <Button
-              size="sm"
-              className="mt-1 w-fit gap-1 text-xs"
+              icon={running ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Play />
+              )}
+              variant="primary"
+              className="mt-1 w-fit"
               disabled={running || batchKeywords <= 0}
               onClick={() => void startRun()}
               title={
@@ -294,11 +298,6 @@ export function GazetteerPlaceDetectionConsole({
                   : `Read up to ${formatCount(batchKeywords)} keywords`
               }
             >
-              {running ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Play className="h-3 w-3" />
-              )}
               {running
                 ? "Reading…"
                 : `Run now (up to ${formatCount(batchKeywords)})`}

@@ -306,18 +306,18 @@ export function ReachabilityInspectorClient({
           className="h-8 w-80 font-mono text-xs"
         />
         <Button
-          size="sm"
+          icon={loading ? (
+            <RefreshCw className="animate-spin" />
+          ) : (
+            <Search />
+          )}
+          variant="primary"
           disabled={loading}
           onClick={() => {
             if (hasRun) void lookupFor(mode, entityType, entityId);
             else setHasRun(true);
           }}
         >
-          {loading ? (
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Search className="mr-1.5 h-3.5 w-3.5" />
-          )}
           Look up
         </Button>
         {rows !== null && rows.length > 0 && lastLookup !== null && (

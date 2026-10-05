@@ -21,7 +21,7 @@ export function StudyFlashcardLinks({ guide, onChanged }: { guide: Note; onChang
   const [open, setOpen] = useState(false);
   const links = useContainerLinks({ containerType: "note", containerId: open ? guide.id : null, orgId: guide.organization_id });
   return <>
-    <Button variant="outline" size="sm" className="w-full" onClick={() => setOpen(true)}>Manage linked flashcards</Button>
+    <Button variant="outline" className="w-full" onClick={() => setOpen(true)}>Manage linked flashcards</Button>
     <MatrxDynamicPanelHost
       open={open}
       onOpenChange={setOpen}

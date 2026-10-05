@@ -194,12 +194,11 @@ export function CanonicalizationOverview() {
               agent={() => overviewToAgentInput(overview)}
             />
           ) : null}
-          <Button onClick={() => setRefreshOpen(true)} disabled={refreshing}>
-            {refreshing ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          <Button icon={refreshing ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <RefreshCw className="mr-1.5 h-4 w-4" />
-            )}
+              <RefreshCw />
+            )} variant="primary" onClick={() => setRefreshOpen(true)} disabled={refreshing}>
             Refresh audit store
           </Button>
         </div>

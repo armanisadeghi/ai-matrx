@@ -74,6 +74,7 @@ export default function ContactPage() {
             </p>
           </div>
           <Button
+            type="submit"
             onClick={() => setSubmitted(false)}
             variant="outline"
           >
@@ -179,10 +180,10 @@ export default function ContactPage() {
 
             {/* Submit Button */}
             <Button
+              variant="primary"
               type="submit"
               disabled={loading}
               className="w-full"
-              size="lg"
             >
               {loading ? (
                 <>

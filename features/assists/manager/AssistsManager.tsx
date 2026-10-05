@@ -201,12 +201,11 @@ export function AssistsManager() {
         filter: false,
         cell: (row) => (
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             aria-label={
               row.isStarred ? "Unflag this assist" : "Flag this assist"
             }
-            className="h-7 w-7 p-0"
+            className="w-7"
             onClick={() => {
               void setStarred(row.id, !row.isStarred).catch(() =>
                 toast.error("Could not update the flag — try again"),
@@ -357,16 +356,14 @@ export function AssistsManager() {
         cell: (row) =>
           row.status === "pending" ? null : (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 px-2 text-xs"
+              icon={<RotateCcw />}
+              variant="quiet"
               onClick={() => {
                 void restore(row.id)
                   .then(() => toast.success("Back in your assists"))
                   .catch(() => toast.error("Could not restore — try again"));
               }}
             >
-              <RotateCcw className="h-3 w-3" />
               Restore
             </Button>
           ),
@@ -498,9 +495,7 @@ export function AssistsManager() {
           return (
             <Button
               key={entry.value}
-              size="sm"
-              variant={tab === entry.value ? "secondary" : "ghost"}
-              className="h-7 gap-1.5 px-2.5 text-xs"
+              variant={tab === entry.value ? "outline" : "quiet"}
               onClick={() => setTab(entry.value)}
             >
               {entry.label}
@@ -520,53 +515,43 @@ export function AssistsManager() {
           const active = urgency === band;
           return (
             <Button
+              icon={<Icon className={`h-3 w-3 ${meta.iconClass}`} />}
               key={band}
-              size="sm"
-              variant={active ? "secondary" : "ghost"}
-              className="h-7 gap-1 px-2.5 text-xs"
+              variant={active ? "outline" : "quiet"}
               // Clicking the active band clears it — the filter is a toggle,
               // so "everything" never needs a fourth button.
               onClick={() => setUrgency(active ? null : band)}
               aria-pressed={active}
             >
-              <Icon className={`h-3 w-3 ${meta.iconClass}`} />
               {meta.label}
             </Button>
           );
         })}
         <span className="mx-1 h-4 w-px bg-border" aria-hidden />
         <Button
-          size="sm"
-          variant={includeSnoozed ? "secondary" : "ghost"}
-          className="h-7 px-2.5 text-xs"
+          variant={includeSnoozed ? "outline" : "quiet"}
           onClick={() => setIncludeSnoozed((v) => !v)}
         >
           {includeSnoozed ? "Including snoozed" : "Show snoozed"}
         </Button>
         <Button
-          size="sm"
-          variant={starredOnly ? "secondary" : "ghost"}
-          className="h-7 gap-1 px-2.5 text-xs"
+          icon={<Star />}
+          variant={starredOnly ? "outline" : "quiet"}
           onClick={() => setStarredOnly((v) => !v)}
         >
-          <Star className="h-3 w-3" />
           Flagged
         </Button>
         <Button
-          size="sm"
-          variant={unseenOnly ? "secondary" : "ghost"}
-          className="h-7 px-2.5 text-xs"
+          variant={unseenOnly ? "outline" : "quiet"}
           onClick={() => setUnseenOnly((v) => !v)}
         >
           Unseen
         </Button>
         <Button
-          size="sm"
-          variant={showSilenced ? "secondary" : "ghost"}
-          className="h-7 gap-1 px-2.5 text-xs"
+          icon={<VolumeX />}
+          variant={showSilenced ? "outline" : "quiet"}
           onClick={() => setShowSilenced((value) => !value)}
         >
-          <VolumeX className="h-3 w-3" />
           Silenced
           <UntrustedCount
             className="text-[11px] text-muted-foreground"
@@ -581,9 +566,7 @@ export function AssistsManager() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 px-2.5 text-xs"
                     disabled={bulkBusy}
                   >
                     Snooze these {shownIds.length}
@@ -607,9 +590,7 @@ export function AssistsManager() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7 px-2.5 text-xs"
                 disabled={bulkBusy}
                 onClick={() => setConfirmDismissAll(true)}
               >
@@ -619,28 +600,24 @@ export function AssistsManager() {
           )}
           {assistsQuiet && (
             <Button
-              size="sm"
+              icon={<VolumeX />}
               variant="outline"
-              className="h-7 gap-1.5 px-2.5 text-xs"
               onClick={() => {
                 resumeAssists();
                 toast.success("Assists are back on");
               }}
             >
-              <VolumeX className="h-3 w-3" />
               Quiet{assistsQuietRemaining ? ` · ${assistsQuietRemaining}` : ""} — turn on
             </Button>
           )}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1.5 px-2 text-xs"
+            icon={<RefreshCw
+              className={loading ? "h-3 w-3 animate-spin" : "h-3 w-3"}
+            />}
+            variant="quiet"
             onClick={refresh}
             disabled={loading}
           >
-            <RefreshCw
-              className={loading ? "h-3 w-3 animate-spin" : "h-3 w-3"}
-            />
             Refresh
           </Button>
         </div>
@@ -683,9 +660,9 @@ export function AssistsManager() {
                     </div>
                   </div>
                   <Button
-                    size="sm"
+                    icon={<Volume2 />}
                     variant="outline"
-                    className="h-7 shrink-0 gap-1 px-2 text-xs"
+                    className="shrink-0"
                     onClick={() => {
                       void unsuppressSource(
                         suppression.sourceKey,
@@ -703,7 +680,6 @@ export function AssistsManager() {
                         );
                     }}
                   >
-                    <Volume2 className="h-3 w-3" />
                     Turn back on
                   </Button>
                 </div>

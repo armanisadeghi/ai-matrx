@@ -32,11 +32,11 @@ export function SittingResumed({
         off, or start again with nothing.
       </p>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={onDiscard}>
+        <Button variant="outline" onClick={onDiscard}>
           Start again
         </Button>
         {onAcknowledge ? (
-          <Button size="sm" variant="ghost" onClick={onAcknowledge}>
+          <Button variant="quiet" onClick={onAcknowledge}>
             Got it
           </Button>
         ) : null}

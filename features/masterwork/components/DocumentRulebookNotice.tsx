@@ -104,7 +104,7 @@ export function DocumentRulebookNotice({
       title={`Everything you write here becomes material ${named}${alsoOthers} learns from, and it saves as you type.`}
       actions={
         href ? (
-          <Button asChild size="sm" variant="outline" className="h-7">
+          <Button asChild variant="outline">
             <Link href={href}>Back to the Rulebook</Link>
           </Button>
         ) : undefined

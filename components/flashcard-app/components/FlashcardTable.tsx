@@ -67,8 +67,7 @@ const FlashcardTable: React.FC<FlashcardTableProps> = ({ onEditCard }) => {
 
   return (
     <div className="w-full max-w-4xl mt-12 overflow-x-auto">
-      <Button onClick={handleAddCard} className="mb-4">
-        <Plus className="mr-2 h-4 w-4" /> Add New Card
+      <Button icon={<Plus />} variant="primary" onClick={handleAddCard} className="mb-4"> Add New Card
       </Button>
       <Table>
         <TableHeader>
@@ -118,7 +117,7 @@ const FlashcardTable: React.FC<FlashcardTableProps> = ({ onEditCard }) => {
                       e.stopPropagation();
                       if (card.id) handleDeleteCard(card.id);
                     }}
-                    variant="destructive"
+                    variant="danger"
                   >
                     <Trash className="h-2 w-2" />
                   </Button>

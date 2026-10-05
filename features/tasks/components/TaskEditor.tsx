@@ -26,6 +26,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ProInput } from "@/components/official/ProInput";
 import { cn } from "@/utils/cn";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
@@ -54,7 +55,7 @@ function EmbeddedToolbarButton({
   children: ReactNode;
 }) {
   return (
-    <Button
+    <SurfaceButton
       type="button"
       size="sm"
       variant={pressed ? "secondary" : variant}
@@ -65,7 +66,7 @@ function EmbeddedToolbarButton({
       className={cn("h-6 w-6 shrink-0 p-0", className)}
     >
       {children}
-    </Button>
+    </SurfaceButton>
   );
 }
 
@@ -299,35 +300,31 @@ function TaskEditorInner({
               {isDirty && (
                 <>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={handleDiscard}
                     disabled={isSaving}
-                    className="h-7 px-2 text-[11px]"
                   >
                     Discard
                   </Button>
                   <Button
-                    size="sm"
+                    icon={isSaving ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Save />
+                    )}
+                    variant="primary"
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="h-7 px-2 text-[11px]"
                   >
-                    {isSaving ? (
-                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                    ) : (
-                      <Save className="w-3 h-3 mr-1" />
-                    )}
                     Save
                   </Button>
                 </>
               )}
               {!embedded ? (
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   asChild
-                  className="h-7 w-7 p-0"
+                  className="w-7"
                   title="Open in full page"
                 >
                   <Link
@@ -340,11 +337,10 @@ function TaskEditorInner({
                 </Button>
               ) : null}
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={handleDelete}
                 disabled={isDeleting || isOperating}
-                className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                className="w-7"
                 title="Delete task"
               >
                 {isDeleting ? (
@@ -422,11 +418,9 @@ function TaskEditorInner({
         ) : (
           <div className="shrink-0 border-t border-border/60 bg-card/60 backdrop-blur-sm px-3 py-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] flex items-center gap-1.5">
             <Button
-              size="sm"
-              variant={completed ? "secondary" : "ghost"}
+              variant={completed ? "outline" : "quiet"}
               onClick={handleToggleComplete}
               disabled={isOperating}
-              className="h-8 text-[11px] gap-1.5"
             >
               {completed ? (
                 <>
@@ -442,17 +436,15 @@ function TaskEditorInner({
             </Button>
 
             <Button
-              size="sm"
-              variant="ghost"
+              icon={isDeleting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Trash2 />
+              )}
+              variant="quiet"
               onClick={handleDelete}
               disabled={isDeleting || isOperating}
-              className="h-8 text-[11px] gap-1.5 text-muted-foreground hover:text-destructive"
             >
-              {isDeleting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="w-3.5 h-3.5" />
-              )}
               Delete
             </Button>
 
@@ -461,26 +453,24 @@ function TaskEditorInner({
             <div className="ml-auto flex items-center gap-1.5">
               {isDirty && (
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={handleDiscard}
                   disabled={isSaving}
-                  className="h-8 text-[11px]"
                 >
                   Discard
                 </Button>
               )}
               <Button
-                size="sm"
+                icon={isSaving ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Save />
+                )}
+                variant="primary"
                 onClick={handleSave}
                 disabled={!isDirty || isSaving}
-                className="h-8 text-[11px] gap-1.5 min-w-[80px]"
+                className="min-w-[80px]"
               >
-                {isSaving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
                 {isDirty ? "Save" : "Saved"}
               </Button>
             </div>

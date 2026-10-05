@@ -74,16 +74,14 @@ export function ClassAccessPanel({
           You&apos;re enrolled in this class.
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 gap-1.5 text-muted-foreground hover:text-destructive"
+          icon={<LogOut />}
+          variant="quiet"
           disabled={acting}
           onClick={async () => {
             const r = await access.leave();
             if (r?.status === "left") toast.success("You left the class.");
           }}
         >
-          <LogOut className="h-4 w-4" />
           Leave
         </Button>
       </div>
@@ -120,8 +118,7 @@ export function ClassAccessPanel({
 
       {/* OPEN */}
       {accessMode === "open" && (
-        <Button size="sm" className="gap-1.5" disabled={busy} onClick={handleJoin}>
-          {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+        <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" disabled={busy} onClick={handleJoin}>
           Join class
         </Button>
       )}
@@ -129,12 +126,11 @@ export function ClassAccessPanel({
       {/* CLOSED */}
       {accessMode === "closed" && (
         <Button
-          size="sm"
-          className="gap-1.5"
+          icon={busy && <Loader2 className="animate-spin" />}
+          variant="primary"
           disabled={busy || myStatus === "pending"}
           onClick={handleRequest}
         >
-          {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {myStatus === "pending" ? "Request pending" : "Request to join"}
         </Button>
       )}
@@ -145,23 +141,21 @@ export function ClassAccessPanel({
           {myStatus === "entitled" ? (
             // Legacy comp grant (owner comped access before enrolment) — join to
             // complete. Paid purchasers are enrolled directly by the webhook.
-            <Button size="sm" className="gap-1.5" disabled={busy} onClick={handleJoin}>
-              {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+            <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" disabled={busy} onClick={handleJoin}>
               Complete enrolment
             </Button>
           ) : (
             <>
               <Button
-                size="sm"
-                className="gap-1.5"
+                icon={busy ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CreditCard />
+                )}
+                variant="primary"
                 disabled={busy}
                 onClick={handleEnroll}
               >
-                {busy ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <CreditCard className="h-4 w-4" />
-                )}
                 {priceLabel ? `Enroll — ${priceLabel}` : "Enroll"}
               </Button>
               <p className="text-xs leading-snug text-muted-foreground">

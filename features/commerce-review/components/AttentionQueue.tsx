@@ -69,7 +69,7 @@ export function AttentionQueue() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
         <p className="px-6 text-center text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
-        <Button variant="outline" size="sm" onClick={retryLoad}>
+        <Button variant="outline" onClick={retryLoad}>
           Try again
         </Button>
       </div>
@@ -117,38 +117,35 @@ export function AttentionQueue() {
           )}
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {item.assetId && (
-              <Button asChild variant="outline" size="sm" className="gap-1">
+              <Button asChild variant="outline">
                 <Link href={`/commerce/intake/assets/${item.assetId}`} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-3.5 w-3.5" /> Open asset
                 </Link>
               </Button>
             )}
             {item.kind === "high_impact_unknown" && (
-              <Button asChild variant="ghost" size="sm">
+              <Button asChild variant="quiet">
                 <Link href="/commerce/intake/answer">Answer queue</Link>
               </Button>
             )}
             {item.audit && (
               <>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => void verdict(item, "original_correct")}
                 >
                   Original was right
                   {item.audit.original_bucket ? ` (${item.audit.original_bucket})` : ""}
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => void verdict(item, "challenge_correct")}
                 >
                   Skeptic was right
                   {item.audit.challenge_bucket ? ` (${item.audit.challenge_bucket})` : ""}
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => void verdict(item, "inconclusive")}
                 >
                   Inconclusive

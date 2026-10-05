@@ -234,8 +234,8 @@ export default function CaWcLanding() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
+              variant="primary"
+              className="w-full sm:w-auto"
               asChild
             >
               <Link href="/sign-up?source=ca-wc-landing">
@@ -245,8 +245,7 @@ export default function CaWcLanding() {
             </Button>
             <Button
               variant="outline"
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8"
+              className="w-full sm:w-auto"
               asChild
             >
               <Link href="#capabilities">See what it does</Link>
@@ -479,7 +478,7 @@ export default function CaWcLanding() {
             defense firms alike. Built for California WC, replayable end to
             end, and built to clear your firm&rsquo;s procurement bar.
           </p>
-          <Button size="lg" className="min-h-[44px] text-base px-10 gap-2" asChild>
+          <Button variant="primary" asChild>
             <Link href="/sign-up?source=ca-wc-landing">
               Get Started
               <ArrowRight className="h-4 w-4" />

@@ -118,24 +118,21 @@ export function LabelsSection() {
             blurb="One data shape, three lanes: print window, PDF download, calibration page. Avery sheets and roll stock."
             actions={
                 <>
-                    <Button size="sm" onClick={handlePrint} disabled={!labels.length || busy !== null}>
-                        {busy === "print" ? (
-                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    <Button icon={busy === "print" ? (
+                            <Loader2 className="animate-spin" />
                         ) : (
-                            <Printer className="mr-1 h-3.5 w-3.5" />
-                        )}
+                            <Printer />
+                        )} variant="primary" onClick={handlePrint} disabled={!labels.length || busy !== null}>
                         Print sheet
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => announcePrintOutcome(printCalibrationSheet(template), "Calibration page")}>
-                        <Crosshair className="mr-1 h-3.5 w-3.5" />
+                    <Button icon={<Crosshair />} variant="outline" onClick={() => announcePrintOutcome(printCalibrationSheet(template), "Calibration page")}>
                         Calibration page
                     </Button>
-                    <Button size="sm" variant="outline" onClick={handlePdf} disabled={!labels.length || busy !== null}>
-                        {busy === "pdf" ? (
-                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                    <Button icon={busy === "pdf" ? (
+                            <Loader2 className="animate-spin" />
                         ) : (
-                            <FileDown className="mr-1 h-3.5 w-3.5" />
-                        )}
+                            <FileDown />
+                        )} variant="outline" onClick={handlePdf} disabled={!labels.length || busy !== null}>
                         Download PDF
                     </Button>
                 </>
@@ -229,14 +226,11 @@ export function LabelsSection() {
                                         ))}
                                         <td className="px-1 py-1">
                                             <Button
-                                                size="icon"
-                                                variant="ghost"
-                                                className="h-6 w-6"
+                                                icon={<Trash2 />}
+                                                variant="quiet"
                                                 onClick={() => removeRow(index)}
                                                 aria-label={`Remove row ${index + 1}`}
-                                            >
-                                                <Trash2 className="h-3.5 w-3.5" />
-                                            </Button>
+                                            />
                                         </td>
                                     </tr>
                                 ))}
@@ -252,8 +246,7 @@ export function LabelsSection() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                        <Button size="sm" variant="outline" onClick={addRow}>
-                            <Plus className="mr-1 h-3.5 w-3.5" />
+                        <Button icon={<Plus />} variant="outline" onClick={addRow}>
                             Add row
                         </Button>
                         <span className="text-xs text-muted-foreground">

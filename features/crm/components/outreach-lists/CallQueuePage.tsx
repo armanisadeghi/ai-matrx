@@ -457,13 +457,12 @@ export function CallQueuePage({ listId }: { listId: string }) {
             <div className="mt-1 text-xs text-destructive/90">{error}</div>
             <div className="mt-2 flex gap-2">
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => void advance()}
               >
                 Try again
               </Button>
-              <Button size="sm" variant="ghost" asChild>
+              <Button variant="quiet" asChild>
                 <Link href={`/crm/outreach-lists/${listId}`}>
                   Back to outreach list
                 </Link>
@@ -491,13 +490,12 @@ export function CallQueuePage({ listId }: { listId: string }) {
             </div>
             <div className="mt-3 flex gap-2">
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => void advance()}
               >
                 Check again
               </Button>
-              <Button size="sm" asChild>
+              <Button variant="primary" asChild>
                 <Link href={`/crm/outreach-lists/${listId}`}>
                   <Megaphone className="mr-1 h-3.5 w-3.5" />
                   Outreach list overview
@@ -612,9 +610,7 @@ export function CallQueuePage({ listId }: { listId: string }) {
                         </>
                       ) : (
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="h-7 gap-1 px-2 text-xs"
                           asChild
                         >
                           <a href={`tel:${t.medium.value_key}`}>
@@ -640,22 +636,15 @@ export function CallQueuePage({ listId }: { listId: string }) {
                   const destructive = d.id === "do_not_call";
                   return (
                     <Button
+                      icon={<Icon />}
                       key={d.id}
-                      size="sm"
                       variant={
-                        d.id === "connected" || d.id === "meeting_booked"
-                          ? "default"
-                          : "outline"
+                        d.id === "connected" || d.id === "meeting_booked" ? "primary" : "outline"
                       }
                       disabled={busy}
-                      className={cn(
-                        "h-8 justify-start gap-1.5 px-2 text-xs",
-                        destructive &&
-                          "border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive",
-                      )}
+                      className="justify-start"
                       onClick={() => void disposition(d)}
                     >
-                      <Icon className="h-3.5 w-3.5" />
                       {d.label}
                       {d.retryAfterHours != null && (
                         <span className="ml-auto text-[10px] text-muted-foreground">
@@ -671,15 +660,12 @@ export function CallQueuePage({ listId }: { listId: string }) {
                   Every disposition logs the call to the record's activity.
                 </span>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={<SkipForward />} iconEnd={<ArrowRight />}
+                  variant="quiet"
                   disabled={busy}
-                  className="h-7 gap-1 px-2 text-xs text-muted-foreground"
                   onClick={() => void skip()}
                 >
-                  <SkipForward className="h-3.5 w-3.5" />
                   Skip
-                  <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>
             </div>

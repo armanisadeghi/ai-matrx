@@ -238,8 +238,7 @@ export function EditItemDialog({
           >
             Cancel
           </Button>
-          <Button type="button" onClick={save} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" type="button" onClick={save} disabled={saving}>
             Save
           </Button>
         </DialogFooter>
@@ -481,8 +480,7 @@ export function AddItemDialog({
           >
             Cancel
           </Button>
-          <Button type="button" onClick={save} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" type="button" onClick={save} disabled={saving}>
             Create item
           </Button>
         </DialogFooter>

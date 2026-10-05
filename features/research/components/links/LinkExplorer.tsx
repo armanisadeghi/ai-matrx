@@ -150,11 +150,10 @@ export default function LinkExplorer() {
                                 )}
                             </div>
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={() => handleAddToScope([link.url])}
                                 disabled={adding}
-                                className="shrink-0 h-7 w-7 p-0"
+                                className="shrink-0 w-7"
                             >
                                 <Plus className="h-3.5 w-3.5" />
                             </Button>

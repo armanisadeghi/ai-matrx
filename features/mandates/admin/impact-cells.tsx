@@ -296,9 +296,8 @@ export function ImpactBlockerCell({
       {/* R17: a blocked row's door is per row — open the mandate in place. */}
       {verdict.blocker && verdict.blocker !== "tracks_latest" ? (
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 gap-1 px-1.5 text-[11px]"
+          icon={<AppWindow />}
+          variant="quiet"
           title={meta.remedy}
           onClick={() =>
             openMandateWindow({
@@ -309,20 +308,17 @@ export function ImpactBlockerCell({
             })
           }
         >
-          <AppWindow className="h-3 w-3" />
           Open
         </Button>
       ) : null}
       {eligibility.batchable && isAdvanceAnyway(verdict) ? (
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<FastForward />}
+          variant="quiet"
           disabled={busy}
-          className="h-6 gap-1 px-1.5 text-[11px] text-rose-700 dark:text-rose-400"
           title="Move this pin even though the change is graded orange or red — the next dialog says exactly what moves."
           onClick={() => onAdvanceAnyway(verdict)}
         >
-          <FastForward className="h-3 w-3" />
           Advance anyway
         </Button>
       ) : null}
@@ -339,8 +335,7 @@ export function ImpactLegend() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" aria-label="Legend">
-          <CircleHelp className="h-3.5 w-3.5" />
+        <Button icon={<CircleHelp />} variant="quiet" aria-label="Legend">
           <span className="hidden sm:inline">Legend</span>
         </Button>
       </PopoverTrigger>
@@ -489,18 +484,17 @@ export function StandingImpactStrip({
             </span>
           ))}
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <CheckCircle2 />
+            )}
             variant="outline"
-            className="ml-auto h-7 gap-1 text-xs"
+            className="ml-auto"
             disabled={busy || staleSafeCount === 0}
             title="Advances eligible green or identical rows with no blocker."
             onClick={onAdvanceAllGreen}
           >
-            {busy ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <CheckCircle2 className="h-3 w-3" />
-            )}
             Advance all green ({staleSafeCount})
           </Button>
         </>
@@ -575,24 +569,22 @@ export function AdvanceResultsCard({
         <span className="font-mono text-[10px] text-muted-foreground">{latest.batch_id}</span>
         {latest.action === "advance" && stillRevertable(latest).length > 0 ? (
           <Button
-            size="sm"
+            icon={busy === "revert" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Undo2 />
+            )}
             variant="outline"
-            className="ml-auto h-7 gap-1 text-xs"
+            className="ml-auto"
             disabled={busy !== null}
             title="Put every pin this batch moved back where it was — the next dialog names each one."
             onClick={() => onRevert(latest, null)}
           >
-            {busy === "revert" ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Undo2 className="h-3 w-3" />
-            )}
             Revert whole batch ({stillRevertable(latest).length})
           </Button>
         ) : null}
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           className={`h-7 w-7 p-0 ${latest.action === "advance" && stillRevertable(latest).length > 0 ? "" : "ml-auto"}`}
           aria-label="Dismiss batch results"
           title="Hide results; they stay recorded"
@@ -630,14 +622,12 @@ export function AdvanceResultsCard({
               <AdvanceResultBadge result={row} />
               {latest.action === "advance" && row.status === "advanced" ? (
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 gap-1 px-1.5 text-[11px]"
+                  icon={<Undo2 />}
+                  variant="quiet"
                   disabled={busy !== null}
                   title="Put this one pin back where it was."
                   onClick={() => onRevert(latest, row.token.row_id)}
                 >
-                  <Undo2 className="h-3 w-3" />
                   Revert
                 </Button>
               ) : null}
@@ -660,13 +650,11 @@ export function AdvanceResultsCard({
                 <span className="font-mono text-[10px]">{batch.batch_id}</span>
                 {batch.action === "advance" && stillRevertable(batch).length > 0 ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 gap-1 px-1.5 text-[11px]"
+                    icon={<Undo2 />}
+                    variant="quiet"
                     disabled={busy !== null}
                     onClick={() => onRevert(batch, null)}
                   >
-                    <Undo2 className="h-3 w-3" />
                     Revert ({stillRevertable(batch).length})
                   </Button>
                 ) : null}

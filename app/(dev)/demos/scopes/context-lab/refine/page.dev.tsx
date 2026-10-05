@@ -107,8 +107,7 @@ function SelectionFooter({
       )}
       {!live && (
         <Button
-          size="sm"
-          className="h-6 px-2.5 text-[11px]"
+          variant="primary"
           disabled={ctrl.count === 0}
           onClick={() => fakeSave(surface, mode, ctrl.sel, label)}
         >
@@ -499,8 +498,7 @@ export default function RefineContextLabPage() {
                 <ErrorAlchemyMenu error={data.treeError} />
               </div>
             </div>
-            <Button size="sm" variant="outline" onClick={data.retryTree}>
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+            <Button icon={<RotateCcw />} variant="outline" onClick={data.retryTree}>
               Retry
             </Button>
           </Card>
@@ -519,7 +517,7 @@ export default function RefineContextLabPage() {
                   works; the bottom sections are empty until retry succeeds.
                   <ErrorAlchemyMenu /></span>
                 </span>
-                <Button size="sm" variant="outline" onClick={data.retryEngagement}>
+                <Button variant="outline" onClick={data.retryEngagement}>
                   Retry
                 </Button>
               </Card>

@@ -107,17 +107,16 @@ export default function SandboxStoragePage() {
           </p>
         </div>
         <Button
+          icon={persistence.loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
-          size="sm"
           className="min-w-max shrink-0"
           onClick={() => void persistence.refresh()}
           disabled={persistence.loading}
         >
-          {persistence.loading ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
-          )}
           Refresh
         </Button>
       </div>
@@ -202,22 +201,20 @@ export default function SandboxStoragePage() {
                   </div>
                   {tier.tier === "hosted" ? (
                     <Button
+                      icon={<Trash2 />}
                       variant="outline"
-                      size="sm"
-                      className="min-w-max shrink-0 text-destructive hover:text-destructive"
+                      className="min-w-max shrink-0"
                       onClick={() => setPendingDelete("hosted")}
                       disabled={
                         tier.status !== "available" || !tier.volume_name
                       }
                     >
-                      <Trash2 className="w-3.5 h-3.5 mr-1.5" />
                       Wipe hosted volume
                     </Button>
                   ) : (
                     <Button
                       asChild
                       variant="outline"
-                      size="sm"
                       className="min-w-max shrink-0"
                     >
                       <Link href="/sandbox">Manage sandboxes</Link>
@@ -339,15 +336,15 @@ export default function SandboxStoragePage() {
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              icon={deleting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Trash2 />
+              )}
+              variant="danger"
               disabled={deleting}
               onClick={() => void handleDelete()}
             >
-              {deleting ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              ) : (
-                <Trash2 className="w-4 h-4 mr-2" />
-              )}
               Yes, delete
             </Button>
           </AlertDialogFooter>

@@ -161,7 +161,7 @@ export function SsnRevealDoor({
 
           <DialogFooter>
             {outcome?.kind === "revealed" ? (
-              <Button type="button" onClick={close}>
+              <Button variant="primary" type="button" onClick={close}>
                 Done
               </Button>
             ) : (
@@ -170,6 +170,7 @@ export function SsnRevealDoor({
                   Cancel
                 </Button>
                 <Button
+                  variant="primary"
                   type="button"
                   onClick={() => void submit()}
                   // The server owns the length floor (it is a knob); this only stops

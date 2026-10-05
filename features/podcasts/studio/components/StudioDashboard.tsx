@@ -116,7 +116,7 @@ export function StudioDashboard() {
           Create and manage AI-produced podcast episodes from any idea, file, or
           note.
         </p>
-        <Button asChild className="gap-2">
+        <Button variant="primary" asChild>
           <Link href="/login?next=/podcast/studio">
             <LogIn className="h-4 w-4" />
             Sign in
@@ -150,14 +150,14 @@ export function StudioDashboard() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
+                icon={<Plus />}
                 variant="outline"
                 onClick={() => setDialogOpen(true)}
-                className="gap-2"
               >
-                <Plus className="h-4 w-4" />
                 New podcast
               </Button>
               <Button
+                icon={<UploadCloud />}
                 variant="outline"
                 onClick={() => {
                   if (shows.length === 0) {
@@ -166,9 +166,7 @@ export function StudioDashboard() {
                   }
                   setUploadOpen(true);
                 }}
-                className="gap-2"
               >
-                <UploadCloud className="h-4 w-4" />
                 Upload episode
               </Button>
               {/* THE DOOR to the intelligence behind podcasts. Every stage of a
@@ -176,13 +174,13 @@ export function StudioDashboard() {
                 is a Mandate whose agent the user may replace with their own
                 (common-docs/systems/intelligence/mandates/STATE.md). Until this link, the
                 surface named none of that and there was no way in from here. */}
-              <Button asChild variant="outline" className="gap-2">
+              <Button asChild variant="outline">
                 <Link href={featureIntelligenceHref("podcast")}>
                   <INTELLIGENCE_ICON className="h-4 w-4" />
                   Podcast intelligence
                 </Link>
               </Button>
-              <Button asChild size="lg" className="gap-2 shadow-md">
+              <Button variant="primary" asChild>
                 <Link href="/podcast/studio/create">
                   <AudioLines className="h-4.5 w-4.5" />
                   Create episode

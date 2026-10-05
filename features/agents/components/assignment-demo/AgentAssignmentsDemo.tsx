@@ -197,18 +197,19 @@ export function AgentAssignmentsDemo() {
 
                 <div className="flex flex-wrap gap-2">
                   <Button
+                    icon={<RefreshCw className={cn("size-4", running && "animate-spin")} />}
+                    variant="primary"
                     onClick={() => dispatchThunk(runAssignmentDemo())}
                     disabled={running || !state.agentId}
                   >
-                    <RefreshCw className={cn("size-4", running && "animate-spin")} />
                     {state.sessionKey ? "Resume session" : "Run demo"}
                   </Button>
                   {running && state.sessionId && (
                     <Button
-                      variant="destructive"
+                      icon={<CircleStop />}
+                      variant="danger"
                       onClick={() => dispatchThunk(cancelAssignmentDemo())}
                     >
-                      <CircleStop className="size-4" />
                       Cancel session
                     </Button>
                   )}
@@ -314,12 +315,11 @@ function PairedRowsEditor({ disabled }: { disabled: boolean }) {
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-base">Blog topics + research</CardTitle>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
           onClick={() => dispatch(agentAssignmentsActions.addRow())}
           disabled={disabled}
         >
-          <Plus className="size-4" />
           Add row
         </Button>
       </CardHeader>
@@ -364,15 +364,13 @@ function PairedRowsEditor({ disabled }: { disabled: boolean }) {
               />
             </div>
             <Button
-              size="icon"
-              variant="ghost"
+              icon={<Trash2 />}
+              variant="quiet"
               className="self-end"
               onClick={() => dispatch(agentAssignmentsActions.removeRow(row.id))}
               disabled={disabled || state.rows.length === 1}
               aria-label={`Remove topic ${index + 1}`}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            />
           </div>
         ))}
         <ToggleRow
@@ -402,12 +400,11 @@ function OptionVariablesEditor({
       <CardHeader className="flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="text-base">Variable option lists</CardTitle>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
           onClick={() => dispatch(agentAssignmentsActions.addVariable())}
           disabled={disabled}
         >
-          <Plus className="size-4" />
           Add variable
         </Button>
       </CardHeader>
@@ -455,17 +452,15 @@ function OptionVariablesEditor({
               />
             </div>
             <Button
-              size="icon"
-              variant="ghost"
+              icon={<Trash2 />}
+              variant="quiet"
               className="self-end"
               onClick={() =>
                 dispatch(agentAssignmentsActions.removeVariable(variable.id))
               }
               disabled={disabled || state.variables.length === 1}
               aria-label={`Remove variable ${variable.name || variable.id}`}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            />
           </div>
         ))}
 

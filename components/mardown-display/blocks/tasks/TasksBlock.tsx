@@ -5,7 +5,7 @@ import { CheckSquare, ListPlus, ExternalLink } from "lucide-react";
 import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
 import { useToast } from "@/components/ui/use-toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";

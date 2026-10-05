@@ -19,7 +19,7 @@ import { Building2, Database } from "lucide-react";
 import { RecordsMount, TablesHome, personActor } from "@ai-matrx/records-ui";
 import { TEMPLATE_GALLERY_HREF } from "./gallery/galleryHref";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";

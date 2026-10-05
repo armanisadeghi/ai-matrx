@@ -361,12 +361,12 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
-              <Button asChild size="sm" variant="ghost">
+              <Button asChild variant="quiet">
                 <Link href={settingsHref} title="Every news monitor setting (knobs), per organization, brand and person">
                   <SlidersHorizontal className="h-3.5 w-3.5" /> News settings
                 </Link>
               </Button>
-              <Button asChild size="sm" variant="outline">
+              <Button asChild variant="outline">
                 <Link
                   href={marketingRoutes.brandMonitorSetup(brandCtx.id, {
                     trackerId: monitor.id,
@@ -376,8 +376,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                   <Pencil className="h-3.5 w-3.5" /> Edit monitor
                 </Link>
               </Button>
-              <Button size="sm" onClick={() => void runNow()} disabled={running}>
-                {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+              <Button icon={running ? <Loader2 className="animate-spin" /> : <Play />} variant="primary" onClick={() => void runNow()} disabled={running}>
                 {running ? "Running…" : "Run now"}
               </Button>
             </div>
@@ -575,7 +574,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                       </li>
                     ))}
                   </ul>
-                  <Button asChild size="sm" variant="outline" className="mt-2">
+                  <Button asChild variant="outline" className="mt-2">
                     <Link
                       href={marketingRoutes.brandMonitorSetup(brandCtx.id, {
                         trackerId: monitor.id,

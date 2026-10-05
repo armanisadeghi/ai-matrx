@@ -128,16 +128,16 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
           inputClassName="h-9"
         />
         <Button
+          icon={granting ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
           onClick={onGrant}
           disabled={!email.trim() || granting}
-          size="sm"
           className="shrink-0"
         >
-          {granting ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
-          )}
           Make curator
         </Button>
       </div>
@@ -179,9 +179,8 @@ export function IndustryCuratorsPanel({ industry }: { industry: Industry }) {
                 </span>
               </span>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 shrink-0 px-2 text-muted-foreground hover:text-destructive"
+                variant="quiet"
+                className="shrink-0"
                 onClick={() => setRevokeTarget(c)}
                 aria-label={`Revoke curator ${c.email ?? c.userId}`}
               >

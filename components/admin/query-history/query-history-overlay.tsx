@@ -236,12 +236,12 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
             </div>
           </div>
           
-          <Button 
+          <Button
+            icon={<Clock />} 
             variant="outline" 
             onClick={toggleSortOrder}
-            className="flex items-center gap-1 bg-white dark:bg-slate-900"
+            className="flex"
           >
-            <Clock className="h-4 w-4" />
             {sortOrder === 'newest' ? (
               <ChevronDown className="h-4 w-4" />
             ) : (
@@ -252,11 +252,11 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
           
           <Popover>
             <PopoverTrigger asChild>
-              <Button 
+              <Button
+                icon={<Filter />} 
                 variant="outline" 
                 className={`flex items-center gap-1 ${selectedTags.size > 0 ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800' : 'bg-white dark:bg-slate-900'}`}
               >
-                <Filter className="h-4 w-4" />
                 Filter by Tags {selectedTags.size > 0 && `(${selectedTags.size})`}
               </Button>
             </PopoverTrigger>
@@ -286,8 +286,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
                 )}
                 {selectedTags.size > 0 && (
                   <Button 
-                    variant="ghost" 
-                    size="sm" 
+                    variant="quiet" 
                     onClick={() => {
                       setSelectedTags(new Set());
                       loadQueries();
@@ -303,7 +302,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="bg-white dark:bg-slate-900">
+              <Button variant="outline">
                 Actions
               </Button>
             </DropdownMenuTrigger>
@@ -426,64 +425,56 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
                       {/* Action buttons */}
                       <div className="flex flex-wrap justify-end mt-4 gap-2">
                         <Button
+                          icon={<Copy />}
                           variant="outline"
-                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             copyToClipboard(query.query);
                           }}
-                          className="text-slate-600 dark:text-slate-400"
                         >
-                          <Copy className="h-4 w-4" />
                           Copy
                         </Button>
                         
                         <Button
+                          icon={<Download />}
                           variant="outline"
-                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             exportQuery(query);
                           }}
-                          className="text-slate-600 dark:text-slate-400"
                         >
-                          <Download className="h-4 w-4" />
                           Export
                         </Button>
                         
                         <Button
+                          icon={<Edit />}
                           variant="outline"
-                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             openEditDialog(query);
                           }}
-                          className="text-slate-600 dark:text-slate-400"
                         >
-                          <Edit className="h-4 w-4" />
                           Edit
                         </Button>
                         
                         <Button
+                          icon={<Trash />}
                           variant="outline"
-                          size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedQuery(query);
                             setShowDeleteConfirm(true);
                           }}
-                          className="text-red-600 dark:text-red-400 border-red-200 dark:border-red-900/50 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
-                          <Trash className="h-4 w-4" />
                           Remove
                         </Button>
                         
                         <Button
+                          variant="primary"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleSelectQuery(query);
                           }}
-                          size="sm"
                         >
                           Use Query
                         </Button>
@@ -553,9 +544,8 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
               Cancel
             </Button>
             <Button 
-              variant="destructive" 
+              variant="danger" 
               onClick={handleDeleteQuery}
-              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Remove
             </Button>
@@ -600,7 +590,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
                   className="flex-1"
                 />
                 <Button 
-                  variant="secondary" 
+                  variant="outline" 
                   onClick={() => {
                     if (tagInput.trim()) {
                       handleUpdateQuery();
@@ -643,7 +633,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
             <Button variant="outline" onClick={() => setShowEditDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleUpdateQuery}>
+            <Button variant="primary" onClick={handleUpdateQuery}>
               Save Changes
             </Button>
           </DialogFooter>

@@ -266,9 +266,9 @@ export function FindingCard({
               </div>
               {variant === "card" && showWindowDoor && (
                 <Button
-                  size="sm"
+                  icon={<AppWindow />}
                   variant="link"
-                  className="mt-1 h-6 px-0 text-xs"
+                  className="mt-1"
                   onClick={() =>
                     openFindingWindow({
                       finding,
@@ -278,7 +278,6 @@ export function FindingCard({
                     })
                   }
                 >
-                  <AppWindow className="h-3 w-3" />
                   Read the full finding
                 </Button>
               )}
@@ -381,7 +380,6 @@ export function FindingActions({
       />
       {showWindowDoor && (
         <Button
-          size="sm"
           variant="outline"
           title="Open the full finding in a window"
           aria-label="Open the full finding in a window"
@@ -399,25 +397,24 @@ export function FindingActions({
         </Button>
       )}
       <Button
-        size="sm"
+        icon={<MessageSquare />}
         variant="outline"
         title="Tell the reviewer what it missed"
         onClick={onGuide}
         data-testid="hindsight-guide"
       >
-        <MessageSquare className="mr-1 h-3.5 w-3.5" />
         Guide
       </Button>
       <RevertButton finding={finding} agentId={agentId} onChanged={onChanged} />
       {!decided && (
         <>
           <Button
-            size="sm"
+            icon={<Check />}
+            variant="primary"
             disabled={busy}
             onClick={() => apply.mutate()}
             data-testid="hindsight-apply"
           >
-            <Check className="mr-1 h-3.5 w-3.5" />
             {apply.isPending
               ? "Applying…"
               : finding.machine_applicable
@@ -425,7 +422,6 @@ export function FindingActions({
                 : "Accept"}
           </Button>
           <Button
-            size="sm"
             variant="outline"
             disabled={busy}
             onClick={() => reject.mutate()}

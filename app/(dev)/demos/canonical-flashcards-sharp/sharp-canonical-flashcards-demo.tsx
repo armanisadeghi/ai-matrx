@@ -22,6 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -196,14 +197,12 @@ function ActionContract({
           </dl>
         </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 shrink-0"
+          icon={<X />}
+          variant="quiet"
+          className="shrink-0"
           aria-label="Close action contract"
           onClick={onClose}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </div>
   );
@@ -260,17 +259,15 @@ export function SharpCanonicalFlashcardsDemo() {
     <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured text-foreground">
       <header className="relative z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-glass px-3 backdrop-blur-glass backdrop-saturate-glass sm:px-5">
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 shrink-0"
+          icon={<ArrowLeft />} aria-label="Back to canonical flashcard demos"
+          variant="quiet"
+          className="shrink-0"
           asChild
         >
           <AppLink
             href="/demos/canonical-flashcards"
             aria-label="Back to canonical flashcard demos"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </AppLink>
+          />
         </Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -287,7 +284,6 @@ export function SharpCanonicalFlashcardsDemo() {
         </div>
         <Button
           variant="outline"
-          className="h-10 px-3"
           onClick={() => setToolsOpen(true)}
         >
           <AGENT_ICON className="h-4 w-4" />
@@ -344,9 +340,9 @@ export function SharpCanonicalFlashcardsDemo() {
             }}
           >
             <Button
-              variant="ghost"
-              size="icon"
-              className="absolute left-1 z-10 hidden h-11 w-11 rounded-full bg-background/70 sm:inline-flex"
+              icon={<ChevronLeft />}
+              variant="quiet"
+              className="absolute left-1 z-10 hidden sm:inline-flex"
               disabled={index === 0}
               aria-label="Previous card"
               onPointerDown={(event) => event.stopPropagation()}
@@ -354,9 +350,7 @@ export function SharpCanonicalFlashcardsDemo() {
                 event.stopPropagation();
                 goTo(index - 1);
               }}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
+            />
 
             <div className="flex h-full w-full max-w-3xl flex-col items-center justify-center text-center">
               <span className="mb-4 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
@@ -378,9 +372,9 @@ export function SharpCanonicalFlashcardsDemo() {
             </div>
 
             <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 z-10 hidden h-11 w-11 rounded-full bg-background/70 sm:inline-flex"
+              icon={<ChevronRight />}
+              variant="quiet"
+              className="absolute right-1 z-10 hidden sm:inline-flex"
               disabled={index === DEMO_SET.cards.length - 1}
               aria-label="Next card"
               onPointerDown={(event) => event.stopPropagation()}
@@ -388,38 +382,35 @@ export function SharpCanonicalFlashcardsDemo() {
                 event.stopPropagation();
                 goTo(index + 1);
               }}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
+            />
           </div>
 
           <div className="shrink-0 border-t border-border bg-muted/30 px-3 py-2">
             <div className="mx-auto flex max-w-xl items-center justify-between gap-2">
               <Button
-                variant="ghost"
-                className="h-11 min-w-11 px-3"
+                icon={<ChevronLeft />}
+                variant="quiet"
+                className="min-w-11"
                 onClick={() => goTo(index - 1)}
                 disabled={index === 0}
               >
-                <ChevronLeft className="h-4 w-4" />
                 <span className="hidden sm:inline">Previous</span>
               </Button>
               <Button
-                variant="ghost"
-                className="h-11 px-3 text-muted-foreground"
+                icon={<ChevronUp />}
+                variant="quiet"
                 onClick={() => setToolsOpen(true)}
               >
-                <ChevronUp className="h-4 w-4" />
                 <span>Swipe up for learning tools</span>
               </Button>
               <Button
-                variant="ghost"
-                className="h-11 min-w-11 px-3"
+                iconEnd={<ChevronRight />}
+                variant="quiet"
+                className="min-w-11"
                 onClick={() => goTo(index + 1)}
                 disabled={index === DEMO_SET.cards.length - 1}
               >
                 <span className="hidden sm:inline">Next</span>
-                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -428,11 +419,10 @@ export function SharpCanonicalFlashcardsDemo() {
 
       <footer className="flex shrink-0 items-center justify-center px-3 pb-safe">
         <Button
-          variant="ghost"
-          className="h-11 text-muted-foreground"
+          icon={filmstripOpen ? <ChevronDown /> : <ChevronUp />}
+          variant="quiet"
           onClick={() => setFilmstripOpen((value) => !value)}
         >
-          {filmstripOpen ? <ChevronDown /> : <ChevronUp />}
           <List className="h-4 w-4" />
           Jump to card
         </Button>
@@ -444,18 +434,16 @@ export function SharpCanonicalFlashcardsDemo() {
             <List className="h-4 w-4 text-primary" />
             <p className="text-sm font-semibold">Jump to card</p>
             <Button
-              variant="ghost"
-              size="icon"
-              className="ml-auto h-10 w-10"
+              icon={<X />}
+              variant="quiet"
+              className="ml-auto"
               onClick={() => setFilmstripOpen(false)}
               aria-label="Close card filmstrip"
-            >
-              <X />
-            </Button>
+            />
           </div>
           <div className="flex snap-x gap-2 overflow-x-auto p-3 scrollbar-thin">
             {DEMO_SET.cards.map((item, itemIndex) => (
-              <Button
+              <SurfaceButton
                 key={item.id}
                 variant="outline"
                 className={cn(
@@ -473,7 +461,7 @@ export function SharpCanonicalFlashcardsDemo() {
                 <span className="text-[10px] text-muted-foreground">
                   Card {itemIndex + 1}
                 </span>
-              </Button>
+              </SurfaceButton>
             ))}
           </div>
         </div>
@@ -502,14 +490,11 @@ export function SharpCanonicalFlashcardsDemo() {
                   </p>
                 </div>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10"
+                  icon={<X />}
+                  variant="quiet"
                   onClick={() => setToolsOpen(false)}
                   aria-label="Close learning tools"
-                >
-                  <X />
-                </Button>
+                />
               </div>
             </div>
 
@@ -518,7 +503,7 @@ export function SharpCanonicalFlashcardsDemo() {
                 {ACTIONS.map((action) => {
                   const Icon = action.icon;
                   return (
-                    <Button
+                    <SurfaceButton
                       key={action.id}
                       variant="outline"
                       className={cn(
@@ -535,7 +520,7 @@ export function SharpCanonicalFlashcardsDemo() {
                       <span className="w-full text-[11px] font-normal leading-snug text-muted-foreground">
                         {action.detail}
                       </span>
-                    </Button>
+                    </SurfaceButton>
                   );
                 })}
               </div>
@@ -551,7 +536,7 @@ export function SharpCanonicalFlashcardsDemo() {
               )}
 
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                <Button
+                <SurfaceButton
                   variant="outline"
                   className="h-12 justify-start"
                   onClick={speak}
@@ -559,7 +544,7 @@ export function SharpCanonicalFlashcardsDemo() {
                   <Volume2 className="h-4 w-4 text-primary" />
                   Read {flipped ? "answer" : "question"} aloud
                   <Headphones className="ml-auto h-4 w-4 text-muted-foreground" />
-                </Button>
+                </SurfaceButton>
                 <a
                   href={card.trust.sourceUrl}
                   target="_blank"

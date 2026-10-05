@@ -46,9 +46,8 @@ export function JsonViewer({
     >
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
-        className="absolute right-1 top-1 h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+        variant="quiet"
+        className="absolute right-1 top-1 w-7"
         onClick={handleCopy}
         aria-label="Copy JSON"
       >

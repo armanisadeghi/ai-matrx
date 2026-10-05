@@ -2,21 +2,8 @@
 
 import { useState } from "react";
 import { ClipboardPaste, Plus, X } from "lucide-react";
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
-} from "@ai-matrx/design-system";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import {
   ENTRY_KINDS,
@@ -123,25 +110,21 @@ export function TermEntriesTable({
                 className="max-md:col-start-2 max-md:row-start-2"
               />
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<X />}
+                variant="quiet"
                 aria-label={`Remove row ${index + 1}`}
                 onClick={() => remove(index)}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground max-md:col-start-3 max-md:row-start-1"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+                className="max-md:col-start-3 max-md:row-start-1"
+              />
             </div>
           );
         })}
       </div>
       <div className="flex items-center gap-1 px-1">
-        <Button variant="ghost" size="sm" onClick={addRow}>
-          <Plus className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<Plus />} variant="quiet" onClick={addRow}>
           Add row
         </Button>
-        <Button variant="ghost" size="sm" onClick={() => setPasteOpen(true)}>
-          <ClipboardPaste className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<ClipboardPaste />} variant="quiet" onClick={() => setPasteOpen(true)}>
           Paste CSV
         </Button>
       </div>
@@ -212,10 +195,10 @@ function PasteCsvDialog({
           </p>
         ) : null}
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={apply} disabled={!preview?.entries.length}>
+          <Button variant="primary" onClick={apply} disabled={!preview?.entries.length}>
             Add rows
           </Button>
         </DialogFooter>

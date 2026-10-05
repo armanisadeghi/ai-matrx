@@ -98,13 +98,12 @@ function Detail({
         <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
         {onBack ? (
           <Button
+            icon={<ArrowLeft />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onBack}
-            className="relative -ml-2 mb-5 rounded-full"
-          >
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> All announcements
+            className="relative -ml-2 mb-5"
+          > All announcements
           </Button>
         ) : null}
         <div className="relative mx-auto flex max-w-xl flex-col items-center text-center">

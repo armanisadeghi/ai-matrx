@@ -111,20 +111,16 @@ export function AnswerQuestionWindow({
         <div className="flex items-center gap-1.5">
           {pendingAnswer !== null && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 gap-1 px-2.5 text-xs text-muted-foreground sm:h-8"
+              icon={<Trash2 aria-hidden />}
+              variant="quiet"
               onClick={discard}
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Discard
             </Button>
           )}
           {question.state !== "deferred" && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 px-2.5 text-xs text-muted-foreground sm:h-8"
+              variant="quiet"
               onClick={() => {
                 onDismiss(question);
                 onClose();
@@ -134,8 +130,7 @@ export function AnswerQuestionWindow({
             </Button>
           )}
           <Button
-            size="sm"
-            className="h-11 px-3 text-xs sm:h-8"
+            variant="primary"
             disabled={!text}
             onClick={save}
           >

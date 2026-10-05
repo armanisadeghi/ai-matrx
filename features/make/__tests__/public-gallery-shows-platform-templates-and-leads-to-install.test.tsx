@@ -35,19 +35,36 @@ const offsetsAsked: number[] = [];
 
 jest.mock("../gallery/publicCatalogue.server", () => {
   const { readPublicCatalogueWith } = jest.requireMock("../gallery/publicGallery") as typeof import("../gallery/publicGallery");
+  const readPublicCatalogue = () =>
+    readPublicCatalogueWith(async (offset: number) => {
+      offsetsAsked.push(offset);
+      return pages[offset / 200] ?? { data: { total: 0, limit: 200, offset, cards: [] }, error: null };
+    });
   return {
-    readPublicCatalogue: () =>
-      readPublicCatalogueWith(async (offset: number) => {
-        offsetsAsked.push(offset);
-        return pages[offset / 200] ?? { data: { total: 0, limit: 200, offset, cards: [] }, error: null };
-      }),
+    readPublicCatalogue,
+    // The page read answers only what the public catalogue holds (platform cards), by address,
+    // catalogue id or version id — the same rule as public.template_public_page.
+    readTemplatePage: async (key: string) => {
+      const read = await readPublicCatalogue();
+      if (read.state !== "open") return null;
+      const card = read.cards.find((c) => c.slug === key || c.catalogue_id === key || c.id === key);
+      return card ? { card, spec: { id: card.slug ?? card.catalogue_id, tables: [], views: [], forms: [], extras: [] }, updatedAt: null } : null;
+    },
   };
 });
+
+// The install island is a client component over the store; signed out it is the sign-up link.
+jest.mock("../gallery/TemplateUseAction", () => ({
+  TemplateUseAction: ({ signUpHref }: { signUpHref: string }) => <a href={signUpHref}>Use this template</a>,
+  OwnTemplateFallback: () => <p>This template is not in the gallery</p>,
+}));
 
 // eslint-disable-next-line import/first -- the pages must load after the read is wired
 import PublicTemplatesPage from "@/app/(public)/templates/page";
 // eslint-disable-next-line import/first
-import PublicTemplatePage, { generateMetadata } from "@/app/(public)/templates/[catalogueId]/page";
+import PublicTemplatePage, { generateMetadata } from "@/app/(public)/templates/[slug]/page";
+// eslint-disable-next-line import/first
+import IndustryTemplatesPage from "@/app/(public)/templates/category/[industry]/page";
 
 const CAPTURED = cardsFixture as unknown as GalleryCard[];
 const ACCOUNTING = CAPTURED.find((c) => c.catalogue_id === "T0001")!;
@@ -78,8 +95,9 @@ const closedWith = (code: string, message: string) => {
 async function html(node: Promise<React.ReactElement>) {
   return renderToStaticMarkup(await node);
 }
-const index = (industry?: string) => html(PublicTemplatesPage({ searchParams: Promise.resolve({ industry }) }));
-const detail = (catalogueId: string) => html(PublicTemplatePage({ params: Promise.resolve({ catalogueId }) }));
+const index = () => html(PublicTemplatesPage({ searchParams: Promise.resolve({}) }));
+const industryPage = (industry: string) => html(IndustryTemplatesPage({ params: Promise.resolve({ industry }) }));
+const detail = (slug: string) => html(PublicTemplatePage({ params: Promise.resolve({ slug }), searchParams: Promise.resolve({}) }));
 
 beforeEach(() => {
   offsetsAsked.length = 0;
@@ -102,7 +120,8 @@ describe("the public gallery index", () => {
     const page = await index();
     expect(offsetsAsked).toEqual([0, 200]);
     expect(page).toContain('href="/templates/T0016"');
-    expect(page).toContain('href="/templates/T2198"');
+    // The index shows a few per industry; the industry's own page lists every one of them.
+    expect(await industryPage("legal_professional")).toContain('href="/templates/T2198"');
   });
 
   it.each([
@@ -110,7 +129,7 @@ describe("the public gallery index", () => {
     ["legal_professional", "Accounting firm", "Primary care practice"],
   ])("narrows to one industry (%s)", async (industry, shown, hidden) => {
     open();
-    const page = await index(industry);
+    const page = await industryPage(industry);
     expect(page).toContain(shown);
     expect(page).not.toContain(`>${hidden}<`);
   });
@@ -139,9 +158,11 @@ describe("one template's public page", () => {
     open();
     const page = await detail(card.catalogue_id);
     expect(page).toContain(`>${name}</h1>`);
-    expect(page).toContain(`href="/sign-up?redirectTo=%2Fmake%2Ftemplates%2F${versionId}"`);
+    // Sign up, then back to this same page, which installs on return (?install=1).
+    expect(page).toContain(`href="/sign-up?redirectTo=${encodeURIComponent(`/templates/${card.catalogue_id}?install=1`)}"`);
+    expect(page).not.toContain(versionId);
     expect(page).toContain(">Use this template<");
-    expect(page).toContain(card.footprint!.line!.split(" · ")[0].replace(/^(\d+) /, "$1</span> <span class=\"text-muted-foreground\">"));
+    expect(page).toContain(card.footprint!.line!.split(" · ")[0]);
   });
 
   it.each([
@@ -149,7 +170,7 @@ describe("one template's public page", () => {
     ["T0001", "Accounting firm", "Denise Albright"],
   ])("carries its own title and description for search engines (%s)", async (id, name, personaStart) => {
     open();
-    const meta = await generateMetadata({ params: Promise.resolve({ catalogueId: id }) });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: id }), searchParams: Promise.resolve({}) });
     expect(String(meta.title)).toContain(name);
     expect(String(meta.description)).toContain(personaStart);
     expect(meta.robots).toBeUndefined();
@@ -158,7 +179,7 @@ describe("one template's public page", () => {
   it("keeps an organization's saved template off the public web", async () => {
     open();
     expect(await detail("BV-INTAKE")).toContain("This template is not in the gallery");
-    const meta = await generateMetadata({ params: Promise.resolve({ catalogueId: "BV-INTAKE" }) });
+    const meta = await generateMetadata({ params: Promise.resolve({ slug: "BV-INTAKE" }), searchParams: Promise.resolve({}) });
     expect(meta.robots).toEqual({ index: false, follow: true });
   });
 
@@ -183,7 +204,7 @@ describe("one gallery drawing, two hosts", () => {
     const all = ROOTS.flatMap(files);
     const drawers = all.filter((f) => MARKERS.some((m) => readFileSync(f, "utf8").includes(m))).map((f) => relative(join(__dirname, "..", "..", ".."), f));
     expect(drawers).toEqual([join("features", "make", "gallery", "TemplateCards.tsx")]);
-    for (const host of [join(ROOTS[0], "TemplateGallery.tsx"), join(ROOTS[1], "page.tsx"), join(ROOTS[1], "[catalogueId]", "page.tsx")]) {
+    for (const host of [join(ROOTS[0], "TemplateGallery.tsx"), join(ROOTS[0], "PublicGalleryPage.tsx"), join(ROOTS[1], "[slug]", "page.tsx")]) {
       expect(readFileSync(host, "utf8")).toMatch(/from "(\.\/|@\/features\/make\/gallery\/)TemplateCards"/);
     }
   });

@@ -164,9 +164,8 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
 
               {/* Trash + play. No pencil — clicking the row loads it. */}
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                variant="quiet"
+                className="w-7 shrink-0"
                 title="Delete template (data stays)"
                 disabled={deletingJobId === job.id}
                 onClick={(e) => {
@@ -181,8 +180,8 @@ export function SavedJobsList({ fileId }: { fileId: string }) {
                 )}
               </Button>
               <Button
-                size="sm"
-                className="h-7 w-7 p-0 shrink-0"
+                variant="primary"
+                className="w-7 shrink-0"
                 title="Run a new extraction with this template"
                 disabled={running || runningJobId === job.id}
                 onClick={(e) => {

@@ -62,7 +62,7 @@ export function OrgScopeTree({ orgId, slug }: { orgId: string; slug: string }) {
     return (
       <div className="text-center py-6 border-2 border-dashed border-border rounded-lg">
         <p className="text-sm text-muted-foreground mb-3">No scopes yet.</p>
-        <Button asChild size="sm">
+        <Button variant="primary" asChild>
           <Link href={`/organizations/${slug}/scopes`}>
             <Plus className="h-3.5 w-3.5 mr-1.5" />
             Set up scopes

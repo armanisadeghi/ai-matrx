@@ -1014,18 +1014,16 @@ export function ToolUiComponentGenerator({
             </p>
           </div>
           <Button
-            size="sm"
+            icon={<ClipboardList />}
             variant="outline"
-            className="h-7 text-xs gap-1 flex-shrink-0"
+            className="flex-shrink-0"
             onClick={handleRestoreDraft}
           >
-            <ClipboardList className="w-3 h-3" />
             Restore Draft
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0 flex-shrink-0"
+            variant="quiet"
+            className="w-7 flex-shrink-0"
             onClick={() => {
               clearDraft(selectedToolName || preselectedToolName || "");
               setHasDraft(false);
@@ -1084,9 +1082,8 @@ export function ToolUiComponentGenerator({
                     needed)
                   </p>
                   <Button
-                    size="sm"
+                    icon={<Copy />}
                     variant="outline"
-                    className="h-6 text-[11px] gap-1"
                     onClick={() => {
                       navigator.clipboard
                         .writeText(saveError.raw ?? "")
@@ -1103,7 +1100,6 @@ export function ToolUiComponentGenerator({
                         });
                     }}
                   >
-                    <Copy className="w-3 h-3" />
                     Copy All
                   </Button>
                 </div>
@@ -1116,23 +1112,21 @@ export function ToolUiComponentGenerator({
 
             <div className="flex gap-2 pt-1">
               <Button
-                size="sm"
+                icon={isSaving ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
+                variant="primary"
                 onClick={() => {
                   setSaveError(null);
                   handleSave();
                 }}
                 disabled={isSaving}
-                className="gap-1.5"
               >
-                {isSaving ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3.5 h-3.5" />
-                )}
                 Retry Save
               </Button>
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => setSaveError(null)}
               >
@@ -1209,12 +1203,12 @@ export function ToolUiComponentGenerator({
 
             <div className="flex justify-end">
               <Button
+                iconEnd={<ArrowRight />}
+                variant="primary"
                 onClick={handleToolSelected}
                 disabled={!selectedToolName}
-                size="sm"
               >
                 Next
-                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </Button>
             </div>
           </CardContent>
@@ -1243,11 +1237,10 @@ export function ToolUiComponentGenerator({
               />
               {!preselectedToolName && (
                 <Button
+                  icon={<ArrowLeft />}
                   variant="outline"
-                  size="sm"
                   onClick={() => setStep("select-tool")}
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                   Back
                 </Button>
               )}
@@ -1401,21 +1394,20 @@ export function ToolUiComponentGenerator({
               <div className="flex items-center justify-between">
                 {!preselectedToolName && (
                   <Button
+                    icon={<ArrowLeft />}
                     variant="outline"
-                    size="sm"
                     onClick={() => setStep("select-tool")}
                   >
-                    <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
                     Back
                   </Button>
                 )}
                 <Button
-                  size="sm"
+                  icon={<Zap />}
+                  variant="primary"
                   onClick={handleGenerate}
                   disabled={selectedSampleIds.size === 0 || isFetchingData}
                   className={preselectedToolName ? "w-full" : ""}
                 >
-                  <Zap className="w-3.5 h-3.5 mr-1.5" />
                   Generate Component
                 </Button>
                 <IntelligenceIndicator feature="tool_viz" label="Generate Component" />
@@ -1455,19 +1447,17 @@ export function ToolUiComponentGenerator({
             <div className="flex items-center gap-2">
               {agent.isStreaming && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<X />}
+                  variant="quiet"
                   onClick={agent.cancel}
-                  className="text-xs h-7 gap-1"
                 >
-                  <X className="w-3 h-3" />
                   Cancel
                 </Button>
               )}
               {step === "review" && (
                 <Button
+                  icon={<RefreshCw />}
                   variant="outline"
-                  size="sm"
                   // THE DESTRUCTIVE/EXPENSIVE CLICK LAW: the component on
                   // screen has been generated but not saved — resetting the
                   // step throws it away for good.
@@ -1483,24 +1473,21 @@ export function ToolUiComponentGenerator({
                     setStep("select-data");
                     agent.reset();
                   }}
-                  className="text-xs h-7 gap-1"
                 >
-                  <RefreshCw className="w-3 h-3" />
                   Regenerate
                 </Button>
               )}
               {step === "review" && generatedComponent && (
                 <Button
-                  size="sm"
+                  icon={isSaving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="h-7 text-xs gap-1"
                 >
-                  {isSaving ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Save className="w-3 h-3" />
-                  )}
                   {isSaving ? "Saving…" : "Save to Database"}
                 </Button>
               )}
@@ -1688,7 +1675,7 @@ export function ToolUiComponentGenerator({
           )}
 
           <div className="flex justify-center">
-            <Button variant="outline" size="sm" onClick={handleReset}>
+            <Button variant="outline" onClick={handleReset}>
               Generate Another
             </Button>
           </div>

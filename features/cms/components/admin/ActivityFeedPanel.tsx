@@ -132,8 +132,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
 
                 <div className="flex-1" />
 
-                <Button variant="ghost" size="sm" onClick={refresh} className="h-7 gap-1.5 text-xs">
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <Button icon={isLoading ? <Loader2 className="animate-spin" /> : <RefreshCw />} variant="quiet" onClick={refresh}>
                     Refresh
                 </Button>
             </div>

@@ -185,9 +185,8 @@ export const PersistedLibraryFileRow: React.FC<
         )}
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+          variant="quiet"
+          className="w-11 shrink-0 lg:hidden"
           aria-label={`Actions for ${file.name}`}
           aria-haspopup="menu"
           onClick={(event) => {
@@ -383,9 +382,8 @@ export const LibraryTreeNode: React.FC<LibraryTreeNodeProps> = ({
           />
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+            variant="quiet"
+            className="w-11 shrink-0 lg:hidden"
             aria-label={`Actions for ${folder.name}`}
             aria-haspopup="menu"
             onClick={(event) => {

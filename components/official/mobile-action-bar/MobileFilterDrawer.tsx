@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X, SlidersHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

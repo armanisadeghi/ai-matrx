@@ -115,8 +115,7 @@ export function NewInterviewButton() {
   const [, startTransition] = useTransition();
   return (
     <Button
-      size="sm"
-      className="h-11 lg:h-7"
+      variant="primary"
       onClick={() => startTransition(() => router.push("/masterwork/vision-interview/new"))}
     >
       New

@@ -357,11 +357,9 @@ export default function AiModelForm({
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1"
+                                icon={<Trash2 />}
+                                variant="quiet"
                             >
-                                <Trash2 className="h-3.5 w-3.5" />
                                 Move to Trash
                             </Button>
                         </AlertDialogTrigger>

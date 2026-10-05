@@ -430,8 +430,8 @@ export function TriadGamePage({
         ) : null}
 
         <Button
-          size="lg"
-          className="min-h-12 w-full text-base"
+          variant="primary"
+          className="w-full"
           disabled={dealing}
           onClick={() => void deal(mode ?? undefined)}
         >
@@ -487,8 +487,8 @@ export function TriadGamePage({
         ) : null}
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
-            size="lg"
-            className="min-h-12 flex-1 text-base"
+            variant="primary"
+            className="flex-1"
             disabled={dealing}
             onClick={() => void deal(deck.mode)}
           >
@@ -506,9 +506,8 @@ export function TriadGamePage({
           </Button>
           <Button
             asChild
-            size="lg"
             variant="outline"
-            className="min-h-12 flex-1 text-base"
+            className="flex-1"
           >
             <Link href={`/masterwork/${rulebookId}`}>
               See what landed{rulesThisSitting ? ` (${rulesThisSitting})` : ""}
@@ -677,12 +676,11 @@ export function TriadGamePage({
             <ArrowRight className="ml-2 h-5 w-5" />
           </GatedActionButton>
           <Button
-            size="lg"
-            variant="ghost"
-            className="min-h-12 text-base text-muted-foreground sm:flex-none"
+            icon={<SkipForward />}
+            variant="quiet"
+            className="sm:flex-none"
             onClick={skip}
           >
-            <SkipForward className="mr-2 h-5 w-5" />
             Skip this one
           </Button>
         </div>

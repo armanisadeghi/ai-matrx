@@ -98,7 +98,6 @@ export function GuestBlockDialog({
         </div>
         <DialogFooter>
           <Button
-            size="sm"
             variant="outline"
             disabled={pending}
             onClick={() => onOpenChange(false)}
@@ -106,10 +105,9 @@ export function GuestBlockDialog({
             Cancel
           </Button>
           <Button
-            size="sm"
-            variant="destructive"
+            icon={<Ban />}
+            variant="danger"
             disabled={pending}
-            className="gap-1"
             onClick={() =>
               onConfirm({
                 reason: reason.trim() || null,
@@ -118,7 +116,6 @@ export function GuestBlockDialog({
               })
             }
           >
-            <Ban className="h-3.5 w-3.5" />
             {pending ? "Blocking…" : "Block guest"}
           </Button>
         </DialogFooter>

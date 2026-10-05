@@ -244,12 +244,12 @@ export function LeaveDecisionDialog({
             Cancel
           </Button>
           <Button
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
             type="button"
             disabled={busy || (reasonRequired && reason.trim() === "")}
-            variant={intent === "reject" ? "destructive" : "default"}
+            variant={intent === "reject" ? "danger" : "primary"}
             onClick={() => void submit()}
           >
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             {INTENT_CTA[intent]}
           </Button>
         </DialogFooter>
@@ -398,11 +398,12 @@ export function LeaveReassignDialog({
             Cancel
           </Button>
           <Button
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
             type="button"
             disabled={busy || toEmploymentId === ""}
             onClick={() => void submit()}
           >
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Reassign
           </Button>
         </DialogFooter>

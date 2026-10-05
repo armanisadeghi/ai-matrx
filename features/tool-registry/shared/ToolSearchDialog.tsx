@@ -280,18 +280,16 @@ export function ToolSearchDialog({
                             </div>
                             <div className="flex items-center gap-1 shrink-0 ml-auto sm:ml-0">
                               <Button
-                                variant="default"
-                                size="sm"
+                                icon={isAddingThis ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Plus />
+                                )}
+                                variant="primary"
                                 onClick={() => void handleAdd(tool)}
                                 disabled={!!adding}
-                                className="h-7 px-2 text-[11px] gap-1"
                                 title={addLabel}
                               >
-                                {isAddingThis ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <Plus className="h-3 w-3" />
-                                )}
                                 {addLabel}
                               </Button>
                             </div>
@@ -314,8 +312,7 @@ export function ToolSearchDialog({
               : "No changes yet"}
           </span>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={!!adding}
           >

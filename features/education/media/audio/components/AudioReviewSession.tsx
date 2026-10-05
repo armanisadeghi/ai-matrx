@@ -368,13 +368,11 @@ export function AudioReviewSession({
       <div className="mx-auto w-full max-w-md space-y-5 p-4">
         <div className="flex items-center gap-3">
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<ArrowLeft />}
+            variant="quiet"
             onClick={() => router.push("/education/audio-study")}
             aria-label="Back"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          />
           <div>
             <h1 className="text-lg font-semibold text-foreground">
               Audio review
@@ -420,8 +418,7 @@ export function AudioReviewSession({
         {heldStart.held && (
           <StudyOrganizationHoldNotice what="Starting the review" />
         )}
-        <Button className="w-full gap-2" onClick={() => heldStart.start()}>
-          <Mic className="h-4 w-4" />
+        <Button icon={<Mic />} variant="primary" className="w-full" onClick={() => heldStart.start()}>
           Start review
         </Button>
       </div>
@@ -446,6 +443,7 @@ export function AudioReviewSession({
         </div>
         <div className="flex w-full flex-col gap-2 sm:flex-row">
           <Button
+            variant="primary"
             className="flex-1"
             onClick={() => router.push("/education/flashcards/sessions")}
           >
@@ -472,9 +470,7 @@ export function AudioReviewSession({
           Card {index + 1} of {cards.length}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs text-muted-foreground"
+          variant="quiet"
           onClick={quit}
         >
           Quit
@@ -533,9 +529,8 @@ export function AudioReviewSession({
                 <CardFaceContent content={card.back} variant="inline" />
               </div>
             </div>
-            <Button className="w-full gap-1.5" onClick={next}>
+            <Button iconEnd={<ChevronRight />} variant="primary" className="w-full" onClick={next}>
               {index + 1 >= cards.length ? "Finish" : "Next card"}
-              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}

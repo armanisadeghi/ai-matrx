@@ -126,13 +126,11 @@ export function InjuriesList({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<ClipboardCopy />}
                   type="button"
-                  size="sm"
                   variant="outline"
                   onClick={handleCopyAll}
-                  className="gap-1.5 h-8"
                 >
-                  <ClipboardCopy className="h-3.5 w-3.5" />
                   Copy all
                 </Button>
               </TooltipTrigger>
@@ -142,12 +140,11 @@ export function InjuriesList({
             </Tooltip>
           )}
           <Button
+            icon={<Plus />}
+            variant="primary"
             type="button"
-            size="sm"
             onClick={handleAdd}
-            className="gap-1.5 h-8"
           >
-            <Plus className="h-3.5 w-3.5" />
             Add injury
           </Button>
         </div>

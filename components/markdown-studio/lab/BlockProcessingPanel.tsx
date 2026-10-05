@@ -150,9 +150,8 @@ export function BlockProcessingPanel({
     <div className="flex-1 overflow-auto p-3">
       <div className="mb-2 flex items-center justify-end gap-1">
         <Button
-          size="sm"
-          variant={strict ? "destructive" : "outline"}
-          className="mr-auto h-6 px-2 font-mono text-[10px]"
+          variant={strict ? "danger" : "outline"}
+          className="mr-auto"
           onClick={() => setStrict((v) => !v)}
           title={
             strict
@@ -164,31 +163,27 @@ export function BlockProcessingPanel({
         </Button>
         {events.length > 0 && (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-xs"
+            icon={rawCopied ? (
+              <CheckCircle2 className="text-green-500" />
+            ) : (
+              <Copy />
+            )}
+            variant="quiet"
             onClick={() => void handleCopyRaw()}
           >
-            {rawCopied ? (
-              <CheckCircle2 className="mr-1 h-3 w-3 text-green-500" />
-            ) : (
-              <Copy className="mr-1 h-3 w-3" />
-            )}
             {rawCopied ? "Copied" : "Copy raw"}
           </Button>
         )}
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-2 text-xs"
+          icon={isProcessing ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
+          variant="quiet"
           onClick={rerun}
           disabled={isProcessing || !content.trim() || !isReady}
         >
-          {isProcessing ? (
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="mr-1 h-3 w-3" />
-          )}
           {events.length > 0 ? "Re-run" : "Run"}
         </Button>
       </div>

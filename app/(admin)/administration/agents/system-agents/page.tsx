@@ -192,16 +192,15 @@ export default function SystemAgentsDashboardPage() {
       <div className="flex-shrink-0 p-4 border-b border-border bg-card">
         <div className="flex items-center justify-end gap-3 flex-wrap">
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isLoading || appsLoading}
-          >
-            <RefreshCw
+            icon={<RefreshCw
               className={`h-4 w-4 mr-2 ${
                 isLoading || appsLoading ? "animate-spin" : ""
               }`}
-            />
+            />}
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={isLoading || appsLoading}
+          >
             Refresh
           </Button>
         </div>

@@ -231,16 +231,16 @@ export default function ShellPage() {
                   />
                 </div>
                 <Button
-                  size="sm"
+                  icon={bashLoading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Play />
+                  )}
+                  variant="primary"
                   disabled={isDisabled || bashLoading || !bashCommand.trim()}
                   onClick={runBash}
-                  className="gap-1.5 shrink-0"
+                  className="shrink-0"
                 >
-                  {bashLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5" />
-                  )}
                   Run
                 </Button>
               </div>
@@ -277,16 +277,16 @@ export default function ShellPage() {
                   onKeyDown={(e) => e.key === "Enter" && launchBackground()}
                 />
                 <Button
-                  size="sm"
+                  icon={loading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Play />
+                  )}
+                  variant="primary"
                   disabled={isDisabled || !bgCommand.trim()}
                   onClick={launchBackground}
-                  className="gap-1.5 shrink-0"
+                  className="shrink-0"
                 >
-                  {loading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Play className="w-3.5 h-3.5" />
-                  )}
                   Launch
                 </Button>
               </div>
@@ -328,9 +328,8 @@ export default function ShellPage() {
                       </span>
                       <div className="flex items-center gap-1 shrink-0">
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0"
+                          variant="quiet"
+                          className="w-6"
                           onClick={() => refreshShell(shell)}
                           title="Read latest output"
                         >
@@ -338,9 +337,8 @@ export default function ShellPage() {
                         </Button>
                         {shell.status === "running" && (
                           <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
+                            variant="quiet"
+                            className="w-6"
                             onClick={() => stopShell(shell)}
                             title="Stop process"
                           >
@@ -348,9 +346,8 @@ export default function ShellPage() {
                           </Button>
                         )}
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-muted-foreground"
+                          variant="quiet"
+                          className="w-6"
                           onClick={() => removeShell(shell.id)}
                           title="Remove"
                         >
@@ -430,27 +427,23 @@ function ManualControl({ local }: { local: UseMatrxLocalReturn }) {
           style={{ fontSize: "16px" }}
         />
         <Button
-          size="sm"
+          icon={loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
           disabled={!!loading || !shellId.trim()}
           onClick={readOutput}
-          className="gap-1"
         >
-          {loading ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <RefreshCw className="w-3 h-3" />
-          )}
           Read Output
         </Button>
         <Button
-          size="sm"
-          variant="destructive"
+          icon={<Square />}
+          variant="danger"
           disabled={!!loading || !shellId.trim()}
           onClick={stopProcess}
-          className="gap-1"
         >
-          <Square className="w-3 h-3" />
           Stop
         </Button>
       </div>

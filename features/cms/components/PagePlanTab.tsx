@@ -91,8 +91,6 @@ function PageOriginSection({ page }: { page: ClientPage }) {
           <Button
             key={door.href}
             variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
             asChild
           >
             <Link href={door.href} target="_blank" rel="noopener noreferrer">
@@ -169,10 +167,10 @@ function EditablePlanNode({
             : "The plan entry may have been deleted, or it belongs to a plan you cannot see."}
         </p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => void node.refetch()}>
+          <Button variant="outline" onClick={() => void node.refetch()}>
             Retry
           </Button>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" asChild>
             <Link href={workspaceHref} target="_blank" rel="noopener noreferrer">
               Open the plan workspace
               <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
@@ -196,8 +194,7 @@ function EditablePlanNode({
         </p>
         <Button
           variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5 text-xs"
+          className="shrink-0"
           asChild
         >
           <Link href={workspaceHref} target="_blank" rel="noopener noreferrer">
@@ -301,19 +298,18 @@ function AdoptIntoPlan({
         </p>
         <div className="flex flex-wrap gap-2">
           <Button
-            size="sm"
-            className="gap-1.5 text-xs"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
+            variant="primary"
             disabled={busy}
             onClick={() => setConfirmOpen(true)}
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Plus className="h-3.5 w-3.5" />
-            )}
             Create plan entry
           </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
+          <Button variant="outline" asChild>
             <Link
               href={`/marketing/content-plan/${webSiteId}`}
               target="_blank"
@@ -409,7 +405,7 @@ export default function PagePlanTab({
           and link it to this CMS site. After that, every page here can carry
           its plan.
         </p>
-        <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
+        <Button variant="outline" asChild>
           <Link
             href="/marketing/content-plan"
             target="_blank"

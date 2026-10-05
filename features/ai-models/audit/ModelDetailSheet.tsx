@@ -103,9 +103,8 @@ export function OpenDetailButton({ onClick }: { onClick: () => void }) {
   const canvas = useOptionalCanvas();
   return (
     <Button
-      variant="ghost"
-      size="sm"
-      className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground shrink-0"
+      variant="quiet"
+      className="w-6 shrink-0"
       onClick={(e) => {
         e.stopPropagation();
         onClick();

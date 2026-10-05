@@ -18,7 +18,7 @@ import { useAppSelector } from "../../store/hooks";
 import { selectVoiceVoiceId } from "../state/selectors";
 import { LiveVoiceDoor } from "../components/LiveVoiceDoor";
 import { AudioLines } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useMandate } from "../../mandates/useMandate";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
 import { VoiceRelayPanel } from "./VoiceRelayPanel";
@@ -71,13 +71,12 @@ function ActiveDock({
         </p>
         <LiveVoiceDoor voiceId={voiceId} agentId={communicatorAgentId} />
         <Button
+          icon={<AudioLines />}
           type="button"
-          size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={relay.toggle}
-          className="h-8 shrink-0 gap-1.5"
+          className="shrink-0"
         >
-          <AudioLines className="h-3.5 w-3.5" />
           Start talking
         </Button>
       </div>

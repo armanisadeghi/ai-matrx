@@ -187,29 +187,23 @@ export function IntegrationDirectory({
           <div className="ml-auto flex items-center gap-1">
             {exportControl}
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9"
+              icon={<RefreshCw
+                className={cn("h-4 w-4", refreshing && "animate-spin")}
+              />}
+              variant="quiet"
               aria-label="Refresh integrations"
               title="Refresh integrations"
               onClick={onRefresh}
               disabled={refreshing}
-            >
-              <RefreshCw
-                className={cn("h-4 w-4", refreshing && "animate-spin")}
-              />
-            </Button>
+            />
             {onOpenWindow && (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9"
+                icon={<AppWindow />}
+                variant="quiet"
                 aria-label="Open integrations in window"
                 title="Open in window"
                 onClick={onOpenWindow}
-              >
-                <AppWindow className="h-4 w-4" />
-              </Button>
+              />
             )}
           </div>
         </div>
@@ -410,7 +404,6 @@ export function IntegrationDirectory({
                 </p>
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() =>
                     readFailed
                       ? onRefresh()

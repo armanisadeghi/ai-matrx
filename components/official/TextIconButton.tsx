@@ -1,6 +1,6 @@
 import * as React from "react";
 import { VariantProps, cva } from "class-variance-authority";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,

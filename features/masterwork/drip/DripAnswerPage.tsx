@@ -144,7 +144,7 @@ export function DripAnswerPage({
           <p className="text-sm text-muted-foreground">
             Tomorrow&apos;s question comes at your usual time. Nothing else to do.
           </p>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={`/masterwork/${rulebook.id}`}>See your Rulebook</Link>
           </Button>
         </section>
@@ -209,7 +209,7 @@ export function DripAnswerPage({
             Nothing is lost — start it again from your Rulebook and it picks up where it
             left off.
           </p>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={`/masterwork/${rulebook.id}?drip=1`}>Start it again</Link>
           </Button>
         </section>
@@ -254,7 +254,7 @@ export function DripAnswerPage({
               </>
             )}
           </p>
-          <Button asChild size={drip.subscription ? "sm" : "default"} variant={drip.subscription ? "outline" : "default"}>
+          <Button asChild variant={drip.subscription ? "outline" : "primary"}>
             <Link href={`/masterwork/${rulebook.id}?drip=1`}>
               {drip.subscription
                 ? "Open your daily question"

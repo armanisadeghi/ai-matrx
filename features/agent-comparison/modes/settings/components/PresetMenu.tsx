@@ -170,9 +170,8 @@ export function PresetMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          size="sm"
+          icon={<Zap />} iconEnd={<ChevronDown className="opacity-60" />}
           variant="outline"
-          className="h-7"
           disabled={!locked.agentId}
           title={
             locked.agentId
@@ -180,9 +179,7 @@ export function PresetMenu() {
               : "Pick an agent first to use presets"
           }
         >
-          <Zap className="w-3.5 h-3.5" />
           Presets
-          <ChevronDown className="w-3 h-3 ml-0.5 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">

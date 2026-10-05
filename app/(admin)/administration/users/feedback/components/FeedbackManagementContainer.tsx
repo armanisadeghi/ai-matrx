@@ -181,10 +181,11 @@ export default function FeedbackManagementContainer() {
 
                             {activeTab === 'announcements' && (
                                 <Button
+                                    icon={<Plus />}
+                                    variant="primary"
                                     onClick={() => setIsCreateAnnouncementOpen(true)}
-                                    className="gap-2 w-full sm:w-auto"
+                                    className="w-full sm:w-auto"
                                 >
-                                    <Plus className="w-4 h-4" />
                                     Create Announcement
                                 </Button>
                             )}

@@ -204,16 +204,15 @@ export default function LocalChatTestPage() {
                 </Badge>
               </div>
               <Button
-                size="sm"
+                icon={openAiRun.running ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Play />
+                )}
+                variant="primary"
                 onClick={runOpenAi}
                 disabled={openAiRun.running}
-                className="h-8 gap-1.5"
               >
-                {openAiRun.running ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Play className="w-3.5 h-3.5" />
-                )}
                 Run
               </Button>
             </div>
@@ -242,16 +241,15 @@ export default function LocalChatTestPage() {
                 </Badge>
               </div>
               <Button
-                size="sm"
+                icon={matrxRun.running ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Play />
+                )}
+                variant="primary"
                 onClick={runMatrx}
                 disabled={matrxRun.running}
-                className="h-8 gap-1.5"
               >
-                {matrxRun.running ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Play className="w-3.5 h-3.5" />
-                )}
                 Run
               </Button>
             </div>

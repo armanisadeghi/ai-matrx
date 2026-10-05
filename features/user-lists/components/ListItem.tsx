@@ -95,11 +95,10 @@ export function ListItem({
           <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+                icon={<MoreHorizontal />}
+                variant="quiet"
+                className="w-6"
               >
-                <MoreHorizontal className="h-3.5 w-3.5" />
                 <span className="sr-only">Item options</span>
               </Button>
             </DropdownMenuTrigger>

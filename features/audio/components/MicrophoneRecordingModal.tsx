@@ -196,34 +196,32 @@ export function MicrophoneRecordingModal({
             {/* Controls */}
             <div className="flex items-center gap-3">
               <Button
+                icon={<Pause />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={onPauseRecording}
-                className="gap-2 min-w-[88px]"
+                className="min-w-[88px]"
                 aria-label="Pause recording"
               >
-                <Pause className="h-3.5 w-3.5" />
                 Pause
               </Button>
               <Button
+                icon={<Square className="fill-current" />}
+                variant="primary"
                 type="button"
-                size="sm"
                 onClick={onStopRecording}
-                className="gap-2 min-w-[88px] bg-primary hover:bg-primary/90"
+                className="min-w-[88px]"
                 aria-label="Stop recording"
               >
-                <Square className="h-3 w-3 fill-current" />
                 Stop
               </Button>
             </div>
 
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => { onStopRecording(); onCancel(); }}
-              className="text-muted-foreground text-xs -mt-1"
+              className="-mt-1"
             >
               Cancel
             </Button>
@@ -259,34 +257,32 @@ export function MicrophoneRecordingModal({
             {/* Controls */}
             <div className="flex items-center gap-3">
               <Button
+                icon={<Play className="fill-current" />}
+                variant="primary"
                 type="button"
-                size="sm"
                 onClick={onResumeRecording}
-                className="gap-2 min-w-[88px]"
+                className="min-w-[88px]"
                 aria-label="Resume recording"
               >
-                <Play className="h-3.5 w-3.5 fill-current" />
                 Resume
               </Button>
               <Button
+                icon={<Square className="fill-current" />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={onStopRecording}
-                className="gap-2 min-w-[88px]"
+                className="min-w-[88px]"
                 aria-label="Stop recording and transcribe"
               >
-                <Square className="h-3 w-3 fill-current" />
                 Stop
               </Button>
             </div>
 
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => { onStopRecording(); onCancel(); }}
-              className="text-muted-foreground text-xs -mt-1"
+              className="-mt-1"
             >
               Cancel
             </Button>
@@ -338,38 +334,36 @@ export function MicrophoneRecordingModal({
             <div className="flex flex-wrap items-center justify-between gap-2">
               {/* Left: destructive-ish actions */}
               <Button
+                icon={<RotateCcw />}
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={onRetry}
-                className="gap-1.5 text-muted-foreground shrink-0"
+                className="shrink-0"
                 title="Discard and record from scratch"
               >
-                <RotateCcw className="h-3 w-3" />
                 Replace
               </Button>
 
               {/* Right: constructive actions */}
               <div className="flex items-center gap-2">
                 <Button
+                  icon={<Plus />}
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={onAddMore}
-                  className="gap-1.5 shrink-0"
+                  className="shrink-0"
                   title="Record again — appended to this text"
                 >
-                  <Plus className="h-3 w-3" />
                   Add More
                 </Button>
                 <Button
+                  icon={<Check />}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   onClick={() => onAccept(editedText)}
                   disabled={!hasText}
-                  className="gap-1.5 shrink-0"
+                  className="shrink-0"
                 >
-                  <Check className="h-3 w-3" />
                   Use This
                 </Button>
               </div>

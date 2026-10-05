@@ -18,7 +18,7 @@ import { getToolDisplayName } from "@ai-matrx/chat/tool-call-visualization/regis
 import { useEffect, useMemo } from "react";
 import { Wrench, Plus, X, Info } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ScrollFade } from "@/components/ui/scroll-fade";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {

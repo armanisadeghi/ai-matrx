@@ -68,15 +68,12 @@ export function MeetingRowMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          icon={<MoreHorizontal aria-hidden="true" />}
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+          variant="quiet"
           aria-label={`More actions for ${meeting.title}`}
           onClick={(e) => e.stopPropagation()}
-        >
-          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-        </Button>
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"

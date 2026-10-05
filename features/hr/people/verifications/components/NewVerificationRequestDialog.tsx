@@ -277,15 +277,14 @@ export function NewVerificationRequestDialog({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="min-h-11 sm:min-h-9"
           >
             Cancel
           </Button>
           <Button
+            variant="primary"
             type="button"
             onClick={save}
             disabled={!canSave}
-            className="min-h-11 sm:min-h-9"
           >
             Raise the request
           </Button>

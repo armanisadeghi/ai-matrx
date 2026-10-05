@@ -197,9 +197,7 @@ export function ImageEditTab({ fileId, className }: ImageEditTabProps) {
         <div className="ml-auto">
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
+            variant="quiet"
             title="Open the file in the full Image Studio (more space + side-by-side history)"
           >
             <Link

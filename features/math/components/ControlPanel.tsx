@@ -17,14 +17,14 @@ const ControlPanel: React.FC<ControlPanelProps> = ({ onReset, onBack, onNext, st
             <CardContent className="p-2">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                        <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-8">
+                        <Button asChild variant="outline">
                             <Link href="/education/subjects/quick-math">All Lessons</Link>
                         </Button>
-                        <Button variant="outline" size="sm" onClick={onReset} className="min-h-11 sm:min-h-8">Reset</Button>
+                        <Button variant="outline" onClick={onReset}>Reset</Button>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={onBack} className="min-h-11 sm:min-h-8">Back</Button>
-                        <Button size="sm" onClick={onNext} className="min-h-11 sm:min-h-8">{!started ? 'Start Interactive' : 'Next'}</Button>
+                        <Button variant="outline" onClick={onBack}>Back</Button>
+                        <Button variant="primary" onClick={onNext}>{!started ? 'Start Interactive' : 'Next'}</Button>
                     </div>
                 </div>
             </CardContent>

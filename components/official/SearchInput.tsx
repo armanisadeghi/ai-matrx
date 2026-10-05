@@ -126,10 +126,11 @@ export function SearchInput({
       </div>
       {showSubmitButton ? (
         <Button
+          variant="primary"
           type="submit"
           disabled={disabled || loading}
           aria-label="Submit search"
-          className={cn("h-9 w-10 px-0", buttonClassName)}
+          className={cn("w-10", buttonClassName)}
         >
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />

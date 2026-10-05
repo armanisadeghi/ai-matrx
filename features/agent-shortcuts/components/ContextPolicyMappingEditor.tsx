@@ -224,10 +224,9 @@ export function ContextPolicyMappingEditor({
                 <div className="flex-1">{renderSlotSelect(scopeName, true)}</div>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => removeCustomScope(scopeName)}
-                  className={compact ? "h-6 w-6 p-0" : "h-7 w-7 p-0"}
+                  className={compact ? "w-6" : "w-7"}
                 >
                   <X className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                 </Button>
@@ -251,14 +250,12 @@ export function ContextPolicyMappingEditor({
           className={compact ? "h-8 text-[16px]" : "h-9 text-[16px]"}
         />
         <Button
+          icon={<Plus />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={addCustomScope}
           disabled={!newScopeName.trim()}
-          className={compact ? "h-8" : "h-9"}
         >
-          <Plus className="h-4 w-4 mr-1" />
           Add
         </Button>
       </div>

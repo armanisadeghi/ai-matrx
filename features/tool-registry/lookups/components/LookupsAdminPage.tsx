@@ -515,10 +515,10 @@ function UiClientDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy || !nameValid}>
+          <Button variant="primary" onClick={submit} disabled={busy || !nameValid}>
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
           </Button>
         </DialogFooter>
@@ -795,10 +795,11 @@ function UiSurfaceDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={submit}
             disabled={busy || !clientName || !localValid}
           >
@@ -1063,10 +1064,10 @@ function ToolExecutorDialog({
           {jsonErr && <p className="text-[11px] text-destructive">{jsonErr} <ErrorAlchemyMenu error={jsonErr} /></p>}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy || !nameValid}>
+          <Button variant="primary" onClick={submit} disabled={busy || !nameValid}>
             {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
           </Button>
         </DialogFooter>

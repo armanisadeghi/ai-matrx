@@ -163,17 +163,16 @@ export function AnalysisCard({
           </div>
           {topicId && (
             <Button
-              size="sm"
+              icon={retrying ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
               onClick={handleRetry}
               disabled={retrying}
-              className="gap-1.5 shrink-0 border-destructive/40 hover:border-destructive text-destructive hover:text-destructive min-h-[44px] sm:min-h-0"
+              className="shrink-0"
             >
-              {retrying ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               Retry
             </Button>
           )}
@@ -212,12 +211,11 @@ export function AnalysisCard({
           </div>
           {topicId && sourceId && (
             <Button
-              size="sm"
+              icon={<Brain />}
               variant="outline"
               onClick={onAnalyzed}
-              className="gap-1.5 shrink-0 min-h-[44px] sm:min-h-0"
+              className="shrink-0"
             >
-              <Brain className="h-3.5 w-3.5" />
               Analyze
             </Button>
           )}

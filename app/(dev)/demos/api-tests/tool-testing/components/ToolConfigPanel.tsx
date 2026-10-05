@@ -150,12 +150,11 @@ export function ToolConfigPanel({
         <div className="flex gap-2">
           {isRunning ? (
             <Button
+              icon={<Square />}
               onClick={onCancel}
-              variant="destructive"
-              size="sm"
+              variant="danger"
               className="flex-1"
             >
-              <Square className="h-3.5 w-3.5 mr-1.5" />
               Cancel
             </Button>
           ) : (
@@ -163,12 +162,12 @@ export function ToolConfigPanel({
               <TooltipTrigger asChild>
                 <span className="flex-1">
                   <Button
+                    icon={<Play />}
+                    variant="primary"
                     onClick={onExecute}
                     disabled={!requiredFilled || !conversationReady}
-                    size="sm"
                     className="w-full"
                   >
-                    <Play className="h-3.5 w-3.5 mr-1.5" />
                     Execute
                   </Button>
                 </span>
@@ -185,8 +184,6 @@ export function ToolConfigPanel({
               <Button
                 onClick={onReset}
                 variant="outline"
-                size="sm"
-                className="px-2"
                 disabled={isRunning}
               >
                 <RotateCcw className="h-3.5 w-3.5" />

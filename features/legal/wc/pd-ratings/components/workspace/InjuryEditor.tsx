@@ -122,17 +122,15 @@ function EditorActions({
       {onDelete && !isNew ? (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onDelete}
-          className="text-destructive hover:text-destructive hover:bg-destructive/10"
         >
           Remove injury
         </Button>
       ) : (
         <span />
       )}
-      <Button type="button" onClick={onClose}>
+      <Button variant="primary" type="button" onClick={onClose}>
         {isNew ? "Add injury" : "Done"}
       </Button>
     </div>

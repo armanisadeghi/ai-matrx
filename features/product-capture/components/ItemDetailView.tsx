@@ -331,15 +331,14 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                   {(item.status === "capturing" ||
                     item.status === "processed") && (
                     <Button
+                      icon={statusBusy ? (
+                        <Loader2 className="animate-spin" />
+                      ) : null}
                       variant="outline"
-                      size="sm"
-                      className="mt-1.5 h-7 px-2 text-xs"
+                      className="mt-1.5"
                       disabled={statusBusy}
                       onClick={() => void markReady()}
                     >
-                      {statusBusy ? (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      ) : null}
                       {item.status === "processed"
                         ? "Reprocess"
                         : "Mark ready for processing"}
@@ -373,12 +372,10 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                   </span>
                 </h2>
                 <Button
+                  icon={<ImagePlus />}
                   variant="outline"
-                  size="sm"
-                  className="h-9"
                   onClick={() => addInputRef.current?.click()}
                 >
-                  <ImagePlus className="mr-1.5 h-4 w-4" />
                   Add photos
                 </Button>
               </div>
@@ -455,14 +452,11 @@ export function ItemDetailView({ itemId }: { itemId: string }) {
                         })}
                       </span>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground"
+                        icon={<Trash2 />}
+                        variant="quiet"
                         aria-label="Delete voice note"
                         onClick={() => setConfirmDeleteFile(file)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      />
                     </li>
                   ))}
                 </ul>

@@ -65,12 +65,11 @@ export function ScopesSettingsPanel() {
             </div>
           </div>
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
             onClick={() => void refresh()}
             className="shrink-0"
           >
-            <RefreshCw className="h-3 w-3 mr-1.5" />
             Refresh
           </Button>
         </div>

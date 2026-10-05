@@ -1004,22 +1004,20 @@ export function ShortcutForm({
       <div className="flex gap-2">
         {onDuplicate && (
           <Button
+            icon={<Copy />}
             variant="outline"
-            size="sm"
             onClick={() => onDuplicate(shortcut)}
             disabled={saving || deleting}
           >
-            <Copy className="h-4 w-4 mr-1.5" />
             Duplicate
           </Button>
         )}
         <Button
-          variant="destructive"
-          size="sm"
+          icon={<Trash2 />}
+          variant="danger"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={saving || deleting}
         >
-          <Trash2 className="h-4 w-4 mr-1.5" />
           Delete
         </Button>
       </div>
@@ -1030,16 +1028,15 @@ export function ShortcutForm({
   const rightButtons = (
     <div className="flex gap-2">
       <Button
+        icon={<X />}
         variant="outline"
-        size="sm"
         onClick={onClose}
         disabled={saving || deleting}
       >
-        <X className="h-4 w-4 mr-1.5" />
         Cancel
       </Button>
       <Button
-        size="sm"
+        variant="primary"
         onClick={handleSave}
         disabled={saving || deleting || !formData.label || !formData.categoryId}
       >

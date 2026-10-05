@@ -80,12 +80,12 @@ export function ChangesFooter({ summary }: { summary: ChangesSummary }) {
             {summary.pairsTotal} job × place pairs
           </span>
           <Button
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
+            icon={<Rocket />}
+            type="submit"
+            variant="primary"
             disabled
             title="Preview only — this mockup writes nothing"
           >
-            <Rocket className="h-3.5 w-3.5" />
             Apply batch
           </Button>
         </div>

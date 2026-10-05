@@ -104,38 +104,35 @@ const FlashcardDisplay = ({ flashcardHook }: { flashcardHook: ReturnType<typeof 
                     </CardContent>
                     <CardFooter className="flex justify-between p-2 absolute bottom-0 left-0 right-0">
                         <Button
+                            icon={<XCircle className="sm:flex hidden"/>}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleAnswer(false);
                             }}
-                            variant="destructive"
-                            className="sm:px-4 px-2 text-sm sm:text-base"
+                            variant="danger"
                         >
-                            <XCircle className="sm:mr-2 mr-0 h-4 w-4 sm:flex hidden"/>
                             <XCircle className="h-4 w-4 sm:hidden flex"/>
                             <span className="sm:inline hidden">Incorrect</span>
                         </Button>
                         <Button
+                            icon={<MessageSquare className="sm:flex hidden"/>}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 textModalActions.openAiModal();
                             }}
-                            variant="secondary"
-                            className="sm:px-4 px-2 text-sm sm:text-base"
+                            variant="outline"
                         >
-                            <MessageSquare className="sm:mr-2 mr-0 h-4 w-4 sm:flex hidden"/>
                             <MessageSquare className="h-4 w-4 sm:hidden flex"/>
                             <span className="sm:inline hidden">Ask a Question</span>
                         </Button>
                         <Button
+                            icon={<CheckCircle className="sm:flex hidden"/>}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleAnswer(true);
                             }}
-                            variant="default"
-                            className="bg-primary hover:bg-green-700 sm:px-4 px-2 text-sm sm:text-base"
+                            variant="primary"
                         >
-                            <CheckCircle className="sm:mr-2 mr-0 h-4 w-4 sm:flex hidden"/>
                             <CheckCircle className="h-4 w-4 sm:hidden flex"/>
                             <span className="sm:inline hidden">Correct</span>
                         </Button>

@@ -364,33 +364,29 @@ export function EnhanceSetDialog({
                     <div className="flex shrink-0 items-center gap-1">
                       {modes.includes("enrich") && (
                         <Button
-                          size="sm"
+                          icon={w.running === "enrich" ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Lightbulb />
+                          )}
                           variant="outline"
-                          className="h-8 gap-1 px-2 text-xs"
                           disabled={busy}
                           onClick={() => void run(card, "enrich")}
                         >
-                          {w.running === "enrich" ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Lightbulb className="h-3.5 w-3.5" />
-                          )}
                           Enrich
                         </Button>
                       )}
                       {modes.includes("deepen") && (
                         <Button
-                          size="sm"
+                          icon={w.running === "deepen" ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <GitBranch />
+                          )}
                           variant="outline"
-                          className="h-8 gap-1 px-2 text-xs"
                           disabled={busy}
                           onClick={() => void run(card, "deepen")}
                         >
-                          {w.running === "deepen" ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <GitBranch className="h-3.5 w-3.5" />
-                          )}
                           Deepen
                         </Button>
                       )}
@@ -465,9 +461,8 @@ export function EnhanceSetDialog({
                       )}
                       <div className="mt-2 flex items-center justify-end gap-1.5">
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 gap-1 px-2 text-xs"
+                          icon={<X />}
+                          variant="quiet"
                           disabled={w.saving}
                           onClick={async () => {
                             // This preview is AI work that already ran and
@@ -496,20 +491,18 @@ export function EnhanceSetDialog({
                             });
                           }}
                         >
-                          <X className="h-3.5 w-3.5" />
                           Discard
                         </Button>
                         <Button
-                          size="sm"
-                          className="h-7 gap-1 px-2 text-xs"
+                          icon={w.saving ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Check />
+                          )}
+                          variant="primary"
                           disabled={w.saving}
                           onClick={() => void save(card)}
                         >
-                          {w.saving ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Check className="h-3.5 w-3.5" />
-                          )}
                           Save
                         </Button>
                       </div>

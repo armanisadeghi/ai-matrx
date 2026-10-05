@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { FileText } from "lucide-react";
 import dynamic from "next/dynamic";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { MessageRole } from "@/features/message-templates/types/message-templates-db";
 
 export interface TemplateSelectorProps {

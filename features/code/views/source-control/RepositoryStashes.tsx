@@ -143,7 +143,7 @@ export function RepositoryStashes({
           </p>
         </div>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
           disabled={disabled || loading}
           onClick={() =>
@@ -153,7 +153,6 @@ export function RepositoryStashes({
             )
           }
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
           Save changes
         </Button>
       </div>
@@ -177,7 +176,7 @@ export function RepositoryStashes({
           </div>
           <div className="mt-1.5 flex gap-1">
             <Button
-              size="sm"
+              icon={<ArchiveRestore />}
               variant="outline"
               disabled={disabled || loading}
               onClick={() =>
@@ -186,16 +185,14 @@ export function RepositoryStashes({
                   "Applied saved changes. The saved copy is still available.",
                 )
               }
-            >
-              <ArchiveRestore className="mr-1 h-3.5 w-3.5" /> Apply
+            > Apply
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
+              icon={<ArchiveX />}
+              variant="quiet"
               disabled={disabled || loading}
               onClick={() => setDropTarget(stash)}
-            >
-              <ArchiveX className="mr-1 h-3.5 w-3.5" /> Discard
+            > Discard
             </Button>
           </div>
         </div>

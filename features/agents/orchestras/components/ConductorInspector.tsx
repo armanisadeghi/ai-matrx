@@ -82,12 +82,11 @@ export function ConductorInspector({
         <div className="space-y-1.5">
           <div className="text-xs font-medium text-muted-foreground">System prompt</div>
           <Button
+            icon={<FileText />}
             variant="outline"
-            size="sm"
-            className="w-full justify-start gap-1.5"
+            className="w-full justify-start"
             onClick={openSystemPrompt}
-          >
-            <FileText className="h-3.5 w-3.5" /> View system prompt
+          > View system prompt
           </Button>
           {/* The prompt includes the auto-generated <available_agents> listing. */}
         </div>
@@ -97,13 +96,11 @@ export function ConductorInspector({
 
         <div className="flex flex-wrap gap-1.5">
           <Link href={`/agents/go/${conductorId}/build`} target="_blank">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ExternalLink className="h-3.5 w-3.5" /> Open
+            <Button icon={<ExternalLink />} type="submit" variant="outline"> Open
             </Button>
           </Link>
           <Link href={`/agents/go/${conductorId}/run`} target="_blank">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Play className="h-3.5 w-3.5" /> Run
+            <Button icon={<Play />} type="submit" variant="outline"> Run
             </Button>
           </Link>
         </div>

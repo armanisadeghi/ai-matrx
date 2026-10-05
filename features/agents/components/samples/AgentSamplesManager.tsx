@@ -279,9 +279,7 @@ export function AgentSamplesManager({
           <div className="flex shrink-0 items-center gap-1 pt-0.5">
             {onUseSample ? (
               <Button
-                size="sm"
-                variant="secondary"
-                className="h-7 px-2 text-xs"
+                variant="outline"
                 onClick={() => onUseSample(sample)}
               >
                 Use
@@ -289,9 +287,8 @@ export function AgentSamplesManager({
             ) : null}
             {sample.status !== "approved" ? (
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+                icon={<BadgeCheck />} aria-label="Approve — counts against the per-agent cap"
+                variant="quiet"
                 title="Approve — counts against the per-agent cap"
                 disabled={busy}
                 onClick={() =>
@@ -300,14 +297,11 @@ export function AgentSamplesManager({
                     toast.success("Test case approved.");
                   })
                 }
-              >
-                <BadgeCheck className="h-4 w-4" />
-              </Button>
+              />
             ) : (
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+                icon={<Archive />} aria-label="Move back to candidates"
+                variant="quiet"
                 title="Move back to candidates"
                 disabled={busy}
                 onClick={() =>
@@ -315,36 +309,28 @@ export function AgentSamplesManager({
                     setAgentSampleStatus(sample.id, "candidate"),
                   )
                 }
-              >
-                <Archive className="h-4 w-4" />
-              </Button>
+              />
             )}
             {sample.source_conversation_id ? (
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+                icon={<ExternalLink />} aria-label="Open the run this was borrowed from"
+                variant="quiet"
                 title="Open the run this was borrowed from"
                 asChild
               >
                 <Link
                   href={`/agents/go/${agentId}/run?conversationId=${sample.source_conversation_id}`}
                   target="_blank"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Link>
+                />
               </Button>
             ) : null}
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-destructive"
+              icon={<Trash2 />} aria-label="Delete test case"
+              variant="quiet"
               title="Delete test case"
               disabled={busy}
               onClick={() => setDeleteTarget(sample)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            />
           </div>
         </div>
         {expanded ? (
@@ -375,14 +361,11 @@ export function AgentSamplesManager({
             Approved
           </h3>
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-6 w-6"
+            icon={<RefreshCw />} aria-label="Refresh"
+            variant="quiet"
             title="Refresh"
             onClick={() => void reload()}
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
         {approved.length === 0 ? (
           <p className="text-xs text-muted-foreground">None</p>
@@ -397,12 +380,10 @@ export function AgentSamplesManager({
             Candidates
           </h3>
           <Button
-            size="sm"
+            icon={<Library />}
             variant="outline"
-            className="h-7 text-xs"
             onClick={() => setLibraryOpen(true)}
           >
-            <Library className="mr-1 h-3.5 w-3.5" />
             Load from a Library
           </Button>
         </div>
@@ -514,9 +495,7 @@ function BorrowFromRunsSection({
           Recent runs
         </h3>
         <Button
-          size="sm"
           variant="outline"
-          className="h-7 text-xs"
           onClick={() => {
             const next = !open;
             setOpen(next);
@@ -583,23 +562,18 @@ function BorrowFromRunsSection({
                   </button>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
+                      icon={<ExternalLink />} aria-label="Open the full conversation"
+                      variant="quiet"
                       title="Open the full conversation"
                       asChild
                     >
                       <Link
                         href={`/agents/go/${agentId}/run?conversationId=${run.conversationId}`}
                         target="_blank"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Link>
+                      />
                     </Button>
                     <Button
-                      size="sm"
-                      variant="secondary"
-                      className="h-7 px-2 text-xs"
+                      variant="outline"
                       disabled={savingId === run.conversationId}
                       onClick={() => {
                         setSavingId(run.conversationId);

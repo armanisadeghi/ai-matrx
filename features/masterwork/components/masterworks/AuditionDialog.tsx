@@ -602,8 +602,7 @@ export function AuditionDialog({
               {verdict.vanilla_text ? (
                 <div>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => setShowVanillaText((s) => !s)}
                   >
                     {showVanillaText
@@ -673,7 +672,6 @@ export function AuditionDialog({
                         <Button
                           key={call.score}
                           variant="outline"
-                          size="sm"
                           disabled={savingExpert}
                           onClick={() => void recordExpertCall(call.score)}
                         >

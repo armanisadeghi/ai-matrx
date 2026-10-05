@@ -128,7 +128,7 @@ export function DeepLinkMissNotice({
           className="shrink-0"
         />
       </div>
-      <Button variant="outline" size="sm" onClick={onClear} className="shrink-0">
+      <Button variant="outline" onClick={onClear} className="shrink-0">
         Clear
       </Button>
     </div>

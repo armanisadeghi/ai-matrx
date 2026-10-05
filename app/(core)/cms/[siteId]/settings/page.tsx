@@ -257,16 +257,17 @@ export default function SiteSettingsPage() {
                   <span className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></span>
                 )}
                 <Button
+                  icon={isSaving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   onClick={handleSave}
                   disabled={isSaving || !name || !slug}
                   aria-describedby="general-save-scope"
-                  className="min-h-11 flex-1 gap-1.5 text-sm sm:min-h-9 sm:flex-none"
+                  className="flex-1 sm:flex-none"
                 >
-                  {isSaving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
                   Save Changes
                 </Button>
               </div>
@@ -422,9 +423,8 @@ export default function SiteSettingsPage() {
                       back into plan statuses.
                     </p>
                     <Button
+                      icon={<ExternalLink />}
                       variant="outline"
-                      size="sm"
-                      className="gap-1.5 text-xs"
                       onClick={() =>
                         window.open(
                           `/marketing/content-plan/${site.web_site_id}`,
@@ -432,7 +432,6 @@ export default function SiteSettingsPage() {
                         )
                       }
                     >
-                      <ExternalLink className="h-3.5 w-3.5" />
                       Open content plan
                     </Button>
                   </>
@@ -486,26 +485,23 @@ export default function SiteSettingsPage() {
                 ) : null}
                 <div className="flex items-center gap-2">
                   <Button
+                    icon={kitBusy ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
                     variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs"
                     disabled={kitBusy}
                     onClick={() => runKit({ dryRun: true })}
                   >
-                    {kitBusy ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : null}
                     Preview (dry run)
                   </Button>
                   <Button
-                    size="sm"
-                    className="gap-1.5 text-xs"
+                    icon={kitBusy ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
+                    variant="primary"
                     disabled={kitBusy}
                     onClick={() => runKit({})}
                   >
-                    {kitBusy ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : null}
                     Install starter kit
                   </Button>
                 </div>
@@ -525,12 +521,10 @@ export default function SiteSettingsPage() {
                   you can restore it, with its history, later.
                 </p>
                 <Button
+                  icon={<Trash2 />}
                   variant="outline"
-                  size="sm"
                   onClick={() => setDeleteDialogOpen(true)}
-                  className="gap-1.5 text-xs text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
                   Move Site to Trash
                 </Button>
               </section>

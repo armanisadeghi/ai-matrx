@@ -511,12 +511,12 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
               Core Web Vitals, and available real-user field data.
             </p>
             <Button
+              icon={<RefreshCw />}
+              variant="primary"
               className="mt-4"
-              size="sm"
               disabled={!canRun || syncingStrategy !== null}
               onClick={() => void runSync("both")}
             >
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
               Run PageSpeed test
             </Button>
           </div>
@@ -533,7 +533,6 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
                   </p>
                   <Button
                     className="mt-3"
-                    size="sm"
                     variant="outline"
                     disabled={!canRun || syncingStrategy !== null}
                     onClick={() => void runSync("mobile")}
@@ -552,7 +551,6 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
                   </p>
                   <Button
                     className="mt-3"
-                    size="sm"
                     variant="outline"
                     disabled={!canRun || syncingStrategy !== null}
                     onClick={() => void runSync("desktop")}

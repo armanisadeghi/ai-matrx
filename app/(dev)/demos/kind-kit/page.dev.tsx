@@ -268,7 +268,6 @@ export default function KindKitDemoPage() {
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => setSteps(INITIAL_STEPS)}
             >
               Reset

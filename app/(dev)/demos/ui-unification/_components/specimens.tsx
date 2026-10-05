@@ -14,7 +14,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Input,
   SegmentedControl,
-  Skeleton,
+  Skeleton, Button as SurfaceButton,
 } from "@ai-matrx/design-system";
 import {
   Copy,
@@ -127,15 +127,12 @@ function MeasuredRow({ children }: { children: ReactNode }) {
 export function TouchGrows() {
   return (
     <MeasuredRow>
-      <Button size="sm" className="min-h-11">
-        <Plus /> New
+      <Button icon={<Plus />} type="submit" variant="primary"> New
       </Button>
-      <Button size="sm" variant="outline" className="min-h-11">
+      <Button type="submit" variant="outline">
         Export
       </Button>
-      <Button size="icon-sm" variant="ghost" className="min-h-11 min-w-11" aria-label="More">
-        <MoreHorizontal />
-      </Button>
+      <Button icon={<MoreHorizontal />} type="submit" variant="quiet" aria-label="More" />
     </MeasuredRow>
   );
 }
@@ -143,10 +140,9 @@ export function TouchGrows() {
 export function TouchHitArea() {
   return (
     <MeasuredRow>
-      <Button size="sm">
-        <Plus /> New
+      <Button icon={<Plus />} type="submit" variant="primary"> New
       </Button>
-      <Button size="sm" variant="outline">
+      <Button type="submit" variant="outline">
         Export
       </Button>
       <div className="flex items-center">
@@ -284,15 +280,15 @@ function QuietRow({
     <div className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5">
       <span className="truncate text-sm text-foreground">Launch plan</span>
       <div className="flex items-center gap-0.5">
-        <Button size="icon-sm" variant={variant} className={className} aria-label="Edit">
+        <SurfaceButton size="icon-sm" variant={variant} className={className} aria-label="Edit">
           <Pencil />
-        </Button>
-        <Button size="icon-sm" variant={variant} className={className} aria-label="Copy">
+        </SurfaceButton>
+        <SurfaceButton size="icon-sm" variant={variant} className={className} aria-label="Copy">
           <Copy />
-        </Button>
-        <Button size="icon-sm" variant={variant} className={className} aria-label="More">
+        </SurfaceButton>
+        <SurfaceButton size="icon-sm" variant={variant} className={className} aria-label="More">
           <MoreHorizontal />
-        </Button>
+        </SurfaceButton>
       </div>
     </div>
   );
@@ -324,8 +320,7 @@ function DeleteRow({ action }: { action: ReactNode }) {
 export const DestructiveSolid = () => (
   <DeleteRow
     action={
-      <Button size="sm" variant="destructive">
-        <Trash2 /> Delete
+      <Button icon={<Trash2 />} type="submit" variant="danger"> Delete
       </Button>
     }
   />
@@ -335,11 +330,10 @@ export const DestructiveGhost = () => (
   <DeleteRow
     action={
       <Button
-        size="sm"
-        variant="ghost"
-        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 /> Delete
+        icon={<Trash2 />}
+        type="submit"
+        variant="quiet"
+      > Delete
       </Button>
     }
   />
@@ -425,7 +419,7 @@ function DigestBody() {
     <>
       <p className="text-sm text-muted-foreground">12 new runs this week.</p>
       <p className="text-sm text-muted-foreground">2 need review.</p>
-      <Button size="sm" variant="outline" className="mt-2">
+      <Button type="submit" variant="outline" className="mt-2">
         Open
       </Button>
     </>
@@ -480,7 +474,7 @@ function WidthDialog({ widthClass }: { widthClass: string }) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button variant="outline">
           Open {widthClass}
         </Button>
       </DialogTrigger>
@@ -494,7 +488,7 @@ function WidthDialog({ widthClass }: { widthClass: string }) {
             <Button variant="outline">Cancel</Button>
           </DialogClose>
           <DialogClose asChild>
-            <Button>Save</Button>
+            <Button variant="primary">Save</Button>
           </DialogClose>
         </DialogFooter>
       </DialogContent>
@@ -577,8 +571,7 @@ export const EmptyComposed = () => (
       <div className="text-xs text-muted-foreground">
         Create one to get started.
       </div>
-      <Button size="sm">
-        <Plus /> New project
+      <Button icon={<Plus />} type="submit" variant="primary"> New project
       </Button>
     </div>
   </EmptyBox>
@@ -588,8 +581,7 @@ export const EmptyDashed = () => (
   <EmptyBox className="border-2 border-dashed">
     <div className="flex flex-col items-center gap-2 text-center">
       <p className="text-sm text-muted-foreground">No projects yet</p>
-      <Button size="sm" variant="outline">
-        <Plus /> New project
+      <Button icon={<Plus />} type="submit" variant="outline"> New project
       </Button>
     </div>
   </EmptyBox>
@@ -611,7 +603,6 @@ export function ToastCanonical() {
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={() => toast.success("Project saved")}
     >
       Fire lib/toast
@@ -624,7 +615,6 @@ export function ToastLegacy() {
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={() =>
         legacyToast({ title: "Project saved", description: "Launch plan" })
       }

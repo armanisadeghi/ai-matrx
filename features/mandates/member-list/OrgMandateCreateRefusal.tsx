@@ -47,7 +47,7 @@ export function OrgMandateCreateRefusal({
           <p className="min-w-0 flex-1 text-sm text-muted-foreground">
             Make your own; it stays yours until you share it.
           </p>
-          <Button asChild size="sm" variant="outline" className="h-8 gap-1">
+          <Button asChild variant="outline">
             <Link href={newSoftMandateHref("person")}>
               Create a personal mandate
               <ArrowRight className="h-3.5 w-3.5" />

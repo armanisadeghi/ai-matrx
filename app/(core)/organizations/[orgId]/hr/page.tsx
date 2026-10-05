@@ -62,7 +62,7 @@ export default function OrgHrPage() {
                 You can switch it on. It gives every person here an employee
                 record, a directory, and time and leave.
               </p>
-              <Button asChild size="sm" className="mt-3 min-h-11 sm:min-h-9">
+              <Button variant="primary" asChild className="mt-3">
                 <Link href={`/organizations/${orgRef}/settings#modules`}>
                   Turn HR on
                   <ChevronRight className="ml-1 h-4 w-4" />
@@ -93,7 +93,7 @@ export default function OrgHrPage() {
                 ) : null}
               </dl>
               {/* THE PRIMARY ACTION. HR lives at /hr with `?org=`, never here. */}
-              <Button asChild className="min-h-11 shrink-0 sm:min-h-9">
+              <Button variant="primary" asChild className="shrink-0">
                 <Link href={hrHref(orgRef)}>
                   <Users className="mr-1.5 h-4 w-4" />
                   Open HR
@@ -103,10 +103,10 @@ export default function OrgHrPage() {
           </Card>
 
           <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
+            <Button asChild variant="outline">
               <Link href={hrPeopleHref({ org: orgRef })}>Directory</Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
+            <Button asChild variant="outline">
               <Link href={hrTasksHref(orgRef)}>HR tasks</Link>
             </Button>
           </div>

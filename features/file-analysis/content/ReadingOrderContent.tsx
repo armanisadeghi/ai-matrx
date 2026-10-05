@@ -88,16 +88,15 @@ export function ReadingOrderContent({ fileId, onJumpToPage }: Props) {
           sequence a person (or an LLM) should read the document in, per page.
         </p>
         <Button
-          size="sm"
-          className="h-7 gap-1.5 text-[11px]"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <BookOpenText />
+          )}
+          variant="primary"
           disabled={running}
           onClick={() => void run()}
         >
-          {running ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <BookOpenText className="h-3 w-3" />
-          )}
           {running ? "Extracting…" : "Extract reading order"}
         </Button>
         {running && progress ? <PdfStreamProgress text={progress} /> : null}
@@ -118,17 +117,16 @@ export function ReadingOrderContent({ fileId, onJumpToPage }: Props) {
           blocks in reading order
         </span>
         <Button
-          size="sm"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <BookOpenText />
+          )}
           variant="outline"
-          className="ml-auto h-6 gap-1 px-2 text-[10px]"
+          className="ml-auto"
           disabled={running}
           onClick={() => void run()}
         >
-          {running ? (
-            <Loader2 className="h-2.5 w-2.5 animate-spin" />
-          ) : (
-            <BookOpenText className="h-2.5 w-2.5" />
-          )}
           Re-run
         </Button>
       </div>

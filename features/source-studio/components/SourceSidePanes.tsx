@@ -225,8 +225,7 @@ function ChunksTab({
                       : "This Source has not been broken into searchable pieces yet, so neither you nor AI can search it."}
                   </p>
                   {!indexing && onProcessNow && (
-                    <Button size="sm" onClick={onProcessNow} disabled={processing}>
-                      {processing && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+                    <Button icon={processing && <Loader2 className="animate-spin" />} variant="primary" onClick={onProcessNow} disabled={processing}>
                       {processing ? "Processing…" : "Process now"}
                     </Button>
                   )}

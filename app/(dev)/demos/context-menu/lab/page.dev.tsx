@@ -883,40 +883,34 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
         </p>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           <Button
-            size="sm"
+            icon={apiBusy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
             onClick={() => void fetchApi()}
             disabled={apiBusy}
-            className="h-7 text-xs"
           >
-            {apiBusy ? (
-              <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3 mr-1.5" />
-            )}
             Refetch API
           </Button>
           <Button
-            size="sm"
+            icon={<RefreshCw />}
             variant="outline"
             onClick={() => void refreshMenu()}
-            className="h-7 text-xs"
           >
-            <RefreshCw className="h-3 w-3 mr-1.5" />
             Refresh menu (force)
           </Button>
           <Button
-            size="sm"
+            icon={dbBusy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Database />
+            )}
             variant="outline"
             onClick={() => void fetchDbView()}
             disabled={dbBusy}
-            className="h-7 text-xs"
           >
-            {dbBusy ? (
-              <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-            ) : (
-              <Database className="h-3 w-3 mr-1.5" />
-            )}
             Query view
           </Button>
         </div>
@@ -973,10 +967,8 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                     />
                     {scopeIdOverride && (
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        variant="quiet"
                         onClick={() => setScopeIdOverride("")}
-                        className="h-8 px-2"
                       >
                         <X className="h-3 w-3" />
                       </Button>

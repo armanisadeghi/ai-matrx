@@ -151,48 +151,45 @@ export function ConnectionBar({
               autoComplete="off"
             />
             <Button
-              size="sm"
-              variant={urlDirty ? "default" : "outline"}
+              icon={<Check />}
+              variant={urlDirty ? "primary" : "outline"}
               onClick={applyDraftUrl}
               disabled={!urlDirty}
-              className="h-8 px-3 gap-1.5 shrink-0"
+              className="shrink-0"
               title={
                 urlDirty
                   ? "Apply this engine URL"
                   : "Engine URL is already applied"
               }
             >
-              <Check className="w-3.5 h-3.5" />
               <span className="text-xs">Apply</span>
             </Button>
           </div>
 
           {/* Instance picker — opens modal with all registered instances */}
           <Button
-            size="sm"
+            icon={<Server />}
             variant="outline"
             onClick={() => setShowInstanceModal(true)}
-            className="h-8 px-3 gap-1.5 shrink-0"
+            className="shrink-0"
             title="Browse your registered instances"
           >
-            <Server className="w-3.5 h-3.5" />
             <span className="text-xs">Instances</span>
           </Button>
 
           {/* Scan / discover local ports (live + dev ranges) */}
           <Button
-            size="sm"
+            icon={isDiscovering ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
             onClick={discover}
             disabled={isDiscovering}
-            className="h-8 px-3 gap-1.5 shrink-0"
+            className="shrink-0"
             title={`Scan ports ${LOCAL_ENGINE_SCAN_LABEL}`}
           >
-            {isDiscovering ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="w-3.5 h-3.5" />
-            )}
             <span className="text-xs">
               {isDiscovering ? "Scanning…" : "Scan"}
               {discoveredEngines.length > 0 && !isDiscovering
@@ -281,22 +278,21 @@ export function ConnectionBar({
 
           {/* Manual health refresh */}
           <Button
-            size="sm"
-            variant="ghost"
+            icon={refreshingHealth ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <HeartPulse />
+            )}
+            variant="quiet"
             onClick={handleRefreshHealth}
             disabled={refreshingHealth}
-            className="h-8 px-2.5 gap-1.5 shrink-0 text-muted-foreground"
+            className="shrink-0"
             title={
               checkedAgo
                 ? `Health last checked ${checkedAgo}`
                 : "Check engine health"
             }
           >
-            {refreshingHealth ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <HeartPulse className="w-3.5 h-3.5" />
-            )}
             <span className="text-xs hidden sm:inline">
               {refreshingHealth
                 ? "Checking…"
@@ -419,12 +415,11 @@ export function ConnectionBar({
           {/* Cancel when loading */}
           {loading && (
             <Button
-              size="sm"
-              variant="destructive"
+              icon={<XCircle />}
+              variant="danger"
               onClick={cancelAll}
-              className="h-7 px-2.5 gap-1 text-xs shrink-0"
-            >
-              <XCircle className="w-3 h-3" /> Cancel
+              className="shrink-0"
+            > Cancel
             </Button>
           )}
 

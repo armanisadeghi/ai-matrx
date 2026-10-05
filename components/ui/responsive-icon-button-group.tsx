@@ -5,7 +5,7 @@ import { MoreHorizontal, LucideIcon } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import IconButton from "@/components/official/IconButton";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 export interface IconButtonConfig {

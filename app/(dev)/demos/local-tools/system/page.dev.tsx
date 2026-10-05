@@ -77,16 +77,16 @@ export default function SystemPage() {
                 <span className="text-xs font-semibold">System Info</span>
               </div>
               <Button
-                size="sm"
+                icon={isLoading("sysinfo") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Monitor />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() => run("sysinfo", "SystemInfo", {})}
               >
-                {isLoading("sysinfo") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Monitor className="w-3 h-3" />
-                )}
                 Get System Info
               </Button>
             </div>
@@ -98,16 +98,16 @@ export default function SystemPage() {
                 <span className="text-xs font-semibold">Screenshot</span>
               </div>
               <Button
-                size="sm"
+                icon={isLoading("screenshot") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Camera />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() => run("screenshot", "Screenshot", {})}
               >
-                {isLoading("screenshot") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Camera className="w-3 h-3" />
-                )}
                 Capture Screen
               </Button>
             </div>
@@ -136,9 +136,14 @@ export default function SystemPage() {
                 Show hidden
               </label>
               <Button
-                size="sm"
+                icon={isLoading("listdir") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FolderOpen />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("listdir", "ListDirectory", {
                     path: dirPath,
@@ -146,11 +151,6 @@ export default function SystemPage() {
                   })
                 }
               >
-                {isLoading("listdir") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <FolderOpen className="w-3 h-3" />
-                )}
                 List Directory
               </Button>
             </div>
@@ -162,17 +162,16 @@ export default function SystemPage() {
                 <span className="text-xs font-semibold">Clipboard</span>
               </div>
               <Button
-                size="sm"
+                icon={isLoading("clipboard-read") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ClipboardPaste />
+                )}
                 variant="outline"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() => run("clipboard-read", "ClipboardRead", {})}
               >
-                {isLoading("clipboard-read") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <ClipboardPaste className="w-3 h-3" />
-                )}
                 Read Clipboard
               </Button>
               {clipboardReadResult && (
@@ -191,20 +190,20 @@ export default function SystemPage() {
                 style={{ fontSize: "16px" }}
               />
               <Button
-                size="sm"
+                icon={isLoading("clipboard-write") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Clipboard />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("clipboard-write", "ClipboardWrite", {
                     content: clipboardText,
                   })
                 }
               >
-                {isLoading("clipboard-write") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Clipboard className="w-3 h-3" />
-                )}
                 Write Clipboard
               </Button>
             </div>
@@ -234,9 +233,14 @@ export default function SystemPage() {
                 style={{ fontSize: "16px" }}
               />
               <Button
-                size="sm"
+                icon={isLoading("notify") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Bell />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("notify", "Notify", {
                     title: notifyTitle,
@@ -244,11 +248,6 @@ export default function SystemPage() {
                   })
                 }
               >
-                {isLoading("notify") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Bell className="w-3 h-3" />
-                )}
                 Send Notification
               </Button>
             </div>
@@ -270,9 +269,9 @@ export default function SystemPage() {
                   placeholder="https://example.com"
                 />
                 <Button
-                  size="sm"
+                  variant="primary"
                   disabled={!!loading}
-                  className="h-7 px-2 shrink-0"
+                  className="shrink-0"
                   onClick={() => run("openurl", "OpenUrl", { url: openUrl })}
                 >
                   {isLoading("openurl") ? (
@@ -295,10 +294,9 @@ export default function SystemPage() {
                   placeholder="~/Documents"
                 />
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={!!loading}
-                  className="h-7 px-2 shrink-0"
+                  className="shrink-0"
                   onClick={() =>
                     run("openpath", "OpenPath", { path: openPath })
                   }

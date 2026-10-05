@@ -616,11 +616,10 @@ export function SandboxVersionHealthCard({
       >
         <span>Freshness unavailable: {loadState.message} <ErrorAlchemyMenu error={loadState.message} /></span>
         <Button
-          variant="ghost"
-          size="xs"
+          icon={<RefreshCw />}
+          variant="quiet"
           onClick={() => void refresh(lifecycleRef.current.generation)}
-        >
-          <RefreshCw className="mr-1 h-3 w-3" /> Retry
+        > Retry
         </Button>
       </div>
     );
@@ -670,21 +669,20 @@ export function SandboxVersionHealthCard({
         <div className="flex shrink-0 items-center gap-1">
           {health.status === "outdated" && health.can_migrate && (
             <Button
-              size="xs"
+              icon={updating ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowUpCircle />
+              )}
+              variant="primary"
               onClick={() => setConfirmUpdateOpen(true)}
               disabled={updating}
             >
-              {updating ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <ArrowUpCircle className="mr-1 h-3 w-3" />
-              )}
               Update
             </Button>
           )}
           <Button
-            variant="ghost"
-            size="xs"
+            variant="quiet"
             aria-label="Check sandbox image freshness"
             title="Check sandbox image freshness"
             onClick={() => void refresh(lifecycleRef.current.generation)}
@@ -729,25 +727,24 @@ export function SandboxVersionHealthCard({
         <div className="flex items-center gap-1">
           {health.status === "outdated" && health.can_migrate && (
             <Button
-              size="xs"
+              icon={updating ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowUpCircle />
+              )}
+              variant="primary"
               onClick={() => setConfirmUpdateOpen(true)}
               disabled={updating}
             >
-              {updating ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <ArrowUpCircle className="mr-1 h-3 w-3" />
-              )}
               Update image
             </Button>
           )}
           <Button
-            variant="ghost"
-            size="xs"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={() => void refresh(lifecycleRef.current.generation)}
             disabled={updating}
-          >
-            <RefreshCw className="mr-1 h-3 w-3" /> Check
+          > Check
           </Button>
         </div>
       </div>

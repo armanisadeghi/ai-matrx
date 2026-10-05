@@ -1194,12 +1194,10 @@ export function RulebookSourcesPanel({
               ) : null}
               <div className="mt-3">
                 <Button
-                  size="sm"
-                  variant={totalSources === 0 ? "outline" : "ghost"}
-                  className="h-7"
+                  icon={<Plus />}
+                  variant={totalSources === 0 ? "outline" : "quiet"}
                   onClick={() => setCaptureVisible(true)}
                 >
-                  <Plus className="h-3.5 w-3.5" />
                   {/* `totalSources`, never `tally.attached`: a Rulebook holding
                       50 kept emails is not being asked for its FIRST resource. */}
                   {totalSources === 0 ? "Add your first resource" : "Add more"}
@@ -1240,9 +1238,9 @@ export function RulebookSourcesPanel({
                         2026-09-12). The state is now declared, not just
                         painted. */}
                     <Button
+                      icon={<Globe />}
                       type="button"
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       aria-expanded={showUrlAdd}
                       aria-pressed={showUrlAdd}
                       aria-controls="rulebook-sources-url-add"
@@ -1250,18 +1248,13 @@ export function RulebookSourcesPanel({
                         setShowUrlAdd((v) => !v);
                         setShowPicker(false);
                       }}
-                      className={cn(
-                        "h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground",
-                        showUrlAdd && "bg-accent text-foreground",
-                      )}
                     >
-                      <Globe className="size-3.5" />
                       Add a link
                     </Button>
                     <Button
+                      icon={<Plus />}
                       type="button"
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       aria-expanded={showPicker}
                       aria-pressed={showPicker}
                       aria-controls="rulebook-sources-workspace-picker"
@@ -1269,12 +1262,7 @@ export function RulebookSourcesPanel({
                         setShowPicker((v) => !v);
                         setShowUrlAdd(false);
                       }}
-                      className={cn(
-                        "h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground",
-                        showPicker && "bg-accent text-foreground",
-                      )}
                     >
-                      <Plus className="size-3.5" />
                       From your workspace
                     </Button>
                     {/* A DOOR, NOT A THIRD CAPTURE FLOW. One link at a time is
@@ -1288,9 +1276,7 @@ export function RulebookSourcesPanel({
                         fixed for. */}
                     <Button
                       asChild
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                      variant="quiet"
                     >
                       <Link
                         href={`${LIBRARIES_PATH}?from=rulebook&rulebook_id=${encodeURIComponent(rulebook.id)}`}
@@ -1805,9 +1791,7 @@ function FailedUploadRow({
             />
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="h-7"
               disabled={retrying || !onRetry}
               onClick={() => inputRef.current?.click()}
             >
@@ -2163,15 +2147,14 @@ export function DumpOutcomes({
                     cannot do what it says is worse than its absence. */}
                 {onRetryOne && outcomeTone(res) === "refused" ? (
                   <Button
-                    size="sm"
+                    icon={retrying ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
                     variant="outline"
-                    className="mt-1 h-7"
+                    className="mt-1"
                     disabled={retrying}
                     onClick={() => onRetryOne(i, res)}
                   >
-                    {retrying ? (
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    ) : null}
                     Read this one again
                   </Button>
                 ) : null}
@@ -2180,15 +2163,14 @@ export function DumpOutcomes({
                 (res.replaceableDrafts ?? 0) > 0 &&
                 retryResourceFor(res) ? (
                   <Button
-                    size="sm"
+                    icon={retrying ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
                     variant="outline"
-                    className="mt-1 h-7"
+                    className="mt-1"
                     disabled={retrying}
                     onClick={() => onDistilAgain(i, res)}
                   >
-                    {retrying ? (
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    ) : null}
                     Distil again and replace
                   </Button>
                 ) : null}
@@ -2197,7 +2179,7 @@ export function DumpOutcomes({
           );
         })}
       </ul>
-      <Button size="sm" onClick={onDone}>
+      <Button variant="primary" onClick={onDone}>
         Review the drafts
       </Button>
     </div>
@@ -2257,9 +2239,8 @@ function KeptMaterialSummary({
           <ErrorAlchemyMenu error={kept.reason} />
         </p>
         <Button
-          size="sm"
           variant="outline"
-          className="mt-2 h-7"
+          className="mt-2"
           onClick={() => kept.retry()}
         >
           Try again

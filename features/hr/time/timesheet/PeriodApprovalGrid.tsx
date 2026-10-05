@@ -542,11 +542,10 @@ function BulkBar({
           ? ` · ${excludedForExceptions.length} held back by open exceptions`
           : ""}
       </span>
-      <Button type="button" size="sm" onClick={onOpen} disabled={eligible.length === 0}>
-        <CheckCheck className="mr-1.5 h-4 w-4" aria-hidden />
+      <Button icon={<CheckCheck aria-hidden />} variant="primary" type="button" onClick={onOpen} disabled={eligible.length === 0}>
         Review and approve
       </Button>
-      <Button type="button" size="sm" variant="ghost" onClick={onClear}>
+      <Button type="button" variant="quiet" onClick={onClear}>
         Clear
       </Button>
     </div>

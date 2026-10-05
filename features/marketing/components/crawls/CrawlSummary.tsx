@@ -186,22 +186,18 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
           <>
             <Button
               asChild
-              size="sm"
               variant="outline"
-              className="h-7 gap-1.5 border-primary/40 px-2 text-primary"
             >
               <Link href={marketingRoutes.site(brandId, site.id, "/crawls/new")}>
                 <Radio className="h-3.5 w-3.5 animate-pulse" /> Watch live
               </Link>
             </Button>
             <Button
-              size="sm"
-              variant="destructive"
-              className="h-7 gap-1.5 px-2"
+              icon={<Ban />}
+              variant="danger"
               disabled={canceling}
               onClick={() => void requestCancel()}
-            >
-              <Ban className="h-3.5 w-3.5" /> Cancel crawl
+            > Cancel crawl
             </Button>
             <span className="mr-auto" />
           </>

@@ -143,10 +143,9 @@ export function ConversationSelector({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={handleClear}
-                  className="h-10 w-10 p-0 text-muted-foreground hover:text-destructive sm:h-5 sm:w-5"
+                  className="w-10 sm:w-5"
                 >
                   ×
                 </Button>
@@ -156,17 +155,15 @@ export function ConversationSelector({
           </div>
         ) : (
           <Button
-            size="sm"
+            icon={isCreating ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
             variant="outline"
             onClick={handleCreate}
             disabled={isCreating}
-            className="h-10 gap-1 px-3 text-sm sm:h-6 sm:px-2 sm:text-xs"
           >
-            {isCreating ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Plus className="h-3 w-3" />
-            )}
             {isCreating ? 'Creating...' : 'New'}
           </Button>
         )
@@ -198,11 +195,10 @@ export function ConversationSelector({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                size="sm"
-                variant="default"
+                variant="primary"
                 onClick={handleApplyExisting}
                 disabled={!inputValue.trim()}
-                className="h-10 w-10 p-0 sm:h-6 sm:w-6"
+                className="w-10 sm:w-6"
               >
                 <Check className="h-3 w-3" />
               </Button>
@@ -213,10 +209,9 @@ export function ConversationSelector({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={handleClear}
-                  className="h-10 w-10 p-0 text-destructive hover:text-destructive sm:h-6 sm:w-6"
+                  className="w-10 sm:w-6"
                 >
                   ×
                 </Button>

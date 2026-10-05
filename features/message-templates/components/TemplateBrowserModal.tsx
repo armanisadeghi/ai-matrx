@@ -219,8 +219,7 @@ export function TemplateBrowserModal({
             onOpenChange={setTagSearchOpen}
           >
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 text-xs">
-                <Tag className="w-3 h-3 mr-1" />
+              <Button icon={<Tag />} variant="outline">
                 Tags {selectedTags.length > 0 && `(${selectedTags.length})`}
               </Button>
             </PopoverTrigger>
@@ -269,12 +268,10 @@ export function TemplateBrowserModal({
             selectedTags.length > 0 ||
             searchTerm) && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-xs"
+              icon={<X />}
+              variant="quiet"
               onClick={clearFilters}
             >
-              <X className="w-3 h-3 mr-1" />
               Clear
             </Button>
           )}
@@ -342,7 +339,6 @@ export function TemplateBrowserModal({
                     )}
                 </div>
                 <Button
-                  size="sm"
                   onClick={() => setSelectedTemplate(null)}
                   variant="outline"
                 >
@@ -363,7 +359,7 @@ export function TemplateBrowserModal({
               </div>
             </ScrollArea>
             <div className="p-4 border-t border-border/50">
-              <Button onClick={handleSelect} className="w-full">
+              <Button variant="primary" onClick={handleSelect} className="w-full">
                 Use This Template
               </Button>
             </div>

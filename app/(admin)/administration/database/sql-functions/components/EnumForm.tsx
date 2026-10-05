@@ -280,24 +280,21 @@ export default function EnumForm(props: EnumFormProps) {
                   />
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => removeValueInput(index)}
                     disabled={(isEdit ? newValues : values).length === 1}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
               <Button
+                icon={<Plus />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={addValueInput}
-                className="w-full text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="w-full"
               >
-                <Plus className="h-4 w-4 mr-2" />
                 Add Value
               </Button>
             </div>
@@ -307,21 +304,20 @@ export default function EnumForm(props: EnumFormProps) {
 
       <div className="flex justify-end space-x-3">
         <Button
+          icon={<X />}
           type="button"
           variant="outline"
           onClick={onCancel}
           disabled={loading}
-          className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
         >
-          <X className="h-4 w-4 mr-2" />
           Cancel
         </Button>
         <Button
+          icon={<Save />}
+          variant="primary"
           type="submit"
           disabled={loading}
-          className="bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
         >
-          <Save className="h-4 w-4 mr-2" />
           {isEdit ? "Update Enum" : "Create Enum"}
         </Button>
       </div>

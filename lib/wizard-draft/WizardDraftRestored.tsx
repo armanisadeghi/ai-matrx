@@ -55,19 +55,15 @@ export function WizardDraftRestored({
       <Button
         type="button"
         variant="outline"
-        size="sm"
         onClick={onStartFresh}
-        className="min-h-[36px]"
       >
         {startFreshLabel}
       </Button>
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         onClick={onDismiss}
         aria-label="Keep it and hide this message"
-        className="min-h-[36px] px-2 text-muted-foreground"
       >
         <X className="h-4 w-4" />
       </Button>

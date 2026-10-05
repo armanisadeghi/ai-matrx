@@ -280,9 +280,7 @@ function MatcherRow({
         )}
         {meta.editableHere ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-destructive hover:text-destructive"
+            variant="quiet"
             disabled={remove.isPending}
             onClick={async () => {
               const ok = await confirm({
@@ -525,32 +523,29 @@ function AddMatcherForm({
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
+          icon={preview.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Play />
+          )}
           type="button"
-          size="sm"
           variant="outline"
-          className="h-7 text-[11px]"
           disabled={!trimmed || preview.isPending}
           onClick={() => preview.mutate()}
         >
-          {preview.isPending ? (
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          ) : (
-            <Play className="mr-1 h-3 w-3" />
-          )}
           Preview reach
         </Button>
         <Button
+          icon={save.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-7 text-[11px]"
           disabled={!trimmed || save.isPending}
           onClick={() => save.mutate()}
         >
-          {save.isPending ? (
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          ) : (
-            <Plus className="mr-1 h-3 w-3" />
-          )}
           Save matcher
         </Button>
       </div>
@@ -679,18 +674,16 @@ export function MatcherEditor({
             the next run — or press below.
           </p>
           <Button
+            icon={run.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-7 text-[11px]"
             disabled={run.isPending}
             onClick={() => run.mutate()}
           >
-            {run.isPending ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1 h-3 w-3" />
-            )}
             {run.isPending ? "Running…" : "Run matchers now"}
           </Button>
         </DialogFooter>

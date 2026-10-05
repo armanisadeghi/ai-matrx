@@ -20,7 +20,7 @@
 import { readOrganizationMemberRows } from "@/features/organizations/service/orgMemberRows";
 import React, { useEffect, useState } from "react";
 import { Building2, CheckCircle, Loader2, Users, XCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {

@@ -201,13 +201,11 @@ export function DocumentViewer({
           )}
           {canCompare && (
             <Button
+              icon={<GitCompareArrows />}
               variant="outline"
-              size="sm"
               onClick={handleCompare}
-              className="gap-1.5"
               title="Compare raw extraction with the cleaned text for this page"
             >
-              <GitCompareArrows className="h-3.5 w-3.5" />
               Compare
             </Button>
           )}
@@ -287,8 +285,7 @@ function BindButton({
   return (
     <Dialog open={open} onOpenChange={setOpen} modal={false}>
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
-          <Database className="h-3.5 w-3.5" />
+        <Button icon={<Database />} variant="outline">
           Data stores
         </Button>
       </DialogTrigger>

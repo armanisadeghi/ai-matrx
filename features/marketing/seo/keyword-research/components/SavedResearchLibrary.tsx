@@ -86,13 +86,11 @@ export default function SavedResearchLibrary({
     <Popover>
       <PopoverTrigger asChild>
         <Button
+          icon={<FolderOpen />}
           variant="outline"
-          size="sm"
-          className="h-11 gap-1.5"
           disabled={!siteId}
           title={siteId ? undefined : "Select a site to see its saved research"}
         >
-          <FolderOpen className="h-3.5 w-3.5" />
           Saved research
           {saved.data?.length ? (
             <UntrustedCount
@@ -127,14 +125,12 @@ export default function SavedResearchLibrary({
             </div>
             {cleanedSearch ? (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 shrink-0"
+                icon={<X />}
+                variant="quiet"
+                className="shrink-0"
                 onClick={() => setSearch("")}
                 aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              />
             ) : null}
           </div>
           <ArchiveFilter

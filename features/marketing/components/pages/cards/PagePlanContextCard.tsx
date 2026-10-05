@@ -115,7 +115,7 @@ export function PagePlanContextCard({
   const planWorkspaceHref = planNodeHref(site.id);
 
   const planWorkspaceDoor = (
-    <Button variant="outline" size="sm" className="gap-1.5 text-xs" asChild>
+    <Button variant="outline" asChild>
       <Link
         href={planWorkspaceHref}
         target="_blank"
@@ -149,8 +149,6 @@ export function PagePlanContextCard({
               <ErrorAlchemyMenu error={facts.error} operation="Resolve the plan behind this page" />
               <Button
                 variant="outline"
-                size="sm"
-                className="text-xs"
                 onClick={() => void facts.refetch()}
               >
                 Retry
@@ -196,7 +194,7 @@ export function PagePlanContextCard({
         detail="It was authored directly in the CMS, so there is no brief, target keyword, or keyword strategy behind it. Adopting it into the content plan gives it one — the page itself is untouched — and every future improvement is measured against it."
         actions={
           <>
-            <Button size="sm" className="gap-1.5 text-xs" asChild>
+            <Button variant="primary" asChild>
               <Link
                 href={cmsPageEditorHref(cmsSiteId, cmsPage.id, "plan")}
                 target="_blank"

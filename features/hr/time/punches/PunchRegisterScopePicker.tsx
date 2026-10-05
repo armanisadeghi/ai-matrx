@@ -153,16 +153,15 @@ export function PunchRegisterScopePicker({
           )}
         </p>
         <Button
+          icon={<ChevronDown
+            className={`mr-1.5 h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+            aria-hidden
+          />}
           type="button"
-          size="sm"
-          variant={chosen ? "outline" : "default"}
+          variant={chosen ? "outline" : "primary"}
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
         >
-          <ChevronDown
-            className={`mr-1.5 h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-            aria-hidden
-          />
           {chosen ? "Change who this is about" : "Choose who this is about"}
         </Button>
       </div>
@@ -224,8 +223,7 @@ export function PunchRegisterScopePicker({
                     <li key={employer.organization_id}>
                       <Button
                         type="button"
-                        size="sm"
-                        variant={isActive ? "default" : "outline"}
+                        variant={isActive ? "primary" : "outline"}
                         className="w-full justify-start"
                         onClick={() => {
                           const query = new URLSearchParams(params?.toString() ?? "");

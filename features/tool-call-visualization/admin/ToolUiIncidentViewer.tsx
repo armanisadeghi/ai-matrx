@@ -183,17 +183,13 @@ export function ToolUiIncidentViewer({ toolName }: ToolUiIncidentViewerProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs h-7"
+            variant="quiet"
             onClick={() => setShowResolved(!showResolved)}
           >
             {showResolved ? "Hide Resolved" : "Show Resolved"}
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7"
+            variant="quiet"
             onClick={fetchIncidents}
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -316,9 +312,8 @@ function IncidentCard({
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
+              variant="quiet"
+              className="w-7"
               onClick={onToggleExpanded}
             >
               {isExpanded ? (
@@ -385,9 +380,7 @@ function IncidentCard({
             {/* Actions */}
             <div className="flex items-center gap-2">
               <Button
-                size="sm"
-                variant={incident.resolved ? "outline" : "default"}
-                className="text-xs h-7"
+                variant={incident.resolved ? "outline" : "primary"}
                 onClick={() => onResolve(resolutionNotes)}
               >
                 {incident.resolved ? (
@@ -403,12 +396,10 @@ function IncidentCard({
                 )}
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="text-xs h-7 text-red-600"
+                icon={<Trash2 />}
+                variant="quiet"
                 onClick={onDelete}
               >
-                <Trash2 className="w-3 h-3 mr-1" />
                 Move to Trash
               </Button>
             </div>

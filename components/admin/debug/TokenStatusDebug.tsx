@@ -101,12 +101,11 @@ export default function TokenStatusDebug() {
 
       <div className="flex gap-2 border-t pt-4">
         <Button
+          icon={<RefreshCw />}
           onClick={loadStatus}
           variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
+          className="flex"
         >
-          <RefreshCw className="h-4 w-4" />
           Refresh Status
         </Button>
       </div>

@@ -1228,9 +1228,8 @@ export function BacklinksWorkspace({
             <AuthorityRouterDoor brandId={brandId} siteId={site.id} compact />
             <Button
               asChild
-              size="sm"
               variant="outline"
-              className="h-10 shrink-0 gap-1.5 sm:h-8"
+              className="shrink-0"
             >
               <Link href={marketingRoutes.brandReputation(brandId, site.id)}>
                 <Newspaper className="h-3.5 w-3.5" />
@@ -1304,16 +1303,16 @@ export function BacklinksWorkspace({
               </SelectContent>
             </Select>
             <Button
-              size="sm"
-              className="h-10 shrink-0 gap-1.5 sm:h-8"
+              icon={refreshing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
+              variant="primary"
+              className="shrink-0"
               disabled={refreshing || !detailLimitValid}
               onClick={() => void refresh()}
             >
-              {refreshing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               Refresh
             </Button>
             <Select
@@ -1337,9 +1336,8 @@ export function BacklinksWorkspace({
               </SelectContent>
             </Select>
             <Button
-              size="sm"
               variant="outline"
-              className="h-10 shrink-0 gap-1.5 sm:h-8"
+              className="shrink-0"
               disabled={batchAnalyzing || refreshing}
               onClick={() => void analyzeNext(enrichmentBatchSize)}
             >
@@ -1351,18 +1349,16 @@ export function BacklinksWorkspace({
               Review next {enrichmentBatchSize}
             </Button>
             <Button
-              size="icon"
+              icon={<Settings2
+                className={cn("h-3.5 w-3.5", settingsOpen && "text-primary")}
+              />}
               variant="outline"
-              className="h-10 w-10 shrink-0 sm:h-8 sm:w-8"
+              className="shrink-0"
               aria-label="Automatic link checks"
               aria-pressed={settingsOpen}
               title="Check for new links automatically"
               onClick={() => setSettingsOpen((open) => !open)}
-            >
-              <Settings2
-                className={cn("h-3.5 w-3.5", settingsOpen && "text-primary")}
-              />
-            </Button>
+            />
           </div>
         </div>
 
@@ -1462,19 +1458,17 @@ export function BacklinksWorkspace({
                   />
                 </div>
                 <Button
-                  size="sm"
+                  icon={savingSchedule ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
                   variant="outline"
-                  className="gap-1.5"
                   disabled={
                     !scheduleDirty || savingSchedule || !detailLimitValid
                   }
                   onClick={() => void saveSchedule()}
                 >
-                  {savingSchedule ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
                   Save
                 </Button>
               </div>

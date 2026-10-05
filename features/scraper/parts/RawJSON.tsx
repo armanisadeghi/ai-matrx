@@ -27,8 +27,7 @@ const RawJSON = ({ pageData }: RawJSONProps) => {
     <div className="p-4">
       <div className="mb-4 flex justify-end">
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={() => copyToClipboard(jsonStr)}
         >
           <CopyIcon className="w-4 h-4" />

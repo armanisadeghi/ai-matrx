@@ -69,13 +69,12 @@ export function KgOrganizationFilter({ organizationId, onChange }: Props) {
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
+            icon={<Building2 />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-8 w-56 justify-start gap-2 text-sm"
+            className="w-56 justify-start"
             aria-label="Filter edges by organization"
           >
-            <Building2 className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">{label}</span>
           </Button>
         </PopoverTrigger>
@@ -102,15 +101,12 @@ export function KgOrganizationFilter({ organizationId, onChange }: Props) {
       </Popover>
       {organizationId ? (
         <Button
+          icon={<X />}
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+          variant="quiet"
           aria-label="Clear organization filter"
           onClick={() => onChange("")}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        />
       ) : null}
     </div>
   );

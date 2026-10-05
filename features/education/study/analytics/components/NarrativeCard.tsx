@@ -92,14 +92,12 @@ function NarrativeDoors({
     <div className="flex flex-wrap gap-2">
       {doors.map((door) => (
         <Button
+          iconEnd={<ChevronRight />}
           key={door.href + door.label}
-          size="sm"
           variant="outline"
-          className="h-7 gap-1 px-2 text-xs"
           onClick={() => onGo(door.href)}
         >
           {door.label}
-          <ChevronRight className="h-3.5 w-3.5" />
         </Button>
       ))}
     </div>
@@ -142,18 +140,17 @@ export function NarrativeCard({
   const refresh =
     organizationState === "ready" ? (
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-7 shrink-0 gap-1.5 px-2 text-xs text-muted-foreground"
+        icon={loading ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <RefreshCw />
+        )}
+        variant="quiet"
+        className="shrink-0"
         disabled={loading}
         title="Writes a new reading of your current numbers — one agent run, which replaces the one shown"
         onClick={onRegenerate}
       >
-        {loading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <RefreshCw className="h-3.5 w-3.5" />
-        )}
         {loading ? "Analyzing…" : "Refresh"}
       </Button>
     ) : null;

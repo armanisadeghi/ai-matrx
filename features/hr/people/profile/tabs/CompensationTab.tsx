@@ -178,9 +178,7 @@ function FullVisibility({
         </p>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           onClick={() => void announceComingSoon("hr.people.compensation-history")}
         >
           What is missing?

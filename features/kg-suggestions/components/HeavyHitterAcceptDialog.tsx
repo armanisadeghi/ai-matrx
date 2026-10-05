@@ -235,19 +235,17 @@ export function HeavyHitterAcceptDialog({
   const footer = (
     <>
       <Button
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         onClick={() => onOpenChange(false)}
         disabled={busy}
       >
         Cancel
       </Button>
-      <Button size="sm" onClick={handleConfirm} disabled={!canSubmit || busy}>
-        {busy ? (
-          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+      <Button icon={busy ? (
+          <Loader2 className="animate-spin" />
         ) : (
-          <Network className="h-3.5 w-3.5 mr-1.5" />
-        )}
+          <Network />
+        )} variant="primary" onClick={handleConfirm} disabled={!canSubmit || busy}>
         Create scope
       </Button>
     </>

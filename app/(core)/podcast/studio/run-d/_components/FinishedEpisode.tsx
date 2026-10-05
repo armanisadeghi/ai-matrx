@@ -67,19 +67,18 @@ export function FinishedEpisode({ state }: { state: PodcastRunState }) {
             </p>
             <div className="mt-auto flex flex-wrap gap-2 pt-4">
               {href && (
-                <Button asChild size="sm" className="gap-1.5">
+                <Button variant="primary" asChild>
                   <Link href={href} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4" />
                     Open episode
                   </Link>
                 </Button>
               )}
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Share2 className="h-4 w-4" />
+              <Button icon={<Share2 />} type="submit" variant="outline">
                 Share
               </Button>
               {state.audioUrl && (
-                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Button asChild variant="outline">
                   <a href={state.audioUrl} download>
                     <Download className="h-4 w-4" />
                     Download

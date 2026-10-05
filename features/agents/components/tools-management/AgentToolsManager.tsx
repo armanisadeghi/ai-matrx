@@ -39,7 +39,7 @@ import { getToolDisplayName } from "@ai-matrx/chat/tool-call-visualization/regis
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {

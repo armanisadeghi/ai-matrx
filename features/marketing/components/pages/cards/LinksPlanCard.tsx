@@ -209,16 +209,14 @@ function PlannedLinkListEditor({
               />
               <PlannedLinkStatusBadge score={score} pending={pending} />
               <Button
-                size="icon"
-                variant="ghost"
+                icon={<X />}
+                variant="quiet"
                 aria-label="Remove planned link"
-                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                className="shrink-0"
                 onClick={() =>
                   onChange(entries.filter((item) => item.id !== entry.id))
                 }
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
             <div className="mt-1.5 flex items-center gap-1.5">
               <Input
@@ -302,13 +300,12 @@ function PlannedLinkListEditor({
           }}
         />
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-8 shrink-0"
+          className="shrink-0"
           disabled={!newUrl.trim()}
           onClick={add}
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
           Add
         </Button>
       </div>

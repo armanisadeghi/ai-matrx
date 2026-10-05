@@ -106,8 +106,6 @@ export function BoundaryWeeksPanel({
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="h-7 font-mono text-[11px]"
               onClick={() => void announceComingSoon("hr.workweek-detail")}
             >
               {id.slice(0, 8)}…

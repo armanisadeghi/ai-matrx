@@ -106,9 +106,7 @@ export function SearchAnalytics({ token, property }: SearchAnalyticsProps) {
                 <Button
                     onClick={loadAllData}
                     disabled={loading}
-                    size="sm"
-                    variant={summary === null ? "default" : "outline"}
-                    className={summary === null ? "gap-2 bg-green-600 hover:bg-green-700 text-white" : "gap-2"}
+                    variant={summary === null ? "primary" : "outline"}
                 >
                     {loading ? (
                         <>

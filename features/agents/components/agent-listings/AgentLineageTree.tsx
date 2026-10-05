@@ -303,10 +303,8 @@ export function AgentLineageTree() {
         )}
         <Button
           variant="outline"
-          size="sm"
           onClick={allExpanded ? handleCollapseAll : handleExpandAll}
           disabled={visibleBuiltins.length === 0}
-          className="h-8"
           title={
             allExpanded
               ? "Collapse every card so you can scan the agent list at a glance"

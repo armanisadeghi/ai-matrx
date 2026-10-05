@@ -136,8 +136,7 @@ export function AssetsList() {
         <p className="text-sm text-muted-foreground">
           No intake assets yet — start capturing.
         </p>
-        <Button className="h-10" onClick={() => router.push("/commerce/intake")}>
-          <Camera className="mr-1.5 h-4 w-4" />
+        <Button icon={<Camera />} variant="primary" onClick={() => router.push("/commerce/intake")}>
           Open capture
         </Button>
       </div>
@@ -186,14 +185,12 @@ export function AssetsList() {
             <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Link>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 shrink-0"
+            icon={<Camera />}
+            variant="quiet"
+            className="shrink-0"
             aria-label="Capture more on this item"
             onClick={() => router.push(`/commerce/intake?asset=${asset.id}`)}
-          >
-            <Camera className="h-4 w-4" />
-          </Button>
+          />
         </li>
       ))}
     </ul>

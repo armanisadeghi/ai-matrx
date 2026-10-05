@@ -68,13 +68,13 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
               episode of your own in minutes.
             </p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-              <Button asChild className="gap-2 shadow-md">
+              <Button variant="primary" asChild>
                 <Link href="/podcast/studio/create">
                   <AudioLines className="h-4 w-4" />
                   Create a podcast
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="gap-2">
+              <Button asChild variant="outline">
                 <Link href="/podcast/studio">
                   <Mic className="h-4 w-4" />
                   Open Studio
@@ -101,7 +101,7 @@ export function PodcastIndexClient({ published }: { published: PcShow[] }) {
                   operation="List your podcasts"
                   calls={["pc_shows", "pc_episodes"]}
                   actions={
-                    <Button size="sm" variant="outline" onClick={() => void refresh()}>
+                    <Button variant="outline" onClick={() => void refresh()}>
                       Try again
                     </Button>
                   }

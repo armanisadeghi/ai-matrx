@@ -265,12 +265,11 @@ export default function ControlRuleRow({
               </button>
               {isDirty && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 px-1.5 text-[10px] gap-1 ml-auto"
+                  icon={<RotateCcw />}
+                  variant="quiet"
+                  className="ml-auto"
                   onClick={() => onDiscardDraft(row.key)}
                 >
-                  <RotateCcw className="h-3 w-3" />
                   Discard
                 </Button>
               )}

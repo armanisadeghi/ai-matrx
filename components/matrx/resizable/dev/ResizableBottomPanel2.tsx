@@ -60,15 +60,11 @@ const ResizableBottomPanel2: React.FC<ResizableBottomPanelProps> = ({
   if (!isExpanded) {
     return (
       <Button
+        icon={<ChevronUp />}
         variant="outline"
-        size="sm"
         onClick={handleToggle}
-        className={cn(
-          "bg-background border shadow-md h-6 px-2 py-1 text-xs z-50",
-          expandButtonProps.className,
-        )}
+        className={cn("z-50", expandButtonProps.className)}
       >
-        <ChevronUp className="h-3 w-3 mr-1" />
         {expandButtonProps.label}
       </Button>
     );
@@ -109,10 +105,8 @@ const ResizableBottomPanel2: React.FC<ResizableBottomPanelProps> = ({
                 <div className="flex-1">{header}</div>
                 <div className="flex gap-2">
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={handleFullScreenToggle}
-                    className="h-6 px-2"
                   >
                     {isFullScreen ? (
                       <Minimize2 className="h-3 w-3" />
@@ -121,10 +115,8 @@ const ResizableBottomPanel2: React.FC<ResizableBottomPanelProps> = ({
                     )}
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={handleToggle}
-                    className="h-6 px-2"
                   >
                     <ChevronDown className="h-3 w-3" />
                   </Button>

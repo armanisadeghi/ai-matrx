@@ -56,12 +56,12 @@ export function PdfBinaryResult({ result }: Props) {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="outline">
             <a href={objectUrl} target="_blank" rel="noreferrer">
               <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
             </a>
           </Button>
-          <Button asChild size="sm">
+          <Button variant="primary" asChild>
             <a href={objectUrl} download={result.filename}>
               <Download className="h-3.5 w-3.5 mr-1" /> Download
             </a>

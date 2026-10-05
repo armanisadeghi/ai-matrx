@@ -129,9 +129,7 @@ export function WantedTopicsPanel({ mapId, siteId, limit }: WantedTopicsPanelPro
       <div>
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1 text-xs"
+          variant="quiet"
           aria-expanded={heldBackOpen}
           onClick={() => setHeldBackOpen((open) => !open)}
         >
@@ -193,13 +191,12 @@ function WantedRow({
           <p className="shrink-0 text-muted-foreground">{disabledReason}</p>
         ) : (
           <Button
+            icon={<Plus aria-hidden />}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-6 shrink-0 gap-1 text-xs"
+            className="shrink-0"
             onClick={onAdd}
           >
-            <Plus className="h-3 w-3" aria-hidden />
             {busy ? "Adding…" : "Add as proposed topic"}
           </Button>
         )}

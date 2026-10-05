@@ -8,7 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { AlertCircle, Edit3, Maximize2, Minimize2, Type } from 'lucide-react';
 import { useComponentRef, useRefManager } from '@/lib/refs';
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -34,13 +34,13 @@ const Editor = ({ id }: { id: string }) => {
           <CardTitle className="text-base">Editor {id}</CardTitle>
           <CardDescription>Font size: {fontSize}px</CardDescription>
         </div>
-        <Button
+        <SurfaceButton
           variant="ghost"
           size="icon"
           onClick={() => setIsFullscreen(prev => !prev)}
         >
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-        </Button>
+        </SurfaceButton>
       </CardHeader>
       <CardContent>
         <ProTextarea
@@ -115,7 +115,7 @@ const ControlPanel = () => {
           {['editor1', 'editor2', 'editor3'].map(id => (
             <Button
               key={id}
-              variant={selectedEditor === id ? 'default' : 'outline'}
+              variant={selectedEditor === id ? "primary" : "outline"}
               onClick={() => setSelectedEditor(id)}
             >
               {id}
@@ -133,14 +133,13 @@ const ControlPanel = () => {
               placeholder="Enter text..."
               className="flex-1"
             />
-            <Button onClick={handleSetText}>
-              <Edit3 className="h-4 w-4 mr-2" />
+            <Button icon={<Edit3 />} variant="primary" onClick={handleSetText}>
               Set Text
             </Button>
             <Button variant="outline" onClick={handleGetText}>
               Get Text
             </Button>
-            <Button variant="secondary" onClick={handleClear}>
+            <Button variant="outline" onClick={handleClear}>
               Clear
             </Button>
           </div>
@@ -165,7 +164,7 @@ const ControlPanel = () => {
         {/* Layout Controls */}
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Layout Controls</h3>
-          <Button onClick={handleToggleFullscreen}>
+          <Button variant="primary" onClick={handleToggleFullscreen}>
             Toggle Fullscreen
           </Button>
         </div>
@@ -174,10 +173,10 @@ const ControlPanel = () => {
         <div className="space-y-2">
           <h3 className="text-sm font-medium">Broadcast Controls</h3>
           <div className="flex gap-2">
-            <Button variant="secondary" onClick={handleBroadcastClear}>
+            <Button variant="outline" onClick={handleBroadcastClear}>
               Clear All
             </Button>
-            <Button variant="secondary" onClick={handleBroadcastFontSize}>
+            <Button variant="outline" onClick={handleBroadcastFontSize}>
               Set All Font Sizes
             </Button>
           </div>

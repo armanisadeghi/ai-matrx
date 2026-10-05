@@ -506,7 +506,7 @@ function AgentAppsExecutionsContent() {
                   Showing records for{" "}
                   <AgentAppRef appId={appId} alwaysShowActions />
                 </span>
-                <Button size="sm" variant="outline" onClick={clearAppScope}>
+                <Button variant="outline" onClick={clearAppScope}>
                   Show all apps
                 </Button>
               </div>
@@ -1092,13 +1092,11 @@ function ErrorDialog({
                 Close
               </Button>
               {selected.resolved ? (
-                <Button variant="outline" onClick={() => void unresolve()}>
-                  <XCircle className="mr-1 h-4 w-4" />
+                <Button icon={<XCircle />} variant="outline" onClick={() => void unresolve()}>
                   Mark Unresolved
                 </Button>
               ) : (
-                <Button onClick={() => void resolve()}>
-                  <CheckCircle className="mr-1 h-4 w-4" />
+                <Button icon={<CheckCircle />} variant="primary" onClick={() => void resolve()}>
                   Mark Resolved
                 </Button>
               )}

@@ -165,7 +165,7 @@ function ChatPicker({ onPick, onCancel }: PickerProps) {
         />
       </div>
       <div className="flex shrink-0 justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -186,7 +186,7 @@ function AgentChatPicker({ onPick, onCancel }: PickerProps) {
         />
       </div>
       <div className="flex shrink-0 justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -207,7 +207,7 @@ function NotePicker({ onPick, onCancel }: PickerProps) {
         />
       </div>
       <div className="flex justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -308,7 +308,7 @@ function FilePicker({ onPick, onCancel }: PickerProps) {
         )}
       </div>
       <div className="flex shrink-0 justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
+        <Button type="button" variant="quiet" onClick={onCancel} disabled={busy}>
           Cancel
         </Button>
       </div>

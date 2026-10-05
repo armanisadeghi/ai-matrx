@@ -214,13 +214,12 @@ export function AssessmentResults({
             )}
           </div>
           <Button
+            icon={<RotateCcw />}
             variant="outline"
-            size="sm"
             onClick={() =>
               startTransition(() => router.push(`${base}/${assessmentId}?start=1`))
             }
           >
-            <RotateCcw className="mr-1.5 h-4 w-4" />
             Retake
           </Button>
         </div>
@@ -236,7 +235,8 @@ export function AssessmentResults({
               to see your measured improvement.
             </p>
             <Button
-              size="sm"
+              iconEnd={<ArrowRight />}
+              variant="primary"
               className="mt-3"
               onClick={() =>
                 startTransition(() =>
@@ -247,7 +247,6 @@ export function AssessmentResults({
               }
             >
               Take the post-test
-              <ArrowRight className="ml-1.5 h-4 w-4" />
             </Button>
           </div>
         )}

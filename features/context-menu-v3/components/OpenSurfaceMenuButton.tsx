@@ -10,7 +10,7 @@
 
 import * as React from "react";
 import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 export function OpenSurfaceMenuButton({

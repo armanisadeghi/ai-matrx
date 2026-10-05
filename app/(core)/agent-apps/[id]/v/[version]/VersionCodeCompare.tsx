@@ -25,9 +25,8 @@ export function VersionCodeCompare({
   }
   return (
     <Button
+      icon={<GitCompareArrows />}
       variant="outline"
-      size="sm"
-      className="gap-1.5"
       onClick={() =>
         openDiff({
           original: snapshotCode,
@@ -41,7 +40,6 @@ export function VersionCodeCompare({
         })
       }
     >
-      <GitCompareArrows className="h-3.5 w-3.5" />
       Compare with current
     </Button>
   );

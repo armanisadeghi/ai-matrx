@@ -62,11 +62,11 @@ export function KioskDevicesPanel({ source }: { source: KioskDeviceAdminSource }
           </p>
         </div>
         <Button
+          icon={<Plus />}
+          variant="primary"
           type="button"
           onClick={() => setPairing((open) => !open)}
-          className="min-h-[44px] gap-2"
         >
-          <Plus className="size-4" />
           Pair a tablet
         </Button>
       </header>

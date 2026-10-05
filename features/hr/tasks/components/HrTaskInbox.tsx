@@ -81,8 +81,8 @@ function SectionPaginator({ page, section, onPage }: { page: HrInboxPage; sectio
     const last = Math.min(page.offset + page.limit, page.total);
     return <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
         <span>Showing {first}–{last} of {page.total}</span>
-        <Button size="sm" variant="outline" disabled={page.offset === 0} onClick={() => onPage(section, Math.max(0, page.offset - page.limit))}>Previous</Button>
-        <Button size="sm" variant="outline" disabled={page.offset + page.limit >= page.total} onClick={() => onPage(section, page.offset + page.limit)}>Next</Button>
+        <Button variant="outline" disabled={page.offset === 0} onClick={() => onPage(section, Math.max(0, page.offset - page.limit))}>Previous</Button>
+        <Button variant="outline" disabled={page.offset + page.limit >= page.total} onClick={() => onPage(section, page.offset + page.limit)}>Next</Button>
     </div>;
 }
 
@@ -213,7 +213,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                 <div className="rounded-lg border border-destructive/40 bg-card p-4 text-sm">
                     <p className="font-medium text-destructive">Your HR inbox could not be loaded.</p>
                     <p className="mt-1 text-muted-foreground">{error}</p>
-                    <Button className="mt-3" size="sm" variant="outline" onClick={() => reload()}>
+                    <Button className="mt-3" variant="outline" onClick={() => reload()}>
                         Try again
                     </Button>
                   <ErrorAlchemyMenu />
@@ -249,8 +249,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                     disabled, without it. */}
                 {inbox && !inbox.can_view_queue ? null : (
                     <Button
-                        size="sm"
-                        variant={scope === "queue" ? "default" : "outline"}
+                        variant={scope === "queue" ? "primary" : "outline"}
                         aria-pressed={scope === "queue"}
                         title={QUEUE_FILTER.hint}
                         disabled={pending}
@@ -260,7 +259,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                     </Button>
                 )}
                 {flowKey ? (
-                    <Button size="sm" variant="ghost" asChild>
+                    <Button variant="quiet" asChild>
                         <Link href={hrTasksHref(orgRef, { scope })} onClick={() => setSelectedIds([])}>
                             Clear “{flowKey}” filter
                         </Link>
@@ -343,8 +342,7 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                         </ul>
                         <Button
                             className="mt-3"
-                            size="sm"
-                            variant="ghost"
+                            variant="quiet"
                             onClick={() => setBulkOutcomes(null)}
                         >
                             Dismiss
@@ -373,14 +371,13 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                             bulkActions={(selected) => (
                                 <div className="flex items-center gap-2">
                                     <Button
-                                        size="sm"
+                                        variant="primary"
                                         disabled={busy || selected.length === 0}
                                         onClick={() => void runBulk("approve")}
                                     >
                                         Approve {selected.length}
                                     </Button>
                                     <Button
-                                        size="sm"
                                         variant="outline"
                                         disabled={busy || selected.length === 0}
                                         onClick={() => setRejectOpen(true)}
@@ -473,7 +470,6 @@ export function HrTaskInbox({ initialScope }: { initialScope: HrInboxScope }) {
                                         the row. */}
                                     <Button
                                         className="shrink-0"
-                                        size="sm"
                                         variant="outline"
                                         onClick={() =>
                                             setFailure({

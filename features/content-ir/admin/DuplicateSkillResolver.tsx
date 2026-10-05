@@ -170,13 +170,12 @@ function CandidateCard({
       </div>
 
       <Button
-        size="sm"
-        variant={isDeclaredOwner ? "outline" : "default"}
+        icon={busy ? <Loader2 className="animate-spin" /> : null}
+        variant={isDeclaredOwner ? "outline" : "primary"}
         className="mt-auto"
         disabled={busy || isDeclaredOwner}
         onClick={onDeclare}
       >
-        {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
         {isDeclaredOwner ? "Owns this kind" : "Declare this skill the owner"}
       </Button>
     </div>
@@ -347,22 +346,20 @@ function CaseCard({ item }: { item: DuplicateSkillCase }) {
         />
         <div className="flex flex-wrap items-center gap-2">
           <Button
-            size="sm"
+            icon={<Columns2 />}
             variant="outline"
             onClick={() => setShowDiff((v) => !v)}
             disabled={item.candidates.length < 2}
           >
-            <Columns2 className="mr-1 h-3.5 w-3.5" />
             {showDiff ? "Hide" : "Compare"} skill bodies
           </Button>
           {item.declaredOwner && (
             <Button
-              size="sm"
+              icon={<RotateCcw />}
               variant="outline"
               disabled={pending || busySkill !== null}
               onClick={() => void clearOwner()}
             >
-              <RotateCcw className="mr-1 h-3.5 w-3.5" />
               Clear declaration
             </Button>
           )}

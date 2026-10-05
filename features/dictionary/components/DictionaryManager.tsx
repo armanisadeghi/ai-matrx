@@ -205,28 +205,23 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
           />
         </div>
         {canEdit && (
-          <Button size="sm" className="gap-1.5" onClick={() => openEditor()}>
-            <Plus className="h-4 w-4" /> Add
+          <Button icon={<Plus />} variant="primary" onClick={() => openEditor()}> Add
           </Button>
         )}
         <Button
-          size="sm"
+          icon={<MessageSquare />}
           variant="outline"
-          className="gap-1.5"
           disabled={assistantUnavailable}
           title={assistantError ?? undefined}
           onClick={() => void openAssistant({ level, ownerId, ownerName })}
-        >
-          <MessageSquare className="h-4 w-4" /> Ask assistant
+        > Ask assistant
         </Button>
         {selected.size > 0 && canEdit && (
           <Button
-            size="sm"
-            variant="destructive"
-            className="gap-1.5"
+            icon={<Trash2 />}
+            variant="danger"
             onClick={() => setConfirmDelete([...selected])}
-          >
-            <Trash2 className="h-4 w-4" /> Delete {selected.size}
+          > Delete {selected.size}
           </Button>
         )}
         {entries.length > 0 && (
@@ -453,29 +448,24 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
               <Label className="text-xs">Import / export</Label>
               <div className="flex flex-wrap gap-2">
                 {canEdit && (
-                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
-                    <Upload className="h-4 w-4" /> Import CSV / JSON
+                  <Button icon={<Upload />} variant="outline" onClick={() => setImportOpen(true)}> Import CSV / JSON
                   </Button>
                 )}
                 <Button
-                  size="sm"
+                  icon={<Download />}
                   variant="outline"
-                  className="gap-1.5"
                   disabled={entries.length === 0}
                   onClick={() => downloadTextFile("dictionary.csv", entriesToCsv(entries), "text/csv")}
-                >
-                  <Download className="h-4 w-4" /> Export CSV
+                > Export CSV
                 </Button>
                 <Button
-                  size="sm"
+                  icon={<Download />}
                   variant="outline"
-                  className="gap-1.5"
                   disabled={entries.length === 0}
                   onClick={() =>
                     downloadTextFile("dictionary.json", entriesToJson(entries), "application/json")
                   }
-                >
-                  <Download className="h-4 w-4" /> Export JSON
+                > Export JSON
                 </Button>
               </div>
             </div>
@@ -494,10 +484,10 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
                 <InlinePolicyControl value={effectiveInline} onChange={setInlineDraft} />
                 {inlineDraft && (
                   <div className="flex gap-2">
-                    <Button size="sm" onClick={saveInline} disabled={busy}>
+                    <Button variant="primary" onClick={saveInline} disabled={busy}>
                       Save policy
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setInlineDraft(null)}>
+                    <Button variant="quiet" onClick={() => setInlineDraft(null)}>
                       Cancel
                     </Button>
                   </div>
@@ -574,8 +564,8 @@ export function DictionaryManager({ level, ownerId, ownerName, canEdit = true, e
             </div>
           )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setEditing(null)}>Cancel</Button>
-            <Button onClick={saveEntry} disabled={busy}>Save</Button>
+            <Button variant="quiet" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button variant="primary" onClick={saveEntry} disabled={busy}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

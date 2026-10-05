@@ -87,15 +87,13 @@ export function TopicIdeaHelper({
             generates ideas (your agent vs the system default). */}
         <MandateAgentPicker mandateKey={TOPIC_IDEAS_MANDATE_KEY} />
         <Button
+          icon={<Lightbulb />}
           type="button"
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          variant="quiet"
           onClick={() => setOpen(true)}
           disabled={loading || !mandate}
           title={error ?? undefined}
         >
-          <Lightbulb className="h-3.5 w-3.5" />
           {error ? "Idea helper unavailable" : "Need an idea? Get help"}
         </Button>
         <IntelligenceIndicator

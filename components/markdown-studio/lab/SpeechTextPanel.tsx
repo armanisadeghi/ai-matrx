@@ -31,13 +31,12 @@ export function SpeechTextPanel({ content }: SpeechTextPanelProps) {
           {speechText.length} speech chars
         </Badge>
         <Button
+          icon={<Volume2 />}
           variant="outline"
-          size="sm"
           onClick={() => setAudioTestOpen(true)}
-          className="ml-auto h-7 px-2.5 text-xs"
+          className="ml-auto"
           disabled={!content.trim()}
         >
-          <Volume2 className="mr-1.5 h-3.5 w-3.5" />
           Audio test
         </Button>
       </div>

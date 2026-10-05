@@ -122,9 +122,8 @@ export function EmploymentPicker({
         {!disabled ? (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 shrink-0 p-0"
+            variant="quiet"
+            className="w-8 shrink-0"
             aria-label="Clear the selected person"
             onClick={() => {
               setChosen(null);

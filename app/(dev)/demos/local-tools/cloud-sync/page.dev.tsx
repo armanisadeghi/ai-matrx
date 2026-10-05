@@ -229,12 +229,11 @@ export default function CloudSyncPage() {
               </div>
             </div>
             <Button
-              size="sm"
-              className="h-7 text-xs px-3 gap-1"
+              icon={configuring && <Loader2 className="animate-spin" />}
+              variant="primary"
               onClick={configure}
               disabled={configuring || !jwt || !userId}
             >
-              {configuring && <Loader2 className="w-3 h-3 animate-spin" />}
               Configure
             </Button>
             <MsgBanner msg={configResult} />
@@ -251,30 +250,27 @@ export default function CloudSyncPage() {
               </h2>
               <div className="flex items-center gap-2">
                 <Button
+                  icon={loadingSettings ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
                   onClick={fetchSettings}
                   disabled={loadingSettings}
                 >
-                  {loadingSettings ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3 h-3" />
-                  )}
                   Reload
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
+                  icon={savingSettings ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   onClick={saveSettings}
                   disabled={savingSettings || !settingsJson}
                 >
-                  {savingSettings ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Save className="w-3 h-3" />
-                  )}
                   Save
                 </Button>
               </div>
@@ -296,31 +292,27 @@ export default function CloudSyncPage() {
             </h2>
             <div className="flex gap-3">
               <Button
+                icon={syncing === "push" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowUpFromLine />
+                )}
                 variant="outline"
-                size="sm"
-                className="h-8 text-xs px-3 gap-1.5"
                 onClick={() => syncAction("push")}
                 disabled={!!syncing}
               >
-                {syncing === "push" ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <ArrowUpFromLine className="w-3.5 h-3.5" />
-                )}
                 Push Settings
               </Button>
               <Button
+                icon={syncing === "pull" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowDownToLine />
+                )}
                 variant="outline"
-                size="sm"
-                className="h-8 text-xs px-3 gap-1.5"
                 onClick={() => syncAction("pull")}
                 disabled={!!syncing}
               >
-                {syncing === "pull" ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <ArrowDownToLine className="w-3.5 h-3.5" />
-                )}
                 Pull Settings
               </Button>
             </div>
@@ -337,17 +329,15 @@ export default function CloudSyncPage() {
                 </Badge>
               </h2>
               <Button
+                icon={loadingInstances ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
                 variant="outline"
-                size="sm"
-                className="h-7 text-xs px-2 gap-1"
                 onClick={fetchInstances}
                 disabled={loadingInstances}
               >
-                {loadingInstances ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3 h-3" />
-                )}
                 Refresh
               </Button>
             </div>

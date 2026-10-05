@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -309,11 +309,12 @@ function ClaimHandle({ onClaimed }: { onClaimed: (p: CreatorProfileMine) => void
           </div>
 
           <Button
+            icon={claiming ? <Loader2 className="animate-spin" /> : <BadgeCheck />}
+            variant="primary"
             className="w-full"
             disabled={claiming || available !== true}
             onClick={claim}
           >
-            {claiming ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <BadgeCheck className="mr-1.5 h-4 w-4" />}
             Claim @{handle.trim() || "handle"}
           </Button>
         </div>
@@ -366,15 +367,15 @@ function FeaturedRow({
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-0.5">
-        <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={onUp}>
+        <SurfaceButton variant="ghost" size="icon" className="h-7 w-7" disabled={isFirst} onClick={onUp}>
           <ChevronUp className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={onDown}>
+        </SurfaceButton>
+        <SurfaceButton variant="ghost" size="icon" className="h-7 w-7" disabled={isLast} onClick={onDown}>
           <ChevronDown className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onRemove}>
+        </SurfaceButton>
+        <SurfaceButton variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onRemove}>
           <Trash2 className="h-4 w-4" />
-        </Button>
+        </SurfaceButton>
       </div>
     </div>
   );
@@ -548,14 +549,13 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
               {isPublic ? "Public" : "Draft"}
             </Label>
           </div>
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" asChild>
             <a href={`/c/${handle}`} target="_blank" rel="noopener noreferrer">
               <Eye className="mr-1.5 h-4 w-4" />
               View
             </a>
           </Button>
-          <Button size="sm" disabled={saving} onClick={save}>
-            {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Save className="mr-1.5 h-4 w-4" />}
+          <Button icon={saving ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" disabled={saving} onClick={save}>
             Save
           </Button>
         </div>
@@ -595,13 +595,12 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
                   onChange={(e) => setLinks((p) => p.map((x, idx) => (idx === i ? { ...x, url: e.target.value } : x)))}
                   placeholder="https://youtube.com/@you"
                 />
-                <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-destructive" onClick={() => setLinks((p) => p.filter((_, idx) => idx !== i))}>
+                <SurfaceButton variant="ghost" size="icon" className="h-9 w-9 shrink-0 text-destructive" onClick={() => setLinks((p) => p.filter((_, idx) => idx !== i))}>
                   <Trash2 className="h-4 w-4" />
-                </Button>
+                </SurfaceButton>
               </div>
             ))}
-            <Button variant="outline" size="sm" onClick={() => setLinks((p) => [...p, { label: "", url: "" }])}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button icon={<Plus />} variant="outline" onClick={() => setLinks((p) => [...p, { label: "", url: "" }])}>
               Add link
             </Button>
           </div>
@@ -621,8 +620,7 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
             onKeyDown={(e) => e.key === "Enter" && addYouTube()}
             placeholder="Paste a YouTube link or video ID"
           />
-          <Button variant="outline" size="sm" className="shrink-0" onClick={addYouTube}>
-            <Plus className="mr-1.5 h-4 w-4" />
+          <Button icon={<Plus />} variant="outline" className="shrink-0" onClick={addYouTube}>
             Add video
           </Button>
         </div>
@@ -674,7 +672,7 @@ function Editor({ initial }: { initial: CreatorProfileMine }) {
             error={resourcesError}
             operation="List your public flashcard sets and guides"
             actions={
-              <Button variant="outline" size="sm" onClick={loadResources}>
+              <Button variant="outline" onClick={loadResources}>
                 Retry
               </Button>
             }
@@ -782,7 +780,7 @@ export function CreatorDashboard() {
             operation="Load your creator page"
             calls={["creator_get_mine"]}
             actions={
-              <Button variant="outline" size="sm" onClick={load}>
+              <Button variant="outline" onClick={load}>
                 Retry
               </Button>
             }

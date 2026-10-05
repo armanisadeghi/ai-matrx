@@ -66,12 +66,11 @@ export function VariablesPanel({
           </TooltipProvider>
         </div>
         <Button
+          icon={<Plus />}
           onClick={onAdd}
           variant="outline"
-          size="sm"
-          className="h-7 text-xs border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0"
+          className="shrink-0"
         >
-          <Plus className="h-3 w-3 mr-1" />
           Add
         </Button>
       </div>
@@ -101,9 +100,8 @@ export function VariablesPanel({
                     />
                     <Button
                       onClick={() => onRemove(v.id)}
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 shrink-0 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      variant="quiet"
+                      className="w-7 shrink-0"
                       title="Remove variable"
                     >
                       <Trash2 className="h-3.5 w-3.5" />

@@ -205,8 +205,7 @@ export function QueryError({
             </p>
             {onRetry ? (
               <Button
-                className="mt-3 h-7"
-                size="sm"
+                className="mt-3"
                 variant="outline"
                 onClick={onRetry}
               >
@@ -254,9 +253,8 @@ export function InlineQueryError({
       </span>
       {onRetry ? (
         <Button
-          size="sm"
           variant="outline"
-          className="h-6 shrink-0 text-[11px]"
+          className="shrink-0"
           onClick={onRetry}
         >
           Retry

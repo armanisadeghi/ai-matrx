@@ -167,24 +167,20 @@ export function SaveTemplateModal({
                     placeholder="Add tags..."
                     className="flex-1 h-9"
                 />
-                <Button onClick={handleAddTag} disabled={!tagInput.trim()} size="sm" className="h-9">
+                <Button variant="primary" onClick={handleAddTag} disabled={!tagInput.trim()}>
                     <Plus className="w-4 h-4" />
                 </Button>
                 {!isMobile && (
                     <>
                         <Button
-                            variant={previewMode === 'editor' ? 'default' : 'outline'}
-                            size="sm"
+                            variant={previewMode === 'editor' ? "primary" : "outline"}
                             onClick={() => setPreviewMode('editor')}
-                            className="h-9"
                         >
                             <PanelLeft className="w-4 h-4" />
                         </Button>
                         <Button
-                            variant={previewMode === 'split' ? 'default' : 'outline'}
-                            size="sm"
+                            variant={previewMode === 'split' ? "primary" : "outline"}
                             onClick={() => setPreviewMode('split')}
-                            className="h-9"
                         >
                             <Columns2 className="w-4 h-4" />
                         </Button>
@@ -272,14 +268,13 @@ export function SaveTemplateModal({
                 variant="outline" 
                 onClick={handleClose}
                 disabled={isSaving}
-                size="sm"
             >
                 Cancel
             </Button>
-            <Button 
+            <Button
+                variant="primary" 
                 onClick={handleSave}
                 disabled={isSaving || !label.trim() || !content.trim()}
-                size="sm"
             >
                 {isSaving ? 'Saving...' : 'Save'}
             </Button>

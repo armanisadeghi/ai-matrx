@@ -605,7 +605,7 @@ function DirtyGuardMobile({ open, onConfirm, onCancel }: DirtyGuardProps) {
           </DrawerDescription>
         </DrawerHeader>
         <DrawerFooter>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button variant="danger" onClick={onConfirm}>
             Discard & Switch
           </Button>
           <Button variant="outline" onClick={onCancel}>

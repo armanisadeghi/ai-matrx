@@ -143,9 +143,8 @@ export function EditorPanel({
             {stats.chars} chars
           </Badge>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0"
+            variant="quiet"
+            className="w-6"
             onClick={onClear}
             aria-label="Clear editor"
             title="Clear editor"

@@ -112,23 +112,19 @@ export function ProcessingProgressSheet({
       <div className="flex items-center gap-1.5 shrink-0">
         {runningCount > 0 && onCancelAll && (
           <Button
-            size="sm"
+            icon={<XIcon />}
             variant="outline"
             onClick={onCancelAll}
-            className="h-7 text-xs"
           >
-            <XIcon className="h-3 w-3 mr-1" />
             Stop all
           </Button>
         )}
         {terminalCount > 0 && onDismissAll && (
           <Button
-            size="sm"
+            icon={<Trash2 />}
             variant="outline"
             onClick={onDismissAll}
-            className="h-7 text-xs"
           >
-            <Trash2 className="h-3 w-3 mr-1" />
             Clear finished
           </Button>
         )}

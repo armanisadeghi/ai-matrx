@@ -83,9 +83,8 @@ export function NoteKnowledgePanel({ noteId }: { noteId: string }) {
             }}
           />
           <Button
-            size="sm"
+            icon={<ExternalLink />}
             variant="outline"
-            className="h-7 gap-1.5 text-xs"
             onClick={() =>
               window.open(
                 `/knowledge/viewer/${documentId}`,
@@ -93,8 +92,7 @@ export function NoteKnowledgePanel({ noteId }: { noteId: string }) {
                 "noopener,noreferrer",
               )
             }
-          >
-            <ExternalLink className="h-3.5 w-3.5" /> Full viewer
+          > Full viewer
           </Button>
         </div>
       </div>

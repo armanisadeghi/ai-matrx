@@ -265,9 +265,7 @@ export function ConversationBattlePage({
         </div>
 
         <Button
-          size="sm"
           variant="outline"
-          className="h-7"
           disabled={forks.length > 0 || isForking}
           onClick={() => setPickerOpen(true)}
           title={
@@ -283,16 +281,15 @@ export function ConversationBattlePage({
 
         {source && forks.length === 0 && (
           <Button
-            size="sm"
-            className="h-7"
+            icon={isForking ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Split />
+            )}
+            variant="primary"
             disabled={isForking}
             onClick={() => void addForks(INITIAL_FORK_COUNT)}
           >
-            {isForking ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Split className="size-3.5" />
-            )}
             Create {INITIAL_FORK_COUNT} forks
           </Button>
         )}
@@ -300,26 +297,23 @@ export function ConversationBattlePage({
         {forks.length > 0 && (
           <>
             <Button
-              size="sm"
-              className="h-7"
+              icon={isForking ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               disabled={isForking}
               onClick={() => void addForks(1)}
             >
-              {isForking ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Plus className="size-3.5" />
-              )}
               Add fork
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7"
+              icon={<RotateCcw />}
+              variant="quiet"
               disabled={isForking}
               onClick={() => setResetConfirmOpen(true)}
             >
-              <RotateCcw className="size-3.5" />
               New battle
             </Button>
           </>
@@ -450,14 +444,13 @@ function EmptyState({
         <h2 className="text-sm font-semibold">
           {hasSource ? "Ready to fork" : "Choose a source conversation"}
         </h2>
-        <Button onClick={hasSource ? onCreate : onChoose} disabled={isForking}>
-          {isForking ? (
-            <Loader2 className="size-4 animate-spin" />
+        <Button icon={isForking ? (
+            <Loader2 className="animate-spin" />
           ) : hasSource ? (
-            <Split className="size-4" />
+            <Split />
           ) : (
-            <MessagesSquare className="size-4" />
-          )}
+            <MessagesSquare />
+          )} variant="primary" onClick={hasSource ? onCreate : onChoose} disabled={isForking}>
           {hasSource ? "Create 2 forks" : "Choose conversation"}
         </Button>
       </div>

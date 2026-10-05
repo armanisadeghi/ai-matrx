@@ -80,7 +80,7 @@ export function ImageManagerExampleContent() {
         </CardContent>
         
         <CardFooter className="flex justify-between">
-          <Button onClick={handleOpen} variant="default">
+          <Button onClick={handleOpen} variant="primary">
             Open Image Manager
           </Button>
           

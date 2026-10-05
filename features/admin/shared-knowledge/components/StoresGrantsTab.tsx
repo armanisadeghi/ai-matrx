@@ -175,11 +175,11 @@ export function StoresGrantsTab({
             )}
           </div>
           <Button
-            size="sm"
+            icon={<Send />}
+            variant="primary"
             onClick={() => setPublishOpen(true)}
             disabled={!selectedStore}
-          >
-            <Send className="mr-1.5 h-3.5 w-3.5" /> Publish
+          > Publish
           </Button>
         </div>
 
@@ -233,9 +233,8 @@ export function StoresGrantsTab({
                   </Badge>
                 </span>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 shrink-0 px-2 text-muted-foreground hover:text-destructive"
+                  variant="quiet"
+                  className="shrink-0"
                   onClick={() => setRevokeTarget(g)}
                   aria-label={`Revoke ${grantLabel(g)}`}
                 >

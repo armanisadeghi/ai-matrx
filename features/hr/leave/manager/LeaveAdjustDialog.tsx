@@ -294,8 +294,7 @@ export function LeaveAdjustDialog({
               {needsSecondConfirmation ? (
                 <Button
                   type="button"
-                  size="sm"
-                  variant="destructive"
+                  variant="danger"
                   disabled={busy}
                   onClick={() => void submit(true)}
                 >
@@ -326,8 +325,7 @@ export function LeaveAdjustDialog({
           <Button type="button" variant="outline" disabled={busy} onClick={onClose}>
             Cancel
           </Button>
-          <Button type="button" disabled={!canConfirm} onClick={() => void submit(false)}>
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" type="button" disabled={!canConfirm} onClick={() => void submit(false)}>
             {direction === "add" ? "Add the hours" : "Remove the hours"}
           </Button>
         </DialogFooter>

@@ -161,8 +161,8 @@ export function ModuleLanding({
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
+              variant="primary"
+              className="w-full sm:w-auto"
               asChild
             >
               <Link href={primaryCtaUrl}>
@@ -172,8 +172,7 @@ export function ModuleLanding({
             </Button>
             <Button
               variant="outline"
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8"
+              className="w-full sm:w-auto"
               asChild
             >
               <Link href="#capabilities">See what it does</Link>
@@ -403,8 +402,7 @@ export function ModuleLanding({
             {finalCtaDescription}
           </p>
           <Button
-            size="lg"
-            className="min-h-[44px] text-base px-10 gap-2"
+            variant="primary"
             asChild
           >
             <Link href={primaryCtaHref}>

@@ -61,9 +61,7 @@ export default function MediaCaptureDemoPage() {
           {PROFILES.map((p) => (
             <Button
               key={p}
-              size="sm"
-              variant={p === profile ? "default" : "outline"}
-              className="h-8 text-xs"
+              variant={p === profile ? "primary" : "outline"}
               onClick={() => setProfile(p)}
             >
               {p}
@@ -126,9 +124,8 @@ export default function MediaCaptureDemoPage() {
               saved file_ids: {savedIds.length === 0 ? "—" : savedIds.join(", ")}
             </p>
             <Button
-              size="sm"
-              variant={mounted ? "destructive" : "default"}
-              className="mt-1 h-7 text-xs"
+              variant={mounted ? "danger" : "primary"}
+              className="mt-1"
               onClick={() => setMounted((m) => !m)}
             >
               {mounted ? "Unmount studio (leak check)" : "Mount studio"}

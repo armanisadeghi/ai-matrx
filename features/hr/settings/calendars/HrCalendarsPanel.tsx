@@ -187,17 +187,16 @@ function CalendarsSection({
           </div>
         </div>
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <CalendarPlus />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
           disabled={busy || creating}
           onClick={create}
-          className="min-h-11 sm:min-h-9"
         >
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <CalendarPlus className="mr-2 h-4 w-4" />
-          )}
           New calendar
         </Button>
       </header>
@@ -389,17 +388,16 @@ function CalendarEditor({
       ) : null}
 
       <Button
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Save />
+        )}
+        variant="primary"
         type="button"
-        size="sm"
         onClick={save}
         disabled={busy}
-        className="min-h-11 sm:min-h-9"
       >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
         Save
       </Button>
     </div>
@@ -539,11 +537,10 @@ function HolidaysSection({
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
+            icon={<Flag />}
             type="button"
-            size="sm"
             variant="outline"
             disabled={busy}
-            className="min-h-11 sm:min-h-9"
             onClick={() =>
               addMany(
                 federalHolidays(year),
@@ -551,15 +548,13 @@ function HolidaysSection({
               )
             }
           >
-            <Flag className="mr-2 h-4 w-4" />
             Import federal set ({year})
           </Button>
           <Button
+            icon={<CopyPlus />}
             type="button"
-            size="sm"
             variant="outline"
             disabled={busy || calendar.holidays.length === 0}
-            className="min-h-11 sm:min-h-9"
             onClick={() =>
               addMany(
                 shiftYearForward(calendar.holidays),
@@ -567,7 +562,6 @@ function HolidaysSection({
               )
             }
           >
-            <CopyPlus className="mr-2 h-4 w-4" />
             Duplicate a year forward
           </Button>
         </div>

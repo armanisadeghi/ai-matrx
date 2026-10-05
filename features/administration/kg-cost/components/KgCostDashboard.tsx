@@ -124,7 +124,7 @@ function percentColorClass(percent: number): string {
 const KPI_GRID_CLASS = "lg:grid-cols-3 2xl:grid-cols-6";
 
 function ReadFailure({ message, onRetry }: { message: string; onRetry: () => void }) {
-  return <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"><span>{message}</span><Button variant="outline" size="sm" onClick={onRetry}>Retry</Button><ErrorAlchemyMenu /></div>;
+  return <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive"><span>{message}</span><Button variant="outline" onClick={onRetry}>Retry</Button><ErrorAlchemyMenu /></div>;
 }
 
 function readFailureMessage(error: unknown, subject: string): string {
@@ -1105,12 +1105,11 @@ export function KgCostDashboard() {
             Batch system
           </AppLink>
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
             onClick={() => setRefreshTick((t) => t + 1)}
             disabled={summaryLoading || orgTable.loading || batchesLoading}
           >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Refresh
           </Button>
         </div>

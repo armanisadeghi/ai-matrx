@@ -178,6 +178,7 @@ export default function CreateAnnouncementDialog({ open, onOpenChange, onSuccess
                         Cancel
                     </Button>
                     <Button
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={isSubmitting || !title.trim() || !message.trim()}
                     >

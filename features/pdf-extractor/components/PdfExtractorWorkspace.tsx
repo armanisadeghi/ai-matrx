@@ -546,12 +546,12 @@ function NewExtractionContent({
           </div>
 
           <Button
+            variant="primary"
             onClick={() => {
               void extractor.extractFiles();
             }}
             disabled={isExtracting}
-            size="sm"
-            className="w-full h-7 text-xs mt-1"
+            className="w-full mt-1"
           >
             {isExtracting ? (
               <>
@@ -1121,11 +1121,10 @@ function AiCleanView({
       </div>
       <div className="flex items-center gap-2 flex-wrap justify-center">
         <Button
-          size="sm"
-          className="h-7 text-xs"
+          icon={<Zap />}
+          variant="primary"
           onClick={() => onClean(tab.id)}
         >
-          <Zap className="w-3 h-3 mr-1.5" />
           {hasError ? "Re-run Cleanup" : "Run AI Cleanup"}
         </Button>
         <IntelligenceIndicator
@@ -1135,12 +1134,10 @@ function AiCleanView({
         />
         {hasError && (
           <Button
-            size="sm"
+            icon={<RefreshCw />}
             variant="outline"
-            className="h-7 text-xs"
             onClick={() => void onRefresh(tab.id)}
           >
-            <RefreshCw className="w-3 h-3 mr-1.5" />
             Refetch from server
           </Button>
         )}

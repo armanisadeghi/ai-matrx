@@ -40,7 +40,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { toast } from "../../../../host/notify";
 import {
@@ -143,22 +143,18 @@ function HistoryEntryCard({
           </div>
           <div className="mt-2 flex justify-end gap-2">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs gap-1"
+              icon={<GitCompareArrows />}
+              variant="quiet"
               onClick={onCompare}
             >
-              <GitCompareArrows className="w-3 h-3" />
               Compare with current
             </Button>
             <Button
+              icon={<RotateCcw />}
               variant="outline"
-              size="sm"
-              className="h-7 text-xs gap-1"
               disabled={isRestoring}
               onClick={onRestore}
             >
-              <RotateCcw className="w-3 h-3" />
               {isRestoring ? "Restoring…" : "Restore this version"}
             </Button>
           </div>

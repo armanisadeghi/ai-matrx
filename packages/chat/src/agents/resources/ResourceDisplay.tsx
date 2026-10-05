@@ -26,7 +26,7 @@ import {
 import { Youtube } from "@host/components/icons/brand-icons";
 import { ParsedResource } from "./types";
 import { Badge } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { cn } from "@ai-matrx/design-system";
 import { VideoPublishDate } from "@host/features/files/blocks/video/VideoPublishDate";
 
@@ -128,9 +128,8 @@ export function ResourceDisplay({ resource, className }: ResourceDisplayProps) {
                 </div>
                 {url && (
                     <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
+                        variant="quiet"
+                        className="w-6"
                         onClick={(e) => {
                             e.stopPropagation();
                             window.open(url, '_blank');

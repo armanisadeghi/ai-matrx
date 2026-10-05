@@ -214,31 +214,25 @@ export function LinkValuationWorkspace() {
 
         <div className="ml-auto flex items-center gap-1.5">
           <Button
-            size="sm"
+            icon={<Save />}
             variant="outline"
-            className="h-8 text-xs"
             onClick={persist}
           >
-            <Save className="mr-1 h-3.5 w-3.5" />
             Save
           </Button>
           <Button
-            size="sm"
+            icon={<Download />}
             variant="outline"
-            className="h-8 text-xs"
             onClick={exportJson}
           >
-            <Download className="mr-1 h-3.5 w-3.5" />
             Export
           </Button>
           {isBuiltIn(config.id) ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs"
+              icon={<RotateCcw />}
+              variant="quiet"
               onClick={() => void restore()}
             >
-              <RotateCcw className="mr-1 h-3.5 w-3.5" />
               Reset
             </Button>
           ) : null}
@@ -304,11 +298,11 @@ export function LinkValuationWorkspace() {
                 className="h-[60dvh] font-mono text-[11px]"
               />
               <Button
-                size="sm"
-                className="h-8 w-fit text-xs"
+                icon={<Upload />}
+                variant="primary"
+                className="w-fit"
                 onClick={() => void importJson()}
               >
-                <Upload className="mr-1 h-3.5 w-3.5" />
                 Import
               </Button>
             </div>

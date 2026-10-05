@@ -145,9 +145,9 @@ export function PlatformAccessSection({
               onFocus={(event) => event.currentTarget.select()}
             />
             <Button
+              icon={<Copy />}
               type="button"
               variant="outline"
-              size="sm"
               className="shrink-0"
               onClick={() => {
                 void navigator.clipboard
@@ -156,7 +156,6 @@ export function PlatformAccessSection({
                   .catch(() => toast.error("Could not copy the link"));
               }}
             >
-              <Copy className="mr-1.5 h-3.5 w-3.5" />
               Copy
             </Button>
           </div>
@@ -190,8 +189,7 @@ export function PlatformAccessSection({
           className="h-8 max-w-xs text-xs"
           onChange={(event) => setEmail(event.target.value)}
         />
-        <Button type="button" size="sm" disabled={issuing} onClick={() => void issue()}>
-          <KeyRound className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<KeyRound />} variant="primary" type="button" disabled={issuing} onClick={() => void issue()}>
           {issuing ? "Inviting…" : "Invite to sign in"}
         </Button>
       </div>

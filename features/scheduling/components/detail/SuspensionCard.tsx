@@ -156,12 +156,11 @@ export function SuspensionCard({ task, onRestore, restoring }: Props) {
           actions={
             onRestore ? (
               <Button
-                size="sm"
-                variant={isSuspendedNow ? "destructive" : "outline"}
+                icon={<Power />}
+                variant={isSuspendedNow ? "danger" : "outline"}
                 onClick={onRestore}
                 disabled={restoring}
               >
-                <Power className="mr-1.5 h-3.5 w-3.5" />
                 {isSuspendedNow
                   ? approval
                     ? "Re-enable and restore its approval"

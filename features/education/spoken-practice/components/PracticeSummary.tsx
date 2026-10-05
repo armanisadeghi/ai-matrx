@@ -111,7 +111,7 @@ export function PracticeSummary({
       {review?.summary && <BatchReviewBlock review={review} />}
 
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button className="flex-1" onClick={reset}>
+        <Button variant="primary" className="flex-1" onClick={reset}>
           Practice again
         </Button>
         <Button

@@ -82,7 +82,7 @@ export function StructuredDataValidatorTool() {
               className="flex-1"
               disabled={running}
             />
-            <Button onClick={run} disabled={running || !url.trim()} className="sm:w-40">
+            <Button variant="primary" onClick={run} disabled={running || !url.trim()} className="sm:w-40">
               {running ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Validating

@@ -191,17 +191,19 @@ export default function ShapeActivationControl({
 
         {isActive ? (
           <Button
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
             variant="outline"
-            size="sm"
             onClick={() => void flip(false)}
             disabled={busy}
           >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Deactivate
           </Button>
         ) : (
           <Button
-            size="sm"
+            icon={busy || loadingVerdict ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+            variant="primary"
             onClick={() => void flip(true)}
             disabled={busy || loadingVerdict || !canActivate}
             title={
@@ -210,9 +212,6 @@ export default function ShapeActivationControl({
                 : "The dual gate is not satisfied yet — see the blockers below."
             }
           >
-            {busy || loadingVerdict ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : null}
             Activate
           </Button>
         )}
@@ -242,7 +241,6 @@ export default function ShapeActivationControl({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             disabled={artisanLaunching}
             onClick={() =>
               void launchArtisan(

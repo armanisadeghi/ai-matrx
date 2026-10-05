@@ -377,8 +377,6 @@ import { Field } from '@/components/official/Field';
           <div className="flex gap-2 pt-1">
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 text-xs"
               onClick={() => {
                 navigator.clipboard.writeText(
                   `import { ProInput } from "@/components/official/ProInput";`,

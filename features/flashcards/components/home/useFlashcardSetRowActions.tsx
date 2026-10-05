@@ -280,7 +280,7 @@ export function useFlashcardSetRowActions(
         </DialogHeader>
         {filing ? <FolderTagPicker setId={filing.id} /> : null}
         <div className="flex justify-end">
-          <Button onClick={() => {
+          <Button variant="primary" onClick={() => {
             setFiling(null);
             list.refresh();
           }}>

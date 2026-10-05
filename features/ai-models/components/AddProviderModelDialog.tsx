@@ -314,20 +314,16 @@ export default function AddProviderModelDialog({
 
         <DialogFooter className="px-5 py-3 border-t shrink-0 gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={submitting}
-            className="h-8 text-xs"
           >
             Cancel
           </Button>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => handleCreate(false)}
             disabled={!canSubmit}
-            className="h-8 text-xs"
           >
             {submitting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -336,10 +332,9 @@ export default function AddProviderModelDialog({
             )}
           </Button>
           <Button
-            size="sm"
+            variant="primary"
             onClick={() => handleCreate(true)}
             disabled={!canSubmit}
-            className="h-8 text-xs"
           >
             {submitting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

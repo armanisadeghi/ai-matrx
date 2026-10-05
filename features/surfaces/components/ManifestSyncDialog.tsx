@@ -324,10 +324,10 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
         <DialogFooter>
           {!result ? (
             <>
-              <Button variant="ghost" onClick={onClose} disabled={busy}>
+              <Button variant="quiet" onClick={onClose} disabled={busy}>
                 Cancel
               </Button>
-              <Button onClick={() => void run()} disabled={busy}>
+              <Button variant="primary" onClick={() => void run()} disabled={busy}>
                 {busy ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -336,7 +336,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
               </Button>
             </>
           ) : (
-            <Button onClick={onSynced}>Done</Button>
+            <Button variant="primary" onClick={onSynced}>Done</Button>
           )}
         </DialogFooter>
       </DialogContent>

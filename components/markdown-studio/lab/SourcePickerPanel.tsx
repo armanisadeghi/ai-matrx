@@ -172,8 +172,8 @@ export function SourcePickerPanel({
         </div>
         {canOpenPasted && (
           <Button
-            size="sm"
-            className="h-7 w-full text-xs"
+            variant="primary"
+            className="w-full"
             onClick={() => pick(pastedId)}
           >
             Open {def.label.toLowerCase()} {pastedId.slice(0, 8)}…

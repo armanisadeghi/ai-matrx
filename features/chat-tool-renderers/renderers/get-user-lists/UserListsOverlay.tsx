@@ -16,7 +16,7 @@ import {
     Check,
     Shield,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@ai-matrx/design-system";
 import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/types";
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
@@ -244,10 +244,8 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                         ].map(({ key, label, icon }) => (
                             <Button
                                 key={key}
-                                variant={visFilter === key ? "default" : "outline"}
-                                size="sm"
+                                variant={visFilter === key ? "primary" : "outline"}
                                 onClick={() => setVisFilter(key)}
-                                className="gap-1.5 text-xs h-7"
                             >
                                 {icon}
                                 {label}
@@ -265,14 +263,12 @@ export const UserListsOverlay: React.FC<ToolRendererProps> = ({ entry }) => {
                             { key: "updated" as const, label: "Updated" },
                         ].map(({ key, label }) => (
                             <Button
+                                iconEnd={sortKey === key && <SortIcon />}
                                 key={key}
-                                variant={sortKey === key ? "default" : "outline"}
-                                size="sm"
+                                variant={sortKey === key ? "primary" : "outline"}
                                 onClick={() => toggleSort(key)}
-                                className="gap-1 text-xs h-7"
                             >
                                 {label}
-                                {sortKey === key && <SortIcon className="w-3 h-3" />}
                             </Button>
                         ))}
                     </div>

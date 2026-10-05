@@ -255,12 +255,10 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
     if (list.status === "draft" || list.status === "paused") {
       return (
         <Button
-          size="sm"
+          icon={<Play />}
           variant="outline"
-          className="h-7 gap-1 px-2 text-xs"
           onClick={() => setActivating(list)}
         >
-          <Play className="h-3.5 w-3.5" />
           {list.status === "draft" ? "Start outreach list" : "Resume"}
         </Button>
       );
@@ -269,9 +267,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       return (
         <>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 px-2 text-xs"
+            icon={<Pause />}
+            variant="quiet"
             onClick={async () => {
               try {
                 await setOutreachListStatus(list, "paused");
@@ -281,13 +278,11 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               }
             }}
           >
-            <Pause className="h-3.5 w-3.5" />
             Pause
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 px-2 text-xs"
+            icon={<CheckCircle2 />}
+            variant="quiet"
             onClick={async () => {
               const ok = await confirm({
                 title: `Complete ${list.name}?`,
@@ -304,7 +299,6 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               }
             }}
           >
-            <CheckCircle2 className="h-3.5 w-3.5" />
             Complete
           </Button>
         </>
@@ -329,9 +323,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
             onChanged={onPartyAccessChanged}
             repairAction={
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7 w-full text-xs"
+                className="w-full"
                 onClick={async () => {
                   try {
                     await removeMember(row.id);
@@ -701,9 +694,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   currently costing the human. Both are views over the same two
                   tables this page writes, so a campaign must reach them. */}
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs"
+                variant="quiet"
                 asChild
               >
                 <Link href="/crm/inbox">
@@ -712,9 +703,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 </Link>
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 px-2 text-xs"
+                variant="quiet"
                 asChild
               >
                 <Link href="/crm/chasebox">
@@ -724,43 +713,37 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               </Button>
               {/* The loop closed: links our crawl credited to this campaign. */}
               <Button
-                size="sm"
-                variant={activeView === "outcomes" ? "secondary" : "ghost"}
-                className="h-7 gap-1 px-2 text-xs"
+                icon={<Award />}
+                variant={activeView === "outcomes" ? "outline" : "quiet"}
                 onClick={() =>
                   setActiveView(
                     activeView === "outcomes" ? "members" : "outcomes",
                   )
                 }
               >
-                <Award className="h-3.5 w-3.5" />
                 Outcomes
               </Button>
               {/* Is this campaign working? Every number opens to its rows. */}
               <Button
-                size="sm"
-                variant={activeView === "performance" ? "secondary" : "ghost"}
-                className="h-7 gap-1 px-2 text-xs"
+                icon={<BarChart3 />}
+                variant={activeView === "performance" ? "outline" : "quiet"}
                 onClick={() =>
                   setActiveView(
                     activeView === "performance" ? "members" : "performance",
                   )
                 }
               >
-                <BarChart3 className="h-3.5 w-3.5" />
                 Performance
               </Button>
               {lifecycleButton}
               <Button
-                size="sm"
+                icon={<ListPlus />}
                 variant="outline"
-                className="h-7 gap-1 px-2 text-xs"
                 onClick={() => setAddOpen(true)}
               >
-                <ListPlus className="h-3.5 w-3.5" />
                 Add members
               </Button>
-              <Button size="sm" className="h-7 gap-1 px-2 text-xs" asChild>
+              <Button variant="primary" asChild>
                 <Link href={`/crm/outreach-lists/${listId}/dial`}>
                   <PhoneCall className="h-3.5 w-3.5" />
                   Call queue
@@ -946,11 +929,10 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   action:
                     statusFilter === "all" ? (
                       <Button
-                        size="sm"
-                        className="h-7 gap-1 px-2 text-xs"
+                        icon={<ListPlus />}
+                        variant="primary"
                         onClick={() => setAddOpen(true)}
                       >
-                        <ListPlus className="h-3.5 w-3.5" />
                         Add members
                       </Button>
                     ) : undefined,

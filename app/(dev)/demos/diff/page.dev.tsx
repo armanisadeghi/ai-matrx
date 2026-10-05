@@ -120,9 +120,7 @@ export default function DiffDemoPage() {
         {SCENARIOS.map((s) => (
           <Button
             key={s.id}
-            size="sm"
             variant="outline"
-            className="h-7 text-xs"
             onClick={() => loadScenario(s)}
             title={s.note}
           >
@@ -201,8 +199,7 @@ export default function DiffDemoPage() {
           review &amp; merge (per-hunk)
         </label>
         <Button
-          size="sm"
-          className="h-7 text-xs"
+          variant="primary"
           onClick={() =>
             openWindow({
               original,

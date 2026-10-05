@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Input, Skeleton } from "@ai-matrx/design-system";
+import { Input, Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -379,8 +379,8 @@ function MeetReviewBodyInner({
             />
           </label>
           <Button
+            variant="primary"
             type="button"
-            className="min-h-11"
             onClick={() => void loadConferences()}
             disabled={busy !== null || !connectionId}
           >
@@ -394,7 +394,6 @@ function MeetReviewBodyInner({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
               disabled={busy !== null}
               onClick={() =>
                 void loadConferences(
@@ -410,7 +409,6 @@ function MeetReviewBodyInner({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
               disabled={busy !== null}
               onClick={() =>
                 void loadTranscript(
@@ -455,7 +453,6 @@ function MeetReviewBodyInner({
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
                   disabled={busy !== null}
                   onClick={() =>
                     void loadConferences(
@@ -478,7 +475,7 @@ function MeetReviewBodyInner({
                 </p>
               ) : null}
               {conference.transcripts.names?.map((name) => (
-                <Button
+                <SurfaceButton
                   key={name}
                   type="button"
                   variant="outline"
@@ -487,7 +484,7 @@ function MeetReviewBodyInner({
                   onClick={() => void loadTranscript(name)}
                 >
                   {name}
-                </Button>
+                </SurfaceButton>
               )) ?? null}
               {conference.transcripts.state === "available" &&
               !conference.transcripts.names?.length ? (
@@ -522,7 +519,6 @@ function MeetReviewBodyInner({
                 <Button
                   type="button"
                   variant="outline"
-                  className="min-h-11"
                   disabled={busy !== null}
                   onClick={() =>
                     void loadTranscript(

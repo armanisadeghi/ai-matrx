@@ -394,6 +394,7 @@ export default function AcceptInvitationPage() {
             )}
           </Button>
           <Button
+            variant="primary"
             onClick={handleAccept}
             className="flex-1"
             disabled={accepting || declining}

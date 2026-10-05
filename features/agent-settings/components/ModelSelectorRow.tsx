@@ -145,8 +145,7 @@ export function ModelSelectorRow({
 
         <Button
           variant="outline"
-          size="sm"
-          className="h-7 w-7 p-0 shrink-0"
+          className="w-7 shrink-0"
           onClick={onSettingsClick}
           title="Model settings"
         >

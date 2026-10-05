@@ -23,7 +23,7 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "../../../host/notify";
 
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useAgentLauncher } from "../../../agents/hooks/useAgentLauncher";
 import { sourceFeatureFromSurfaceName } from "../../../agents/utils/source-feature-from-surface";
 import { useSurfaceAgentRoles } from "../../hooks/useSurfaceConfig";
@@ -98,15 +98,10 @@ export function SurfaceRoleAgentButton({
     <Button
       type="button"
       variant="outline"
-      size="sm"
       disabled={launching}
       onClick={() => void handleClick()}
       title={role.role.description}
-      className={cn(
-        "gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary",
-        size === "xs" && "h-6 px-2 text-[11px]",
-        className,
-      )}
+      className={className}
     >
       {launching ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />

@@ -176,27 +176,23 @@ export function OwnerSuggestionInbox({ header }: { header?: ReactNode } = {}) {
             {s.status === "open" ? (
               <div className="flex items-center gap-1 shrink-0">
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  icon={busy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Check className="text-emerald-600 dark:text-emerald-400" />
+                  )} aria-label="Accept"
+                  variant="quiet"
                   title="Accept"
                   disabled={busy}
                   onClick={() => resolve(s.id, "accepted")}
-                >
-                  {busy ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  )}
-                </Button>
+                />
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  icon={<X className="text-muted-foreground" />} aria-label="Decline"
+                  variant="quiet"
                   title="Decline"
                   disabled={busy}
                   onClick={() => resolve(s.id, "declined")}
-                >
-                  <X className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                />
               </div>
             ) : null}
           </div>

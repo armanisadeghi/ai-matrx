@@ -259,16 +259,16 @@ function DiagnosticCall({
           </Badge>
         </div>
         <Button
-          size="sm"
+          icon={state.loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Play />
+          )}
+          variant="primary"
           onClick={onRun}
           disabled={state.loading}
-          className="h-8 gap-1.5 shrink-0"
+          className="shrink-0"
         >
-          {state.loading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Play className="w-3.5 h-3.5" />
-          )}
           Run
         </Button>
       </div>

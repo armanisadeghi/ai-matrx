@@ -290,10 +290,11 @@ export function NewSurfaceDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void submit()}
             disabled={
               busy ||

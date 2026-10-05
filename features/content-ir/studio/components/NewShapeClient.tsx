@@ -516,28 +516,28 @@ function NewShapeForm({ agentId }: { agentId: string }) {
             // the agent's to choose and the client never learns it, so the
             // honest destination is the library it just appeared at the top of.
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button asChild className="h-11 flex-1 gap-2 text-sm">
+              <Button variant="primary" asChild className="flex-1">
                 <Link href={SHAPES_ALL_HREF}>
                   <ArrowRight className="h-4 w-4" aria-hidden />
                   See it in your Shapes
                 </Link>
               </Button>
               <Button
+                icon={<RotateCcw aria-hidden />}
                 variant="outline"
-                className="h-11 gap-2 text-sm"
                 onClick={() => {
                   setSubmitted(null);
                   setDone(false);
                   setAnswers(NEW_SHAPE_EMPTY_ANSWERS);
                 }}
               >
-                <RotateCcw className="h-4 w-4" aria-hidden />
                 Build another
               </Button>
             </div>
           ) : (
             <Button
-              className="h-11 w-full gap-2 text-sm"
+              variant="primary"
+              className="w-full"
               disabled={!ready || submitted !== null}
               onClick={() => setSubmitted(answers)}
             >
@@ -618,7 +618,7 @@ export default function NewShapeClient() {
           role here. Pick an agent for it in the header Agents menu, or check
           its mandate in the admin console.
         </p>
-        <Button variant="outline" size="sm" className="mt-4 gap-1.5" asChild>
+        <Button variant="outline" className="mt-4" asChild>
           <AppLink href="/shapes/all">
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden />
             Back to Shapes

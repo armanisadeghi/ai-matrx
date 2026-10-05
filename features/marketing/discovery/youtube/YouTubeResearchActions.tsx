@@ -271,43 +271,41 @@ export function YouTubeResearchActions({
     <div className="mt-5 space-y-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
+          icon={processing || isRunning ? (
+            <LoaderCircle className="animate-spin" />
+          ) : isComplete ? (
+            <CheckCircle2 />
+          ) : (
+            <Brain />
+          )}
+          variant="primary"
           type="button"
           onClick={() => void analyze(false)}
           disabled={processing || isRunning}
-          className="rounded-xl bg-red-500 text-white hover:bg-red-400"
         >
-          {processing || isRunning ? (
-            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-          ) : isComplete ? (
-            <CheckCircle2 className="mr-2 h-4 w-4" />
-          ) : (
-            <Brain className="mr-2 h-4 w-4" />
-          )}
           {isRunning ? "Analyzing…" : isComplete ? "Analyzed" : "Analyze"}
         </Button>
         <Button
+          icon={loadingComments ? (
+            <LoaderCircle className="animate-spin" />
+          ) : (
+            <MessageCircleMore />
+          )}
           type="button"
           variant="outline"
           onClick={() => void loadComments()}
           disabled={loadingComments}
-          className="rounded-xl"
         >
-          {loadingComments ? (
-            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <MessageCircleMore className="mr-2 h-4 w-4" />
-          )}
           Enrich comments
         </Button>
         {(status === "failed" || status === "partial") && (
           <Button
+            icon={<RefreshCw />}
             type="button"
-            variant="ghost"
+            variant="quiet"
             onClick={() => void analyze(true)}
             disabled={processing}
-            className="rounded-xl"
           >
-            <RefreshCw className="mr-2 h-4 w-4" />
             Retry
           </Button>
         )}

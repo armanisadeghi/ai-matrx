@@ -68,7 +68,7 @@ import { MergeCardsDialog } from "./MergeCardsDialog";
 import { toast } from "@/lib/toast";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@ai-matrx/design-system";
+import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -267,7 +267,7 @@ function IconAction({
   asTrigger?: boolean;
 }) {
   const button = (
-    <Button
+    <SurfaceButton
       variant="ghost"
       size="icon"
       aria-label={label}
@@ -276,7 +276,7 @@ function IconAction({
       className="h-9 w-9 text-muted-foreground hover:text-foreground"
     >
       {children}
-    </Button>
+    </SurfaceButton>
   );
   return (
     <TooltipProvider>
@@ -1170,7 +1170,7 @@ export function SetDetailView({
               <div className="flex items-center gap-2">
                 {deckEmpty ? (
                   canEdit && (
-                    <Button className="h-10 px-5" onClick={() => setGenerateOpen(true)}>
+                    <Button variant="primary" onClick={() => setGenerateOpen(true)}>
                       <AGENT_ICON className="mr-1.5 h-4 w-4" />
                       Generate cards
                     </Button>
@@ -1179,24 +1179,24 @@ export function SetDetailView({
                   <>
                     <div className="inline-flex rounded-lg shadow-sm">
                       <Button
+                        icon={pendingAction === "study" ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Play className="fill-current" />
+                        )}
+                        variant="primary"
                         onClick={() =>
                           navigate("study", `${EDU_BASE}/${setId}/study`)
                         }
                         disabled={isPending}
-                        className="h-10 rounded-r-none px-5 font-semibold"
                       >
-                        {pendingAction === "study" ? (
-                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Play className="mr-1.5 h-4 w-4 fill-current" />
-                        )}
                         Study
                       </Button>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
+                            variant="primary"
                             disabled={isPending}
-                            className="h-10 rounded-l-none border-l border-primary-foreground/20 px-2.5"
                             aria-label="More ways to study"
                           >
                             <ChevronDown className="h-4 w-4" />
@@ -1231,23 +1231,22 @@ export function SetDetailView({
                       title={data.set.name}
                     />
                     <Button
-                      variant="ghost"
-                      className="h-10"
+                      icon={pendingAction === "sessions" ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <TrendingUp />
+                      )}
+                      variant="quiet"
                       data-deck-action="progress"
                       onClick={() =>
                         navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
                       }
                       disabled={isPending}
                     >
-                      {pendingAction === "sessions" ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : (
-                        <TrendingUp className="mr-1.5 h-4 w-4" />
-                      )}
                       Progress
                     </Button>
                     {chatHref && (
-                      <Button asChild variant="ghost" className="h-10">
+                      <Button asChild variant="quiet">
                         <Link href={chatHref}>
                           <MessagesSquare className="mr-1.5 h-4 w-4" />
                           See chat
@@ -1429,17 +1428,17 @@ export function SetDetailView({
                 other way to study is one sheet, every deck tool another. */}
             <div className="mt-2 space-y-2 md:hidden">
               {deckEmpty && canEdit && (
-                <Button
+                <SurfaceButton
                   size="lg"
                   className="h-12 w-full"
                   onClick={() => setGenerateOpen(true)}
                 >
                   <AGENT_ICON className="mr-2 h-5 w-5" />
                   Generate cards
-                </Button>
+                </SurfaceButton>
               )}
               {!deckEmpty && (
-                <Button
+                <SurfaceButton
                   size="lg"
                   className="h-12 w-full text-base font-semibold"
                   onClick={() =>
@@ -1449,25 +1448,24 @@ export function SetDetailView({
                 >
                   <Play className="mr-2 h-5 w-5 fill-current" />
                   Study
-                </Button>
+                </SurfaceButton>
               )}
               <div className="grid grid-cols-2 gap-2">
                 {!deckEmpty && (
                   <Button
+                    icon={<GraduationCap />}
                     variant="outline"
-                    className="h-11"
                     onClick={() => setStudyModesOpen(true)}
                   >
-                    <GraduationCap className="mr-2 h-4 w-4" />
                     More ways
                   </Button>
                 )}
                 <Button
+                  icon={<Ellipsis />}
                   variant="outline"
-                  className={cn("h-11", deckEmpty && "col-span-2")}
+                  className={cn(deckEmpty && "col-span-2")}
                   onClick={() => setDeckToolsOpen(true)}
                 >
-                  <Ellipsis className="mr-2 h-4 w-4" />
                   Deck tools
                 </Button>
               </div>
@@ -1612,17 +1610,17 @@ export function SetDetailView({
                   </p>
                   {canEdit && (
                     <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
-                      <Button onClick={() => setGenerateOpen(true)}>
+                      <Button variant="primary" onClick={() => setGenerateOpen(true)}>
                         <AGENT_ICON className="mr-1.5 h-4 w-4" />
                         Generate cards
                       </Button>
                       <Button
+                        icon={<Pencil />}
                         variant="outline"
                         onClick={() =>
                           navigate("edit", `${EDU_BASE}/${setId}/edit`)
                         }
                       >
-                        <Pencil className="mr-1.5 h-4 w-4" />
                         Write cards
                       </Button>
                     </div>
@@ -1649,14 +1647,14 @@ export function SetDetailView({
                     </h2>
                       {canEdit && !selecting && (
                         <Button
-                          variant="ghost"
-                          className="-ml-1 h-11 shrink-0 px-2.5 text-muted-foreground lg:h-8"
+                          icon={<MousePointerClick />}
+                          variant="quiet"
+                          className="-ml-1 shrink-0"
                           onClick={() => {
                             changeView("overview");
                             setSelecting(true);
                           }}
                         >
-                          <MousePointerClick className="mr-1.5 h-4 w-4" />
                           Select
                         </Button>
                       )}
@@ -1680,7 +1678,8 @@ export function SetDetailView({
                               : `${selectedIds.size} selected`}
                           </span>
                           <Button
-                            size="sm"
+                            icon={<Lightbulb />}
+                            variant="primary"
                             onClick={() => void runBulkEnrich()}
                             disabled={
                               selectedIds.size === 0 ||
@@ -1689,11 +1688,10 @@ export function SetDetailView({
                             }
                             title="Add explanations, examples and memory tricks to just these cards — a card you pick is enriched even if it already has layers"
                           >
-                            <Lightbulb className="mr-1.5 h-3.5 w-3.5" />
                             Enrich selected ({selectedIds.size})
                           </Button>
                           <Button
-                            size="sm"
+                            icon={<Merge />}
                             variant="outline"
                             onClick={() => setMergeOpen(true)}
                             disabled={!canMergeSelection}
@@ -1703,13 +1701,11 @@ export function SetDetailView({
                                 : "Pick two or more basic or cloze cards — other kinds can't be merged"
                             }
                           >
-                            <Merge className="mr-1.5 h-3.5 w-3.5" />
                             Merge{" "}
                             {selectedIds.size >= 2 ? selectedIds.size : ""}
                           </Button>
                           <Button
-                            size="sm"
-                            variant="ghost"
+                            variant="quiet"
                             onClick={() => {
                               setSelecting(false);
                               setSelectedIds(new Set());
@@ -1720,12 +1716,11 @@ export function SetDetailView({
                         </>
                       ) : (
                         <Button
-                          size="sm"
+                          icon={<MousePointerClick />}
                           variant="outline"
                           onClick={() => setSelecting(true)}
                           disabled={data.cards.length === 0}
                         >
-                          <MousePointerClick className="mr-1.5 h-3.5 w-3.5" />
                           Select cards
                         </Button>
                       )}
@@ -1852,7 +1847,7 @@ export function SetDetailView({
                 </DrawerHeader>
                 <div className="grid gap-2 overflow-y-auto px-4 pb-safe">
                   {STUDY_MODES.map((mode) => (
-                    <Button
+                    <SurfaceButton
                       key={mode.key}
                       variant="ghost"
                       className="h-auto min-h-14 justify-start px-3 py-2 text-left"
@@ -1865,7 +1860,7 @@ export function SetDetailView({
                           {mode.description}
                         </span>
                       </span>
-                    </Button>
+                    </SurfaceButton>
                   ))}
                 </div>
               </DrawerContent>
@@ -1887,34 +1882,34 @@ export function SetDetailView({
                     <div className="grid grid-cols-2 gap-2">
                       {canEdit && (
                         <Button
+                          icon={<Pencil />}
                           variant="outline"
-                          className="h-11 justify-start md:hidden"
+                          className="justify-start md:hidden"
                           onClick={() =>
                             navigate("edit", `${EDU_BASE}/${setId}/edit`)
                           }
-                        >
-                          <Pencil className="mr-2 h-4 w-4" /> Edit
+                        > Edit
                         </Button>
                       )}
                       <Button
+                        icon={<TrendingUp />}
                         variant="outline"
-                        className="h-11 justify-start"
+                        className="justify-start"
                         onClick={() =>
                           navigate("sessions", `${EDU_BASE}/${setId}/sessions`)
                         }
-                      >
-                        <TrendingUp className="mr-2 h-4 w-4" /> Progress
+                      > Progress
                       </Button>
                       {canEdit && (
                         <Button
+                          icon={<Settings2 />}
                           variant="outline"
-                          className="h-11 justify-start"
+                          className="justify-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
                             setSettingsOpen(true);
                           }}
-                        >
-                          <Settings2 className="mr-2 h-4 w-4" /> Deck settings
+                        > Deck settings
                         </Button>
                       )}
                       {(access.isOwner || access.level === "admin") && (
@@ -1931,7 +1926,7 @@ export function SetDetailView({
                         <Button
                           asChild
                           variant="outline"
-                          className="h-11 justify-start"
+                          className="justify-start"
                         >
                           <Link href={chatHref}>
                             <MessagesSquare className="mr-2 h-4 w-4" /> See chat
@@ -1948,14 +1943,14 @@ export function SetDetailView({
                       )}
                       {!deckEmpty && (
                         <Button
+                          icon={<Printer />}
                           variant="outline"
-                          className="h-11 justify-start"
+                          className="justify-start"
                           onClick={() => {
                             setDeckToolsOpen(false);
                             handlePrint();
                           }}
-                        >
-                          <Printer className="mr-2 h-4 w-4" /> Print
+                        > Print
                         </Button>
                       )}
                       {/* This deck is one printable; the hub is the index of
@@ -1963,8 +1958,8 @@ export function SetDetailView({
                           labels, codes, booklets, printed copies). */}
                       <Button
                         asChild
-                        variant="ghost"
-                        className="h-11 justify-start"
+                        variant="quiet"
+                        className="justify-start"
                         onClick={() => setDeckToolsOpen(false)}
                       >
                         <Link href="/print">
@@ -1983,12 +1978,12 @@ export function SetDetailView({
                       {(["csv", "anki", "md", "json"] as const).map(
                         (format) => (
                           <Button
+                            icon={<Download />}
                             key={format}
                             variant="outline"
-                            className="h-11 justify-start"
+                            className="justify-start"
                             onClick={() => exportDeck(format)}
                           >
-                            <Download className="mr-2 h-4 w-4" />
                             {DECK_EXPORT_FILE[format].label}
                           </Button>
                         ),
@@ -2004,11 +1999,11 @@ export function SetDetailView({
                       </h2>
                       <div className="grid gap-2">
                         <Button
+                          icon={<Volume2 />}
                           variant="outline"
-                          className="h-11 justify-start"
+                          className="justify-start"
                           onClick={() => startAudioJob("generate")}
                         >
-                          <Volume2 className="mr-2 h-4 w-4" />
                           {data.set.audio_overview_file_id
                             ? "Regenerate audio overview"
                             : "Generate audio overview"}
@@ -2023,13 +2018,13 @@ export function SetDetailView({
                           const done = ready >= total;
                           return (
                             <Button
+                              icon={<Icon />}
                               key={lane}
                               variant="outline"
-                              className="h-11 justify-start"
+                              className="justify-start"
                               disabled={done}
                               onClick={() => startAudioJob(lane)}
                             >
-                              <Icon className="mr-2 h-4 w-4" />
                               {done
                                 ? `${noun.charAt(0).toUpperCase()}${noun.slice(1)} ready`
                                 : ready > 0
@@ -2047,14 +2042,14 @@ export function SetDetailView({
                         Cards
                       </h2>
                       <Button
+                        icon={<MousePointerClick />}
                         variant="outline"
-                        className="h-11 w-full justify-start"
+                        className="w-full justify-start"
                         onClick={() => {
                           setDeckToolsOpen(false);
                           setSelecting(true);
                         }}
                       >
-                        <MousePointerClick className="mr-2 h-4 w-4" />
                         Select cards to enrich or merge
                       </Button>
                     </section>

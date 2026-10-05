@@ -328,7 +328,8 @@ export function SetupCommitBar({
         </p>
       ) : null}
       <Button
-        className="h-9 w-full gap-2"
+        variant="primary"
+        className="w-full"
         disabled={committing || disabledReason !== null || newCount === 0}
         onClick={onCommit}
       >

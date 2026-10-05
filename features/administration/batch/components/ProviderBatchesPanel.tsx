@@ -163,15 +163,13 @@ function ProviderBatchDetail({
   return (
     <div className="space-y-3">
       <Button
+        icon={<ListFilter />}
         variant="outline"
-        size="sm"
-        className="h-7 text-xs"
         onClick={(e) => {
           e.stopPropagation();
           onShowItems(row.id);
         }}
       >
-        <ListFilter className="mr-1.5 h-3.5 w-3.5" />
         Show its {fmtInt(row.request_count)}{" "}
         {row.request_count === 1 ? "work item" : "work items"}
       </Button>

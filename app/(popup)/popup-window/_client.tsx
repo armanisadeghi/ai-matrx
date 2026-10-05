@@ -92,7 +92,6 @@ export default function PopupWindowClient() {
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
-              size="sm"
               onClick={() =>
                 updateState((s) => ({ ...s, counter: s.counter - 1 }))
               }
@@ -104,7 +103,6 @@ export default function PopupWindowClient() {
             </div>
             <Button
               variant="outline"
-              size="sm"
               onClick={() =>
                 updateState((s) => ({ ...s, counter: s.counter + 1 }))
               }
@@ -129,7 +127,7 @@ export default function PopupWindowClient() {
       </div>
 
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={() => window.close()}>
+        <Button variant="outline" onClick={() => window.close()}>
           Close window
         </Button>
       </div>

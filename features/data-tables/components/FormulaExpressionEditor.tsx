@@ -20,7 +20,7 @@ import { useState } from "react";
 import { AlertCircle, CheckCircle2, FunctionSquare } from "lucide-react";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { Label } from "@/components/ui/label";
 import {

@@ -297,8 +297,7 @@ function ThreadTaskBody({
             footerAppend={
               <Button
                 type="button"
-                size="sm"
-                variant={railOpen ? "secondary" : "ghost"}
+                variant={railOpen ? "outline" : "quiet"}
                 onClick={() => {
                   if (railOpen) {
                     setRailOpen(false);
@@ -311,7 +310,7 @@ function ThreadTaskBody({
                     setRailAutoFocus(true);
                   }
                 }}
-                className="h-6 w-6 shrink-0 p-0"
+                className="w-6 shrink-0"
                 aria-pressed={railOpen}
                 title={railOpen ? "Hide subtasks" : "Add / open subtasks"}
                 aria-label={railOpen ? "Hide subtasks" : "Add / open subtasks"}

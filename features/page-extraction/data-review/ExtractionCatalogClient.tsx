@@ -366,16 +366,13 @@ export function ExtractionCatalogClient() {
                       },
                       render: () => (
                         <Button
+                          icon={<Filter />}
                           variant={
-                            showFilter || filterScopeIds.length > 0
-                              ? "default"
-                              : "outline"
+                            showFilter || filterScopeIds.length > 0 ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setShowFilter((value) => !value)}
                           title="Filter by scope"
                         >
-                          <Filter className="h-4 w-4 sm:mr-2" />
                           <span className="hidden sm:inline">
                             Scopes
                             {filterScopeIds.length > 0

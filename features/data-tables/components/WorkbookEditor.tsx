@@ -36,7 +36,7 @@ import "@univerjs/preset-sheets-core/lib/index.css";
 
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useToolToggle } from "@/features/canvas/host/toolCanvas";
 import { toast } from "@/components/ui/use-toast";

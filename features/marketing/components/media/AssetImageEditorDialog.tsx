@@ -299,17 +299,16 @@ function AssetEditorBody({
               <Tooltip key={slot.id}>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+                    icon={rendering ? (
+                      <Loader2 className="animate-spin" />
+                    ) : done ? (
+                      <Check className="text-emerald-500" />
+                    ) : null}
+                    variant="quiet"
+                    className="shrink-0"
                     disabled={renderingSlotId !== null}
                     onClick={() => void renderSlot(slot)}
                   >
-                    {rendering ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : done ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-500" />
-                    ) : null}
                     {humanizeIdentifier(slot.name)}
                     <span className="font-mono text-[10px] tabular-nums text-muted-foreground">
                       {slot.width}×{slot.height}

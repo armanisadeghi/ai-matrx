@@ -336,7 +336,7 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
     >
       <div className="space-y-4 p-4 sm:p-6">
         <div className="space-y-1">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 h-8">
+          <Button asChild variant="quiet" className="-ml-2">
             <Link href={leavePolicyHref(policyId, orgRef)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to the policy
@@ -426,16 +426,16 @@ export function LeaveEnrollmentSurface({ policyId }: { policyId: string }) {
                   />
                 </div>
                 <Button
+                  icon={busy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <UserPlus />
+                  )}
+                  variant="primary"
                   type="button"
                   disabled={busy || selectedIds.length === 0}
                   onClick={() => void enrol()}
-                  className="min-h-11 sm:min-h-9"
                 >
-                  {busy ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <UserPlus className="mr-2 h-4 w-4" />
-                  )}
                   Enrol {selectedIds.length > 0 ? selectedIds.length : ""}
                 </Button>
               </div>

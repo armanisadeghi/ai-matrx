@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Printer, FileDown, Crosshair, Trash2 } from 'lucide-react';
 import Papa from 'papaparse';
@@ -118,8 +118,7 @@ const QRLabelsPage = () => {
               </option>
             ))}
           </select>
-          <Button variant="outline" size="sm" onClick={() => printCalibrationSheet(template)}>
-            <Crosshair className="w-4 h-4 mr-1.5" />
+          <Button icon={<Crosshair />} variant="outline" onClick={() => printCalibrationSheet(template)}>
             Calibration page
           </Button>
         </CardContent>
@@ -170,7 +169,7 @@ const QRLabelsPage = () => {
                   />
                 </div>
               ))}
-              <Button onClick={handleManualEntry} disabled={!qrValue.trim()}>Add Label</Button>
+              <Button variant="primary" onClick={handleManualEntry} disabled={!qrValue.trim()}>Add Label</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -200,25 +199,23 @@ const QRLabelsPage = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
-                <Button onClick={triggerPrint} disabled={!labels.length}>
-                  <Printer className="w-4 h-4 mr-1.5" />
+                <Button icon={<Printer />} variant="primary" onClick={triggerPrint} disabled={!labels.length}>
                   Print label sheet
                 </Button>
                 <Button
+                  icon={<FileDown />}
                   variant="outline"
                   onClick={handleDownloadPdf}
                   disabled={!labels.length || isDownloading}
                 >
-                  <FileDown className="w-4 h-4 mr-1.5" />
                   {isDownloading ? 'Generating PDF…' : 'Download PDF'}
                 </Button>
                 <Button
-                  variant="ghost"
+                  icon={<Trash2 />}
+                  variant="quiet"
                   onClick={() => setLabels([])}
                   disabled={!labels.length}
-                  className="text-muted-foreground"
                 >
-                  <Trash2 className="w-4 h-4 mr-1.5" />
                   Clear all
                 </Button>
               </div>
@@ -231,7 +228,6 @@ const QRLabelsPage = () => {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => setPageIndex((p) => Math.max(0, p - 1))}
                           disabled={pageIndex === 0}
                         >
@@ -242,7 +238,6 @@ const QRLabelsPage = () => {
                         </span>
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => setPageIndex((p) => Math.min(pageCount - 1, p + 1))}
                           disabled={pageIndex >= pageCount - 1}
                         >
@@ -272,14 +267,14 @@ const QRLabelsPage = () => {
                             <p key={i} className="text-xs text-muted-foreground truncate">{text}</p>
                           ))}
                         </div>
-                        <Button
+                        <SurfaceButton
                           variant="ghost"
                           size="icon"
                           className="h-6 w-6 shrink-0"
                           onClick={() => setLabels((prev) => prev.filter((_, i) => i !== index))}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
+                        </SurfaceButton>
                       </div>
                     ))}
                     {!labels.length && (

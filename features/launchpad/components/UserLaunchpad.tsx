@@ -139,16 +139,13 @@ export default function UserLaunchpad() {
           <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
             <span className="hidden sm:inline">Stays current while open</span>
             <Button
+              icon={<RefreshCw />}
               type="button"
-              size="icon"
-              className="h-8 w-8"
               variant="outline"
               onClick={() => window.location.reload()}
               aria-label="Refresh Launchpad"
               title="Refresh Launchpad"
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
+            />
           </div>
         </section>
 
@@ -410,10 +407,9 @@ function LaunchpadFolderCard({
         {remainingCount > 0 ? (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onShowAll}
-            className="mt-0.5 h-8 w-full justify-start px-2 text-xs text-muted-foreground"
+            className="mt-0.5 w-full justify-start"
           >
             View all {group.destinations.length} destinations
           </Button>

@@ -38,7 +38,7 @@ import { useState } from "react";
 import { KeyRound, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { setEmploymentPin } from "@/features/hr/time/api/service";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -122,12 +122,12 @@ export function SetKioskPinCard({
   if (!open) {
     return (
       <Button
+        icon={<KeyRound />}
         type="button"
         variant="outline"
         onClick={() => setOpen(true)}
-        className="min-h-[48px] w-full gap-2"
+        className="w-full"
       >
-        <KeyRound className="size-4" />
         {hr ? "Set or reset this person's time clock PIN" : "Set my time clock PIN"}
       </Button>
     );
@@ -218,7 +218,7 @@ export function SetKioskPinCard({
       {refusal && <p className="text-sm text-foreground">{refusal} <ErrorAlchemyMenu error={refusal} /></p>}
 
       <div className="flex flex-col gap-2">
-        <Button
+        <SurfaceButton
           type="button"
           disabled={!canSubmit}
           onClick={() => void save()}
@@ -226,10 +226,10 @@ export function SetKioskPinCard({
         >
           {busy && <Loader2 className="size-4 animate-spin" />}
           {hr ? "Save this PIN" : "Save my PIN"}
-        </Button>
+        </SurfaceButton>
         <Button
           type="button"
-          variant="ghost"
+          variant="quiet"
           disabled={busy}
           onClick={() => {
             setOpen(false);
@@ -237,7 +237,6 @@ export function SetKioskPinCard({
             setConfirmPin("");
             setRefusal(null);
           }}
-          className="min-h-[48px]"
         >
           Cancel
         </Button>

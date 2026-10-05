@@ -50,12 +50,10 @@ export function AdoptSignature({
       </div>
       {canType && canDraw && (
         <div className="flex gap-1">
-          <Button size="sm" variant={mark === "typed" ? "secondary" : "ghost"} onClick={() => onMark("typed")}>
-            <TypeIcon className="mr-1 h-3.5 w-3.5" />
+          <Button icon={<TypeIcon />} variant={mark === "typed" ? "outline" : "quiet"} onClick={() => onMark("typed")}>
             Type
           </Button>
-          <Button size="sm" variant={mark === "drawn" ? "secondary" : "ghost"} onClick={() => onMark("drawn")}>
-            <PenLine className="mr-1 h-3.5 w-3.5" />
+          <Button icon={<PenLine />} variant={mark === "drawn" ? "outline" : "quiet"} onClick={() => onMark("drawn")}>
             Draw
           </Button>
         </div>

@@ -176,9 +176,8 @@ export function LibraryBrowser({
         {isSignedIn && (
           <Button
             asChild
-            variant={openSuggestionCount > 0 ? "default" : "outline"}
-            size="sm"
-            className="ml-auto gap-1.5 shrink-0"
+            variant={openSuggestionCount > 0 ? "primary" : "outline"}
+            className="ml-auto shrink-0"
           >
             <Link href="/education/library/suggestions">
               <Lightbulb className="h-4 w-4" />
@@ -214,11 +213,11 @@ export function LibraryBrowser({
           />
         </div>
         <Button
-          variant={certifiedOnly ? "default" : "outline"}
+          icon={<ShieldCheck />}
+          variant={certifiedOnly ? "primary" : "outline"}
           onClick={() => setCertifiedOnly((v) => !v)}
-          className="gap-1.5 shrink-0"
+          className="shrink-0"
         >
-          <ShieldCheck className="h-4 w-4" />
           Certified only
         </Button>
       </div>

@@ -66,9 +66,8 @@ const PositionControl: React.FC<PositionControlProps> = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-8 p-0"
+              variant="quiet"
+              className="w-8"
               aria-label="Change panel position"
             >
               <GripVertical className="h-3 w-3 text-muted-foreground" />
@@ -313,12 +312,10 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
         )}
       >
         <Button
+          icon={<ChevronIcon />}
           variant="outline"
-          size="sm"
           onClick={handleToggle}
-          className="bg-background border shadow-md h-6 px-2 py-1 text-xs"
         >
-          <ChevronIcon className="h-3 w-3 mr-1" />
           {expandButtonProps.label}
         </Button>
       </div>
@@ -398,10 +395,9 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={handleFullScreenToggle}
-                        className="h-6 w-8 p-0"
+                        className="w-8"
                         aria-label={
                           isFullScreen
                             ? "Exit panel full screen"
@@ -424,10 +420,9 @@ const MatrxDynamicPanel: React.FC<MatrxDynamicPanelProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={handleToggle}
-                    className="h-6 w-8 p-0"
+                    className="w-8"
                     aria-label="Collapse panel"
                   >
                     <ChevronIcon className="h-3 w-3" />

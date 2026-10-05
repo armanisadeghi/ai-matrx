@@ -237,15 +237,15 @@ export function ManualCompetitorAdd({
             disabled={!site}
           />
           <Button
+            icon={busy === "search" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Search />
+            )}
+            variant="primary"
             onClick={() => void search()}
             disabled={!site || name.trim().length < 2 || busy !== null}
-            className="gap-2"
-          >
-            {busy === "search" ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Search className="size-4" />
-            )}{" "}
+          >{" "}
             Find site
           </Button>
         </div>
@@ -274,16 +274,16 @@ export function ManualCompetitorAdd({
                   </p>
                 </div>
                 <Button
-                  size="sm"
+                  icon={busy === result.domain ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Plus />
+                  )}
+                  variant="primary"
                   onClick={() => void add(result)}
                   disabled={busy !== null}
-                  className="shrink-0 gap-1"
-                >
-                  {busy === result.domain ? (
-                    <Loader2 className="size-3 animate-spin" />
-                  ) : (
-                    <Plus className="size-3" />
-                  )}{" "}
+                  className="shrink-0"
+                >{" "}
                   Add
                 </Button>
               </div>
@@ -535,6 +535,12 @@ export function CompetitorClassificationEditor({
           Save changes
         </Button>
         <Button
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check />
+          )}
+          variant="primary"
           disabled={
             saving ||
             !draft.business_overlap ||
@@ -543,13 +549,7 @@ export function CompetitorClassificationEditor({
             !draft.posture
           }
           onClick={() => void save(true)}
-          className="gap-2"
-        >
-          {saving ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Check className="size-4" />
-          )}{" "}
+        >{" "}
           Confirm classification
         </Button>
       </div>

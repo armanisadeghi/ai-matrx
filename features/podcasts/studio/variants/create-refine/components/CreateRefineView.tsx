@@ -159,7 +159,7 @@ export function CreateRefineView() {
           The podcast studio turns any idea, document, or note into a fully
           produced two-host episode — with cover art, video, and audio.
         </p>
-        <Button asChild className="gap-2">
+        <Button variant="primary" asChild>
           <Link href="/login?next=/podcast/studio/create-refine">
             <LogIn className="h-4 w-4" />
             Sign in
@@ -266,16 +266,16 @@ export function CreateRefineView() {
                 : "Add a source to begin."}
           </p>
           <Button
-            size="lg"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <AudioLines />
+            )}
+            variant="primary"
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="ml-auto gap-2 shadow-md"
+            className="ml-auto"
           >
-            {busy ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin" />
-            ) : (
-              <AudioLines className="h-4.5 w-4.5" />
-            )}
             {busy ? "Starting…" : "Generate episode"}
           </Button>
         </div>

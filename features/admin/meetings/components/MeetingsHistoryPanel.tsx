@@ -225,9 +225,7 @@ export function MeetingsHistoryPanel({
         {filtersActive ? (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={() => {
               setDraftQuery("");
               setSearch({ query: "", state: null, from: null, to: null });
@@ -237,7 +235,7 @@ export function MeetingsHistoryPanel({
             Clear
           </Button>
         ) : null}
-        <Button type="button" variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => setNonce((n) => n + 1)}>Refresh</Button>
+        <Button type="button" variant="quiet" className="ml-auto" onClick={() => setNonce((n) => n + 1)}>Refresh</Button>
       </form>
 
       {error ? (
@@ -272,7 +270,7 @@ export function MeetingsHistoryPanel({
       {rows.length < total ? (
         <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
           Showing {formatCount(rows.length)} of {formatCount(total)} matching meetings.
-          <Button type="button" variant="outline" size="sm" className="h-7 text-xs" disabled={loading} onClick={() => void loadMore()}>
+          <Button type="button" variant="outline" disabled={loading} onClick={() => void loadMore()}>
             Load {formatCount(Math.min(HISTORY_PAGE_SIZE, total - rows.length))} more
           </Button>
         </div>

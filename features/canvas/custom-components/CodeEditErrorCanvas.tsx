@@ -101,9 +101,7 @@ export function CodeEditErrorCanvas({
               Raw AI Response
             </h4>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2"
+              variant="quiet"
               onClick={handleCopyResponse}
             >
               {isCopied ? (

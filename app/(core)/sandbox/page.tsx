@@ -370,8 +370,8 @@ export default function SandboxListPage() {
           {historyOpen && historicalInstances.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               <Button
+                icon={<Trash2 />}
                 variant="outline"
-                size="sm"
                 disabled={
                   selectedHistoryCount === 0 ||
                   historyDeleting ||
@@ -381,12 +381,10 @@ export default function SandboxListPage() {
                 }
                 onClick={() => setHistoryDeleteMode("selected")}
               >
-                <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                 Delete selected ({selectedHistoryCount})
               </Button>
               <Button
-                variant="destructive"
-                size="sm"
+                variant="danger"
                 disabled={
                   historyDeleting || loading || refreshing || Boolean(error)
                 }
@@ -531,10 +529,11 @@ export default function SandboxListPage() {
                   Cancel
                 </Button>
                 <Button
+                  icon={<Plus />}
+                  variant="primary"
                   onClick={handleCreate}
                   disabled={createForm.loadingTemplates || creating}
                 >
-                  <Plus className="w-4 h-4 mr-2" />
                   Create Sandbox
                 </Button>
               </DialogFooter>
@@ -579,12 +578,11 @@ export default function SandboxListPage() {
                 >
                   Cancel
                 </Button>
-                <Button variant="destructive" disabled={deleteTargetBusy} onClick={() => {
+                <Button icon={<Trash2 />} variant="danger" disabled={deleteTargetBusy} onClick={() => {
                   const target = deleteTarget;
                   setDeleteTarget(null);
                   if (target) void handleDelete(target);
                 }}>
-                  <Trash2 className="w-4 h-4 mr-2" />
                   Delete Sandbox
                 </Button>
               </AlertDialogFooter>

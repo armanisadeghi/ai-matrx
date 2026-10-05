@@ -22,7 +22,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import AdvancedMenu, { MenuItem } from '@/components/official/AdvancedMenu';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -440,13 +440,8 @@ export function NotesSidebar({
                                         onContextMenu={(e) => handleFolderContextMenu(e, group.folder_name, group.count)}
                                     >
                                         <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className={cn(
-                                                "h-5 px-1 justify-start text-xs font-medium text-foreground transition-colors",
-                                                "flex-1 min-w-0",
-                                                isDropTarget && "bg-primary/10 border-2 border-dashed border-primary"
-                                            )}
+                                            variant="quiet"
+                                            className="justify-start flex-1 min-w-0"
                                             onClick={() => hasNotes && toggleFolder(group.folder_name)}
                                         >
                                             {/* Chevron - always show for consistency */}
@@ -476,16 +471,14 @@ export function NotesSidebar({
                                             <Tooltip>
                                                 <TooltipTrigger asChild>
                                                     <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-5 w-5 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        icon={<Plus />} aria-label="New Note in Folder"
+                                                        variant="quiet"
+                                                        className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             onCreateNote(group.folder_name);
                                                         }}
-                                                    >
-                                                        <Plus className="h-2.5 w-2.5" />
-                                                    </Button>
+                                                    />
                                                 </TooltipTrigger>
                                                 <TooltipContent side="right">New Note in Folder</TooltipContent>
                                             </Tooltip>
@@ -511,7 +504,7 @@ export function NotesSidebar({
                                                         onDrop={handleDrop(group.folder_name)}
                                                         onContextMenu={(e) => handleNoteContextMenu(e, note)}
                                                     >
-                                                        <Button
+                                                        <SurfaceButton
                                                             variant="ghost"
                                                             size="sm"
                                                             className={cn(
@@ -526,9 +519,9 @@ export function NotesSidebar({
                                                             <span className="truncate flex-1 text-left min-w-0">
                                                                 {note.label}
                                                             </span>
-                                                        </Button>
+                                                        </SurfaceButton>
                                                         
-                                                        <Button
+                                                        <SurfaceButton
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-5 w-5 p-0 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -538,7 +531,7 @@ export function NotesSidebar({
                                                             }}
                                                         >
                                                             <Trash2 className="h-2.5 w-2.5 text-destructive" />
-                                                        </Button>
+                                                        </SurfaceButton>
                                                     </div>
                                                 );
                                             })}

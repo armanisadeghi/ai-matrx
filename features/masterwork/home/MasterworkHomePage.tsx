@@ -187,7 +187,7 @@ function HomeMasterworkCard({ masterwork: m }: { masterwork: HomeMasterwork }) {
       <div className="mt-auto flex items-center justify-between pt-3">
         <QualityTrend latest={m.qualityLatest} previous={m.qualityPrevious} />
         {m.released_at !== null && !m.is_archived ? (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={masterworkHref(m.id)}>
               <Play className="mr-1 h-3.5 w-3.5" />
               Run
@@ -303,13 +303,13 @@ export function MasterworkHomePage() {
       {/* Primary actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild size="sm">
+          <Button variant="primary" asChild>
             <Link href="/masterwork/new">
               <Plus className="mr-1 h-4 w-4" />
               New Rulebook
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href="/masterwork/encore">
               <Zap className="mr-1 h-4 w-4" />
               Encore
@@ -406,7 +406,7 @@ export function MasterworkHomePage() {
               A Rulebook is your judgment, written down as rules you approve —
               one conversation is enough to start.
             </p>
-            <Button asChild size="sm" className="mt-3">
+            <Button variant="primary" asChild className="mt-3">
               <Link href="/masterwork/new">
                 <Plus className="mr-1 h-4 w-4" />
                 Start your first Rulebook

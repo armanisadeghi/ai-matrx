@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { toast } from "../../../host/notify";
@@ -167,28 +167,27 @@ export default function SendToAgentWindow({
         ? {
             footerLeft: (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<ArrowLeft />}
+                variant="quiet"
                 onClick={() => setAgentId(null)}
                 disabled={isOpening}
               >
-                <ArrowLeft className="mr-1 h-4 w-4" />
                 Back
               </Button>
             ),
             footerRight: (
               <>
-                <Button variant="outline" size="sm" onClick={onClose}>
+                <Button variant="outline" onClick={onClose}>
                   Cancel
                 </Button>
                 <Button
-                  size="sm"
+                  icon={isOpening ? (
+                    <Loader2 className="animate-spin" />
+                  ) : null}
+                  variant="primary"
                   onClick={handleOpen}
                   disabled={load.status !== "ready" || isOpening || !selected}
                 >
-                  {isOpening ? (
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  ) : null}
                   Open
                 </Button>
               </>
@@ -221,7 +220,6 @@ export default function SendToAgentWindow({
                   <ErrorAlchemyMenu error={load.message} />
                 </span>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setAttempt((n) => n + 1)}
                 >

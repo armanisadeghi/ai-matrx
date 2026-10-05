@@ -261,24 +261,21 @@ export function TriadInputSection({
             <DraftInputsEditor items={draft} onChange={setDraft} />
             <div className="flex items-center gap-1.5">
               <Button
-                size="sm"
-                className="h-7 gap-1 text-[12px]"
+                icon={<Check />}
+                variant="primary"
                 disabled={saving}
                 onClick={() => void save()}
               >
-                <Check className="h-3.5 w-3.5" />
                 {saving ? "Saving…" : "Save"}
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-[12px]"
+                icon={<X />}
+                variant="quiet"
                 onClick={() => {
                   setDraft(draftInputs);
                   setEditing(false);
                 }}
               >
-                <X className="h-3.5 w-3.5" />
                 Cancel
               </Button>
             </div>
@@ -682,24 +679,21 @@ export function TriadGoalSection({
             />
             <div className="flex items-center gap-1.5">
               <Button
-                size="sm"
-                className="h-7 gap-1 text-[12px]"
+                icon={<Check />}
+                variant="primary"
                 disabled={saving}
                 onClick={() => void save()}
               >
-                <Check className="h-3.5 w-3.5" />
                 {saving ? "Saving…" : "Save goal"}
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-[12px]"
+                icon={<X />}
+                variant="quiet"
                 onClick={() => {
                   setDraft(goal ?? "");
                   setEditing(false);
                 }}
               >
-                <X className="h-3.5 w-3.5" />
                 Cancel
               </Button>
               <FieldHelp label="Save goal">

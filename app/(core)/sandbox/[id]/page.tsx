@@ -638,12 +638,11 @@ export default function SandboxDetailPage() {
                     <p className="mt-1 text-xs text-destructive">{nameError} <ErrorAlchemyMenu error={nameError} /></p>
                   )}
                 </div>
-                <Button type="submit" size="sm" disabled={nameSaving}>
+                <Button variant="primary" type="submit" disabled={nameSaving}>
                   {nameSaving ? "Saving…" : "Save name"}
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
                   disabled={nameSaving}
                   onClick={() => setRenaming(false)}
@@ -748,10 +747,9 @@ export default function SandboxDetailPage() {
                 </CardTitle>
                 {terminalHistory.length > 0 && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    type="submit"
+                    variant="quiet"
                     onClick={handleCopyTerminal}
-                    className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1.5"
                   >
                     {copied ? (
                       <>
@@ -962,17 +960,16 @@ export default function SandboxDetailPage() {
                     {/* Force Stop */}
                     {isActive && (
                       <Button
+                        icon={adminActionLoading === "stop" ? (
+                          <RefreshCw className="animate-spin" />
+                        ) : (
+                          <Square />
+                        )}
+                        type="submit"
                         variant="outline"
-                        size="sm"
-                        className="gap-1.5 border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/30"
                         disabled={!!adminActionLoading}
                         onClick={() => setForceStopOpen(true)}
                       >
-                        {adminActionLoading === "stop" ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Square className="w-3.5 h-3.5" />
-                        )}
                         Force Stop
                       </Button>
                     )}
@@ -980,9 +977,13 @@ export default function SandboxDetailPage() {
                     {/* View Logs (run `journalctl` or `tail /var/log/...` in the container) */}
                     {isActive && (
                       <Button
+                        icon={fetchingLogs ? (
+                          <RefreshCw className="animate-spin" />
+                        ) : (
+                          <ScrollText />
+                        )}
+                        type="submit"
                         variant="outline"
-                        size="sm"
-                        className="gap-1.5"
                         disabled={!!adminActionLoading}
                         onClick={async () => {
                           setFetchingLogs(true);
@@ -1023,42 +1024,35 @@ export default function SandboxDetailPage() {
                           }
                         }}
                       >
-                        {fetchingLogs ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <ScrollText className="w-3.5 h-3.5" />
-                        )}
                         View Logs
                       </Button>
                     )}
 
                     {/* Direct API Inspect */}
                     <Button
+                      icon={<Network />}
+                      type="submit"
                       variant="outline"
-                      size="sm"
-                      className="gap-1.5"
                       onClick={() => {
                         window.open(`/api/sandbox/${id}`, "_blank");
                       }}
                     >
-                      <Network className="w-3.5 h-3.5" />
                       API Inspect
                     </Button>
 
                     {/* Extend TTL for admin debugging */}
                     {isActive && (
                       <Button
+                        icon={lifecycleBusy === "extend" ? (
+                          <RefreshCw className="animate-spin" />
+                        ) : (
+                          <Clock />
+                        )}
+                        type="submit"
                         variant="outline"
-                        size="sm"
-                        className="gap-1.5"
                         disabled={!!adminActionLoading || lifecycleBusy !== null}
                         onClick={() => void handleExtend(3600)}
                       >
-                        {lifecycleBusy === "extend" ? (
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <Clock className="w-3.5 h-3.5" />
-                        )}
                         +1h Debug Time
                       </Button>
                     )}
@@ -1119,10 +1113,10 @@ export default function SandboxDetailPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+            <Button type="submit" variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" disabled={lifecycleBusy !== null} onClick={() => {
+            <Button type="submit" variant="danger" disabled={lifecycleBusy !== null} onClick={() => {
               setDeleteOpen(false);
               void handleDelete();
             }}>
@@ -1134,7 +1128,7 @@ export default function SandboxDetailPage() {
       <AlertDialog open={forceStopOpen} onOpenChange={setForceStopOpen}>
         <AlertDialogContent>
           <AlertDialogHeader><AlertDialogTitle>Force stop sandbox?</AlertDialogTitle><AlertDialogDescription>This immediately terminates the running sandbox instead of requesting a graceful stop.</AlertDialogDescription></AlertDialogHeader>
-          <AlertDialogFooter><Button variant="outline" onClick={() => setForceStopOpen(false)}>Cancel</Button><Button variant="destructive" onClick={() => { setForceStopOpen(false); void handleStop(false); }}>Force Stop</Button></AlertDialogFooter>
+          <AlertDialogFooter><Button type="submit" variant="outline" onClick={() => setForceStopOpen(false)}>Cancel</Button><Button type="submit" variant="danger" onClick={() => { setForceStopOpen(false); void handleStop(false); }}>Force Stop</Button></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
       </div>

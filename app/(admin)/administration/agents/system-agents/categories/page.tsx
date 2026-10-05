@@ -106,14 +106,13 @@ export default function AdminCategoriesPage() {
     <div className="h-full flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 p-4 border-b border-border bg-card flex items-center justify-end">
         <Button
+          icon={<RefreshCw
+            className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+          />}
           variant="outline"
-          size="sm"
           onClick={() => refetch()}
           disabled={isLoading}
         >
-          <RefreshCw
-            className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-          />
           Refresh
         </Button>
       </div>

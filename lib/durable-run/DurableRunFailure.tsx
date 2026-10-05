@@ -97,7 +97,6 @@ export function DurableRunFailure({
         <div className="flex flex-wrap gap-2 pl-6">
           {retry && !refusal.retryIsPointless ? (
             <Button
-              size="sm"
               variant="outline"
               disabled={running}
               onClick={() => void retry()}

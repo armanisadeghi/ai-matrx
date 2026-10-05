@@ -164,9 +164,8 @@ export function CaptureDeviceRail({
           then reopen this menu.
         </p>
         <Button
-          size="sm"
           variant="outline"
-          className="h-7 w-full text-xs"
+          className="w-full"
           onClick={() =>
             what === "Camera"
               ? void requestCameraPermission()

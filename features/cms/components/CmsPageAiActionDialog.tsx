@@ -264,14 +264,15 @@ export function CmsPageAiActionDialog({
       />
     ) : !hasContent && hasPlan ? (
       <Button
+        icon={reality.busy === "write" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Hammer />
+        )}
+        variant="primary"
         onClick={() => void runBuild()}
         disabled={busy || reality.isLoadingPage}
       >
-        {reality.busy === "write" ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Hammer className="mr-2 h-4 w-4" />
-        )}
         {hasBrief && hasKeyword ? "Build page with AI" : "Build with AI anyway"}
       </Button>
     ) : (
@@ -328,7 +329,7 @@ export function CmsPageAiActionDialog({
                     : "No usable plan is linked. You can still use the page agent directly, or connect this page from the Plan tab."
                 }
                 action={
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline">
                     <a href={planHref} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                       Open Plan
@@ -347,19 +348,18 @@ export function CmsPageAiActionDialog({
                 action={
                   hasPlan ? (
                     <div className="flex flex-wrap justify-end gap-1.5">
-                      <Button asChild variant="outline" size="sm">
+                      <Button asChild variant="outline">
                         <a href={keywordHref}>
                           <Pencil className="mr-1.5 h-3.5 w-3.5" />
                           Edit
                         </a>
                       </Button>
                       <Button
+                        icon={<KeyRound />}
                         variant="outline"
-                        size="sm"
                         onClick={() => void runDeepen()}
                         disabled={busy}
                       >
-                        <KeyRound className="mr-1.5 h-3.5 w-3.5" />
                         Find + deepen
                       </Button>
                     </div>
@@ -377,19 +377,18 @@ export function CmsPageAiActionDialog({
                 action={
                   hasPlan ? (
                     <div className="flex flex-wrap justify-end gap-1.5">
-                      <Button asChild variant="outline" size="sm">
+                      <Button asChild variant="outline">
                         <a href={planHref}>
                           <Pencil className="mr-1.5 h-3.5 w-3.5" />
                           Edit
                         </a>
                       </Button>
                       <Button
+                        icon={<BookOpenCheck />}
                         variant="outline"
-                        size="sm"
                         onClick={() => void runDeepen()}
                         disabled={busy}
                       >
-                        <BookOpenCheck className="mr-1.5 h-3.5 w-3.5" />
                         Create with AI
                       </Button>
                     </div>
@@ -406,7 +405,7 @@ export function CmsPageAiActionDialog({
                 }
                 action={
                   hasPlan ? (
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline">
                       <a href={planHref}>
                         <Search className="mr-1.5 h-3.5 w-3.5" />
                         Add evidence
@@ -423,12 +422,11 @@ export function CmsPageAiActionDialog({
                   <p className="text-xs text-destructive">{reality.failure} <ErrorAlchemyMenu error={reality.failure} /></p>
                   {isWritePolicyBlocked(reality.failure) ? (
                     <Button
+                      icon={<Unlock />}
                       variant="outline"
-                      size="sm"
                       disabled={busy}
                       onClick={() => void reality.allowWrites("write")}
                     >
-                      <Unlock className="mr-1.5 h-3.5 w-3.5" />
                       Let the plan build this website
                     </Button>
                   ) : null}
@@ -443,14 +441,13 @@ export function CmsPageAiActionDialog({
           )}
 
           <DialogFooter className="gap-2 sm:justify-between">
-            <Button asChild variant="ghost">
+            <Button asChild variant="quiet">
               <a href={editorHref}>Open full editor</a>
             </Button>
             {fullPage ? (
               aiButton
             ) : (
-              <Button disabled>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <Button icon={<Loader2 className="animate-spin" />} type="submit" variant="primary" disabled>
                 Loading page…
               </Button>
             )}

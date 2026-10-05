@@ -185,9 +185,8 @@ export function PluginsSection({
             {providerFilter ? (
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 shrink-0"
+                variant="quiet"
+                className="shrink-0"
                 onClick={() => setProviderFilter(null)}
               >
                 Show all
@@ -300,7 +299,6 @@ export function PluginsSection({
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={loadOlder}
                 disabled={loadingMore}
@@ -362,14 +360,12 @@ function BridgeHealthCard({
         <div className="text-xs text-muted-foreground">{health.detail}</div>
       </div>
       <Button
+        icon={<RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />}
         type="button"
-        size="sm"
         variant="outline"
-        className="h-7 gap-1.5"
         onClick={onRefresh}
         disabled={loading}
       >
-        <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
         Refresh
       </Button>
     </section>
@@ -623,14 +619,11 @@ function CodingSessionDetail({
           align="end"
         >
           <Button
+            icon={<Share2 />} iconEnd={<MoreHorizontal />}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-8 gap-1.5"
           >
-            <Share2 className="h-3.5 w-3.5" />
             Share or fork
-            <MoreHorizontal className="h-3.5 w-3.5" />
           </Button>
         </ItemMenu>
       </div>

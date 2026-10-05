@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Pencil, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { InlineDecision, InlineDecisionOption } from "./types";
 
 interface InlineDecisionBlockProps {

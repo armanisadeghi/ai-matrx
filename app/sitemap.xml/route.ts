@@ -6,7 +6,8 @@ import { MARKETING_PUBLIC_TOOLS } from '@/features/marketing/lib/marketing-nav'
 import { listSearchEngineIndexedRecords } from '@/lib/seo/search-engine-indexed.server'
 import { getScriptSupabaseClient } from '@/utils/supabase/getScriptClient'
 import { readPublicCatalogue } from '@/features/make/gallery/publicCatalogue.server'
-import { PUBLIC_GALLERY_PATH, publicTemplateHref } from '@/features/make/gallery/publicGallery'
+import { industryHref, jobHref, PUBLIC_GALLERY_PATH, publicTemplateHref } from '@/features/make/gallery/publicGallery'
+import { facetValues } from '@/features/make/gallery/catalogue'
 
 /**
  * THE INDEXED SWITCH (access ladder T-12): every published record in the sitemap comes from
@@ -140,10 +141,13 @@ export async function GET() {
   // The public template gallery (Arman 2026-10-02: public and indexed) — every platform template a
   // signed-out visitor can open. A closed catalogue door lists none; any other failure throws.
   const catalogue = await readPublicCatalogue()
+  const templateCards = catalogue.state === 'open' ? catalogue.cards : []
   const templateUrls = [
     { loc: `${baseUrl}${PUBLIC_GALLERY_PATH}`, changefreq: 'weekly', priority: '0.8' },
-    ...(catalogue.state === 'open' ? catalogue.cards : []).map((c) => ({
-      loc: `${baseUrl}${publicTemplateHref(c.catalogue_id)}`,
+    ...facetValues(templateCards, 'industry').map((v) => ({ loc: `${baseUrl}${industryHref(v)}`, changefreq: 'weekly', priority: '0.7' })),
+    ...facetValues(templateCards, 'job').map((v) => ({ loc: `${baseUrl}${jobHref(v)}`, changefreq: 'weekly', priority: '0.7' })),
+    ...templateCards.map((c) => ({
+      loc: `${baseUrl}${publicTemplateHref(c)}`,
       changefreq: 'weekly',
       priority: '0.7',
     })),

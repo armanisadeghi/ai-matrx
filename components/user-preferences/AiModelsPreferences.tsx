@@ -270,7 +270,7 @@ const AiModelsPreferences = () => {
           <p className="text-sm font-medium text-foreground">{emptyTitle}</p>
           <p className="text-sm text-muted-foreground">{emptyHint}</p>
           {activeFilters > 0 || q ? (
-            <Button variant="outline" size="sm" onClick={clearFilters}>
+            <Button variant="outline" onClick={clearFilters}>
               Show all models
             </Button>
           ) : null}

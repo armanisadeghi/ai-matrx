@@ -369,15 +369,16 @@ export default function ShapeOwnerEditor({
           )}
           <div className="flex justify-end">
             <Button
+              icon={profileSaving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Check />
+              )}
+              variant="primary"
               type="button"
               disabled={profileSaving}
               onClick={() => void saveProfile()}
             >
-              {profileSaving ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Check className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Save details
             </Button>
           </div>

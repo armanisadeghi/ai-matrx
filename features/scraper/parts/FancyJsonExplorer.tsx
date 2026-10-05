@@ -29,10 +29,8 @@ const renderNavigationKeys = (keys: string[], onKeyClick: (key: string) => void)
       {keys.map((key) => (
         <Button
           key={key}
-          size="sm"
           variant="outline"
           onClick={() => onKeyClick(key)}
-          className="text-xs"
         >
           {key}
         </Button>
@@ -117,10 +115,8 @@ const FancyJsonExplorer = ({ pageData }: FancyJsonExplorerProps) => {
                 <div className="font-medium text-gray-700 dark:text-gray-300">{key}</div>
                 {isNavigable(value) && (
                   <Button 
-                    size="sm" 
-                    variant="ghost" 
+                    variant="quiet" 
                     onClick={() => handleKeyClick(key)}
-                    className="text-xs p-1 h-6"
                   >
                     {formatDisplayValue(value)}
                   </Button>
@@ -157,16 +153,14 @@ const FancyJsonExplorer = ({ pageData }: FancyJsonExplorerProps) => {
         </div>
         <div className="flex gap-2">
           <Button 
-            size="sm" 
-            variant="ghost" 
+            variant="quiet" 
             onClick={handleReset}
             title="Reset"
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
           <Button 
-            size="sm" 
-            variant="ghost" 
+            variant="quiet" 
             onClick={() => copyToClipboard(jsonStr)}
             title="Copy JSON"
           >

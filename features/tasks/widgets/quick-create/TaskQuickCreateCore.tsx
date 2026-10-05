@@ -758,7 +758,6 @@ export function TaskQuickCreateCore({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => handlePostSaveAction("newTab")}
               className={btnClass}
             >
@@ -767,28 +766,26 @@ export function TaskQuickCreateCore({
               <span className="hidden sm:inline">New tab</span>
             </Button>
             <Button
+              icon={<LayoutPanelLeft />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => handlePostSaveAction("openWindow")}
               className={btnClass}
             >
-              <LayoutPanelLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Window</span>
             </Button>
             <Button
+              icon={<ArrowRight />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => handlePostSaveAction("navigate")}
               className={btnClass}
             >
-              <ArrowRight className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Go to task</span>
             </Button>
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => handlePostSaveAction("none")}
               className={btnClass}
             >
@@ -799,31 +796,30 @@ export function TaskQuickCreateCore({
           <>
             {onCancel && (
               <Button
+                icon={<X />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={onCancel}
                 disabled={isBusy}
                 className={btnClass}
               >
-                <X className="h-3.5 w-3.5" />
                 Cancel
               </Button>
             )}
             <Button
+              icon={isBusy ? (
+                <Loader2 className="animate-spin" />
+              ) : source ? (
+                <Link2 />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={handleSave}
               disabled={!canSave}
               className={btnClass}
             >
-              {isBusy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : source ? (
-                <Link2 className="h-3.5 w-3.5" />
-              ) : (
-                <Plus className="h-3.5 w-3.5" />
-              )}
               {isBusy
                 ? "Saving…"
                 : (saveLabel ?? (source ? "Create & attach" : "Create task"))}

@@ -105,10 +105,7 @@ export function FastFireSetPicker({
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn(
-            "h-11 w-full justify-between bg-background font-normal text-base",
-            !selected && "text-muted-foreground",
-          )}
+          className="w-full justify-between"
         >
           <span className="flex min-w-0 items-center gap-2 truncate">
             <Layers className="h-4 w-4 shrink-0 text-muted-foreground" />

@@ -145,19 +145,17 @@ function OpenThreadAction({ row }: { row: ThreadTableRow }) {
 
   return (
     <Button
+      icon={busy ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <ArrowUpRight />
+      )}
       type="button"
-      variant="ghost"
-      size="sm"
+      variant="quiet"
       disabled={busy}
       onClick={() => void handleOpen()}
-      className="h-7 gap-1.5 px-2 text-xs"
       title={row.roomId ? "Open in its War Room" : "Open in a new War Room"}
     >
-      {busy ? (
-        <Loader2 className="size-3.5 animate-spin" />
-      ) : (
-        <ArrowUpRight className="size-3.5" />
-      )}
       Open
     </Button>
   );

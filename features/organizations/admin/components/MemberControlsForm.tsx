@@ -131,8 +131,7 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={save} disabled={saving} size="sm">
-          {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+        <Button icon={saving ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" onClick={save} disabled={saving}>
           Save controls
         </Button>
       </div>

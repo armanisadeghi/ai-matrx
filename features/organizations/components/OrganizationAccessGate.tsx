@@ -115,14 +115,14 @@ export function OrganizationAccessGate({
           </div>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-2">
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={fallbackHref}>
               <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
               {fallbackLabel}
             </Link>
           </Button>
           {onRetry ? (
-            <Button size="sm" variant="ghost" onClick={onRetry}>
+            <Button variant="quiet" onClick={onRetry}>
               Try again
             </Button>
           ) : null}

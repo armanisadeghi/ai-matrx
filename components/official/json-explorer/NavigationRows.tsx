@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { NavigationRowsProps } from "./types";
 import { getKeysAtPath } from "./json-utils";
 

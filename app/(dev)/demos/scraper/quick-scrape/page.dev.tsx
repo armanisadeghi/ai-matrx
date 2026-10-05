@@ -499,9 +499,9 @@ export default function QuickScrapeDemoPage() {
         style={{ fontSize: "16px" }}
       />
       <Button
+        variant="primary"
         onClick={handleScrape}
         disabled={!url.trim() || isLoading}
-        className="px-6"
       >
         {isLoading ? (
           <>

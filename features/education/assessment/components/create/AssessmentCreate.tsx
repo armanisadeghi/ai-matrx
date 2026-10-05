@@ -335,15 +335,13 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0"
+            icon={<ArrowLeft />}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => !busy && startNavigation(() => router.push(base))}
             disabled={busy}
             aria-label={`Back to ${config.pluralLabel}`}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
+          />
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Icon className="h-6 w-6" />
           </div>
@@ -639,13 +637,14 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
 
             <div className="flex items-center justify-end gap-2 pt-1">
               <Button
-                variant="ghost"
+                variant="quiet"
                 onClick={() => startNavigation(() => router.push(base))}
                 disabled={busy}
               >
                 Cancel
               </Button>
               <Button
+                variant="primary"
                 onClick={() => void handleGenerate()}
                 disabled={!canGenerate || generation.isChecking}
               >

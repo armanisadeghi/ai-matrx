@@ -32,7 +32,7 @@ import {
   attachedKey,
 } from "@ai-matrx/associations/react";
 import type { EntityTypeToken } from "@ai-matrx/associations";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {

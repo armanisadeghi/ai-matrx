@@ -55,21 +55,19 @@ const TableTopOptions: React.FC<TableTopOptionsProps> = ({
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:space-x-2">
                     <MatrxTooltip content="Add a new item" placement="bottom" offset={10}>
                         <Button
+                            icon={<Plus/>}
+                            variant="primary"
                             onClick={handleAdd}
-                            size="sm"
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:scale-105 text-sm"
                         >
-                            <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4"/>
                             <span>Add New</span>
                         </Button>
                     </MatrxTooltip>
                     <MatrxTooltip content="Column settings" placement="bottom" offset={10}>
                         <Button
+                            icon={<Settings/>}
+                            variant="primary"
                             onClick={() => setColumnSettingsOpen(!columnSettingsOpen)}
-                            size="sm"
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300 hover:scale-105 text-sm"
                         >
-                            <Settings className="mr-2 h-3 w-3 sm:h-4 sm:w-4"/>
                             <span>Columns</span>
                         </Button>
                     </MatrxTooltip>

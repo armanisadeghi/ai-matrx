@@ -255,8 +255,7 @@ export function MandateCoverageAlert({
       </div>
       {verdict.offerFix && onAssignHolder ? (
         <Button
-          size="sm"
-          variant={isRed ? "destructive" : "outline"}
+          variant={isRed ? "danger" : "outline"}
           className="shrink-0"
           onClick={onAssignHolder}
         >

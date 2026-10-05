@@ -56,7 +56,7 @@ export function AgentAppActionModal({
         {cancelLabel}
       </Button>
       <Button
-        variant={variant === "destructive" ? "destructive" : "default"}
+        variant={variant === "destructive" ? "danger" : "primary"}
         onClick={handleConfirm}
         disabled={busy}
       >

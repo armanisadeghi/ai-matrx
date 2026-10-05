@@ -335,21 +335,17 @@ export default function TerminalPage() {
           <div className="ml-auto flex items-center gap-2">
             {running && (
               <Button
-                size="sm"
-                variant="destructive"
+                icon={<XCircle />}
+                variant="danger"
                 onClick={cancelAll}
-                className="h-7 text-xs px-2 gap-1"
-              >
-                <XCircle className="w-3 h-3" /> Cancel
+              > Cancel
               </Button>
             )}
             <Button
-              size="sm"
-              variant="ghost"
+              icon={<Trash2 />}
+              variant="quiet"
               onClick={() => setLines([])}
-              className="h-7 text-xs px-2 gap-1"
-            >
-              <Trash2 className="w-3 h-3" /> Clear
+            > Clear
             </Button>
           </div>
         </div>

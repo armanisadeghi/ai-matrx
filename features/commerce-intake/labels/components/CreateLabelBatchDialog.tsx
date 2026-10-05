@@ -207,6 +207,7 @@ export function CreateLabelBatchDialog({
             Cancel
           </Button>
           <Button
+            variant="primary"
             disabled={busy || !countValid || missing.length > 0}
             onClick={() => void create()}
           >

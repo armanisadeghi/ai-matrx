@@ -94,11 +94,10 @@ export function AiReviewQuotaDialog({
           variant="outline"
           onClick={() => onOpenChange(false)}
           disabled={saving}
-          className="min-h-[44px]"
         >
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving} className="min-h-[44px]">
+        <Button variant="primary" onClick={handleSave} disabled={saving}>
           {saving ? "Saving…" : "Save settings"}
         </Button>
       </div>

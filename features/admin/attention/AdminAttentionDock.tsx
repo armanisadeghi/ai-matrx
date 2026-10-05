@@ -472,8 +472,7 @@ export default function AdminAttentionDock() {
                 as unknown, not healthy.
                 <ErrorAlchemyMenu error={source.error} />
               </span>
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={source.refetch}>
-                <RefreshCw className="mr-1 h-3 w-3" aria-hidden />
+              <Button icon={<RefreshCw aria-hidden />} variant="outline" onClick={source.refetch}>
                 Retry
               </Button>
             </div>

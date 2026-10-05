@@ -567,7 +567,7 @@ export function BacklinkChangesTable({ siteId }: { siteId: string }) {
             <span className="text-xs text-muted-foreground">
               Showing: <b className="text-foreground">{activeLensLabel}</b>
             </span>
-            <Button asChild size="sm" variant="outline" className="h-7">
+            <Button asChild variant="outline">
               <Link href={lensHref({})}>Show every change</Link>
             </Button>
           </>

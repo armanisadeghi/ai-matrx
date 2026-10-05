@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ArrowLeft, MessageSquare, Import, Zap, Repeat } from "lucide-react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -41,13 +42,13 @@ export default function AgentStudioComingSoonPage() {
             <div className="p-4 sm:p-6 md:p-8 lg:p-12">
                 <div className="flex items-start gap-2.5 sm:gap-3 md:gap-4 mb-8">
                     <Link href="/agents/new">
-                        <Button
+                        <SurfaceButton
                             variant="ghost"
                             size="icon"
                             className="hover:bg-accent h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0"
                         >
                             <ArrowLeft className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </Button>
+                        </SurfaceButton>
                     </Link>
                     <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2.5 mb-1.5">
@@ -136,7 +137,7 @@ export default function AgentStudioComingSoonPage() {
 
                 <div className="mt-6 flex flex-wrap items-center gap-3">
                     <Link href="/agents/new/builder">
-                        <Button variant="default" size="sm">
+                        <Button type="submit" variant="primary">
                             Build an agent now
                         </Button>
                     </Link>

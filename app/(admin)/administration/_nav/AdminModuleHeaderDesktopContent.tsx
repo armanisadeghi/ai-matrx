@@ -52,13 +52,11 @@ export default function AdminModuleHeaderDesktopContent({
       <div className="flex items-center gap-1">
         <AppLink href={moduleHome}>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-gray-800 hover:bg-accent dark:text-gray-300"
+            icon={<Home />}
+            type="submit"
+            variant="quiet"
             aria-label="Admin home"
-          >
-            <Home className="h-4 w-4" />
-          </Button>
+          />
         </AppLink>
 
         <AdminNavTreeMenu />

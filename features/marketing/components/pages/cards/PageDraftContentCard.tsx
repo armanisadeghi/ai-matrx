@@ -179,16 +179,15 @@ export function PageDraftContentCard({ page }: { page: MarketingPage }) {
         )}
         <div className="flex items-center justify-end gap-2">
           <Button
-            size="sm"
-            className="h-8"
+            icon={saveMutation.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             disabled={!dirty || saveMutation.isPending}
             onClick={() => void save()}
           >
-            {saveMutation.isPending ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Save draft
           </Button>
         </div>

@@ -125,9 +125,8 @@ export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRe
           </p>
         </div>
         <div className="flex gap-2">
-          {usingCustom && <Button size="sm" variant="outline" onClick={usePlatform}>Use Matrx URL instead</Button>}
-          <Button size="sm" onClick={check} disabled={!site.domain || checking} className="gap-1.5">
-            {checking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
+          {usingCustom && <Button variant="outline" onClick={usePlatform}>Use Matrx URL instead</Button>}
+          <Button icon={checking ? <Loader2 className="animate-spin" /> : <ShieldCheck />} variant="primary" onClick={check} disabled={!site.domain || checking}>
             Check connection
           </Button>
         </div>
@@ -159,7 +158,7 @@ export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRe
           </div>
           <div className="flex flex-wrap gap-2">
             {(Object.keys(PROVIDERS) as ProviderKey[]).map((key) => (
-              <Button key={key} size="sm" variant={provider === key ? "default" : "outline"} onClick={() => setProvider(key)} className="h-7 text-xs">
+              <Button key={key} variant={provider === key ? "primary" : "outline"} onClick={() => setProvider(key)}>
                 {PROVIDERS[key].name}
               </Button>
             ))}
@@ -168,8 +167,8 @@ export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRe
             <div className="flex flex-wrap items-center justify-between gap-2">
               <strong className="text-sm">{PROVIDERS[provider].name} instructions</strong>
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" asChild><a href={PROVIDERS[provider].help} target="_blank" rel="noreferrer">Official guide <ExternalLink className="ml-1 h-3 w-3" /></a></Button>
-                <Button size="sm" asChild><a href={PROVIDERS[provider].dashboard} target="_blank" rel="noreferrer">Open DNS dashboard <ExternalLink className="ml-1 h-3 w-3" /></a></Button>
+                <Button variant="outline" asChild><a href={PROVIDERS[provider].help} target="_blank" rel="noreferrer">Official guide <ExternalLink className="ml-1 h-3 w-3" /></a></Button>
+                <Button variant="primary" asChild><a href={PROVIDERS[provider].dashboard} target="_blank" rel="noreferrer">Open DNS dashboard <ExternalLink className="ml-1 h-3 w-3" /></a></Button>
               </div>
             </div>
             <ol className="list-decimal pl-5 text-xs text-muted-foreground space-y-1">

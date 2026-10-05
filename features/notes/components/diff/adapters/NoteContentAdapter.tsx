@@ -84,16 +84,14 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
           </span>
           <div className="flex-1" />
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 px-1.5 text-[0.625rem] gap-1"
+            icon={ignoreWhitespace ? (
+              <Eye />
+            ) : (
+              <EyeOff />
+            )}
+            variant="quiet"
             onClick={() => setIgnoreWhitespace((v) => !v)}
           >
-            {ignoreWhitespace ? (
-              <Eye className="w-3 h-3" />
-            ) : (
-              <EyeOff className="w-3 h-3" />
-            )}
             {ignoreWhitespace ? "Show whitespace" : "Ignore whitespace"}
           </Button>
         </div>
@@ -121,12 +119,11 @@ function NoteContentDiffRenderer({ node }: FieldDiffProps) {
                   <div className="border-r border-border" />
                   <div className="col-span-2">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-full text-[0.625rem] gap-1 text-muted-foreground justify-center rounded-none"
+                      icon={<ChevronDown />}
+                      variant="quiet"
+                      className="w-full justify-center"
                       onClick={() => toggleSection(groupIdx)}
                     >
-                      <ChevronDown className="w-3 h-3" />
                       {hiddenCount} unchanged line{hiddenCount !== 1 ? "s" : ""}
                     </Button>
                   </div>

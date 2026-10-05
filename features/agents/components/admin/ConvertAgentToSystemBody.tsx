@@ -217,8 +217,7 @@ export function ConvertAgentToSystemBody({
         <Button variant="outline" onClick={onClose}>
           Close
         </Button>
-        <Button onClick={fetchExisting} variant="default" className="gap-1.5">
-          <RefreshCw className="w-3.5 h-3.5" />
+        <Button icon={<RefreshCw />} onClick={fetchExisting} variant="primary">
           Retry
         </Button>
       </div>
@@ -317,22 +316,17 @@ export function ConvertAgentToSystemBody({
                         </div>
                       </button>
                       <Button
+                        icon={<ExternalLink />} aria-label="Open system agent in new tab"
                         asChild
-                        variant="ghost"
-                        size="icon"
-                        className="h-auto min-h-10 w-9 shrink-0 rounded-l-none rounded-r-md text-muted-foreground hover:text-foreground"
+                        variant="quiet"
+                        className="shrink-0"
                         title="Open system agent in new tab"
                       >
                         <Link
                           href={`${SYSTEM_AGENT_ADMIN_BASE_PATH}/${row.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                          <span className="sr-only">
-                            Open {row.name} in new tab
-                          </span>
-                        </Link>
+                        />
                       </Button>
                     </div>
                   );
@@ -367,14 +361,14 @@ export function ConvertAgentToSystemBody({
       </RadioGroup>
 
       <div className="flex justify-end gap-2 pt-1">
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <Button variant="quiet" onClick={onClose}>
           Cancel
         </Button>
         <Button
-          size="sm"
+          iconEnd={<ArrowRight />}
+          variant="primary"
           onClick={handleSubmit}
           disabled={action === "update" && !selectedExistingId}
-          className="gap-1.5"
         >
           {action === "update" ? (
             <>
@@ -387,7 +381,6 @@ export function ConvertAgentToSystemBody({
               Create system agent
             </>
           )}
-          <ArrowRight className="w-3.5 h-3.5" />
         </Button>
       </div>
     </div>
@@ -417,7 +410,7 @@ export function ConvertAgentToSystemBody({
 
       <div className="flex items-center gap-2 pt-2">
         {resultId && (
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link
               href={`${SYSTEM_AGENT_ADMIN_BASE_PATH}/${resultId}`}
               target="_blank"
@@ -429,7 +422,7 @@ export function ConvertAgentToSystemBody({
             </Link>
           </Button>
         )}
-        <Button size="sm" onClick={onClose}>
+        <Button variant="primary" onClick={onClose}>
           Done
         </Button>
       </div>

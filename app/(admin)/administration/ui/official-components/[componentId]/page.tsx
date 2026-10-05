@@ -10,6 +10,7 @@ import {
   categoryNames,
 } from "../parts/component-list";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Card,
   CardContent,
@@ -153,11 +154,11 @@ export default function ComponentDetailPage({
                   </p>
                 </div>
                 <Button
+                  icon={<FileCode />}
+                  type="submit"
                   variant="outline"
-                  size="sm"
-                  className="gap-2 w-full sm:w-auto sm:shrink-0"
+                  className="w-full sm:w-auto sm:shrink-0"
                 >
-                  <FileCode className="h-4 w-4" />
                   Source
                 </Button>
               </div>
@@ -223,7 +224,7 @@ export default function ComponentDetailPage({
                 <ScrollArea className="h-auto max-h-64">
                   <div className="p-4 space-y-2">
                     {relatedComponents.map((related) => (
-                      <Button
+                      <SurfaceButton
                         key={related.id}
                         variant="ghost"
                         className="w-full justify-start font-normal text-left"
@@ -237,7 +238,7 @@ export default function ComponentDetailPage({
                           {categoryIcons[related.categories[0]]}
                           <span>{related.name}</span>
                         </div>
-                      </Button>
+                      </SurfaceButton>
                     ))}
                   </div>
                 </ScrollArea>

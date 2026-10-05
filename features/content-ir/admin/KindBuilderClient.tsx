@@ -132,16 +132,13 @@ export default function KindBuilderClient() {
 
         <div className="mt-4 flex items-center justify-between">
           <Button
+            icon={<Table2 />}
             variant="outline"
-            size="sm"
-            className="gap-1.5"
             onClick={() => pushAppHref(router, "/administration/utilities/kind-registry")}
           >
-            <Table2 className="h-4 w-4" />
             Kind Registry
           </Button>
-          <Button onClick={start} disabled={!canStart} className="gap-1.5">
-            <Hammer className="h-4 w-4" />
+          <Button icon={<Hammer />} variant="primary" onClick={start} disabled={!canStart}>
             Build the kind
           </Button>
         </div>

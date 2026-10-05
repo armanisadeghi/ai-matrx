@@ -106,8 +106,8 @@ export default function SiteWorkbenchTab() {
               }}
             />
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               className="self-start"
               onClick={addBookmark}
             >
@@ -137,8 +137,7 @@ export default function SiteWorkbenchTab() {
                 </div>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   className="shrink-0"
                   onClick={() => removeBookmark(bookmark.id)}
                   aria-label={`Remove ${bookmark.label}`}

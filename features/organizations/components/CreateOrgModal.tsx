@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";

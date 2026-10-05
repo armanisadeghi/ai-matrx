@@ -181,9 +181,9 @@ export function PendingExamplesPanel({
                 )}
                 {focusable && (
                   <Button
-                    size="sm"
+                    icon={<Eye />}
                     variant="outline"
-                    className="h-6 max-w-full px-2 text-[11px]"
+                    className="max-w-full"
                     disabled={reviewRunning}
                     onClick={async () => {
                       // THE LAW: expensive + deliberately duplicative — say so.
@@ -197,15 +197,21 @@ export function PendingExamplesPanel({
                     }}
                     title="Review exactly this run now — bypasses the settle window, never advances the queue"
                   >
-                    <Eye className="mr-1 h-3 w-3" />
                     Review just this
                   </Button>
                 )}
                 {isAdmin && REPLAYABLE_EXAMPLE_KINDS.has(ex.kind) && (
                   <Button
-                    size="sm"
+                    icon={<Repeat2
+                      className={cn(
+                        "mr-1 h-3 w-3",
+                        replay.isPending &&
+                          replay.variables?.id === ex.id &&
+                          "animate-spin",
+                      )}
+                    />}
                     variant="outline"
-                    className="h-6 max-w-full px-2 text-[11px]"
+                    className="max-w-full"
                     disabled={replay.isPending}
                     data-testid="hindsight-replay-example"
                     title="Re-run this exact call against the candidate change and rank the result against what really happened. Spends real money."
@@ -219,14 +225,6 @@ export function PendingExamplesPanel({
                       if (ok) replay.mutate({ kind: ex.kind, id: ex.id });
                     }}
                   >
-                    <Repeat2
-                      className={cn(
-                        "mr-1 h-3 w-3",
-                        replay.isPending &&
-                          replay.variables?.id === ex.id &&
-                          "animate-spin",
-                      )}
-                    />
                     {replay.isPending && replay.variables?.id === ex.id
                       ? "Replaying…"
                       : "Replay"}

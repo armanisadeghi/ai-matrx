@@ -120,12 +120,10 @@ export default function AuditRulesConfig({
           </span>
         </div>
         <Button
+          icon={<RotateCcw />}
           variant="outline"
-          size="sm"
-          className="h-7 text-xs gap-1"
           onClick={handleReset}
         >
-          <RotateCcw className="h-3 w-3" />
           Reset Defaults
         </Button>
       </div>

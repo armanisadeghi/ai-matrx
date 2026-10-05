@@ -369,16 +369,12 @@ export function MandateAgentPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          icon={<Settings2 />}
           type="button"
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-6 gap-1 px-1.5 text-[11px] text-muted-foreground hover:text-foreground",
-            className,
-          )}
+          variant="quiet"
+          className={className}
           title="Choose which agent runs this step"
         >
-          <Settings2 className="h-3 w-3" />
           {overrideAgentName ? (
             <span className="max-w-40 truncate">{overrideAgentName}</span>
           ) : (

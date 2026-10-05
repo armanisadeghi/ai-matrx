@@ -450,8 +450,7 @@ export function CollectionItemEditorDialog({
       >
         Cancel
       </Button>
-      <Button onClick={handleSave} disabled={isSaving}>
-        {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+      <Button icon={isSaving && <Loader2 className="animate-spin" />} variant="primary" onClick={handleSave} disabled={isSaving}>
         {item ? "Save changes" : "Add item"}
       </Button>
     </>

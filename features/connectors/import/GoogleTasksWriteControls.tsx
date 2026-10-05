@@ -284,14 +284,14 @@ export function GoogleTasksWriteControls({
             ) : null}
             <div className="flex flex-wrap gap-2">
               {recoveryMatches && (createRecovery.phase === "reviewed_unattempted" || createRecovery.phase === "known_unsent") ? (
-                <Button size="sm" disabled={busy !== null} onClick={() => void submitCreate()}>
+                <Button variant="primary" disabled={busy !== null} onClick={() => void submitCreate()}>
                   {createRecovery.phase === "known_unsent" ? "Retry reviewed create" : "Create in Google"}
                 </Button>
               ) : null}
               {createRecovery.phase === "reviewed_unattempted" ? (
-                <Button size="sm" variant="outline" disabled={busy !== null} onClick={cancelCreate}>Cancel review</Button>
+                <Button variant="outline" disabled={busy !== null} onClick={cancelCreate}>Cancel review</Button>
               ) : null}
-              <Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button>
+              <Button variant="outline" onClick={refreshSource}>Refresh source</Button>
             </div>
           </div>
         ) : (
@@ -299,13 +299,13 @@ export function GoogleTasksWriteControls({
             <label className="block text-xs">Title<Input value={title} maxLength={1024} disabled={createBlocked || busy !== null} onChange={(event) => setTitle(event.target.value)} /></label>
             <label className="block text-xs">Notes<textarea className="mt-1 min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={notes} maxLength={8192} disabled={createBlocked || busy !== null} onChange={(event) => setNotes(event.target.value)} /></label>
             <label className="block text-xs">Due date<Input type="date" value={dueDate} disabled={createBlocked || busy !== null} onChange={(event) => setDueDate(event.target.value)} /></label>
-            <Button size="sm" variant="outline" disabled={busy !== null || !title.trim()} onClick={reviewCreate}>Review create</Button>
+            <Button variant="outline" disabled={busy !== null || !title.trim()} onClick={reviewCreate}>Review create</Button>
           </div>
         )}
         {createResult ? (
           <div className="space-y-2 text-xs">
             <p>Google confirmed task ID: <code>{createResult.remote_task_id}</code></p>
-            <Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button>
+            <Button variant="outline" onClick={refreshSource}>Refresh source</Button>
           </div>
         ) : null}
       </div>
@@ -314,12 +314,12 @@ export function GoogleTasksWriteControls({
         <p className="text-sm font-medium">Change selected task status</p>
         {!selectedTask ? <p className="text-xs text-muted-foreground">Select one task to review a status change.</p> : null}
         {selectedTask && !selectedKnownStatus ? (
-          <div className="space-y-2 text-xs"><p>This task has an unknown Google status.</p><Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button></div>
+          <div className="space-y-2 text-xs"><p>This task has an unknown Google status.</p><Button variant="outline" onClick={refreshSource}>Refresh source</Button></div>
         ) : null}
         {selectedTask && selectedKnownStatus && !statusPreview && !statusResult ? (
           <div className="flex flex-wrap items-center gap-2 text-xs">
             <span>{selectedTask.title} · {statusLabel(selectedTask.status as "completed" | "needsAction")}</span>
-            <Button size="sm" variant="outline" disabled={busy !== null} onClick={() => void reviewStatus(selectedTask.status === "completed" ? "needsAction" : "completed")}>
+            <Button variant="outline" disabled={busy !== null} onClick={() => void reviewStatus(selectedTask.status === "completed" ? "needsAction" : "completed")}>
               Preview {selectedTask.status === "completed" ? "reopen" : "complete"}
             </Button>
           </div>
@@ -328,13 +328,13 @@ export function GoogleTasksWriteControls({
           <div className="space-y-2 text-xs">
             <p>{statusPreview.title}: {statusLabel(statusPreview.current_status)} → {statusLabel(statusPreview.desired_status)}</p>
             <p>Fresh review receipt ready.</p>
-            <Button size="sm" disabled={busy !== null} onClick={() => void applyStatus()}>Apply reviewed status</Button>
+            <Button variant="primary" disabled={busy !== null} onClick={() => void applyStatus()}>Apply reviewed status</Button>
           </div>
         ) : null}
         {statusResult ? (
           <div className="space-y-2 text-xs">
             <p>Google verified {statusResult.title} as {statusLabel(statusResult.desired_status)}.</p>
-            <Button size="sm" variant="outline" onClick={refreshSource}>Refresh source</Button>
+            <Button variant="outline" onClick={refreshSource}>Refresh source</Button>
           </div>
         ) : null}
       </div>

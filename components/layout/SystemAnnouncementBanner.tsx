@@ -134,9 +134,10 @@ export default function SystemAnnouncementBanner({
           </div>
 
           <Button
+            variant="primary"
             type="button"
             onClick={openDetail}
-            className="h-10 shrink-0 rounded-full bg-foreground px-5 text-background hover:bg-foreground/90"
+            className="shrink-0"
           >
             {presentation.actionLabel}
           </Button>

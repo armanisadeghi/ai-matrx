@@ -89,10 +89,9 @@ export function SearchPanel({ fileId, onJumpToPage }: Props) {
             className="h-7 text-xs"
           />
           <Button
-            size="sm"
+            variant="primary"
             disabled={loading || !query.trim()}
             onClick={() => void run()}
-            className="h-7 text-[10px]"
           >
             {loading ? (
               <Loader2 className="h-3 w-3 animate-spin" />

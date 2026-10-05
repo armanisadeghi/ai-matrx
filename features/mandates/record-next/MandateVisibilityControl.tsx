@@ -45,12 +45,10 @@ export function MandateVisibilityControl({
   return (
     <>
       <Button
+        icon={<Icon />}
         variant="outline"
-        size="sm"
-        className="h-7 gap-1 text-xs"
         onClick={() => setOpen(true)}
       >
-        <Icon className="h-3.5 w-3.5" />
         {mandateShareButtonLabel(mandate.published_to_web)}
       </Button>
       {open ? (

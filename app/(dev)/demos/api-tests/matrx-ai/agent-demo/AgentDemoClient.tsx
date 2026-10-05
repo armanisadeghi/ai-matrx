@@ -108,9 +108,12 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className="h-7 text-xs px-2 gap-1"
+      icon={copied ? (
+        <Check className="text-green-500" />
+      ) : (
+        <Copy />
+      )}
+      variant="quiet"
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text).catch(() => null);
@@ -118,11 +121,6 @@ function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 1800);
       }}
     >
-      {copied ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
       {copied ? "Copied" : "Copy"}
     </Button>
   );
@@ -185,12 +183,10 @@ function KVEditor({
       <div className="flex items-center justify-between">
         <Label className="text-xs font-semibold">{label}</Label>
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<Plus />}
+          variant="quiet"
           onClick={add}
-          className="h-5 text-[10px] px-1.5 gap-1"
-        >
-          <Plus className="h-3 w-3" /> Add
+        > Add
         </Button>
       </div>
       {pairs.length === 0 && (
@@ -214,10 +210,9 @@ function KVEditor({
             className="h-6 text-xs font-mono flex-1 min-w-0"
           />
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => remove(i)}
-            className="h-6 w-6 p-0 flex-shrink-0"
+            className="w-6 flex-shrink-0"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -515,13 +510,11 @@ export default function AgentDemoClient() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
+                    icon={<Zap />}
                     variant="outline"
                     onClick={handleWarm}
                     disabled={!agentId.trim() || isRunning}
-                    className="h-7 text-xs px-2.5 gap-1.5"
-                  >
-                    <Zap className="h-3 w-3" /> Warm
+                  > Warm
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
@@ -726,11 +719,12 @@ export default function AgentDemoClient() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
+                          icon={<Play />}
+                          variant="primary"
                           onClick={handleExecute}
                           disabled={!canExecute}
-                          className="flex-1 h-8 text-sm gap-2"
-                        >
-                          <Play className="h-3.5 w-3.5" /> Execute
+                          className="flex-1"
+                        > Execute
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent className="text-xs">
@@ -739,21 +733,20 @@ export default function AgentDemoClient() {
                     </Tooltip>
                   ) : (
                     <Button
+                      icon={<Square />}
                       onClick={handleCancel}
-                      variant="destructive"
-                      className="flex-1 h-8 text-sm gap-2"
-                    >
-                      <Square className="h-3.5 w-3.5" /> Cancel
+                      variant="danger"
+                      className="flex-1"
+                    > Cancel
                     </Button>
                   )}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        size="sm"
                         variant="outline"
                         onClick={clearResults}
                         disabled={isRunning}
-                        className="h-8 w-8 p-0"
+                        className="w-8"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                       </Button>
@@ -797,11 +790,10 @@ export default function AgentDemoClient() {
                     </>
                   )}
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={clearResults}
                     disabled={isRunning}
-                    className="h-6 w-6 p-0"
+                    className="w-6"
                   >
                     <X className="h-3 w-3" />
                   </Button>

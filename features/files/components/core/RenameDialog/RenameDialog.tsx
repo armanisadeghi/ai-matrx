@@ -411,7 +411,6 @@ export function RenameDialog({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11"
               disabled={busy}
               onClick={() => {
                 setError(null);
@@ -421,8 +420,8 @@ export function RenameDialog({
               Cancel
             </Button>
             <Button
+              variant="primary"
               type="button"
-              className="min-h-11"
               disabled={busy}
               onClick={() => void handleSubmit()}
             >

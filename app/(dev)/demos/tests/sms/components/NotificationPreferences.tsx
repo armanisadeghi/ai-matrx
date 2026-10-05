@@ -358,7 +358,7 @@ export default function NotificationPreferences() {
             </div>
           </div>
 
-          <Button onClick={savePreferences} disabled={saving} className="w-full">
+          <Button variant="primary" onClick={savePreferences} disabled={saving} className="w-full">
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

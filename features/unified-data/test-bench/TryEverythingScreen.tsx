@@ -1007,12 +1007,11 @@ function StatusStrip({
             <div className="mb-2 flex items-center gap-2">
                 <h1 className="text-sm font-medium text-foreground">Everything the record store can do</h1>
                 <Button
-                    variant="ghost"
-                    size="sm"
-                    className="ml-auto h-7 px-2 text-xs"
+                    icon={<RefreshCw aria-hidden />}
+                    variant="quiet"
+                    className="ml-auto"
                     onClick={() => setNonce((n) => n + 1)}
                 >
-                    <RefreshCw className="mr-1 h-3.5 w-3.5" aria-hidden />
                     Re-read
                 </Button>
             </div>
@@ -1137,13 +1136,11 @@ function WorkingTableBar({
             </select>
             {selectedId ? (
                 <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
+                    iconEnd={<ArrowUpRight aria-hidden />}
+                    variant="quiet"
                     onClick={() => onOpenTable(selectedId)}
                 >
                     Open its full screen
-                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" aria-hidden />
                 </Button>
             ) : null}
         </div>
@@ -1186,7 +1183,7 @@ function WritesItsOwnTable({
                 button asked the live doors and printed their answer; a second
                 sentence typed into this component is exactly the note that
                 outlived its defect and told a person not to press the button. */}
-            <Button variant="outline" size="sm" onClick={() => setOpened(true)}>
+            <Button variant="outline" onClick={() => setOpened(true)}>
                 Open {what} anyway
             </Button>
         </div>
@@ -1927,9 +1924,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                             : `${template.token_count} columns merged in`}
                                     </span>
                                     <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 shrink-0 px-2 text-xs"
+                                        variant="quiet"
+                                        className="shrink-0"
                                         disabled={busy}
                                         onClick={() => {
                                             setTemplateId(template.template_id);
@@ -1940,9 +1936,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                         Edit its wording
                                     </Button>
                                     <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-7 shrink-0 px-2 text-xs"
+                                        variant="quiet"
+                                        className="shrink-0"
                                         disabled={busy}
                                         onClick={() =>
                                             void act(async () => {
@@ -1981,7 +1976,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                         />
                         <div className="flex flex-wrap items-center gap-2">
                             <Button
-                                size="sm"
+                                variant="primary"
                                 disabled={busy || draftName.trim() === ""}
                                 onClick={() =>
                                     void act(async () => {
@@ -2003,7 +1998,6 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                             {chosenTemplate ? (
                                 <Button
                                     variant="outline"
-                                    size="sm"
                                     disabled={busy || draftName.trim() === ""}
                                     onClick={() =>
                                         void act(async () => {
@@ -2061,7 +2055,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                 ))}
                             </select>
                             <Button
-                                size="sm"
+                                variant="primary"
                                 disabled={busy || !chosenTemplate || !chosenRecord}
                                 onClick={() =>
                                     void act(async () => {
@@ -2111,9 +2105,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                             {new Date(render.rendered_at).toLocaleString()}
                                         </span>
                                         <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-7 shrink-0 px-2 text-xs"
+                                            variant="quiet"
+                                            className="shrink-0"
                                             onClick={() =>
                                                 setOpenRender((was) =>
                                                     was === render.render_id ? null : render.render_id,
@@ -2128,9 +2121,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                             says what to declare. */}
                                         {signatureFields.length > 0 ? (
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 shrink-0 px-2 text-xs"
+                                                variant="quiet"
+                                                className="shrink-0"
                                                 disabled={busy}
                                                 onClick={() => {
                                                     setMadeLink(null);
@@ -2210,7 +2202,7 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                             </select>
                                         ) : null}
                                         <Button
-                                            size="sm"
+                                            variant="primary"
                                             disabled={
                                                 busy ||
                                                 askEmail.trim() === "" ||
@@ -2302,9 +2294,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                             {ask.state === "sent" || ask.state === "viewed" ? (
                                                 <>
                                                     <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 shrink-0 px-2 text-xs"
+                                                        variant="quiet"
+                                                        className="shrink-0"
                                                         disabled={busy}
                                                         onClick={() =>
                                                             void act(async () => {
@@ -2325,9 +2316,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                                         Remind them
                                                     </Button>
                                                     <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="h-7 shrink-0 px-2 text-xs"
+                                                        variant="quiet"
+                                                        className="shrink-0"
                                                         disabled={busy}
                                                         onClick={() =>
                                                             void act(async () => {
@@ -2346,9 +2336,8 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                             ) : null}
                                             {ask.state === "signed" ? (
                                                 <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-7 shrink-0 px-2 text-xs"
+                                                    variant="quiet"
+                                                    className="shrink-0"
                                                     onClick={() =>
                                                         setOpenRender((was) =>
                                                             was === ask.render_id
@@ -2497,9 +2486,8 @@ function NotificationsTry({ table, organizationId }: { table: Table; organizatio
                                     </div>
                                     {row.i_may_mute ? (
                                         <Button
-                                            variant={row.muted ? "outline" : "ghost"}
-                                            size="sm"
-                                            className="h-7 shrink-0 px-2 text-xs"
+                                            variant={row.muted ? "outline" : "quiet"}
+                                            className="shrink-0"
                                             disabled={busy === row.rule_id}
                                             onClick={() =>
                                                 void (async () => {

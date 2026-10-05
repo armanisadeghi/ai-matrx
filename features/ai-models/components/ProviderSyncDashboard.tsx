@@ -695,12 +695,10 @@ function ProviderEntryDetail({
           )}
           {comparison.status === "missing_local" && (
             <Button
-              size="sm"
+              icon={<Plus />}
               variant="outline"
-              className="h-6 px-2 text-[10px] gap-1 text-amber-700 border-amber-300 hover:bg-amber-50 dark:hover:bg-amber-900/20"
               onClick={() => onAddMissing(comparison)}
             >
-              <Plus className="h-3 w-3" />
               Add to DB
             </Button>
           )}
@@ -934,14 +932,7 @@ function ExcludeButton({
   const isExcluded = comparison.status === "excluded";
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className={cn(
-        "h-5 px-1.5 text-[10px] gap-0.5",
-        isExcluded
-          ? "text-muted-foreground hover:text-foreground"
-          : "text-muted-foreground hover:text-destructive",
-      )}
+      variant="quiet"
       onClick={() => onToggle(comparison)}
       disabled={busy}
       title={
@@ -1231,12 +1222,10 @@ function ComparisonTable({
             )}
             {comparison.status === "missing_local" && (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-5 px-1.5 text-[10px]"
+                icon={<Plus />}
+                variant="quiet"
                 onClick={() => onAddMissing(comparison)}
               >
-                <Plus className="h-2.5 w-2.5" />
                 Add
               </Button>
             )}
@@ -1453,26 +1442,22 @@ function ProviderSection({
             </a>
           )}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs gap-1.5"
+            icon={<SlidersHorizontal />}
+            variant="quiet"
             onClick={() => onEditPolicy(summary)}
             title="Edit the sync policy the model sync agent obeys for this provider"
           >
-            <SlidersHorizontal className="h-3.5 w-3.5" />
             Policy
           </Button>
           {summary.is_supported && (
             <Button
-              size="sm"
-              variant={snapshotStale ? "default" : "outline"}
-              className="h-7 px-2.5 text-xs gap-1.5"
+              icon={<RefreshCw
+                className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
+              />}
+              variant={snapshotStale ? "primary" : "outline"}
               onClick={() => onSync(summary)}
               disabled={syncing}
             >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`}
-              />
               {syncing
                 ? "Syncing…"
                 : snapshotStale
@@ -1823,15 +1808,13 @@ export default function ProviderSyncDashboard({
             disabled={loading}
           />
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
+            icon={<RefreshCw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            />}
+            variant="quiet"
             onClick={loadSummaries}
             disabled={loading}
           >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-            />
             Refresh
           </Button>
         </div>

@@ -202,23 +202,20 @@ export function PublicFlashcardDeck({
 
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
             <Button
-              size="lg"
-              className="gap-2"
+              icon={<GraduationCap />}
+              variant="primary"
               onClick={() => openMode(latest?.mode ?? "study")}
               disabled={count === 0}
             >
-              <GraduationCap className="h-4 w-4" />
               {!latest ? "Study" : finished ? "Study again" : "Resume"}
             </Button>
             <Button
-              size="lg"
+              icon={<Target />}
               variant="outline"
-              className="gap-2"
               onClick={() => openMode("learn")}
               disabled={count === 0}
               title="Missed cards come back until you know them all"
             >
-              <Target className="h-4 w-4" />
               Learn
             </Button>
           </div>
@@ -265,28 +262,24 @@ export function PublicFlashcardDeck({
             />
             <div className="mt-2 flex items-center justify-between gap-2">
               <Button
+                icon={<ChevronLeft />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 onClick={() => movePreview(-1)}
                 disabled={previewIndex === 0}
                 aria-label="Previous card"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
+              />
               <span className="text-xs tabular-nums text-muted-foreground">
                 {previewIndex + 1} / {count}
               </span>
               <Button
+                icon={<ChevronRight />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 onClick={() => movePreview(1)}
                 disabled={previewIndex >= count - 1}
                 aria-label="Next card"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+              />
             </div>
           </div>
         )}

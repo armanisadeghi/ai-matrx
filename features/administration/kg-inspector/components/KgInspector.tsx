@@ -738,22 +738,20 @@ function MentionsTab({ entity }: { entity: SelectedEntity | null }) {
         </span>
         <div className="flex items-center gap-2">
           <Button
+            icon={<ChevronLeft />}
             variant="outline"
-            size="sm"
             disabled={offset === 0 || loading}
             onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
           >
-            <ChevronLeft className="h-4 w-4" />
             Prev
           </Button>
           <Button
+            iconEnd={<ChevronRight />}
             variant="outline"
-            size="sm"
             disabled={pageEnd >= total || loading}
             onClick={() => setOffset(offset + PAGE_SIZE)}
           >
             Next
-            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>

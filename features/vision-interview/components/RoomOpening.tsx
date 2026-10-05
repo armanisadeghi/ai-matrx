@@ -262,8 +262,7 @@ export function OpeningVisionSend({
         begin.
       </p>
       <div className="mt-2.5">
-        <Button size="sm" onClick={() => void send()}>
-          <SendHorizonal className="mr-1.5 h-4 w-4" aria-hidden />
+        <Button icon={<SendHorizonal aria-hidden />} variant="primary" onClick={() => void send()}>
           Send my opening to {meta.name}
         </Button>
       </div>

@@ -77,26 +77,22 @@ export function DiffControls({
         <div className="flex items-center gap-2">
           {/* Undo */}
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<Undo2 />}
+            variant="quiet"
             onClick={onUndo}
             disabled={!canUndo || isProcessing}
-            className="h-8"
           >
-            <Undo2 className="h-3.5 w-3.5 mr-1.5" />
             Undo
           </Button>
 
           {/* Reject All */}
           {pendingCount > 0 && (
             <Button
-              size="sm"
+              icon={<XCircle />}
               variant="outline"
               onClick={onRejectAll}
               disabled={isProcessing}
-              className="h-8 hover:bg-red-50 hover:text-red-600 hover:border-red-300 dark:hover:bg-red-950/30"
             >
-              <XCircle className="h-3.5 w-3.5 mr-1.5" />
               Reject All
             </Button>
           )}
@@ -104,13 +100,11 @@ export function DiffControls({
           {/* Accept All */}
           {pendingCount > 0 && (
             <Button
-              size="sm"
+              icon={<CheckCheck />}
               variant="outline"
               onClick={onAcceptAll}
               disabled={isProcessing}
-              className="h-8 bg-green-50 text-green-700 border-green-300 hover:bg-green-100 dark:bg-green-950/30"
             >
-              <CheckCheck className="h-3.5 w-3.5 mr-1.5" />
               Accept All
             </Button>
           )}
@@ -118,12 +112,11 @@ export function DiffControls({
           {/* Save */}
           {isDirty && (
             <Button
-              size="sm"
+              icon={<Save />}
+              variant="primary"
               onClick={onSave}
               disabled={isProcessing}
-              className="h-8 bg-primary"
             >
-              <Save className="h-3.5 w-3.5 mr-1.5" />
               Save
             </Button>
           )}

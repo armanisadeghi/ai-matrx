@@ -239,10 +239,10 @@ export default function TaskContentNew() {
                   className="w-full"
                 />
                 <Button
+                  variant="primary"
                   type="submit"
                   disabled={!newProjectName.trim() || isCreatingProject}
                   className="w-full"
-                  size="lg"
                 >
                   {isCreatingProject ? (
                     <>

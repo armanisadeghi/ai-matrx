@@ -168,24 +168,25 @@ export function MeetingInviteDialog({
                 onFocus={(event) => event.currentTarget.select()}
               />
               <Button
+                icon={copiedWhat === "link" ? (
+                  <Check aria-hidden="true" />
+                ) : (
+                  <Copy aria-hidden="true" />
+                )}
+                variant="primary"
                 type="button"
                 onClick={() => void copyLink()}
-                className="shrink-0 gap-1.5"
+                className="shrink-0"
               >
-                {copiedWhat === "link" ? (
-                  <Check className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Copy className="h-4 w-4" aria-hidden="true" />
-                )}
                 {copiedWhat === "link" ? "Copied" : "Copy link"}
               </Button>
               <Button
+                icon={<Share2 aria-hidden="true" />}
                 type="button"
                 variant="outline"
                 onClick={() => void shareLink()}
-                className="shrink-0 gap-1.5"
+                className="shrink-0"
               >
-                <Share2 className="h-4 w-4" aria-hidden="true" />
                 Share…
               </Button>
             </div>
@@ -208,20 +209,18 @@ export function MeetingInviteDialog({
             </pre>
             <div className="flex flex-wrap gap-2">
               <Button
+                icon={copiedWhat === "invitation" ? (
+                  <Check aria-hidden="true" />
+                ) : (
+                  <Copy aria-hidden="true" />
+                )}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => void copyInvitation()}
-                className="gap-1.5"
               >
-                {copiedWhat === "invitation" ? (
-                  <Check className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Copy className="h-4 w-4" aria-hidden="true" />
-                )}
                 {copiedWhat === "invitation" ? "Copied" : "Copy invitation"}
               </Button>
-              <Button variant="outline" size="sm" asChild className="gap-1.5">
+              <Button variant="outline" asChild>
                 <a href={invitationMailto(meeting, link)}>
                   <Mail className="h-4 w-4" aria-hidden="true" />
                   Email invitation
@@ -235,7 +234,7 @@ export function MeetingInviteDialog({
             <section className="space-y-2" aria-label="Add to calendar">
               <SectionTitle>Add to calendar</SectionTitle>
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" asChild className="gap-1.5">
+                <Button variant="outline" asChild>
                   <a
                     href={googleCalendarUrl(calendarEvent)}
                     target="_blank"
@@ -248,9 +247,7 @@ export function MeetingInviteDialog({
                 {outlookWebSupports(calendarEvent) ? (
                   <Button
                     variant="outline"
-                    size="sm"
                     asChild
-                    className="gap-1.5"
                   >
                     <a
                       href={outlookCalendarUrl(calendarEvent)}
@@ -263,13 +260,11 @@ export function MeetingInviteDialog({
                   </Button>
                 ) : null}
                 <Button
+                  icon={<Download aria-hidden="true" />}
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={() => downloadIcs(calendarEvent)}
-                  className="gap-1.5"
                 >
-                  <Download className="h-4 w-4" aria-hidden="true" />
                   Download .ics
                 </Button>
               </div>

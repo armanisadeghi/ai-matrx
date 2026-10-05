@@ -284,9 +284,12 @@ function CopyButton({
   const [copied, setCopied] = useState(false);
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className="h-7 text-xs px-2 gap-1"
+      icon={copied ? (
+        <Check className="text-green-500" />
+      ) : (
+        <Copy />
+      )}
+      variant="quiet"
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text).catch(() => null);
@@ -294,11 +297,6 @@ function CopyButton({
         setTimeout(() => setCopied(false), 1800);
       }}
     >
-      {copied ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
       {copied ? "Copied" : label}
     </Button>
   );
@@ -385,22 +383,19 @@ function KVEditor({
             className="h-6 text-xs flex-1 min-w-0"
           />
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => remove(i)}
-            className="h-6 w-6 p-0 flex-shrink-0"
+            className="w-6 flex-shrink-0"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       ))}
       <Button
-        size="sm"
-        variant="ghost"
+        icon={<Plus />}
+        variant="quiet"
         onClick={add}
-        className="h-6 text-[10px] gap-1 px-2"
-      >
-        <Plus className="h-3 w-3" /> Add
+      > Add
       </Button>
     </div>
   );
@@ -755,10 +750,11 @@ export default function DynamicApiClient() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<Play />}
+                    variant="primary"
                     onClick={handleExecute}
-                    className="h-9 px-4 gap-2 flex-shrink-0"
-                  >
-                    <Play className="h-4 w-4" /> Send
+                    className="flex-shrink-0"
+                  > Send
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
@@ -767,11 +763,11 @@ export default function DynamicApiClient() {
               </Tooltip>
             ) : (
               <Button
+                icon={<Square />}
                 onClick={handleCancel}
-                variant="destructive"
-                className="h-9 px-4 gap-2 flex-shrink-0"
-              >
-                <Square className="h-4 w-4" /> Cancel
+                variant="danger"
+                className="flex-shrink-0"
+              > Cancel
               </Button>
             )}
           </div>
@@ -799,9 +795,7 @@ export default function DynamicApiClient() {
                         Parse NDJSON stream
                       </label>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 text-[10px] px-1.5 gap-1"
+                        variant="quiet"
                         onClick={() => setBody(tryPrettyJson(body))}
                       >
                         Format JSON
@@ -869,12 +863,10 @@ export default function DynamicApiClient() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
-                          variant="ghost"
+                          icon={<BookOpen />}
+                          variant="quiet"
                           onClick={saveRequest}
-                          className="h-6 text-[10px] px-1.5 gap-1"
-                        >
-                          <BookOpen className="h-2.5 w-2.5" /> Save
+                        > Save
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent className="text-xs">
@@ -960,14 +952,13 @@ export default function DynamicApiClient() {
                               {req.savedAt}
                             </span>
                             <Button
-                              size="sm"
-                              variant="ghost"
+                              variant="quiet"
                               onClick={() =>
                                 persistSaved(
                                   saved.filter((r) => r.id !== req.id),
                                 )
                               }
-                              className="h-5 w-5 p-0 opacity-0 group-hover:opacity-100"
+                              className="w-5 opacity-0 group-hover:opacity-100"
                             >
                               <X className="h-3 w-3" />
                             </Button>
@@ -1043,17 +1034,15 @@ export default function DynamicApiClient() {
                           Endpoint Browser
                         </p>
                         <Button
-                          size="sm"
+                          icon={openApiLoading ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Download />
+                          )}
                           variant="outline"
                           onClick={fetchOpenApiSpec}
                           disabled={openApiLoading}
-                          className="h-6 text-[10px] px-1.5 gap-1"
                         >
-                          {openApiLoading ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Download className="h-3 w-3" />
-                          )}
                           {openApiEndpoints.length > 0
                             ? "Refresh"
                             : "Fetch Spec"}
@@ -1155,11 +1144,10 @@ export default function DynamicApiClient() {
                 )}
                 <div className="ml-auto">
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={clearResponse}
                     disabled={isRunning}
-                    className="h-6 w-6 p-0"
+                    className="w-6"
                   >
                     <RotateCcw className="h-3 w-3" />
                   </Button>

@@ -64,11 +64,12 @@ export function SaveSheet({
 
         <DrawerFooter className="pb-safe pt-3">
           <Button
-            className="h-11 w-full"
+            icon={<FileDown />}
+            variant="primary"
+            className="w-full"
             disabled={label.trim().length === 0}
             onClick={onSave}
           >
-            <FileDown className="mr-1.5 h-4 w-4" />
             Create PDF & extract
           </Button>
         </DrawerFooter>

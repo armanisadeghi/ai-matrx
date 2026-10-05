@@ -18,7 +18,7 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, BookmarkPlus, Loader2 } from "lucide-react";
 import { useAgentCatalogRows } from "@ai-matrx/agents/catalog/react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -197,38 +197,36 @@ export default function CustomAgentWindow({
             footerLeft: (
               <>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<ArrowLeft />}
+                  variant="quiet"
                   onClick={() => setAgentId(null)}
                   disabled={isOpening}
                 >
-                  <ArrowLeft className="mr-1 h-4 w-4" />
                   Back
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<BookmarkPlus />}
+                  variant="quiet"
                   onClick={handleSaveAsShortcut}
                   disabled={load.status !== "ready"}
                 >
-                  <BookmarkPlus className="mr-1 h-4 w-4" />
                   Save as shortcut
                 </Button>
               </>
             ),
             footerRight: (
               <>
-                <Button variant="outline" size="sm" onClick={close}>
+                <Button variant="outline" onClick={close}>
                   Cancel
                 </Button>
                 <Button
-                  size="sm"
+                  icon={isOpening ? (
+                    <Loader2 className="animate-spin" />
+                  ) : null}
+                  variant="primary"
                   onClick={handleOpen}
                   disabled={load.status !== "ready" || isOpening}
                 >
-                  {isOpening ? (
-                    <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                  ) : null}
                   Open
                 </Button>
               </>
@@ -262,7 +260,6 @@ export default function CustomAgentWindow({
                   <ErrorAlchemyMenu error={load.message} />
                 </span>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setAttempt((n) => n + 1)}
                 >

@@ -65,17 +65,18 @@ export function UseOwnDialog({
         disabled={busy}
       />
       <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+        <Button type="button" variant="quiet" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
         <Button
+          icon={busy ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           type="button"
           disabled={!chosen || busy}
           onClick={async () => {
             if (await onSave(draft)) onClose();
           }}
         >
-          {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
           Use this for {whoFor}
         </Button>
       </div>

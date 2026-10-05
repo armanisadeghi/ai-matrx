@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
@@ -358,7 +358,7 @@ export default function LSIMarkdownGenerator({
                   </p>
                 </div>
 
-                <Button
+                <SurfaceButton
                   type="submit"
                   disabled={
                     !variables.primary_keyword.trim() ||
@@ -373,7 +373,7 @@ export default function LSIMarkdownGenerator({
                   {isExecuting
                     ? "Generating Keywords..."
                     : "Generate LSI Keywords"}
-                </Button>
+                </SurfaceButton>
               </form>
             </CardContent>
           </Card>
@@ -387,13 +387,13 @@ export default function LSIMarkdownGenerator({
               {variables.primary_keyword}
             </span>
             <Button
+              icon={<RefreshCw />}
+              type="submit"
               onClick={handleNewSearch}
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               className="flex-shrink-0"
               disabled={isExecuting || isStreaming}
             >
-              <RefreshCw className="w-4 h-4 mr-1" />
               New Search
             </Button>
           </div>
@@ -522,9 +522,9 @@ export default function LSIMarkdownGenerator({
                   </div>
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto">
                     <Button
+                      type="submit"
                       onClick={copyAllKeywords}
                       variant="outline"
-                      size="sm"
                     >
                       {copiedCategory === "all" ? (
                         <>
@@ -539,19 +539,17 @@ export default function LSIMarkdownGenerator({
                       )}
                     </Button>
                     <Button
+                      icon={<FileText />}
+                      type="submit"
                       onClick={downloadAsMarkdown}
                       variant="outline"
-                      size="sm"
                     >
-                      <FileText className="w-4 h-4 mr-2" />
                       Markdown
                     </Button>
-                    <Button onClick={downloadAsCSV} variant="outline" size="sm">
-                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                    <Button icon={<FileSpreadsheet />} type="submit" onClick={downloadAsCSV} variant="outline">
                       CSV
                     </Button>
-                    <Button onClick={downloadAsTXT} variant="outline" size="sm">
-                      <FileText className="w-4 h-4 mr-2" />
+                    <Button icon={<FileText />} type="submit" onClick={downloadAsTXT} variant="outline">
                       TXT
                     </Button>
                   </div>
@@ -590,19 +588,19 @@ export default function LSIMarkdownGenerator({
                         </CardTitle>
                         <div className="flex gap-1">
                           <Button
-                            size="sm"
-                            variant="ghost"
+                            type="submit"
+                            variant="quiet"
                             onClick={() => addKeyword(category)}
-                            className="h-8 w-8 p-0"
+                            className="w-8"
                             title="Add keyword"
                           >
                             <Plus className="w-4 h-4" />
                           </Button>
                           <Button
-                            size="sm"
-                            variant="ghost"
+                            type="submit"
+                            variant="quiet"
                             onClick={() => copyCategory(category, keywords)}
-                            className="h-8 w-8 p-0"
+                            className="w-8"
                             title="Copy category"
                           >
                             {copiedCategory === category ? (
@@ -648,18 +646,18 @@ export default function LSIMarkdownGenerator({
                                     }}
                                   />
                                   <Button
-                                    size="sm"
-                                    variant="ghost"
+                                    type="submit"
+                                    variant="quiet"
                                     onClick={() => saveEdit(category, index)}
-                                    className="h-8 w-8 p-0"
+                                    className="w-8"
                                   >
                                     <Check className="w-3 h-3" />
                                   </Button>
                                   <Button
-                                    size="sm"
-                                    variant="ghost"
+                                    type="submit"
+                                    variant="quiet"
                                     onClick={() => cancelEdit(category, index)}
-                                    className="h-8 w-8 p-0"
+                                    className="w-8"
                                   >
                                     <X className="w-3 h-3" />
                                   </Button>
@@ -671,23 +669,23 @@ export default function LSIMarkdownGenerator({
                                   </span>
                                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
+                                      type="submit"
+                                      variant="quiet"
                                       onClick={() =>
                                         startEdit(category, index, keyword)
                                       }
-                                      className="h-7 w-7 p-0"
+                                      className="w-7"
                                       title="Edit"
                                     >
                                       <Edit2 className="w-3 h-3" />
                                     </Button>
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
+                                      type="submit"
+                                      variant="quiet"
                                       onClick={() =>
                                         removeKeyword(category, index)
                                       }
-                                      className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                                      className="w-7"
                                       title="Remove"
                                     >
                                       <X className="w-3 h-3" />

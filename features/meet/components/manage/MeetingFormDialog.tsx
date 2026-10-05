@@ -576,21 +576,19 @@ export function MeetingFormDialog({
                   </SelectContent>
                 </Select>
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 gap-1.5"
-                  onClick={runFindTime}
-                  disabled={findTime.loading}
-                >
-                  {findTime.loading ? (
+                  icon={findTime.loading ? (
                     <Loader2
-                      className="h-4 w-4 animate-spin"
+                      className="animate-spin"
                       aria-hidden="true"
                     />
                   ) : (
-                    <CalendarSearch className="h-4 w-4" aria-hidden="true" />
+                    <CalendarSearch aria-hidden="true" />
                   )}
+                  type="button"
+                  variant="quiet"
+                  onClick={runFindTime}
+                  disabled={findTime.loading}
+                >
                   Find a time
                 </Button>
               </div>
@@ -674,21 +672,20 @@ export function MeetingFormDialog({
                     </Label>
                     {draft.title.trim() !== "" && actions.organizationId ? (
                       <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="ml-auto h-7 gap-1.5 px-2 text-xs"
-                        onClick={() => void runAgendaDraft()}
-                        disabled={agendaDraft.run.status === "running"}
-                      >
-                        {agendaDraft.run.status === "running" ? (
+                        icon={agendaDraft.run.status === "running" ? (
                           <Loader2
-                            className="h-3.5 w-3.5 animate-spin"
+                            className="animate-spin"
                             aria-hidden="true"
                           />
                         ) : (
-                          <PenLine className="h-3.5 w-3.5" aria-hidden="true" />
+                          <PenLine aria-hidden="true" />
                         )}
+                        type="button"
+                        variant="quiet"
+                        className="ml-auto"
+                        onClick={() => void runAgendaDraft()}
+                        disabled={agendaDraft.run.status === "running"}
+                      >
                         Draft agenda
                       </Button>
                     ) : null}
@@ -720,9 +717,7 @@ export function MeetingFormDialog({
                       <div className="ml-auto flex gap-1">
                         <Button
                           type="button"
-                          size="sm"
                           variant="outline"
-                          className="h-7 text-xs"
                           onClick={() => {
                             set({ agenda: pendingAgenda });
                             setPendingAgenda(null);
@@ -732,9 +727,7 @@ export function MeetingFormDialog({
                         </Button>
                         <Button
                           type="button"
-                          size="sm"
                           variant="outline"
-                          className="h-7 text-xs"
                           onClick={() => {
                             set({
                               agenda: `${draft.agenda.trim()}\n\n${pendingAgenda}`,
@@ -746,9 +739,7 @@ export function MeetingFormDialog({
                         </Button>
                         <Button
                           type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
+                          variant="quiet"
                           onClick={() => setPendingAgenda(null)}
                         >
                           Discard
@@ -875,23 +866,24 @@ export function MeetingFormDialog({
               ) : null}
               <Button
                 type="button"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => onOpenChange(false)}
                 disabled={saving}
               >
                 Cancel
               </Button>
               <Button
+                icon={saving ? (
+                  <Loader2
+                    className="animate-spin"
+                    aria-hidden="true"
+                  />
+                ) : null}
+                variant="primary"
                 type="button"
                 onClick={onSave}
                 disabled={problem !== null || saving}
               >
-                {saving ? (
-                  <Loader2
-                    className="h-4 w-4 animate-spin"
-                    aria-hidden="true"
-                  />
-                ) : null}
                 {editing ? "Save" : "Schedule"}
               </Button>
             </div>
@@ -919,7 +911,7 @@ export function MeetingFormDialog({
           </DialogHeader>
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
-              variant="ghost"
+              variant="quiet"
               onClick={() => setExceptionsAsk(null)}
               disabled={saving}
             >
@@ -937,6 +929,7 @@ export function MeetingFormDialog({
               Discard them
             </Button>
             <Button
+              variant="primary"
               disabled={saving}
               onClick={() => {
                 const ask = exceptionsAsk;
@@ -977,16 +970,15 @@ export function MeetingFormDialog({
           </RadioGroup>
           <DialogFooter>
             <Button
-              variant="ghost"
+              variant="quiet"
               onClick={() => setScopeAsk(false)}
               disabled={saving}
             >
               Cancel
             </Button>
-            <Button onClick={() => void submit(scope)} disabled={saving}>
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              ) : null}
+            <Button icon={saving ? (
+                <Loader2 className="animate-spin" aria-hidden="true" />
+              ) : null} variant="primary" onClick={() => void submit(scope)} disabled={saving}>
               OK
             </Button>
           </DialogFooter>

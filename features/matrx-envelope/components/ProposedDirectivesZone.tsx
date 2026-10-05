@@ -423,22 +423,21 @@ function ProposedDirectiveCard({ proposal }: { proposal: ProposedDirective }) {
         </Badge>
       </div>
       <div className="mt-3 flex items-center justify-end gap-2">
-        <Button variant="ghost" size="sm" onClick={dismiss} disabled={busy}>
-          <X className="size-4" />
+        <Button icon={<X />} variant="quiet" onClick={dismiss} disabled={busy}>
           Decline
         </Button>
         <Button
-          size="sm"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check />
+          )}
+          variant="primary"
           onClick={onApprove}
           disabled={busy}
           aria-busy={busy}
           data-approve-state={busy ? "applying" : "idle"}
         >
-          {busy ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Check className="size-4" />
-          )}
           {/* The PENDING STATE says what is happening, so a click that looks
               like it did nothing is never mistaken for one that did. */}
           {busy ? "Applying…" : "Approve"}

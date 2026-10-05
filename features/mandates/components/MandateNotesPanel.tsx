@@ -197,18 +197,17 @@ export function MandateNotesPanel({
             </button>
           ))}
           <Button
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <MessageSquarePlus />
+            )}
             type="button"
-            size="sm"
-            variant="secondary"
+            variant="outline"
             disabled={!body.trim() || saving}
             onClick={() => void save()}
-            className="ml-auto h-6 gap-1 px-2 text-[11px]"
+            className="ml-auto"
           >
-            {saving ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <MessageSquarePlus className="h-3 w-3" />
-            )}
             Save note
           </Button>
         </div>

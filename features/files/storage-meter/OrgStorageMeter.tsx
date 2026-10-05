@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { AlertTriangle, Gauge, HardDrive, RefreshCw } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { cn } from "@/lib/utils";
 
@@ -77,16 +77,15 @@ export function OrgStorageMeter({
         </span>
         <span className="text-muted-foreground">{meter.detail}</span>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 w-fit px-1.5 text-[11px]"
+          icon={<RefreshCw
+            className={cn("h-3 w-3", loading && "animate-spin")}
+            aria-hidden="true"
+          />}
+          variant="quiet"
+          className="w-fit"
           onClick={() => void refresh()}
           disabled={loading}
         >
-          <RefreshCw
-            className={cn("h-3 w-3", loading && "animate-spin")}
-            aria-hidden="true"
-          />
           <span className="ml-1">Try again</span>
         </Button>
       </div>

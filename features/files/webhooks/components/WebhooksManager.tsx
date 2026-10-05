@@ -83,7 +83,6 @@ function SecretReveal({ secret }: { secret: string }) {
         </code>
       </div>
       <Button
-        size="sm"
         variant="outline"
         onClick={() => {
           void navigator.clipboard.writeText(secret);
@@ -151,17 +150,14 @@ function DeliveryRow({
       </span>
       {canRedeliver && (
         <Button
-          size="icon"
-          variant="ghost"
-          className="size-6"
+          icon={<RefreshCw
+            className={`size-3.5 ${redelivering ? "animate-spin" : ""}`}
+          />} aria-label="Redeliver this event now"
+          variant="quiet"
           disabled={redelivering}
           onClick={handleRedeliver}
           title="Redeliver this event now"
-        >
-          <RefreshCw
-            className={`size-3.5 ${redelivering ? "animate-spin" : ""}`}
-          />
-        </Button>
+        />
       )}
     </div>
   );
@@ -295,29 +291,23 @@ function WebhookCard({
             aria-label="Active"
           />
           <Button
-            size="icon"
-            variant="ghost"
+            icon={<Send />} aria-label="Send a test event to this endpoint"
+            variant="quiet"
             onClick={handleTest}
             title="Send a test event to this endpoint"
-          >
-            <Send className="size-4" />
-          </Button>
+          />
           <Button
-            size="icon"
-            variant="ghost"
+            icon={<RotateCw />} aria-label="Rotate signing secret"
+            variant="quiet"
             onClick={handleRotate}
             title="Rotate signing secret"
-          >
-            <RotateCw className="size-4" />
-          </Button>
+          />
           <Button
-            size="icon"
-            variant="ghost"
+            icon={<Trash2 className="text-red-500" />} aria-label="Delete webhook"
+            variant="quiet"
             onClick={handleDelete}
             title="Delete webhook"
-          >
-            <Trash2 className="size-4 text-red-500" />
-          </Button>
+          />
         </div>
       </div>
 
@@ -495,8 +485,7 @@ export function WebhooksManager() {
         />
         <div className="flex items-center gap-2">
           <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} counts={counts} countsLoading={laneRows === null} />
-          <Button size="sm" onClick={() => setCreating((c) => !c)}>
-            <Plus className="size-4" /> New webhook
+          <Button icon={<Plus />} variant="primary" onClick={() => setCreating((c) => !c)}> New webhook
           </Button>
         </div>
       </div>
@@ -608,14 +597,13 @@ export function WebhooksManager() {
           </div>
           <div className="flex justify-end gap-2">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => setCreating(false)}
             >
               Cancel
             </Button>
             <Button
-              size="sm"
+              variant="primary"
               onClick={handleCreate}
               disabled={submitting || (!allEvents && selected.size === 0)}
             >

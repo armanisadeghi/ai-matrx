@@ -134,8 +134,6 @@ export function WorkflowListContent({
             </p>
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 text-[11.5px]"
               onClick={onRetry}
             >
               Try again

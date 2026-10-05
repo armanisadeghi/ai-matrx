@@ -333,9 +333,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                       <div className="flex shrink-0 flex-col gap-1">
                         <Button
                           type="button"
-                          size="sm"
                           variant="outline"
-                          className="h-7 gap-1 px-2 text-[11px]"
                           disabled={action.disabled}
                           title={action.title}
                           onClick={() => {
@@ -373,9 +371,7 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
                   {observations.length > 10 ? (
                     <Button
                       type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-[11px]"
+                      variant="quiet"
                       onClick={() => setShowAllRecords((current) => !current)}
                     >
                       {showAllRecords
@@ -438,9 +434,13 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
             </p>
           </div>
           <Button
+            icon={pageGapRunning ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Search />
+            )}
+            variant="primary"
             type="button"
-            size="sm"
-            className="gap-1.5"
             disabled={
               pageGapRunning ||
               pageGap.isLoading ||
@@ -449,11 +449,6 @@ export function PageBacklinksCard({ page }: { page: MarketingPage }) {
             }
             onClick={() => void runPageGap()}
           >
-            {pageGapRunning ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Search className="h-3.5 w-3.5" />
-            )}
             {pageGapMatches.length > 0 ? "Refresh comparison" : "Find link prospects"}
           </Button>
         </div>

@@ -446,16 +446,16 @@ export function AccessExplorerTab({
               className="min-w-0 flex-1"
             />
             <Button
+              icon={lookupState === "loading" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Search />
+              )}
+              variant="primary"
               onClick={onLookupUser}
               disabled={!email.trim() || lookupState === "loading"}
-              size="sm"
               className="shrink-0"
             >
-              {lookupState === "loading" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Search className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Look up
             </Button>
           </div>

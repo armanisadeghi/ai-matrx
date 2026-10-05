@@ -60,9 +60,12 @@ function CopyInstructionButton({ instruction }: { instruction: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
+      icon={copied ? (
+        <Check className="text-success" />
+      ) : (
+        <Copy />
+      )}
       variant="outline"
-      size="sm"
-      className="h-7 gap-1.5"
       onClick={() => {
         void writeClipboard(instruction).then(() => {
           setCopied(true);
@@ -71,11 +74,6 @@ function CopyInstructionButton({ instruction }: { instruction: string }) {
         });
       }}
     >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-success" />
-      ) : (
-        <Copy className="h-3.5 w-3.5" />
-      )}
       {copied ? "Copied" : "Copy instructions"}
     </Button>
   );
@@ -199,7 +197,7 @@ export function FindingRemedyCard({
         {/* Doors — the page this finding is about, never a dead end. */}
         <div className="flex flex-wrap items-center gap-1.5">
           {pageWorkspaceHref ? (
-            <Button asChild variant="outline" size="sm" className="h-7 gap-1.5">
+            <Button asChild variant="outline">
               <a href={pageWorkspaceHref} target="_blank" rel="noreferrer">
                 <LayoutPanelTop className="h-3.5 w-3.5" />
                 Open the page workspace
@@ -207,7 +205,7 @@ export function FindingRemedyCard({
             </Button>
           ) : null}
           {context.pageUrl ? (
-            <Button asChild variant="outline" size="sm" className="h-7 gap-1.5">
+            <Button asChild variant="outline">
               <a href={context.pageUrl} target="_blank" rel="noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
                 View the live page
@@ -216,25 +214,21 @@ export function FindingRemedyCard({
           ) : null}
           {suppressed && onUnsuppress ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5"
+              icon={<Eye />}
+              variant="quiet"
               disabled={busy}
               onClick={() => void runUnsuppress()}
             >
-              <Eye className="h-3.5 w-3.5" />
               Start flagging this again
             </Button>
           ) : null}
           {!suppressed && onSuppress ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5"
+              icon={<EyeOff />}
+              variant="quiet"
               disabled={busy}
               onClick={() => setSuppressOpen(true)}
             >
-              <EyeOff className="h-3.5 w-3.5" />
               This is intentional
             </Button>
           ) : null}

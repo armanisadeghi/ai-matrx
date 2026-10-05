@@ -139,8 +139,7 @@ export function CredentialMaintenanceEditor({
             </div>
             <Button
               type="button"
-              size="sm"
-              variant="destructive"
+              variant="danger"
               onClick={() => onRemoveMalformed(id)}
             >
               Remove invalid entry
@@ -178,13 +177,13 @@ export function CredentialMaintenanceEditor({
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
-                <Button type="button" size="sm" variant="outline" asChild>
+                <Button type="button" variant="outline" asChild>
                   <a href={entry.source_url} target="_blank" rel="noreferrer">
                     Rotate at source{" "}
                     <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
                   </a>
                 </Button>
-                <Button type="button" size="sm" variant="outline" asChild>
+                <Button type="button" variant="outline" asChild>
                   <a
                     href={entry.deployment_url}
                     target="_blank"
@@ -195,28 +194,26 @@ export function CredentialMaintenanceEditor({
                   </a>
                 </Button>
                 <Button
+                  icon={<RefreshCw />}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   onClick={() =>
                     updateEntry(id, recordCredentialRotation(entry))
                   }
-                >
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Record rotation
+                > Record rotation
                   now
                 </Button>
                 <Button
+                  icon={<Trash2 className="text-destructive" />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
+                  variant="quiet"
                   aria-label={`Remove ${entry.label}`}
                   onClick={() => {
                     const next = { ...entries };
                     delete next[id];
                     onChange(next);
                   }}
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                />
               </div>
             </div>
 
@@ -397,8 +394,7 @@ export function CredentialMaintenanceEditor({
             <p className="text-xs text-destructive">{newIdError} <ErrorAlchemyMenu error={newIdError} /></p>
           ) : null}
         </div>
-        <Button type="button" variant="outline" onClick={addCredential}>
-          <Plus className="mr-1.5 h-4 w-4" /> Add credential
+        <Button icon={<Plus />} type="button" variant="outline" onClick={addCredential}> Add credential
         </Button>
       </div>
     </div>

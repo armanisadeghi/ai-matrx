@@ -155,10 +155,9 @@ function ImageCard({
       {onJumpToPage ? (
         <div className="border-t border-border bg-card/40 px-2 py-1">
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => onJumpToPage(image.page_number)}
-            className="h-6 w-full text-[10px]"
+            className="w-full"
           >
             Open page {image.page_number}
           </Button>

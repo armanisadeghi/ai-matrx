@@ -106,27 +106,27 @@ export function MindMapEditor({ media, isOwner = false }: { media?: StudyMediaRo
       <section className="space-y-2"><Label htmlFor="mind-map-title">Title</Label><Input id="mind-map-title" value={draft.title} onChange={(event) => update({ title: event.target.value })} /></section>
       {recoveryNotice && <p role="status" className="rounded-md border border-primary/30 bg-primary/10 p-3 text-sm text-foreground">{recoveryNotice}</p>}
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2"><div><h2 className="text-base font-semibold">Concepts</h2><p className="text-sm text-muted-foreground">Add the ideas people should see in the map.</p></div><Button type="button" size="sm" variant="outline" onClick={() => update({ nodes: [...draft.nodes, { __kind: "diagram_node", id: newId("node"), label: "", description: "", details: "" }] })}><Plus className="mr-1 h-4 w-4" />Add concept</Button></div>
+        <div className="flex items-center justify-between gap-2"><div><h2 className="text-base font-semibold">Concepts</h2><p className="text-sm text-muted-foreground">Add the ideas people should see in the map.</p></div><Button icon={<Plus />} type="button" variant="outline" onClick={() => update({ nodes: [...draft.nodes, { __kind: "diagram_node", id: newId("node"), label: "", description: "", details: "" }] })}>Add concept</Button></div>
         {draft.nodes.map((node, index) => <div key={String(node.id)} className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
           <Field label="Concept" value={stringValue(node.label)} onChange={(value) => updateNode(index, { label: value })} />
           <Field label="ID" value={stringValue(node.id)} onChange={(value) => updateNode(index, { id: value })} />
           <Field label="Short explanation" value={stringValue(node.description)} onChange={(value) => updateNode(index, { description: value })} />
           <Field label="Details" value={stringValue(node.details)} onChange={(value) => updateNode(index, { details: value })} />
-          <Button type="button" variant="ghost" className="justify-self-start text-destructive hover:text-destructive" onClick={() => update({ nodes: draft.nodes.filter((_, position) => position !== index), edges: draft.edges.filter((edge) => edge.source !== node.id && edge.target !== node.id) })}><Trash2 className="mr-1 h-4 w-4" />Delete concept</Button>
+          <Button icon={<Trash2 />} type="button" variant="quiet" className="justify-self-start" onClick={() => update({ nodes: draft.nodes.filter((_, position) => position !== index), edges: draft.edges.filter((edge) => edge.source !== node.id && edge.target !== node.id) })}>Delete concept</Button>
         </div>)}
       </section>
       <section className="space-y-3">
-        <div className="flex items-center justify-between gap-2"><div><h2 className="text-base font-semibold">Connections</h2><p className="text-sm text-muted-foreground">Show how two concepts relate.</p></div><Button type="button" size="sm" variant="outline" disabled={draft.nodes.length < 2} onClick={() => update({ edges: [...draft.edges, { __kind: "diagram_edge", id: newId("edge"), source: stringValue(draft.nodes[0]?.id), target: stringValue(draft.nodes[1]?.id), label: "" }] })}><Plus className="mr-1 h-4 w-4" />Add connection</Button></div>
+        <div className="flex items-center justify-between gap-2"><div><h2 className="text-base font-semibold">Connections</h2><p className="text-sm text-muted-foreground">Show how two concepts relate.</p></div><Button icon={<Plus />} type="button" variant="outline" disabled={draft.nodes.length < 2} onClick={() => update({ edges: [...draft.edges, { __kind: "diagram_edge", id: newId("edge"), source: stringValue(draft.nodes[0]?.id), target: stringValue(draft.nodes[1]?.id), label: "" }] })}>Add connection</Button></div>
         {draft.edges.map((edge, index) => <div key={String(edge.id)} className="grid gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-2">
           <Field label="Connection label" value={stringValue(edge.label)} onChange={(value) => updateEdge(index, { label: value })} />
           <Field label="Connection ID" value={stringValue(edge.id)} onChange={(value) => updateEdge(index, { id: value })} />
           <NodeChoice label="From" value={stringValue(edge.source)} nodes={draft.nodes} onChange={(value) => updateEdge(index, { source: value })} />
           <NodeChoice label="To" value={stringValue(edge.target)} nodes={draft.nodes} onChange={(value) => updateEdge(index, { target: value })} />
-          <Button type="button" variant="ghost" className="justify-self-start text-destructive hover:text-destructive" onClick={() => update({ edges: draft.edges.filter((_, position) => position !== index) })}><Trash2 className="mr-1 h-4 w-4" />Delete connection</Button>
+          <Button icon={<Trash2 />} type="button" variant="quiet" className="justify-self-start" onClick={() => update({ edges: draft.edges.filter((_, position) => position !== index) })}>Delete connection</Button>
         </div>)}
       </section>
       {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(recoveryKey); router.back(); }}>Cancel</Button><Button type="button" disabled={saving || !dirty} onClick={() => void save()}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create mind map"}</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(recoveryKey); router.back(); }}>Cancel</Button><Button variant="primary" type="button" disabled={saving || !dirty} onClick={() => void save()}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create mind map"}</Button></div>
     </main>
   </></SurfaceRuntimeProvider>;
 }

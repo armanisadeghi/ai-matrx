@@ -87,21 +87,18 @@ function StreamingSim() {
   return (
     <div className="space-y-3">
       <div className="flex gap-2">
-        <Button size="sm" onClick={start} disabled={running}>
-          <Play className="mr-1.5 h-3.5 w-3.5" /> Simulate stream
+        <Button icon={<Play />} variant="primary" onClick={start} disabled={running}> Simulate stream
         </Button>
-        <Button size="sm" variant="outline" onClick={stop} disabled={!running}>
-          <Square className="mr-1.5 h-3.5 w-3.5" /> Stop
+        <Button icon={<Square />} variant="outline" onClick={stop} disabled={!running}> Stop
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<RotateCcw />}
+          variant="quiet"
           onClick={() => {
             stop();
             setText("");
           }}
-        >
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Reset
+        > Reset
         </Button>
       </div>
       <pre className="max-h-32 overflow-auto rounded-md bg-muted p-2 text-[11px] text-muted-foreground">

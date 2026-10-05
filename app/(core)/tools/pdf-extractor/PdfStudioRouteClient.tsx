@@ -111,17 +111,16 @@ function ExistingFileExtractionGate({ fileId }: { fileId: string }) {
         {extraction.status === "error" ? (
           <div className="mt-4 flex flex-wrap gap-2">
             <Button
-              size="sm"
+              icon={<RotateCcw />}
+              variant="primary"
               onClick={() => {
                 extraction.reset();
                 start();
               }}
             >
-              <RotateCcw className="mr-1.5 size-3.5" />
               Retry extraction
             </Button>
             <Button
-              size="sm"
               variant="outline"
               onClick={() => router.push(`/files/f/${fileId}`)}
             >

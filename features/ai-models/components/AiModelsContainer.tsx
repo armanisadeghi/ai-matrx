@@ -320,7 +320,7 @@ export default function AiModelsContainer() {
         {loadError && models.length > 0 && (
           <div role="alert" className="flex shrink-0 items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-sm">
             <span className="min-w-0 flex-1">{loadError}{models.length > 0 ? " Previously loaded models remain visible." : ""}</span>
-            <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={() => void loadData()}>Retry</Button>
+            <Button type="button" variant="outline" disabled={isLoading} onClick={() => void loadData()}>Retry</Button>
             <ErrorAlchemyMenu className="ml-auto" />
           </div>
         )}
@@ -339,24 +339,20 @@ export default function AiModelsContainer() {
           </div>
           <div className="shrink-0 px-2 border-l flex items-center gap-1">
             <Button
-              variant={referenceOpen ? "secondary" : "ghost"}
-              size="sm"
-              className="h-7 px-2 text-xs gap-1.5"
+              icon={<BookOpen />}
+              variant={referenceOpen ? "outline" : "quiet"}
               onClick={() => setReferenceOpen((v) => !v)}
               title="Open floating provider reference panel"
             >
-              <BookOpen className="h-3.5 w-3.5" />
               Provider Ref
             </Button>
             {deprecatedCount > 0 && (
               <Button
-                variant={auditOpen ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2 text-xs gap-1.5"
+                icon={<AlertTriangle className="text-amber-500" />}
+                variant={auditOpen ? "outline" : "quiet"}
                 onClick={() => setAuditOpen((v) => !v)}
                 title="View and fix deprecated model references"
               >
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
                 Deprecated Audit
                 <Badge
                   variant="outline"
@@ -452,9 +448,8 @@ export default function AiModelsContainer() {
                 >
                   <div className="h-full border-l-2 border-l-primary/20 flex flex-col overflow-hidden relative">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 absolute top-2 right-10 z-10"
+                      variant="quiet"
+                      className="w-6 absolute top-2 right-10 z-10"
                       onClick={() => setPanelMaximized((v) => !v)}
                       title={
                         panelMaximized

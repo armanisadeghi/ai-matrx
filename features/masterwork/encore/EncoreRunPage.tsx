@@ -229,7 +229,7 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
           This one isn&apos;t ready to run yet — the expert behind it
           hasn&apos;t released it.
         </p>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href="/masterwork/encore">Back to Encore</Link>
         </Button>
       </div>
@@ -291,18 +291,15 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             </div>
             {ownsRulebook && masterwork.rulebook ? (
               <Button
+                icon={<Wrench />} aria-label="Open in Studio"
                 asChild
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
+                variant="quiet"
                 title="Open in Studio"
               >
                 <Link
                   href={`/masterwork/${masterwork.rulebook.id}/masterworks`}
                   aria-label="Open in Studio"
-                >
-                  <Wrench className="h-4 w-4" />
-                </Link>
+                />
               </Button>
             ) : null}
           </div>
@@ -321,13 +318,11 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                 Draft — only you can see this one. Run it as much as you like.
               </span>
               <Button
-                size="sm"
+                icon={<Rocket />}
                 variant="outline"
-                className="h-7 text-xs"
                 disabled={releasing}
                 onClick={() => void releaseThis()}
               >
-                <Rocket className="mr-1 h-3.5 w-3.5" />
                 {releasing ? "Releasing…" : "Release it"}
               </Button>
             </div>

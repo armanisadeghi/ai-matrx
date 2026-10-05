@@ -291,7 +291,6 @@ export function ScopeTypeFormSheet({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={addVariableKey}
             >
               Add
@@ -331,11 +330,12 @@ export function ScopeTypeFormSheet({
             Cancel
           </Button>
           <Button
+            icon={saving && <Loader2 className="animate-spin" />}
+            variant="primary"
             className="flex-1"
             onClick={handleSubmit}
             disabled={!canSave || saving}
           >
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {isEdit ? "Save Changes" : "Create Type"}
           </Button>
         </div>

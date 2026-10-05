@@ -382,15 +382,12 @@ export function PodcastsTable({
             )}
         <Button
           variant="outline"
-          size="sm"
           onClick={onRefresh}
-          className="h-8 px-2"
           title="Refresh"
         >
           <RefreshCw className="h-3.5 w-3.5" />
         </Button>
-        <Button size="sm" onClick={onCreate} className="h-8 gap-1.5">
-          <Plus className="h-3.5 w-3.5" />
+        <Button icon={<Plus />} variant="primary" onClick={onCreate}>
           New {activeTab === "shows" ? "Show" : "Episode"}
         </Button>
       </div>

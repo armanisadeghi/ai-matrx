@@ -211,7 +211,7 @@ export function MandateCandidatesPanel({
         <p className="text-sm text-destructive">
           {failure} <ErrorAlchemyMenu error={failure} />
         </p>
-        <Button variant="outline" size="sm" onClick={reload}>
+        <Button variant="outline" onClick={reload}>
           Retry
         </Button>
       </div>
@@ -245,8 +245,7 @@ export function MandateCandidatesPanel({
           {active ? null : "No candidate is collecting. Set one to try a change on real runs first."}
         </div>
         {readOnly ? null : (
-          <Button size="sm" className="gap-1" onClick={() => setDialogOpen(true)}>
-            <Plus className="h-3.5 w-3.5" />
+          <Button icon={<Plus />} variant="primary" onClick={() => setDialogOpen(true)}>
             {active ? "New candidate" : "Set candidate"}
           </Button>
         )}
@@ -494,41 +493,36 @@ function DecisionButtons({
       <div className="flex flex-wrap items-center gap-1.5">
         {open ? (
           <Button
-            size="sm"
-            className="h-7 gap-1 text-xs"
+            icon={busy === "promote" ? <Loader2 className="animate-spin" /> : <ArrowUpCircle />}
+            variant="primary"
             disabled={busy !== null}
             onClick={() => setPending("promote")}
             data-candidate-promote
             title="Make it what runs here. Put back stays available for a while."
           >
-            {busy === "promote" ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowUpCircle className="h-3 w-3" />}
             Promote
           </Button>
         ) : null}
         {canPutBack ? (
           <Button
-            size="sm"
+            icon={busy === "put-back" ? <Loader2 className="animate-spin" /> : <Undo2 />}
             variant="outline"
-            className="h-7 gap-1 text-xs"
             disabled={busy !== null}
             onClick={() => setPending("put-back")}
             data-candidate-put-back
             title={`Restore what ran before, until ${new Date(candidate.put_back_until as string).toLocaleString()}.`}
           >
-            {busy === "put-back" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
             Put back
           </Button>
         ) : null}
         {open ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs text-muted-foreground"
+            icon={busy === "discard" ? <Loader2 className="animate-spin" /> : <Trash2 />}
+            variant="quiet"
             disabled={busy !== null}
             onClick={() => setPending("discard")}
             data-candidate-discard
           >
-            {busy === "discard" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
             Discard
           </Button>
         ) : null}
@@ -539,9 +533,7 @@ function DecisionButtons({
           {versions.map((choice) => (
             <Button
               key={choice.version_id ?? "latest"}
-              size="sm"
               variant="outline"
-              className="h-7 text-xs"
               disabled={busy !== null}
               onClick={() => void promote(choice.version_id ?? undefined)}
             >

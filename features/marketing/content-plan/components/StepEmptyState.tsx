@@ -37,18 +37,17 @@ export function StepEmptyState({
   const Icon = action?.icon;
   const button = action ? (
     <Button
+      icon={action.busy ? (
+        <Loader2 className="animate-spin" aria-hidden />
+      ) : Icon ? (
+        <Icon aria-hidden />
+      ) : null}
       type="button"
       variant="outline"
-      size="sm"
-      className="h-7 shrink-0 gap-1 text-xs"
+      className="shrink-0"
       disabled={action.busy || action.disabled}
       onClick={action.onClick}
     >
-      {action.busy ? (
-        <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-      ) : Icon ? (
-        <Icon className="h-3 w-3" aria-hidden />
-      ) : null}
       {action.label}
     </Button>
   ) : null;

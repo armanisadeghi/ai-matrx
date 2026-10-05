@@ -447,6 +447,7 @@ export function CodeFileManagerWindow({
               Cancel
             </Button>
             <Button
+              variant="primary"
               onClick={handleCreateFolderSubmit}
               disabled={!newFolderName.trim()}
             >
@@ -487,6 +488,7 @@ export function CodeFileManagerWindow({
               Cancel
             </Button>
             <Button
+              variant="primary"
               onClick={handleRenameSubmit}
               disabled={
                 !renameValue.trim() ||

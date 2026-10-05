@@ -366,7 +366,7 @@ const MarkdownClassificationTester = ({
                         </Select>
                     </div>
 
-                    <Button onClick={handleParseClick} className="whitespace-nowrap h-8 text-xs" aria-label="Parse Markdown">
+                    <Button variant="primary" onClick={handleParseClick} aria-label="Parse Markdown">
                         Reprocess
                     </Button>
                 </div>

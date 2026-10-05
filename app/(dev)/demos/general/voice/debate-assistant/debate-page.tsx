@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { processDebate } from '@/actions/ai-actions/groq-debate';
 import { usePlayer } from '@/hooks/tts/usePlayer';
 import { Button } from '@/components/ui/button';
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -84,9 +85,9 @@ export default function DebatePage() {
                             </CardDescription>
                         </div>
                         {messages.length > 0 && (
-                            <Button 
+                            <Button
+                                type="submit" 
                                 variant="outline" 
-                                size="sm" 
                                 onClick={handleReset}
                                 disabled={isPending || isPlaying}
                             >
@@ -188,7 +189,7 @@ export default function DebatePage() {
                                     }
                                 }}
                             />
-                            <Button
+                            <SurfaceButton
                                 type="submit"
                                 size="icon"
                                 disabled={!input.trim() || isPending || isPlaying}
@@ -199,7 +200,7 @@ export default function DebatePage() {
                                 ) : (
                                     <Send className="w-5 h-5" />
                                 )}
-                            </Button>
+                            </SurfaceButton>
                         </form>
                         <p className="text-xs text-muted-foreground mt-2">
                             Press Enter to send • Shift+Enter for new line

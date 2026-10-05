@@ -153,7 +153,6 @@ export default function PopupDemoClient() {
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   setState((s) => ({ ...s, counter: s.counter - 1 }))
                 }
@@ -165,7 +164,6 @@ export default function PopupDemoClient() {
               </div>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   setState((s) => ({ ...s, counter: s.counter + 1 }))
                 }
@@ -191,13 +189,13 @@ export default function PopupDemoClient() {
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
-          <Button onClick={openPopup} disabled={popupOpen}>
+          <Button variant="primary" onClick={openPopup} disabled={popupOpen}>
             Open popup (inside click)
           </Button>
           <Button variant="outline" onClick={openPopupDelayed}>
             Open popup (delayed 1.5s — blocker test)
           </Button>
-          <Button variant="ghost" onClick={closePopup} disabled={!popupOpen}>
+          <Button variant="quiet" onClick={closePopup} disabled={!popupOpen}>
             Close popup
           </Button>
         </div>

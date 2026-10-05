@@ -358,7 +358,7 @@ function BasicUsageDemo() {
         </div>
       </div>
 
-      <Button variant="outline" size="sm" onClick={clearImages}>
+      <Button variant="outline" onClick={clearImages}>
         Clear Selection
       </Button>
     </div>
@@ -402,15 +402,13 @@ function SizesDemo() {
           </p>
           <div className="flex gap-4">
             <Button
-              variant={mode === "single" ? "default" : "outline"}
-              size="sm"
+              variant={mode === "single" ? "primary" : "outline"}
               onClick={() => setMode("single")}
             >
               Single Selection
             </Button>
             <Button
-              variant={mode === "multiple" ? "default" : "outline"}
-              size="sm"
+              variant={mode === "multiple" ? "primary" : "outline"}
               onClick={() => setMode("multiple")}
             >
               Multiple Selection
@@ -419,7 +417,7 @@ function SizesDemo() {
         </div>
 
         <div className="ml-auto">
-          <Button variant="outline" size="sm" onClick={clearImages}>
+          <Button variant="outline" onClick={clearImages}>
             Clear Selection
           </Button>
         </div>
@@ -474,7 +472,7 @@ function ComparisonDemo() {
       </div>
 
       <div className="flex justify-end">
-        <Button variant="outline" size="sm" onClick={clearImages}>
+        <Button variant="outline" onClick={clearImages}>
           Clear Selection
         </Button>
       </div>

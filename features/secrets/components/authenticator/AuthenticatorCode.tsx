@@ -97,12 +97,10 @@ export function AuthenticatorCode({
       <div className="flex min-h-11 items-center gap-2">
         <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-11"
+          icon={<RefreshCw />}
+          variant="quiet"
           onClick={() => setReload((value) => value + 1)}
-        >
-          <RefreshCw className="mr-1 h-3.5 w-3.5" /> Retry
+        > Retry
         </Button>
       </div>
     );
@@ -145,9 +143,8 @@ export function AuthenticatorCode({
       <div className="flex items-center gap-2">
         <CountdownRing seconds={code ? seconds : null} progress={progress} />
         <Button
+          icon={<Copy />}
           variant="outline"
-          size="icon"
-          className="h-11 w-11"
           disabled={!code}
           aria-label="Copy authenticator code"
           onClick={async () => {
@@ -155,9 +152,7 @@ export function AuthenticatorCode({
             await navigator.clipboard.writeText(code);
             toast.success("Code copied");
           }}
-        >
-          <Copy className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </div>
   );

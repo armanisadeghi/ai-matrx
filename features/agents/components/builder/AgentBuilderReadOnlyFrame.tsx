@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentAccessResolved,

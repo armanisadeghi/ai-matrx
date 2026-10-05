@@ -186,16 +186,16 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                     className="h-11 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
                 />
                 <Button
+                    icon={busy ? (
+                        <Loader2 className="animate-spin" aria-hidden />
+                    ) : (
+                        <ArrowRight aria-hidden />
+                    )}
+                    variant="primary"
                     type="submit"
-                    size="lg"
-                    className="h-11 shrink-0 gap-2"
+                    className="shrink-0"
                     disabled={!value.trim() || busy}
                 >
-                    {busy ? (
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                        <ArrowRight className="size-4" aria-hidden />
-                    )}
                     {stage.kind === "resolving"
                         ? "Finding it"
                         : stage.kind === "creating"

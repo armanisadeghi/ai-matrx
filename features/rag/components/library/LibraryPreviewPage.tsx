@@ -389,10 +389,9 @@ export function LibraryPreviewPage({
                     embedded ? (
                       <Button
                         variant="outline"
-                        size="sm"
                         onClick={assets.toggle}
                         aria-pressed={assets.isVisible}
-                        className={cn("h-7 px-2 text-xs shrink-0", assets.isVisible && "bg-accent text-accent-foreground")}
+                        className="shrink-0"
                         title="Build premium knowledge representations from this document"
                       >
                         Knowledge Assets

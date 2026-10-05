@@ -36,14 +36,12 @@ export function AddContextItemInline({
   if (!open) {
     return (
       <Button
+        icon={<Plus />}
         ref={triggerRef}
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground hover:text-foreground"
       >
-        <Plus className="h-3.5 w-3.5 mr-1" />
         Add context item
       </Button>
     );

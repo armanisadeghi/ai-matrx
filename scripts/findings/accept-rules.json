@@ -87,6 +87,9 @@
     "route-metadata-and-favicons": {
       "no_accept": "scripts/check-route-metadata.ts has no allowlist or baseline: every item is new."
     },
+    "page-top": {
+      "no_accept": "scripts/page-top/baseline.json only shrinks (`--shrink`); a new item is fixed by moving the page onto a template — never added to the baseline."
+    },
     "one-control": {
       "no_accept": "scripts/one-control/check-one-control.mjs has no baseline: the controls shipped with zero sites, so every item is new — render the package control."
     }

@@ -23,7 +23,7 @@ export function ShareLinkError({ message }: { message?: string }) {
           <p className="text-muted-foreground mb-6">
             {message ?? "This link is invalid, expired, or has been turned off."}
           </p>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href="/">Go to AI Matrx</Link>
           </Button>
         </div>

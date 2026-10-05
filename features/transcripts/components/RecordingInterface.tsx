@@ -191,23 +191,21 @@ export function RecordingInterface({
             </Alert>
           )}
           <Button
+            icon={<Mic />}
+            variant="primary"
             onClick={startRecording}
-            size="lg"
             className="min-w-[140px]"
             disabled={limits === null}
           >
-            <Mic className="h-4 w-4 mr-2" />
             {limits === null ? "Checking limits…" : "Start Recording"}
           </Button>
           {onRunDeterministicCanary && (
             <div className="space-y-2 border-t border-border pt-4">
               <Button
+                icon={<ShieldCheck />}
                 onClick={onRunDeterministicCanary}
-                size="lg"
                 variant="outline"
-                className="min-h-11"
               >
-                <ShieldCheck className="h-4 w-4 mr-2" />
                 Run safe QA canary
               </Button>
               <p className="text-xs text-muted-foreground">
@@ -316,12 +314,11 @@ export function RecordingInterface({
           {isRecording && (
             <div className="flex justify-center">
               <Button
+                icon={<Square />}
                 onClick={stopRecording}
-                size="lg"
-                variant="destructive"
+                variant="danger"
                 className="min-w-[140px]"
               >
-                <Square className="h-4 w-4 mr-2" />
                 Stop Recording
               </Button>
             </div>

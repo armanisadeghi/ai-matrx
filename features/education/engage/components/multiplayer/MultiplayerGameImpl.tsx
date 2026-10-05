@@ -438,8 +438,7 @@ function Lobby({
   return (
     <div className="mx-auto flex h-full w-full max-w-lg flex-col items-center justify-center gap-5 p-4">
       <div className="flex items-center gap-2 self-start">
-        <Button variant="ghost" size="sm" onClick={onExit} className="gap-1">
-          <ArrowLeft className="h-4 w-4" /> Exit
+        <Button icon={<ArrowLeft />} variant="quiet" onClick={onExit}> Exit
         </Button>
         <ConnBadge connected={connected} />
       </div>
@@ -493,10 +492,9 @@ function Lobby({
       {isHost ? (
         <div className="flex flex-wrap justify-center gap-2">
           <Button
-            size="lg"
+            variant="primary"
             disabled={!queueReady || cancelling}
             onClick={onStart}
-            className="gap-2"
           >
             {queueReady ? (
               <>
@@ -511,12 +509,10 @@ function Lobby({
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
+                icon={<X />}
                 variant="outline"
-                size="lg"
                 disabled={cancelling}
-                className="gap-2"
-              >
-                <X className="h-4 w-4" /> Cancel room
+              > Cancel room
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

@@ -95,8 +95,9 @@ export function AnnotateView({
             Open one with the source picker (Document), or turn the text in the studio into a new private document and annotate that.
           </p>
           <Button
+            icon={creating ? <Loader2 className="animate-spin" aria-hidden /> : null}
+            variant="primary"
             className="mt-3"
-            size="sm"
             disabled={creating || !buffer.trim()}
             onClick={async () => {
               setCreating(true);
@@ -118,7 +119,6 @@ export function AnnotateView({
               }
             }}
           >
-            {creating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
             {buffer.trim() ? "Create a document from this text" : "Type or load some text first"}
           </Button>
         </div>
@@ -137,7 +137,7 @@ export function AnnotateView({
     return (
       <div role="alert" className="m-6 rounded-lg border border-destructive/30 p-4 text-sm">
         <p>{error ?? "This document could not be opened."}</p>
-        <Button className="mt-2" size="sm" variant="outline" onClick={() => void reload(documentId)}>Try again</Button>
+        <Button className="mt-2" variant="outline" onClick={() => void reload(documentId)}>Try again</Button>
         <ErrorAlchemyMenu className="ml-auto" />
       </div>
     );
@@ -167,12 +167,11 @@ export function AnnotateView({
             <span className="truncate font-medium text-foreground">{doc.title}</span>
             <span className="shrink-0 text-muted-foreground">version {doc.contentVersion}</span>
             <Button
-              size="sm"
+              icon={<PencilLine aria-hidden />}
               variant="outline"
-              className="ml-auto h-7 px-2 text-xs"
+              className="ml-auto"
               onClick={() => setEditing(true)}
             >
-              <PencilLine className="mr-1 h-3.5 w-3.5" aria-hidden />
               Edit text
             </Button>
           </div>

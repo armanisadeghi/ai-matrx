@@ -134,7 +134,7 @@ export function SyncNowDoor({ compact = false }: { compact?: boolean }) {
     <div
       className={cn("flex flex-wrap items-center gap-2", compact && "gap-1.5")}
     >
-      <Button asChild size="sm" variant="outline" className="gap-1.5">
+      <Button asChild variant="outline">
         <a
           href={MATRX_LOCAL_DOWNLOAD_PATH}
           target="_blank"

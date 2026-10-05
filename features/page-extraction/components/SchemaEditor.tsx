@@ -166,9 +166,8 @@ export function SchemaEditor({
           Output columns
         </span>
         <Button
-          size="sm"
+          icon={<Download />}
           variant="outline"
-          className="h-6 px-1.5 text-[10px]"
           onClick={importFromAgent}
           disabled={!agentImportable}
           title={
@@ -177,7 +176,6 @@ export function SchemaEditor({
               : "The selected agent has no structured output schema to import"
           }
         >
-          <Download className="w-3 h-3 mr-1" />
           Import from agent
         </Button>
       </div>
@@ -289,28 +287,22 @@ export function SchemaEditor({
 
       <div className="flex flex-wrap gap-1">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[10px]"
+          icon={<Plus />}
+          variant="quiet"
           onClick={() => addColumn("agent")}
-        >
-          <Plus className="w-3 h-3 mr-0.5" /> Agent
+        > Agent
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[10px]"
+          icon={<Plus />}
+          variant="quiet"
           onClick={() => addColumn("manual")}
-        >
-          <Plus className="w-3 h-3 mr-0.5" /> Manual
+        > Manual
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[10px]"
+          icon={<Plus />}
+          variant="quiet"
           onClick={() => addColumn("validation")}
-        >
-          <Plus className="w-3 h-3 mr-0.5" /> Validation
+        > Validation
         </Button>
       </div>
         </>

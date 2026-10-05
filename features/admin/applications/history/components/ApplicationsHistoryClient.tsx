@@ -315,7 +315,6 @@ export function ApplicationsHistoryClient({
               searchPlaceholder: "Search record, application, who…",
               actions: (
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => void loadMore()}
                   disabled={loadingMore}
@@ -329,7 +328,7 @@ export function ApplicationsHistoryClient({
               // dead end; the panel carries the door, into a new tab so the
               // timeline stays put.
               headerActions: (row) => (
-                <Button size="sm" variant="outline" asChild>
+                <Button variant="outline" asChild>
                   <AppLink
                     href={recordHref(row)}
                     target="_blank"

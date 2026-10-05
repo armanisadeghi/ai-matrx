@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, Database, FileText, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import AdvancedTranscriptViewer from "@/components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer";
 import { ImportTranscriptModal } from "@/features/transcripts/components/ImportTranscriptModal";
 import { parseTranscript } from "./transcript-parser";

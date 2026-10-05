@@ -511,34 +511,33 @@ function BindingFormLayout({
       <footer className="shrink-0 px-6 py-3 border-t border-border bg-background flex items-center gap-2">
         {onDelete && (
           <Button
-            variant="ghost"
+            icon={<Trash2 />}
+            variant="quiet"
             onClick={onDelete}
             disabled={busy}
-            className="h-9 gap-1.5 text-sm text-muted-foreground hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4" />
             Delete
           </Button>
         )}
         <div className="ml-auto flex items-center gap-2">
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={onCancel}
             disabled={busy}
-            className="h-9 text-sm"
           >
             Cancel
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             onClick={onSave}
             disabled={busy}
-            className="h-9 gap-1.5 text-sm min-w-[110px]"
+            className="min-w-[110px]"
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
             {existing ? "Save" : "Create binding"}
           </Button>
         </div>

@@ -18,7 +18,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import type { ToolLifecycleEntry } from "../../agents/types/request.types";
 import { ToolCallVisualization } from "../components/ToolCallVisualization";
 import { SURFACE_WRITE_STEP } from "./readSurfaceWrite";
@@ -204,7 +204,7 @@ export function SurfaceWriteStress() {
   return (
     <div className="mx-auto flex h-full max-w-3xl flex-col gap-3 overflow-auto px-2 py-4">
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={run}>
+        <Button variant="primary" onClick={run}>
           Run 200 KB write
         </Button>
         <span className="text-xs text-muted-foreground">

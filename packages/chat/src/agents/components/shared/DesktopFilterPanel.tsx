@@ -9,7 +9,8 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
@@ -282,7 +283,7 @@ export function DesktopFilterPanel({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         {iconOnly ? (
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="h-8 w-8 rounded-full matrx-glass-thin-border hover:shadow-xl relative border border-border/50 shrink-0"
@@ -294,19 +295,19 @@ export function DesktopFilterPanel({
                 {activeFilterCount}
               </span>
             )}
-          </Button>
+          </SurfaceButton>
         ) : (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-3 rounded-full matrx-glass-thin-border hover:shadow-xl relative border border-border/50"
-          >
-            <ChevronDown
+            icon={<ChevronDown
               className={cn(
                 "h-3.5 w-3.5 transition-transform",
                 open && "rotate-180",
               )}
-            />
+            />}
+            type="submit"
+            variant="quiet"
+            className="relative"
+          >
             Filters
             {activeFilterCount > 0 && (
               <span className="ml-1 inline-flex items-center justify-center h-4 min-w-[16px] px-1 text-[10px] font-bold bg-primary text-primary-foreground rounded-full">

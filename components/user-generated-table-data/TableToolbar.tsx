@@ -15,7 +15,7 @@ import TableReferenceOverlay from "./TableReferenceOverlay";
 import RowOrderingModal from "./RowOrderingModal";
 import PasteRowsDialog from "./PasteRowsDialog";
 import { SheetSearchBox } from "@/features/data-tables/components/SheetSearchBox";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   BottomSheet,
   BottomSheetHeader,

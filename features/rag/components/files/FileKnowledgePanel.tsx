@@ -87,16 +87,15 @@ export function FileKnowledgePanel({
             search can use this document.
           </p>
           <Button
-            size="sm"
-            className="h-7 text-[11px]"
+            icon={running ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Brain />
+            )}
+            variant="primary"
             disabled={running}
             onClick={() => void runIngest(false)}
           >
-            {running ? (
-              <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-            ) : (
-              <Brain className="h-3 w-3 mr-1.5" />
-            )}
             Index for knowledge (runs NER)
           </Button>
         </div>
@@ -119,28 +118,24 @@ export function FileKnowledgePanel({
         </div>
         <div className="flex flex-wrap gap-1.5">
           <Button
-            size="sm"
+            icon={running ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            className="h-7 text-[11px]"
             disabled={running}
             onClick={() => void runIngest(true)}
           >
-            {running ? (
-              <Loader2 className="h-3 w-3 mr-1.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3 mr-1.5" />
-            )}
             Re-run indexing + NER
           </Button>
           <Button
-            size="sm"
+            icon={<ExternalLink />}
             variant="outline"
-            className="h-7 text-[11px]"
             onClick={() =>
               window.open("/knowledge-graph", "_blank", "noopener,noreferrer")
             }
           >
-            <ExternalLink className="h-3 w-3 mr-1.5" />
             Knowledge graph
           </Button>
         </div>

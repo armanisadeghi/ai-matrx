@@ -111,11 +111,10 @@ function BandEditor({
       <Input value={d.description} onChange={(e) => setD({ ...d, description: e.target.value })} placeholder="What lands here, in plain words" className="h-8 text-sm" />
       <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Why this industry reads the band this way" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
+        <Button variant="quiet" onClick={() => onDone(false)}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
-          {save.isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
+        <Button icon={save.isPending ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
           Save band
         </Button>
       </div>
@@ -208,11 +207,10 @@ function AreaEditor({
       </div>
       <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="What this archetype stands for" className="min-h-12 text-sm" />
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
+        <Button variant="quiet" onClick={() => onDone(false)}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
-          {save.isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
+        <Button icon={save.isPending ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
           Save archetype
         </Button>
       </div>
@@ -223,10 +221,10 @@ function AreaEditor({
 function RowActions({ onEdit, onDelete, label }: { onEdit: () => void; onDelete: () => void; label: string }) {
   return (
     <div className="flex shrink-0 items-center">
-      <Button size="sm" variant="ghost" className="h-7 px-1.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onEdit} aria-label={`Edit ${label}`}>
+      <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onEdit} aria-label={`Edit ${label}`}>
         <Pencil className="size-3.5" />
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 px-1.5 text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onDelete} aria-label={`Remove ${label}`}>
+      <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={onDelete} aria-label={`Remove ${label}`}>
         <Trash2 className="size-3.5" />
       </Button>
     </div>
@@ -266,8 +264,7 @@ export function PackBandsSection({ detail, onChanged }: { detail: AdminPackDetai
           <p className="text-[11px] text-muted-foreground">{hint}</p>
         </div>
         {canAuthor ? (
-          <Button size="sm" variant="outline" className="h-7" onClick={() => setAdding(kind)} disabled={adding === kind}>
-            <Plus className="mr-1 size-3.5" /> Add
+          <Button icon={<Plus />} variant="outline" onClick={() => setAdding(kind)} disabled={adding === kind}> Add
           </Button>
         ) : null}
       </div>
@@ -322,8 +319,7 @@ export function PackBandsSection({ detail, onChanged }: { detail: AdminPackDetai
             <p className="text-[11px] text-muted-foreground">Placeholders like “Primary service radius”, never a city</p>
           </div>
           {canAuthor ? (
-            <Button size="sm" variant="outline" className="h-7" onClick={() => setAdding("geo_area")} disabled={adding === "geo_area"}>
-              <Plus className="mr-1 size-3.5" /> Add
+            <Button icon={<Plus />} variant="outline" onClick={() => setAdding("geo_area")} disabled={adding === "geo_area"}> Add
             </Button>
           ) : null}
         </div>

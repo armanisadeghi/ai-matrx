@@ -259,20 +259,18 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
           ) : null}
           <div className="ml-auto flex items-center gap-2">
             <Button
-              size="sm"
+              icon={refreshing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
               onClick={() => void handleRefresh()}
               disabled={refreshing}
-              className="h-7 text-xs"
             >
-              {refreshing ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <RefreshCw className="h-3 w-3 mr-1" />
-              )}
               Refresh
             </Button>
-            <Button asChild size="sm" className="h-7 text-xs">
+            <Button variant="primary" asChild>
               <Link href={`/files/f/${fileId}/studio`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3 w-3 mr-1" /> Open in Studio
               </Link>

@@ -316,15 +316,12 @@ export function ToolsTab() {
               {expanded.label}
             </div>
             <Button
+              icon={<X />}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              variant="quiet"
               onClick={() => setExpandedId(null)}
               aria-label="Close tool"
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            />
           </header>
           <div className="p-2 md:p-3">{expanded.expand()}</div>
         </section>
@@ -486,10 +483,8 @@ function ToolCard({
         ) : (
           <Button
             type="button"
-            size="sm"
-            variant={isExpanded ? "default" : "outline"}
+            variant={isExpanded ? "primary" : "outline"}
             onClick={onAction}
-            className="h-8 px-2 md:px-3"
           >
             {isExpanded && tool.action.kind === "expand"
               ? "Close"

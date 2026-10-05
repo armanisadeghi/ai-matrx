@@ -284,20 +284,17 @@ function FullOverlay({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {!finished && onCancel && (
-            <Button variant="outline" size="sm" onClick={onCancel}>
-              <Pause className="h-3.5 w-3.5 mr-1" />
+            <Button icon={<Pause />} variant="outline" onClick={onCancel}>
               Stop
             </Button>
           )}
           {!finished && onMinimize && (
-            <Button variant="outline" size="sm" onClick={onMinimize}>
-              <Minimize2 className="h-3.5 w-3.5 mr-1" />
+            <Button icon={<Minimize2 />} variant="outline" onClick={onMinimize}>
               Minimize
             </Button>
           )}
           {finished && (
-            <Button onClick={onClose}>
-              <XIcon className="h-3.5 w-3.5 mr-1" />
+            <Button icon={<XIcon />} variant="primary" onClick={onClose}>
               Close
             </Button>
           )}

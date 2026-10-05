@@ -263,14 +263,13 @@ export function DuplicateShortcutModal({
     <>
       <Button
         variant="outline"
-        size="sm"
         onClick={onClose}
         disabled={isProcessing}
       >
         Cancel
       </Button>
       <Button
-        size="sm"
+        variant="primary"
         onClick={handleDuplicate}
         disabled={isProcessing || !selectedPlacement || !selectedCategoryId}
       >

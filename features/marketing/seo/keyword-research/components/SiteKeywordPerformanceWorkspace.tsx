@@ -592,21 +592,19 @@ export function SiteKeywordPerformanceWorkspace() {
         <div className="flex shrink-0 items-center gap-2">
           {bingBinding?.enabled ? (
             <Button
-              size="sm"
+              icon={syncingBing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
-              className="h-8 gap-1.5"
               disabled={syncingBing}
               onClick={() => void runBingSync()}
             >
-              {syncingBing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               {syncingBing ? "Syncing Bing…" : "Sync Bing now"}
             </Button>
           ) : (
-            <Button asChild size="sm" variant="outline" className="h-8">
+            <Button asChild variant="outline">
               <Link href={marketingRoutes.connectionsBing()}>Connect Bing</Link>
             </Button>
           )}
@@ -696,10 +694,9 @@ export function SiteKeywordPerformanceWorkspace() {
           columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <>
               <Button
+                icon={<Search />}
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-primary"
+                variant="quiet"
                 aria-label="Keyword Intelligence"
                 title="Keyword Intelligence"
                 onClick={() => {
@@ -711,19 +708,14 @@ export function SiteKeywordPerformanceWorkspace() {
                     tab: "site",
                   });
                 }}
-              >
-                <Search className="h-3.5 w-3.5" />
-              </Button>
+              />
               <ItemMenu config={() => rowMenuConfig(row)}>
                 <Button
+                  icon={<MoreVertical />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  variant="quiet"
                   aria-label={`Options for ${row.query ?? "search query"}`}
-                >
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </Button>
+                />
               </ItemMenu>
             </>
           ) }]}

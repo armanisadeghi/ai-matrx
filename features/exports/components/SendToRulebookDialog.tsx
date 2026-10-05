@@ -201,7 +201,7 @@ export function SendToRulebookDialog({
                 <strong>{selected?.name ?? "the Rulebook"}</strong>.
               </span>
             </div>
-            <Button asChild className="w-full sm:w-auto sm:self-start">
+            <Button variant="primary" asChild className="w-full sm:w-auto sm:self-start">
               <Link href={rulebookHref(sent.rulebookId)}>
                 Open the Rulebook
                 <ArrowUpRight className="h-4 w-4" />
@@ -251,7 +251,7 @@ export function SendToRulebookDialog({
                     A Rulebook is where this knowledge goes. Start one, then come
                     back to this selection.
                   </p>
-                  <Button asChild variant="outline" size="sm" className="mt-3">
+                  <Button asChild variant="outline" className="mt-3">
                     <Link href="/masterwork/new">
                       <Plus className="h-4 w-4" />
                       Start a Rulebook
@@ -313,9 +313,8 @@ export function SendToRulebookDialog({
                   })}
                   <Button
                     asChild
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start text-muted-foreground"
+                    variant="quiet"
+                    className="w-full justify-start"
                   >
                     <Link href="/masterwork/new">
                       <Plus className="h-4 w-4" />
@@ -348,12 +347,11 @@ export function SendToRulebookDialog({
               <Button variant="outline" onClick={onCancel} disabled={sending}>
                 Cancel
               </Button>
-              <Button onClick={submit} disabled={!selected || sending}>
-                {sending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
+              <Button icon={sending ? (
+                  <Loader2 className="animate-spin" />
                 ) : (
-                  <Send className="h-4 w-4" />
-                )}
+                  <Send />
+                )} variant="primary" onClick={submit} disabled={!selected || sending}>
                 {sending ? "Sending" : "Send as Sources"}
               </Button>
             </DialogFooter>

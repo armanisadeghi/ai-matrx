@@ -241,13 +241,12 @@ export function CloudSyncTruthPanel({
           </p>
         </div>
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<RefreshCw className={cn("h-3.5 w-3.5", reading && "animate-spin")} />}
+          variant="quiet"
           onClick={() => setReloadToken((token) => token + 1)}
           disabled={reading}
-          className="h-7 shrink-0 gap-1.5"
+          className="shrink-0"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", reading && "animate-spin")} />
           {reading ? "Checking…" : "Check again"}
         </Button>
       </div>
@@ -360,17 +359,16 @@ export function CloudSyncTruthPanel({
             Ask Matrx Local to reconcile
           </span>
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
             onClick={() => void askToReconcile()}
             disabled={busy}
-            className="ml-auto h-7 shrink-0 gap-1.5"
+            className="ml-auto shrink-0"
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
             {reconcile.phase === "reaching"
               ? "Reaching your Mac…"
               : reconcile.phase === "running"

@@ -304,12 +304,11 @@ export function InteractionTimeline({
               while the message is written about it. */}
           {partyLabel && showSendEmail && (
             <Button
+              icon={<Send />}
               variant="outline"
-              size="sm"
               onClick={() => openCompose()}
-              className="mr-1 h-6 gap-1 px-2 text-xs"
+              className="mr-1"
             >
-              <Send className="h-3 w-3" />
               Send email
             </Button>
           )}

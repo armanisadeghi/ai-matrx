@@ -141,7 +141,18 @@ for (const scheme of SCHEMES) {
       const slug = `${LABEL}-${route.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "")}-${width}-${scheme}`;
       const row = { route, width, scheme };
       try {
-        const resp = await page.goto(`${ORIGIN}${route}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+        // The shared preview restarts under other sessions: retry a refused navigation for 3 minutes.
+        let resp = null;
+        for (let attempt = 0; attempt < 12; attempt += 1) {
+          try {
+            resp = await page.goto(`${ORIGIN}${route}`, { waitUntil: "domcontentloaded", timeout: 180000 });
+            break;
+          } catch (e) {
+            if (attempt === 11) throw e;
+            await sleep(15000);
+          }
+        }
+        await page.waitForFunction(() => document.querySelectorAll(".shell-main *").length > 60, null, { timeout: 120000 }).catch(() => undefined);
         row.status = resp?.status();
         await page.evaluate((s) => {
           document.documentElement.classList.toggle("dark", s === "dark");

@@ -384,7 +384,7 @@ export function ImproveRuleDialog({
           ) : (
             <>
               <Button
-                variant="ghost"
+                variant="quiet"
                 onClick={() => handleOpenChange(false)}
                 className="sm:mr-auto"
               >
@@ -398,10 +398,11 @@ export function ImproveRuleDialog({
                 )}
               </Button>
               <Button
+                icon={<Zap />}
+                variant="primary"
                 onClick={() => void submit()}
                 disabled={running || !feedback.trim() || !target}
               >
-                <Zap className="h-4 w-4" />
                 {running ? "Rewriting…" : "Improve this rule"}
               </Button>
             </>

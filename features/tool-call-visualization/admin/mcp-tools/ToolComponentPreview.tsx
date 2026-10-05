@@ -436,9 +436,8 @@ export function ToolComponentPreview({
                     Generated code (copy to Edit Code tab)
                   </p>
                   <Button
-                    size="sm"
+                    icon={<Copy />}
                     variant="outline"
-                    className="h-6 text-[11px] gap-1"
                     onClick={() => {
                       navigator.clipboard
                         .writeText(agent.accumulatedText)
@@ -454,7 +453,6 @@ export function ToolComponentPreview({
                         });
                     }}
                   >
-                    <Copy className="w-3 h-3" />
                     Copy All
                   </Button>
                 </div>
@@ -465,23 +463,21 @@ export function ToolComponentPreview({
             )}
             <div className="flex gap-2 pt-1">
               <Button
-                size="sm"
+                icon={isSavingRevision ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <HardDrive />
+                )}
+                variant="primary"
                 onClick={() => {
                   setSaveError(null);
                   handleSaveRevision();
                 }}
                 disabled={isSavingRevision}
-                className="gap-1.5"
               >
-                {isSavingRevision ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <HardDrive className="w-3.5 h-3.5" />
-                )}
                 Retry Save
               </Button>
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => setSaveError(null)}
               >
@@ -544,12 +540,11 @@ export function ToolComponentPreview({
               </SelectContent>
             </Select>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={loadSamples}
               aria-label="Reload samples"
               title="Reload samples"
-              className="h-11 w-11 shrink-0 p-0 sm:h-8 sm:w-8"
+              className="w-11 shrink-0 sm:w-8"
             >
               <RefreshCw className="h-3.5 w-3.5" />
             </Button>
@@ -573,27 +568,23 @@ export function ToolComponentPreview({
               </h2>
               <div className="flex flex-wrap items-center gap-1.5 sm:ml-auto">
                 <Button
-                  variant={simulateStream ? "default" : "outline"}
-                  size="sm"
-                  className="min-h-11 gap-1 text-[11px] sm:min-h-0 sm:h-7"
+                  icon={<FastForward />}
+                  variant={simulateStream ? "primary" : "outline"}
                   onClick={() => {
                     setSimulateStream((s) => !s);
                     setStreamKey((k) => k + 1);
                   }}
                   title="Simulate streaming — reveals items progressively over 5 s"
                 >
-                  <FastForward className="h-3 w-3" />
                   Simulate Stream
                 </Button>
                 {simulateStream && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="min-h-11 gap-1 text-[11px] sm:min-h-0 sm:h-7"
+                    icon={<Play />}
+                    variant="quiet"
                     onClick={() => setStreamKey((k) => k + 1)}
                     title="Replay simulation"
                   >
-                    <Play className="h-3 w-3" />
                     Replay
                   </Button>
                 )}
@@ -632,14 +623,13 @@ export function ToolComponentPreview({
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              size="sm"
+              variant="primary"
               onClick={handleRevise}
               disabled={
                 agent.isStreaming ||
                 !selectedSampleId ||
                 !revisionInstructions.trim()
               }
-              className="min-h-11 gap-1.5 sm:min-h-0"
             >
               {agent.isStreaming ? (
                 <>
@@ -653,21 +643,18 @@ export function ToolComponentPreview({
             </Button>
             {agent.isStreaming && (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<X />}
+                variant="quiet"
                 onClick={agent.cancel}
-                className="h-11 gap-1 text-xs sm:h-8"
-              >
-                <X className="h-3 w-3" /> Cancel
+              > Cancel
               </Button>
             )}
             {lastRevision && onSaveRevision && (
               <Button
-                size="sm"
-                variant="default"
+                variant="primary"
                 onClick={handleSaveRevision}
                 disabled={isSavingRevision}
-                className="ml-auto min-h-11 gap-1.5 sm:min-h-0"
+                className="ml-auto"
               >
                 {isSavingRevision ? (
                   <>

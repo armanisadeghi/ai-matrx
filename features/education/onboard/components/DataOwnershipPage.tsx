@@ -162,8 +162,12 @@ export function DataOwnershipPage() {
           </div>
         </div>
         <Button
+          icon={exportingAll ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Download />
+          )}
           variant="outline"
-          size="sm"
           disabled={exportingAll || decks.length === 0}
           onClick={() =>
             exportAll().catch((e) =>
@@ -171,11 +175,6 @@ export function DataOwnershipPage() {
             )
           }
         >
-          {exportingAll ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
           Export all ({decks.length})
         </Button>
       </section>
@@ -195,16 +194,15 @@ export function DataOwnershipPage() {
           </div>
         </div>
         <Button
+          icon={exportingStudy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Download />
+          )}
           variant="outline"
-          size="sm"
           disabled={exportingStudy}
           onClick={onExportStudy}
         >
-          {exportingStudy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
           Download archive
         </Button>
       </section>
@@ -226,7 +224,7 @@ export function DataOwnershipPage() {
             </p>
           </div>
         </div>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href="/education/offline">Open</Link>
         </Button>
       </section>
@@ -246,17 +244,15 @@ export function DataOwnershipPage() {
           </div>
         </div>
         <Button
+          icon={deletingStudy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Trash2 />
+          )}
           variant="outline"
-          size="sm"
-          className="border-destructive/40 text-destructive hover:bg-destructive/10"
           disabled={deletingStudy}
           onClick={() => setConfirmDelete(true)}
         >
-          {deletingStudy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Trash2 className="h-4 w-4" />
-          )}
           Delete
         </Button>
       </section>
@@ -289,7 +285,7 @@ export function DataOwnershipPage() {
             </p>
           </div>
         </div>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href="/trash">Open</Link>
         </Button>
       </section>
@@ -327,12 +323,11 @@ export function DataOwnershipPage() {
                 </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" disabled={busyId === set.id}>
-                      {busyId === set.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                    <Button icon={busyId === set.id ? (
+                        <Loader2 className="animate-spin" />
                       ) : (
-                        <Download className="h-4 w-4" />
-                      )}
+                        <Download />
+                      )} variant="outline" disabled={busyId === set.id}>
                       Export
                     </Button>
                   </DropdownMenuTrigger>

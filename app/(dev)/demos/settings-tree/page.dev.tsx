@@ -236,8 +236,7 @@ export default function SettingsTreeDemoPage() {
         <header className="flex items-center gap-2 px-4 h-11 border-b border-border shrink-0">
           <Button
             variant="outline"
-            size="sm"
-            className="md:hidden h-8 text-xs"
+            className="md:hidden"
             onClick={() => setDrawerOpen(true)}
           >
             Open settings

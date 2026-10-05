@@ -13,6 +13,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { footprintLine, footprintParts, wordFor, type GalleryCard } from "./catalogue";
+import { TemplateThumb } from "./TemplateShowcase";
 
 export function TemplateCardGrid({
   cards,
@@ -33,6 +34,11 @@ export function TemplateCardGrid({
             data-industry={card.industry ?? ""}
             className="flex h-full min-w-0 flex-col gap-1 rounded-xl border border-border bg-card p-3 shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
+            {card.thumb ? (
+              <span className="mb-1 block">
+                <TemplateThumb thumb={card.thumb} />
+              </span>
+            ) : null}
             <span className="flex min-w-0 items-center gap-2">
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{card.name}</span>
               {card.installed ? <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">Installed</span> : null}

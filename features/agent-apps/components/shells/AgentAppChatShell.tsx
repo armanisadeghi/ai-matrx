@@ -249,43 +249,37 @@ function ChatShellLayout({
       <div className="flex h-10 shrink-0 items-center gap-1 border-b border-border px-2 bg-card/50">
         {sidebarEnabled && (
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0"
+            icon={sidebarOpen ? (
+              <PanelLeftClose />
+            ) : (
+              <PanelLeftOpen />
+            )}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => setSidebarOpen((v) => !v)}
             title={sidebarOpen ? "Collapse sidebar" : "Show sidebar"}
             aria-label={sidebarOpen ? "Collapse sidebar" : "Show sidebar"}
-          >
-            {sidebarOpen ? (
-              <PanelLeftClose className="w-4 h-4" />
-            ) : (
-              <PanelLeftOpen className="w-4 h-4" />
-            )}
-          </Button>
+          />
         )}
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
+          icon={<ChevronLeft />}
+          variant="quiet"
+          className="shrink-0"
           onClick={() => router.back()}
           title="Back"
           aria-label="Back"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </Button>
+        />
         <div className="flex-1 min-w-0 text-sm font-medium truncate px-1">
           {appName}
         </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
+          icon={<Plus />}
+          variant="quiet"
+          className="shrink-0"
           onClick={handleNewConversation}
           title="New conversation"
           aria-label="New conversation"
-        >
-          <Plus className="w-4 h-4" />
-        </Button>
+        />
       </div>
 
       {/* Row: optional sidebar + content. */}
@@ -325,7 +319,7 @@ function ChatDefaultPreGate({ onContinue, app }: DefaultSlotProps) {
   return (
     <div className="max-w-md mx-auto p-6 rounded-lg border border-border bg-card">
       <h2 className="text-lg font-semibold mb-2">{app.name ?? "Welcome"}</h2>
-      <Button onClick={onContinue} size="sm">
+      <Button variant="primary" onClick={onContinue}>
         Continue
       </Button>
     </div>

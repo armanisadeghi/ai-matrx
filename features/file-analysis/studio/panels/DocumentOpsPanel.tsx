@@ -212,11 +212,10 @@ export function DocumentOpsPanel({ fileId }: Props) {
         {result ? (
           <div className="flex items-center gap-2 rounded border border-emerald-500/40 bg-emerald-500/5 p-2">
             <Button
-              size="sm"
+              icon={<Download />}
+              variant="primary"
               onClick={downloadResult}
-              className="h-7 text-[10px]"
             >
-              <Download className="h-3 w-3 mr-1" />
               Download {result.result.filename}
             </Button>
             <span className="ml-auto text-[10px] text-muted-foreground">
@@ -276,10 +275,10 @@ function OpCard({
           </p>
         </div>
         <Button
-          size="sm"
+          variant="primary"
           disabled={running}
           onClick={onRun}
-          className="h-6 shrink-0 text-[10px]"
+          className="shrink-0"
         >
           {running ? (
             <Loader2 className="h-3 w-3 animate-spin" />

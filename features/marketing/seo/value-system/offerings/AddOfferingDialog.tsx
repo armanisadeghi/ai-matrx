@@ -149,11 +149,11 @@ export function AddOfferingDialog({
                       </button>
                     ))}
                     <Button
-                      size="sm"
+                      icon={<Plus />}
+                      variant="primary"
                       disabled={busy}
                       onClick={() => onChoose({ mode: "custom", name: typed, kind, reason })}
                     >
-                      <Plus className="mr-1 h-3.5 w-3.5" />
                       Add
                     </Button>
                   </div>
@@ -227,8 +227,7 @@ export function AddOfferingDialog({
         </div>
 
         <DialogFooter className="pb-safe">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="quiet" onClick={onCancel} disabled={busy}>
             Close
           </Button>
         </DialogFooter>

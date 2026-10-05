@@ -219,17 +219,16 @@ function SeedStartingCodes({
         ) : null}
         {refusal ? <p className="text-sm text-destructive">{refusal} <ErrorAlchemyMenu /></p> : null}
         <Button
+          icon={running ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Sprout aria-hidden />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
-          className="min-h-11 sm:min-h-9"
           disabled={running}
           onClick={run}
         >
-          {running ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Sprout className="mr-2 h-4 w-4" aria-hidden />
-          )}
           {report ? "Run it again" : "Create the starting codes"}
         </Button>
         {report ? (
@@ -623,17 +622,16 @@ function EarningCodeEditor({
       ) : null}
 
       <Button
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Save />
+        )}
+        variant="primary"
         type="button"
-        size="sm"
         onClick={save}
         disabled={busy}
-        className="min-h-11 sm:min-h-9"
       >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
         Save
       </Button>
     </div>
@@ -877,17 +875,16 @@ function DeductionCodeEditor({
       ) : null}
 
       <Button
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Save />
+        )}
+        variant="primary"
         type="button"
-        size="sm"
         onClick={save}
         disabled={busy}
-        className="min-h-11 sm:min-h-9"
       >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
         Save
       </Button>
     </div>

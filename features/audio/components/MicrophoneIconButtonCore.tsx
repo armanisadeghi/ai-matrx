@@ -380,13 +380,11 @@ const MicrophoneIconButtonCore = forwardRef<
               />
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => {
                   stopModeRef.current = "full";
                   stopRecording();
                 }}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 h-7 px-2 text-xs"
               >
                 Stop
               </Button>

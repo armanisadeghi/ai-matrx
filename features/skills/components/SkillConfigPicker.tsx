@@ -283,9 +283,8 @@ export function SkillConfigPicker({
                 <Button
                   key={filter}
                   type="button"
-                  size="sm"
-                  variant={catalogueFilter === filter ? "secondary" : "ghost"}
-                  className="h-7 shrink-0 px-2.5 text-xs"
+                  variant={catalogueFilter === filter ? "outline" : "quiet"}
+                  className="shrink-0"
                   onClick={() => setCatalogueFilter(filter)}
                 >
                   {label}
@@ -300,22 +299,18 @@ export function SkillConfigPicker({
             <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 lg:hidden">
               <Button
                 type="button"
-                size="sm"
-                variant={categoryId === null ? "secondary" : "ghost"}
-                className="h-7 shrink-0 px-2.5 text-xs"
+                variant={categoryId === null ? "outline" : "quiet"}
+                className="shrink-0"
                 onClick={() => setCategoryId(null)}
               >
                 All categories
               </Button>
               <Button
                 type="button"
-                size="sm"
                 variant={
-                  categoryId === UNCATEGORIZED_CATEGORY_ID
-                    ? "secondary"
-                    : "ghost"
+                  categoryId === UNCATEGORIZED_CATEGORY_ID ? "outline" : "quiet"
                 }
-                className="h-7 shrink-0 px-2.5 text-xs"
+                className="shrink-0"
                 onClick={() => setCategoryId(UNCATEGORIZED_CATEGORY_ID)}
               >
                 Uncategorized
@@ -324,9 +319,8 @@ export function SkillConfigPicker({
                 <Button
                   key={category.id}
                   type="button"
-                  size="sm"
-                  variant={categoryId === category.id ? "secondary" : "ghost"}
-                  className="h-7 shrink-0 px-2.5 text-xs"
+                  variant={categoryId === category.id ? "outline" : "quiet"}
+                  className="shrink-0"
                   onClick={() => setCategoryId(category.id)}
                 >
                   {category.label}

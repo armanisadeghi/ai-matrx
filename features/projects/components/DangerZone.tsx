@@ -88,11 +88,10 @@ export function DangerZone({ project }: DangerZoneProps) {
             </p>
           </div>
           <Button
-            variant="destructive"
-            size="sm"
+            icon={<Trash2 />}
+            variant="danger"
             onClick={() => setIsDeleteDialogOpen(true)}
           >
-            <Trash2 className="h-4 w-4 mr-1" />
             Delete
           </Button>
         </div>
@@ -127,7 +126,7 @@ export function DangerZone({ project }: DangerZoneProps) {
               Cancel
             </AlertDialogCancel>
             <Button
-              variant="destructive"
+              variant="danger"
               disabled={confirmName !== project.name || isDeleting}
               onClick={handleDelete}
             >

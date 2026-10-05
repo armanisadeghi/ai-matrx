@@ -93,8 +93,7 @@ const FullscreenMarkdownEditor = ({
           <div className="flex items-center justify-between p-2 border-b border-border">
             <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Creator Content Admin View</h2>
             <Button
-              variant="ghost" 
-              size="sm" 
+              variant="quiet" 
               onClick={() => closeEditor()}
               aria-label="Close"
             >
@@ -115,14 +114,13 @@ const FullscreenMarkdownEditor = ({
   return (
     <>
       {triggerLabel && (
-        <Button 
+        <Button
+          icon={<Maximize2 />} 
           variant="outline" 
-          size="sm" 
           onClick={openEditor} 
           className={triggerClassName}
           aria-label={`Open ${triggerLabel}`}
         >
-          <Maximize2 className="h-4 w-4 mr-2" />
           {triggerLabel}
         </Button>
       )}
@@ -141,8 +139,7 @@ const FullscreenMarkdownEditor = ({
             <div className="flex items-center justify-between p-2 border-b border-border">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{triggerLabel || "Content Processing & Classification"}</h2>
               <Button
-                variant="ghost" 
-                size="sm" 
+                variant="quiet" 
                 onClick={() => closeEditor()}
                 aria-label="Close"
               >

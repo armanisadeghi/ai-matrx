@@ -829,8 +829,7 @@ export function StudyDeck(props: StudyDeckProps) {
         <DropdownMenuTrigger asChild>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             className={STUDY_TOOL_BUTTON}
             title="Study options"
             aria-label="Study options"
@@ -971,15 +970,14 @@ export function StudyDeck(props: StudyDeckProps) {
             the driver knows the owning set (cross-set drivers omit setId). */}
         {setId && (
           <Button
+            icon={<Expand />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             className={cn(STUDY_TOOL_BUTTON, enhanceOpen && STUDY_TOOL_BUTTON_ACTIVE)}
             onClick={() => setEnhanceOpen(true)}
             title="Split into sub-cards"
             aria-label="Split into sub-cards"
           >
-            <Expand className="h-3.5 w-3.5" />
             Split
           </Button>
         )}
@@ -1159,13 +1157,12 @@ export function StudyDeck(props: StudyDeckProps) {
 
           <div className="flex w-full flex-col gap-2 sm:flex-row">
             {onRestart && (
-              <Button variant="outline" className="flex-1" onClick={restart}>
-                <RotateCcw className="mr-1.5 h-4 w-4" />
+              <Button icon={<RotateCcw />} variant="outline" className="flex-1" onClick={restart}>
                 Study again
               </Button>
             )}
             {completionPrimary && (
-              <Button className="flex-1" onClick={completionPrimary.onClick}>
+              <Button variant="primary" className="flex-1" onClick={completionPrimary.onClick}>
                 <completionPrimary.icon className="mr-1.5 h-4 w-4" />
                 {completionPrimary.label}
               </Button>
@@ -1399,17 +1396,15 @@ export function StudyDeck(props: StudyDeckProps) {
               narrow screen the grade row takes the full width, arrows below). */}
           <div className="mt-3 flex flex-wrap items-end justify-between gap-2 sm:flex-nowrap">
             <Button
+              icon={<ChevronLeft />}
               type="button"
               variant="outline"
-              size="icon"
-              className="h-11 w-11 shrink-0 rounded-lg"
+              className="shrink-0"
               onClick={prev}
               disabled={currentIndex === 0}
               aria-label="Previous card"
               title="Previous (←)"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
+            />
             <div className="order-first min-w-0 basis-full sm:order-none sm:basis-auto sm:flex-1">
               {currentKind === CARD_KIND.matching ? (
                 // Matching cards self-grade on completion — no grade row.
@@ -1419,17 +1414,15 @@ export function StudyDeck(props: StudyDeckProps) {
               )}
             </div>
             <Button
+              icon={<ChevronRight />}
               type="button"
               variant="outline"
-              size="icon"
-              className="h-11 w-11 shrink-0 rounded-lg"
+              className="shrink-0"
               onClick={next}
               disabled={currentIndex === cards.length - 1}
               aria-label="Next card"
               title="Next (→)"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
+            />
           </div>
 
           {current && <div className="mt-3">{renderToolRow(current)}</div>}
@@ -1514,19 +1507,18 @@ function AskAiPanel({
   return (
     <div className="contents">
       <Button
+        icon={loading ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <HelpCircle />
+        )}
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         className={cn(STUDY_TOOL_BUTTON, open && STUDY_TOOL_BUTTON_ACTIVE)}
         onClick={onToggle}
         aria-expanded={open}
         title="Ask AI for help with this card"
       >
-        {loading ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <HelpCircle className="h-3.5 w-3.5" />
-        )}
         Ask AI
       </Button>
 
@@ -1544,17 +1536,17 @@ function AskAiPanel({
             className="min-h-[52px] resize-none text-xs"
           />
           <Button
+            icon={loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <GraduationCap />
+            )}
+            variant="primary"
             type="button"
-            size="sm"
-            className="self-end gap-1.5 text-xs"
+            className="self-end"
             onClick={onAsk}
             disabled={loading}
           >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <GraduationCap className="h-3.5 w-3.5" />
-            )}
             Ask
           </Button>
         </div>

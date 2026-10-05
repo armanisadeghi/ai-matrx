@@ -3,6 +3,7 @@
 import { GitFork, Heart, MessageCircle, Share2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { useCanvasLike } from "@/hooks/canvas/useCanvasLike";
 import { useCanvasShare } from "@/hooks/canvas/useCanvasShare";
 import { toast } from "@/lib/toast";
@@ -45,7 +46,7 @@ export function CanvasSocialActions({
 
   return (
     <div className={cn("flex shrink-0 items-center gap-0.5", className)}>
-      <Button
+      <SurfaceButton
         type="button"
         variant="ghost"
         size="icon"
@@ -63,10 +64,10 @@ export function CanvasSocialActions({
           aria-hidden="true"
         />
         <span className="text-xs font-medium tabular-nums">{likeCount}</span>
-      </Button>
+      </SurfaceButton>
 
       {onCommentClick ? (
-        <Button
+        <SurfaceButton
           type="button"
           variant="ghost"
           size="icon"
@@ -79,23 +80,20 @@ export function CanvasSocialActions({
           <span className="text-xs font-medium tabular-nums">
             {commentCount}
           </span>
-        </Button>
+        </SurfaceButton>
       ) : null}
 
       <Button
+        icon={<Share2 aria-hidden="true" />}
         type="button"
-        variant="ghost"
-        size="icon"
+        variant="quiet"
         onClick={handleShare}
         aria-label="Copy share link"
         title="Copy share link"
-        className="h-11 w-11 rounded-lg sm:h-9 sm:w-9"
-      >
-        <Share2 className="h-4 w-4" aria-hidden="true" />
-      </Button>
+      />
 
       {onForkClick && forkCount > 0 ? (
-        <Button
+        <SurfaceButton
           type="button"
           variant="ghost"
           size="icon"
@@ -106,7 +104,7 @@ export function CanvasSocialActions({
         >
           <GitFork className="h-4 w-4" aria-hidden="true" />
           <span className="text-xs font-medium tabular-nums">{forkCount}</span>
-        </Button>
+        </SurfaceButton>
       ) : null}
     </div>
   );

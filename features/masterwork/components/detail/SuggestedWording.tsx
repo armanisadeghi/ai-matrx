@@ -45,18 +45,14 @@ export function SuggestedWording({
       </span>
       <span className="flex items-center gap-1">
         <Button
-          size="sm"
           variant="outline"
-          className="h-6 px-2 text-xs"
           disabled={busy !== null}
           onClick={() => void run("use", onUse)}
         >
           {busy === "use" ? "Saving…" : "Use it"}
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-2 text-xs"
+          variant="quiet"
           disabled={busy !== null}
           onClick={() => void run("keep", onKeepMine)}
         >

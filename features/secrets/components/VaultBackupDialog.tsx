@@ -558,7 +558,7 @@ export function VaultBackupDialog({
           >
             <Button
               type="button"
-              variant={mode === "download" ? "secondary" : "ghost"}
+              variant={mode === "download" ? "outline" : "quiet"}
               role="tab"
               aria-selected={mode === "download"}
               onClick={() => switchMode("download")}
@@ -567,7 +567,7 @@ export function VaultBackupDialog({
             </Button>
             <Button
               type="button"
-              variant={mode === "restore" ? "secondary" : "ghost"}
+              variant={mode === "restore" ? "outline" : "quiet"}
               role="tab"
               aria-selected={mode === "restore"}
               onClick={() => switchMode("restore")}
@@ -604,8 +604,7 @@ export function VaultBackupDialog({
                   autoComplete="current-password"
                 />
               </div>
-              <Button onClick={() => void confirmIdentity()} disabled={running}>
-                {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button icon={running && <Loader2 className="animate-spin" />} variant="primary" onClick={() => void confirmIdentity()} disabled={running}>
                 Confirm identity
               </Button>
             </section>
@@ -660,10 +659,11 @@ export function VaultBackupDialog({
               </fieldset>
               {!downloadPreview ? (
                 <Button
+                  icon={running && <Loader2 className="animate-spin" />}
+                  variant="primary"
                   onClick={() => void reviewDownload()}
                   disabled={running || items.length === 0}
                 >
-                  {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Review selected backup
                 </Button>
               ) : (
@@ -691,6 +691,8 @@ export function VaultBackupDialog({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
+                      icon={<Download />}
+                      variant="primary"
                       onClick={() => void download()}
                       disabled={
                         running ||
@@ -698,7 +700,6 @@ export function VaultBackupDialog({
                           !omissionsAccepted)
                       }
                     >
-                      <Download className="mr-2 h-4 w-4" />
                       Encrypt and download
                     </Button>
                     <Button
@@ -753,12 +754,13 @@ export function VaultBackupDialog({
                     />
                   </div>
                   <Button
+                    icon={running && (
+                      <Loader2 className="animate-spin" />
+                    )}
+                    variant="primary"
                     onClick={() => void reviewRestore()}
                     disabled={running || !restoreFile}
                   >
-                    {running && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
                     <Upload className="mr-2 h-4 w-4" />
                     Review restore
                   </Button>
@@ -813,6 +815,10 @@ export function VaultBackupDialog({
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
+                      icon={running && (
+                        <Loader2 className="animate-spin" />
+                      )}
+                      variant="primary"
                       onClick={() => void restore()}
                       disabled={
                         running ||
@@ -820,9 +826,6 @@ export function VaultBackupDialog({
                           !omissionsAccepted)
                       }
                     >
-                      {running && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
                       <RotateCcw className="mr-2 h-4 w-4" />
                       {retryable
                         ? "Retry same restore run"
@@ -854,7 +857,7 @@ export function VaultBackupDialog({
                         </span>
                       </label>
                       <Button
-                        variant="destructive"
+                        variant="danger"
                         disabled={!newRunAccepted}
                         onClick={() => {
                           setRestoreRunId(startNewRestoreRun(restorePreview));

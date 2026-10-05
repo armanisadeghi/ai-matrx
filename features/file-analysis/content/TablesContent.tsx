@@ -76,24 +76,20 @@ function TableCard({
         <div className="ml-auto flex items-center gap-1">
           {onJumpToPage ? (
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => onJumpToPage(table.page_number)}
-              className="h-7 text-[10px]"
             >
               Open page
             </Button>
           ) : null}
           {table.markdown ? (
             <Button
-              size="sm"
+              icon={<Copy />}
               variant="outline"
               onClick={() =>
                 void navigator.clipboard.writeText(table.markdown ?? "")
               }
-              className="h-7 text-[10px]"
-            >
-              <Copy className="h-3 w-3 mr-1" /> Copy md
+            > Copy md
             </Button>
           ) : null}
         </div>

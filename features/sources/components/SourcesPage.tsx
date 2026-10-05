@@ -1171,52 +1171,47 @@ export function SourcesPage() {
               return (
               <div className="flex flex-wrap items-center gap-1">
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<Save />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => void bulkSave(sel)}
-                >
-                  <Save className="h-3 w-3" /> Save
+                > Save
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<Paperclip />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => openSaveFor(sel.map(toSaveItem), [], false)}
-                >
-                  <Paperclip className="h-3 w-3" /> Attach
+                > Attach
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<Sparkles />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => void bulkProcess(sel)}
-                >
-                  <Sparkles className="h-3 w-3" /> Process now
+                > Process now
                 </Button>
                 {sel.some(isSourceArchived) ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1 text-xs"
+                    icon={<ArchiveRestore />}
+                    type="submit"
+                    variant="quiet"
                     disabled={bulkBusy}
                     onClick={() => void restoreRows(sel.filter(isSourceArchived))}
-                  >
-                    <ArchiveRestore className="h-3 w-3" /> Restore
+                  > Restore
                   </Button>
                 ) : null}
                 {sel.some((r) => !isSourceArchived(r)) ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10"
+                    icon={<Archive />}
+                    type="submit"
+                    variant="quiet"
                     disabled={bulkBusy}
                     onClick={() => setDeleteRows(sel.filter((r) => !isSourceArchived(r)))}
-                  >
-                    <Archive className="h-3 w-3" /> Archive
+                  > Archive
                   </Button>
                 ) : null}
                 {bulkBusy ? (
@@ -1305,15 +1300,14 @@ export function SourcesPage() {
               Showing the newest {formatCount(visibleRows.length)} Sources — more available
             </span>
             <Button
-              size="sm"
+              icon={loadingMore ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              type="submit"
               variant="outline"
-              className="h-7 text-xs"
               disabled={loadingMore}
               onClick={loadMore}
             >
-              {loadingMore ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : null}
               Load more
             </Button>
           </div>
@@ -1366,20 +1360,19 @@ export function SourcesPage() {
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setAddMode(null)}
               >
                 Cancel
               </Button>
               <Button
+                icon={adding ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 type="submit"
-                size="sm"
                 disabled={adding || !urlInput.trim()}
               >
-                {adding ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Read the page
               </Button>
             </div>
@@ -1423,20 +1416,21 @@ export function SourcesPage() {
             </p>
             <div className="flex justify-end gap-2">
               <Button
-                variant="ghost"
-                size="sm"
+                type="submit"
+                variant="quiet"
                 onClick={() => setAddMode(null)}
               >
                 Cancel
               </Button>
               <Button
-                size="sm"
+                icon={adding ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                type="submit"
+                variant="primary"
                 disabled={adding || !textInput.trim()}
                 onClick={() => void handleAddText()}
               >
-                {adding ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Add to Sources
               </Button>
             </div>
@@ -1502,20 +1496,22 @@ export function SourcesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button
-              variant="ghost"
+              type="submit"
+              variant="quiet"
               onClick={() => setDeleteRows(null)}
               disabled={deleting}
             >
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              icon={deleting ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              type="submit"
+              variant="danger"
               onClick={() => void confirmDelete()}
               disabled={deleting}
             >
-              {deleting ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : null}
               Archive
             </Button>
           </AlertDialogFooter>

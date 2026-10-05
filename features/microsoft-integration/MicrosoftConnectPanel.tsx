@@ -252,8 +252,6 @@ export function MicrosoftConnectPanel({
                 <Button
                   asChild
                   variant="outline"
-                  size="sm"
-                  className="h-11 sm:h-8"
                 >
                   <Link href="/connected-sources">
                     <Search className="mr-1.5 h-3.5 w-3.5" />
@@ -261,23 +259,19 @@ export function MicrosoftConnectPanel({
                   </Link>
                 </Button>
                 <Button
+                  icon={<RefreshCw />}
                   variant="outline"
-                  size="sm"
-                  className="h-11 sm:h-8"
                   disabled={busyConnectionId === connection.id}
                   onClick={() => void recheck(connection.id)}
                 >
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                   Re-check
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-11 sm:h-8"
+                  icon={<Trash2 />}
+                  variant="quiet"
                   disabled={busyConnectionId === connection.id}
                   onClick={() => void disconnect(connection)}
                 >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                   Disconnect
                 </Button>
               </div>
@@ -327,20 +321,21 @@ export function MicrosoftConnectPanel({
           ))}
         </ul>
         <Button
+          icon={starting ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
           onClick={() => void connect()}
           disabled={starting}
-          className="h-11 max-w-full px-2 sm:px-4"
+          className="max-w-full"
           aria-label={
             connections?.length
               ? "Connect another Microsoft account"
               : "Connect a Microsoft account"
           }
         >
-          {starting ? (
-            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="mr-1.5 h-4 w-4" />
-          )}
           <span className="sm:hidden">
             {connections?.length
               ? "Connect another account"

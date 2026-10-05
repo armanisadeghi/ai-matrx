@@ -39,7 +39,7 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { AgeBand } from "../types";
 
 /** Which caller opened it — drives copy only, never the write path. */

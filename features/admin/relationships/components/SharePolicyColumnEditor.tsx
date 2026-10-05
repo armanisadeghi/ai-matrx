@@ -168,15 +168,13 @@ export function SharePolicyColumnEditor({
         {showActions ? (
           <div className="flex items-center gap-2">
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={onCancel}
               disabled={busy}
             >
               Cancel
             </Button>
-            <Button size="sm" onClick={onSave} disabled={busy || !dirty}>
-              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" onClick={onSave} disabled={busy || !dirty}>
               Save exposed columns
             </Button>
           </div>

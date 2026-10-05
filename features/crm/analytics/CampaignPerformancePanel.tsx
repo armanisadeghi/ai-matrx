@@ -246,8 +246,7 @@ export function CampaignPerformancePanel({
         anchor="performance_funnel"
         headerExtra={
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => void load()}
             disabled={isLoading}
           >

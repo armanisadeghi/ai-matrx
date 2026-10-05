@@ -81,9 +81,8 @@ export function ApprovalLoadError({
       </div>
       {onRetry ? (
         <Button
-          size="sm"
           variant="outline"
-          className="h-6 shrink-0 text-[11px] max-md:h-9"
+          className="shrink-0"
           onClick={onRetry}
         >
           Try again

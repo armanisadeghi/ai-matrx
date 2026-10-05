@@ -57,7 +57,7 @@ export function EduNoteNew() {
           <AlertCircle className="h-6 w-6 text-muted-foreground" />
           <p className="text-sm font-medium text-foreground">Couldn&apos;t create the note <ErrorAlchemyMenu /></p>
           <p className="max-w-sm text-xs text-muted-foreground">{error} <ErrorAlchemyMenu /></p>
-          <Button onClick={() => router.push("/education/notes")}>Back to notes</Button>
+          <Button variant="primary" onClick={() => router.push("/education/notes")}>Back to notes</Button>
         </div>
       ) : (
         <div className="flex flex-col items-center gap-3 text-muted-foreground">

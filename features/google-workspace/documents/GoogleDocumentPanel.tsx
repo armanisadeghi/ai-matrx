@@ -14,7 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Archive, ExternalLink, FolderOpen, Lock, Plug, TriangleAlert } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";

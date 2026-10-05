@@ -132,7 +132,7 @@ export default function SmartCodeEditorDemoPage() {
   return (
     <div className="p-4 md:p-6 max-w-[1400px] mx-auto space-y-4">
       <div className="flex items-center gap-2">
-        <Button onClick={openSingleFile}>Open single-file window</Button>
+        <Button variant="primary" onClick={openSingleFile}>Open single-file window</Button>
         <Button onClick={openMultiFile} variant="outline">
           Open multi-file window
         </Button>

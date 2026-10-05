@@ -111,17 +111,17 @@ export function PortalCommentThread({
           className="min-h-[80px] resize-y text-base"
         />
         <Button
+          icon={pending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Send />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
-          className="mt-2 h-9"
+          className="mt-2"
           onClick={onSend}
           disabled={pending || !draft.trim()}
         >
-          {pending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
           {pending ? "Sending" : "Send"}
         </Button>
         {refusal ? (

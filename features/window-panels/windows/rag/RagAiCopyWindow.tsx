@@ -168,33 +168,27 @@ function RagAiCopyWindowInner({
               : ""}
           </span>
           <Button
+            icon={<Database />}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-7 gap-1.5 px-2 text-xs"
             onClick={() => setOptions(identifiersOnlyRagAiCopyOptions())}
           >
-            <Database className="h-3.5 w-3.5" />
             Identifiers only
           </Button>
           <Button
+            icon={<FileText />}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-7 gap-1.5 px-2 text-xs"
             onClick={() => setOptions(defaultRagAiCopyOptions(bundle))}
           >
-            <FileText className="h-3.5 w-3.5" />
             Essentials
           </Button>
           <Button
+            icon={<Layers3 />}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-7 gap-1.5 px-2 text-xs"
             onClick={() => setOptions(allRagAiCopyOptions(bundle))}
           >
-            <Layers3 className="h-3.5 w-3.5" />
             Everything available
           </Button>
         </div>
@@ -252,11 +246,9 @@ function RagAiCopyWindowInner({
                   <Button
                     key={value}
                     type="button"
-                    size="sm"
                     variant={
-                      options.maxTextChars === value ? "default" : "outline"
+                      options.maxTextChars === value ? "primary" : "outline"
                     }
-                    className="h-7 px-2 text-[10px]"
                     onClick={() => update({ maxTextChars: value })}
                   >
                     {value === 0 ? "Full" : value.toLocaleString()}
@@ -288,9 +280,7 @@ function RagAiCopyWindowInner({
                   <Button
                     key={value}
                     type="button"
-                    size="sm"
-                    variant={options.maxItems === value ? "default" : "outline"}
-                    className="h-7 px-2 text-[10px]"
+                    variant={options.maxItems === value ? "primary" : "outline"}
                     onClick={() => update({ maxItems: value })}
                   >
                     {value === 0 ? "All" : value}
@@ -323,9 +313,13 @@ function RagAiCopyWindowInner({
 
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-background px-3 py-2">
           <Button
+            icon={copied === "text" ? (
+              <Check />
+            ) : (
+              <Copy />
+            )}
             type="button"
             variant="outline"
-            size="sm"
             disabled={options.includedSections.length === 0}
             onClick={() => {
               void writeClipboard(
@@ -339,16 +333,16 @@ function RagAiCopyWindowInner({
               );
             }}
           >
-            {copied === "text" ? (
-              <Check className="h-4 w-4" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
             Copy selected content
           </Button>
           <Button
+            icon={copied === "ai" ? (
+              <Check />
+            ) : (
+              <CopyForAiIcon />
+            )}
+            variant="primary"
             type="button"
-            size="sm"
             onClick={() => {
               void writeClipboard(
                 buildAgentPayload(buildRagAiPayload(bundle, options)),
@@ -361,11 +355,6 @@ function RagAiCopyWindowInner({
               );
             }}
           >
-            {copied === "ai" ? (
-              <Check className="h-4 w-4" />
-            ) : (
-              <CopyForAiIcon className="h-4 w-4" />
-            )}
             Copy for AI
           </Button>
         </div>

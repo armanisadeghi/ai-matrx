@@ -68,12 +68,11 @@ export function NotesPanel({
         className="min-h-32 resize-none border-white/15 bg-white/5 text-base text-white placeholder:text-white/40"
       />
       <div className="mt-2 flex justify-end">
-        <Button size="sm" className="h-10 rounded-full px-5" onClick={onClose}>
-          {saving ? (
-            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+        <Button icon={saving ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Check className="mr-1.5 h-4 w-4" />
-          )}
+            <Check />
+          )} variant="primary" onClick={onClose}>
           Done
         </Button>
       </div>

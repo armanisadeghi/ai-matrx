@@ -76,24 +76,21 @@ export function MasterInputWindow({ id, onClose }: Props) {
       }
       actionsRight={
         <Button
-          size="sm"
-          variant="default"
-          className="h-7 shrink-0"
+          icon={<Send />}
+          variant="primary"
+          className="shrink-0"
           onClick={handleApply}
           disabled={columns.filter((c) => c.agentId).length === 0}
         >
-          <Send className="w-3.5 h-3.5" />
           Apply now
         </Button>
       }
       footerRight={
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
           onClick={handleAddField}
-          className="!h-7"
         >
-          <Plus className="w-3.5 h-3.5" />
           Add field
         </Button>
       }

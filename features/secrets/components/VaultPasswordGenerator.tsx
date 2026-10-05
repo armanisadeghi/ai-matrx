@@ -189,13 +189,11 @@ export function VaultPasswordGenerator({
   return (
     <>
       <Button
+        icon={<RefreshCw />}
         type="button"
         variant="outline"
-        size="sm"
-        className="h-9"
         onClick={() => setOpen(true)}
       >
-        <RefreshCw className="mr-1.5 h-4 w-4" />
         Generate
       </Button>
       <Credenza
@@ -213,16 +211,14 @@ export function VaultPasswordGenerator({
             <div className="flex gap-2">
               <Button
                 type="button"
-                size="sm"
-                variant={kind === "password" ? "default" : "outline"}
+                variant={kind === "password" ? "primary" : "outline"}
                 onClick={() => changeOptions("password")}
               >
                 Password
               </Button>
               <Button
                 type="button"
-                size="sm"
-                variant={kind === "passphrase" ? "default" : "outline"}
+                variant={kind === "passphrase" ? "primary" : "outline"}
                 onClick={() => changeOptions("passphrase")}
               >
                 Passphrase
@@ -334,34 +330,32 @@ export function VaultPasswordGenerator({
                 </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
+                    icon={revealed ? (
+                      <EyeOff />
+                    ) : (
+                      <Eye />
+                    )}
                     type="button"
-                    size="sm"
                     variant="outline"
                     onClick={() => setRevealed((value) => !value)}
                   >
-                    {revealed ? (
-                      <EyeOff className="mr-1.5 h-4 w-4" />
-                    ) : (
-                      <Eye className="mr-1.5 h-4 w-4" />
-                    )}
                     {revealed ? "Hide" : "Reveal"}
                   </Button>
                   <Button
+                    icon={<Copy />}
                     type="button"
-                    size="sm"
                     variant="outline"
                     onClick={() => void copy()}
                   >
-                    <Copy className="mr-1.5 h-4 w-4" />
                     Copy
                   </Button>
-                  <Button type="button" size="sm" onClick={use}>
+                  <Button variant="primary" type="button" onClick={use}>
                     Use
                   </Button>
                 </div>
               </div>
             )}
-            <Button type="button" onClick={() => void generate()}>
+            <Button variant="primary" type="button" onClick={() => void generate()}>
               {candidate ? "Generate another" : "Generate"}
             </Button>
           </CredenzaBody>

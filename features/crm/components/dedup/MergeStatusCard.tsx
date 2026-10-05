@@ -142,12 +142,11 @@ export function MergeStatusCard({
           </p>
           {activeAsLoser && (
             <Button
-              size="sm"
+              icon={<Undo2 />}
               variant="outline"
-              className="mt-1.5 h-7 gap-1 px-2 text-xs"
+              className="mt-1.5"
               onClick={() => void onUnmerge(activeAsLoser)}
             >
-              <Undo2 className="h-3.5 w-3.5" />
               Undo merge
             </Button>
           )}
@@ -179,9 +178,8 @@ export function MergeStatusCard({
             })}
           </ul>
           <Button
-            size="sm"
             variant="outline"
-            className="mt-1.5 h-7 gap-1 px-2 text-xs"
+            className="mt-1.5"
             asChild
           >
             <Link href="/crm/duplicates">
@@ -216,12 +214,11 @@ export function MergeStatusCard({
                   {new Date(m.merged_at).toLocaleDateString()}
                 </span>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="ml-auto h-6 gap-1 px-1.5 text-[11px]"
+                  icon={<Undo2 />}
+                  variant="quiet"
+                  className="ml-auto"
                   onClick={() => void onUnmerge(m)}
                 >
-                  <Undo2 className="h-3 w-3" />
                   Undo
                 </Button>
               </li>

@@ -83,7 +83,7 @@ export default function SlideDeckDemoPage() {
       <div className="flex items-center gap-2">
         <span className="text-sm text-muted-foreground">Tier:</span>
         {(["generic", "fancy", "deluxe"] as Variant[]).map((v) => (
-          <Button key={v} size="sm" variant={variant === v ? "default" : "outline"} onClick={() => setVariant(v)} className="capitalize">
+          <Button key={v} variant={variant === v ? "primary" : "outline"} onClick={() => setVariant(v)}>
             {v}
           </Button>
         ))}

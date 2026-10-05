@@ -119,16 +119,15 @@ export function PageSeoPlanSection({
               plan and the page workspace read.
             </p>
             <Button
-              size="sm"
-              className="h-8"
+              icon={plan.creating ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <PlusCircle />
+              )}
+              variant="primary"
               disabled={plan.creating}
               onClick={() => void plan.create()}
             >
-              {plan.creating ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <PlusCircle className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Create plan
             </Button>
           </>

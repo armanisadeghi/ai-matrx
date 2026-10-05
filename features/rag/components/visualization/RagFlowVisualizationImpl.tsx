@@ -669,27 +669,21 @@ export function RagFlowVisualization({
       {showControls && (
         <div className="absolute right-4 top-4 flex items-center gap-1 rounded-lg border bg-background/85 p-1 backdrop-blur">
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            icon={playing ? (
+              <Pause />
+            ) : (
+              <Play />
+            )}
+            variant="quiet"
             onClick={() => setPlaying((p) => !p)}
             aria-label={playing ? "Pause" : "Play"}
-          >
-            {playing ? (
-              <Pause className="h-3.5 w-3.5" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            icon={<RotateCcw />}
+            variant="quiet"
             onClick={restart}
             aria-label="Restart"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
+          />
           <div className="mx-1 h-5 w-px bg-border" />
           <button
             type="button"

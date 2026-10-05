@@ -327,14 +327,13 @@ export function TakeOverAccountDialog({
             Cancel
           </Button>
           {mode ? (
-            <Button onClick={submit} disabled={busy} variant="destructive">
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Button icon={busy ? (
+                <Loader2 className="animate-spin" />
               ) : mode === "account" ? (
-                <KeyRound className="mr-2 h-4 w-4" />
+                <KeyRound />
               ) : (
-                <FolderInput className="mr-2 h-4 w-4" />
-              )}
+                <FolderInput />
+              )} onClick={submit} disabled={busy} variant="danger">
               {mode === "account" ? "Take over account" : "Take over records"}
             </Button>
           ) : null}

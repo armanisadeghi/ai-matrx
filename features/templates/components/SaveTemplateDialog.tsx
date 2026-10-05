@@ -131,7 +131,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                 ))}
               </ul>
             ) : null}
-            <Button asChild size="sm">
+            <Button variant="primary" asChild>
               <Link href={templatePreviewHref(saved.templateId)} onClick={onClose}>
                 Open the template
               </Link>
@@ -146,7 +146,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
                 setSkipped(new Set());
               }}
               triggerSlot={
-                <Button variant="outline" className="w-full justify-between" data-save-template-agent="">
+                <Button type="submit" variant="outline" className="w-full justify-between" data-save-template-agent="">
                   <span className="truncate">
                     {ok?.agents[0]
                       ? `${ok.agents[0].name}${orgName ? ` · ${orgName}` : ""}`
@@ -209,12 +209,11 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
 
         <DialogFooter>
           {saved ? (
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="quiet" onClick={onClose}>
               Close
             </Button>
           ) : (
-            <Button onClick={() => void save()} disabled={!ok || !organizationId || !name.trim() || saving} data-save-template-save="">
-              {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            <Button icon={saving ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => void save()} disabled={!ok || !organizationId || !name.trim() || saving} data-save-template-save="">
               Save
             </Button>
           )}

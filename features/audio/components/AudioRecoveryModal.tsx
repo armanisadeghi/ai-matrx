@@ -211,10 +211,9 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
           </span>
         </div>
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={() => onDismiss(item.id)}
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+          className="w-7"
           title="Delete this recording"
         >
           <Trash2 className="h-3.5 w-3.5" />
@@ -238,12 +237,10 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
             </div>
           </div>
           <Button
+            icon={<Bug />}
             variant="outline"
-            size="sm"
             onClick={() => handleReportLoss(item)}
-            className="h-7 text-xs gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
-            <Bug className="h-3 w-3" />
             Report Lost Recording
           </Button>
         </div>
@@ -273,21 +270,17 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
       {hasText && (
         <div className="grid grid-cols-2 gap-2">
           <Button
-            variant="default"
-            size="sm"
+            icon={<BookOpen />}
+            variant="primary"
             onClick={handleSaveToNotes}
-            className="h-8 text-xs gap-1.5"
           >
-            <BookOpen className="h-3.5 w-3.5" />
             Save to Notes
           </Button>
           <Button
-            variant="secondary"
-            size="sm"
+            icon={<MessageSquarePlus />}
+            variant="outline"
             onClick={handleOpenInChat}
-            className="h-8 text-xs gap-1.5"
           >
-            <MessageSquarePlus className="h-3.5 w-3.5" />
             Open in Chat
           </Button>
         </div>
@@ -298,32 +291,28 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
         <div className="flex items-center gap-1.5 flex-wrap">
           {hasText && (
             <Button
-              variant="outline"
-              size="sm"
-              onClick={handleCopyText}
-              className="h-7 text-xs gap-1.5"
-            >
-              {copied ? (
-                <Check className="h-3 w-3" />
+              icon={copied ? (
+                <Check />
               ) : (
-                <Copy className="h-3 w-3" />
+                <Copy />
               )}
+              variant="outline"
+              onClick={handleCopyText}
+            >
               {copied ? "Copied" : "Copy Text"}
             </Button>
           )}
           {hasAudio && (
             <Button
+              icon={isRetranscribing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RotateCcw />
+              )}
               variant="outline"
-              size="sm"
               onClick={handleRetranscribe}
               disabled={isRetranscribing}
-              className="h-7 text-xs gap-1.5"
             >
-              {isRetranscribing ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RotateCcw className="h-3 w-3" />
-              )}
               Re-transcribe
             </Button>
           )}
@@ -402,10 +391,8 @@ export function AudioRecoveryModal({
             ))}
             <div className="flex justify-end pt-1">
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={handleDismissAll}
-                className="text-xs text-muted-foreground"
               >
                 Dismiss All
               </Button>

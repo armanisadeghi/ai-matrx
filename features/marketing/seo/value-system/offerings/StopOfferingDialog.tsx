@@ -88,7 +88,6 @@ export function StopOfferingDialog({
               <p>Could not measure what this would change: {extractErrorMessage(impact.error)}</p>
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 className="mt-2"
                 onClick={() => void impact.refetch()}
@@ -151,16 +150,16 @@ export function StopOfferingDialog({
         </div>
 
         <DialogFooter className="pb-safe">
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
+          <Button type="button" variant="quiet" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
           <Button
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
             type="button"
-            variant="destructive"
+            variant="danger"
             disabled={busy || impact.isPending || Boolean(impact.error)}
             onClick={() => onConfirm(reason)}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Stop offering here
           </Button>
         </DialogFooter>

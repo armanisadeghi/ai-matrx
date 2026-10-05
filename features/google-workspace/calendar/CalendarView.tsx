@@ -66,9 +66,7 @@ export function CalendarView() {
             <Button
               key={candidate}
               type="button"
-              size="sm"
-              variant={mode === candidate ? "secondary" : "ghost"}
-              className="h-7 px-2 text-xs capitalize max-sm:min-h-9"
+              variant={mode === candidate ? "outline" : "quiet"}
               onClick={() => setMode(candidate)}
             >
               {candidate}
@@ -76,13 +74,9 @@ export function CalendarView() {
           ))}
         </div>
         <div className="flex items-center gap-0.5">
-          <Button type="button" size="icon" variant="ghost" className="h-8 w-8" aria-label="Previous calendar period" onClick={() => setStartDay((day) => dateShift(day, -step))}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button type="button" size="sm" variant="ghost" className="h-8 px-2 text-xs" onClick={() => setStartDay(today)}>Today</Button>
-          <Button type="button" size="icon" variant="ghost" className="h-8 w-8" aria-label="Next calendar period" onClick={() => setStartDay((day) => dateShift(day, step))}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <Button icon={<ChevronLeft />} type="button" variant="quiet" aria-label="Previous calendar period" onClick={() => setStartDay((day) => dateShift(day, -step))} />
+          <Button type="button" variant="quiet" onClick={() => setStartDay(today)}>Today</Button>
+          <Button icon={<ChevronRight />} type="button" variant="quiet" aria-label="Next calendar period" onClick={() => setStartDay((day) => dateShift(day, step))} />
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-auto p-2.5">

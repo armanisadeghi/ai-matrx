@@ -35,7 +35,7 @@ export function ConfigRecovery({ configName, reason, onRecover }: Props) {
             <p className="rounded border border-border bg-background p-2 font-mono text-[11px] text-muted-foreground">
               {reason}
             </p>
-            <Button size="sm" className="w-fit text-xs" onClick={onRecover}>
+            <Button variant="primary" className="w-fit" onClick={onRecover}>
               Discard it and return to the shipped config
             </Button>
           </div>

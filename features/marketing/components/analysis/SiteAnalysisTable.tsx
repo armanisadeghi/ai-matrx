@@ -428,32 +428,29 @@ export function SiteAnalysisTable() {
                 groomer={groomerConfig}
               />
               <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5"
-                onClick={() => void priority.refetch()}
-                disabled={priority.isFetching}
-              >
-                <RefreshCw
+                icon={<RefreshCw
                   className={
                     priority.isFetching
                       ? "h-3.5 w-3.5 animate-spin"
                       : "h-3.5 w-3.5"
                   }
-                />
+                />}
+                variant="outline"
+                onClick={() => void priority.refetch()}
+                disabled={priority.isFetching}
+              >
                 Refresh
               </Button>
               <Button
-                size="sm"
-                className="h-8 gap-1.5"
+                icon={isNavigating ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ListChecks />
+                )}
+                variant="primary"
                 onClick={() => navigate(marketingRoutes.site(brandId, site.id, "/findings"))}
                 disabled={isNavigating}
               >
-                {isNavigating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ListChecks className="h-3.5 w-3.5" />
-                )}
                 Findings
               </Button>
             </div>

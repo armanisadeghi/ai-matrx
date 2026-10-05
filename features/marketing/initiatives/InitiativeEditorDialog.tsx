@@ -221,7 +221,7 @@ export function InitiativeEditorDialog({
           >
             Cancel
           </Button>
-          <Button onClick={() => void save()} disabled={busy}>
+          <Button variant="primary" onClick={() => void save()} disabled={busy}>
             {busy ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>

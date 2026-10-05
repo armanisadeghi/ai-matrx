@@ -50,9 +50,7 @@ export function ContentFindControl({
 
   return (
     <div className="relative shrink-0">
-      <Button type="button" variant="ghost" size="icon" aria-label={label} title={label} onClick={openFind}>
-        <Search className="h-4 w-4" aria-hidden />
-      </Button>
+      <Button icon={<Search aria-hidden />} type="button" variant="quiet" aria-label={label} title={label} onClick={openFind} />
       {open && (
         <div className="absolute right-0 top-full z-30 mt-1 w-[min(88vw,520px)]">
           <RenderedFindBar rootRef={rootRef} label={label} focusRequest={focusRequest} onClose={closeFind} />

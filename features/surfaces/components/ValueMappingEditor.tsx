@@ -376,9 +376,8 @@ function MappingRow({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                variant="quiet"
+                className="w-6 shrink-0"
                 onClick={() => onChange(null)}
                 disabled={disabled}
                 aria-label="Clear mapping"

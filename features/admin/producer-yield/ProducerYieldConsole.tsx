@@ -287,8 +287,7 @@ export function ProducerYieldConsole() {
             {/* Page purpose: every autonomous spender and what its money bought; unaccepted output = broken producer. */}
           </div>
           <div className="flex gap-2">
-            <Button size="sm" onClick={() => void onCheck()} disabled={checking}>
-              <Play className="mr-2 h-4 w-4" />
+            <Button icon={<Play />} variant="primary" onClick={() => void onCheck()} disabled={checking}>
               {checking ? "Checking…" : "Run floor check"}
             </Button>
           </div>
@@ -363,11 +362,11 @@ export function ProducerYieldConsole() {
           actions: (
             <>
               {idleCount > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setShowIdle((value) => !value)}>
+                <Button variant="outline" onClick={() => setShowIdle((value) => !value)}>
                   {showIdle ? "Hide" : "Show"} {idleCount} idle
                 </Button>
               )}
-              <Button variant="outline" size="sm" aria-label="Refresh yield register" onClick={() => void register.refetch()} disabled={refreshing}>
+              <Button variant="outline" aria-label="Refresh yield register" onClick={() => void register.refetch()} disabled={refreshing}>
                 <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               </Button>
             </>

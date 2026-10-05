@@ -147,27 +147,23 @@ export function JobTab({
       {canWrite && employmentId ? (
         <div className="flex flex-wrap gap-2">
           <Button
+            icon={<Pencil aria-hidden />}
             type="button"
-            size="sm"
-            variant={changing === "position" ? "secondary" : "outline"}
-            className="min-h-11 sm:min-h-9"
+            variant={changing === "position" ? "outline" : "outline"}
             onClick={() =>
               setChanging(changing === "position" ? null : "position")
             }
           >
-            <Pencil className="mr-2 h-4 w-4" aria-hidden />
             Change position
           </Button>
           <Button
+            icon={<ArrowRightLeft aria-hidden />}
             type="button"
-            size="sm"
-            variant={changing === "transfer" ? "secondary" : "outline"}
-            className="min-h-11 sm:min-h-9"
+            variant={changing === "transfer" ? "outline" : "outline"}
             onClick={() =>
               setChanging(changing === "transfer" ? null : "transfer")
             }
           >
-            <ArrowRightLeft className="mr-2 h-4 w-4" aria-hidden />
             Transfer
           </Button>
         </div>
@@ -443,15 +439,13 @@ function AssignmentRow({
         <div className="flex shrink-0 items-center gap-1">
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="min-h-11 sm:min-h-8"
+            variant="quiet"
             onClick={onOpen}
           >
             Open
           </Button>
           {assignmentId ? (
-            <Button asChild size="sm" variant="ghost" className="min-h-11 sm:min-h-8">
+            <Button asChild variant="quiet">
               <Link
                 /*
                   🚨 BUILT, NOT HAND-ASSEMBLED — routes.ts says so at the top of the

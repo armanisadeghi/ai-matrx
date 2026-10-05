@@ -134,39 +134,39 @@ export function ModeImagePicker({
 
         <div className="grid gap-2 sm:grid-cols-2">
           <Button
+            icon={<Clipboard />}
             type="button"
             variant="outline"
             onClick={() => void handleClipboard()}
           >
-            <Clipboard className="mr-1.5 h-4 w-4" />
             Paste image
           </Button>
           {enableCapture ? (
             <>
               <Button
+                icon={isCapturing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Camera />
+                )}
                 type="button"
                 variant="outline"
                 disabled={isCapturing}
                 onClick={() => void handleCapture("tab")}
               >
-                {isCapturing ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="mr-1.5 h-4 w-4" />
-                )}
                 Capture this page
               </Button>
               <Button
+                icon={isCapturing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Monitor />
+                )}
                 type="button"
                 variant="outline"
                 disabled={isCapturing}
                 onClick={() => void handleCapture("screen")}
               >
-                {isCapturing ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Monitor className="mr-1.5 h-4 w-4" />
-                )}
                 Capture screen
               </Button>
             </>
@@ -189,10 +189,9 @@ export function ModeImagePicker({
             style={{ fontSize: "16px" }}
           />
           <Button
+            variant="primary"
             type="button"
-            size="sm"
             disabled={!urlInput.trim()}
-            className="min-h-[40px]"
             onClick={() => {
               const url = urlInput.trim();
               if (url) onPick({ kind: "url", url });

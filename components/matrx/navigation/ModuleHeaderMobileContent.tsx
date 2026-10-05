@@ -54,14 +54,12 @@ export function ModuleHeaderMobileContent({
         <PageSelection pages={pages} moduleHome={moduleHome} />
       </div>
       <Button
-        variant="ghost"
-        size="icon"
-        className="h-10 w-10 shrink-0"
+        icon={<ShieldPlus />}
+        variant="quiet"
+        className="shrink-0"
         aria-label={`Open ${moduleName || "module"} menu`}
         onClick={() => setMenuOpen(true)}
-      >
-        <ShieldPlus className="h-4 w-4" />
-      </Button>
+      />
       <MatrxDynamicPanelHost
         open={menuOpen}
         onOpenChange={setMenuOpen}

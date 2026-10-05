@@ -228,7 +228,7 @@ function UserSearchWindowInner({
         <MatrxDataTable
           data={visibleRows}
           columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-            <Button size="sm" onClick={() => select(row)}>
+            <Button variant="primary" onClick={() => select(row)}>
               Select
             </Button>
           ) }]}

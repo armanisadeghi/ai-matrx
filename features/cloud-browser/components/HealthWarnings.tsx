@@ -61,7 +61,7 @@ export function HealthWarnings({
             <div className="flex items-center gap-2">
               <span className={cn("text-xs font-medium", meta.tone)}>{meta.label}</span>
               {meta.warn ? (
-                <Button asChild size="sm" variant="outline">
+                <Button asChild variant="outline">
                   <a
                     href={`https://${b.normalizedOrigin}`}
                     target="_blank"

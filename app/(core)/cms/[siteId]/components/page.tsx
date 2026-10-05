@@ -279,8 +279,7 @@ export default function ComponentsPage() {
             />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-                  <Plus className="h-3.5 w-3.5" />
+                <Button icon={<Plus />} variant="outline">
                   New Component
                 </Button>
               </DialogTrigger>
@@ -325,12 +324,13 @@ export default function ComponentsPage() {
                     Cancel
                   </Button>
                   <Button
+                    icon={isCreating && (
+                      <Loader2 className="animate-spin" />
+                    )}
+                    variant="primary"
                     onClick={handleCreate}
                     disabled={isCreating || !createName}
                   >
-                    {isCreating && (
-                      <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-                    )}
                     Create
                   </Button>
                 </DialogFooter>
@@ -427,36 +427,31 @@ export default function ComponentsPage() {
                           </Badge>
                           {editingId === comp.id ? (
                             <Button
-                              size="sm"
+                              icon={isSavingEdit ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <Save />
+                              )}
+                              variant="primary"
                               onClick={handleSaveEdit}
                               disabled={isSavingEdit}
-                              className="gap-1.5 text-xs"
                             >
-                              {isSavingEdit ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Save className="h-3.5 w-3.5" />
-                              )}
                               Save
                             </Button>
                           ) : (
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              icon={<Pencil />}
+                              variant="quiet"
                               onClick={() => startEditing(comp)}
-                              className="gap-1.5 text-xs"
                             >
-                              <Pencil className="h-3.5 w-3.5" />
                               Edit
                             </Button>
                           )}
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            icon={<Trash2 />}
+                            variant="quiet"
                             onClick={() => setDeleteTarget(comp)}
-                            className="gap-1.5 text-xs text-destructive hover:text-destructive"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
                             Delete
                           </Button>
                         </div>
@@ -523,10 +518,8 @@ export default function ComponentsPage() {
                           </EditableContextMenu>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant="quiet"
                           onClick={() => setEditingId(null)}
-                          className="text-xs"
                         >
                           Cancel
                         </Button>

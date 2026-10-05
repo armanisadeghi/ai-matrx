@@ -195,8 +195,7 @@ export default function OrgApiKeysPage() {
             </div>
             {isOwner && (
               <div className="flex justify-end">
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" />
+                <Button icon={<Plus />} variant="primary" onClick={() => setCreateOpen(true)}>
                   New key
                 </Button>
               </div>
@@ -249,7 +248,6 @@ export default function OrgApiKeysPage() {
                   {isOwner && key.status === "active" && (
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => setRevokeTarget(key)}
                     >
                       Revoke
@@ -295,12 +293,13 @@ export default function OrgApiKeysPage() {
               />
               <DialogFooter>
                 <Button
+                  icon={creating && (
+                    <Loader2 className="animate-spin" />
+                  )}
+                  variant="primary"
                   onClick={() => void handleCreate()}
                   disabled={creating || !newName.trim()}
                 >
-                  {creating && (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  )}
                   Create key
                 </Button>
               </DialogFooter>
@@ -318,7 +317,7 @@ export default function OrgApiKeysPage() {
                 <code className="flex-1 break-all rounded-md border border-border bg-muted/40 p-3 font-mono text-xs">
                   {created.api_key}
                 </code>
-                <Button variant="outline" size="sm" onClick={() => void handleCopy()}>
+                <Button variant="outline" onClick={() => void handleCopy()}>
                   {copied ? (
                     <Check className="h-4 w-4" />
                   ) : (
@@ -328,6 +327,7 @@ export default function OrgApiKeysPage() {
               </div>
               <DialogFooter>
                 <Button
+                  variant="primary"
                   onClick={() => {
                     setCreateOpen(false);
                     setCreated(null);

@@ -219,12 +219,10 @@ function CompletionScreen({
       </div>
       {pairPicker}
       <div className="flex w-full flex-col gap-2 sm:flex-row">
-        <Button variant="outline" className="flex-1" onClick={onPlayAgain}>
-          <RotateCcw className="mr-1.5 h-4 w-4" />
+        <Button icon={<RotateCcw />} variant="outline" className="flex-1" onClick={onPlayAgain}>
           Play again
         </Button>
-        <Button className="flex-1" onClick={onBackToSet}>
-          <Layers className="mr-1.5 h-4 w-4" />
+        <Button icon={<Layers />} variant="primary" className="flex-1" onClick={onBackToSet}>
           Back to set
         </Button>
       </div>

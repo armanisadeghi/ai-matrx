@@ -142,12 +142,10 @@ export function KeywordMeaningPanel({
           label="Class"
           action={
             <Button
-              size="sm"
+              icon={<Tag />}
               variant="outline"
-              className="h-6 gap-1 px-1.5 text-[11px]"
               onClick={() => surfaces.openDimension(row, "traffic_class")}
             >
-              <Tag className="h-3 w-3" />
               {value?.traffic_class ? "Change" : "Set"}
             </Button>
           }
@@ -172,12 +170,10 @@ export function KeywordMeaningPanel({
           label="Offering"
           action={
             <Button
-              size="sm"
+              icon={<Network />}
               variant="outline"
-              className="h-6 gap-1 px-1.5 text-[11px]"
               onClick={() => surfaces.openService(row)}
             >
-              <Network className="h-3 w-3" />
               {service ? "Change" : "Place"}
             </Button>
           }
@@ -217,13 +213,11 @@ export function KeywordMeaningPanel({
           label="Score and level"
           action={
             <Button
-              size="sm"
+              icon={<Gavel />}
               variant="outline"
-              className="h-6 gap-1 px-1.5 text-[11px]"
               disabled={surfaces.busy}
               onClick={() => surfaces.openLevel(row)}
             >
-              <Gavel className="h-3 w-3" />
               {value?.value_source === "override" ? "Change" : "Pin a level"}
             </Button>
           }
@@ -324,12 +318,10 @@ export function KeywordMeaningPanel({
         )}
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           <Button
-            size="sm"
+            icon={<Tag />}
             variant="outline"
-            className="h-6 gap-1 px-1.5 text-[11px]"
             onClick={() => surfaces.openDimension(row)}
           >
-            <Tag className="h-3 w-3" />
             Answer a dimension…
           </Button>
           {unanswered.length > 0 ? (

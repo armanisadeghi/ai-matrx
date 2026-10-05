@@ -11,7 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/utils/cn";
 import {

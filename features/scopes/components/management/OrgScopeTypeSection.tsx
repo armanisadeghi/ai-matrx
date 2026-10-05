@@ -335,8 +335,7 @@ export function ContextItemsReadyPreview({
         >
           View all {items.length} {fieldsWord}
         </Link>
-        <Button size="sm" onClick={onAdd}>
-          <Plus className="h-3.5 w-3.5 mr-1.5" />
+        <Button icon={<Plus />} variant="primary" onClick={onAdd}>
           Add your first {singular}
         </Button>
       </div>

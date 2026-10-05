@@ -163,21 +163,17 @@ export function OrgSelector({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          icon={orgsLoading ? (
+            <Loader2 className="animate-spin text-muted-foreground" />
+          ) : (
+            <Icon className="text-muted-foreground" />
+          )} iconEnd={<ChevronDown className="text-muted-foreground" />}
           variant="outline"
-          className={cn(
-            "w-full justify-start gap-2 font-normal",
-            isMobile && "min-h-[44px] text-base",
-          )}
+          className="w-full justify-start"
           disabled={orgsLoading}
           style={isMobile ? { fontSize: "16px" } : undefined}
         >
-          {orgsLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-          ) : (
-            <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-          )}
           <span className="truncate">{orgsLoading ? "Loading..." : label}</span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-[280px]">
@@ -503,9 +499,10 @@ export function ProjectFormCore({
           {/* Actions */}
           <div className="flex flex-col gap-3 pt-2 border-t border-border">
             <Button
+              variant="primary"
               type="submit"
               disabled={!isFormValid || isSubmitting}
-              className="w-full min-h-[44px]"
+              className="w-full"
             >
               {isSubmitting ? (
                 <>
@@ -524,7 +521,7 @@ export function ProjectFormCore({
               variant="outline"
               onClick={onClose}
               disabled={isSubmitting}
-              className="w-full min-h-[44px]"
+              className="w-full"
             >
               Cancel
             </Button>
@@ -665,7 +662,7 @@ export function ProjectFormCore({
         >
           Cancel
         </Button>
-        <Button type="submit" disabled={!isFormValid || isSubmitting}>
+        <Button variant="primary" type="submit" disabled={!isFormValid || isSubmitting}>
           {isSubmitting ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

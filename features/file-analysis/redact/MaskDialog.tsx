@@ -216,7 +216,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
               <Button
                 variant="outline"
                 onClick={downloadMasked}
-                className="w-full text-xs"
+                className="w-full"
               >
                 Download masked PDF
               </Button>
@@ -232,16 +232,15 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
 
           <DialogFooter>
             <Button
-              variant="ghost"
+              variant="quiet"
               onClick={() => onOpenChange(false)}
-              size="sm"
             >
               Cancel
             </Button>
             <Button
+              variant="primary"
               disabled={running || !candidates.length}
               onClick={() => void handleRun()}
-              size="sm"
             >
               {running ? (
                 <>

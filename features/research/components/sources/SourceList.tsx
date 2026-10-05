@@ -34,6 +34,7 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -301,17 +302,15 @@ function ActionTrigger({
 }) {
   return (
     <Button
+      icon={busy ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <Play />
+      )}
       variant="outline"
-      size="sm"
-      className="h-6 px-1.5 gap-1 text-[10px] font-medium"
       disabled={busy || disabled}
       onClick={onClick}
     >
-      {busy ? (
-        <Loader2 className="h-3 w-3 animate-spin" />
-      ) : (
-        <Play className="h-2.5 w-2.5" />
-      )}
       {label}
     </Button>
   );
@@ -749,14 +748,14 @@ function SourceRow({
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
+                  <SurfaceButton
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 rounded-full"
                     disabled={anyNavigating}
                   >
                     <MoreVertical className="h-3.5 w-3.5" />
-                  </Button>
+                  </SurfaceButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem

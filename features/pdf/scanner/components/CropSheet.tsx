@@ -401,12 +401,11 @@ function CropEditor({
           </DrawerTitle>
           {offerRetry && !detecting && item.fileId && (
             <Button
+              icon={<ScanSearch />}
               variant="outline"
-              size="sm"
-              className="ml-auto h-7 px-2 text-xs"
+              className="ml-auto"
               onClick={() => runDetect("relaxed")}
             >
-              <ScanSearch className="mr-1 h-3 w-3" />
               Try harder
             </Button>
           )}
@@ -493,34 +492,30 @@ function CropEditor({
 
       <DrawerFooter className="flex-row gap-2 pb-safe pt-2">
         <Button
+          icon={<Maximize2 />}
           variant="outline"
-          size="sm"
-          className="h-10"
           disabled={!naturalSize}
           onClick={() =>
             naturalSize && setQuad(fullFrameQuad(naturalSize.w, naturalSize.h))
           }
         >
-          <Maximize2 className="mr-1.5 h-3.5 w-3.5" />
           Full frame
         </Button>
         <Button
+          icon={<RotateCw />}
           variant="outline"
-          size="sm"
-          className="h-10"
           disabled={!naturalSize}
           onClick={() => setRotation(((rotation + 90) % 360) as ScanRotation)}
         >
-          <RotateCw className="mr-1.5 h-3.5 w-3.5" />
           {rotation ? `${rotation}°` : "Rotate"}
         </Button>
         <Button
-          size="sm"
-          className="h-10 flex-1"
+          icon={<Check />}
+          variant="primary"
+          className="flex-1"
           disabled={!quad || detecting || Boolean(enhanceBusy)}
           onClick={apply}
         >
-          <Check className="mr-1.5 h-3.5 w-3.5" />
           Use crop
         </Button>
       </DrawerFooter>

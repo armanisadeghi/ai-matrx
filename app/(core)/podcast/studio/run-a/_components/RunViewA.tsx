@@ -86,15 +86,13 @@ export function RunViewA() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<RotateCcw />}
+            variant="quiet"
             onClick={replay}
-            className="gap-1.5 text-muted-foreground hover:text-foreground"
           >
-            <RotateCcw className="h-4 w-4" />
             <span className="hidden sm:inline">Replay</span>
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href="/podcast/studio/create-a">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">New episode</span>
@@ -222,13 +220,13 @@ export function RunViewA() {
 
           {done && (
             <div className="flex flex-wrap items-center gap-2">
-              <Button asChild className="gap-2">
+              <Button variant="primary" asChild>
                 <Link href="/podcast/crispr-explained">
                   <Podcast className="h-4 w-4" />
                   Open the episode
                 </Link>
               </Button>
-              <Button asChild variant="outline" className="gap-2">
+              <Button asChild variant="outline">
                 <Link href="/podcast/studio/create-a">
                   <Plus className="h-4 w-4" />
                   Make another

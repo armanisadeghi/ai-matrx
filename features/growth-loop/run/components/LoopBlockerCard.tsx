@@ -93,16 +93,15 @@ export function LoopBlockerCard({
 
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
-              size="sm"
-              variant="default"
+              icon={busy ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Play aria-hidden />
+              )}
+              variant="primary"
               disabled={busy}
               onClick={() => onUnblock(open.id)}
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Play className="h-4 w-4" aria-hidden />
-              )}
               I handled it — continue
             </Button>
             {skipping ? (
@@ -119,7 +118,6 @@ export function LoopBlockerCard({
                   step comes back around on the loop&apos;s next cycle.
                 </p>
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() => {
@@ -130,7 +128,6 @@ export function LoopBlockerCard({
                   Confirm skip
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setSkipping(false)}
                 >
@@ -139,12 +136,11 @@ export function LoopBlockerCard({
               </>
             ) : (
               <Button
-                size="sm"
+                icon={<SkipForward aria-hidden />}
                 variant="outline"
                 disabled={busy}
                 onClick={() => setSkipping(true)}
               >
-                <SkipForward className="h-4 w-4" aria-hidden />
                 Skip this step
               </Button>
             )}

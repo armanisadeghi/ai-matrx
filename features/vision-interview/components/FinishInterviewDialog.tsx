@@ -254,9 +254,8 @@ export function FinishInterviewDialog({
                     </span>
                     {ready ? (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 shrink-0 px-2 text-xs"
+                        variant="quiet"
+                        className="shrink-0"
                         onClick={() => openDocument(key)}
                       >
                         Open

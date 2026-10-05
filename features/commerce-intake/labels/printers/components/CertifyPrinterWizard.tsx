@@ -332,7 +332,7 @@ export function CertifyPrinterWizard({
           </div>
 
           <div className="flex justify-end">
-            <Button disabled={!canDescribe} onClick={() => setStep(2)}>
+            <Button variant="primary" disabled={!canDescribe} onClick={() => setStep(2)}>
               Next — print the calibration page
             </Button>
           </div>
@@ -383,8 +383,7 @@ export function CertifyPrinterWizard({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button onClick={printCalibration}>
-              <Ruler className="mr-1.5 h-4 w-4" />
+            <Button icon={<Ruler />} variant="primary" onClick={printCalibration}>
               Print the calibration page
             </Button>
             <span className="text-[11px] text-muted-foreground">
@@ -400,11 +399,10 @@ export function CertifyPrinterWizard({
           )}
 
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(1)}>
-              <ChevronLeft className="mr-1 h-4 w-4" />
+            <Button icon={<ChevronLeft />} variant="quiet" onClick={() => setStep(1)}>
               Back
             </Button>
-            <Button disabled={!printed} onClick={() => setStep(3)}>
+            <Button variant="primary" disabled={!printed} onClick={() => setStep(3)}>
               I have the printed page — check it
             </Button>
           </div>
@@ -438,23 +436,21 @@ export function CertifyPrinterWizard({
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <Button
-                      size="sm"
-                      variant={value === true ? "default" : "outline"}
+                      icon={<Check />}
+                      variant={value === true ? "primary" : "outline"}
                       onClick={() =>
                         setAnswers((a) => ({ ...a, [check.id]: true }))
                       }
                     >
-                      <Check className="mr-1 h-4 w-4" />
                       Yes
                     </Button>
                     <Button
-                      size="sm"
-                      variant={value === false ? "destructive" : "outline"}
+                      icon={<X />}
+                      variant={value === false ? "danger" : "outline"}
                       onClick={() =>
                         setAnswers((a) => ({ ...a, [check.id]: false }))
                       }
                     >
-                      <X className="mr-1 h-4 w-4" />
                       No
                     </Button>
                   </div>
@@ -473,11 +469,10 @@ export function CertifyPrinterWizard({
           )}
 
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(2)}>
-              <ChevronLeft className="mr-1 h-4 w-4" />
+            <Button icon={<ChevronLeft />} variant="quiet" onClick={() => setStep(2)}>
               Back
             </Button>
-            <Button disabled={!allAnswered || saving} onClick={() => void save()}>
+            <Button variant="primary" disabled={!allAnswered || saving} onClick={() => void save()}>
               {saving ? (
                 <>
                   <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -528,12 +523,10 @@ export function CertifyPrinterWizard({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => router.push(CERTIFIED_PRINTERS_HREF)}>
-              <Printer className="mr-1.5 h-4 w-4" />
+            <Button icon={<Printer />} variant="primary" onClick={() => router.push(CERTIFIED_PRINTERS_HREF)}>
               See all certified printers
             </Button>
-            <Button variant="outline" onClick={tryAnotherStock}>
-              <RotateCcw className="mr-1.5 h-4 w-4" />
+            <Button icon={<RotateCcw />} variant="outline" onClick={tryAnotherStock}>
               {verdict === "certified"
                 ? "Certify this printer on another stock"
                 : "Try a different label stock"}

@@ -231,8 +231,7 @@ export function CleanupOptionsPopover({
             "Already clean"
           )}
         </div>
-        <Button size="sm" className="h-7 gap-1.5 text-xs" disabled={!willChange} onClick={onRun}>
-          <Eraser className="h-3.5 w-3.5" /> Clean up
+        <Button icon={<Eraser />} variant="primary" disabled={!willChange} onClick={onRun}> Clean up
         </Button>
       </div>
     </div>

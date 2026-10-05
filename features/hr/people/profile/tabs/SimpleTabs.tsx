@@ -156,9 +156,7 @@ export function NotesTab({ profile }: { profile: HrEmployeeProfile }) {
         </div>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           disabled={!subjectEmploymentId}
           onClick={() => setIssuing(true)}
         >
@@ -210,7 +208,7 @@ export function RelationsTab({
         rule — including from people named in them — so a count here can
         legitimately differ from a colleague&apos;s.
       </p>
-      <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+      <Button asChild variant="outline">
         <Link href={hrRelationsHref(org)}>Open employee relations</Link>
       </Button>
     </TabShell>
@@ -330,9 +328,7 @@ export function HostedTab({
         </p>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           onClick={() => void announceComingSoon(hosted.comingSoonId)}
         >
           What lands here?
@@ -380,13 +376,11 @@ function Waiting({
     <div className="max-w-prose space-y-2 rounded-lg border border-dashed border-border p-3">
       <p className="text-sm text-muted-foreground">{sentence}</p>
       <Button
+        icon={Icon ? <Icon aria-hidden /> : null}
         type="button"
-        size="sm"
         variant="outline"
-        className="min-h-11 sm:min-h-9"
         onClick={() => void announceComingSoon(id)}
       >
-        {Icon ? <Icon className="mr-2 h-4 w-4" aria-hidden /> : null}
         {action ?? "What is missing?"}
       </Button>
     </div>

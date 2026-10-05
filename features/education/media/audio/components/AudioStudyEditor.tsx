@@ -91,7 +91,7 @@ export function AudioStudyEditor({ media: initialMedia }: { media?: StudyMediaRo
       {fileName && <p className="text-sm text-muted-foreground">{fileName}</p>}
       {media && fileId && <p className="text-sm text-muted-foreground">The replacement recording will use its own provenance. The original generated citations will be cleared.</p>}
       {error && <p role="alert" className="text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
-      <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push(media ? `/education/audio-study/${media.id}` : "/education/audio-study"); }}>Cancel</Button><Button disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : "Save audio study"}</Button></div>
+      <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.push(media ? `/education/audio-study/${media.id}` : "/education/audio-study"); }}>Cancel</Button><Button variant="primary" disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : "Save audio study"}</Button></div>
     </div>
   </SurfaceRuntimeProvider>;
 }

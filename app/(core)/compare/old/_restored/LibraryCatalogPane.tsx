@@ -105,21 +105,17 @@ export function LibraryCatalogPane() {
                   </span>
                   {it.subscribed ? (
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-muted-foreground hover:text-destructive"
+                      icon={<X />}
+                      variant="quiet"
                       onClick={() => onUnsubscribe(it.id, it.name)}
-                    >
-                      <X className="h-3.5 w-3.5" /> Leave
+                    > Leave
                     </Button>
                   ) : (
                     <Button
-                      size="sm"
+                      icon={<Plus />}
                       variant="outline"
-                      className="h-7"
                       onClick={() => onSubscribe(it.id, it.name)}
-                    >
-                      <Plus className="h-3.5 w-3.5" /> Subscribe
+                    > Subscribe
                     </Button>
                   )}
                 </div>

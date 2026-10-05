@@ -228,13 +228,12 @@ export function DeviceFleetTable({
         <div className="flex flex-wrap gap-2">
           {(row.trustState === "pending" || row.trustState === "suspended") && (
             <Button
+              icon={<ShieldCheck />}
+              variant="primary"
               type="button"
-              size="sm"
               disabled={busyId === row.id}
               onClick={() => void approve(row)}
-              className="gap-1"
             >
-              <ShieldCheck className="size-4" />
               Approve
             </Button>
           )}
@@ -251,41 +250,35 @@ export function DeviceFleetTable({
           */}
           {row.trustState !== "revoked" && (
             <Button
+              icon={<KeyRound />}
               type="button"
-              size="sm"
               variant="outline"
               disabled={busyId === row.id}
               onClick={() => void reissue(row)}
-              className="gap-1"
             >
-              <KeyRound className="size-4" />
               New code
             </Button>
           )}
           {row.trustState === "trusted" && (
             <Button
+              icon={<ShieldOff />}
               type="button"
-              size="sm"
               variant="outline"
               disabled={busyId === row.id}
               onClick={() => void changeTrust(row, "suspended")}
-              className="gap-1"
             >
-              <ShieldOff className="size-4" />
               Pause
             </Button>
           )}
           {/* A revoked device is terminal — there is nothing left to do to it from here. */}
           {row.trustState !== "revoked" && (
             <Button
+              icon={<ShieldX />}
               type="button"
-              size="sm"
-              variant="destructive"
+              variant="danger"
               disabled={busyId === row.id}
               onClick={() => void changeTrust(row, "revoked")}
-              className="gap-1"
             >
-              <ShieldX className="size-4" />
               Revoke
             </Button>
           )}
@@ -309,7 +302,6 @@ export function DeviceFleetTable({
           <Button
             type="button"
             variant="outline"
-            className="min-h-[44px]"
             onClick={() => setReissued(null)}
           >
             Done

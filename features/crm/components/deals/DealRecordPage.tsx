@@ -164,8 +164,8 @@ export function DealRecordPage({ dealId }: Props) {
                   with this deal. It carries the PARTY's organization (D8). */}
               {deal.party && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<Send />}
+                  variant="quiet"
                   onClick={() =>
                     openGmailCompose({
                       partyId: deal.party!.id,
@@ -179,17 +179,14 @@ export function DealRecordPage({ dealId }: Props) {
                       },
                     })
                   }
-                  className="h-7 px-2 text-xs"
                 >
-                  <Send className="mr-1 h-3.5 w-3.5" />
                   Send email
                 </Button>
               )}
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => void onDelete()}
-                className="hidden h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
+                className="hidden sm:inline-flex"
               >
                 Delete
               </Button>
@@ -218,7 +215,7 @@ export function DealRecordPage({ dealId }: Props) {
         {deal && error && (
           <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
             <span>This deal couldn&apos;t be refreshed just now. <ErrorAlchemyMenu /></span>
-            <Button variant="outline" size="sm" onClick={() => void refresh()}>
+            <Button variant="outline" onClick={() => void refresh()}>
               Retry
             </Button>
           </div>
@@ -268,8 +265,7 @@ export function DealRecordPage({ dealId }: Props) {
                               autoFocus
                             />
                             <Button
-                              size="sm"
-                              className="h-7 px-2 text-xs"
+                              variant="primary"
                               onClick={() => void saveAmount()}
                             >
                               Save

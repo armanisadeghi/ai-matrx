@@ -105,15 +105,16 @@ export function AttachVersionDialog({
           <Button
             type="button"
             variant="outline"
-            className="h-10 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={() => onOpenChange(false)}
             disabled={isSaving}
           >
             Cancel
           </Button>
           <Button
+            variant="primary"
             type="button"
-            className="h-10 w-full sm:w-auto"
+            className="w-full sm:w-auto"
             onClick={handleSave}
             disabled={isSaving || !draft.trim()}
           >

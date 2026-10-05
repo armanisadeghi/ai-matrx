@@ -47,7 +47,6 @@ const FALLBACK: TargetPresentation = {
   unit: null,
   verb: "Open",
   icon: BookOpen,
-  tone: "slate",
   fg: "text-slate-600 dark:text-slate-300",
   chip: "bg-slate-500/10",
   activeBorder: "border-slate-500/40",

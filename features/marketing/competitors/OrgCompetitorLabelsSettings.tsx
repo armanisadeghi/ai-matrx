@@ -166,14 +166,15 @@ export function OrgCompetitorLabelsSettings({
           aria-label="New organization competitor label"
         />
         <Button
+          icon={busy === "add" ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Plus aria-hidden />
+          )}
+          variant="primary"
           disabled={busy !== null || !value.trim()}
           onClick={() => void add()}
         >
-          {busy === "add" ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Plus className="h-4 w-4" aria-hidden />
-          )}
           Add label
         </Button>
       </div>

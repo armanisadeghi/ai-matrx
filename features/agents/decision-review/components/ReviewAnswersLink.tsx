@@ -8,7 +8,7 @@
 
 import Link from "next/link";
 import { ListChecks } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { agentAsksDecisions } from "../queue";
@@ -27,7 +27,7 @@ export function ReviewAnswersLink({
   const messages = useAppSelector((state) => selectAgentMessages(state, agentId));
   if (!force && !agentAsksDecisions(messages)) return null;
   return (
-    <Button asChild size="sm" variant="outline" className={className ?? "h-7 gap-1.5 text-xs"}>
+    <Button asChild variant="outline" className={className ?? "h-7 gap-1.5 text-xs"}>
       <Link href={reviewAnswersHref(agentId)}>
         <ListChecks className="h-3.5 w-3.5" />
         Review answers

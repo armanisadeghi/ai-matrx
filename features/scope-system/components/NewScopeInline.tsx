@@ -244,16 +244,14 @@ export function NewScopeInline({
       {onCancel && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onCancel}
           disabled={busy}
         >
           Cancel
         </Button>
       )}
-      <Button type="submit" size="sm" disabled={busy || !name.trim()}>
-        {busy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+      <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy || !name.trim()}>
         Add {labelSingular}
       </Button>
     </div>
@@ -301,7 +299,6 @@ export function NewScopeInline({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => {
                 setSlugTouched(false);
                 setSlug(toSlug(name));
@@ -439,15 +436,13 @@ export function NewScopeInline({
                     className="flex-1"
                   />
                   <Button
+                    icon={<X />}
                     type="button"
-                    variant="ghost"
-                    size="icon"
+                    variant="quiet"
                     onClick={() => removeNewItemRow(row.rowId)}
                     disabled={busy}
                     aria-label="Remove context item row"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  />
                 </div>
                 <ContextValueInput
                   id={`new-context-item-value-${row.rowId}`}
@@ -470,15 +465,13 @@ export function NewScopeInline({
 
         <div className="flex items-center justify-between gap-2 pt-2 border-t border-border">
           <Button
+            icon={<Plus />}
             ref={addItemButtonRef}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={addNewItemRow}
             disabled={busy}
-            className="text-muted-foreground hover:text-foreground"
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
             Add context item
           </Button>
           {submitActions}

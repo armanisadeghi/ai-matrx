@@ -179,14 +179,12 @@ function CardAudioPrep({
   return (
     <>
       <Button
+        icon={<Icon />}
         variant="outline"
-        size="sm"
-        className="gap-1.5"
         onClick={() => void prepare()}
         disabled={allDone || enrichGuard.isChecking}
         title={allDone ? cfg.doneTitle : cfg.idleTitle}
       >
-        <Icon className="h-4 w-4" />
         {allDone
           ? cfg.doneLabel
           : withAudio > 0
@@ -318,9 +316,7 @@ export function AudioOverviewSection({
         </span>
         <span className="tabular-nums">{state.progress}%</span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-xs"
+          variant="quiet"
           onClick={cancel}
         >
           Cancel
@@ -337,15 +333,13 @@ export function AudioOverviewSection({
           {state.error ?? "Couldn't generate the audio overview"}
         </span>
         <Button
+          icon={<RefreshCw />}
           variant="outline"
-          size="sm"
-          className="h-6 gap-1 px-2 text-xs"
           onClick={() => {
             reset();
             handleGenerate();
           }}
         >
-          <RefreshCw className="h-3 w-3" />
           Retry
         </Button>
         <ErrorAlchemyMenu error={state.error} />
@@ -363,13 +357,11 @@ export function AudioOverviewSection({
         />
         {!statusOnly && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 px-2 text-xs text-muted-foreground"
+            icon={<RefreshCw />}
+            variant="quiet"
             disabled={persisting}
             onClick={handleGenerate}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Regenerate
           </Button>
         )}
@@ -396,12 +388,10 @@ export function AudioOverviewSection({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button
+        icon={<Volume2 />}
         variant="outline"
-        size="sm"
-        className="gap-1.5"
         onClick={handleGenerate}
       >
-        <Volume2 className="h-4 w-4" />
         Generate audio overview
       </Button>
       <CardAudioPrep

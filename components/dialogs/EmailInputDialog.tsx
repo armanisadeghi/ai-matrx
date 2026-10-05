@@ -122,7 +122,7 @@ export function EmailInputDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading || !email.trim()}>
+            <Button variant="primary" type="submit" disabled={loading || !email.trim()}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

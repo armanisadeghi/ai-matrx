@@ -402,7 +402,7 @@ export function MasterworksPage({
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">{error} <ErrorAlchemyMenu error={error} /></p>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href="/masterwork/all">Back to Masterwork Studio</Link>
         </Button>
       </div>
@@ -431,7 +431,7 @@ export function MasterworksPage({
               No Masterworks yet. Build one from the Rulebook page — one button,
               a few minutes, and this Rulebook becomes a working checker.
             </p>
-            <Button asChild size="sm" variant="outline" className="mt-3">
+            <Button asChild variant="outline" className="mt-3">
               <Link href={`/masterwork/${rulebook.id}`}>Open the Rulebook</Link>
             </Button>
           </div>
@@ -445,7 +445,7 @@ export function MasterworksPage({
                     : `No ${activeFilter === "current" ? "current" : "released"} Masterworks.`}
                 </p>
                 {activeFilter === "all" ? null : (
-                  <Button asChild size="sm" variant="ghost" className="mt-2">
+                  <Button asChild variant="quiet" className="mt-2">
                     <Link
                       href={`/masterwork/${rulebook.id}/masterworks?status=all`}
                     >
@@ -576,9 +576,12 @@ export function MasterworksPage({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
+                              icon={masterwork.released_at === null ? (
+                                <Rocket />
+                              ) : (
+                                <Undo2 />
+                              )}
+                              variant="quiet"
                               disabled={releaseBusy === masterwork.id}
                               onClick={() => void toggleReleased(masterwork)}
                               aria-label={
@@ -586,13 +589,7 @@ export function MasterworksPage({
                                   ? "Release Masterwork"
                                   : "Un-release Masterwork"
                               }
-                            >
-                              {masterwork.released_at === null ? (
-                                <Rocket className="h-4 w-4" />
-                              ) : (
-                                <Undo2 className="h-4 w-4" />
-                              )}
-                            </Button>
+                            />
                           </TooltipTrigger>
                           <TooltipContent>
                             {masterwork.released_at === null
@@ -605,17 +602,14 @@ export function MasterworksPage({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
+                              icon={<Play />} aria-label="Open in Encore"
                               asChild
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8"
+                              variant="quiet"
                             >
                               <Link
                                 href={masterworkHref(masterwork.id)}
                                 aria-label="Open in Encore"
-                              >
-                                <Play className="h-4 w-4" />
-                              </Link>
+                              />
                             </Button>
                           </TooltipTrigger>
                           <TooltipContent>Open in Encore</TooltipContent>

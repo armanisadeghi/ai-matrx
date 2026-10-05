@@ -449,12 +449,11 @@ export function BrandsPortfolio({
         {brands.isError ? (
           <div className="space-y-2">
             <Button
-              size="sm"
-              className="h-11"
+              icon={<Plus />}
+              variant="primary"
               aria-label="Add brand"
               onClick={openCreate}
             >
-              <Plus className="h-3.5 w-3.5" />
               Add brand
             </Button>
             <QueryError
@@ -476,34 +475,28 @@ export function BrandsPortfolio({
               actions={
                 <div className="flex shrink-0 items-center gap-1">
                   <Button
+                    icon={<LayoutGrid />}
                     type="button"
-                    variant={view === "cards" ? "secondary" : "ghost"}
-                    size="icon"
-                    className="h-11 w-11"
+                    variant={view === "cards" ? "outline" : "quiet"}
                     aria-label="Show brand cards"
                     title="Cards"
                     onClick={() => setView("cards")}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
+                  />
                   <Button
+                    icon={<TableIcon />}
                     type="button"
-                    variant={view === "table" ? "secondary" : "ghost"}
-                    size="icon"
-                    className="h-11 w-11"
+                    variant={view === "table" ? "outline" : "quiet"}
                     aria-label="Show brand table"
                     title="Table"
                     onClick={() => setView("table")}
-                  >
-                    <TableIcon className="h-4 w-4" />
-                  </Button>
+                  />
                   <Button
-                    size="sm"
-                    className="h-11 w-11 p-0 sm:w-auto sm:px-3"
+                    icon={<Plus />}
+                    variant="primary"
+                    className="w-11 sm:w-auto"
                     aria-label="Add brand"
                     onClick={openCreate}
                   >
-                    <Plus className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Add brand</span>
                   </Button>
                 </div>
@@ -573,7 +566,7 @@ export function BrandsPortfolio({
                     description:
                       "A brand is the company you manage — websites, social accounts, assets, and facts all attach to it.",
                     action: (
-                      <Button size="sm" onClick={openCreate}>
+                      <Button variant="primary" onClick={openCreate}>
                         Add your first brand
                       </Button>
                     ),
@@ -724,27 +717,21 @@ function BrandCardQueryControls({
           </span>
         )}
         <Button
+          icon={<ChevronLeft />}
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+          variant="quiet"
           aria-label="Previous brand page"
           disabled={state.page <= 1}
           onClick={() => update({ page: state.page - 1 })}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
+        />
         <Button
+          icon={<ChevronRight />}
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
+          variant="quiet"
           aria-label="Next brand page"
           disabled={pageCount === undefined || state.page >= pageCount}
           onClick={() => update({ page: state.page + 1 })}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </div>
   );
@@ -868,25 +855,19 @@ function BrandCards({
                   </Badge>
                 ) : null}
                 <Button
+                  icon={<Pencil />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  variant="quiet"
                   aria-label={`Edit ${row.name}`}
                   onClick={() => onEdit(row)}
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                />
                 <Button
+                  icon={<Trash2 />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  variant="quiet"
                   aria-label={`Delete ${row.name}`}
                   onClick={() => onDelete(row)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
             </div>
           </div>

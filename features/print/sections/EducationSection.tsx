@@ -206,8 +206,7 @@ export function EducationSection() {
             entry="@ai-matrx/print/education"
             blurb="Cheat sheet, glossary, and study calendar — one content source, many layouts picked at print time."
             actions={
-                <Button size="sm" onClick={handlePrint}>
-                    <Printer className="mr-1 h-3.5 w-3.5" />
+                <Button icon={<Printer />} variant="primary" onClick={handlePrint}>
                     Print {artifact.label.toLowerCase()}
                 </Button>
             }

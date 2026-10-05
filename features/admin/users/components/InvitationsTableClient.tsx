@@ -283,7 +283,7 @@ export function InvitationsTableClient() {
             search: true,
             searchPlaceholder: "Search name, email, company…",
             actions: (
-              <Button size="sm" variant="outline" onClick={load}>
+              <Button variant="outline" onClick={load}>
                 Refresh
               </Button>
             ),
@@ -379,28 +379,27 @@ export function InvitationsTableClient() {
                     />
                     <div className="flex justify-end gap-2">
                       <Button
-                        size="sm"
-                        variant="destructive"
+                        icon={acting ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <XCircle />
+                        )}
+                        variant="danger"
                         disabled={acting}
                         onClick={() => void act(r, "reject")}
                       >
-                        {acting ? (
-                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <XCircle className="mr-1 h-3.5 w-3.5" />
-                        )}
                         Reject
                       </Button>
                       <Button
-                        size="sm"
+                        icon={acting ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <CheckCircle />
+                        )}
+                        variant="primary"
                         disabled={acting}
                         onClick={() => void act(r, "approve")}
                       >
-                        {acting ? (
-                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <CheckCircle className="mr-1 h-3.5 w-3.5" />
-                        )}
                         Approve & send code
                       </Button>
                     </div>

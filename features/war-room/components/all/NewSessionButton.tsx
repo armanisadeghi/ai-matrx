@@ -27,12 +27,11 @@ export function NewSessionButton() {
   }
 
   return (
-    <Button size="sm" onClick={handleCreate} disabled={busy} className="gap-1.5">
-      {busy ? (
-        <Loader2 className="size-4 animate-spin" />
+    <Button icon={busy ? (
+        <Loader2 className="animate-spin" />
       ) : (
-        <Plus className="size-4" />
-      )}
+        <Plus />
+      )} variant="primary" onClick={handleCreate} disabled={busy}>
       New War Room
     </Button>
   );

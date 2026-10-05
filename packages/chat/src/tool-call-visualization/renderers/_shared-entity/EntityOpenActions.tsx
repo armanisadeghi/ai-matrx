@@ -1,7 +1,7 @@
 "use client";
 
 import { PanelRight, ExternalLink } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { cn } from "@ai-matrx/design-system";
 
 /**
@@ -29,17 +29,15 @@ export function EntityOpenActions({
     <div className={cn("flex shrink-0 items-center gap-1.5", className)}>
       {onOpenWindow ? (
         <Button
+          icon={<PanelRight />}
           variant="outline"
-          size="sm"
-          className="gap-1.5"
           onClick={onOpenWindow}
         >
-          <PanelRight className="h-3.5 w-3.5" />
           {windowLabel}
         </Button>
       ) : null}
       {href ? (
-        <Button asChild variant="outline" size="sm" className="gap-1.5">
+        <Button asChild variant="outline">
           <a href={href} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-3.5 w-3.5" />
             {newTabLabel}

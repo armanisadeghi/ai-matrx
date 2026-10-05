@@ -109,10 +109,8 @@ export function VoiceInputButton({
                 />
                 <Button
                   type="button"
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={stop}
-                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 h-7 px-2 text-xs"
                 >
                   Stop
                 </Button>
@@ -164,10 +162,8 @@ export function VoiceInputButton({
               />
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={stop}
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 h-7 px-2 text-xs"
               >
                 <span className="sm:hidden">Stop</span>
                 <span className="hidden sm:inline">Stop Recording</span>
@@ -181,17 +177,12 @@ export function VoiceInputButton({
           </div>
         ) : (
           <Button
+            icon={<AudioLines />}
+            variant="primary"
             type="button"
             onClick={handleClick}
             disabled={disabled}
-            className={cn(
-              "bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white",
-              size === "sm" && "h-8 text-xs",
-              size === "md" && "h-9 text-sm",
-              size === "lg" && "h-10 text-base",
-            )}
           >
-            <AudioLines className="mr-2 h-4 w-4" />
             {buttonText}
           </Button>
         )}

@@ -171,8 +171,7 @@ export function MyUsageCard({ className }: { className?: string }) {
             <p className="text-sm text-muted-foreground">
               We couldn&apos;t read your usage just now.
             </p>
-            <Button size="sm" variant="outline" onClick={read}>
-              <RotateCw className="h-3.5 w-3.5" aria-hidden />
+            <Button icon={<RotateCw aria-hidden />} variant="outline" onClick={read}>
               Try again
             </Button>
           </div>
@@ -205,7 +204,7 @@ export function MyUsageCard({ className }: { className?: string }) {
             </p>
           ) : null}
         </div>
-        <Button size="sm" variant="outline" asChild>
+        <Button variant="outline" asChild>
           <a href="/pricing">
             See plans
             <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />

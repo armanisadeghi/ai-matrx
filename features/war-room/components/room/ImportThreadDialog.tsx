@@ -191,60 +191,52 @@ export function ImportThreadDialog({
           </span>
         )}
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           disabled={!!busy}
           onClick={() => handleOpenChange(false)}
-          className="h-7 px-2 text-xs"
         >
           Cancel
         </Button>
         {picked && picked.roomIds.length > 0 ? (
           <>
             <Button
-              size="sm"
-              variant="default"
+              icon={busy === "move" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowRight />
+              )}
+              variant="primary"
               disabled={!!busy}
               onClick={() => void run("move")}
-              className="h-7 gap-1 px-2 text-xs"
             >
-              {busy === "move" ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <ArrowRight className="size-3.5" />
-              )}
               Move here
             </Button>
             <Button
-              size="sm"
+              icon={busy === "add" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
               variant="outline"
               disabled={!!busy}
               onClick={() => void run("add")}
-              className="h-7 gap-1 px-2 text-xs"
               title="Keep it in its current room too"
             >
-              {busy === "add" ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Plus className="size-3.5" />
-              )}
               Add here
             </Button>
           </>
         ) : null}
         {picked && picked.roomIds.length === 0 ? (
           <Button
-            size="sm"
-            variant="default"
+            icon={busy === "add" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <FolderInput />
+            )}
+            variant="primary"
             disabled={!!busy}
             onClick={() => void run("add")}
-            className="h-7 gap-1 px-2 text-xs"
           >
-            {busy === "add" ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <FolderInput className="size-3.5" />
-            )}
             Add to this room
           </Button>
         ) : null}

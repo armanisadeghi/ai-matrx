@@ -157,12 +157,11 @@ export function ContinueOnMyMacPanel({
             className="text-sm"
           />
           <div className="flex items-center gap-2">
-            <Button size="sm" onClick={() => void start()} disabled={starting}>
-              {starting ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+            <Button icon={starting ? (
+                <Loader2 className="animate-spin" />
               ) : (
-                <Play className="mr-1.5 h-3.5 w-3.5" />
-              )}
+                <Play />
+              )} variant="primary" onClick={() => void start()} disabled={starting}>
               Continue on my Mac
             </Button>
             {startedConversationId &&

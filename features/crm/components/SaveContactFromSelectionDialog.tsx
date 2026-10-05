@@ -239,14 +239,12 @@ export function SaveContactFromSelectionDialog({
               const Icon = kind === "person" ? User : Building2;
               return (
                 <Button
+                  icon={<Icon />}
                   key={kind}
                   type="button"
-                  variant={draft.kind === kind ? "default" : "outline"}
-                  size="sm"
-                  className="h-8"
+                  variant={draft.kind === kind ? "primary" : "outline"}
                   onClick={() => setKind(kind)}
                 >
-                  <Icon className="mr-1.5 h-3.5 w-3.5" />
                   {kind === "person" ? "Person" : "Company"}
                 </Button>
               );
@@ -324,11 +322,11 @@ export function SaveContactFromSelectionDialog({
             Cancel
           </Button>
           <Button
+            icon={<Save />}
+            variant="primary"
             onClick={() => void onSave()}
             disabled={!canSave}
-            className={cn(saving && "opacity-80")}
           >
-            <Save className="mr-1.5 h-3.5 w-3.5" />
             {saving ? "Saving…" : "Save contact"}
           </Button>
         </DialogFooter>

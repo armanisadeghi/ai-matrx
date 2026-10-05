@@ -337,7 +337,6 @@ export function GeoPlacesStep({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={onCancel}
               disabled={busy}
             >
@@ -346,23 +345,20 @@ export function GeoPlacesStep({
             {filledAreas < ordered.length ? (
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => onAdopt({ tokens: {}, placeIds: {} })}
                 disabled={busy}
-                className="text-xs"
               >
                 Skip — I&apos;ll add places later
               </Button>
             ) : null}
             <Button
+              icon={busy ? <Loader2 className="animate-spin" aria-hidden /> : null}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => onAdopt(result)}
               disabled={busy || blocked || filledAreas === 0}
-              className="gap-1.5"
             >
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
               Adopt with these places
             </Button>
           </div>

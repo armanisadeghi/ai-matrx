@@ -21,7 +21,6 @@ const TextContent = ({ textData }: { textData: string }) => {
     <div className="p-4 space-y-4">
       <div className="mb-4 flex justify-end">
         <Button
-          size="sm"
           variant="outline"
           onClick={() => copyToClipboard(textData)}
         >

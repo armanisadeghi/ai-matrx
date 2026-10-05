@@ -90,8 +90,7 @@ export function GoogleConnectWindow({
       }
       actionsRight={
         mode === "overview" && !isOverview ? (
-          <Button size="sm" variant="ghost" onClick={() => setView("overview")}>
-            <ArrowLeft className="mr-1 h-3.5 w-3.5" />
+          <Button icon={<ArrowLeft />} variant="quiet" onClick={() => setView("overview")}>
             Back to Google
           </Button>
         ) : undefined

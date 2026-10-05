@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Menu, Puzzle } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { useProject } from "@/features/projects/hooks";

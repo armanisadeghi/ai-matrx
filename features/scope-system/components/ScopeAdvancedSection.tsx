@@ -136,7 +136,6 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setSlug(toSlug(scope.name))}
                 disabled={busy || !scope.name.trim()}
               >
@@ -204,8 +203,7 @@ export function ScopeAdvancedSection({ scope }: ScopeAdvancedSectionProps) {
           </div>
 
           <div className="flex justify-end">
-            <Button type="submit" disabled={busy} size="sm">
-              {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy}>
               Save advanced settings
             </Button>
           </div>

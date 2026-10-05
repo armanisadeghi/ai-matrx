@@ -170,7 +170,6 @@ const ApiTest = () => {
                                     onClick={connectWebSocket}
                                     disabled={!!wsConnection}
                                     variant="outline"
-                                    size="sm"
                                 >
                                     Connect
                                 </Button>
@@ -178,7 +177,6 @@ const ApiTest = () => {
                                     onClick={disconnectWebSocket}
                                     disabled={!wsConnection}
                                     variant="outline"
-                                    size="sm"
                                 >
                                     Disconnect
                                 </Button>
@@ -197,9 +195,9 @@ const ApiTest = () => {
                                 }}
                             />
                             <Button
+                                variant="primary"
                                 onClick={sendWebSocketMessage}
                                 disabled={!wsConnection}
-                                size="sm"
                             >
                                 Send
                             </Button>
@@ -233,7 +231,6 @@ const ApiTest = () => {
                                         <Button
                                             onClick={clearMessages}
                                             variant="outline"
-                                            size="sm"
                                         >
                                             Clear Messages
                                         </Button>

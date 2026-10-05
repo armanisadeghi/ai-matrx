@@ -230,7 +230,6 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
             <div className="px-3 py-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => setShowAllFindings(true)}
               >
                 Show all {allFindings.length} rows
@@ -567,13 +566,12 @@ export function MandateReferenceBoardView() {
       <header className="flex flex-wrap items-center gap-3">
         <h1 className="text-lg font-semibold">Mandate references</h1>
         <Button
+          icon={<RefreshCw aria-hidden="true" />}
           variant="outline"
-          size="sm"
           className="ml-auto"
           onClick={reload}
           disabled={loading}
         >
-          <RefreshCw className="mr-2 size-4" aria-hidden="true" />
           Refresh
         </Button>
       </header>

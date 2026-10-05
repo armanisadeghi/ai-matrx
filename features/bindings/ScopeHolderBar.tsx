@@ -575,7 +575,6 @@ export function ScopeHolderBar({
                     <Button
                       key={other}
                       variant="outline"
-                      size="sm"
                       disabled={disabled}
                       onClick={() => onRungChange(other, null)}
                     >
@@ -588,7 +587,6 @@ export function ScopeHolderBar({
                 <span>{defaultHolderOffer?.label ?? "Mandate default"}</span>
                 <Button
                   variant="outline"
-                  size="sm"
                   disabled={disabled}
                   onClick={() => onRungChange("user", null)}
                 >
@@ -640,7 +638,6 @@ export function ScopeHolderBar({
                 {defaultHolderOffer.offered ? (
                   <Button
                     variant="outline"
-                    size="sm"
                     disabled={disabled}
                     onClick={() => onRungChange(DEFAULT_HOLDER_RUNG, null)}
                   >

@@ -37,7 +37,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { OriginalQuestion, QuizState } from "./quiz-types";
 import {
   appendNewQuestions,

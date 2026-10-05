@@ -78,9 +78,8 @@ const UUIDArrayField = () => {
                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                         <Button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
+                            variant="quiet"
+                            className="w-7"
                             onClick={generateUUID}
                             title="Generate UUID"
                         >
@@ -88,9 +87,8 @@ const UUIDArrayField = () => {
                         </Button>
                         <Button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 w-7 p-0"
+                            variant="quiet"
+                            className="w-7"
             onClick={handleAdd}
             title="Add UUID"
             disabled={!inputValue}
@@ -99,9 +97,8 @@ const UUIDArrayField = () => {
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
+            variant="quiet"
+            className="w-7"
             onClick={() => setShowExternal(!showExternal)}
             title={showExternal ? "Show inline" : "Show external"}
           >
@@ -126,9 +123,8 @@ const UUIDArrayField = () => {
                   <span className="font-mono text-sm truncate">{uuid}</span>
                   <div className="flex gap-1 ml-2">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
+                      variant="quiet"
+                      className="w-6"
                       onClick={(e) => copyToClipboard(uuid, e)}
                     >
                       {copiedId === uuid ? (
@@ -138,9 +134,8 @@ const UUIDArrayField = () => {
                       )}
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0"
+                      variant="quiet"
+                      className="w-6"
                       onClick={(e) => handleRemove(uuid, e)}
                     >
                       <X className="h-3 w-3" />
@@ -164,8 +159,8 @@ const UUIDArrayField = () => {
               <span className="truncate max-w-48">{uuid}</span>
               <div className="flex gap-1">
                 <Button
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
+                  variant="quiet"
+                  className="w-6"
                   onClick={(e) => copyToClipboard(uuid, e)}
                 >
                   {copiedId === uuid ? (
@@ -175,8 +170,8 @@ const UUIDArrayField = () => {
                   )}
                 </Button>
                 <Button
-                  variant="ghost"
-                  className="h-6 w-6 p-0"
+                  variant="quiet"
+                  className="w-6"
                   onClick={(e) => handleRemove(uuid, e)}
                 >
                   <X className="h-3 w-3" />

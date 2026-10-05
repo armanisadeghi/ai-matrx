@@ -100,17 +100,16 @@ export default function AdminEditShortcutPage({
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 px-4 h-12 border-b border-border bg-card flex items-center gap-2">
         <Button
-          variant="ghost"
-          size="sm"
+          icon={isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ArrowLeft />
+          )}
+          variant="quiet"
           onClick={goToList}
           disabled={isPending}
           className="-ml-2"
         >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-          )}
           Back to shortcuts
         </Button>
         <div className="text-sm text-muted-foreground truncate flex-1">
@@ -118,11 +117,10 @@ export default function AdminEditShortcutPage({
           <span className="font-medium text-foreground">{resolved.label}</span>
         </div>
         <Button
+          icon={<Copy />}
           variant="outline"
-          size="sm"
           onClick={() => handleDuplicate(resolved as AgentShortcut)}
         >
-          <Copy className="h-3.5 w-3.5 mr-1.5" />
           Duplicate
         </Button>
       </div>

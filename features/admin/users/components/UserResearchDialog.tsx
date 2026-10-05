@@ -69,7 +69,7 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
           {draft && <><ProTextarea aria-label="Invitation draft" value={draft} onChange={e => setDraft(e.target.value)} className="min-h-48" /><Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(draft); toast.success("Invitation copied"); }}>Copy draft</Button></>}
         </div>
       </div>
-      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save notes"}</Button></DialogFooter>
+      <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save notes"}</Button></DialogFooter>
     </DialogContent>
   </Dialog>;
 }

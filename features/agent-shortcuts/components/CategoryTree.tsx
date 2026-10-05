@@ -168,9 +168,8 @@ export function CategoryTree({
         >
           {hasChildren ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0"
+              variant="quiet"
+              className="w-5"
               onClick={() => toggleExpand(node.id)}
             >
               {isExpanded ? (
@@ -231,9 +230,8 @@ export function CategoryTree({
             <div className="flex items-center gap-1">
               {onCreate && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCreate(node);
@@ -245,9 +243,8 @@ export function CategoryTree({
               )}
               {onEdit && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(node);
@@ -259,9 +256,8 @@ export function CategoryTree({
               )}
               {onDuplicate && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDuplicate(node);
@@ -273,9 +269,8 @@ export function CategoryTree({
               )}
               {onToggleActive && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleActive(node);
@@ -291,9 +286,8 @@ export function CategoryTree({
               )}
               {onDelete && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0 text-destructive"
+                  variant="quiet"
+                  className="w-7"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(node);
@@ -347,8 +341,7 @@ export function CategoryTree({
             </Select>
           )}
           {!readonly && onCreate && (
-            <Button size="sm" onClick={() => onCreate()}>
-              <Plus className="h-4 w-4 mr-1" />
+            <Button icon={<Plus />} variant="primary" onClick={() => onCreate()}>
               New Category
             </Button>
           )}

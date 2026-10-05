@@ -108,7 +108,7 @@ export function JoinClassView() {
           maxLength={12}
           className="text-center font-mono text-lg tracking-[0.25em] uppercase"
         />
-        <Button type="submit" disabled={code.trim().length < 4 || looking}>
+        <Button variant="primary" type="submit" disabled={code.trim().length < 4 || looking}>
           {looking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Find"}
         </Button>
       </form>
@@ -138,7 +138,7 @@ export function JoinClassView() {
               {preview.memberCount === 1 ? "member" : "members"}
             </p>
           </div>
-          <Button className="w-full" disabled={joining} onClick={() => void join()}>
+          <Button type="submit" variant="primary" className="w-full" disabled={joining} onClick={() => void join()}>
             {joining ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : preview.accessMode === "paid" ? (

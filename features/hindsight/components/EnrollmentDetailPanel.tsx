@@ -133,7 +133,12 @@ export function EnrollmentDetailPanel({
           </div>
           <div className="flex shrink-0 gap-1.5">
             <Button
-              size="sm"
+              icon={runReview.isPending ? (
+                <RefreshCw className="animate-spin" />
+              ) : (
+                <Eye />
+              )}
+              variant="primary"
               disabled={runReview.isPending}
               onClick={async () => {
                 // THE LAW (destructive-and-expensive-actions): an expensive
@@ -152,11 +157,6 @@ export function EnrollmentDetailPanel({
               }}
               data-testid="hindsight-review-now"
             >
-              {runReview.isPending ? (
-                <RefreshCw className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Eye className="mr-1 h-3.5 w-3.5" />
-              )}
               {runReview.isPending ? "Reviewing…" : "Review now"}
             </Button>
             <IntelligenceIndicator
@@ -166,7 +166,6 @@ export function EnrollmentDetailPanel({
               className="self-center"
             />
             <Button
-              size="sm"
               variant="outline"
               disabled={toggleStatus.isPending}
               title={enrollment.status === "active" ? "Pause reviews" : "Resume reviews"}
@@ -183,7 +182,6 @@ export function EnrollmentDetailPanel({
               )}
             </Button>
             <Button
-              size="sm"
               variant="outline"
               title="Archive this enrollment"
               disabled={archive.isPending}

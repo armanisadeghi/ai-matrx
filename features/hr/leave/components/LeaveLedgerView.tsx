@@ -282,9 +282,7 @@ export function LeaveLedgerView({
             <Button
               key={key}
               type="button"
-              size="sm"
-              variant={filter === key ? "default" : "outline"}
-              className="h-11 px-3 md:h-8 md:px-3"
+              variant={filter === key ? "primary" : "outline"}
               onClick={() => onFilterChange?.(key)}
             >
               {FILTER_LABEL[key]}
@@ -314,9 +312,7 @@ export function LeaveLedgerView({
             {asOf ? (
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-11 px-3 md:h-8 md:px-3"
+                variant="quiet"
                 onClick={() => onAsOfChange(null)}
               >
                 Today
@@ -469,13 +465,11 @@ export function LeaveLedgerView({
                   <td className="px-3 py-2">
                     {entry.snapshotId || entry.calc !== null ? (
                       <Button
+                        icon={<FileSearch aria-hidden />}
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-11 gap-1 px-3 md:h-7 md:px-2"
+                        variant="quiet"
                         onClick={() => setSnapshotEntry(entry)}
                       >
-                        <FileSearch className="h-3.5 w-3.5" aria-hidden />
                         Open
                       </Button>
                     ) : (

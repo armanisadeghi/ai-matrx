@@ -78,7 +78,7 @@ function HrHomeStarters() {
             self-service surface. You can link somebody who already has a login,
             or an existing contact, instead of retyping them.
           </p>
-          <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+          <Button variant="primary" asChild>
             <Link href={hrPeopleNewHref({ org: orgRef })}>
               <UserPlus className="mr-2 h-4 w-4" />
               Add the first person

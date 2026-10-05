@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -80,14 +81,14 @@ function EditorHeader({
     <RouteHeader
       left={
         <div className="flex items-center gap-1.5 w-full px-1">
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             className="h-8 w-8 flex-shrink-0"
             onClick={onBack}
           >
             <ArrowLeft className="h-4 w-4" />
-          </Button>
+          </SurfaceButton>
           <div className="flex items-center gap-1.5 flex-1 min-w-0">
             <FileText className="h-4 w-4 text-primary flex-shrink-0" />
             <span className="text-sm font-semibold truncate">
@@ -96,28 +97,25 @@ function EditorHeader({
           </div>
           {onCompare && (
             <Button
-              variant="ghost"
-              size="icon"
+              icon={<GitCompareArrows />} aria-label="Compare saved vs draft"
+              variant="quiet"
               onClick={onCompare}
-              className="h-8 w-8 flex-shrink-0"
+              className="flex-shrink-0"
               title="Compare saved vs draft"
-            >
-              <GitCompareArrows className="h-3.5 w-3.5" />
-            </Button>
+            />
           )}
           <Button
-            size="icon"
+            icon={isSaving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )} aria-label="Save"
+            variant="primary"
             onClick={onSave}
             disabled={isSaving || !canSave}
-            className="h-8 w-8 flex-shrink-0"
+            className="flex-shrink-0"
             title="Save"
-          >
-            {isSaving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
         </div>
       }
     />

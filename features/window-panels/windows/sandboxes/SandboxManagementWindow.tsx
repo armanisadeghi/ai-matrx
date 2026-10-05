@@ -69,9 +69,9 @@ export default function SandboxManagementWindow({
       <div className="flex min-w-0 items-center gap-2">{statusBadge}</div>
       <div className="flex shrink-0 items-center gap-1.5">
         <Button
+          icon={<ExternalLink />} aria-label="Open full sandbox management"
           asChild
-          variant="ghost"
-          size="icon"
+          variant="quiet"
           title="Open full sandbox management"
         >
           <Link
@@ -79,28 +79,24 @@ export default function SandboxManagementWindow({
             aria-label="Open full sandbox management"
              target="_blank"
              rel="noopener noreferrer"
-           >
-            <ExternalLink className="h-4 w-4" />
-          </Link>
+           />
         </Button>
         <Button
+          icon={<RotateCcw />}
           variant="outline"
-          size="sm"
           onClick={() => diagnosticsRef.current?.requestRebuild()}
           disabled={status?.busy}
           title="Replace the container with its configured template and resources. Your persistent home is kept unless you explicitly erase it."
-        >
-          <RotateCcw className="mr-1 h-3.5 w-3.5" /> Rebuild
+        > Rebuild
         </Button>
         <Button
+          icon={<RefreshCw />}
           variant="outline"
-          size="sm"
           aria-label="Refresh sandbox diagnostics"
           title="Refresh sandbox diagnostics"
           onClick={() => diagnosticsRef.current?.refresh()}
           disabled={status?.busy}
-        >
-          <RefreshCw className="h-3.5 w-3.5 sm:mr-1" />{" "}
+        >{" "}
           <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>

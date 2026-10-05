@@ -41,7 +41,7 @@ import { AlertTriangle, ChevronDown, GitCompareArrows, MessageSquareText, Refres
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@ai-matrx/design-system";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
@@ -650,12 +650,11 @@ function AnswerAgentPicker({
         label={chosenName ?? "Choose an agent"}
         showPinnedAgent={Boolean(agentId)}
         triggerSlot={
-          <Button type="button" variant="outline" size="sm" className="h-7 max-w-full justify-between gap-1.5 text-xs font-normal">
+          <Button iconEnd={<ChevronDown className="text-muted-foreground" />} type="button" variant="outline" className="max-w-full justify-between">
             <span className="flex min-w-0 items-center gap-1.5">
               <AGENT_ICON className="h-3 w-3 shrink-0 text-muted-foreground" />
               <span className="truncate">{chosenName ?? (agentId ? "This agent" : "Choose an agent")}</span>
             </span>
-            <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" />
           </Button>
         }
       />
@@ -779,8 +778,7 @@ function AnswerBoth({
         className="mt-1.5 min-h-[64px] text-base md:text-sm"
       />
       <div className="mt-1.5 flex items-center gap-2">
-        <Button size="sm" onClick={run} disabled={running || !question.trim()} className="h-7 gap-1.5 text-xs">
-          {running ? <RefreshCw className="h-3 w-3 animate-spin" /> : <GitCompareArrows className="h-3 w-3" />}
+        <Button icon={running ? <RefreshCw className="animate-spin" /> : <GitCompareArrows />} variant="primary" onClick={run} disabled={running || !question.trim()}>
           {running ? "Answering twice…" : "Answer on both paths"}
         </Button>
       </div>
@@ -971,13 +969,11 @@ export function ContextCompareView({
         </span>
         <span className="flex-1" />
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1 px-2 text-[11px] text-primary hover:text-primary"
+          icon={<RefreshCw className={cn("h-3 w-3", status === "loading" && "animate-spin")} />}
+          variant="quiet"
           onClick={refresh}
           disabled={status === "loading"}
         >
-          <RefreshCw className={cn("h-3 w-3", status === "loading" && "animate-spin")} />
           Refresh
         </Button>
       </div>

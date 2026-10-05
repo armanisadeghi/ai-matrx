@@ -167,8 +167,7 @@ export function DrillSavedViews({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" variant="ghost" size="xs" className="gap-1" data-drill-explorer-saved-views>
-            <Bookmark className="h-3 w-3" /> Saved views{count > 0 ? ` (${count})` : ""}
+          <Button icon={<Bookmark />} type="button" variant="quiet" data-drill-explorer-saved-views> Saved views{count > 0 ? ` (${count})` : ""}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-[16rem]">

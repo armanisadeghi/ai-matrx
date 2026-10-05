@@ -421,7 +421,6 @@ export function InstallationsClient({
               searchPlaceholder: "Search instance, user, platform…",
               actions: (
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => void refresh()}
                   disabled={refreshing}

@@ -166,12 +166,10 @@ function BrandPortalsPanel({
           approved imagery from. Portals also appear in the Library view.
         </p>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-6 px-2 text-[10px]"
           onClick={() => setAdding((prev) => !prev)}
         >
-          <Plus className="mr-1 h-3 w-3" />
           Add portal
         </Button>
       </div>
@@ -194,14 +192,13 @@ function BrandPortalsPanel({
             className="h-7 min-w-0 flex-1 basis-56 rounded-md border border-border bg-background px-2 text-[11px] text-foreground outline-none placeholder:text-muted-foreground max-md:text-base"
           />
           <Button
-            size="sm"
-            className="h-7 text-[11px]"
+            icon={createAsset.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+            variant="primary"
             disabled={createAsset.isPending || !url.trim()}
             onClick={() => void addPortal()}
           >
-            {createAsset.isPending ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : null}
             Save
           </Button>
         </div>
@@ -439,14 +436,13 @@ export function StockSourcesView({
           </SelectContent>
         </Select>
         <Button
-          size="sm"
-          className="h-7 text-[11px]"
+          icon={searching && page === 1 ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
+          variant="primary"
           disabled={searching || !query.trim()}
           onClick={() => void runSearch(1)}
         >
-          {searching && page === 1 ? (
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          ) : null}
           Search
         </Button>
       </div>
@@ -513,9 +509,7 @@ export function StockSourcesView({
                     </div>
                     <div className="flex items-center gap-0.5 pt-0.5">
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5 text-[10px]"
+                        variant="quiet"
                         asChild
                       >
                         <a
@@ -528,9 +522,7 @@ export function StockSourcesView({
                         </a>
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5 text-[10px]"
+                        variant="quiet"
                         disabled={savingId !== null || saved}
                         title={
                           saved
@@ -558,15 +550,13 @@ export function StockSourcesView({
           {page < totalPages ? (
             <div className="flex justify-center">
               <Button
-                size="sm"
+                icon={searching ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
                 variant="outline"
-                className="h-7 text-[11px]"
                 disabled={searching}
                 onClick={() => void runSearch(page + 1)}
               >
-                {searching ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : null}
                 Load more
               </Button>
             </div>

@@ -132,17 +132,16 @@ export default function EditLandingClient({ folder }: Props) {
         </div>
 
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FolderOpen />
+          )}
           variant="outline"
-          size="default"
           onClick={() => void handlePickFromCloud()}
           disabled={busy}
-          className="w-full justify-center gap-2"
+          className="w-full justify-center"
         >
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <FolderOpen className="h-4 w-4" />
-          )}
           Pick from your cloud files
         </Button>
 

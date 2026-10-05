@@ -65,7 +65,7 @@ export default function AuthSignIn() {
                             Forgot password?
                         </Link>
                     </div>
-                    <Button type="submit" className="w-full">
+                    <Button variant="primary" type="submit" className="w-full">
                         Log In
                     </Button>
                 </form>
@@ -75,16 +75,13 @@ export default function AuthSignIn() {
                     <Separator className="flex-1" />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <Button variant="outline" className="w-full">
-                        <Icon icon="flat-color-icons:google" width={20} className="mr-2" />
+                    <Button icon={<Icon icon="flat-color-icons:google" width={20} />} type="submit" variant="outline" className="w-full">
                         Continue with Google
                     </Button>
-                    <Button variant="outline" className="w-full bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200">
-                        <Icon icon="ic:baseline-apple" width={20} className="mr-2" />
+                    <Button icon={<Icon icon="ic:baseline-apple" width={20} />} type="submit" variant="outline" className="w-full">
                         Continue with Apple
                     </Button>
-                    <Button variant="outline" className="w-full">
-                        <Icon className="mr-2" icon="fe:github" width={20} />
+                    <Button icon={<Icon icon="fe:github" width={20} />} type="submit" variant="outline" className="w-full">
                         Continue with Github
                     </Button>
                 </div>

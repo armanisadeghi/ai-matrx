@@ -280,15 +280,12 @@ export function DimensionForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" size="sm" className="h-8" disabled={!canSubmit}>
-          {pending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+        <Button icon={pending ? <Loader2 className="animate-spin" /> : null} variant="primary" type="submit" disabled={!canSubmit}>
           {mode === "create" ? "Create dimension" : "Save changes"}
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-8"
+          variant="quiet"
           onClick={onCancel}
           disabled={pending}
         >

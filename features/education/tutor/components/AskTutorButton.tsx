@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { GraduationCap, ExternalLink } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { cn } from "@/lib/utils";
 import type { TutorGroundingSeed } from "../grounding";

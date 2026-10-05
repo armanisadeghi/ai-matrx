@@ -370,11 +370,10 @@ export function CorrectiveActionPanel({
             ) : null}
 
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={saveAck}
               disabled={saving}
-              className="min-h-11 sm:min-h-9"
             >
               Record it
             </Button>
@@ -447,11 +446,10 @@ export function CorrectiveActionPanel({
               />
             </div>
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={saveOutcome}
               disabled={saving}
-              className="min-h-11 sm:min-h-9"
             >
               Record the outcome
             </Button>

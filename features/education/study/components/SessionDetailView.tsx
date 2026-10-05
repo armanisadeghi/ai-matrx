@@ -289,12 +289,11 @@ export function SessionDetailView({
       )}
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8">
         <Button
-          variant="ghost"
-          size="sm"
-          className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+          icon={<ArrowLeft />}
+          variant="quiet"
+          className="mb-4"
           onClick={() => (backHref ? router.push(backHref) : router.back())}
         >
-          <ArrowLeft className="mr-1 h-4 w-4" />
           Back
         </Button>
 
@@ -528,14 +527,11 @@ function AttemptRow({
             </span>
           )}
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-muted-foreground"
+            icon={<Pencil />}
+            variant="quiet"
             onClick={() => setEditOpen(true)}
             aria-label="Edit your score"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       </div>
 

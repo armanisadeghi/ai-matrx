@@ -177,13 +177,12 @@ export function MeetingGuests({
           </label>
           {untold > 0 ? (
             <Button
-              size="sm"
+              icon={<Send aria-hidden="true" />}
               variant="outline"
-              className="ml-auto h-8 gap-1.5"
+              className="ml-auto"
               onClick={() => void send()}
               disabled={sending}
             >
-              <Send className="h-3.5 w-3.5" aria-hidden="true" />
               Email invitation to{" "}
               {untold === 1 ? "1 guest" : `${untold} guests`}
             </Button>

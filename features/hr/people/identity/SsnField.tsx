@@ -142,8 +142,8 @@ export function SsnField({
           disabled={busy}
         />
         <Button
+          variant="primary"
           type="button"
-          size="sm"
           disabled={busy || !value.trim()}
           onClick={() => void submit()}
         >

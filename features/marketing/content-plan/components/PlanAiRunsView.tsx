@@ -19,6 +19,7 @@ import { useState } from "react";
 import { AlertTriangle, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -157,16 +158,15 @@ export function PlanAiRunsView({
             </>
           ) : null}
           <Button
+            icon={runs.isFetching ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            size="sm"
             onClick={() => void runs.refetch()}
             disabled={runs.isFetching}
           >
-            {runs.isFetching ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-2 h-4 w-4" />
-            )}
             Refresh
           </Button>
         </div>
@@ -300,7 +300,7 @@ export function PlanAiRunsView({
                           )}
                         </span>
                         {detail.data.nodeId ? (
-                          <Button
+                          <SurfaceButton
                             variant="link"
                             size="sm"
                             className="h-auto p-0"
@@ -309,7 +309,7 @@ export function PlanAiRunsView({
                             }
                           >
                             Open {run.nodeRoute || "the page this ran for"}
-                          </Button>
+                          </SurfaceButton>
                         ) : null}
                       </div>
                       {Object.keys(detail.data.error).length > 0 ? (

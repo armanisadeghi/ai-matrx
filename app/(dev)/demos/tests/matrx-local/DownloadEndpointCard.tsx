@@ -134,7 +134,7 @@ export const DownloadEndpointCard = ({ endpoint, baseUrl }: DownloadEndpointCard
                             onClick={() => handleDownload()}
                             disabled={downloadStatus === 'downloading'}
                             className="w-full"
-                            variant={downloadStatus === 'success' ? 'outline' : 'default'}
+                            variant={downloadStatus === 'success' ? "outline" : "primary"}
                         >
                             {downloadStatus === 'downloading' && (
                                 <>

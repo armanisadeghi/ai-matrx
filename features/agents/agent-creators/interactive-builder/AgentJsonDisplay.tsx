@@ -249,21 +249,17 @@ function AgentJsonDisplayInner({
         {agentData.isComplete && jsonBlock && (
           <div className="flex items-center gap-1 border rounded-lg p-0.5 bg-background">
             <Button
-              variant={view === "pretty" ? "default" : "ghost"}
-              size="sm"
+              icon={<Eye />}
+              variant={view === "pretty" ? "primary" : "quiet"}
               onClick={() => setView("pretty")}
-              className="h-7 px-3 text-xs"
             >
-              <Eye className="h-3 w-3 mr-1.5" />
               Pretty
             </Button>
             <Button
-              variant={view === "json" ? "default" : "ghost"}
-              size="sm"
+              icon={<Code2 />}
+              variant={view === "json" ? "primary" : "quiet"}
               onClick={() => setView("json")}
-              className="h-7 px-3 text-xs"
             >
-              <Code2 className="h-3 w-3 mr-1.5" />
               JSON
             </Button>
           </div>

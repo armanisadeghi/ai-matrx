@@ -226,15 +226,16 @@ export function GiveFreeMonthsDialog({
           </div>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             {results ? "Done" : "Cancel"}
           </Button>
           {!results && (
             <Button
+              icon={saving && <Loader2 className="animate-spin" />}
+              variant="primary"
               onClick={() => void apply()}
               disabled={saving || !planKey || !!monthsError || cap === null || people.length === 0}
             >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Give free time
             </Button>
           )}

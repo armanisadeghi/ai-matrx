@@ -32,7 +32,7 @@
 import { useState } from "react";
 import { History, RotateCcw, AppWindow } from "lucide-react";
 
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useOpenTopicalMapWindow } from "@/features/overlays/openers/topicalMapWindow";
@@ -138,13 +138,12 @@ export function HistoryView({ mapId, siteId, host, readOnly }: MapViewProps) {
           {/* The shell header is coordinator-owned; the map's own "open as a
               window" door lives here until the header carries it. */}
           <Button
+            icon={<AppWindow aria-hidden />}
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => openWindow({ mapId, screen: "history", siteId })}
             title="Float this map over any screen"
           >
-            <AppWindow className="h-3.5 w-3.5" aria-hidden />
             Open as window
           </Button>
         </div>
@@ -405,14 +404,13 @@ function HistoryList({
                 </div>
                 {!readOnly && target ? (
                   <Button
+                    icon={<RotateCcw aria-hidden />}
                     type="button"
-                    size="sm"
                     variant="outline"
                     disabled={patch.isPending}
                     onClick={() => setPending(entry)}
                     title={`Restore as ${target}`}
                   >
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden />
                     Restore
                   </Button>
                 ) : null}
@@ -430,8 +428,7 @@ function HistoryList({
           <span className="inline-flex gap-1">
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={offset === 0}
               onClick={() => onPage(Math.max(0, offset - pageSize))}
             >
@@ -439,8 +436,7 @@ function HistoryList({
             </Button>
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={offset + pageCount >= total}
               onClick={() => onPage(offset + pageSize)}
             >

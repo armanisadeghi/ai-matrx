@@ -497,7 +497,7 @@ export function GmailReadReview() {
                   maxLength={200}
                   placeholder="from:someone@example.com"
                 />
-                <Button type="submit" disabled={busy || !query.trim()}>
+                <Button variant="primary" type="submit" disabled={busy || !query.trim()}>
                   Search
                 </Button>
               </div>

@@ -383,15 +383,14 @@ export default function SandboxInfraPage() {
         <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
             <div className="px-6 py-4 border-b border-border flex items-center justify-end">
                 <Button
+                    icon={<RefreshCw className={`w-4 h-4 mr-2 ${tiersLoading || runsLoading ? "animate-spin" : ""}`} />}
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                         void refreshTiers();
                         void refreshRuns();
                     }}
                     disabled={tiersLoading || runsLoading}
                 >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${tiersLoading || runsLoading ? "animate-spin" : ""}`} />
                     Refresh
                 </Button>
             </div>
@@ -430,17 +429,16 @@ export default function SandboxInfraPage() {
                             Recent matrx-sandbox deploys
                         </h2>
                         <Button
-                            variant="default"
-                            size="sm"
+                            icon={dispatching ? (
+                                <Loader2 className="animate-spin" />
+                            ) : (
+                                <PlayCircle />
+                            )}
+                            variant="primary"
                             onClick={triggerDeploy}
                             disabled={dispatching || !deployTokenAttached}
                             title={!deployTokenAttached ? "Set MATRX_SANDBOX_GH_TOKEN env var to enable" : ""}
                         >
-                            {dispatching ? (
-                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            ) : (
-                                <PlayCircle className="w-4 h-4 mr-2" />
-                            )}
                             Trigger deploy
                         </Button>
                     </div>

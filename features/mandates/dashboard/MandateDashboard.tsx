@@ -168,16 +168,14 @@ function Section({
           <span className="ml-auto flex shrink-0 items-center gap-1">
             {onRetry ? (
               <Button
+                icon={<RefreshCw
+                  className={`mr-1 h-3 w-3${retrying ? " animate-spin" : ""}`}
+                  aria-hidden
+                />}
                 variant="outline"
-                size="sm"
-                className="h-6 px-2 text-xs"
                 onClick={onRetry}
                 disabled={retrying}
               >
-                <RefreshCw
-                  className={`mr-1 h-3 w-3${retrying ? " animate-spin" : ""}`}
-                  aria-hidden
-                />
                 Retry
               </Button>
             ) : null}
@@ -304,14 +302,13 @@ export function MandateDashboard() {
           </span>
         ) : null}
         <Button
+          icon={<RefreshCw aria-hidden />}
           variant="outline"
-          size="sm"
           className="ml-auto shrink-0"
           onClick={refreshAll}
           disabled={anyLoading}
           aria-label="Refresh"
         >
-          <RefreshCw className="h-4 w-4 sm:mr-2" aria-hidden />
           <span className="hidden sm:inline">Refresh</span>
         </Button>
       </header>

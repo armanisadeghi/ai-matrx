@@ -190,14 +190,14 @@ export function OfflineDeckButton({
   if (known && !status.available) {
     return (
       <Button
+        icon={<CloudOff className={cn(iconGap, "h-4 w-4")} />}
+        type="submit"
         variant="outline"
-        size={size}
         disabled
         aria-label="Offline unavailable"
         className={className}
         title="This browser can't store decks offline (private browsing, or no storage space)."
       >
-        <CloudOff className={cn(iconGap, "h-4 w-4")} />
         {label("Offline unavailable")}
       </Button>
     );
@@ -208,20 +208,16 @@ export function OfflineDeckButton({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="outline"
-            size={size}
-            disabled={disabled || busy}
-            aria-label="Downloaded for offline"
-            className={cn(
-              "border-emerald-500/40 text-emerald-700 dark:text-emerald-400",
-              className,
-            )}
-          >
-            {working ? (
+            icon={working ? (
               <Loader2 className={cn(iconGap, "h-4 w-4 animate-spin")} />
             ) : (
               <Check className={cn(iconGap, "h-4 w-4")} />
             )}
+            variant="outline"
+            disabled={disabled || busy}
+            aria-label="Downloaded for offline"
+            className={className}
+          >
             {label("Downloaded")}
           </Button>
         </DropdownMenuTrigger>
@@ -255,19 +251,18 @@ export function OfflineDeckButton({
 
   return (
     <Button
+      icon={working ? (
+        <Loader2 className={cn(iconGap, "h-4 w-4 animate-spin")} />
+      ) : (
+        <CloudDownload className={cn(iconGap, "h-4 w-4")} />
+      )}
       variant="outline"
-      size={size}
       disabled={disabled || working}
       className={className}
       onClick={() => void download(false)}
       aria-label="Download for offline"
       title="Keep this deck on this device so you can study it with no connection"
     >
-      {working ? (
-        <Loader2 className={cn(iconGap, "h-4 w-4 animate-spin")} />
-      ) : (
-        <CloudDownload className={cn(iconGap, "h-4 w-4")} />
-      )}
       {label("Download")}
     </Button>
   );

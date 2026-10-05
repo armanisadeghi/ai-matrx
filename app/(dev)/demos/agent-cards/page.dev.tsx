@@ -345,15 +345,14 @@ export default function AgentCardGalleryPage() {
             </p>
           </div>
           <Button
+            icon={<RotateCcw />}
             variant="outline"
-            size="sm"
             onClick={() => {
               setAsks(source === "full" ? SAMPLES : recentSamples);
               setLog([]);
             }}
-            className="h-11 shrink-0 gap-1.5 sm:h-9"
+            className="shrink-0"
           >
-            <RotateCcw className="size-3.5" />
             Reset
           </Button>
         </div>
@@ -361,44 +360,40 @@ export default function AgentCardGalleryPage() {
         <div className="mb-5 flex flex-col gap-2 rounded-xl border border-border/70 bg-card/70 p-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-1">
             <Button
-              variant={source === "full" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-11 flex-1 gap-1.5 sm:h-9 sm:flex-none"
+              icon={<LayoutGrid />}
+              variant={source === "full" ? "outline" : "quiet"}
+              className="flex-1 sm:flex-none"
               onClick={() => {
                 setSource("full");
                 setAsks(SAMPLES);
                 setLog([]);
               }}
             >
-              <LayoutGrid className="size-3.5" />
               Full gallery
             </Button>
             <Button
-              variant={source === "recent" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-11 flex-1 gap-1.5 sm:h-9 sm:flex-none"
+              icon={<Database />}
+              variant={source === "recent" ? "outline" : "quiet"}
+              className="flex-1 sm:flex-none"
               onClick={() => {
                 setRecentState("loading");
                 setRecentError(null);
                 setSource("recent");
               }}
             >
-              <Database className="size-3.5" />
               Recent calls
             </Button>
           </div>
           {source === "recent" && recentState === "ready" && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 gap-1.5 sm:h-9"
+              icon={<RefreshCw />}
+              variant="quiet"
               onClick={() => {
                 setRecentState("loading");
                 setRecentError(null);
                 setRefreshKey((key) => key + 1);
               }}
             >
-              <RefreshCw className="size-3.5" />
               Refresh
             </Button>
           )}
@@ -424,16 +419,15 @@ export default function AgentCardGalleryPage() {
             </p>
             <p className="mt-1 text-sm text-muted-foreground">{recentError}</p>
             <Button
+              icon={<RefreshCw />}
               variant="outline"
-              size="sm"
-              className="mt-3 h-11 gap-1.5 sm:h-9"
+              className="mt-3"
               onClick={() => {
                 setRecentState("loading");
                 setRecentError(null);
                 setRefreshKey((key) => key + 1);
               }}
             >
-              <RefreshCw className="size-3.5" />
               Try again
             </Button>
             <ErrorAlchemyMenu />

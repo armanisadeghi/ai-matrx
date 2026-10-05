@@ -84,10 +84,8 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
                     </Tabs>
 
                     <Button
-                        size="sm"
                         onClick={handleCopy}
-                        className="gap-2"
-                        variant={copied ? "default" : "outline"}
+                        variant={copied ? "primary" : "outline"}
                     >
                         {copied ? (
                             <>

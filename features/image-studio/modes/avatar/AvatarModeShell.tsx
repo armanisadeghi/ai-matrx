@@ -210,43 +210,39 @@ export function AvatarModeShell({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           {IMAGE_STUDIO_BACKEND_CAPABILITIES.faceDetection && (
             <Button
+              icon={smartCropping ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Zap />
+              )}
               variant="outline"
-              size="sm"
               onClick={handleSmartCrop}
               disabled={smartCropping || !url}
-              className="min-h-[40px]"
             >
-              {smartCropping ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Zap className="h-3.5 w-3.5 mr-1.5" />
-              )}
               Smart crop
             </Button>
           )}
           <div className="flex items-center gap-2">
             {presentation === "modal" && (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<X />}
+                variant="quiet"
                 onClick={onCancel}
                 disabled={saving}
               >
-                <X className="h-3.5 w-3.5 mr-1.5" />
                 Cancel
               </Button>
             )}
             <Button
-              size="sm"
+              icon={saving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               onClick={handleSave}
               disabled={saving || !pixels}
-              className="min-h-[40px]"
             >
-              {saving ? (
-                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Save className="h-3.5 w-3.5 mr-1.5" />
-              )}
               Save avatar
             </Button>
           </div>

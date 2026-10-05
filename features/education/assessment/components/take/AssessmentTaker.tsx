@@ -350,6 +350,10 @@ export function AssessmentTaker({
                 <div className="flex items-center gap-2">
                   {!record ? (
                     <Button
+                      icon={take.grading ? (
+                        <Loader2 className="animate-spin" />
+                      ) : null}
+                      variant="primary"
                       onClick={() => void submit()}
                       disabled={
                         !current ||
@@ -361,13 +365,10 @@ export function AssessmentTaker({
                         )
                       }
                     >
-                      {take.grading ? (
-                        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                      ) : null}
                       Check answer
                     </Button>
                   ) : (
-                    <Button onClick={next} disabled={finishing}>
+                    <Button variant="primary" onClick={next} disabled={finishing}>
                       {isLast ? (
                         <>
                           {finishing ? (

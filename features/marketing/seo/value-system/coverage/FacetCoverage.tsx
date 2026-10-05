@@ -410,9 +410,7 @@ export function FacetCoverage({ siteId }: { siteId: string }) {
             json={() => row}
           />
           <Button
-            size="sm"
-            variant={complete ? "outline" : "default"}
-            className="h-7 gap-1.5 text-[11px]"
+            variant={complete ? "outline" : "primary"}
             disabled={running || complete}
             title={
               complete

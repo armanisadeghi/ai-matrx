@@ -887,14 +887,13 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
               </SelectContent>
             </Select>
             <Button
+              icon={<RefreshCw
+                className={cn("mr-2 h-4 w-4", saving && "animate-spin")}
+              />}
               variant="outline"
-              size="sm"
               onClick={() => void refresh()}
               disabled={saving}
             >
-              <RefreshCw
-                className={cn("mr-2 h-4 w-4", saving && "animate-spin")}
-              />
               Refresh
             </Button>
           </div>
@@ -1349,15 +1348,16 @@ export function AccessPlannerImpl({ initialSnapshot }: AccessPlannerProps) {
                       </Alert>
                     )}
                     <Button
+                      icon={saving ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Check />
+                      )}
+                      variant="primary"
                       className="w-full"
                       onClick={() => setConfirmOpen(true)}
                       disabled={decisionBlocked || saving}
                     >
-                      {saving ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Check className="mr-2 h-4 w-4" />
-                      )}
                       Apply access decision
                     </Button>
                   </>

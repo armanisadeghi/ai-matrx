@@ -54,10 +54,8 @@ export function VersionHistory({ open, onOpenChange, topicId, currentVersion, on
                     </div>
                     {i < versionList.length - 1 && (
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={() => onCompare(versionList[i + 1], doc)}
-                            className="text-xs"
                         >
                             Compare
                         </Button>

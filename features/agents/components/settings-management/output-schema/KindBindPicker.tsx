@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { Shapes, ChevronDown, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import {
   Command,

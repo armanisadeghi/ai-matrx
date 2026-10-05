@@ -364,17 +364,15 @@ export default function TasksView() {
             </span>
           </label>
           <Button
+            icon={refreshing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            size="sm"
             onClick={refresh}
             disabled={isLoading || refreshing}
-            className="gap-1.5"
           >
-            {refreshing ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5" />
-            )}
             Refresh
           </Button>
         </div>
@@ -638,9 +636,7 @@ function TaskRow({
         <div className="flex flex-col sm:flex-row items-end sm:items-start gap-1.5 shrink-0">
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs gap-1"
+            variant="quiet"
           >
             <a href={item.url} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-3 w-3" />
@@ -649,30 +645,25 @@ function TaskRow({
           </Button>
           {isPasteLevel && (
             <Button
-              variant="default"
-              size="sm"
-              className="h-7 px-2 text-xs gap-1"
+              icon={<ClipboardPaste />}
+              variant="primary"
               onClick={() => setPasteOpen(true)}
             >
-              <ClipboardPaste className="h-3 w-3" />
               Paste
             </Button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                icon={pendingVerdict !== null ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CheckCircle2 />
+                )} iconEnd={<ChevronDown className="opacity-60" />}
                 variant="outline"
-                size="sm"
-                className="h-7 px-2 text-xs gap-1"
                 disabled={pendingVerdict !== null}
               >
-                {pendingVerdict !== null ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-3 w-3" />
-                )}
                 Resolve
-                <ChevronDown className="h-3 w-3 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-72">

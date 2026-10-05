@@ -362,7 +362,7 @@ function Toolbar({
 
       <div className="flex items-center gap-1 shrink-0">
         {isAuthed && (
-          <Button asChild size="sm" variant="ghost" className="h-8 gap-1.5">
+          <Button asChild variant="quiet">
             <Link href="/legal/ca-wc/cases">
               <FolderOpen className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">My cases</span>
@@ -371,13 +371,11 @@ function Toolbar({
         )}
         {canReset && (
           <Button
+            icon={<RotateCcw />}
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={onReset}
-            className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Reset</span>
           </Button>
         )}
@@ -413,7 +411,7 @@ function ResumeSavedCasesPanel({
             </p>
           </div>
         </div>
-        <Button asChild size="sm" variant="ghost" className="h-8 gap-1 text-xs">
+        <Button asChild variant="quiet">
           <Link href="/legal/ca-wc/cases">
             View all
             <ArrowRight className="h-3 w-3" />

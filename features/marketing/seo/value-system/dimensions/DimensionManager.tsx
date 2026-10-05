@@ -184,11 +184,11 @@ export function DimensionManager() {
             <DimensionSearchField value={query} onChange={setQuery} />
             {!creating ? (
               <Button
-                size="sm"
-                className="h-8 shrink-0"
+                icon={<Plus />}
+                variant="primary"
+                className="shrink-0"
                 onClick={() => setCreating(true)}
-              >
-                <Plus className="mr-1.5 h-3.5 w-3.5" /> New dimension
+              > New dimension
               </Button>
             ) : null}
           </div>
@@ -321,11 +321,11 @@ export function DimensionManager() {
                       using it immediately.
                     </p>
                     <Button
-                      size="sm"
-                      className="mt-2.5 h-8"
+                      icon={<Plus />}
+                      variant="primary"
+                      className="mt-2.5"
                       onClick={() => setCreating(true)}
-                    >
-                      <Plus className="mr-1.5 h-3.5 w-3.5" /> Add your first
+                    > Add your first
                       dimension
                     </Button>
                   </div>

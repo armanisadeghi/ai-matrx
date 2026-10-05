@@ -143,13 +143,12 @@ export function HeldOutCasesSection({ rulebookId }: { rulebookId: string }) {
             database, not in this component's state — so the list carries its
             own reload rather than silently going stale. */}
         <Button
-          size="sm"
-          variant="ghost"
-          className="ml-auto h-7 px-2 text-xs text-muted-foreground"
+          icon={<RefreshCw />}
+          variant="quiet"
+          className="ml-auto"
           onClick={() => void load()}
           disabled={state.status === "loading"}
         >
-          <RefreshCw className="h-3.5 w-3.5" />
           Refresh
         </Button>
       </div>
@@ -162,12 +161,11 @@ export function HeldOutCasesSection({ rulebookId }: { rulebookId: string }) {
         <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive">
           <p>{state.message}</p>
           <Button
-            size="sm"
+            icon={<RefreshCw />}
             variant="outline"
-            className="mt-2 h-7"
+            className="mt-2"
             onClick={() => void load()}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Try again
           </Button>
           <ErrorAlchemyMenu error={state.message} />

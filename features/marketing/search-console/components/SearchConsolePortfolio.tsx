@@ -426,9 +426,8 @@ export function SearchConsolePortfolio({
               // action is the repair door.
               <Button
                 asChild
-                size="sm"
-                variant="destructive"
-                className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+                variant="danger"
+                className="shrink-0"
               >
                 <Link href={integrationsHref}>
                   <Wrench className="h-3 w-3" />
@@ -437,25 +436,23 @@ export function SearchConsolePortfolio({
               </Button>
             ) : hasBinding ? (
               <Button
-                size="sm"
+                icon={syncingSiteId === site.id ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
                 variant="outline"
-                className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+                className="shrink-0"
                 disabled={syncingSiteId !== null}
                 onClick={() => onSyncSite(site.id, site.organization_id)}
               >
-                {syncingSiteId === site.id ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3" />
-                )}
                 Sync now
               </Button>
             ) : (
               <Button
                 asChild
-                size="sm"
                 variant="outline"
-                className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+                className="shrink-0"
               >
                 <Link href={integrationsHref}>
                   <Plug className="h-3 w-3" />
@@ -512,7 +509,7 @@ export function SearchConsolePortfolio({
                 . Reconnect Google once and every site recovers.
               </p>
             </div>
-            <Button asChild size="sm" className="h-7 shrink-0 gap-1 text-xs">
+            <Button variant="primary" asChild className="shrink-0">
               <Link href={marketingRoutes.connectionsGoogle()}>
                 <Wrench className="h-3 w-3" />
                 Fix Google connection
@@ -535,8 +532,7 @@ export function SearchConsolePortfolio({
             </div>
             <div className="flex gap-2">
               <Button
-                size="sm"
-                className="h-7 text-xs"
+                variant="primary"
                 onClick={() =>
                   startNavigation(() => router.push(marketingRoutes.sites()))
                 }
@@ -544,16 +540,14 @@ export function SearchConsolePortfolio({
                 Websites
               </Button>
               <Button
-                size="sm"
+                icon={<Plug />}
                 variant="outline"
-                className="h-7 gap-1 text-xs"
                 onClick={() =>
                   startNavigation(() =>
                     router.push(marketingRoutes.connectionsGoogle()),
                   )
                 }
               >
-                <Plug className="h-3 w-3" />
                 Connect Google
               </Button>
             </div>

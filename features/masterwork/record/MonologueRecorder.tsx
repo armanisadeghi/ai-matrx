@@ -106,8 +106,7 @@ export function MonologueRecorder({
         <p className="text-xs text-muted-foreground">
           {describeDistillWait(finishedSeconds)}
         </p>
-        <Button variant="outline" size="sm" onClick={discard} disabled={disabled}>
-          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Trash2 />} variant="outline" onClick={discard} disabled={disabled}>
           Record it again
         </Button>
       </div>
@@ -150,7 +149,6 @@ export function MonologueRecorder({
           </div>
           <div className="flex gap-2">
             <Button
-              size="sm"
               variant="outline"
               onClick={() => (isPaused ? resumeRecording() : pauseRecording())}
               disabled={disabled}
@@ -165,19 +163,19 @@ export function MonologueRecorder({
                 </>
               )}
             </Button>
-            <Button size="sm" onClick={() => stopRecording()} disabled={disabled}>
-              <Square className="mr-1.5 h-3.5 w-3.5" /> Done talking
+            <Button icon={<Square />} variant="primary" onClick={() => stopRecording()} disabled={disabled}> Done talking
             </Button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
           <Button
+            icon={<Mic />}
+            variant="primary"
             onClick={() => void startRecording()}
             disabled={disabled}
             className="w-full"
           >
-            <Mic className="mr-2 h-4 w-4" />
             Start talking
           </Button>
           <p className="text-xs text-muted-foreground">

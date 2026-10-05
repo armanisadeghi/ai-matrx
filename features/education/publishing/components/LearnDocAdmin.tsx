@@ -406,10 +406,11 @@ export function LearnDocAdmin({ initialDocs }: Props) {
               </p>
             </div>
             <Button
+              icon={<FilePlus2 />}
+              variant="primary"
               onClick={() => setState({ mode: "new" })}
-              className="gap-2 shrink-0"
-            >
-              <FilePlus2 className="h-4 w-4" /> New guide
+              className="shrink-0"
+            > New guide
             </Button>
           </div>
 
@@ -483,8 +484,8 @@ export function LearnDocAdmin({ initialDocs }: Props) {
                     <div className="flex items-center gap-1 shrink-0">
                       {doc.status === "published" ? (
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          icon={<ExternalLink />} aria-label="View live"
+                          variant="quiet"
                           asChild
                           title="View live"
                         >
@@ -492,45 +493,37 @@ export function LearnDocAdmin({ initialDocs }: Props) {
                             href={eduHref("learn", doc.slug)}
                             target="_blank"
                             rel="noreferrer"
-                          >
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
+                          />
                         </Button>
                       ) : null}
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        icon={<Pencil />} aria-label="Edit"
+                        variant="quiet"
                         title="Edit"
                         onClick={() => setState({ mode: "edit", doc })}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      />
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        icon={busy ? (
+                          <Loader2 className="animate-spin" />
+                        ) : doc.status === "published" ? (
+                          <EyeOff />
+                        ) : (
+                          <Eye />
+                        )} aria-label={doc.status === "published" ? "Unpublish" : "Publish"}
+                        variant="quiet"
                         title={
                           doc.status === "published" ? "Unpublish" : "Publish"
                         }
                         disabled={busy}
                         onClick={() => onPublishToggle(doc)}
-                      >
-                        {busy ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : doc.status === "published" ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </Button>
+                      />
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        icon={<Trash2 className="text-destructive" />} aria-label="Delete"
+                        variant="quiet"
                         title="Delete"
                         disabled={busy}
                         onClick={() => onDelete(doc)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      />
                     </div>
                   </div>
                 );
@@ -820,9 +813,7 @@ function LearnDocEditor({
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-6">
       <div className="flex items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-3 min-w-0">
-          <Button variant="ghost" size="icon" onClick={onCancel} title="Back">
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          <Button icon={<ArrowLeft />} aria-label="Back" variant="quiet" onClick={onCancel} title="Back" />
           <h1 className="text-xl font-bold tracking-tight truncate">
             {doc ? "Edit study guide" : "New study guide"}
           </h1>
@@ -838,28 +829,27 @@ function LearnDocEditor({
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Button
+            icon={isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
             variant="outline"
             onClick={() => save(false)}
             disabled={isPending || !authoredSections.ok || !parsedRelated.ok}
-            className="gap-2"
           >
-            {isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
             Save draft
           </Button>
           <Button
+            icon={isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Eye />
+            )}
+            variant="primary"
             onClick={() => save(true)}
             disabled={isPending || !authoredSections.ok || !parsedRelated.ok}
-            className="gap-2"
           >
-            {isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Eye className="h-4 w-4" />
-            )}
             {doc?.status === "published"
               ? "Save & keep live"
               : "Save & publish"}
@@ -1003,16 +993,14 @@ function LearnDocEditor({
           <div className="flex items-center justify-between">
             <Label className="text-sm font-semibold">{V.preview_visible}</Label>
             <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPreview((v) => !v)}
-              className="gap-1.5 text-xs"
-            >
-              {showPreview ? (
-                <EyeOff className="h-3.5 w-3.5" />
+              icon={showPreview ? (
+                <EyeOff />
               ) : (
-                <Eye className="h-3.5 w-3.5" />
+                <Eye />
               )}
+              variant="quiet"
+              onClick={() => setShowPreview((v) => !v)}
+            >
               {showPreview ? "Hide" : "Show"}
             </Button>
           </div>

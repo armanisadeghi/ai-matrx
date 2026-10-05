@@ -795,12 +795,12 @@ export function BatchMode({
             </span>
           ) : null}
           <Button
-            size="sm"
-            className={cn("min-w-[130px] gap-1.5")}
+            icon={applying ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
+            className="min-w-[130px]"
             disabled={disabled || applying || Boolean(refusal)}
             onClick={() => void onApply()}
           >
-            {applying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {applying ? "Applying…" : `Apply ${pendingRows.length}`}
           </Button>
         </div>

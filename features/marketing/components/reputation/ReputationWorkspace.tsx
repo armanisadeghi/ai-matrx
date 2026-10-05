@@ -205,8 +205,7 @@ function CaseVerdictAction({
     return (
       <>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <Button size="sm" className="h-7 gap-1.5" onClick={() => setStartOpen(true)}>
-            <Send className="h-3.5 w-3.5" /> Start outreach
+          <Button icon={<Send />} variant="primary" onClick={() => setStartOpen(true)}> Start outreach
           </Button>
           <span className="text-[11px] text-muted-foreground">
             Finds {row.source_domain} in your CRM and adds it to an outreach
@@ -244,7 +243,7 @@ function CaseVerdictAction({
       : marketingRoutes.site(brandId, siteId, "/pages");
     return (
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
+        <Button asChild variant="outline">
           <Link href={href}>
             <PencilLine className="h-3.5 w-3.5" /> Improve this page
           </Link>
@@ -259,7 +258,7 @@ function CaseVerdictAction({
   if (row.verdict === "protect") {
     return (
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <Button asChild size="sm" variant="outline" className="h-7 gap-1.5">
+        <Button asChild variant="outline">
           <Link
             href={marketingRoutes.site(
               brandId,
@@ -281,12 +280,10 @@ function CaseVerdictAction({
     return (
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
+          icon={<SearchCheck />}
           variant="outline"
-          className="h-7 gap-1.5"
           onClick={onRecheck}
-        >
-          <SearchCheck className="h-3.5 w-3.5" /> Recheck the evidence
+        > Recheck the evidence
         </Button>
         <span className="text-[11px] text-muted-foreground">
           There is not enough here to act on yet — collect more before deciding.
@@ -477,31 +474,26 @@ function CaseCard({
       ) : null}
       <div className="flex flex-wrap items-center justify-end gap-1.5 border-t px-4 py-2.5">
         {updating ? <Loader2 className="mr-auto h-3.5 w-3.5 animate-spin" /> : null}
-        <Button size="sm" variant="ghost" className="h-7" disabled={updating} onClick={() => onStatus("dismissed")}>
-          <X className="mr-1 h-3.5 w-3.5" /> Dismiss
+        <Button icon={<X />} variant="quiet" disabled={updating} onClick={() => onStatus("dismissed")}> Dismiss
         </Button>
-        <Button size="sm" variant="outline" className="h-7" disabled={updating} onClick={() => onStatus("monitoring")}>
-          <Radar className="mr-1 h-3.5 w-3.5" /> Monitor
+        <Button icon={<Radar />} variant="outline" disabled={updating} onClick={() => onStatus("monitoring")}> Monitor
         </Button>
         {row.status === "open" ? (
-          <Button size="sm" variant="outline" className="h-7" disabled={updating} onClick={() => onStatus("accepted")}>
-            <BadgeCheck className="mr-1 h-3.5 w-3.5" /> Accept
+          <Button icon={<BadgeCheck />} variant="outline" disabled={updating} onClick={() => onStatus("accepted")}> Accept
           </Button>
         ) : null}
-        <Button size="sm" variant="outline" className="h-7" disabled={updating} onClick={() => onStatus("in_progress")}>
-          <Flag className="mr-1 h-3.5 w-3.5" /> Mark in progress
+        <Button icon={<Flag />} variant="outline" disabled={updating} onClick={() => onStatus("in_progress")}> Mark in progress
         </Button>
         <Button
-          size="sm"
-          className="h-7"
+          icon={<Check />}
+          variant="primary"
           disabled={updating}
           onClick={() => {
             void advisories
               .recordGoAhead({ entityType: "seo_reputation_case", entityId: row.id })
               .then(() => onStatus("completed"));
           }}
-        >
-          <Check className="mr-1 h-3.5 w-3.5" /> Complete
+        > Complete
         </Button>
       </div>
     </article>
@@ -792,16 +784,13 @@ export function ReputationWorkspace({
                 organizationId={site.organization_id}
               />
               <Button
+                icon={<RefreshCw />}
                 variant="outline"
-                size="sm"
-                className="h-8"
                 disabled={running}
                 onClick={() => void analysis.analyze(true)}
-              >
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Recheck evidence
+              > Recheck evidence
               </Button>
-              <Button size="sm" className="h-8" disabled={running} onClick={() => void analysis.analyze(false)}>
-                {running ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Play className="mr-1.5 h-3.5 w-3.5" />}
+              <Button icon={running ? <Loader2 className="animate-spin" /> : <Play />} variant="primary" disabled={running} onClick={() => void analysis.analyze(false)}>
                 {running ? analysis.run.stage || "Analyzing" : "Run intelligence"}
               </Button>
             </div>
@@ -893,8 +882,7 @@ export function ReputationWorkspace({
                   <p className="mx-auto mt-1 max-w-lg text-xs text-muted-foreground">
                     Run intelligence to combine captured backlinks, first-party domain opinions, competitor intersections, AI citations, brand facts, and internal expert knowledge.
                   </p>
-                  <Button className="mt-4" size="sm" onClick={() => void analysis.analyze(false)}>
-                    <Play className="mr-1.5 h-3.5 w-3.5" /> Run intelligence
+                  <Button icon={<Play />} variant="primary" className="mt-4" onClick={() => void analysis.analyze(false)}> Run intelligence
                   </Button>
                 </div>
               )
@@ -975,12 +963,12 @@ export function ReputationWorkspace({
                     })}
                   </div>
                   <div className="flex flex-wrap gap-2 border-t p-3">
-                    <Button asChild size="sm" variant="outline" className="h-7">
+                    <Button asChild variant="outline">
                       <Link href={marketingRoutes.site(brandId, site.id, "/backlinks")}>
                         Open backlink evidence
                       </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline" className="h-7">
+                    <Button asChild variant="outline">
                       <Link href={marketingRoutes.brand(brandId)}>Open brand facts & assets</Link>
                     </Button>
                   </div>

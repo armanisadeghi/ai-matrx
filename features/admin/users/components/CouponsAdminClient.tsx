@@ -253,8 +253,7 @@ export function CouponsAdminClient() {
         cell: (r) => (
           <div className="flex items-center gap-1">
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={r.status !== "active" || r.kind === "new_account"}
               title={r.kind === "new_account" ? "Links can be sent only when made" : "Send"}
               aria-label="Send coupon"
@@ -266,8 +265,7 @@ export function CouponsAdminClient() {
               <Send className="h-3.5 w-3.5" />
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={r.status === "revoked"}
               title="Revoke"
               aria-label="Revoke coupon"
@@ -302,12 +300,10 @@ export function CouponsAdminClient() {
             searchPlaceholder: "Search code, email, phone, note…",
             actions: (
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={() => setGiving(true)}>
-                  <Gift className="mr-1.5 h-3.5 w-3.5" />
+                <Button icon={<Gift />} variant="outline" onClick={() => setGiving(true)}>
                   Give free months
                 </Button>
-                <Button size="sm" onClick={() => setCreating(true)}>
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                <Button icon={<Plus />} variant="primary" onClick={() => setCreating(true)}>
                   New coupons
                 </Button>
               </div>

@@ -234,7 +234,7 @@ export function ComparisonSetLoaderDialog({
                         </div>
                       </div>
                       {href && (
-                        <Button size="sm" variant="outline" asChild>
+                        <Button variant="outline" asChild>
                           <AppLink
                             href={href}
                             onClick={() => handleOpenChange(false)}

@@ -188,7 +188,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
             </SelectContent>
           </Select>
           <Button
-            size="sm"
+            icon={<Plus />}
             variant="outline"
             disabled={!adding}
             onClick={async () => {
@@ -200,8 +200,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                 toast.error("Could not add industry");
               }
             }}
-          >
-            <Plus className="h-3.5 w-3.5" /> Add
+          > Add
           </Button>
         </div>
       )}
@@ -253,9 +252,8 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                 {canEdit &&
                   (it.subscribed ? (
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-2 text-[11px] text-muted-foreground hover:text-destructive"
+                      icon={<X />}
+                      variant="quiet"
                       onClick={async () => {
                         const ok = await catalog.unsubscribe(it.id);
                         if (ok)
@@ -268,14 +266,12 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                             catalog.error ?? "Could not unsubscribe",
                           );
                       }}
-                    >
-                      <X className="h-3 w-3" /> Leave
+                    > Leave
                     </Button>
                   ) : (
                     <Button
-                      size="sm"
+                      icon={<Plus />}
                       variant="outline"
-                      className="h-6 px-2 text-[11px]"
                       onClick={async () => {
                         const ok = await catalog.subscribe(it.id);
                         if (ok)
@@ -286,8 +282,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                         else
                           toast.error(catalog.error ?? "Could not subscribe");
                       }}
-                    >
-                      <Plus className="h-3 w-3" /> Subscribe
+                    > Subscribe
                     </Button>
                   ))}
               </div>

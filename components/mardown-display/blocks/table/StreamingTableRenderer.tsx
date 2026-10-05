@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Download,
   Copy,

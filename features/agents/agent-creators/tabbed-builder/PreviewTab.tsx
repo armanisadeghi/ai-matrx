@@ -75,10 +75,9 @@ export const PreviewTab: React.FC = () => {
             <div className="relative">
               <div className="absolute top-2 right-2">
                 <Button 
-                  size="sm" 
-                  variant="ghost" 
+                  variant="quiet" 
                   onClick={copyToClipboard} 
-                  className="h-8 w-8 p-0 rounded-full"
+                  className="w-8"
                 >
                   {copied ? 
                     <CheckIcon className="h-4 w-4 text-green-500" /> : 
@@ -122,9 +121,9 @@ export const PreviewTab: React.FC = () => {
         </div>
         
         <div className="flex space-x-2">
-          <Button 
+          <Button
+            variant="primary" 
             onClick={copyToClipboard}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
             {copied ? 'Copied!' : 'Copy to Clipboard'}
           </Button>

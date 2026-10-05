@@ -302,7 +302,6 @@ export function PromoteToGlobalModal({
     <>
       <Button
         variant="outline"
-        size="sm"
         onClick={onClose}
         disabled={isProcessing}
       >
@@ -311,7 +310,7 @@ export function PromoteToGlobalModal({
       {/* Clickable and honest: handlePromote already owns the exact refusal
           sentence for every missing piece, so the reader hears it instead of
           staring at a greyed button. Only work-in-flight disables. */}
-      <Button size="sm" onClick={handlePromote} disabled={isProcessing}>
+      <Button variant="primary" onClick={handlePromote} disabled={isProcessing}>
         {isProcessing ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -61,8 +61,7 @@ export function DeletionFlow({
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <Button variant="destructive" size="sm" onClick={onDelete} disabled={busy} className="self-start">
-        {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+      <Button icon={busy ? <Loader2 className="animate-spin" /> : <Trash2 />} variant="danger" onClick={onDelete} disabled={busy} className="self-start">
         Delete this browser
       </Button>
       <p className="text-[11px] text-muted-foreground">

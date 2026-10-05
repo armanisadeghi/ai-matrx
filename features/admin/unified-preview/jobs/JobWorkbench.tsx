@@ -143,20 +143,18 @@ export function JobWorkbench({
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
               <span>Following</span>
               <Button
-                size="sm"
+                iconEnd={<ArrowRight />}
                 variant="outline"
-                className="h-6 font-mono text-[11px]"
                 onClick={() => onOpenJobKey(leader.mandate_key)}
                 title={`Open ${leader.mandate_key} — THE DOOR LAW: a job that is following shows what it follows, and opens it.`}
               >
                 {leader.mandate_key}
-                <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
             </div>
           ) : null}
           <Button
-            size="sm"
-            className="mt-2 h-7"
+            variant="primary"
+            className="mt-2"
             onClick={() =>
               previewToast(
                 "Would open the holder picker scoped to intelligences that can produce this output kind.",
@@ -177,9 +175,7 @@ export function JobWorkbench({
           <div className="flex items-center gap-1.5">
             <GroundingBadge grounding={job.goal_grounding} />
             <Button
-              size="sm"
-              variant={editingGoal ? "default" : "outline"}
-              className="h-6 px-2 text-[11px]"
+              variant={editingGoal ? "primary" : "outline"}
               title="Goal is frozen once set; changing it makes a different job"
               onClick={() => {
                 if (editingGoal) {
@@ -285,13 +281,11 @@ export function JobWorkbench({
               </span>
               {leader ? (
                 <Button
-                  size="sm"
+                  iconEnd={<ArrowRight />}
                   variant="outline"
-                  className="h-6 font-mono text-[11px]"
                   onClick={() => onOpenJobKey(leader.mandate_key)}
                 >
                   {leader.mandate_key}
-                  <ArrowRight className="ml-1 h-3 w-3" />
                 </Button>
               ) : (
                 <span className="text-[11px] text-muted-foreground">
@@ -357,18 +351,15 @@ export function JobWorkbench({
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button
-                  size="sm"
+                  icon={<ShieldQuestion />}
                   variant="outline"
-                  className="h-7"
                   disabled={!candidate}
                   onClick={() => setPreflight(true)}
                 >
-                  <ShieldQuestion className="mr-1.5 h-3.5 w-3.5" />
                   Run impact preflight
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-7"
+                  variant="primary"
                   disabled={!preflight}
                   onClick={runRebind}
                 >
@@ -417,9 +408,8 @@ export function JobWorkbench({
                     </li>
                   </ul>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="mt-1.5 h-6 px-2 text-[11px]"
+                    variant="quiet"
+                    className="mt-1.5"
                     onClick={() =>
                       previewToast(
                         "Would copy a paste-ready fix brief: the mismatch, the code truth, the call sites, and the four legal fixes.",
@@ -484,9 +474,8 @@ export function JobWorkbench({
               </table>
             </div>
             <Button
-              size="sm"
               variant="outline"
-              className="mt-2 h-7"
+              className="mt-2"
               onClick={() =>
                 previewToast(
                   "Would run every exemplar through the baseline and both candidate columns in one batch.",
@@ -529,9 +518,7 @@ export function JobWorkbench({
             </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7"
                 onClick={() =>
                   previewToast("Would move the pin from v4 to v7 for this job only.")
                 }
@@ -539,9 +526,7 @@ export function JobWorkbench({
                 Bump the pin to v7
               </Button>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7"
                 onClick={() =>
                   previewToast(
                     "Would drop the pin so this job always tracks the newest version.",
@@ -551,9 +536,7 @@ export function JobWorkbench({
                 Stop pinning, follow latest
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7"
+                variant="quiet"
                 onClick={() =>
                   previewToast("Would arm AND run the v4-vs-v7 comparison on the bench.")
                 }

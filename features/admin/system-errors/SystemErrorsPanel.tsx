@@ -405,9 +405,7 @@ export default function SystemErrorsPanel() {
                 {HOUR_PRESETS.map((preset) => (
                   <Button
                     key={preset}
-                    size="sm"
-                    variant={hours === preset ? "default" : "outline"}
-                    className="whitespace-nowrap"
+                    variant={hours === preset ? "primary" : "outline"}
                     onClick={() => {
                       setHours(preset);
                       setSourceRevision((revision) => revision + 1);
@@ -417,9 +415,7 @@ export default function SystemErrorsPanel() {
                   </Button>
                 ))}
                 <Button
-                  size="sm"
-                  variant={unresolvedOnly ? "default" : "outline"}
-                  className="whitespace-nowrap"
+                  variant={unresolvedOnly ? "primary" : "outline"}
                   onClick={() => {
                     setUnresolvedOnly((current) => !current);
                     setSourceRevision((revision) => revision + 1);
@@ -436,11 +432,9 @@ export default function SystemErrorsPanel() {
                   {byKind.map(([candidate, count]) => (
                     <Button
                       key={candidate}
-                      size="sm"
                       variant={
-                        candidate === trimmedKind ? "default" : "outline"
+                        candidate === trimmedKind ? "primary" : "outline"
                       }
-                      className="whitespace-nowrap"
                       onClick={() => {
                         setKind(candidate === "(no kind)" ? "" : candidate);
                         setSourceRevision((revision) => revision + 1);

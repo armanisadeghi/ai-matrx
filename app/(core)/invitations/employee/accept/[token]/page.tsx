@@ -171,6 +171,7 @@ export default function AcceptEmployeeInvitationPage() {
           that is not you, sign out first.
         </p>
         <Button
+          variant="primary"
           className="w-full"
           disabled={accepting}
           onClick={() => void accept()}

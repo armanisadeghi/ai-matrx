@@ -44,9 +44,8 @@ export function SiteChooser({ siteIds, onChoose }: SiteChooserProps) {
             <EntityRef token="web_site" id={siteId} className="min-w-0" />
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="h-6 shrink-0 text-xs"
+              className="shrink-0"
               onClick={() => onChoose(siteId)}
             >
               Use this site

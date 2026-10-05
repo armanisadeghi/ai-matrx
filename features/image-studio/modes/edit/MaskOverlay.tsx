@@ -256,21 +256,17 @@ export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
       {/* Floating mask toolbar */}
       <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 rounded-md border border-border bg-card/95 backdrop-blur px-2 py-1.5 shadow-md">
         <Button
-          variant={mode === "draw" ? "default" : "ghost"}
-          size="sm"
-          className="h-7"
+          icon={<Paintbrush />}
+          variant={mode === "draw" ? "primary" : "quiet"}
           onClick={() => setMode("draw")}
         >
-          <Paintbrush className="h-3.5 w-3.5 mr-1" />
           Draw
         </Button>
         <Button
-          variant={mode === "erase" ? "default" : "ghost"}
-          size="sm"
-          className="h-7"
+          icon={<Eraser />}
+          variant={mode === "erase" ? "primary" : "quiet"}
           onClick={() => setMode("erase")}
         >
-          <Eraser className="h-3.5 w-3.5 mr-1" />
           Erase
         </Button>
         <div className="flex items-center gap-1.5 pl-1.5 border-l border-border">
@@ -289,18 +285,14 @@ export function MaskOverlay({ canvasAreaRef, mask, sourceDims }: Props) {
           </span>
         </div>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7"
+          variant="quiet"
           onClick={clear}
           title="Clear mask"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7"
+          variant="quiet"
           onClick={() => setMode("off")}
           title="Close mask"
         >

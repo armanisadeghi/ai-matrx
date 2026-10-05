@@ -247,8 +247,7 @@ export default function RagKindsDemoPage() {
             Also write a grounded answer (spends model tokens)
           </Label>
         </div>
-        <Button type="submit" disabled={phase === "running"}>
-          <Play className="mr-1.5 h-4 w-4" />
+        <Button icon={<Play />} variant="primary" type="submit" disabled={phase === "running"}>
           Search
         </Button>
       </form>

@@ -948,13 +948,12 @@ function AiCanvas({
                 </p>
                 {onOpenSettings && (
                   <Button
+                    icon={<SlidersHorizontal />}
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={onOpenSettings}
-                    className="mt-1 h-8 gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10"
+                    className="mt-1"
                   >
-                    <SlidersHorizontal className="h-3.5 w-3.5" />
                     Pipeline settings
                   </Button>
                 )}
@@ -983,13 +982,11 @@ function AiCanvas({
             <div className="flex items-center gap-2">
               {onOpenSettings && !hasQuotaConflict && (
                 <Button
+                  icon={<SlidersHorizontal />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={onOpenSettings}
-                  className="h-8 gap-1.5 text-muted-foreground"
                 >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
                   Pipeline settings
                 </Button>
               )}
@@ -1064,15 +1061,16 @@ function AiCanvas({
       {isReview && onStart && viewFirstHref && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-200 fill-mode-both">
           <Button
+            icon={isLaunching ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <FlaskConical />
+            )}
+            variant="primary"
             onClick={onStart}
             disabled={isLaunching || !canStart}
-            className="gap-2 bg-violet-600 hover:bg-violet-700 text-white flex-1 sm:flex-none sm:px-7 min-h-[44px] shadow-sm shadow-violet-500/20 disabled:opacity-50"
+            className="flex-1 sm:flex-none"
           >
-            {isLaunching ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FlaskConical className="h-4 w-4" />
-            )}
             Start Research
           </Button>
           {!canStart && (
@@ -1086,12 +1084,11 @@ function AiCanvas({
               state becomes a real link. Rendering an <a> with a `disabled`
               prop would look disabled and still navigate. */}
           {isLaunching ? (
-            <Button variant="outline" disabled className="min-h-[44px] gap-2">
+            <Button iconEnd={<ArrowRight />} type="submit" variant="outline" disabled>
               View &amp; Edit First
-              <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button variant="outline" asChild className="min-h-[44px] gap-2">
+            <Button variant="outline" asChild>
               <Link href={viewFirstHref}>
                 View &amp; Edit First
                 <ArrowRight className="h-4 w-4" />
@@ -2372,7 +2369,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
                     could not be opened in a new tab beside the error they are
                     still reading. */}
                 {viewTopicHref && (
-                  <Button asChild>
+                  <Button variant="primary" asChild>
                     <Link href={viewTopicHref}>View topic anyway</Link>
                   </Button>
                 )}
@@ -2573,38 +2570,37 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
         aiPhase.status !== "error" && (
           <div className="w-full max-w-2xl flex items-center justify-between mt-8 pt-6 border-t border-border">
             <Button
-              variant="ghost"
+              icon={<ArrowLeft />}
+              variant="quiet"
               onClick={handleBack}
-              className="gap-2 min-h-[44px]"
             >
-              <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
 
             {currentMode === "ai" ? (
               /* AI path: single-step, the CTA triggers the state machine */
               <Button
+                icon={<Atom />}
+                variant="primary"
                 onClick={handleAiSubmit}
                 disabled={!canContinue}
-                className="gap-2 min-h-[44px] bg-violet-600 hover:bg-violet-700 text-white px-6 shadow-sm shadow-violet-500/20"
               >
-                <Atom className="h-4 w-4" />
                 Build with AI
               </Button>
             ) : currentStep === 1 ? (
               <Button
+                iconEnd={<ArrowRight />}
+                variant="primary"
                 onClick={handleContinue}
                 disabled={!canContinue}
-                className="gap-2 min-h-[44px]"
               >
                 Continue
-                <ArrowRight className="h-4 w-4" />
               </Button>
             ) : (
               <Button
+                variant="primary"
                 onClick={handleManualSubmit}
                 disabled={!canContinue}
-                className="gap-2 min-h-[44px] px-6"
               >
                 Create Topic
               </Button>

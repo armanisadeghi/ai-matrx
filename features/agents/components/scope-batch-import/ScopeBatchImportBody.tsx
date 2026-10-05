@@ -520,9 +520,7 @@ export function ScopeBatchImportBody({
                     {accessEligibleItems.length > 0 && (
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
+                        variant="quiet"
                         onClick={() =>
                           setAllAccess(
                             editableCount === accessEligibleItems.length
@@ -602,7 +600,7 @@ export function ScopeBatchImportBody({
                 .join(" · ")
             : "Select an item to add, or change a slot's agent access"}
         </p>
-        <Button onClick={handleSubmit} disabled={!canSubmit}>
+        <Button variant="primary" onClick={handleSubmit} disabled={!canSubmit}>
           {selectedVariableCount + selectedSlotCount === 0 &&
           updatedSlots.length > 0
             ? "Save changes"
@@ -632,9 +630,7 @@ function ColumnAllToggle({
   return (
     <Button
       type="button"
-      variant="ghost"
-      size="sm"
-      className="h-6 px-1.5 text-[11px] font-normal text-muted-foreground hover:text-foreground"
+      variant="quiet"
       onClick={allSelected ? onClearAll : onAddAll}
     >
       {allSelected ? "Clear" : "Add all"}

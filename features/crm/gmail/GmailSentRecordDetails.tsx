@@ -207,15 +207,13 @@ export function GmailSentRecordDetails({
             — this message is recorded here, but it will not show up under them.
           </span>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
+            icon={linking ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : null}
+            variant="quiet"
             disabled={linking}
             onClick={() => void linkMissing()}
           >
-            {linking ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-            ) : null}
             {linking ? "Linking…" : "Link it now"}
           </Button>
         </div>

@@ -263,13 +263,19 @@ export function RecapDialog({
 
         <DialogFooter className="gap-2 sm:gap-2">
           <Button
-            variant="ghost"
+            variant="quiet"
             disabled={draft === null || count === 0 || working !== null}
             onClick={() => void run(true)}
           >
             {working === "check" ? "Checking…" : "Check delivery"}
           </Button>
           <Button
+            icon={working === "send" ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Send aria-hidden="true" />
+            )}
+            variant="primary"
             disabled={
               draft === null ||
               count === 0 ||
@@ -278,13 +284,7 @@ export function RecapDialog({
               working !== null
             }
             onClick={() => void run(false)}
-            className="gap-1.5"
           >
-            {working === "send" ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Send className="h-4 w-4" aria-hidden="true" />
-            )}
             {count === 0
               ? "Choose who gets it"
               : `Send to ${count} ${count === 1 ? "person" : "people"}`}

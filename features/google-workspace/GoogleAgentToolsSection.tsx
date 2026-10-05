@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { AgentListInlinePicker } from "@ai-matrx/agents/catalog/react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -211,11 +212,10 @@ function GoogleAgentToolsSectionContent() {
         <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-destructive">
           <span>{toolsError ?? "Agent tools could not be loaded."}</span>
           <Button
-            size="sm"
+            icon={<RefreshCw />}
             variant="outline"
             onClick={() => void dispatch(fetchAvailableTools())}
-          >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+          > Retry
           </Button>
           <ErrorAlchemyMenu error={toolsError} />
         </div>
@@ -306,8 +306,7 @@ function GoogleAgentToolsSectionContent() {
           <code className="max-w-full overflow-x-auto rounded bg-muted px-2 py-1 text-xs text-foreground">
             {AI_DREAM_MCP_URL}
           </code>
-          <Button size="sm" variant="outline" onClick={copyMcpUrl}>
-            <Clipboard className="mr-1.5 h-3.5 w-3.5" /> Copy server URL
+          <Button icon={<Clipboard />} variant="outline" onClick={copyMcpUrl}> Copy server URL
           </Button>
         </div>
       </div>
@@ -362,8 +361,7 @@ function AgentToolAssignment({
     return (
       <div className="flex flex-wrap items-center gap-3 text-sm text-destructive">
         <span>{loadError}</span>
-        <Button size="sm" variant="outline" onClick={onRetryLoad}>
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+        <Button icon={<RefreshCw />} variant="outline" onClick={onRetryLoad}> Retry
         </Button>
         <ErrorAlchemyMenu error={loadError} />
       </div>
@@ -372,8 +370,7 @@ function AgentToolAssignment({
     return (
       <div className="flex flex-wrap items-center gap-3 text-sm text-destructive">
         <span>This agent is unavailable. Choose another agent or retry.</span>
-        <Button size="sm" variant="outline" onClick={onRetryLoad}>
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+        <Button icon={<RefreshCw />} variant="outline" onClick={onRetryLoad}> Retry
         </Button>
       </div>
     );
@@ -406,31 +403,30 @@ function AgentToolAssignment({
               ) : null}
               {additionBlocker}
               {modelError || (!modelAvailable && modelReady) ? (
-                <Button
+                <SurfaceButton
                   size="sm"
                   variant="link"
                   className="h-auto p-0 text-xs"
                   onClick={onRetryModel}
                 >
                   Retry model check
-                </Button>
+                </SurfaceButton>
               ) : null}
             </p>
           ) : null}
         </div>
         <Button
-          size="sm"
-          variant={hasGoogleMarketing ? "outline" : "default"}
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : hasGoogleMarketing ? (
+            <CheckCircle2 />
+          ) : null}
+          variant={hasGoogleMarketing ? "outline" : "primary"}
           disabled={
             saving || (!hasGoogleMarketing && additionBlocker !== null)
           }
           onClick={onToggleGoogleMarketing}
         >
-          {saving ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : hasGoogleMarketing ? (
-            <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-          ) : null}
           {hasGoogleMarketing
             ? "Remove Google marketing access"
             : "Add Google marketing access"}
@@ -447,8 +443,7 @@ function AgentToolAssignment({
             </p>
           </div>
           <Button
-            size="sm"
-            variant={hasGoogleWorkspace ? "outline" : "secondary"}
+            variant={hasGoogleWorkspace ? "outline" : "outline"}
             disabled={
               saving || (!hasGoogleWorkspace && additionBlocker !== null)
             }

@@ -49,9 +49,8 @@ export function TemplateSelectorImpl({
       <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+            variant="quiet"
+            className="w-7"
             onMouseDown={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -66,18 +65,16 @@ export function TemplateSelectorImpl({
         <PopoverContent /* sizing: fixed — two fixed actions inside a fixed h-[76px] box */ className="w-48 p-2 h-[76px]" align="start">
           <div className="space-y-1">
             <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start h-8 px-2 text-xs text-foreground hover:bg-accent"
+              variant="quiet"
+              className="w-full justify-start"
               onClick={handleBrowse}
             >
               Browse Templates
             </Button>
             {onSaveTemplate && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="w-full justify-start h-8 px-2 text-xs text-foreground hover:bg-accent"
+                variant="quiet"
+                className="w-full justify-start"
                 onClick={handleSave}
                 disabled={!currentContent.trim()}
               >

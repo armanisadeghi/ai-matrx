@@ -248,16 +248,16 @@ export default function KindComponentCodeTab({
               {dirty ? " · Unsaved" : ""}
             </span>
             <Button
+              icon={saving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => void save()}
               disabled={!editable || !dirty || saving}
             >
-              {saving ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
               {saving ? "Saving" : "Save code"}
             </Button>
           </div>

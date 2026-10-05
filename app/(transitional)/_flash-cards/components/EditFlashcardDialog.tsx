@@ -121,7 +121,7 @@ const EditFlashcardDialog: React.FC<EditFlashcardDialogProps> = ({ editingCard, 
                                 placeholder="Add your personal notes here"
                             />
                         </div>
-                        <Button onClick={handleSave}>Save Changes</Button>
+                        <Button variant="primary" onClick={handleSave}>Save Changes</Button>
                     </div>
                 )}
             </DialogContent>

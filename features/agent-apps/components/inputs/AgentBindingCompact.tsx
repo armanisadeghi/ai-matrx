@@ -52,8 +52,6 @@ export function AgentBindingCompact({
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="h-10 px-3 text-xs sm:h-7 sm:px-2"
             disabled={disabled}
           >
             Change

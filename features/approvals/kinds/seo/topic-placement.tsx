@@ -272,11 +272,11 @@ function RejectChooser({ scope, items, onChosen, onCancel }: ApprovalChooserProp
           className="text-xs"
         />
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onCancel}>
+          <Button variant="quiet" onClick={onCancel}>
             Cancel
           </Button>
           <Button
-            size="sm"
+            variant="primary"
             disabled={!chosen}
             onClick={() => chosen && onChosen(chosen, reason.trim() || null)}
           >

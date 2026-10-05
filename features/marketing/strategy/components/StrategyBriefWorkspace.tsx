@@ -242,8 +242,7 @@ export function StrategyBriefWorkspace({
             </span>
           ) : (
             <Button
-              size="sm"
-              variant={current ? "outline" : "default"}
+              variant={current ? "outline" : "primary"}
               onClick={() => void runGenerate()}
             >
               {current ? (
@@ -270,7 +269,7 @@ export function StrategyBriefWorkspace({
               ? `Reads the brand strategy (${brandStrategy.data.status === "confirmed" ? "confirmed" : brandStrategy.data.status === "auto_accepted" ? "accepted by lapse" : "not yet reviewed"}).`
               : "This brand has no strategy yet — the site brief will have to infer the business facts itself. Write the brand strategy first for a better brief."}
           </span>
-          <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
+          <Button asChild variant="quiet">
             <Link href={brandStrategyHref} target="_blank" rel="noopener noreferrer">
               Brand strategy
               <ExternalLink className="size-3" aria-hidden />
@@ -365,15 +364,15 @@ export function StrategyBriefWorkspace({
             />
             <div className="mt-2 flex items-center gap-2">
               <Button
-                size="sm"
+                icon={ruling.isPending ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <Check aria-hidden />
+                )}
+                variant="primary"
                 disabled={ruling.isPending}
                 onClick={() => ruling.mutate({ guidance: guidanceValue })}
               >
-                {ruling.isPending ? (
-                  <Loader2 className="size-3.5 animate-spin" aria-hidden />
-                ) : (
-                  <Check className="size-3.5" aria-hidden />
-                )}
                 {current.status === "confirmed" ? "Save corrections" : "Confirm this brief"}
               </Button>
               {current.status !== "confirmed" ? (
@@ -392,7 +391,7 @@ export function StrategyBriefWorkspace({
             {(sites.data ?? []).map((site) => (
               <li key={site.id} className="flex items-center justify-between py-2">
                 <span className="text-sm text-foreground">{site.domain ?? site.name}</span>
-                <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
+                <Button asChild variant="quiet">
                   <Link href={marketingRoutes.brandContentPlanSite(brandSeg, marketingSeg(site), "brief")} target="_blank" rel="noopener noreferrer">
                     Site brief
                     <ExternalLink className="size-3" aria-hidden />

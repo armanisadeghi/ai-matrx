@@ -165,7 +165,7 @@ export function GenericRenderer({ result }: { result: ResolvedShareToken }) {
           </p>
         )}
         {appPath && (
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href={appPath} target="_blank" rel="noopener noreferrer">
               Open in AI Matrx
               <ExternalLink className="ml-1.5 h-4 w-4" />

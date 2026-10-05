@@ -153,19 +153,16 @@ export function CatalogRowActions({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <MoreHorizontal />
+            )}
+            variant="quiet"
             disabled={busy}
             onClick={(e) => e.stopPropagation()}
             aria-label="Dataset actions"
-          >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <MoreHorizontal className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"

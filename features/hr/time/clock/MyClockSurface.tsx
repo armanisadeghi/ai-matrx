@@ -120,7 +120,7 @@ export function MyClockSurface({
             <p className="text-base text-foreground">
               You do not have an active job here today, so there is no time clock to use.
             </p>
-            <Button asChild variant="outline" className="min-h-[48px] w-fit">
+            <Button asChild variant="outline" className="w-fit">
               <Link href={myRecordHref}>Open my HR record</Link>
             </Button>
           </section>

@@ -30,7 +30,6 @@ export const DebugConsoleTab: React.FC<DebugConsoleTabProps> = ({
         </p>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => dispatch(setActiveTab("terminal"))}
         >
           Open terminal

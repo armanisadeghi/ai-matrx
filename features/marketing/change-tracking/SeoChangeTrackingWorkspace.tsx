@@ -625,12 +625,11 @@ function ChangeComposer({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={() => void save()} disabled={!canSave || saving}>
-            {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Button icon={saving ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <FlaskConical className="mr-2 h-4 w-4" />
-            )}
+              <FlaskConical />
+            )} variant="primary" onClick={() => void save()} disabled={!canSave || saving}>
             Save experiment
           </Button>
         </DialogFooter>
@@ -888,9 +887,9 @@ function TheoriesTab({
                       Keyword
                     </p>
                     <Button
+                      iconEnd={<Target />}
                       variant="outline"
-                      size="sm"
-                      className="mt-1 h-8"
+                      className="mt-1"
                       onClick={() =>
                         openKeyword({
                           phrase,
@@ -902,7 +901,6 @@ function TheoriesTab({
                       }
                     >
                       {phrase}
-                      <Target className="ml-2 h-3.5 w-3.5" />
                     </Button>
                     <span className="mt-1 flex items-center gap-1">
                       {classCol.cell?.(theory, 0)}
@@ -1041,20 +1039,19 @@ function ImplementationItem({
           placeholder="Manual verification note"
         />
         <Button
-          size="sm"
+          icon={<XCircle />}
           variant="outline"
           disabled={verify.isPending}
           onClick={() => verify.mutate("mismatch")}
         >
-          <XCircle className="mr-1.5 h-3.5 w-3.5" />
           Mismatch
         </Button>
         <Button
-          size="sm"
+          icon={<CheckCircle2 />}
+          variant="primary"
           disabled={verify.isPending}
           onClick={() => verify.mutate("matched")}
         >
-          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
           Matches
         </Button>
       </div>
@@ -1221,7 +1218,7 @@ function EvidenceCard({
           placeholder="Interpretation or confounders"
         />
         <Button
-          size="sm"
+          variant="primary"
           disabled={assess.isPending}
           onClick={() => assess.mutate(value)}
         >
@@ -1362,7 +1359,7 @@ function ManualEvidenceCard({
           placeholder="Source, interpretation, and known confounders"
         />
         <Button
-          size="sm"
+          variant="primary"
           disabled={save.isPending || !deploymentDay}
           onClick={() => save.mutate()}
         >
@@ -1689,6 +1686,10 @@ function ChangeEditForm({
         />
       </Field>
       <Button
+        icon={save.isPending ? (
+          <Loader2 className="animate-spin" />
+        ) : null}
+        variant="primary"
         disabled={
           save.isPending ||
           (["deployed", "measuring", "completed", "rolled_back"].includes(
@@ -1698,9 +1699,6 @@ function ChangeEditForm({
         }
         onClick={() => save.mutate()}
       >
-        {save.isPending ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : null}
         Save state
       </Button>
     </div>
@@ -2130,25 +2128,22 @@ export function SeoChangeTrackingWorkspace({
       <div className="flex shrink-0 flex-wrap items-center gap-2">
         <div className="ml-auto flex gap-2">
           <Button
+            icon={<RefreshCw
+              className={cn(
+                "mr-1.5 h-3.5 w-3.5",
+                (changes.isFetching || untracked.isFetching) && "animate-spin",
+              )}
+            />}
             variant="outline"
-            size="sm"
-            className="h-8"
             onClick={() => {
               void changes.refetch();
               void untracked.refetch();
             }}
             disabled={changes.isFetching || untracked.isFetching}
           >
-            <RefreshCw
-              className={cn(
-                "mr-1.5 h-3.5 w-3.5",
-                (changes.isFetching || untracked.isFetching) && "animate-spin",
-              )}
-            />
             Refresh
           </Button>
-          <Button size="sm" className="h-8" onClick={() => startNew()}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<Plus />} variant="primary" onClick={() => startNew()}>
             New change
           </Button>
         </div>
@@ -2233,8 +2228,7 @@ export function SeoChangeTrackingWorkspace({
                 description:
                   "Create the first theory-backed intervention before the next website update.",
                 action: (
-                  <Button size="sm" onClick={() => startNew()}>
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  <Button icon={<Plus />} variant="primary" onClick={() => startNew()}>
                     Document first change
                   </Button>
                 ),

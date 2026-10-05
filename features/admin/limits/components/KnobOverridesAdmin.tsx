@@ -89,18 +89,17 @@ function NamePicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          iconEnd={<ChevronDown className="opacity-60" />}
           ref={trigger}
           type="button"
           variant="outline"
-          size="sm"
           disabled={disabled}
           aria-label={ariaLabel}
-          className="h-7 w-full min-w-0 justify-between px-2 text-xs font-normal"
+          className="w-full min-w-0 justify-between"
         >
           <span className={cn("truncate", !picked && "text-muted-foreground")}>
             {picked ? picked.label : placeholder}
           </span>
-          <ChevronDown className="ml-1 h-3 w-3 shrink-0 opacity-60" />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -283,9 +282,7 @@ function ValueEditor({
         onChange={(event) => setDraft(event.target.value)}
       />
       <Button
-        size="sm"
         variant="outline"
-        className="h-7 px-2 text-xs"
         disabled={busy || parsed.error !== undefined || JSON.stringify(parsed.value) === JSON.stringify(value)}
         title={parsed.error}
         onClick={() => onCommit(parsed.value)}
@@ -488,15 +485,12 @@ export function KnobOverridesAdmin({
                     <td className="whitespace-nowrap px-2 py-1 text-muted-foreground" title={row.setAt ?? undefined}>{row.setAt ? formatRelativeTime(row.setAt) : "Not recorded"}</td>
                     <td className="px-1 py-1">
                       <Button
-                        size="icon"
-                        variant="ghost"
-                        className="h-6 w-6"
+                        icon={busyRow === row.id ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                        variant="quiet"
                         aria-label={`Remove ${row.who}'s override${row.kind === "organization" ? "" : ` in ${row.organizationName}`}`}
                         disabled={busyRow === row.id}
                         onClick={() => void remove(row)}
-                      >
-                        {busyRow === row.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
-                      </Button>
+                      />
                     </td>
                   </tr>
                 );
@@ -535,8 +529,7 @@ export function KnobOverridesAdmin({
           )}
           <ValueEditor key={`add:${addKey}`} knob={knob} value={addValue} busy={adding} commitOnPick={false} ariaLabel="Value for the new override" onCommit={setAddValue} />
           <Button
-            size="sm"
-            className="h-7 px-2 text-xs"
+            variant="primary"
             disabled={adding || !addOrg || addValue === undefined || (addKind === "user" && !addPerson) || addTaken}
             title={addTaken ? "That override already exists — change it in the table above" : undefined}
             onClick={() => void add()}

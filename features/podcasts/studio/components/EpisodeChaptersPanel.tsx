@@ -180,19 +180,17 @@ export function EpisodeChaptersPanel({
           <span className="font-medium text-foreground">Chapter markers</span>
         </div>
         <Button
-          size="sm"
-          variant={hasChapters ? "ghost" : "default"}
-          className="gap-1.5"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : hasChapters ? (
+            <RefreshCw />
+          ) : (
+            <ListPlus />
+          )}
+          variant={hasChapters ? "quiet" : "primary"}
           disabled={busy || !episode || noScript}
           onClick={() => void regenerate()}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : hasChapters ? (
-            <RefreshCw className="h-3.5 w-3.5" />
-          ) : (
-            <ListPlus className="h-3.5 w-3.5" />
-          )}
           {busy ? "Generating…" : hasChapters ? "Regenerate" : "Generate"}
         </Button>
       </div>

@@ -444,7 +444,6 @@ function DictionaryPanel({
           pronunciation{pronCount === 1 ? "" : "s"} in effect.
         </p>
         <Button
-          size="sm"
           variant="outline"
           onClick={() => openDictionary({ surfaceKey: surfaceName })}
         >
@@ -542,7 +541,7 @@ function NamespaceConfigPanel({
               {JSON.stringify(merged, null, 2)}
             </pre>
           </details>
-          <Button size="sm" onClick={() => void save()} disabled={saving}>
+          <Button variant="primary" onClick={() => void save()} disabled={saving}>
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>

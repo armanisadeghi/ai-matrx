@@ -204,8 +204,7 @@ export function OutsiderSigning() {
               <p className="text-sm text-muted-foreground">
                 {phase.maskedTarget ? `We will send a code to ${phase.maskedTarget}.` : "We will send you a code."}
               </p>
-              <Button disabled={busy !== null} onClick={() => void send(secret)}>
-                {busy === "send" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Send me the code
+              <Button icon={busy === "send" && <Loader2 className="animate-spin" />} type="submit" variant="primary" disabled={busy !== null} onClick={() => void send(secret)}>Send me the code
               </Button>
             </>
           ) : (
@@ -226,10 +225,9 @@ export function OutsiderSigning() {
                 className="text-base tracking-widest"
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               />
-              <Button type="submit" disabled={busy !== null || code.trim().length < 6}>
-                {busy === "verify" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Open the document
+              <Button icon={busy === "verify" && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy !== null || code.trim().length < 6}>Open the document
               </Button>
-              <Button type="button" variant="ghost" size="sm" disabled={busy !== null} onClick={() => void send(secret)}>
+              <Button type="button" variant="quiet" disabled={busy !== null} onClick={() => void send(secret)}>
                 Send a new code
               </Button>
             </form>

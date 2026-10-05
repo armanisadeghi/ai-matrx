@@ -44,15 +44,15 @@ export function UseTemplateButton({ templateId }: UseTemplateButtonProps) {
 
   return (
     <Button
-      className="bg-success hover:bg-success/90"
+      icon={busy ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <Copy />
+      )}
+      variant="primary"
       onClick={handleUseTemplate}
       disabled={busy}
     >
-      {busy ? (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-      ) : (
-        <Copy className="h-4 w-4 mr-2" />
-      )}
       {busy ? "Creating Agent..." : "Use This Template"}
     </Button>
   );

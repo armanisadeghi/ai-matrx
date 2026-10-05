@@ -246,8 +246,7 @@ export function OtherContactsReview() {
                 requireExplicitSelection
                 className="min-w-[17rem] flex-1"
               />
-              <Button className="min-h-11" disabled={!connectionId || loading} onClick={() => void load()}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              <Button icon={loading ? <Loader2 className="animate-spin" /> : <RefreshCw />} variant="primary" disabled={!connectionId || loading} onClick={() => void load()}>
                 Preview one page
               </Button>
             </div>
@@ -286,7 +285,7 @@ export function OtherContactsReview() {
                 <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
               </button>
             ))}
-            {nextPageToken ? <Button variant="outline" size="sm" disabled={loading} onClick={() => void load(nextPageToken)}>Load the next page</Button> : null}
+            {nextPageToken ? <Button variant="outline" disabled={loading} onClick={() => void load(nextPageToken)}>Load the next page</Button> : null}
           </CardContent>
         </Card>
       ) : connectionId && !loading ? <p className="text-sm text-muted-foreground">Preview a page to see the contacts Google returns for this account.</p> : null}
@@ -310,8 +309,8 @@ export function OtherContactsReview() {
               </div>
             ) : null}
             <div className="flex flex-wrap gap-2">
-              <Button className="min-h-11" disabled={reviewing} onClick={() => void makeReview()}>{reviewing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}{review ? "Refresh review" : "Review mapping and duplicates"}</Button>
-              {review ? <Button className="min-h-11" disabled={!reviewIsCurrent || importing || outcome?.choice_required} onClick={() => void apply()}>{importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}Import selected contact</Button> : null}
+              <Button icon={reviewing ? <Loader2 className="animate-spin" /> : <RefreshCw />} variant="primary" disabled={reviewing} onClick={() => void makeReview()}>{review ? "Refresh review" : "Review mapping and duplicates"}</Button>
+              {review ? <Button icon={importing ? <Loader2 className="animate-spin" /> : <Check />} variant="primary" disabled={!reviewIsCurrent || importing || outcome?.choice_required} onClick={() => void apply()}>Import selected contact</Button> : null}
             </div>
             {review && !reviewIsCurrent ? <p className="text-xs text-muted-foreground">Refresh the review after changing fields. Import stays disabled until the short-lived receipt matches what you see.</p> : null}
           </CardContent>

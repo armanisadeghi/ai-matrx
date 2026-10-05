@@ -184,10 +184,10 @@ export function FastFireSurface({ setId }: { setId?: string | null }) {
         <div className="flex min-h-[60dvh] flex-col items-center justify-center gap-3 bg-textured text-center">
           <p className="text-sm text-muted-foreground">Session ended.</p>
           <Button
+            variant="primary"
             type="button"
             onClick={restart}
             disabled={isExiting}
-            className="bg-orange-600 hover:bg-orange-700"
           >
             Start a new FastFire
           </Button>

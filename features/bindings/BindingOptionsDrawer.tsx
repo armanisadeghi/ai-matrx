@@ -402,7 +402,6 @@ export function BindingOptionsDrawer({
               <PropertyRow label="Details" value={load.message} />
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   startedFor.current = null;
                   setReadAttempt((attempt) => attempt + 1);
@@ -443,7 +442,6 @@ export function BindingOptionsDrawer({
                 {treatmentId !== null && !access?.exists ? (
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={() => {
                       startedFor.current = null;
                       setReadAttempt((attempt) => attempt + 1);
@@ -613,7 +611,6 @@ export function BindingOptionsDrawer({
                   {saveError && (
                     <Button
                       variant="outline"
-                      size="sm"
                       disabled={busy}
                       onClick={async () => {
                         const accepted = await confirm({
@@ -636,11 +633,11 @@ export function BindingOptionsDrawer({
                     Mandate Holder selection and model overrides are saved separately.
                   </FieldHelp>
                   <Button
-                    size="sm"
+                    icon={busy && <Loader2 className="animate-spin" />}
+                    variant="primary"
                     disabled={controlsDisabled || !dirty}
                     onClick={() => void save()}
                   >
-                    {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     {busy ? "Saving…" : "Save"}
                   </Button>
                 </div>

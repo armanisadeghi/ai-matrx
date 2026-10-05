@@ -196,17 +196,16 @@ function BucketPanel({
             disabled={createBusy}
           />
           <Button
+            variant="primary"
             type="submit"
-            size="sm"
             disabled={createBusy || !newKey.trim() || !newLabel.trim()}
           >
             Create bucket
           </Button>
           <Button
+            icon={<X />}
             type="button"
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
+            variant="quiet"
             aria-label="Cancel bucket creation"
             disabled={createBusy}
             onClick={() => {
@@ -214,9 +213,7 @@ function BucketPanel({
               setNewKey("");
               setNewLabel("");
             }}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          />
         </form>
       ) : null}
     </section>

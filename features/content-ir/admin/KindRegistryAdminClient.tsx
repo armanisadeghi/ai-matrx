@@ -348,9 +348,7 @@ export default function KindRegistryAdminClient() {
         </div>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="h-8"
           onClick={() => setReloadTick((tick) => tick + 1)}
           title="Reload the catalog"
         >
@@ -610,14 +608,13 @@ export default function KindRegistryAdminClient() {
                       include __kind discriminators
                     </label>
                     <Button
+                      icon={<Copy />}
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="ml-auto h-7"
+                      className="ml-auto"
                       onClick={copyExport}
                       disabled={!exportPayload}
-                    >
-                      <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy
+                    > Copy
                     </Button>
                   </div>
 

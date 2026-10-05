@@ -495,20 +495,20 @@ export function CalendarCreateReview({
             </div>
           ) : null}
           {saved.phase === "reviewed_unattempted" && expired(saved.intent) ? (
-            <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>Review again</Button>
+            <Button type="button" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>Review again</Button>
           ) : null}
           {saved.phase === "preview_unavailable" ? (
             <div className="flex flex-wrap gap-2">
               <p className="w-full text-destructive">{saved.problem}<ErrorAlchemyMenu error={saved.problem ?? undefined} /></p>
-              <Button type="button" size="sm" variant="outline" onClick={editEvent} disabled={!scopeMatches || busy !== null}>Edit event</Button>
-              <Button type="button" size="sm" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>{busy === "preview" ? "Reviewing…" : "Review again"}</Button>
+              <Button type="button" variant="outline" onClick={editEvent} disabled={!scopeMatches || busy !== null}>Edit event</Button>
+              <Button type="button" variant="outline" onClick={() => void review(saved.request)} disabled={!scopeMatches || busy !== null}>{busy === "preview" ? "Reviewing…" : "Review again"}</Button>
             </div>
           ) : null}
           {(saved.phase === "reviewed_unattempted" || saved.phase === "retryable_same_intent") && !expired(saved.intent) ? (
-            <Button type="button" size="sm" onClick={() => void send()} disabled={!scopeMatches || busy !== null}>{busy === "confirm" ? "Creating…" : saved.phase === "retryable_same_intent" ? "Retry same confirmation" : "Confirm create"}</Button>
+            <Button variant="primary" type="button" onClick={() => void send()} disabled={!scopeMatches || busy !== null}>{busy === "confirm" ? "Creating…" : saved.phase === "retryable_same_intent" ? "Retry same confirmation" : "Confirm create"}</Button>
           ) : null}
           {saved.phase === "retryable_same_intent" && expired(saved.intent) ? (
-            <Button type="button" size="sm" variant="outline" onClick={() => requireFreshReview("This event review expired. Review it again before creating.")}>Prepare fresh review</Button>
+            <Button type="button" variant="outline" onClick={() => requireFreshReview("This event review expired. Review it again before creating.")}>Prepare fresh review</Button>
           ) : null}
           {["attempting", "uncertain", "reconciliation_required"].includes(saved.phase) ? (
             <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-2">
@@ -528,7 +528,7 @@ export function CalendarCreateReview({
               <p>Review {saved.request.summary} at {saved.request.starts_at} in {saved.account_label} · {saved.calendar_summary}.</p>
               {originalSourceHref ? <a className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline" href={originalSourceHref} target="_blank" rel="noreferrer">Open original event in Google Calendar <ExternalLink className="h-3.5 w-3.5" /></a> : null}
               {["uncertain", "reconciliation_required"].includes(saved.phase) ? (
-                <Button type="button" size="sm" variant="outline" onClick={() => void checkOriginalSource()} disabled={!scopeMatches || busy !== null}>{busy === "source" ? "Checking…" : "Check original source"}</Button>
+                <Button type="button" variant="outline" onClick={() => void checkOriginalSource()} disabled={!scopeMatches || busy !== null}>{busy === "source" ? "Checking…" : "Check original source"}</Button>
               ) : null}
             </div>
           ) : null}
@@ -550,7 +550,7 @@ export function CalendarCreateReview({
               >
                 Open verified event in Google Calendar <ExternalLink className="h-3.5 w-3.5" />
               </a>
-              <Button type="button" size="sm" variant="outline" onClick={startAnother}>Create another event</Button>
+              <Button type="button" variant="outline" onClick={startAnother}>Create another event</Button>
             </div>
           ) : null}
           {saved.phase === "consumed" ? (
@@ -574,7 +574,7 @@ export function CalendarCreateReview({
                   Open event in Google Calendar <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               ) : null}
-              <Button type="button" size="sm" variant="outline" onClick={startAnother}>Create another event</Button>
+              <Button type="button" variant="outline" onClick={startAnother}>Create another event</Button>
             </div>
           ) : null}
         </div>
@@ -595,7 +595,7 @@ export function CalendarCreateReview({
               <option value="none">Send no updates</option>
             </select>
           </label>
-          <Button type="button" onClick={() => void review()} disabled={busy !== null}>{busy === "preview" ? "Reviewing…" : "Review event"}</Button>
+          <Button variant="primary" type="button" onClick={() => void review()} disabled={busy !== null}>{busy === "preview" ? "Reviewing…" : "Review event"}</Button>
         </div>
       ) : null}
     </section>

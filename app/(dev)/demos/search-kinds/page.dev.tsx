@@ -167,8 +167,7 @@ export default function SearchKindsDemoPage() {
             ))}
           </SelectContent>
         </Select>
-        <Button type="submit" disabled={phase === "searching" || !query.trim()}>
-          <Search className="mr-1.5 h-4 w-4" />
+        <Button icon={<Search />} variant="primary" type="submit" disabled={phase === "searching" || !query.trim()}>
           Search
         </Button>
       </form>

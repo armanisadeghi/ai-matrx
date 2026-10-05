@@ -159,12 +159,10 @@ export function PlanTreeToolbar({
         <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
           <PopoverTrigger asChild>
             <Button
-              variant={activeFilterCount > 0 ? "secondary" : "ghost"}
-              size="sm"
-              className="h-6 gap-1 px-1.5 text-xs"
+              icon={<ListFilter />}
+              variant={activeFilterCount > 0 ? "outline" : "quiet"}
               aria-label="Filter pages"
             >
-              <ListFilter className="h-3.5 w-3.5" />
               {activeFilterCount > 0 ? (
                 <span className="rounded-full bg-primary px-1 text-[10px] font-semibold leading-4 text-primary-foreground">
                   {activeFilterCount}
@@ -179,9 +177,7 @@ export function PlanTreeToolbar({
               </span>
               {activeFilterCount > 0 ? (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 px-1.5 text-[11px] text-muted-foreground"
+                  variant="quiet"
                   onClick={() => onFiltersChange(EMPTY_TREE_FILTERS)}
                 >
                   Clear all
@@ -249,10 +245,9 @@ export function PlanTreeToolbar({
                 <Button
                   key={option.value}
                   variant={
-                    filters.keyword === option.value ? "secondary" : "ghost"
+                    filters.keyword === option.value ? "outline" : "quiet"
                   }
-                  size="sm"
-                  className="h-6 flex-1 px-1 text-[11px]"
+                  className="flex-1"
                   onClick={() =>
                     onFiltersChange({ ...filters, keyword: option.value })
                   }
@@ -282,9 +277,7 @@ export function PlanTreeToolbar({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant={sortMode !== "tree" ? "secondary" : "ghost"}
-              size="sm"
-              className="h-6 gap-1 px-1.5 text-xs"
+              variant={sortMode !== "tree" ? "outline" : "quiet"}
               aria-label={`Sort: ${sortLabel}`}
               title={`Sort: ${sortLabel}`}
             >
@@ -327,9 +320,7 @@ export function PlanTreeToolbar({
           {LEVEL_OPTIONS.map((option) => (
             <Button
               key={option.value}
-              variant="ghost"
-              size="sm"
-              className="h-6 rounded-none px-2 text-[11px]"
+              variant="quiet"
               onClick={() => onLevel(option.value)}
             >
               {option.label}
@@ -338,14 +329,13 @@ export function PlanTreeToolbar({
         </div>
 
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 shrink-0 gap-1 px-1.5 text-[11px]"
+          icon={<Plus />}
+          variant="quiet"
+          className="shrink-0"
           aria-label="Add top-level page"
           title="Add a top-level page"
           onClick={onAddRoot}
         >
-          <Plus className="h-3.5 w-3.5" />
           Top level
         </Button>
 
@@ -354,9 +344,8 @@ export function PlanTreeToolbar({
         {trailing}
 
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 shrink-0 p-0"
+          variant="quiet"
+          className="w-6 shrink-0"
           aria-label="Expand all"
           title="Expand all"
           onClick={onExpandAll}
@@ -364,9 +353,8 @@ export function PlanTreeToolbar({
           <ChevronsUpDown className="h-3.5 w-3.5" />
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 shrink-0 p-0"
+          variant="quiet"
+          className="w-6 shrink-0"
           aria-label="Collapse all"
           title="Collapse all — Home and its first-tier pages stay visible"
           onClick={onCollapseAll}

@@ -265,16 +265,15 @@ export default function CoreFieldsAuditTab({
             <div className="flex items-center gap-1">
               <OpenDetailButton onClick={() => setDetailModelId(model.id)} />
               <Button
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs"
+                icon={savingIds.has(model.id) ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Save />
+                )}
+                variant="primary"
                 disabled={savingIds.has(model.id) || !isDirty}
                 onClick={() => void saveSingle(model)}
               >
-                {savingIds.has(model.id) ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Save className="h-3 w-3" />
-                )}
                 Save
               </Button>
             </div>
@@ -299,23 +298,20 @@ export default function CoreFieldsAuditTab({
               </span>
               {dirtyIds.length > 1 && (
                 <Button
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
+                  icon={savingAll ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <SaveAll />
+                  )}
+                  variant="primary"
                   onClick={handleSaveAll}
                   disabled={savingAll}
                 >
-                  {savingAll ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <SaveAll className="h-3 w-3" />
-                  )}
                   Save all ({dirtyIds.length})
                 </Button>
               )}
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
+                variant="quiet"
                 onClick={() => setShowPassingModels((value) => !value)}
               >
                 {showPassingModels ? "Hide passing" : "Show all"}

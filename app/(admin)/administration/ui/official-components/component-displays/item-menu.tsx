@@ -181,8 +181,7 @@ export default function ItemMenuDisplay({ component }: ComponentDisplayProps) {
       <div className="flex w-full flex-wrap items-start justify-center gap-8 p-8">
         <div className="flex flex-col items-center gap-2">
           <ItemMenu config={demoConfig}>
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <MoreHorizontal className="h-4 w-4" />
+            <Button icon={<MoreHorizontal />} type="submit" variant="outline">
               Kebab dropdown
             </Button>
           </ItemMenu>
@@ -202,8 +201,7 @@ export default function ItemMenuDisplay({ component }: ComponentDisplayProps) {
 
         <div className="flex flex-col items-center gap-2">
           <ItemMenu config={demoConfig} presentation="drawer">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <MoreHorizontal className="h-4 w-4" />
+            <Button icon={<MoreHorizontal />} type="submit" variant="outline">
               Forced drawer
             </Button>
           </ItemMenu>

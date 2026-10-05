@@ -336,9 +336,7 @@ export function AutonomyModesEditor({
 
                   {scope !== "platform" && isOwn ? (
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs"
+                      variant="quiet"
                       title={`Follow ${parentWord}`}
                       disabled={readOnly || save.isPending}
                       onClick={() =>

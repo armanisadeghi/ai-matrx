@@ -777,18 +777,18 @@ export function SmartCodeEditor({
               : "No agent job available"}
         </span>
         <Button
-          size="sm"
-          className="h-8 shrink-0 gap-1.5"
+          icon={mandatesLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
+          className="shrink-0"
           disabled={phoneCreateDisabled}
           onClick={() => {
             if (pickerMandateKey) void handleCreateDraft(pickerMandateKey);
           }}
         >
-          {mandatesLoading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
-          )}
           New draft
         </Button>
       </div>

@@ -467,33 +467,31 @@ function ContextItemsTypeView({
           {canManage && (
             <div className="flex items-center gap-2 shrink-0">
               <Button
+                icon={<PanelsTopLeft />}
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   resolvedTypeId &&
                   openContextItemsWindow({ scopeTypeId: resolvedTypeId })
                 }
               >
-                <PanelsTopLeft className="h-3.5 w-3.5 mr-1.5" />
                 Manage in panel
               </Button>
               {items.length > 1 && (
                 <Button
+                  icon={<ArrowUpDown />}
                   variant="outline"
-                  size="sm"
                   onClick={() => setReorderOpen(true)}
                 >
-                  <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
                   Edit order
                 </Button>
               )}
               {!addingItem && (
                 <Button
+                  icon={<Plus />}
+                  variant="primary"
                   ref={addItemTriggerRef}
-                  size="sm"
                   onClick={() => setAddingItem(true)}
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Add item
                 </Button>
               )}
@@ -862,10 +860,9 @@ function ContextItemListRow({
       </div>
       {canManage && (
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onEdit}
-          className="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity h-7 px-2"
+          className="shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
           aria-label={`Edit ${item.display_name}`}
         >
           <Pencil className="h-3.5 w-3.5" />

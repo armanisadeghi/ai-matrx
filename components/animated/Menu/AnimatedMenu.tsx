@@ -39,7 +39,7 @@ export default function AnimatedMenu({ items }: AnimatedMenuProps) {
             >
                 <Button
                     variant="outline"
-                    className="w-full justify-between text-left font-normal"
+                    className="w-full justify-between text-left"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     Menu

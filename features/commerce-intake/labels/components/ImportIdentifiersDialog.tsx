@@ -267,7 +267,7 @@ export function ImportIdentifiersDialog({
                 }}
                 id="import-ids-file"
               />
-              <Button asChild variant="outline" size="sm" className="h-8">
+              <Button asChild variant="outline">
                 <span
                   role="button"
                   onClick={() =>
@@ -309,7 +309,7 @@ export function ImportIdentifiersDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
           </Button>
-          <Button disabled={busy || !raw.trim()} onClick={() => void run()}>
+          <Button variant="primary" disabled={busy || !raw.trim()} onClick={() => void run()}>
             {busy ? "Importing…" : "Import"}
           </Button>
         </DialogFooter>

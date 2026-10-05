@@ -145,18 +145,16 @@ export function LawRawParameters({ parameters }: { parameters: Record<string, un
   return (
     <div className="min-w-0">
       <Button
+        icon={open ? (
+          <ChevronDown />
+        ) : (
+          <ChevronRight />
+        )}
         type="button"
-        variant="ghost"
-        size="sm"
-        className="h-6 px-1.5 text-xs text-foreground"
+        variant="quiet"
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
       >
-        {open ? (
-          <ChevronDown className="mr-1 h-3 w-3" />
-        ) : (
-          <ChevronRight className="mr-1 h-3 w-3" />
-        )}
         Exact values
       </Button>
       {open ? (
@@ -323,8 +321,6 @@ export function OrgLawRuleRow({
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="h-7"
             onClick={onEdit}
             disabled={busy}
           >
@@ -332,9 +328,7 @@ export function OrgLawRuleRow({
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7"
+            variant="quiet"
             onClick={onRetire}
             disabled={busy}
           >

@@ -326,11 +326,10 @@ export function OutreachListsPage() {
 
   const newButton = (
     <Button
-      size="sm"
-      className="h-11 gap-1 px-2 text-xs lg:h-7"
+      icon={<Plus />}
+      variant="primary"
       onClick={() => setCreateOpen(true)}
     >
-      <Plus className="h-3.5 w-3.5" />
       New outreach list
     </Button>
   );
@@ -348,18 +347,16 @@ export function OutreachListsPage() {
             </span>
             <div className="ml-auto flex items-center gap-2">
               <Button
-                size="sm"
-                variant={activeView === "report" ? "secondary" : "ghost"}
-                className="h-7 gap-1 px-2 text-xs"
+                icon={activeView === "report" ? (
+                  <ListChecks />
+                ) : (
+                  <BarChart3 />
+                )}
+                variant={activeView === "report" ? "outline" : "quiet"}
                 onClick={() =>
                   setActiveView(activeView === "report" ? "lists" : "report")
                 }
               >
-                {activeView === "report" ? (
-                  <ListChecks className="h-3.5 w-3.5" />
-                ) : (
-                  <BarChart3 className="h-3.5 w-3.5" />
-                )}
                 {activeView === "report" ? "Lists" : "Report"}
               </Button>
               {newButton}

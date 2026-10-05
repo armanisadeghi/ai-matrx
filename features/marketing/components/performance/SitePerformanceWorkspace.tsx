@@ -581,14 +581,15 @@ export function SitePerformanceWorkspace() {
               </div>
               {suggested ? (
                 <Button
+                  icon={testingPageId === suggested.page_id ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Zap />
+                  )}
+                  variant="primary"
                   onClick={() => void runTest(suggested.page_id)}
                   disabled={testingPageId !== null}
                 >
-                  {testingPageId === suggested.page_id ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Zap className="mr-2 h-4 w-4" />
-                  )}
                   Test next page
                 </Button>
               ) : null}
@@ -648,20 +649,17 @@ export function SitePerformanceWorkspace() {
                 data={suggestedPages}
                 columns={[...(suggestedColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (page) => (
                   <Button
-                    size="sm"
+                    icon={testingPageId === page.page_id ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Zap />
+                    )}
                     variant={
-                      page.page_id === suggested?.page_id
-                        ? "default"
-                        : "outline"
+                      page.page_id === suggested?.page_id ? "primary" : "outline"
                     }
                     onClick={() => void runTest(page.page_id)}
                     disabled={testingPageId !== null}
                   >
-                    {testingPageId === page.page_id ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Zap className="mr-1.5 h-3.5 w-3.5" />
-                    )}
                     Test now
                   </Button>
                 ) }]}
@@ -689,14 +687,15 @@ export function SitePerformanceWorkspace() {
             {suggested ? (
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 <Button
+                  icon={testingPageId === suggested.page_id ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Zap />
+                  )}
+                  variant="primary"
                   onClick={() => void runTest(suggested.page_id)}
                   disabled={testingPageId !== null}
                 >
-                  {testingPageId === suggested.page_id ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Zap className="mr-2 h-4 w-4" />
-                  )}
                   Test a page now
                 </Button>
                 <Button variant="outline" asChild>

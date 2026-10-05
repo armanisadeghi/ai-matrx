@@ -120,7 +120,7 @@ export function FinishedPlayer({ state }: { state: PodcastRunState }) {
           </div>
 
           {href && (
-            <Button asChild variant="outline" size="sm" className="mt-4 gap-2">
+            <Button asChild variant="outline" className="mt-4">
               <Link href={href} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
                 Open the episode page

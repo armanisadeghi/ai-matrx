@@ -302,8 +302,7 @@ export function VoicePage({ scope, ownerId, ownerName, organizationId, resolveOr
             )}
           </ul>
           <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button onClick={measure} disabled={measuring || picked.length < MIN_SAMPLES}>
-              {measuring ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : null}
+            <Button icon={measuring ? <Loader2 className="animate-spin" aria-hidden /> : null} variant="primary" onClick={measure} disabled={measuring || picked.length < MIN_SAMPLES}>
               Measure voice
             </Button>
             <span className="text-xs text-muted-foreground" data-testid="voice-picked">
@@ -517,8 +516,7 @@ function ConfirmCard({
         </select>
       </label>
       <div className="flex items-center gap-3">
-        <Button onClick={save} disabled={saving}>
-          {saving ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Check className="mr-1 h-4 w-4" aria-hidden />}
+        <Button icon={saving ? <Loader2 className="animate-spin" aria-hidden /> : <Check aria-hidden />} variant="primary" onClick={save} disabled={saving}>
           Save voice
         </Button>
         {error ? <span className="text-sm text-destructive">{error}</span> : null}
@@ -565,8 +563,7 @@ function TryDraft({ fingerprintId, org }: { fingerprintId: string; org: () => Pr
             </option>
           ))}
         </select>
-        <Button onClick={run} disabled={running || !draft.trim()}>
-          {running ? <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden /> : <Wand2 className="mr-1 h-4 w-4" aria-hidden />}
+        <Button icon={running ? <Loader2 className="animate-spin" aria-hidden /> : <Wand2 aria-hidden />} variant="primary" onClick={run} disabled={running || !draft.trim()}>
           Fix voice
         </Button>
         {!draft.trim() ? <span className="text-xs text-muted-foreground">Paste a draft to check it.</span> : null}

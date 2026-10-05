@@ -71,8 +71,7 @@ export function SelectionFooter({
       </button>
       {onSave && (
         <Button
-          size="sm"
-          className="h-6 px-2 text-xs"
+          variant="primary"
           disabled={sel.count === 0}
           onClick={onSave}
         >
@@ -450,7 +449,7 @@ export function SlotLinkDemo({ data }: { data: PickerData }) {
       </div>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 shrink-0 text-xs">
+          <Button variant="outline" className="shrink-0">
             {result ? "Re-file…" : "File it…"}
           </Button>
         </PopoverTrigger>

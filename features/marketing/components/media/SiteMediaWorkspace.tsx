@@ -137,12 +137,9 @@ export function SiteMediaWorkspace({ view: fixedView }: { view?: string } = {}) 
             <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto">
               <Button
                 asChild
-                size="sm"
-                variant={crawlActivity.activeCrawl ? "outline" : "default"}
+                variant={crawlActivity.activeCrawl ? "outline" : "primary"}
                 className={
-                  crawlActivity.activeCrawl
-                    ? "h-11 flex-1 gap-1.5 border-primary/40 text-primary lg:h-8 lg:flex-none"
-                    : "h-11 flex-1 gap-1.5 lg:h-8 lg:flex-none"
+                  crawlActivity.activeCrawl ? "flex-1 lg:flex-none" : "flex-1 lg:flex-none"
                 }
               >
                 <Link href={marketingRoutes.site(brandId, site.id, "/crawls/new")}>
@@ -161,9 +158,8 @@ export function SiteMediaWorkspace({ view: fixedView }: { view?: string } = {}) 
                   for where their assets went. */}
               <Button
                 asChild
-                size="sm"
                 variant="outline"
-                className="h-11 flex-1 gap-1.5 lg:h-8 lg:flex-none"
+                className="flex-1 lg:flex-none"
               >
                 <Link href={marketingRoutes.brandAssets(brandId)}>
                   <FolderOpen className="h-3.5 w-3.5" />

@@ -137,7 +137,7 @@ export function NewMapDialog({
           >
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!name.trim() || busy}>
+          <Button variant="primary" onClick={submit} disabled={!name.trim() || busy}>
             {busy ? "Creating…" : "Create map"}
           </Button>
         </DialogFooter>

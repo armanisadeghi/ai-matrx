@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { ArrowRight, FileText, Loader2, AlertCircle, ExternalLink, File, Globe } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
     PickerSearchField,
     PickerView,

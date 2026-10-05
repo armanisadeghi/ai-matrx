@@ -143,10 +143,10 @@ export default function LSIKeywordGenerator({
                     autoFocus={!hasResults}
                   />
                   <Button
+                    variant="primary"
                     type="submit"
                     disabled={!isFormValid || isExecuting || isStreaming}
                     className={`${hasResults ? "h-11 px-6" : "h-12 px-8"} font-semibold`}
-                    size={hasResults ? "default" : "lg"}
                   >
                     {isExecuting ? (
                       <>

@@ -185,10 +185,8 @@ export function LibraryPublishPanel({
                     ) : null}
                   </span>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => onRevoke(g.id)}
-                    className="h-7 px-2 text-muted-foreground hover:text-destructive"
                     aria-label="Revoke access"
                   >
                     <X className="h-3.5 w-3.5" />
@@ -231,6 +229,8 @@ export function LibraryPublishPanel({
               </SelectContent>
             </Select>
             <Button
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
+              variant="primary"
               onClick={() =>
                 run({ audience: "industry", industryId }, "Published to industry", () =>
                   setIndustryId(""),
@@ -239,7 +239,6 @@ export function LibraryPublishPanel({
               disabled={!industryId || busy}
               className="w-full"
             >
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Publish to industry
             </Button>
           </TabsContent>
@@ -271,6 +270,8 @@ export function LibraryPublishPanel({
               </SelectContent>
             </Select>
             <Button
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
+              variant="primary"
               onClick={() =>
                 run(
                   { audience: "organization", organizationId },
@@ -281,7 +282,6 @@ export function LibraryPublishPanel({
               disabled={!organizationId || busy}
               className="w-full"
             >
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Publish to organization
             </Button>
           </TabsContent>
@@ -291,12 +291,12 @@ export function LibraryPublishPanel({
               Every organization on the platform. Use only for truly universal resources.
             </p>
             <Button
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
               onClick={() => run({ audience: "global" }, "Published to everyone")}
               disabled={busy}
-              variant="secondary"
+              variant="outline"
               className="w-full"
             >
-              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Publish to everyone
             </Button>
           </TabsContent>

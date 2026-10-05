@@ -284,6 +284,10 @@ if $STRICT; then
         # on @ai-matrx/design-system/controls. Loud via findings; never blocks a release.
         "One control|pnpm check:one-control:strict"
         "One control — self-test|pnpm check:one-control:self-test"
+        # PAGE-TOP TEMPLATES (owner, 2026-10-05): a page top hand-built on a raw <PageHeader>, or a
+        # sentence under a page title. Baseline scripts/page-top/baseline.json only shrinks.
+        "Page top|pnpm check:page-top:strict"
+        "Page top — self-test|pnpm check:page-top:self-test"
         "UI drift — self-test|pnpm check:ui-drift:self-test"
         # No blocking layers (register ARE-008): a desktop dialog forced to
         # block, or built straight on Radix, hides every AI door on the page.

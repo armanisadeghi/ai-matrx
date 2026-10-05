@@ -500,19 +500,15 @@ export function CaptureScreen({
                   onCommit={session.setCode}
                 />
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-9 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
-                    session.notes.trim() !== "" ? "bg-white/20" : "bg-white/10",
+                  iconEnd={session.transcribingCount > 0 && (
+                    <Loader2 className="animate-spin" />
                   )}
+                  variant="quiet"
+                  className="shrink-0"
                   onClick={() => setNotesOpen((o) => !o)}
                   aria-label="Item notes"
                 >
                   Notes
-                  {session.transcribingCount > 0 && (
-                    <Loader2 className="ml-1.5 h-3.5 w-3.5 animate-spin" />
-                  )}
                 </Button>
                 <VoiceNoteButton
                   onRecordingComplete={session.addAudioNote}
@@ -521,7 +517,8 @@ export function CaptureScreen({
                 />
                 {instantMode && (
                   <Button
-                    className="h-9 shrink-0 rounded-full px-3"
+                    variant="primary"
+                    className="shrink-0"
                     onClick={onProcess}
                     disabled={
                       currentItem === null ||
@@ -565,12 +562,11 @@ export function CaptureScreen({
           ),
           modeRowTrailing: (
             <Button
-              size="sm"
-              className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
+              icon={<PackagePlus />}
+              variant="primary"
               onClick={session.nextItem}
               disabled={!session.canAdvanceItem || host.recording}
             >
-              <PackagePlus className="mr-1 h-3.5 w-3.5" />
               Next
             </Button>
           ),

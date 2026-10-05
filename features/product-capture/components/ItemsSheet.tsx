@@ -135,7 +135,7 @@ export function ItemsSheet({
           <DrawerHeader className="pb-1">
             <div className="flex items-center justify-between gap-2">
               <DrawerTitle>Captured items</DrawerTitle>
-              <Button asChild variant="outline" size="sm" className="h-8">
+              <Button asChild variant="outline">
                 <Link href="/tools/product-capture/all">
                   <TableProperties className="mr-1.5 h-3.5 w-3.5" />
                   View all

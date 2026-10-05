@@ -14,7 +14,7 @@
 // SoR: common-docs/systems/chat/voice/STATE.md
 
 import { PhoneOff } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { VoiceOrb } from "../components/VoiceOrb";
 import { VoiceStatusPill } from "../components/VoiceStatusPill";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";
@@ -75,13 +75,11 @@ export function VoiceRelayPanel({
       <div className="flex shrink-0 items-center gap-1.5">
         <VoiceMuteButton muted={micMuted} onToggle={onToggleMute} size={32} />
         <Button
+          icon={<PhoneOff />}
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onEnd}
-          className="h-8 gap-1.5 text-muted-foreground hover:text-destructive"
         >
-          <PhoneOff className="h-3.5 w-3.5" />
           End
         </Button>
       </div>

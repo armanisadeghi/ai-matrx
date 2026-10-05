@@ -483,15 +483,14 @@ export function NewAppConceptClient() {
               </Popover>
 
               <Button
+                icon={<ArrowUp />}
+                variant="primary"
                 type="button"
-                size="icon"
                 onClick={submit}
                 disabled={isPending}
-                className="h-11 w-11 shrink-0 rounded-xl"
+                className="shrink-0"
                 aria-label="Submit"
-              >
-                <ArrowUp className="h-4 w-4" />
-              </Button>
+              />
             </div>
           </div>
 

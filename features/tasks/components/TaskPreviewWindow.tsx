@@ -28,7 +28,7 @@ import {
   DrawerFooter,
 } from "@/components/ui/drawer";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { useAssociateTask } from "@/features/tasks/hooks/useAssociateTask";

@@ -347,8 +347,7 @@ export function TrashList({
       {counts.length > 0 && counts.length <= KIND_CHIPS_AT_MOST && (
         <div className="flex flex-wrap gap-1.5 pb-3">
           <Button
-            size="sm"
-            variant={kind === null ? "secondary" : "ghost"}
+            variant={kind === null ? "outline" : "quiet"}
             onClick={() => setKind(null)}
           >
             {org ? "All" : "Recent"}
@@ -356,8 +355,7 @@ export function TrashList({
           {counts.map((c) => (
             <Button
               key={c.artifact_kind}
-              size="sm"
-              variant={kind === c.artifact_kind ? "secondary" : "ghost"}
+              variant={kind === c.artifact_kind ? "outline" : "quiet"}
               onClick={() => setKind(c.artifact_kind)}
             >
               {c.label}
@@ -421,16 +419,15 @@ export function TrashList({
                   {formatRelativeTime(item.deleted_at, { absolute: "date" })}
                 </span>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={busy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RotateCcw />
+                  )}
+                  variant="quiet"
                   disabled={busy}
                   onClick={() => void restore(item)}
                 >
-                  {busy ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RotateCcw className="h-3.5 w-3.5" />
-                  )}
                   <span className="ml-1.5 hidden sm:inline">Restore</span>
                 </Button>
               </li>
@@ -441,7 +438,7 @@ export function TrashList({
 
       {more && (
         <div className="pt-3 text-center">
-          <Button size="sm" variant="outline" onClick={() => void loadMore()}>
+          <Button variant="outline" onClick={() => void loadMore()}>
             Load more
           </Button>
         </div>

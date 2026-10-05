@@ -238,12 +238,16 @@ export function OrchestraBuilder({
         </h2>
         <div className="mt-5 flex gap-2">
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => router.push("/agents/orchestras")}
           >
             Cancel
           </Button>
           <Button
+            icon={creating ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+            variant="primary"
             disabled={creating}
             onClick={async () => {
               setCreating(true);
@@ -254,9 +258,6 @@ export function OrchestraBuilder({
               if (!res.ok) router.push("/agents/orchestras");
             }}
           >
-            {creating ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : null}
             Create Orchestra
           </Button>
         </div>

@@ -214,8 +214,8 @@ export function FillDownButton({
         </p>
         {renderControl(value, setValue)}
         <Button
-          size="sm"
-          className="h-8 w-full text-xs"
+          variant="primary"
+          className="w-full"
           onClick={() => {
             onApply(value);
             setOpen(false);

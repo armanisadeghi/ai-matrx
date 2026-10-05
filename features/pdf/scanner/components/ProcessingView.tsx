@@ -242,7 +242,7 @@ export function ProcessingView({
         <div className="shrink-0 space-y-2 pb-safe pt-4">
           <Button
             variant="outline"
-            className="h-11 w-full"
+            className="w-full"
             onClick={onAssignContext}
           >
             Assign to a client, matter or project

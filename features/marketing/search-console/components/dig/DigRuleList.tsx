@@ -114,31 +114,27 @@ export function DigRuleList({
     <div className="space-y-2">
       {section("Templates", templates, (rule) => (
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-11 gap-1 px-2 text-xs lg:h-6 lg:px-1.5 lg:text-[11px]"
+          icon={<Copy />}
+          variant="quiet"
           title="Copy this template into an editable rule of your own"
           onClick={() => onAdopt(rule)}
         >
-          <Copy className="h-3 w-3" />
           Adopt
         </Button>
       ))}
       {section("My rules", own, (rule) => (
         <>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 p-0 lg:h-6 lg:w-6"
+            variant="quiet"
+            className="w-11 lg:w-6"
             aria-label={`Edit ${rule.name}`}
             onClick={() => onEdit(rule)}
           >
             <Pencil className="h-3 w-3" />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 p-0 text-muted-foreground hover:text-destructive lg:h-6 lg:w-6"
+            variant="quiet"
+            className="w-11 lg:w-6"
             aria-label={`Delete ${rule.name}`}
             onClick={() => onDelete(rule)}
           >

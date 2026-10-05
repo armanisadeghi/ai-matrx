@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -96,12 +96,10 @@ export function VersionHistoryTimeline({
           </div>
         )}
         <Button
-          variant="default"
-          size="sm"
-          className="gap-2"
+          icon={<Atom />}
+          variant="primary"
           onClick={fetchEnrichedHistory}
         >
-          <Atom className="w-4 h-4" />
           Load Full History
         </Button>
 
@@ -326,9 +324,8 @@ function VersionRow({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-5 px-1 text-[0.5625rem] text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100"
+                  variant="quiet"
+                  className="opacity-0 transition-opacity group-hover:opacity-100 max-sm:opacity-100"
                   title="Mark this version as a contract break the hashes cannot see (e.g. a prompt-level output change)"
                 >
                   <ShieldAlert className="h-2.5 w-2.5" />
@@ -394,25 +391,21 @@ function VersionRow({
           <div className="flex items-center justify-end gap-1 transition-opacity max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
             {prevVersion && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 px-1.5 text-[0.5625rem] gap-0.5 text-muted-foreground"
+                icon={<ArrowRight />}
+                variant="quiet"
                 onClick={() =>
                   onCompare(prevVersion.version_number, version.version_number)
                 }
-              >
-                <ArrowRight className="w-2.5 h-2.5" />v
+              >v
                 {prevVersion.version_number}
               </Button>
             )}
             {!isLatest && currentVersion != null && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 px-1.5 text-[0.5625rem] gap-0.5 text-muted-foreground"
+                icon={<GitCompareArrows />}
+                variant="quiet"
                 onClick={() => onCompare(version.version_number, "current")}
               >
-                <GitCompareArrows className="w-2.5 h-2.5" />
                 Current
               </Button>
             )}
@@ -425,12 +418,11 @@ function VersionRow({
         <tr>
           <td colSpan={5} className="py-1">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[0.625rem] gap-1 text-muted-foreground w-full justify-center"
+              icon={<ChevronDown />}
+              variant="quiet"
+              className="w-full justify-center"
               onClick={() => onFetchGap(gapVersions)}
             >
-              <ChevronDown className="w-3 h-3" />
               Load {gapVersions.length} more version
               {gapVersions.length !== 1 ? "s" : ""}
             </Button>

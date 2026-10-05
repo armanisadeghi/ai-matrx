@@ -107,18 +107,16 @@ export function RunProgressBar({ jobId }: { jobId: string | null }) {
           </span>
           {isTerminal && runId && (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-5 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+              icon={deleting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Trash2 />
+              )}
+              variant="quiet"
               disabled={deleting}
               onClick={() => void handleDeleteRun()}
               title="Move this entire run (chunks + results) to Trash; the template stays"
             >
-              {deleting ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Trash2 className="w-3 h-3 mr-1" />
-              )}
               Move run to Trash
             </Button>
           )}

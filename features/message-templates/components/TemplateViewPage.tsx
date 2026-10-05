@@ -171,14 +171,13 @@ function ShowToggle({
 }) {
   return (
     <Button
+      icon={<Eye />}
       type="button"
-      variant="ghost"
-      size="sm"
+      variant="quiet"
       aria-pressed={value === "example"}
       onClick={() => onChange(value === "example" ? "names" : "example")}
-      className="h-7 shrink-0 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+      className="shrink-0"
     >
-      <Eye className="h-3.5 w-3.5" />
       {value === "example" ? "Show fields" : "Show example"}
     </Button>
   );
@@ -227,12 +226,10 @@ function InsertFieldMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+          icon={<Plus />}
+          variant="quiet"
           aria-label={`Insert a field into the ${target}`}
         >
-          <Plus className="h-3.5 w-3.5" />
           Insert field
         </Button>
       </DropdownMenuTrigger>
@@ -712,10 +709,10 @@ export function TemplateViewPage({ template, canEdit }: TemplateViewPageProps) {
                     <span className="min-w-0 flex-1">
                       You have unsaved changes to this template. This view shows the saved version.
                     </span>
-                    <Button size="sm" variant="outline" className="h-7" onClick={() => selectMode(editHref)}>
+                    <Button variant="outline" onClick={() => selectMode(editHref)}>
                       Continue editing
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7" onClick={() => void handleDiscard()}>
+                    <Button variant="quiet" onClick={() => void handleDiscard()}>
                       Discard
                     </Button>
                   </div>

@@ -121,12 +121,11 @@ export function MarketingAddressCard({
         <h2 className="text-sm font-semibold">{title}</h2>
         {!editing ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-7 gap-1.5 px-2 text-xs"
+            icon={<Pencil />}
+            variant="quiet"
+            className="ml-auto"
             onClick={startEditing}
           >
-            <Pencil className="h-3.5 w-3.5" />
             Change
           </Button>
         ) : null}
@@ -154,21 +153,18 @@ export function MarketingAddressCard({
                 aria-invalid={Boolean(problem)}
               />
               <Button
-                size="sm"
-                className="h-8 gap-1.5"
+                icon={<Check />}
+                variant="primary"
                 disabled={Boolean(formatProblem) || unchanged}
                 onClick={() => setConfirming(true)}
               >
-                <Check className="h-3.5 w-3.5" />
                 Change address
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 gap-1.5"
+                icon={<X />}
+                variant="quiet"
                 onClick={cancelEditing}
               >
-                <X className="h-3.5 w-3.5" />
                 Cancel
               </Button>
             </div>

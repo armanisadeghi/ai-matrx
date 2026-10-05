@@ -22,9 +22,10 @@ export function SignOutConfirmButton({ identity }: { identity: SignOutIdentity }
     <>
       <ConfirmDialogHost />
       <Button
+        icon={<LogOut />}
         type="button"
-        variant="destructive"
-        className="w-full gap-2"
+        variant="danger"
+        className="w-full"
         disabled={pending}
         onClick={async () => {
           setPending(true);
@@ -37,7 +38,6 @@ export function SignOutConfirmButton({ identity }: { identity: SignOutIdentity }
           }
         }}
       >
-        <LogOut className="h-4 w-4" />
         {pending ? "Signing out…" : "Sign Out"}
       </Button>
     </>

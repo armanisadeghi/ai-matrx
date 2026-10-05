@@ -303,20 +303,19 @@ export function CodeOrDiffColumn({
       <div className="shrink-0 border-t border-border px-2 py-2 flex items-center justify-end gap-1.5 bg-background">
         {state === "review" ? (
           <>
-            <Button variant="ghost" size="sm" onClick={onDiscard}>
+            <Button variant="quiet" onClick={onDiscard}>
               Discard
             </Button>
             <Button
-              size="sm"
+              icon={<CheckCircle2 />}
+              variant="primary"
               onClick={onApply}
-              className="bg-green-600 hover:bg-green-700 text-white gap-1"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
               Apply
             </Button>
           </>
         ) : state === "error" ? (
-          <Button size="sm" onClick={onBackToInput}>
+          <Button variant="primary" onClick={onBackToInput}>
             Back
           </Button>
         ) : (

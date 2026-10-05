@@ -45,7 +45,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -697,14 +697,14 @@ export default function PageEditor({
         <div className="flex-none border-b border-border/50 bg-muted/20">
           <div className="flex items-center justify-between px-4 py-2">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <Button
+              <SurfaceButton
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 flex-shrink-0"
                 onClick={onClose}
               >
                 <ArrowLeft className="h-4 w-4" />
-              </Button>
+              </SurfaceButton>
               <input
                 type="text"
                 value={title}
@@ -743,35 +743,30 @@ export default function PageEditor({
 
               {isNew ? (
                 <Button
-                  size="sm"
+                  icon={isSaving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   onClick={handleCreate}
                   disabled={isSaving || !title || !slug}
-                  className="gap-1.5 text-xs"
                 >
-                  {isSaving ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
                   Create Page
                 </Button>
               ) : (
                 <>
                   <Button
+                    icon={<FilePenLine />}
                     variant="outline"
-                    size="sm"
-                    className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hover:text-primary"
                     onClick={() => setAiDialogIntent("build-edit")}
                   >
-                    <FilePenLine className="h-3.5 w-3.5" />
                     {htmlContent.trim() ? "Edit with AI" : "Build with AI"}
                   </Button>
                   {measuredPageHref && (
                     <Button
                       asChild
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs gap-1.5 text-muted-foreground"
+                      variant="quiet"
                     >
                       <a
                         href={measuredPageHref}
@@ -788,27 +783,23 @@ export default function PageEditor({
                   )}
                   {page?.has_draft && (
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      icon={<XCircle />}
+                      variant="quiet"
                       onClick={handleDiscard}
-                      className="text-xs gap-1.5 text-muted-foreground"
                     >
-                      <XCircle className="h-3.5 w-3.5" />
                       Discard
                     </Button>
                   )}
                   <Button
+                    icon={isSaving ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Save />
+                    )}
                     variant="outline"
-                    size="sm"
                     onClick={handleSaveDraft}
                     disabled={isSaving}
-                    className="gap-1.5 text-xs"
                   >
-                    {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
                     Save Draft
                   </Button>
                   <SurfaceRoleAgentButton
@@ -819,16 +810,15 @@ export default function PageEditor({
                     className="hidden lg:inline-flex"
                   />
                   <Button
-                    size="sm"
+                    icon={isSaving ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Upload />
+                    )}
+                    variant="primary"
                     onClick={page?.has_draft ? handlePublish : handleSaveLive}
                     disabled={isSaving}
-                    className="gap-1.5 text-xs"
                   >
-                    {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="h-3.5 w-3.5" />
-                    )}
                     {page?.has_draft ? "Publish" : "Save & Publish"}
                   </Button>
                 </>
@@ -1357,9 +1347,8 @@ export default function PageEditor({
                               </div>
                             </div>
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              className="gap-1.5 text-xs"
+                              icon={<RotateCcw />}
+                              variant="quiet"
                               disabled={!onRollback || v.is_current}
                               title={
                                 v.is_current
@@ -1370,7 +1359,6 @@ export default function PageEditor({
                               }
                               onClick={() => handleRollback(v.version_number)}
                             >
-                              <RotateCcw className="h-3 w-3" />
                               Restore
                             </Button>
                           </div>

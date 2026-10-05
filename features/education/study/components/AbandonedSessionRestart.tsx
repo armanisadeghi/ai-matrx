@@ -105,30 +105,27 @@ export function AbandonedSessionRestart({
       </div>
       <div className="flex flex-col items-center gap-3">
         <Button
-          size="lg"
-          className="gap-2"
+          icon={busyAction === "restart" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Play />
+          )}
+          variant="primary"
           disabled={working}
           onClick={() => void startNewSession()}
         >
-          {busyAction === "restart" ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Play className="h-4 w-4" />
-          )}
           Start new session
         </Button>
         <Button
-          size="sm"
-          variant="destructive"
-          className="gap-1.5"
+          icon={busyAction === "delete" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Trash2 />
+          )}
+          variant="danger"
           disabled={working}
           onClick={() => void deleteAndReturn()}
         >
-          {busyAction === "delete" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
           Delete
         </Button>
       </div>

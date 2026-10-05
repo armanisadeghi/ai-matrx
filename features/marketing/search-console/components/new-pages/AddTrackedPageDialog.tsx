@@ -178,9 +178,8 @@ export function AddTrackedPageDialog({
                       </span>
                     ) : (
                       <Button
-                        size="sm"
                         variant="outline"
-                        className="h-6 shrink-0 text-[11px]"
+                        className="shrink-0"
                         disabled={busy}
                         onClick={() => void trackExisting(row.id)}
                       >
@@ -199,16 +198,16 @@ export function AddTrackedPageDialog({
 
           {searchLooksLikeUrl && !exactMatch ? (
             <Button
-              size="sm"
-              className="h-7 w-full gap-1 text-xs"
+              icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
+              className="w-full"
               disabled={busy}
               onClick={() => void createAndTrack()}
             >
-              {busy ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Plus className="h-3 w-3" />
-              )}
               Register “{search.trim()}” and track it
             </Button>
           ) : null}

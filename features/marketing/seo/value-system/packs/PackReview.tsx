@@ -1254,8 +1254,6 @@ export function PackReview({
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="h-8 text-xs"
               onClick={() => {
                 setMany(
                   [
@@ -1279,16 +1277,15 @@ export function PackReview({
               {tickedTotal < selectableTotal ? "Select all" : "Select none"}
             </Button>
             <Button
+              icon={<Download aria-hidden />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-8 gap-1 text-xs"
               onClick={startAdoption}
               disabled={
                 adopt.isPending ||
                 (tickedTotal === 0 && !(seedGuidelines && pack.guidelines))
               }
             >
-              <Download className="h-3.5 w-3.5" aria-hidden />
               {adopt.isPending
                 ? "Adopting…"
                 : tickedTotal === 0

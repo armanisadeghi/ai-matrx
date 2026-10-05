@@ -28,7 +28,7 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2, ShieldAlert, SlidersHorizontal } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";

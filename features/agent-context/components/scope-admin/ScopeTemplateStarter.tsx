@@ -571,9 +571,9 @@ export function ScopeTemplateStarter({
           {INDUSTRY_CATEGORIES.filter((c) => c.key !== "create_my_own").length >
             6 && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="mt-3 text-xs w-full"
+              iconEnd={<ChevronRight />}
+              variant="quiet"
+              className="mt-3 w-full"
               onClick={() => setSheetOpen(true)}
             >
               View all{" "}
@@ -582,7 +582,6 @@ export function ScopeTemplateStarter({
                   .length
               }{" "}
               templates
-              <ChevronRight className="h-3 w-3 ml-1" />
             </Button>
           )}
         </CardContent>
@@ -658,9 +657,7 @@ function TemplateSheet({
         {presets && selectedIndustry ? (
           <div className="space-y-4">
             <Button
-              variant="ghost"
-              size="sm"
-              className="text-xs"
+              variant="quiet"
               onClick={() => onSelectIndustry("")}
             >
               &larr; All Templates
@@ -766,6 +763,7 @@ function TemplateSheet({
             </div>
 
             <Button
+              variant="primary"
               className="w-full"
               onClick={onApply}
               disabled={applying || creatableCount === 0}

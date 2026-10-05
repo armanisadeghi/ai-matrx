@@ -101,12 +101,11 @@ export function RunView() {
             )}
             {done && (
               <Button
+                icon={<RotateCcw />}
                 variant="outline"
-                size="sm"
                 onClick={replay}
-                className="shrink-0 gap-1.5"
+                className="shrink-0"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
                 Replay demo
               </Button>
             )}

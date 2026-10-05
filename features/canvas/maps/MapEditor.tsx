@@ -300,7 +300,7 @@ export function MapEditor({ mapId }: { mapId: string }) {
   const header = (
     <RouteHeader
       left={
-        <Button asChild variant="ghost" size="sm" className="h-8 shrink-0 px-2">
+        <Button asChild variant="quiet" className="shrink-0">
           <Link href="/maps" aria-label="Back to maps">
             <ArrowLeft className="h-4 w-4" />
             <span className="max-sm:sr-only">Maps</span>

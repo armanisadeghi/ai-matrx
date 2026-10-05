@@ -395,26 +395,23 @@ export function KnobRow({
         {locked ? null : (
           <div className="flex shrink-0 items-center gap-2">
             <Button
+              icon={<Save />}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={save}
               disabled={busy}
-              className="min-h-11 sm:min-h-9"
             >
-              <Save className="mr-2 h-4 w-4" />
               Save
             </Button>
             {/* 🚨 CLEAR REMOVES THE KEY. It never writes a null. */}
             {knob.is_overridden ? (
               <Button
+                icon={<RotateCcw />}
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={clear}
                 disabled={busy}
-                className="min-h-11 sm:min-h-9"
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
                 Clear
               </Button>
             ) : null}

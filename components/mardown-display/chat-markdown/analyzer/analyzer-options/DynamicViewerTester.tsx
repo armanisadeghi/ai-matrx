@@ -223,8 +223,7 @@ export const DynamicViewerTester: React.FC<DynamicViewerTesterProps> = ({ data, 
             <div className="flex-shrink-0 mb-4 space-y-4 px-4">
                 <div className="flex items-center justify-between">
                     {hasError && (
-                        <Button variant="outline" size="sm" onClick={handleRetry} className="flex items-center gap-2">
-                            <RefreshCw className="w-4 h-4" />
+                        <Button icon={<RefreshCw />} variant="outline" onClick={handleRetry} className="flex">
                             Retry
                         </Button>
                     )}

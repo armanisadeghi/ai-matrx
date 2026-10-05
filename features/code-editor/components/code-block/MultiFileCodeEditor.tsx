@@ -427,10 +427,9 @@ export default function MultiFileCodeEditor({
                 {/* Left: Sidebar Toggle + File Info */}
                 <div className="flex items-center gap-2 min-w-0">
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => setSidebarVisible(false)}
-                    className="h-6 w-6 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                    className="w-6 flex-shrink-0"
                     title="Hide sidebar"
                   >
                     <PanelLeftClose className="h-3.5 w-3.5" />
@@ -508,10 +507,9 @@ export default function MultiFileCodeEditor({
               {/* Left: Sidebar Toggle + File Info */}
               <div className="flex items-center gap-2 min-w-0">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => setSidebarVisible(true)}
-                  className="h-6 w-6 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className="w-6 flex-shrink-0"
                   title="Show sidebar"
                 >
                   <PanelLeft className="h-3.5 w-3.5" />

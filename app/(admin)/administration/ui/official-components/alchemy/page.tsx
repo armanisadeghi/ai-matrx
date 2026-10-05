@@ -175,14 +175,12 @@ function AlchemyExamples() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<ArrowLeft />}
+                variant="quiet"
                 asChild
                 aria-label="Back to Official Components"
               >
-                <AppLink href="/administration/ui/official-components">
-                  <ArrowLeft className="size-4" />
-                </AppLink>
+                <AppLink href="/administration/ui/official-components" />
               </Button>
               <h1 className="text-xl font-semibold">
                 Alchemy Content Transfer

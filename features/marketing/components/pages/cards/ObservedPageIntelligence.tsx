@@ -526,9 +526,7 @@ export function PageResourcesCard({
             <div className="flex flex-wrap gap-1.5">
               <Button
                 type="button"
-                size="sm"
-                variant={selectedKind === "all" ? "secondary" : "outline"}
-                className="h-6 px-2 text-[10px]"
+                variant={selectedKind === "all" ? "outline" : "outline"}
                 onClick={() => setSelectedKind("all")}
               >
                 All {resources.count}
@@ -537,9 +535,7 @@ export function PageResourcesCard({
                 <Button
                   key={kind}
                   type="button"
-                  size="sm"
-                  variant={selectedKind === kind ? "secondary" : "outline"}
-                  className="h-6 px-2 text-[10px]"
+                  variant={selectedKind === kind ? "outline" : "outline"}
                   onClick={() => setSelectedKind(kind)}
                 >
                   {humanizeIdentifier(kind)} {count}

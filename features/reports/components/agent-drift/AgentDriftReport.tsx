@@ -55,7 +55,7 @@ export function AgentDriftReport({
             {error ?? "Could not load the report."}
             <ErrorAlchemyMenu error={error} />
           </p>
-          <Button variant="outline" size="sm" onClick={refresh}>
+          <Button variant="outline" onClick={refresh}>
             Retry
           </Button>
         </div>

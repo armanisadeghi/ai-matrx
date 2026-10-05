@@ -43,8 +43,7 @@ export function DrillDeckPopover({
     onOpenChange?.(next);
   };
   const triggerNode = trigger ?? (
-    <Button variant="outline" size="sm" className="gap-1.5">
-      <ListTree className="h-3.5 w-3.5" />
+    <Button icon={<ListTree />} type="submit" variant="outline">
       Select scopes
     </Button>
   );

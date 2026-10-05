@@ -178,12 +178,11 @@ export function PdfSourcePicker({ value, onChange }: Props) {
 
           <TabsContent value="pick" className="space-y-2 pt-3">
             <Button
+              icon={<FolderOpen />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={pickExisting}
-            >
-              <FolderOpen className="h-3.5 w-3.5 mr-1" /> Browse cloud files
+            > Browse cloud files
             </Button>
             <p className="text-xs text-muted-foreground">
               Pick a PDF that's already in your cloud-files library.
@@ -199,7 +198,6 @@ export function PdfSourcePicker({ value, onChange }: Props) {
             <Button
               type="button"
               variant="outline"
-              size="sm"
               disabled={!urlInput.trim()}
               onClick={commitUrl}
             >

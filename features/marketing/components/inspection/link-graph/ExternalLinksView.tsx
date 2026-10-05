@@ -378,18 +378,16 @@ export function ExternalLinksView({ crawlId }: { crawlId?: string }) {
             </span>
           ) : null}
           <Button
-            size="sm"
+            icon={checking ? (
+              <Radio className="text-primary" />
+            ) : (
+              <ShieldCheck />
+            )}
             variant="outline"
-            className="h-7 gap-1.5 text-xs"
             onClick={() =>
               checking ? linkCheck.openWindow() : void runLinkCheck()
             }
           >
-            {checking ? (
-              <Radio className="h-3.5 w-3.5 text-primary" />
-            ) : (
-              <ShieldCheck className="h-3.5 w-3.5" />
-            )}
             {checking ? "Watch progress" : "Check link status"}
           </Button>
           <CopyButtons size="icon" {...copy} />

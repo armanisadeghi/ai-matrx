@@ -284,21 +284,18 @@ export function AgentShortcutsPanel({
               }}
             />
             <Link href={`${basePath}/${agentId}/shortcuts/batch`}>
-              <Button size="sm" variant="outline">
-                <Layers className="h-4 w-4 mr-1.5" />
+              <Button icon={<Layers />} type="submit" variant="outline">
                 Batch
               </Button>
             </Link>
             {/* The fast path: mint a shortcut already pointing at this agent,
                 or adopt an existing unlinked one. `/shortcuts/new` is the full
                 authoring form and stays the primary action. */}
-            <Button size="sm" variant="outline" onClick={() => setLinkOpen(true)}>
-              <Link2 className="h-4 w-4 mr-1.5" />
+            <Button icon={<Link2 />} variant="outline" onClick={() => setLinkOpen(true)}>
               Link shortcut
             </Button>
             <Link href={`${basePath}/${agentId}/shortcuts/new`}>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-1.5" />
+              <Button icon={<Plus />} type="submit" variant="primary">
                 New shortcut
               </Button>
             </Link>
@@ -669,13 +666,11 @@ function EmptyState({
         </p>
       </div>
       <div className="flex items-center gap-2 flex-wrap justify-center">
-        <Button size="sm" onClick={onLink}>
-          <Link2 className="h-4 w-4 mr-1.5" />
+        <Button icon={<Link2 />} variant="primary" onClick={onLink}>
           Link this agent to a shortcut
         </Button>
         <Link href={`${basePath}/${agentId}/shortcuts/new`}>
-          <Button size="sm" variant="outline">
-            <Plus className="h-4 w-4 mr-1.5" />
+          <Button icon={<Plus />} type="submit" variant="outline">
             Create the first one
           </Button>
         </Link>

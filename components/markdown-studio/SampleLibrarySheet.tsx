@@ -277,9 +277,8 @@ export function SampleLibrarySheet({
                       </div>
                       <div className="flex flex-col gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
+                          variant="quiet"
+                          className="w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             setRenaming(sample);
@@ -289,9 +288,8 @@ export function SampleLibrarySheet({
                           <Edit2 className="h-3 w-3" />
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
+                          variant="quiet"
+                          className="w-6"
                           onClick={(e) => {
                             e.stopPropagation();
                             void handleDelete(sample);
@@ -349,9 +347,8 @@ export function SampleLibrarySheet({
                           )}
                           {canManageShared && onArchiveShared && (
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              className="ml-auto h-6 w-6 shrink-0 p-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                              variant="quiet"
+                              className="ml-auto w-6 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 const ok = await confirm({

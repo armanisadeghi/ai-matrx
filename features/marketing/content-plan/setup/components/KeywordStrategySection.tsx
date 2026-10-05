@@ -129,9 +129,7 @@ export function KeywordStrategySection({
           {strategy && !busy ? (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground"
+              variant="quiet"
               title="Discard this keyword strategy — it is saved with your setup until you do."
               onClick={onDismiss}
             >
@@ -140,9 +138,7 @@ export function KeywordStrategySection({
           ) : null}
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 gap-1.5 px-2 text-xs"
+            variant="quiet"
             disabled={runDisabled}
             title={
               disabledReason ??
@@ -230,15 +226,15 @@ export function KeywordStrategySection({
               </span>
             ) : (
               <Button
+                icon={applying ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 type="button"
-                size="sm"
-                className="ml-auto h-6 px-2 text-[11px]"
+                className="ml-auto"
                 disabled={applying || strategy.assignments.length === 0}
                 onClick={onApply}
               >
-                {applying ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : null}
                 Apply to plan
               </Button>
             )}

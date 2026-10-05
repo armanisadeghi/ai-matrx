@@ -194,7 +194,6 @@ export function SavedCanvasItems() {
           {/* Refresh */}
           <Button
             variant="outline"
-            size="sm"
             onClick={() => load()}
             disabled={isLoading}
             aria-label="Refresh"

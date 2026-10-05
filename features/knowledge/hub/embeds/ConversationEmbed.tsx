@@ -133,7 +133,6 @@ export function ConversationEmbed({
           <ErrorAlchemyMenu error={phase.error} size="xs" />
         </p>
         <Button
-          size="sm"
           variant="outline"
           onClick={() => {
             setPhase({ status: "loading" });

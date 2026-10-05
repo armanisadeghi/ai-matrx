@@ -205,12 +205,11 @@ export function SetupWorkOrderColumn({
         action={
           dirtyKeys.size > 0 ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 gap-1.5 px-2 text-xs"
+              icon={<RotateCcw />}
+              type="submit"
+              variant="quiet"
               onClick={onReset}
             >
-              <RotateCcw className="h-3 w-3" />
               Reset
             </Button>
           ) : null
@@ -283,11 +282,11 @@ export function SetupWorkOrderColumn({
 
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
+                        type="submit"
                         variant="outline"
-                        size="sm"
                         /* Phones get a real tap target; desktop keeps the
                            dense 28px control. */
-                        className="h-9 w-9 p-0 md:h-7 md:w-7"
+                        className="w-9 md:w-7"
                         aria-label={`One fewer ${family.label}`}
                         disabled={family.count <= 0}
                         onClick={() =>
@@ -318,9 +317,9 @@ export function SetupWorkOrderColumn({
                         className="h-9 w-16 px-1.5 text-center text-base tabular-nums md:h-7 md:text-sm"
                       />
                       <Button
+                        type="submit"
                         variant="outline"
-                        size="sm"
-                        className="h-9 w-9 p-0 md:h-7 md:w-7"
+                        className="w-9 md:w-7"
                         aria-label={`One more ${family.label}`}
                         disabled={family.count >= MAX_COUNT}
                         onClick={() => onCountChange(family.key, family.count + 1)}
@@ -358,17 +357,17 @@ export function SetupWorkOrderColumn({
                           // names exist it steps back to a quiet re-run link.
                           aiReady && !supplied ? (
                             <Button
-                              size="sm"
-                              className="h-6 gap-1 px-2 text-[11px]"
+                              icon={aiNamingKey === family.key ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <Lightbulb />
+                              )}
+                              type="submit"
+                              variant="primary"
                               disabled={aiBusy}
                               title={`Name the ${family.label.toLowerCase()} pages from the research report`}
                               onClick={() => onAiNames(family.key)}
                             >
-                              {aiNamingKey === family.key ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Lightbulb className="h-3 w-3" />
-                              )}
                               Name with AI
                               <span className="sr-only"> for {family.label}</span>
                             </Button>
@@ -629,14 +628,12 @@ function ConceptRow({
                 /* 16px on mobile: anything smaller makes iOS zoom on focus. */
                 className="h-6 w-36 px-1.5 text-base sm:text-[11px]"
               />
-              <Button type="submit" size="sm" className="h-6 px-2 text-[11px]">
+              <Button variant="primary" type="submit">
                 Use
               </Button>
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-1.5 text-[11px]"
+                variant="quiet"
                 onClick={() => setCustomOpen(false)}
               >
                 Cancel
@@ -815,14 +812,12 @@ function NameBox({
         live in the preview.
       </p>
       <div className="mt-1.5 flex gap-1.5">
-        <Button type="submit" size="sm" className="h-7 px-2.5 text-xs">
+        <Button variant="primary" type="submit">
           Use these names
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2.5 text-xs"
+          variant="quiet"
           onClick={onCancel}
         >
           Cancel

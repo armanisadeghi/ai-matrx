@@ -569,7 +569,7 @@ export function ToastSystemSpecimen() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-1.5">
         {FIRE.map((f) => (
-          <Button key={f.label} size="sm" variant="outline" onClick={f.run}>
+          <Button key={f.label} variant="outline" onClick={f.run}>
             {f.label}
           </Button>
         ))}

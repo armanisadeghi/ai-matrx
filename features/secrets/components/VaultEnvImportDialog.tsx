@@ -63,12 +63,11 @@ export function VaultEnvImportDialog({
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <Button
+              icon={<FileUp />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => fileInput.current?.click()}
             >
-              <FileUp className="mr-2 h-4 w-4" />
               Load a .env file
             </Button>
             <input
@@ -93,18 +92,18 @@ export function VaultEnvImportDialog({
           </div>
           <div className="flex justify-end">
             <Button
-              size="sm"
+              icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Upload />
+              )}
+              variant="primary"
               disabled={busy || !envText.trim()}
               onClick={async () => {
                 const count = await onImport(envText, inject);
                 if (count > 0) close(false);
               }}
             >
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="mr-2 h-4 w-4" />
-              )}
               Import
             </Button>
           </div>

@@ -95,18 +95,17 @@ export function AuthorityRankButton({
 
   return (
     <Button
+      icon={busy ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <Award className="text-primary" />
+      )}
       variant="outline"
-      size={size}
       disabled={busy}
       onClick={run}
-      className={cn("gap-1.5 text-xs", className)}
+      className={className}
       title="Score every source's authoritativeness with AI"
     >
-      {busy ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Award className="h-3.5 w-3.5 text-primary" />
-      )}
       {busy ? "Ranking…" : "Rank authority"}
     </Button>
   );

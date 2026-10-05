@@ -22,7 +22,7 @@
 
 import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverContent,

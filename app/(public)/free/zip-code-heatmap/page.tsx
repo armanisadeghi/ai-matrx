@@ -203,22 +203,20 @@ export default function ZipCodeHeatmapPage() {
                                                 <CardContent className="space-y-2">
                                                     {openSaveToTable ? (
                                                     <Button
+                                                        icon={<Database />}
                                                         variant="outline"
                                                         className="w-full justify-start"
-                                                        size="sm"
                                                         onClick={saveZipsToTable}
                                                     >
-                                                        <Database className="w-4 h-4 mr-2" />
                                                         Save to Table
                                                     </Button>
                                                     ) : null}
                                                     <Button
+                                                        icon={<Share2 />}
                                                         variant="outline"
                                                         className="w-full justify-start"
-                                                        size="sm"
                                                         onClick={() => setShowSaveHeatmap(true)}
                                                     >
-                                                        <Share2 className="w-4 h-4 mr-2" />
                                                         Save & Get Share Link
                                                     </Button>
                                                 </CardContent>

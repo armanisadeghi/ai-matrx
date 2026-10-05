@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ArrowLeft, ArrowRight, Minus, Plus, Shuffle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import AiChatModal from "@/app/(transitional)/_flash-cards/ai/AiChatModal";
@@ -41,17 +42,15 @@ const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcar
     return (
         <div className="w-full flex flex-col space-y-4">
             <div className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-2">
-                <Button onClick={handlePrevious} variant="outline"
-                        className="w-full sm:w-auto flex-1 hover:scale-105 transition-transform bg-card">
-                    <ArrowLeft className="mr-2 h-4 w-4"/> Previous
+                <Button icon={<ArrowLeft/>} onClick={handlePrevious} variant="outline"
+                        className="w-full sm:w-auto flex-1"> Previous
                 </Button>
-                <Button onClick={handleNext} variant="outline"
-                        className="w-full sm:w-auto flex-1 hover:scale-105 transition-transform bg-card">
-                    Next <ArrowRight className="ml-2 h-4 w-4"/>
+                <Button iconEnd={<ArrowRight/>} onClick={handleNext} variant="outline"
+                        className="w-full sm:w-auto flex-1">
+                    Next
                 </Button>
-                <Button onClick={shuffleCards} variant="outline"
-                        className="w-full sm:w-auto flex-1 hover:scale-105 transition-transform bg-card">
-                    <Shuffle className="mr-2 h-4 w-4"/> Shuffle
+                <Button icon={<Shuffle/>} onClick={shuffleCards} variant="outline"
+                        className="w-full sm:w-auto flex-1"> Shuffle
                 </Button>
                 <Select onValueChange={handleSelectChange} value={currentIndex.toString()}>
                     <SelectTrigger className="w-full sm:w-auto flex-1 hover:scale-105 transition-transform bg-card">
@@ -70,61 +69,61 @@ const FlashcardControls: React.FC<{ flashcardHook: ReturnType<typeof useFlashcar
                 <Button
                     onClick={playActiveCardAudio}
                     variant="outline"
-                    className="w-full hover:scale-105 transition-transform bg-card"
+                    className="w-full"
                 >
                     I'm confused
                 </Button>
                 <Button
                     onClick={openAiModal}
                     variant="outline"
-                    className="w-full hover:scale-105 transition-transform bg-card"
+                    className="w-full"
                 >
                     I have a question
                 </Button>
                 <Button
                     onClick={() => openAiAssistModal('example')}
                     variant="outline"
-                    className="w-full hover:scale-105 transition-transform bg-card"
+                    className="w-full"
                 >
                     Give me an example
                 </Button>
                 <div className="flex items-center justify-between w-full px-3 py-1 rounded-md border bg-card hover:scale-105 transition-transform">
-                    <Button
+                    <SurfaceButton
                         onClick={() => setFontSize((prev) => Math.max(18, prev - 2))}
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 p-0"
                     >
                         <Minus className="h-4 w-4"/>
-                    </Button>
+                    </SurfaceButton>
                     <span className="text-sm whitespace-nowrap">Font Size</span>
-                    <Button
+                    <SurfaceButton
                         onClick={() => setFontSize((prev) => Math.min(36, prev + 2))}
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 p-0"
                     >
                         <Plus className="h-4 w-4"/>
-                    </Button>
+                    </SurfaceButton>
                 </div>
                 <Button
                     onClick={() => openAiAssistModal('split')}
                     variant="outline"
-                    className="w-full hover:scale-105 transition-transform bg-card"
+                    className="w-full"
                 >
                     Split cards
                 </Button>
                 <Button
                     onClick={() => openAiAssistModal('combine')}
                     variant="outline"
-                    className="w-full hover:scale-105 transition-transform bg-card"
+                    className="w-full"
                 >
                     Combine cards
                 </Button>
                 <Button
                     onClick={() => openAiAssistModal('compare')}
                     variant="outline"
-                    className="w-full hover:scale-105 transition-transform bg-card"
+                    className="w-full"
                 >
                     Compare Cards
                 </Button>

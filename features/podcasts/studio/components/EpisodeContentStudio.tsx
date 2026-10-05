@@ -111,8 +111,8 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
                   !isBusy &&
                   draft !== article.content_markdown && (
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      icon={<GitCompareArrows />}
+                      variant="quiet"
                       onClick={() =>
                         openDiff({
                           original: article.content_markdown ?? "",
@@ -125,33 +125,27 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
                           defaultView: "highlight",
                         })
                       }
-                      className="gap-1.5"
                     >
-                      <GitCompareArrows className="h-3.5 w-3.5" />
                       Compare
                     </Button>
                   )}
                 {article && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => togglePublish(kind)}
-                    className="gap-1.5"
-                  >
-                    {published ? (
-                      <EyeOff className="h-3.5 w-3.5" />
+                    icon={published ? (
+                      <EyeOff />
                     ) : (
-                      <Eye className="h-3.5 w-3.5" />
+                      <Eye />
                     )}
+                    variant="quiet"
+                    onClick={() => togglePublish(kind)}
+                  >
                     {published ? "Unpublish" : "Publish"}
                   </Button>
                 )}
                 <Button
-                  size="sm"
-                  variant={article ? "outline" : "default"}
+                  variant={article ? "outline" : "primary"}
                   onClick={() => generate(kind)}
                   disabled={isBusy || noScript}
-                  className="gap-1.5"
                   title={noScript ? "This episode has no script to write from." : undefined}
                 >
                   {isBusy ? (

@@ -134,18 +134,17 @@ export function UrlProbeField({
           autoComplete="off"
         />
         <Button
+          icon={probe.status === "probing" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Activity />
+          )}
           type="button"
           variant="outline"
-          size="sm"
           onClick={() => void runProbe()}
           disabled={probe.status === "probing" || value.trim().length === 0}
           className="shrink-0"
         >
-          {probe.status === "probing" ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Activity className="mr-1.5 h-3.5 w-3.5" />
-          )}
           Probe
         </Button>
       </div>

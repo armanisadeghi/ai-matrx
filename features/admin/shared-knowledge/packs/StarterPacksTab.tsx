@@ -156,10 +156,9 @@ export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirec
               className="h-8 pl-7 text-sm"
             />
           </div>
-          <Button size="sm" variant="outline" className="h-8 shrink-0" onClick={onNewPack} disabled={creating}>
-            <Plus className="mr-1 size-3.5" /> New
+          <Button icon={<Plus />} variant="outline" className="shrink-0" onClick={onNewPack} disabled={creating}> New
           </Button>
-          <Button size="sm" className="h-8 shrink-0" onClick={() => setProposeOpen(true)}>
+          <Button variant="primary" className="shrink-0" onClick={() => setProposeOpen(true)}>
             <AGENT_ICON className="mr-1 size-3.5" /> Propose
           </Button>
         </div>

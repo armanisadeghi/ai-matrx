@@ -54,18 +54,16 @@ export function BulkOutcome({ outcome, sentence, onDismiss }: BulkOutcomeProps) 
       <div className="flex items-center gap-2">
         {hasDetail ? (
           <Button
+            icon={expanded ? (
+              <ChevronDown aria-hidden />
+            ) : (
+              <ChevronRight aria-hidden />
+            )}
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-6 gap-1 px-1 text-xs"
+            variant="quiet"
             aria-expanded={expanded}
             onClick={() => setExpanded((previous) => !previous)}
           >
-            {expanded ? (
-              <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" aria-hidden />
-            )}
             {setPageIntentsOutcomeLine(outcome)}
           </Button>
         ) : (
@@ -75,9 +73,8 @@ export function BulkOutcome({ outcome, sentence, onDismiss }: BulkOutcomeProps) 
         )}
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="ml-auto h-6 px-1"
+          variant="quiet"
+          className="ml-auto"
           aria-label="Dismiss this result"
           onClick={onDismiss}
         >

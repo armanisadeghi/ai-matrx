@@ -155,7 +155,7 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
       actions={
         !readOnly ? (
           <Inert what="open the known-values registry admin">
-            <Button variant="outline" size="sm" className="h-7 text-[11px]">
+            <Button type="submit" variant="outline">
               Known values
             </Button>
           </Inert>
@@ -181,9 +181,8 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
                     per-level, so a user can quiet a job on their own page
                     without an admin touching the system tier. */}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 gap-1 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+                  icon={<EyeOff />}
+                  variant="quiet"
                   onClick={() =>
                     setExcludedIds((prev) =>
                       prev.includes(m.id) ? prev : [...prev, m.id],
@@ -191,7 +190,6 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
                   }
                   title="Exclude this job from this place"
                 >
-                  <EyeOff className="h-3 w-3" />
                   Exclude
                 </Button>
               </div>
@@ -234,14 +232,13 @@ export function DiscoveredMandatesPanel({ readOnly }: { readOnly: boolean }) {
                     <MandateHeadline mandate={m} />
                   </div>
                   <Button
+                    icon={<RotateCcw />}
                     variant="outline"
-                    size="sm"
-                    className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+                    className="shrink-0"
                     onClick={() =>
                       setExcludedIds((prev) => prev.filter((id) => id !== m.id))
                     }
                   >
-                    <RotateCcw className="h-3 w-3" />
                     Restore
                   </Button>
                 </div>

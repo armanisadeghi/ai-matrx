@@ -44,13 +44,11 @@ export function AIGenerateHero() {
         </p>
         <div className="mt-5">
           <Button
+            icon={<Settings />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleOpenDefaults}
-          className="min-h-[44px] gap-1.5 md:min-h-0"
           >
-            <Settings className="h-3.5 w-3.5" />
             Set generation defaults
           </Button>
         </div>

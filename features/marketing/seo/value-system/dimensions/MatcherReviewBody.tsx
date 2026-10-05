@@ -251,17 +251,16 @@ export function MatcherReviewBody({
             </span>
           ) : null}
           <Button
-            size="sm"
+            icon={undo.isPending ? (
+              <RefreshCw className="animate-spin" />
+            ) : (
+              <Undo2 />
+            )}
             variant="outline"
-            className="ml-auto h-7 gap-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+            className="ml-auto"
             disabled={undo.isPending || review.isPending}
             onClick={() => void askAndUndo()}
           >
-            {undo.isPending ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Undo2 className="h-3.5 w-3.5" />
-            )}
             Undo this match
           </Button>
         </div>

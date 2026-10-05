@@ -226,17 +226,15 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
 
                 <div className="flex-1" />
 
-                <Button variant="ghost" size="sm" onClick={refresh} className="h-7 gap-1.5 text-xs">
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <Button icon={isLoading ? <Loader2 className="animate-spin" /> : <RefreshCw />} variant="quiet" onClick={refresh}>
                     Refresh
                 </Button>
                 <Button
-                    size="sm"
-                    className="h-7 gap-1.5 text-xs"
+                    icon={isUploading ? <Loader2 className="animate-spin" /> : <Upload />}
+                    variant="primary"
                     disabled={!siteId || isUploading}
                     onClick={() => fileInputRef.current?.click()}
                 >
-                    {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
                     Upload
                 </Button>
                 <input
@@ -304,9 +302,8 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                         </div>
                                         <div className="flex items-center gap-0.5 pt-0.5">
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0"
+                                                variant="quiet"
+                                                className="w-6"
                                                 title="Copy durable URL"
                                                 onClick={() => handleCopy(asset)}
                                             >
@@ -317,9 +314,8 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                                 )}
                                             </Button>
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0"
+                                                variant="quiet"
+                                                className="w-6"
                                                 title="Edit alt text"
                                                 onClick={() => openEdit(asset)}
                                             >
@@ -327,9 +323,8 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                                             </Button>
                                             <div className="flex-1" />
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                                variant="quiet"
+                                                className="w-6"
                                                 title="Archive (usage-guarded)"
                                                 onClick={() =>
                                                     setDeleteState({
@@ -365,10 +360,10 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                         className="text-xs"
                     />
                     <DialogFooter>
-                        <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>
+                        <Button variant="quiet" onClick={() => setEditing(null)}>
                             Cancel
                         </Button>
-                        <Button size="sm" onClick={saveEdit}>
+                        <Button variant="primary" onClick={saveEdit}>
                             Save
                         </Button>
                     </DialogFooter>
@@ -422,27 +417,25 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
                         </p>
                     )}
                     <DialogFooter>
-                        <Button variant="ghost" size="sm" onClick={() => setDeleteState(null)}>
+                        <Button variant="quiet" onClick={() => setDeleteState(null)}>
                             Cancel
                         </Button>
                         {deleteState?.inUse ? (
                             <Button
-                                variant="destructive"
-                                size="sm"
+                                icon={isDeleting && <Loader2 className="animate-spin" />}
+                                variant="danger"
                                 disabled={isDeleting}
                                 onClick={() => deleteState && attemptDelete(deleteState.asset, true)}
                             >
-                                {isDeleting && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
                                 Archive anyway
                             </Button>
                         ) : (
                             <Button
-                                variant="destructive"
-                                size="sm"
+                                icon={isDeleting && <Loader2 className="animate-spin" />}
+                                variant="danger"
                                 disabled={isDeleting}
                                 onClick={() => deleteState && attemptDelete(deleteState.asset, false)}
                             >
-                                {isDeleting && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
                                 Archive
                             </Button>
                         )}

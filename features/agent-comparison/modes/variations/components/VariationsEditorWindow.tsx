@@ -168,28 +168,22 @@ export function VariationsEditorWindow({
                 {active.label}
               </span>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7"
+                icon={<Pencil />}
+                variant="quiet"
                 onClick={() => setRenameOpen(true)}
               >
-                <Pencil className="w-3.5 h-3.5" />
                 Rename
               </Button>
               <Button
-                size="sm"
+                icon={<Save />}
                 variant="outline"
-                className="h-7"
                 onClick={() => setPromoteOpen(true)}
                 title="Save this variation as a real, reusable agent"
               >
-                <Save className="w-3.5 h-3.5" />
                 Save as agent
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-destructive hover:text-destructive"
+                variant="quiet"
                 onClick={() => setRemoveConfirm(true)}
                 title="Remove this variation"
               >
@@ -212,8 +206,7 @@ export function VariationsEditorWindow({
                 No variations yet. Add one to start editing a copy of the
                 template.
               </p>
-              <Button size="sm" onClick={handleAdd}>
-                <Plus className="w-3.5 h-3.5" />
+              <Button icon={<Plus />} variant="primary" onClick={handleAdd}>
                 Add a variation
               </Button>
             </div>

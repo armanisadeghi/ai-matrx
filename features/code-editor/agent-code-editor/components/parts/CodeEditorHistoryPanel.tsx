@@ -103,18 +103,18 @@ export function CodeEditorHistoryPanel({
           </SelectContent>
         </Select>
         <Button
-          size="sm"
+          icon={mandatesLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
           onClick={() => {
             if (pickerMandateKey) onCreateDraft(pickerMandateKey);
           }}
           disabled={createDisabled}
-          className="w-full h-8 gap-1.5"
+          className="w-full"
         >
-          {mandatesLoading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Plus className="w-3.5 h-3.5" />
-          )}
           New
         </Button>
         {pickerError && (

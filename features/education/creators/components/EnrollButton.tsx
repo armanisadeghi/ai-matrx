@@ -111,14 +111,13 @@ export function EnrollButton({ classId, title, accessMode, price, handle }: Enro
   }
 
   return (
-    <Button onClick={onClick} disabled={busy || pending} className="w-full sm:w-auto">
-      {busy || pending ? (
-        <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+    <Button icon={busy || pending ? (
+        <Loader2 className="animate-spin" />
       ) : paid ? (
-        <CreditCard className="mr-1.5 h-4 w-4" />
+        <CreditCard />
       ) : (
-        <GraduationCap className="mr-1.5 h-4 w-4" />
-      )}
+        <GraduationCap />
+      )} variant="primary" onClick={onClick} disabled={busy || pending} className="w-full sm:w-auto">
       {label}
     </Button>
   );

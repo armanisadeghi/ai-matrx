@@ -464,16 +464,15 @@ export function InvitationsPanel({
             </Select>
 
             <Button
+              icon={operationLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Send />
+              )}
+              variant="primary"
               type="submit"
               disabled={!canSubmit}
-              size="sm"
-              className="bg-blue-500 hover:bg-blue-600 h-9"
             >
-              {operationLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-1" />
-              ) : (
-                <Send className="h-4 w-4 mr-1" />
-              )}
               Invite
             </Button>
           </div>
@@ -508,10 +507,9 @@ export function InvitationsPanel({
                 </p>
               )}
               <Button
+                icon={<Copy />}
                 type="button"
-                size="sm"
                 variant="outline"
-                className="h-8"
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(
@@ -525,7 +523,6 @@ export function InvitationsPanel({
                   }
                 }}
               >
-                <Copy className="mr-1 h-4 w-4" />
                 Copy invitation link
               </Button>
             </div>
@@ -576,11 +573,10 @@ export function InvitationsPanel({
             )}
             {invitations.length > 0 && onRefresh && (
               <Button
-                variant="ghost"
-                size="sm"
+                type="submit"
+                variant="quiet"
                 onClick={onRefresh}
                 disabled={refreshing}
-                className="h-11 px-2 lg:h-7"
                 title="Refresh"
               >
                 <RefreshCw
@@ -674,19 +670,19 @@ export function InvitationsPanel({
                     <div className="flex items-center gap-1 flex-shrink-0">
                       {!isExpired && (
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          icon={<Copy />}
+                          type="submit"
+                          variant="quiet"
                           onClick={handleCopyLink}
                           title="Copy invitation link"
-                          className="h-11 lg:h-8"
                         >
-                          <Copy className="h-4 w-4 mr-1" />
                           Copy Link
                         </Button>
                       )}
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        icon={<RefreshCw />}
+                        type="submit"
+                        variant="quiet"
                         onClick={() => onResend(invitation)}
                         disabled={operationLoading}
                         title={
@@ -694,17 +690,15 @@ export function InvitationsPanel({
                             ? "Renew and extend expiry"
                             : "Resend and extend expiry"
                         }
-                        className="h-11 lg:h-8"
                       >
-                        <RefreshCw className="h-4 w-4 mr-1" />
                         {isExpired ? "Renew" : "Resend"}
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        type="submit"
+                        variant="quiet"
                         onClick={() => setInvitationToCancel(invitation)}
                         disabled={operationLoading}
-                        className="h-11 min-w-11 px-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 lg:h-8 lg:min-w-0 lg:px-3"
+                        className="min-w-11 lg:min-w-0"
                         title="Cancel invitation"
                       >
                         <X className="h-4 w-4" />

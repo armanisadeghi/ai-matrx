@@ -271,9 +271,8 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
           searchPlaceholder: "Search final URL or content hash…",
           actions: (
             <Button
+              icon={<Columns2 />}
               variant="outline"
-              size="sm"
-              className="h-8 gap-1.5"
               disabled={compareIds.length !== 2}
               onClick={() => setShowCompare(true)}
               title={
@@ -282,7 +281,6 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
                   : "Select two snapshots to compare"
               }
             >
-              <Columns2 className="h-3.5 w-3.5" />
               Compare ({compareIds.length}/2)
             </Button>
           ),

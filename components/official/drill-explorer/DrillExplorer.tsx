@@ -417,15 +417,13 @@ export function DrillExplorer({
           </span>
           {range && freshness?.recount ? (
             <Button
+              icon={<RefreshCw />}
               type="button"
-              variant="ghost"
-              size="xs"
-              className="gap-1"
+              variant="quiet"
               disabled={freshness.recounting}
               title={freshness.recountTitle ?? "Count this window again"}
               onClick={() => freshness.recount?.({ from: range.from, to: new Date().toISOString() })}
-            >
-              <RefreshCw className="h-3 w-3" /> Recount
+            > Recount
             </Button>
           ) : null}
           {canToggle && hasMoney ? (

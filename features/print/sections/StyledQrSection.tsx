@@ -165,20 +165,18 @@ export function StyledQrSection() {
                                     className="hidden"
                                     onChange={handleLogo}
                                 />
-                                <Button size="sm" variant="outline" onClick={() => fileRef.current?.click()}>
-                                    <ImageUp className="mr-1 h-3.5 w-3.5" />
+                                <Button icon={<ImageUp />} variant="outline" onClick={() => fileRef.current?.click()}>
                                     Choose file
                                 </Button>
                                 {logoDataUrl ? (
                                     <Button
-                                        size="sm"
-                                        variant="ghost"
+                                        icon={<X />}
+                                        variant="quiet"
                                         onClick={() => {
                                             setLogoDataUrl(null);
                                             setLogoName(null);
                                         }}
                                     >
-                                        <X className="mr-1 h-3.5 w-3.5" />
                                         Remove
                                     </Button>
                                 ) : null}

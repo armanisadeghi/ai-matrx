@@ -123,8 +123,7 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
       }}
     >
       <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8" data-store-tables-test-orgs="">
-          <FlaskConical className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<FlaskConical />} variant="outline" data-store-tables-test-orgs="">
           Test orgs
         </Button>
       </PopoverTrigger>
@@ -177,13 +176,12 @@ export function TestOrgsMenu({ onChanged }: { onChanged?: () => void }) {
           </div>
         )}
         <div className="mt-2 flex gap-2 border-t border-border pt-2">
-          <Button size="sm" className="h-8 flex-1" disabled={busy || toMark.length === 0} onClick={() => void run(true)}>
+          <Button variant="primary" className="flex-1" disabled={busy || toMark.length === 0} onClick={() => void run(true)}>
             Mark as test{toMark.length > 0 ? ` (${toMark.length})` : ""}
           </Button>
           <Button
             variant="outline"
-            size="sm"
-            className="h-8 flex-1"
+            className="flex-1"
             disabled={busy || toUnmark.length === 0}
             onClick={() => void run(false)}
           >

@@ -1973,8 +1973,6 @@ export function SetupView() {
             </span>
             <Button
               variant="outline"
-              size="sm"
-              className="h-6 px-2 text-xs"
               onClick={() => setSiteId(siblingWithPlan.site.id)}
             >
               Open that plan instead
@@ -2418,7 +2416,7 @@ function ErrorState({
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
           {message}
         </p>
-        <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+        <Button variant="outline" className="mt-3" onClick={onRetry}>
           Try again
         </Button>
       </div>

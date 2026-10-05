@@ -63,10 +63,9 @@ const SimplifiedView = ({ pageData }: SimplifiedViewProps) => {
             {overview?.page_title || "Untitled Page"}
           </h2>
           <Button
-            variant="ghost"
-            size="default"
+            variant="quiet"
             onClick={() => handleCopy(textData)}
-            className="absolute right-1 top-1 flex items-center"
+            className="absolute right-1 top-1 flex"
           >
             <Copy size={16} className="text-foreground" />
           </Button>

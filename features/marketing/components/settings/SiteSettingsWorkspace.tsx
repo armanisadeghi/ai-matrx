@@ -485,12 +485,10 @@ export function SiteSettingsWorkspace() {
                 database.
               </p>
               <Button
-                size="sm"
-                variant="destructive"
-                className="h-8 gap-1.5"
+                icon={<Trash2 />}
+                variant="danger"
                 onClick={() => setConfirmingDelete(true)}
               >
-                <Trash2 className="h-3.5 w-3.5" />
                 Delete site
               </Button>
             </div>
@@ -566,12 +564,11 @@ export function SiteSettingsWorkspace() {
         />
         <div className="sticky bottom-0 mt-3 flex justify-end border-t border-border/80 bg-background/95 py-2 backdrop-blur">
           <Button
-            size="sm"
-            className="gap-1.5"
+            icon={<Save />}
+            variant="primary"
             disabled={!name.trim() || update.isPending}
             onClick={save}
           >
-            <Save className="h-3.5 w-3.5" />
             Save settings
           </Button>
         </div>

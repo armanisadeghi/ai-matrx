@@ -152,12 +152,10 @@ export function BrandAssetDetail({
               <CopyButtons size="xs" {...copy} json={() => asset} />
               {onEdit ? (
                 <Button
+                  icon={<Pencil />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 gap-1.5 text-xs"
                   onClick={onEdit}
                 >
-                  <Pencil className="h-3 w-3" />
                   Edit
                 </Button>
               ) : null}
@@ -289,9 +287,8 @@ export function BrandAssetDetail({
                     schema.org VideoObject
                   </p>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 gap-1 px-1.5 text-[10px]"
+                    icon={<Copy />}
+                    variant="quiet"
                     onClick={() => {
                       void navigator.clipboard
                         .writeText(
@@ -305,7 +302,6 @@ export function BrandAssetDetail({
                         );
                     }}
                   >
-                    <Copy className="h-3 w-3" />
                     Copy as JSON-LD
                   </Button>
                 </div>

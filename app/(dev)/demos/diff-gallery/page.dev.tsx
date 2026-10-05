@@ -256,9 +256,7 @@ export default function DiffGalleryPage() {
           {SCENARIOS.map((s) => (
             <Button
               key={s.id}
-              size="sm"
-              variant={s.id === scenarioId ? "default" : "outline"}
-              className="h-7 text-xs"
+              variant={s.id === scenarioId ? "primary" : "outline"}
               onClick={() => loadScenario(s)}
             >
               {s.label}
@@ -409,9 +407,7 @@ export default function DiffGalleryPage() {
             <div className="flex h-full flex-col">
               <div className="shrink-0 border-b border-border px-2 py-1">
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-6 text-xs"
                   onClick={() => {
                     setAnimActive(true);
                     setAnimKey((k) => k + 1);

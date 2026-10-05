@@ -340,9 +340,8 @@ export function TuningPanel({ config, onChange }: Props) {
                 }
               />
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
+                icon={<Trash2 />}
+                variant="quiet"
                 aria-label={`Remove curve point at score ${point.at}`}
                 onClick={() =>
                   patchMoney({
@@ -351,22 +350,19 @@ export function TuningPanel({ config, onChange }: Props) {
                     ),
                   })
                 }
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </div>
           ))}
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
-            className="mt-1 h-7 w-fit text-xs"
+            className="mt-1 w-fit"
             onClick={() =>
               patchMoney({
                 curve: [...config.money.curve, { at: 0, value: 0 }],
               })
             }
           >
-            <Plus className="mr-1 h-3.5 w-3.5" />
             Add point
           </Button>
 

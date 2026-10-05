@@ -315,10 +315,10 @@ export function ErrorBoundaryView({
           </p>
           <div className="flex items-center justify-center gap-2">
             <Button
+              icon={<RefreshCw />}
+              variant="primary"
               onClick={() => window.location.reload()}
-              className="gap-2"
             >
-              <RefreshCw className="h-4 w-4" />
               Refresh
             </Button>
             <Button variant="outline" onClick={reset}>
@@ -390,23 +390,20 @@ export function ErrorBoundaryView({
 
         {/* Actions */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
-          <Button onClick={handleReset} disabled={resetting} className="gap-2">
-            <RefreshCw className={cn("h-4 w-4", resetting && "animate-spin")} />
+          <Button icon={<RefreshCw className={cn("h-4 w-4", resetting && "animate-spin")} />} variant="primary" onClick={handleReset} disabled={resetting}>
             {resetting ? "Retrying…" : "Try again"}
           </Button>
           <Button
             variant="outline"
             onClick={() => router.back()}
-            className="gap-2"
           >
             Go back
           </Button>
           <Button
-            variant="ghost"
+            icon={<Home />}
+            variant="quiet"
             onClick={() => router.push(homePath)}
-            className="gap-2"
           >
-            <Home className="h-4 w-4" />
             Home
           </Button>
         </div>

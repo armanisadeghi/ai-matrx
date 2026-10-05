@@ -230,15 +230,16 @@ export function AuthorityRouterWorkspace({
                 className="mt-2 min-h-20 resize-none text-xs"
               />
               <Button
+                icon={authority.run.status === "running" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Play />
+                )}
+                variant="primary"
                 className="mt-3 w-full"
                 disabled={authority.run.status === "running"}
                 onClick={() => void startAnalysis()}
               >
-                {authority.run.status === "running" ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Play className="mr-2 h-4 w-4" />
-                )}
                 {result
                   ? "Recalculate authority routes"
                   : "Map authority routes"}
@@ -497,22 +498,20 @@ function RecommendationCard({
         </div>
         <div className="flex gap-2">
           <Button
-            size="sm"
+            icon={<X />}
             variant="outline"
             disabled={working || approved}
             onClick={onDismiss}
           >
-            <X className="mr-1.5 h-3.5 w-3.5" />
             Dismiss
           </Button>
-          <Button size="sm" disabled={working || approved} onClick={onApprove}>
-            {working ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          <Button icon={working ? (
+              <Loader2 className="animate-spin" />
             ) : approved ? (
-              <Check className="mr-1.5 h-3.5 w-3.5" />
+              <Check />
             ) : (
-              <GitBranch className="mr-1.5 h-3.5 w-3.5" />
-            )}
+              <GitBranch />
+            )} variant="primary" disabled={working || approved} onClick={onApprove}>
             {approved ? "In link plan" : "Add to link plan"}
           </Button>
         </div>

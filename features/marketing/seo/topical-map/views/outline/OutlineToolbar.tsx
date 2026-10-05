@@ -15,15 +15,8 @@
 import { useEffect, useState } from "react";
 import { ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 
-import {
-  Button,
-  Input,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ai-matrx/design-system";
+import { Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 
@@ -140,10 +133,8 @@ export function OutlineToolbar({ mapId, visibleTopics, className }: OutlineToolb
       {totals.proposed > 0 ? (
         <Button
           type="button"
-          size="sm"
-          variant={proposedOnly ? "secondary" : "ghost"}
+          variant={proposedOnly ? "outline" : "quiet"}
           aria-pressed={proposedOnly}
-          className="h-8 text-xs"
           onClick={() =>
             dispatch(
               setFilters({
@@ -160,25 +151,21 @@ export function OutlineToolbar({ mapId, visibleTopics, className }: OutlineToolb
 
       <div className="ml-auto flex items-center gap-0.5">
         <Button
+          icon={<ChevronsUpDown aria-hidden />}
           type="button"
-          size="icon-sm"
-          variant="ghost"
+          variant="quiet"
           title="Expand all"
           aria-label="Expand all"
           onClick={() => dispatch(expandAll({ mapId }))}
-        >
-          <ChevronsUpDown className="h-4 w-4" aria-hidden />
-        </Button>
+        />
         <Button
+          icon={<ChevronsDownUp aria-hidden />}
           type="button"
-          size="icon-sm"
-          variant="ghost"
+          variant="quiet"
           title="Collapse all"
           aria-label="Collapse all"
           onClick={() => dispatch(collapseAll({ mapId }))}
-        >
-          <ChevronsDownUp className="h-4 w-4" aria-hidden />
-        </Button>
+        />
       </div>
     </div>
   );

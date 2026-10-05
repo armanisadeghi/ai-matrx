@@ -557,7 +557,6 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                 variant="outline"
                 onClick={handleDiscardShape}
                 disabled={creating}
-                className="text-destructive"
               >
                 Discard shape
               </Button>
@@ -569,14 +568,13 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                 Keep and fix later
               </Button>
               <Button
+                icon={<ExternalLink />}
                 variant="outline"
                 onClick={() => window.open(shapeDetailHref(slug), "_blank")}
               >
-                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Open kind
               </Button>
-              <Button onClick={handleRetrySample} disabled={creating}>
-                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Button icon={creating && <Loader2 className="animate-spin" />} variant="primary" onClick={handleRetrySample} disabled={creating}>
                 Retry sample
               </Button>
             </>
@@ -590,6 +588,8 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                 Cancel
               </Button>
               <Button
+                icon={creating && <Loader2 className="animate-spin" />}
+                variant="primary"
                 onClick={handleCreate}
                 disabled={
                   creating ||
@@ -600,7 +600,6 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
                   undeclaredSlugs.length > 0
                 }
               >
-                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 {createShapeButtonLabel(planWarnings.length)}
               </Button>
             </>

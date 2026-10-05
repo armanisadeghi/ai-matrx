@@ -165,8 +165,7 @@ function ListDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
         aria-label="Picklist name"
         className="w-full max-w-xs"
       />
-      <Button onClick={() => void create()} disabled={creating || !name.trim() || !userId}>
-        {creating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ListChecks className="mr-2 h-4 w-4" />}
+      <Button icon={creating ? <Loader2 className="animate-spin" /> : <ListChecks />} variant="primary" onClick={() => void create()} disabled={creating || !name.trim() || !userId}>
         Create
       </Button>
     </div>

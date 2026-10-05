@@ -236,7 +236,7 @@ export function CloneRepoDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleClone} disabled={cloning || !url.trim()}>
+          <Button variant="primary" onClick={handleClone} disabled={cloning || !url.trim()}>
             {cloning ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />

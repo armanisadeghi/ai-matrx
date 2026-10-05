@@ -80,7 +80,7 @@ export default async function MarketingPropertyPage({
         </dl>
 
         {publicUrl ? (
-          <Button asChild className="w-fit">
+          <Button variant="primary" asChild className="w-fit">
             <Link href={publicUrl} target="_blank" rel="noreferrer">
               Open public profile <ExternalLink className="ml-2 h-4 w-4" />
             </Link>

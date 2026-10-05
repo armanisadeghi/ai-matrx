@@ -135,43 +135,34 @@ export function InviteStudentsSheet({
                     {inv.code}
                   </span>
                   <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8"
+                    icon={<Copy />}
+                    variant="quiet"
                     onClick={() => copyText(inv.code!, "Code")}
                     aria-label="Copy join code"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
+                  />
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Button
-                    size="sm"
+                    icon={<LinkIcon />}
                     variant="outline"
-                    className="h-7 gap-1.5 text-xs"
                     onClick={() => copyText(classJoinUrl(inv.code!), "Join link")}
                   >
-                    <LinkIcon className="h-3.5 w-3.5" />
                     Copy join link
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1.5 text-xs"
+                    icon={<RefreshCw />}
+                    variant="quiet"
                     disabled={inv.codeLoading}
                     onClick={() => inv.rotateCode()}
                   >
-                    <RefreshCw className="h-3.5 w-3.5" />
                     New code
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1.5 text-xs text-muted-foreground"
+                    icon={<X />}
+                    variant="quiet"
                     disabled={inv.codeLoading}
                     onClick={() => inv.disableCode()}
                   >
-                    <X className="h-3.5 w-3.5" />
                     Turn off
                   </Button>
                 </div>
@@ -186,9 +177,7 @@ export function InviteStudentsSheet({
                   Code joining is off.
                 </p>
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
                   disabled={inv.codeLoading}
                   onClick={() => inv.ensureCode()}
                 >
@@ -215,12 +204,11 @@ export function InviteStudentsSheet({
             />
             <div className="flex flex-wrap items-center gap-1.5">
               <Button
-                size="sm"
-                className="h-7 gap-1.5 text-xs"
+                icon={<Send />}
+                variant="primary"
                 disabled={parsedEmails.length === 0 || inv.sending}
                 onClick={handleSend}
               >
-                <Send className="h-3.5 w-3.5" />
                 {inv.sending
                   ? "Sending…"
                   : parsedEmails.length > 1
@@ -228,12 +216,10 @@ export function InviteStudentsSheet({
                     : "Send invitation"}
               </Button>
               <Button
-                size="sm"
+                icon={<Upload />}
                 variant="outline"
-                className="h-7 gap-1.5 text-xs"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <Upload className="h-3.5 w-3.5" />
                 Import roster (CSV)
               </Button>
               <input
@@ -288,9 +274,8 @@ export function InviteStudentsSheet({
                       <div className="flex shrink-0 items-center gap-0.5">
                         {invite.token && (
                           <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-7 w-7 text-muted-foreground"
+                            icon={<LinkIcon />}
+                            variant="quiet"
                             onClick={() =>
                               copyText(
                                 classInviteAcceptUrl(invite.token!),
@@ -298,28 +283,20 @@ export function InviteStudentsSheet({
                               )
                             }
                             aria-label="Copy invite link"
-                          >
-                            <LinkIcon className="h-3.5 w-3.5" />
-                          </Button>
+                          />
                         )}
                         <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-muted-foreground"
+                          icon={<RefreshCw />}
+                          variant="quiet"
                           onClick={() => inv.resendInvite(invite.id)}
                           aria-label="Resend invitation"
-                        >
-                          <RefreshCw className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                         <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          icon={<X />}
+                          variant="quiet"
                           onClick={() => inv.revokeInvite(invite.id)}
                           aria-label="Withdraw invitation"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </div>
                     </li>
                   ))}

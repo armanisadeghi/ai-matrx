@@ -170,9 +170,12 @@ export function AutomationButton({
 
   const button = (
     <Button
+      icon={running ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <BrainCircuit />
+      )}
       variant="outline"
-      size="sm"
-      className="h-7 gap-1.5 text-[12px]"
       // The control cannot do what it offers, so it does not offer it. Every
       // blocked state has its own sentence below; none of them is silence.
       disabled={
@@ -198,11 +201,6 @@ export function AutomationButton({
         onRun(plan.variables);
       }}
     >
-      {running ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <BrainCircuit className="h-3.5 w-3.5" />
-      )}
       {running
         ? runningLabel
         : loading || surfacePending
@@ -223,9 +221,8 @@ export function AutomationButton({
     return (
       <div className="flex flex-wrap items-center gap-1.5">
         <Button
+          icon={<BrainCircuit />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 text-[12px]"
           onClick={() => {
             void ensureOrganizationContext().catch((err: unknown) => {
               if (isOrganizationSelectionCancelled(err)) return;
@@ -233,7 +230,6 @@ export function AutomationButton({
             });
           }}
         >
-          <BrainCircuit className="h-3.5 w-3.5" />
           {label}
         </Button>
         <span className="text-[11px] leading-snug text-muted-foreground">

@@ -15,7 +15,7 @@
 
 import { useState } from "react";
 import { Mic, Square, AudioLines } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useMandate } from "../../mandates/useMandate";
 import { VoiceMuteButton } from "../components/VoiceMuteButton";
 import type { SourceFeature } from "@ai-matrx/agents/generated/source-attribution";
@@ -67,8 +67,7 @@ function ActiveVoiceRelay({
   return (
     <>
       <Button
-        size="sm"
-        variant={live ? "destructive" : "default"}
+        variant={live ? "danger" : "primary"}
         onClick={relay.toggle}
       >
         {live ? (
@@ -113,8 +112,7 @@ export function VoiceRelayBar(props: VoiceRelayBarProps) {
       }
     >
       {!enabled ? (
-        <Button size="sm" variant="ghost" onClick={() => setEnabled(true)}>
-          <AudioLines className="mr-1.5 h-3.5 w-3.5" /> Voice
+        <Button icon={<AudioLines />} variant="quiet" onClick={() => setEnabled(true)}> Voice
         </Button>
       ) : communicator.loading ? (
         <span className="text-xs text-muted-foreground">

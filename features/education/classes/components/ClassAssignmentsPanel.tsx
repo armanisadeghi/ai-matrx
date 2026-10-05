@@ -57,12 +57,10 @@ export function ClassAssignmentsPanel({
           )}
         </h2>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-7 gap-1.5 text-xs"
           onClick={() => setAddOpen(true)}
         >
-          <Plus className="h-3.5 w-3.5" />
           Assign
         </Button>
       </div>
@@ -80,8 +78,7 @@ export function ClassAssignmentsPanel({
             No assignments yet. Assign a deck or a quiz and your roster gets it —
             with a due date and per-student completion tracking.
           </p>
-          <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4" />
+          <Button icon={<Plus />} variant="primary" onClick={() => setAddOpen(true)}>
             Assign content
           </Button>
         </div>
@@ -127,15 +124,13 @@ export function ClassAssignmentsPanel({
                   className="h-7 shrink-0 rounded-md border border-border bg-background px-2 text-xs text-foreground [color-scheme:light] dark:[color-scheme:dark] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 />
                 <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                  icon={<Trash2 />}
+                  variant="quiet"
+                  className="shrink-0"
                   disabled={assignments.acting}
                   onClick={() => remove(a.token, a.resourceId, a.title)}
                   aria-label="Remove assignment"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                />
               </li>
             );
           })}

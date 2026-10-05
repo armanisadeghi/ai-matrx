@@ -134,17 +134,16 @@ export function DirectiveCatalogClient() {
             </span>
           )}
           <Button
+            icon={<RefreshCw
+              className={isLoading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
+            />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={refresh}
             disabled={isLoading}
-            className="h-11 min-w-11 gap-1 px-2 lg:h-8 lg:min-w-0"
+            className="min-w-11 lg:min-w-0"
             aria-label="Refresh directive catalog"
           >
-            <RefreshCw
-              className={isLoading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
-            />
             <span className="sr-only lg:not-sr-only">Refresh</span>
           </Button>
         </div>
@@ -176,8 +175,7 @@ export function DirectiveCatalogClient() {
               {stripTerminalCodes(error)}
               <ErrorAlchemyMenu error={stripTerminalCodes(error)} />
             </p>
-            <Button type="button" variant="outline" size="sm" onClick={refresh}>
-              <RefreshCw className="h-3.5 w-3.5" />
+            <Button icon={<RefreshCw />} type="button" variant="outline" onClick={refresh}>
               Retry
             </Button>
           </div>

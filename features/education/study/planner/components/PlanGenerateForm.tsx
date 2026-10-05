@@ -298,15 +298,16 @@ export function PlanGenerateForm({
         </Field>
 
         <Button
-          className="mt-1 w-full gap-2 sm:w-auto"
+          icon={generating ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <CalendarClock />
+          )}
+          variant="primary"
+          className="mt-1 w-full sm:w-auto"
           disabled={!valid || generating}
           onClick={submit}
         >
-          {generating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <CalendarClock className="h-4 w-4" />
-          )}
           {generating ? "Building your plan…" : "Generate plan"}
         </Button>
       </div>

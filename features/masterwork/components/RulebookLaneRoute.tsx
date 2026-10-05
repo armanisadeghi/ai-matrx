@@ -413,7 +413,7 @@ function RulebookLaneRouteInstance({
               {ownerMessage ??
                 "Only the Rulebook's owner can work here — the rules have to come from the Expert themself."}
             </p>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <Link href={`/masterwork/${rulebookId}`}>Open the Rulebook</Link>
             </Button>
           </div>

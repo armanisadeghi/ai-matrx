@@ -8,7 +8,7 @@ import {
   UpdateEnumRequest,
 } from "@/types/enum-types";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -271,10 +271,9 @@ export default function EnumsContainer({
 
             {activeTab !== "list" && (
               <Button
+                type="submit"
                 onClick={handleBackToList}
                 variant="outline"
-                size="sm"
-                className="text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
               >
                 Back to List
               </Button>
@@ -299,34 +298,25 @@ export default function EnumsContainer({
                     />
                   </div>
                   <Button
+                    icon={<Search />} aria-label="Search"
+                    variant="primary"
                     type="submit"
-                    size="icon"
-                    className="h-10 w-10 bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
-                  >
-                    <Search className="h-4 w-4" />
-                    <span className="sr-only">Search</span>
-                  </Button>
+                  />
                   <Button
+                    icon={<Plus />} aria-label="New Enum"
+                    variant="primary"
                     type="button"
                     onClick={handleNewEnum}
-                    size="icon"
-                    className="h-10 w-10 bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span className="sr-only">New Enum</span>
-                  </Button>
+                  />
                   <Button
+                    icon={<RefreshCw
+                      className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+                    />} aria-label="Refresh"
+                    variant="primary"
                     type="button"
                     onClick={refreshEnums}
                     disabled={isRefreshing || loading}
-                    size="icon"
-                    className="h-10 w-10 bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
-                  >
-                    <RefreshCw
-                      className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-                    />
-                    <span className="sr-only">Refresh</span>
-                  </Button>
+                  />
                 </form>
               </div>
 
@@ -347,7 +337,7 @@ export default function EnumsContainer({
                           }
                           className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-slate-300 dark:border-slate-700 pr-8"
                         />
-                        <Button
+                        <SurfaceButton
                           type="button"
                           variant="ghost"
                           size="sm"
@@ -355,7 +345,7 @@ export default function EnumsContainer({
                           onClick={() => setCustomSchemaSearch(false)}
                         >
                           <X className="h-4 w-4" />
-                        </Button>
+                        </SurfaceButton>
                       </div>
                     ) : (
                       <Select

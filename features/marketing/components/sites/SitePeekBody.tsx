@@ -253,9 +253,7 @@ export default function SitePeekBody({ site }: SitePeekBodyProps) {
       </span>
       <Button
         asChild
-        size="sm"
         variant="outline"
-        className="h-6 text-[11px]"
       >
         <Link href={marketingRoutes.site(site.brand_id, site.id)}>
           Open workspace

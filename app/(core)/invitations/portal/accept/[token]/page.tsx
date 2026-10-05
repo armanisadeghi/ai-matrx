@@ -172,9 +172,8 @@ export default function AcceptPortalInvitationPage() {
         </div>
         <h2 className="mb-2 text-xl font-semibold">{opened.portal} is open to you</h2>
         <p className="mb-6 text-sm text-muted-foreground">{opened.say}</p>
-        <Button onClick={() => router.push(portalHref(opened.slug))}>
+        <Button iconEnd={<ArrowRight />} variant="primary" onClick={() => router.push(portalHref(opened.slug))}>
           Open {opened.portal}
-          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>,
     );
@@ -219,12 +218,11 @@ export default function AcceptPortalInvitationPage() {
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
         {error ? <p className="mb-4 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
-        <Button onClick={() => void open()} disabled={working}>
-          {working ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Button icon={working ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Check className="mr-2 h-4 w-4" />
-          )}
+            <Check />
+          )} variant="primary" onClick={() => void open()} disabled={working}>
           Open {peek.portal}
         </Button>
       </div>,
@@ -241,8 +239,7 @@ export default function AcceptPortalInvitationPage() {
         <h2 className="mb-2 text-xl font-semibold">{peek.offer}</h2>
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
-        <Button onClick={signIn}>
-          <LogIn className="mr-2 h-4 w-4" />
+        <Button icon={<LogIn />} variant="primary" onClick={signIn}>
           Sign in or create an account
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">
@@ -263,8 +260,7 @@ export default function AcceptPortalInvitationPage() {
         <h2 className="mb-2 text-xl font-semibold">This was sent to a different address</h2>
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
-        <Button onClick={signIn}>
-          <LogIn className="mr-2 h-4 w-4" />
+        <Button icon={<LogIn />} variant="primary" onClick={signIn}>
           Sign in as {peek.invited_email}
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">{peek.ask}</p>
@@ -281,9 +277,8 @@ export default function AcceptPortalInvitationPage() {
         </div>
         <h2 className="mb-2 text-xl font-semibold">{peek.portal} is already yours to open</h2>
         <p className="mb-6 text-sm text-muted-foreground">{peek.say}</p>
-        <Button onClick={() => router.push(portalHref(peek.slug))}>
+        <Button iconEnd={<ArrowRight />} variant="primary" onClick={() => router.push(portalHref(peek.slug))}>
           Open {peek.portal}
-          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>,
     );

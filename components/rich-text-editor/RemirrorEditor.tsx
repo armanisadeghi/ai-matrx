@@ -117,7 +117,7 @@ const LinkDialog: React.FC<{
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!url}>
+            <Button variant="primary" type="submit" disabled={!url}>
               Insert Link
             </Button>
           </DialogFooter>
@@ -179,7 +179,7 @@ const ImageDialog: React.FC<{
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={!src}>
+            <Button variant="primary" type="submit" disabled={!src}>
               Insert Image
             </Button>
           </DialogFooter>

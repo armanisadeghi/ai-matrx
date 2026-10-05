@@ -867,8 +867,8 @@ export function SortingTablePage({
         ) : null}
 
         <Button
-          size="lg"
-          className="min-h-12 w-full text-base"
+          variant="primary"
+          className="w-full"
           disabled={busy}
           onClick={() => void start()}
         >
@@ -929,8 +929,8 @@ export function SortingTablePage({
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row-reverse">
             <Button
-              size="lg"
-              className="min-h-12 flex-1 text-base"
+              variant="primary"
+              className="flex-1"
               disabled={busy}
               onClick={() => void findTheBoundary()}
             >
@@ -947,15 +947,13 @@ export function SortingTablePage({
               )}
             </Button>
             <Button
-              size="lg"
-              variant="ghost"
-              className="min-h-12 text-base text-muted-foreground"
+              icon={<Undo2 />}
+              variant="quiet"
               onClick={() => {
                 setIndex(0);
                 setHistory([]);
               }}
             >
-              <Undo2 className="mr-2 h-5 w-5" />
               Sort them again
             </Button>
           </div>
@@ -975,13 +973,11 @@ export function SortingTablePage({
             Case {index + 1} of {cases.length}
           </span>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 text-muted-foreground"
+            icon={<Undo2 />}
+            variant="quiet"
             disabled={history.length === 0}
             onClick={undo}
           >
-            <Undo2 className="mr-1.5 h-4 w-4" />
             Undo
           </Button>
         </div>
@@ -1050,12 +1046,10 @@ export function SortingTablePage({
             piles, S to skip, U to undo.
           </p>
           <Button
-            size="lg"
-            variant="ghost"
-            className="min-h-11 text-sm text-muted-foreground"
+            icon={<SkipForward />}
+            variant="quiet"
             onClick={skipCase}
           >
-            <SkipForward className="mr-2 h-4 w-4" />
             Can't place this one
           </Button>
         </div>
@@ -1121,8 +1115,9 @@ export function SortingTablePage({
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
-              size="lg"
-              className="min-h-12 flex-1 text-base"
+              icon={<RefreshCw />}
+              variant="primary"
+              className="flex-1"
               onClick={() => {
                 setPhase("setup");
                 setCases([]);
@@ -1132,14 +1127,12 @@ export function SortingTablePage({
                 setPicked([]);
               }}
             >
-              <RefreshCw className="mr-2 h-5 w-5" />
               Sort another pile
             </Button>
             <Button
               asChild
-              size="lg"
               variant="outline"
-              className="min-h-12 flex-1 text-base"
+              className="flex-1"
             >
               <Link href={`/masterwork/${rulebookId}`}>
                 See what landed{rulesThisSitting ? ` (${rulesThisSitting})` : ""}
@@ -1247,26 +1240,25 @@ export function SortingTablePage({
 
           <div className="flex shrink-0 flex-col gap-2 border-t border-border bg-background/95 pb-safe pt-3 backdrop-blur sm:flex-row-reverse">
             <Button
-              size="lg"
-              className="min-h-12 flex-1 text-base"
+              iconEnd={<ArrowRight />}
+              variant="primary"
+              className="flex-1"
               disabled={!answer.trim()}
               onClick={answerAndAdvance}
             >
               {questionIndex + 1 < questions.length
                 ? "Save and next"
                 : "Save and finish"}
-              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
-              size="lg"
-              variant="ghost"
-              className="min-h-12 text-base text-muted-foreground sm:flex-none"
+              icon={<SkipForward />}
+              variant="quiet"
+              className="sm:flex-none"
               onClick={() => {
                 setAnswer("");
                 setQuestionIndex((n) => n + 1);
               }}
             >
-              <SkipForward className="mr-2 h-5 w-5" />
               Skip this one
             </Button>
           </div>
@@ -1296,18 +1288,18 @@ export function SortingTablePage({
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
         <Button
-          size="lg"
-          className="min-h-12 flex-1 text-base"
+          icon={<RefreshCw />}
+          variant="primary"
+          className="flex-1"
           onClick={() => {
             setPhase("setup");
             setCases([]);
             setQuestions([]);
           }}
         >
-          <RefreshCw className="mr-2 h-5 w-5" />
           Sort another pile
         </Button>
-        <Button asChild size="lg" variant="outline" className="min-h-12 flex-1 text-base">
+        <Button asChild variant="outline" className="flex-1">
           <Link href={`/masterwork/${rulebookId}`}>Back to the Rulebook</Link>
         </Button>
       </div>

@@ -272,9 +272,11 @@ export default function LocalToolsDemo() {
                     tools.some((t) => loading.startsWith(`${t}-`));
                   return (
                     <Button
+                      icon={isRunning && (
+                        <Loader2 className="animate-spin" />
+                      )}
                       key={`sequence-${preset.label}`}
                       variant="outline"
-                      size="sm"
                       className={`h-7 text-xs ${!allAvailable ? "opacity-40" : ""}`}
                       disabled={isDisabled || !allAvailable}
                       title={
@@ -294,9 +296,6 @@ export default function LocalToolsDemo() {
                         }
                       }}
                     >
-                      {isRunning && (
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      )}
                       {preset.label}
                     </Button>
                   );
@@ -305,9 +304,12 @@ export default function LocalToolsDemo() {
                 const available = isToolAvailable(preset.tool);
                 return (
                   <Button
+                    icon={typeof loading === "string" &&
+                      loading.startsWith(`${preset.tool}-`) && (
+                        <Loader2 className="animate-spin" />
+                      )}
                     key={`${preset.tool}-${preset.label}`}
                     variant="outline"
-                    size="sm"
                     className={`h-7 text-xs ${!available ? "opacity-40" : ""}`}
                     disabled={isDisabled || !available}
                     title={
@@ -317,10 +319,6 @@ export default function LocalToolsDemo() {
                     }
                     onClick={() => runTool(preset.tool, preset.input)}
                   >
-                    {typeof loading === "string" &&
-                      loading.startsWith(`${preset.tool}-`) && (
-                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                      )}
                     {preset.label}
                   </Button>
                 );
@@ -371,16 +369,15 @@ export default function LocalToolsDemo() {
                     onKeyDown={(e) => e.key === "Enter" && runCustom()}
                   />
                   <Button
-                    size="sm"
-                    className="h-8 px-3"
+                    icon={loading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Send />
+                    )}
+                    variant="primary"
                     disabled={isDisabled}
                     onClick={runCustom}
                   >
-                    {loading ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Send className="w-3 h-3 mr-1" />
-                    )}
                     Send
                   </Button>
                 </div>

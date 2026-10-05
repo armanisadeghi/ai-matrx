@@ -125,13 +125,12 @@ function DuplicateGroupCard({
         </div>
         {redundant.length > 0 ? (
           <Button
-            size="sm"
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
             variant="outline"
             onClick={pauseExtras}
             disabled={busy}
-            className="h-11 shrink-0 gap-1.5 bg-background lg:h-8"
+            className="shrink-0"
           >
-            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             {redundant.length === 1
               ? "Pause the copy"
               : `Pause ${redundant.length} copies`}

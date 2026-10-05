@@ -247,18 +247,19 @@ export function ScoreSubmissionDialog({
                 <DialogFooter className="flex-col sm:flex-row gap-2">
                     {onShare && (
                         <Button
+                            icon={<Share2 />}
                             variant="outline"
                             onClick={() => {
                                 onShare();
                                 onOpenChange(false);
                             }}
-                            className="gap-2 w-full sm:w-auto"
+                            className="w-full sm:w-auto"
                         >
-                            <Share2 className="w-4 h-4" />
                             Share Result
                         </Button>
                     )}
                     <Button
+                        variant="primary"
                         onClick={() => onOpenChange(false)}
                         className="w-full sm:w-auto"
                     >

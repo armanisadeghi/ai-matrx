@@ -133,6 +133,7 @@ export default function SendSMS() {
           </div>
 
           <Button
+            variant="primary"
             onClick={handleSend}
             disabled={loading || !phoneNumber || !message}
             className="w-full"

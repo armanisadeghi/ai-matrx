@@ -590,9 +590,7 @@ export function SiteOverview() {
                     <CopyButtons size="icon" {...initIssuesCopy} />
                   </span>
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 text-xs"
                     disabled={initBusy}
                     onClick={() => void runInitialize()}
                   >
@@ -1222,19 +1220,19 @@ function QuickWorkCard({
   return (
     <SectionCard title="Quick work">
       <div className="grid gap-2 p-3 sm:grid-cols-2">
-        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+        <Button asChild variant="outline" className="justify-start">
           <Link href={marketingRoutes.site(brandId, webSiteId, "/crawls/new")}>
             <Play className="h-4 w-4" />
             Start a crawl
           </Link>
         </Button>
-        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+        <Button asChild variant="outline" className="justify-start">
           <Link href={marketingRoutes.site(brandId, webSiteId, "/pages")}>
             <FileText className="h-4 w-4" />
             Review canonical pages
           </Link>
         </Button>
-        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+        <Button asChild variant="outline" className="justify-start">
           <Link href={marketingRoutes.site(brandId, webSiteId, "/coverage")}>
             <ScanSearch className="h-4 w-4" />
             Coverage matrix
@@ -1246,7 +1244,7 @@ function QuickWorkCard({
           brandSeg={brandId}
           className="h-9 justify-start gap-2"
         />
-        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+        <Button asChild variant="outline" className="justify-start">
           <Link
             href={marketingRoutes.siteSettings(
               brandId,
@@ -1258,14 +1256,14 @@ function QuickWorkCard({
             Manage integrations
           </Link>
         </Button>
-        <Button asChild variant="outline" className="h-9 justify-start gap-2">
+        <Button asChild variant="outline" className="justify-start">
           <Link href={`/marketing/content-plan/${webSiteId}`}>
             <Network className="h-4 w-4" />
             Content plan
           </Link>
         </Button>
         {cmsPairing ? (
-          <Button asChild variant="outline" className="h-9 justify-start gap-2">
+          <Button asChild variant="outline" className="justify-start">
             <Link
               href={`/cms/${cmsPairing.siteId}`}
               title={
@@ -1439,17 +1437,15 @@ function ConnectionsStrip({
           {copy}
           {onReinitialize ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1.5 text-xs"
+              icon={reinitializeBusy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
+              variant="quiet"
               disabled={reinitializeBusy}
               onClick={onReinitialize}
             >
-              {reinitializeBusy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               Re-initialize
             </Button>
           ) : null}
@@ -1722,18 +1718,17 @@ function IdentityEditor({
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-1">
-        <Button size="sm" variant="ghost" className="h-8" onClick={onDone}>
+        <Button variant="quiet" onClick={onDone}>
           Cancel
         </Button>
         <Button
-          size="sm"
-          className="h-8"
+          icon={mutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
+          variant="primary"
           disabled={mutation.isPending}
           onClick={() => void save()}
         >
-          {mutation.isPending ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : null}
           Save
         </Button>
       </div>
@@ -1787,8 +1782,7 @@ function InitializeCard({
           ) : null}
         </div>
         <Button
-          size="sm"
-          className="h-9 gap-2"
+          variant="primary"
           disabled={busy}
           onClick={onInitialize}
         >

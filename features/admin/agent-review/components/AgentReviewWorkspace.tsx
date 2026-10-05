@@ -263,7 +263,7 @@ export default function AgentReviewWorkspace({
             Review failed to load
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">{error}</p>
-          <Button className="mt-4" size="sm" onClick={() => void refresh()}>
+          <Button variant="primary" className="mt-4" onClick={() => void refresh()}>
             Try again
           </Button>
           <ErrorAlchemyMenu />
@@ -363,15 +363,13 @@ export default function AgentReviewWorkspace({
         <header className="shrink-0 border-b bg-card px-4 py-3 lg:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
+              icon={<ChevronLeft />}
+              variant="quiet"
+              className="shrink-0"
               aria-label="Back to reviews"
               title="Back to reviews"
               onClick={() => router.back()}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
+            />
 
             <div className="min-w-0 flex-1">
               <h1
@@ -384,9 +382,8 @@ export default function AgentReviewWorkspace({
 
             <Button
               asChild
-              size="sm"
               variant="outline"
-              className="h-11 shrink-0 sm:h-9"
+              className="shrink-0"
             >
               <AppLink href={row.url} target="_blank" rel="noreferrer">
                 <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
@@ -501,7 +498,7 @@ export default function AgentReviewWorkspace({
           />
           <div className="mt-3 grid gap-2">
             <Button
-              className="h-11 sm:h-9"
+              variant="primary"
               disabled={
                 saving || status !== "ready_for_human" || !feedback.trim()
               }
@@ -510,27 +507,25 @@ export default function AgentReviewWorkspace({
               Request changes
             </Button>
             <Button
-              className="h-11 sm:h-9"
+              icon={<Check />}
               variant="outline"
               disabled={saving || status !== "ready_for_human"}
               onClick={() => void act("approved", feedback)}
-            >
-              <Check className="mr-1.5 h-4 w-4" /> Approve
+            > Approve
             </Button>
             <Button
-              className="h-11 sm:h-9"
+              icon={<Flag />}
               variant="outline"
               disabled={
                 saving || status !== "ready_for_human" || !feedback.trim()
               }
               title="Approve this review and raise your note as a new feedback item"
               onClick={() => void onApproveAndRaise(false)}
-            >
-              <Flag className="mr-1.5 h-4 w-4" /> Approve and raise
+            > Approve and raise
             </Button>
             <Button
-              className="h-11 sm:h-9"
-              variant="ghost"
+              icon={<RotateCcw />}
+              variant="quiet"
               disabled={saving || status === "archived"}
               onClick={() =>
                 void act(
@@ -539,13 +534,11 @@ export default function AgentReviewWorkspace({
                     "Run the agent review again from the beginning.",
                 )
               }
-            >
-              <RotateCcw className="mr-1.5 h-4 w-4" /> Run agent review again
+            > Run agent review again
             </Button>
             {status === "approved" ? (
               <Button
-                className="h-11 sm:h-9"
-                variant="secondary"
+                variant="outline"
                 disabled={saving}
                 onClick={() => void act("archived", feedback)}
               >
@@ -582,8 +575,7 @@ export default function AgentReviewWorkspace({
                   above. Only the new feedback item is missing — retry it here.
                 </p>
                 <Button
-                  className="mt-2 h-9"
-                  size="sm"
+                  className="mt-2"
                   variant="outline"
                   disabled={saving}
                   onClick={() => void onApproveAndRaise(true)}

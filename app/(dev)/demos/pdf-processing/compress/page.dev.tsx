@@ -158,7 +158,7 @@ export default function CompressDemo() {
       </div>
 
       <div className="flex items-center justify-end">
-        <Button onClick={run} disabled={running || !file} size="lg">
+        <Button variant="primary" onClick={run} disabled={running || !file}>
           {running ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Running…

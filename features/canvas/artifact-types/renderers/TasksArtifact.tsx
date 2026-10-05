@@ -12,7 +12,7 @@ import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/task
 import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { isMaterializedArtifactId } from "../artifactId";

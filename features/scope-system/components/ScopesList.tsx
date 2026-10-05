@@ -330,8 +330,7 @@ export function ScopesList({
           {canManage && (
             <div className="flex items-center gap-2 shrink-0">
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setEditingType(true)}
                 title="Quick edit"
                 aria-label={`Quick edit ${scopeType.label_singular} settings`}
@@ -385,16 +384,14 @@ export function ScopesList({
           <div className="flex items-center gap-2">
             {canManage && scopeCount > 1 && (
               <Button
+                icon={<ArrowUpDown />}
                 variant="outline"
-                size="sm"
                 onClick={() => setReorderScopesOpen(true)}
               >
-                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
                 Edit order
               </Button>
             )}
-            <Button size="sm" onClick={() => setAdding(true)} disabled={adding}>
-              <Plus className="h-3.5 w-3.5 mr-1.5" />
+            <Button icon={<Plus />} variant="primary" onClick={() => setAdding(true)} disabled={adding}>
               New {scopeType.label_singular}
             </Button>
           </div>
@@ -442,8 +439,7 @@ export function ScopesList({
               Add your first {scopeType.label_singular.toLowerCase()} to get
               started.
             </p>
-            <Button onClick={() => setAdding(true)}>
-              <Plus className="h-4 w-4 mr-1.5" />
+            <Button icon={<Plus />} variant="primary" onClick={() => setAdding(true)}>
               Add {scopeType.label_singular}
             </Button>
           </Card>
@@ -503,12 +499,10 @@ export function ScopesList({
             {!adding && (
               <div className="px-3 py-2 border-t border-border">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<Plus />}
+                  variant="quiet"
                   onClick={() => setAdding(true)}
-                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1" />
                   Add {scopeType.label_singular.toLowerCase()}
                 </Button>
               </div>
@@ -533,41 +527,38 @@ export function ScopesList({
             <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary" />
           </Link>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="quiet">
               <Link href={contextItemsHref(orgSlugOrId, scopeType)}>
                 Open page
               </Link>
             </Button>
             {canManage && resolvedTypeId && (
               <Button
+                icon={<PanelsTopLeft />}
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   openContextItemsWindow({ scopeTypeId: resolvedTypeId })
                 }
               >
-                <PanelsTopLeft className="h-3.5 w-3.5 mr-1.5" />
                 Manage in panel
               </Button>
             )}
             {canManage && items.length > 1 && (
               <Button
+                icon={<ArrowUpDown />}
                 variant="outline"
-                size="sm"
                 onClick={() => setReorderItemsOpen(true)}
               >
-                <ArrowUpDown className="h-3.5 w-3.5 mr-1.5" />
                 Edit order
               </Button>
             )}
             {canManage && !addingItem && (
               <Button
+                icon={<Plus />}
                 ref={addItemTriggerRef}
                 variant="outline"
-                size="sm"
                 onClick={() => setAddingItem(true)}
               >
-                <Plus className="h-3.5 w-3.5 mr-1.5" />
                 Add context item
               </Button>
             )}
@@ -775,20 +766,16 @@ function ContextItemRow({
       {canManage && (
         <div className="order-3 flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onEdit}
-            className="h-7 px-2"
             aria-label={`Edit ${item.display_name}`}
           >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onDelete}
             disabled={deleting}
-            className="h-7 px-2 text-muted-foreground hover:text-destructive"
             aria-label={`Delete ${item.display_name}`}
           >
             {deleting ? (

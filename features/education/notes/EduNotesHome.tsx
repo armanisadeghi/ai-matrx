@@ -372,8 +372,7 @@ export function EduNotesHome() {
         <EducationToolHeader title="Smart Notes" />
         <div className="mx-auto max-w-4xl px-4 sm:px-6 pb-5 sm:pb-6">
           <div className="flex items-center justify-end">
-            <Button onClick={createNote} disabled={creating || isPending}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button icon={<Plus />} variant="primary" onClick={createNote} disabled={creating || isPending}>
               New note
             </Button>
           </div>
@@ -442,11 +441,12 @@ export function EduNotesHome() {
                   flashcards, a quiz, a summary, or a mind map in one click.
                 </p>
                 <Button
+                  icon={<Plus />}
+                  variant="primary"
                   onClick={createNote}
                   className="mt-2"
                   disabled={creating}
                 >
-                  <Plus className="mr-1.5 h-4 w-4" />
                   New note
                 </Button>
               </div>
@@ -513,46 +513,37 @@ export function EduNotesHome() {
                     {n.created_by === userId && (
                       <div className="flex shrink-0 items-center gap-0.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                         <Button
+                          icon={<Pencil />}
                           type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
+                          variant="quiet"
                           aria-label={`Edit ${n.label || "Untitled note"}`}
                           onClick={(event) => {
                             event.stopPropagation();
                             open(n.id);
                           }}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                         <Button
+                          icon={<Copy />}
                           type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
+                          variant="quiet"
                           aria-label={`Copy ${n.label || "Untitled note"}`}
                           disabled={busyNoteId === n.id}
                           onClick={(event) => {
                             event.stopPropagation();
                             void copyNote(n);
                           }}
-                        >
-                          <Copy className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                         <Button
+                          icon={<Trash2 />}
                           type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          variant="quiet"
                           aria-label={`Move ${n.label || "Untitled note"} to Trash`}
                           disabled={busyNoteId === n.id}
                           onClick={(event) => {
                             event.stopPropagation();
                             void deleteNote(n);
                           }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </div>
                     )}
                   </div>

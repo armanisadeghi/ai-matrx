@@ -169,9 +169,8 @@ function SectionCard({
         <div className="flex shrink-0 items-center gap-0.5">
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
+            variant="quiet"
+            className="w-8"
             disabled={index === 0}
             onClick={() => onMove(-1)}
             aria-label={`Move "${section.heading || "section"}" up`}
@@ -181,9 +180,8 @@ function SectionCard({
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
+            variant="quiet"
+            className="w-8"
             disabled={index === total - 1}
             onClick={() => onMove(1)}
             aria-label={`Move "${section.heading || "section"}" down`}
@@ -193,9 +191,8 @@ function SectionCard({
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0"
+            variant="quiet"
+            className="w-8"
             disabled={reviseBusy}
             onClick={onRevise}
             aria-label={`Ask AI to revise "${section.heading || "this section"}"`}
@@ -209,9 +206,8 @@ function SectionCard({
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            variant="quiet"
+            className="w-8"
             onClick={onRemove}
             aria-label={`Remove "${section.heading || "section"}"`}
             title="Remove this section"
@@ -556,13 +552,11 @@ export function PageDraftEditor({
           ) : null}
           {revisions.length > 1 ? (
             <Button
+              icon={<History />}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 gap-1 px-1.5 text-[11px]"
+              variant="quiet"
               onClick={() => setShowHistory((open) => !open)}
             >
-              <History className="h-3 w-3" />
               {revisions.length} versions
             </Button>
           ) : null}
@@ -688,13 +682,11 @@ export function PageDraftEditor({
           ))}
 
           <Button
+            icon={<Plus />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-7 gap-1 text-xs"
             onClick={addSection}
           >
-            <Plus className="h-3 w-3" />
             Add a section
           </Button>
 
@@ -746,26 +738,24 @@ export function PageDraftEditor({
         {/* ── the actions ── every one verb-labeled, nothing runs on hover. */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Button
+            icon={saver.isSaving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             type="button"
-            size="sm"
-            className="h-7 gap-1 text-xs"
             disabled={!dirty || busy}
             onClick={() => void save()}
           >
-            {saver.isSaving ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Save className="h-3 w-3" />
-            )}
             Save changes
           </Button>
 
           {dirty ? (
             <Button
+              icon={<RotateCcw />}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-xs"
+              variant="quiet"
               disabled={busy}
               onClick={() => {
                 setValue(resolved?.draft ?? EMPTY_PAGE_DRAFT);
@@ -773,7 +763,6 @@ export function PageDraftEditor({
                 setDirty(false);
               }}
             >
-              <RotateCcw className="h-3 w-3" />
               Discard my changes
             </Button>
           ) : null}
@@ -783,10 +772,13 @@ export function PageDraftEditor({
               <TooltipTrigger asChild>
                 <span>
                   <Button
+                    icon={buildBusy ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Hammer />
+                    )}
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className="h-7 gap-1 text-xs"
                     disabled={busy || buildBusy || Boolean(buildDisabledReason)}
                     onClick={async () => {
                       if (dirty) {
@@ -796,11 +788,6 @@ export function PageDraftEditor({
                       await onBuild();
                     }}
                   >
-                    {buildBusy ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Hammer className="h-3 w-3" />
-                    )}
                     Build the page
                   </Button>
                 </span>
@@ -818,18 +805,16 @@ export function PageDraftEditor({
             <Tooltip key={option.key}>
               <TooltipTrigger asChild>
                 <Button
+                  icon={busyGuidance === option.key ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <option.Icon />
+                  )}
                   type="button"
                   variant="outline"
-                  size="sm"
-                  className="h-7 gap-1 text-xs"
                   disabled={busy}
                   onClick={() => void runGuided(option.key, option.guidance)}
                 >
-                  {busyGuidance === option.key ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <option.Icon className="h-3 w-3" />
-                  )}
                   {option.label}
                 </Button>
               </TooltipTrigger>

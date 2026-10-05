@@ -75,19 +75,17 @@ export function RecordUnavailableNotice({
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {onRetry ? (
                 <Button
-                  size="sm"
+                  icon={<RotateCcw />}
                   variant="outline"
-                  className="h-7"
                   onClick={onRetry}
                 >
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
                   Retry
                 </Button>
               ) : null}
-              <Button size="sm" variant="outline" className="h-7" asChild>
+              <Button variant="outline" asChild>
                 <Link href={marketingRoutes.sites()}>All sites</Link>
               </Button>
-              <Button size="sm" variant="outline" className="h-7" asChild>
+              <Button variant="outline" asChild>
                 <Link href={marketingRoutes.brands()}>All brands</Link>
               </Button>
               {deleted ? null : (
@@ -95,24 +93,21 @@ export function RecordUnavailableNotice({
                   open={pickerOpen}
                   onOpenChange={setPickerOpen}
                   trigger={
-                    <Button size="sm" variant="outline" className="h-7">
-                      <Building2 className="mr-1.5 h-3.5 w-3.5" />
+                    <Button icon={<Building2 />} type="submit" variant="outline">
                       Switch organization
                     </Button>
                   }
                 />
               )}
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7"
+                icon={<LifeBuoy />}
+                variant="quiet"
                 onClick={() =>
                   openFeedback({
                     title: `Can't open this ${error.entity}`,
                   })
                 }
               >
-                <LifeBuoy className="mr-1.5 h-3.5 w-3.5" />
                 Report this
               </Button>
             </div>

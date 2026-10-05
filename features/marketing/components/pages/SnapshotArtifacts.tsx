@@ -42,25 +42,23 @@ export function SnapshotArtifacts({
       <div className="flex flex-wrap gap-2">
         {snapshot.body_file_id ? (
           <Button
+            icon={<FileCode2 />}
             variant="outline"
-            size="sm"
             onClick={() =>
               openFilePreview({ fileId: snapshot.body_file_id })
             }
           >
-            <FileCode2 className="mr-1.5 h-3.5 w-3.5" />
             Open captured HTML
           </Button>
         ) : null}
         {snapshot.markdown_file_id ? (
           <Button
+            icon={<FileText />}
             variant="outline"
-            size="sm"
             onClick={() =>
               openFilePreview({ fileId: snapshot.markdown_file_id })
             }
           >
-            <FileText className="mr-1.5 h-3.5 w-3.5" />
             Open extracted Markdown
           </Button>
         ) : null}

@@ -322,7 +322,7 @@ function SeedCard({ prospects }: { prospects: LinkGapProspects }) {
             {seed.confirmed_competitors} of {seed.total_competitors} competitors
             confirmed so far.
           </p>
-          <Button asChild size="sm" className="mt-1.5 gap-1.5">
+          <Button variant="primary" asChild className="mt-1.5">
             <Link
               href={`${marketingRoutes.competitors()}?siteId=${prospects.siteId}`}
             >
@@ -556,8 +556,12 @@ export function BacklinkProspectsTab({
             ) : null}
           </div>
           <Button
-            size="sm"
-            className="gap-1.5"
+            icon={run.status === "running" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Radar />
+            )}
+            variant="primary"
             disabled={!canRun || run.status === "running"}
             title={
               canRun
@@ -566,11 +570,6 @@ export function BacklinkProspectsTab({
             }
             onClick={() => void prospects.startRun()}
           >
-            {run.status === "running" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Radar className="h-3.5 w-3.5" />
-            )}
             Find prospects
           </Button>
         </div>
@@ -584,9 +583,13 @@ export function BacklinkProspectsTab({
           {pendingCount} waiting on you · {approvedCount} approved
         </span>
         <Button
-          size="sm"
+          icon={prospects.folding ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Users />
+          )}
           variant="outline"
-          className="ml-auto gap-1.5"
+          className="ml-auto"
           disabled={approvedCount === 0 || prospects.folding}
           title={
             approvedCount === 0
@@ -595,17 +598,11 @@ export function BacklinkProspectsTab({
           }
           onClick={() => void prospects.foldApproved()}
         >
-          {prospects.folding ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Users className="h-3.5 w-3.5" />
-          )}
           Create CRM records ({approvedCount})
         </Button>
         <Button
-          size="sm"
+          icon={<Megaphone />}
           variant="outline"
-          className="gap-1.5"
           disabled={selectedPartyIds.length === 0}
           title={
             selectedPartyIds.length
@@ -614,10 +611,9 @@ export function BacklinkProspectsTab({
           }
           onClick={() => setEnrolling(true)}
         >
-          <Megaphone className="h-3.5 w-3.5" />
           Add to outreach ({selectedPartyIds.length})
         </Button>
-        <Button asChild size="sm" variant="ghost" className="gap-1.5">
+        <Button asChild variant="quiet">
           <Link
             href={`${marketingRoutes.competitors()}?siteId=${prospects.siteId}`}
           >
@@ -688,8 +684,7 @@ export function BacklinkProspectsTab({
               <>
                 {row.review_status === "approved" ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     disabled={prospects.reviewing}
                     onClick={() => void prospects.review([row.id], "pending")}
                   >
@@ -697,19 +692,16 @@ export function BacklinkProspectsTab({
                   </Button>
                 ) : (
                   <Button
-                    size="sm"
+                    icon={<CheckCircle2 />}
                     variant="outline"
-                    className="gap-1"
                     disabled={prospects.reviewing}
                     onClick={() => void prospects.review([row.id], "approved")}
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Approve
                   </Button>
                 )}
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   disabled={prospects.reviewing}
                   onClick={() => void prospects.review([row.id], "rejected")}
                 >
@@ -734,38 +726,33 @@ export function BacklinkProspectsTab({
               actions: (_selected, selectedIds) => (
                 <div className="flex items-center gap-1">
                   <Button
-                    size="sm"
-                    className="gap-1"
+                    icon={<CheckCircle2 />}
+                    variant="primary"
                     disabled={prospects.reviewing}
                     onClick={() =>
                       void prospects.review(selectedIds, "approved")
                     }
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Approve
                   </Button>
                   <Button
-                    size="sm"
+                    icon={<Clock />}
                     variant="outline"
-                    className="gap-1"
                     disabled={prospects.reviewing}
                     onClick={() =>
                       void prospects.review(selectedIds, "snoozed")
                     }
                   >
-                    <Clock className="h-3.5 w-3.5" />
                     Later
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="gap-1"
+                    icon={<Ban />}
+                    variant="quiet"
                     disabled={prospects.reviewing}
                     onClick={() =>
                       void prospects.review(selectedIds, "rejected")
                     }
                   >
-                    <Ban className="h-3.5 w-3.5" />
                     Not for us
                   </Button>
                 </div>
@@ -824,7 +811,7 @@ export function BacklinkProspectsTab({
                 ? `Run the comparison to find the sites that link to your competitors but not to ${siteDomain}.`
                 : "Confirm at least one competitor, then run the comparison — the prospects come from who links to them.",
               action: seed?.can_run ? undefined : (
-                <Button asChild size="sm" className="gap-1.5">
+                <Button variant="primary" asChild>
                   <Link
                     href={`${marketingRoutes.competitors()}?siteId=${prospects.siteId}`}
                   >

@@ -223,9 +223,7 @@ export function HrSettingsHub() {
             </div>
             <Button
               type="button"
-              size="sm"
-              variant={overriddenOnly ? "default" : "outline"}
-              className="min-h-11 sm:min-h-9"
+              variant={overriddenOnly ? "primary" : "outline"}
               onClick={() => setOverriddenOnly((current) => !current)}
             >
               {overriddenOnly ? "Showing overrides only" : "Show overrides only"}

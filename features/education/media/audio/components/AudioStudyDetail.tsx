@@ -205,14 +205,12 @@ function Header({
   return (
     <div className="flex items-start gap-3">
       <Button
-        variant="ghost"
-        size="icon"
+        icon={<ArrowLeft />}
+        variant="quiet"
         className="mt-0.5 shrink-0"
         onClick={onBack}
         aria-label="Back"
-      >
-        <ArrowLeft className="h-4 w-4" />
-      </Button>
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
@@ -228,7 +226,7 @@ function Header({
           {media.title}
         </h1>
       </div>
-      {!access.loading && canEditAccess(access.level) && <Button size="sm" variant="outline" onClick={() => router.push(`/education/audio-study/${media.id}/edit`)}><Pencil className="mr-1 h-4 w-4" />Edit</Button>}
+      {!access.loading && canEditAccess(access.level) && <Button icon={<Pencil />} variant="outline" onClick={() => router.push(`/education/audio-study/${media.id}/edit`)}>Edit</Button>}
       {isOwner && (
         <div className="flex shrink-0 items-center gap-1">
           <ShareButton
@@ -239,13 +237,11 @@ function Header({
             size="sm"
           />
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<Trash2 className="text-muted-foreground" />}
+            variant="quiet"
             onClick={handleDelete}
             aria-label="Move to Trash"
-          >
-            <Trash2 className="h-4 w-4 text-muted-foreground" />
-          </Button>
+          />
         </div>
       )}
     </div>
@@ -267,12 +263,10 @@ function ReadyAudioView({ media }: { media: StudyMediaRow }) {
       {isOwner && (
         <div className="flex items-center gap-2 border-t border-border pt-3">
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
-            className="gap-1.5"
             onClick={() => router.push(regenerateHref(media))}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Generate a new version
           </Button>
         </div>
@@ -311,7 +305,7 @@ function LiveAudioRun({
           This audio study never got a generation run, so there is nothing to
           resume.
         </div>
-        <Button asChild size="sm" variant="outline">
+        <Button asChild variant="outline">
           <Link href={regenerateHref(media)}>
             <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Generate a new version
@@ -358,7 +352,7 @@ function LiveAudioRun({
           </div>
           {run.canRerun ? (
             <Button
-              size="sm"
+              icon={<RefreshCw />}
               variant="outline"
               onClick={() => {
                 void studyMediaService.update(media.id, {
@@ -367,11 +361,10 @@ function LiveAudioRun({
                 run.rerunFromSource();
               }}
             >
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
               Try again
             </Button>
           ) : (
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link href={regenerateHref(media)}>
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                 Generate a new version

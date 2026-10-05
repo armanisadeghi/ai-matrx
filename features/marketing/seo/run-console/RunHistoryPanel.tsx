@@ -326,12 +326,10 @@ function RunDetail({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex items-center gap-2 border-b border-border px-2 py-1.5">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[10px]"
+          icon={<ChevronLeft />}
+          variant="quiet"
           onClick={onBack}
         >
-          <ChevronLeft className="mr-0.5 h-3 w-3" />
           All runs
         </Button>
         <span className="truncate text-xs font-medium text-foreground">
@@ -583,14 +581,12 @@ function FilterBar({
 
       {count > 0 ? (
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 gap-0.5 px-1.5 text-[11px]"
+          icon={<X />}
+          variant="quiet"
           onClick={() =>
             onChange({ ...EMPTY_RUN_HISTORY_FILTERS, activity: filters.activity })
           }
         >
-          <X className="h-3 w-3" />
           Clear {count}
         </Button>
       ) : null}
@@ -639,9 +635,8 @@ function QuietGroups({
           </span>
         </button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="ml-auto h-6 shrink-0 px-1.5 text-[11px]"
+          variant="quiet"
+          className="ml-auto shrink-0"
           onClick={onShowAll}
         >
           Show every run
@@ -836,12 +831,10 @@ export function RunHistoryPanel() {
           <ErrorAlchemyMenu />
         </p>
         <Button
-          size="sm"
+          icon={<ChevronLeft />}
           variant="outline"
-          className="h-7 text-xs"
           onClick={() => commit(filters, null)}
         >
-          <ChevronLeft className="mr-0.5 h-3 w-3" />
           All runs
         </Button>
       </div>
@@ -873,9 +866,7 @@ export function RunHistoryPanel() {
         </span>
         {filters.activity === "all" ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[11px]"
+            variant="quiet"
             onClick={() =>
               setFilters({ ...filters, activity: "ai", taskId: expandedTask ? null : filters.taskId })
             }
@@ -884,9 +875,8 @@ export function RunHistoryPanel() {
           </Button>
         ) : null}
         <Button
-          size="sm"
-          variant="ghost"
-          className="ml-auto h-6 px-1.5"
+          variant="quiet"
+          className="ml-auto"
           aria-label="Refresh run history"
           onClick={() => {
             void runs.refetch();
@@ -956,15 +946,13 @@ export function RunHistoryPanel() {
               </span>
               {runs.hasNextPage ? (
                 <Button
-                  size="sm"
+                  icon={runs.isFetchingNextPage ? (
+                    <Loader2 className="animate-spin" />
+                  ) : null}
                   variant="outline"
-                  className="h-7 text-xs"
                   disabled={runs.isFetchingNextPage}
                   onClick={() => void runs.fetchNextPage()}
                 >
-                  {runs.isFetchingNextPage ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                  ) : null}
                   Load more
                 </Button>
               ) : (

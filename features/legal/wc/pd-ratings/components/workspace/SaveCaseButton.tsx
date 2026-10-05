@@ -114,9 +114,7 @@ export function SaveCaseButton({
       type="button"
       onClick={handleClick}
       disabled={disabled}
-      size="sm"
-      variant={isSavedCase && !isDirty ? "outline" : "default"}
-      className="gap-1.5"
+      variant={isSavedCase && !isDirty ? "outline" : "primary"}
     >
       {isSaving ? (
         <>

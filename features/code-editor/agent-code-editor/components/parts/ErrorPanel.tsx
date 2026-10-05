@@ -64,9 +64,7 @@ export function ErrorPanel({
               Raw AI Response
             </span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-1.5"
+              variant="quiet"
               onClick={onCopyResponse}
               disabled={!rawAIResponse}
             >

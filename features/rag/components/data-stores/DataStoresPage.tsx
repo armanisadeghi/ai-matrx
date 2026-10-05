@@ -317,18 +317,16 @@ function EmptyPaneActions({ onNew }: { onNew: () => void }) {
   const openPanel = useOpenMobilePanel();
   return (
     <div className="matrx-touch-targets flex flex-wrap gap-2">
-      <Button size="sm" className="gap-1.5" onClick={onNew}>
-        <Plus className="h-3.5 w-3.5" />
+      <Button icon={<Plus />} type="submit" variant="primary" onClick={onNew}>
         New store
       </Button>
       {openPanel ? (
         <Button
-          size="sm"
+          icon={<Database />}
+          type="submit"
           variant="outline"
-          className="gap-1.5"
           onClick={() => openPanel("stores")}
         >
-          <Database className="h-3.5 w-3.5" />
           Browse stores
         </Button>
       ) : null}
@@ -479,12 +477,12 @@ function CreateStoreInline({
   if (!open) {
     return (
       <Button
-        variant="ghost"
-        size="sm"
-        className="justify-start gap-2 text-xs h-9 rounded-none border-b w-full"
+        icon={<Plus />}
+        type="submit"
+        variant="quiet"
+        className="justify-start w-full"
         onClick={() => setOpen(true)}
-      >
-        <Plus className="h-3.5 w-3.5" /> New data store
+      > New data store
       </Button>
     );
   }
@@ -543,8 +541,8 @@ function CreateStoreInline({
       />
       <div className="flex items-center gap-1.5">
         <Button
+          variant="primary"
           type="submit"
-          size="sm"
           className="flex-1"
           disabled={!name.trim() || pending}
         >
@@ -556,8 +554,7 @@ function CreateStoreInline({
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={() => {
             setOpen(false);
             setErr(null);
@@ -882,28 +879,28 @@ function StoreDetailPanel({
           <div className="ml-auto flex items-center gap-1">
             {canPublish && (
               <Button
-                size="sm"
+                icon={<Share2 />}
+                type="submit"
                 variant="outline"
                 onClick={() => setPublishOpen(true)}
               >
-                <Share2 className="h-3.5 w-3.5" />
                 Publish
               </Button>
             )}
             {!readOnly && (
               <>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={<Pencil />}
+                  type="submit"
+                  variant="quiet"
                   onClick={() => setEditing((e) => !e)}
                 >
-                  <Pencil className="h-3.5 w-3.5" />
                   Edit
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive"
+                  icon={<Trash2 />}
+                  type="submit"
+                  variant="quiet"
                   onClick={async () => {
                     const ok = await confirm({
                       title: "Move data store to Trash",
@@ -916,7 +913,6 @@ function StoreDetailPanel({
                     if (deleted) onDeleted();
                   }}
                 >
-                  <Trash2 className="h-3.5 w-3.5" />
                   Move to Trash
                 </Button>
               </>
@@ -966,20 +962,19 @@ function StoreDetailPanel({
             {!readOnly && (
               <>
                 <Button
-                  size="sm"
+                  icon={<FilePlus />}
+                  type="submit"
                   variant="outline"
                   onClick={() => setPickerOpen(true)}
-                >
-                  <FilePlus className="h-3.5 w-3.5" /> Pick from your files
+                > Pick from your files
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-muted-foreground"
+                  icon={<Plus />}
+                  type="submit"
+                  variant="quiet"
                   onClick={() => setAdvancedOpen(true)}
                   title="Bind a source by id"
-                >
-                  <Plus className="h-3.5 w-3.5" /> Advanced
+                > Advanced
                 </Button>
               </>
             )}
@@ -1144,9 +1139,9 @@ function MemberTable({
               </td>
               <td className="px-3 py-1.5 text-right">
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 w-7 p-0 text-destructive"
+                  type="submit"
+                  variant="quiet"
+                  className="w-7"
                   onClick={async () => {
                     const ok = await confirm({
                       title: "Remove member",
@@ -1237,10 +1232,10 @@ function AddMemberForm({
         />
       </label>
       <div className="flex items-center gap-1.5">
-        <Button type="submit" size="sm" disabled={!sourceId.trim() || pending}>
+        <Button variant="primary" type="submit" disabled={!sourceId.trim() || pending}>
           {pending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Add"}
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           <X className="h-3.5 w-3.5" />
         </Button>
       </div>
@@ -1335,12 +1330,12 @@ function EditStoreForm({
         <span>active</span>
       </label>
       <div className="sm:col-span-2 flex items-center gap-1.5 justify-end">
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
         <Button
+          variant="primary"
           type="button"
-          size="sm"
           disabled={!dirty || pending}
           onClick={async () => {
             setPending(true);

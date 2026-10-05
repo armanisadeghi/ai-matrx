@@ -23,14 +23,8 @@ export function WatchButton({
 }) {
   return (
     <Button
-      variant="ghost"
-      size="sm"
-      className={cn(
-        "h-6 w-6 p-0",
-        watched
-          ? "text-primary hover:text-primary"
-          : "text-muted-foreground/50 hover:text-foreground",
-      )}
+      variant="quiet"
+      className="w-6"
       aria-label={watched ? `Stop watching this ${noun}` : `Watch this ${noun}`}
       title={
         watched

@@ -80,15 +80,12 @@ export function ClassProgressPanel({
           Class progress
         </h2>
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground"
+          icon={<RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />}
+          variant="quiet"
           disabled={loading}
           onClick={() => void reload()}
           aria-label="Refresh class progress"
-        >
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
-        </Button>
+        />
       </div>
 
       {loading ? (

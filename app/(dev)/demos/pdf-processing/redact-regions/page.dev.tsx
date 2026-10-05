@@ -100,13 +100,12 @@ export default function RedactRegionsDemo() {
                 <span className="text-sm font-medium">Region #{i + 1}</span>
                 {regions.length > 1 ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    icon={<Trash2 />}
+                    variant="quiet"
                     onClick={() =>
                       setRegions((prev) => prev.filter((_, j) => j !== i))
                     }
-                  >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove
+                  > Remove
                   </Button>
                 ) : null}
               </div>
@@ -153,11 +152,10 @@ export default function RedactRegionsDemo() {
             </div>
           ))}
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
             onClick={() => setRegions((prev) => [...prev, { ...EMPTY_REGION }])}
-          >
-            <Plus className="h-3.5 w-3.5 mr-1" /> Add region
+          > Add region
           </Button>
         </div>
       }

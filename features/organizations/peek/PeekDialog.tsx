@@ -118,14 +118,14 @@ export function PeekDialog({
 
         {resolvedHref && (
           <DialogFooter className="px-5 py-3 border-t border-border">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <a href={resolvedHref} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
                 New tab
               </a>
             </Button>
             <Button
-              size="sm"
+              variant="primary"
               onClick={() => {
                 onClose();
                 router.push(resolvedHref);

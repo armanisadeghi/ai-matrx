@@ -114,20 +114,18 @@ export function SchemaTableTokenFields({
         />
         {onAutofillToken ? (
           <Button
+            icon={autofilling ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Zap />
+            )} aria-label="Fill the token from the entity registry"
             type="button"
             variant="outline"
-            size="icon"
-            className="h-8 w-8 shrink-0"
+            className="shrink-0"
             title="Fill the token from the entity registry"
             onClick={onAutofillToken}
             disabled={disabled || autofilling || loading}
-          >
-            {autofilling ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Zap className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          />
         ) : null}
       </div>
 

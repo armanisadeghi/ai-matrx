@@ -131,15 +131,14 @@ export function SelectedPdfPages({
             const active = entry.output_page === derivativePage;
             return (
               <Button
+                icon={active ? <Check /> : null}
                 key={`${entry.output_page}-${entry.source_page}`}
                 type="button"
-                variant={active ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 shrink-0 gap-1 px-2 text-xs tabular-nums"
+                variant={active ? "outline" : "quiet"}
+                className="shrink-0"
                 onClick={() => setDerivativePage(entry.output_page)}
                 aria-pressed={active}
               >
-                {active ? <Check className="h-3 w-3" /> : null}
                 {entry.source_page}
               </Button>
             );

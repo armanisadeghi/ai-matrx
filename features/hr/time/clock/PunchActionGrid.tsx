@@ -18,7 +18,7 @@
 
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { ClockState, PunchKind } from "@/features/hr/time/api/types";
 
 import { geoCaptureBeforeNotice } from "./geoCapture";

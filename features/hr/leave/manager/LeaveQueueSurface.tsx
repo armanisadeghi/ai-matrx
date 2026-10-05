@@ -490,13 +490,11 @@ export function LeaveQueueSurface() {
             <div className="flex flex-wrap items-center gap-2">
             <HrOrgFilter />
             <Button
+              icon={<RefreshCw />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-8"
+              variant="quiet"
               onClick={() => void queue.reload()}
             >
-              <RefreshCw className="mr-2 h-3.5 w-3.5" />
               Refresh
             </Button>
             </div>
@@ -547,7 +545,6 @@ export function LeaveQueueSurface() {
               </p>
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => replaceAddressOrNavigate(router, leaveQueueHref(orgRef, { scope }))}
               >
@@ -591,17 +588,16 @@ export function LeaveQueueSurface() {
             columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
               <>
                 <Button
+                  icon={<Check />}
                   type="button"
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={() => setDecision({ row, intent: "approve" })}
                 >
-                  <Check className="mr-1.5 h-4 w-4" />
                   Approve
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button type="button" size="sm" variant="ghost" aria-label="More decisions">
+                    <Button type="button" variant="quiet" aria-label="More decisions">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -646,22 +642,21 @@ export function LeaveQueueSurface() {
               actions: () => (
                 <div className="flex items-center gap-2">
                   <Button
+                    icon={<Check />}
+                    variant="primary"
                     type="button"
-                    size="sm"
                     disabled={bulkBusy || bulkIds.length === 0}
                     onClick={() => void runBulk("approve")}
                   >
-                    <Check className="mr-2 h-4 w-4" />
                     Approve {bulkIds.length}
                   </Button>
                   <Button
+                    icon={<X />}
                     type="button"
-                    size="sm"
-                    variant="destructive"
+                    variant="danger"
                     disabled={bulkBusy || bulkIds.length === 0}
                     onClick={() => setBulkReasonOpen(true)}
                   >
-                    <X className="mr-2 h-4 w-4" />
                     Deny {bulkIds.length}
                   </Button>
                 </div>

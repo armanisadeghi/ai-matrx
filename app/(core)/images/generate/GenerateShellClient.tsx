@@ -305,19 +305,19 @@ export default function GenerateShellClient() {
         </div>
 
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Zap />
+          )}
+          variant="primary"
           onClick={handleGenerate}
           disabled={
             !IMAGE_STUDIO_BACKEND_CAPABILITIES.generate ||
             busy ||
             !prompt.trim()
           }
-          className="min-h-[44px] md:min-h-0"
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <Zap className="h-3.5 w-3.5 mr-1.5" />
-          )}
           Generate
         </Button>
 

@@ -127,7 +127,7 @@ export function BrandIdentitySiteSurface({
             it sells, and how it must be written about. Add the client&apos;s
             website and it fills in.
           </p>
-          <Button asChild size="sm" className="mt-4">
+          <Button variant="primary" asChild className="mt-4">
             <Link href={marketingRoutes.newSite(brand.id)}>Add a website</Link>
           </Button>
         </div>

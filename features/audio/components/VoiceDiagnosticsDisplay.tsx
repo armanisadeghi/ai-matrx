@@ -9,7 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AlertCircle, CheckCircle, XCircle, RefreshCw, Mic, Settings, ExternalLink, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@ai-matrx/design-system";
 import { cn } from '@/lib/utils';
 import { runMicrophoneDiagnostics, getFixInstructions, canUserFixIssue, DiagnosticResult } from '../utils/microphone-diagnostics';
 import { acquireMicStream, releaseMicStream } from '@ai-matrx/browser-audio/core';

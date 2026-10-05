@@ -317,11 +317,9 @@ function GhostDimensionCard({
           {dim.columns.length === 1 ? "" : "s"} tracked
         </span>
         <Button
-          size="sm"
           variant="outline"
           onClick={onAdd}
           disabled={disabled}
-          className="h-7"
         >
           {busy ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

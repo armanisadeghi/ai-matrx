@@ -89,7 +89,7 @@ export function ScopeNotFound({
           Links here can use a short name, and &ldquo;{param}&rdquo;
           didn&apos;t resolve for your account. Check the link, or go back.
         </p>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href={backHref}>{backLabel}</Link>
         </Button>
       </Card>

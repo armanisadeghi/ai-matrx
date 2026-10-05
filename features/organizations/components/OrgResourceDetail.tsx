@@ -203,11 +203,10 @@ export function OrgResourceDetail() {
             }
           </p>
           <Button
+            icon={<ArrowLeft />}
             variant="outline"
-            size="sm"
             onClick={() => router.push("/organizations")}
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
             Organizations
           </Button>
         </Card>
@@ -297,8 +296,8 @@ export function OrgResourceDetail() {
         right={
           entry.orgRoute ? (
             <Button
+              iconEnd={<ExternalLink />}
               variant="outline"
-              size="sm"
               onClick={() =>
                 window.open(
                   `/organizations/${org.slug}/${entry.orgRoute}`,
@@ -308,7 +307,6 @@ export function OrgResourceDetail() {
               }
             >
               Full view
-              <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </Button>
           ) : undefined
         }
@@ -689,9 +687,8 @@ function MineRow({
             </Badge>
           ) : (
             <Button
-              size="sm"
               variant="outline"
-              className="h-7 shrink-0"
+              className="shrink-0"
               disabled={sharing}
               onClick={onShare}
             >
@@ -730,7 +727,7 @@ function ShowMore({
 }) {
   return (
     <div className="flex justify-center pt-3">
-      <Button variant="ghost" size="sm" disabled={loading} onClick={onClick}>
+      <Button variant="quiet" disabled={loading} onClick={onClick}>
         {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Show more"}
       </Button>
     </div>

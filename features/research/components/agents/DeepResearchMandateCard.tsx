@@ -154,12 +154,12 @@ export function DeepResearchMandateCard({ topic }: { topic: ResearchTopic }) {
 
       <div className="mt-3">
         <Button
+          icon={launching ? <Loader2 className="animate-spin" /> : <Play />}
+          variant="primary"
           type="button"
-          size="sm"
           disabled={launching || (sources === null && !sourcesError)}
           onClick={() => void run()}
         >
-          {launching ? <Loader2 className="animate-spin" /> : <Play />}
           Research this question
         </Button>
       </div>

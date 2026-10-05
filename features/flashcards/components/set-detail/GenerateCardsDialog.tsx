@@ -157,8 +157,7 @@ export function GenerateCardsDialog({
                   <Button
                     key={n}
                     type="button"
-                    size="sm"
-                    variant={count === n ? "default" : "outline"}
+                    variant={count === n ? "primary" : "outline"}
                     aria-pressed={count === n}
                     onClick={() => setCount(n)}
                   >
@@ -180,14 +179,15 @@ export function GenerateCardsDialog({
             Cancel
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Wand />
+            )}
+            variant="primary"
             onClick={() => void generate()}
             disabled={busy || !topic.trim() || guard.isChecking}
           >
-            {busy ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Wand className="mr-1.5 h-4 w-4" />
-            )}
             {busy ? "Generating…" : `Generate ${count} cards`}
           </Button>
         </DialogFooter>

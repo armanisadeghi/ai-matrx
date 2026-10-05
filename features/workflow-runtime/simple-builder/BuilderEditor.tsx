@@ -27,20 +27,8 @@ import {
   TableScope,
   type TablesAnywhere,
 } from "@ai-matrx/records-ui/pickers";
-import {
-  BasicInput,
-  Button,
-  Checkbox,
-  CreatablePicker,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@ai-matrx/design-system";
+import { BasicInput, Checkbox, CreatablePicker, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { AgentParamPicker } from "@/features/source-library/components/AgentParamPicker";
 import { VariableSelector } from "@/features/agents/components/variables-management/VariableSelector";
 import { cn } from "@/lib/utils";
@@ -311,9 +299,8 @@ function EditorBody({
               <div className="flex items-center">
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   aria-label="Move up"
                   disabled={index === 0}
                   onClick={() => moveAction(index, -1)}
@@ -322,9 +309,8 @@ function EditorBody({
                 </Button>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   aria-label="Move down"
                   disabled={index === spec.actions.length - 1}
                   onClick={() => moveAction(index, 1)}
@@ -333,9 +319,8 @@ function EditorBody({
                 </Button>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 w-7 p-0"
+                  variant="quiet"
+                  className="w-7"
                   aria-label="Remove step"
                   onClick={() => removeAction(index)}
                 >
@@ -399,7 +384,6 @@ function FieldsChooser({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           className="max-w-full justify-start"
           disabled={disabled}
         >
@@ -493,9 +477,8 @@ function ColumnValueRows({
           {readOnly ? null : (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 justify-self-end p-0"
+              variant="quiet"
+              className="w-8 justify-self-end"
               aria-label="Remove value"
               onClick={() => {
                 const { [key]: _gone, ...rest } = value;

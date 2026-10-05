@@ -1058,9 +1058,9 @@ export default function LuluPricingDemoPage() {
           ) : null}
 
           <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-muted-foreground"
+            icon={<RefreshCcw />}
+            variant="quiet"
+            className="w-full"
             onClick={() => {
               setSelection(EMPTY_SELECTION);
               setPageCountText("");
@@ -1068,7 +1068,6 @@ export default function LuluPricingDemoPage() {
             }}
             disabled={previewOnly}
           >
-            <RefreshCcw className="size-3.5" />
             Start over
           </Button>
         </aside>

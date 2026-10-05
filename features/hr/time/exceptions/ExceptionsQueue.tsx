@@ -199,11 +199,10 @@ export function ExceptionsQueue({
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
               {/* read-gate-exempt: rows the person ticked in this queue, shown only when some are selected */}
               <span className="text-sm">{pluralize(selected.length, "exception")} selected</span>
-              <Button type="button" size="sm" onClick={() => setBulkOpen(true)}>
-                <CheckCheck className="mr-1.5 h-4 w-4" aria-hidden />
+              <Button icon={<CheckCheck aria-hidden />} variant="primary" type="button" onClick={() => setBulkOpen(true)}>
                 Review and acknowledge
               </Button>
-              <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds([])}>
+              <Button type="button" variant="quiet" onClick={() => setSelectedIds([])}>
                 Clear
               </Button>
             </div>
@@ -576,6 +575,7 @@ function BulkAcknowledgeDialog({
         <DialogFooter>
           {outcomes ? (
             <Button
+              variant="primary"
               type="button"
               onClick={() => {
                 setOutcomes(null);
@@ -586,10 +586,11 @@ function BulkAcknowledgeDialog({
             </Button>
           ) : (
             <>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="quiet" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button
+                variant="primary"
                 type="button"
                 disabled={busy || overCap || eligible.length === 0}
                 onClick={() => void commit()}

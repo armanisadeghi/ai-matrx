@@ -75,7 +75,7 @@ export function MandateAdminPagesNav() {
         {INLINE_PAGES.map((page) => {
           const Icon = page.icon;
           return (
-            <Button key={page.href} asChild variant="ghost" size="sm" className="h-8 gap-1">
+            <Button key={page.href} asChild variant="quiet">
               <Link href={page.href}>
                 <Icon className="h-3.5 w-3.5" />
                 {page.label}
@@ -86,7 +86,7 @@ export function MandateAdminPagesNav() {
       </div>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 w-8 p-0" aria-label="More mandate pages">
+          <Button variant="outline" className="w-8" aria-label="More mandate pages">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -102,7 +102,7 @@ export function MandateAdminPagesNav() {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Button asChild size="sm" className="h-8 gap-1">
+      <Button variant="primary" asChild>
         <Link href={ADMIN_MANDATES_NEW}>
           <Plus className="h-3.5 w-3.5" />
           New mandate

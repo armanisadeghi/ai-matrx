@@ -705,16 +705,16 @@ export default function BatchScrapePage() {
               {summary ?? "Paste links above to see what we understood."}
             </p>
             <Button
+              icon={isLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ClipboardList />
+              )}
+              variant="primary"
               onClick={handleRun}
               disabled={isLoading || parsed.urls.length === 0}
-              size="sm"
-              className="gap-1.5 flex-shrink-0"
+              className="flex-shrink-0"
             >
-              {isLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ClipboardList className="h-3.5 w-3.5" />
-              )}
               {parsed.urls.length > 0
                 ? `Scrape ${parsed.urls.length} page${parsed.urls.length === 1 ? "" : "s"}`
                 : "Scrape"}
@@ -753,16 +753,15 @@ export default function BatchScrapePage() {
                       What is already waiting
                     </a>
                     <Button
-                      size="sm"
-                      className="h-7 gap-1.5 text-xs"
+                      icon={sendingToBrowser ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <MonitorSmartphone />
+                      )}
+                      variant="primary"
                       disabled={sendingToBrowser}
                       onClick={() => void handleSendToOwnBrowser()}
                     >
-                      {sendingToBrowser ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <MonitorSmartphone className="h-3.5 w-3.5" />
-                      )}
                       Send the rest to my browser
                     </Button>
                   </div>
@@ -774,17 +773,15 @@ export default function BatchScrapePage() {
                 columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
                   row.status === "failed" ? (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
+                      icon={retrying.has(row.url) ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <RotateCw />
+                      )}
+                      variant="quiet"
                       disabled={retrying.has(row.url) || isLoading}
                       onClick={() => void handleRetry(row.url)}
                     >
-                      {retrying.has(row.url) ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RotateCw className="h-3 w-3" />
-                      )}
                       Retry
                     </Button>
                   ) : null }]}
@@ -800,13 +797,12 @@ export default function BatchScrapePage() {
                   noun: "page",
                   actions: (selected) => (
                     <Button
-                      size="sm"
-                      className="h-7 gap-1.5 text-xs"
+                      icon={<Bookmark />}
+                      variant="primary"
                       disabled={!selected.some((row) => row.status === "success" && row.processedDocumentId)}
                       title="Save selected pages that became Sources"
                       onClick={() => openSaveForSelected(selected)}
                     >
-                      <Bookmark className="h-3.5 w-3.5" />
                       Save {selected.filter((row) => row.status === "success" && row.processedDocumentId).length}…
                     </Button>
                   ),

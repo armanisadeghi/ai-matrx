@@ -144,12 +144,11 @@ export function CloudBrowserWaitingForCapacity({
       <p className="text-xs tabular-nums text-muted-foreground">
         {seconds}s waited{attempts ? ` · asked ${attempts} ${attempts === 1 ? "time" : "times"}` : ""}
       </p>
-      <Button size="sm" variant="outline" onClick={onRetry} disabled={retrying}>
-        {retrying ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+      <Button icon={retrying ? (
+          <Loader2 className="animate-spin" aria-hidden />
         ) : (
-          <RotateCw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-        )}
+          <RotateCw aria-hidden />
+        )} variant="outline" onClick={onRetry} disabled={retrying}>
         {retrying ? "Asking now" : "Ask now"}
       </Button>
     </div>
@@ -194,12 +193,11 @@ export function CloudBrowserStartFailed({
         </p>
       </div>
       {error.retryable ? (
-        <Button size="sm" onClick={onRetry} disabled={retrying}>
-          {retrying ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
+        <Button icon={retrying ? (
+            <Loader2 className="animate-spin" aria-hidden />
           ) : (
-            <RotateCw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-          )}
+            <RotateCw aria-hidden />
+          )} variant="primary" onClick={onRetry} disabled={retrying}>
           {retrying ? "Trying again" : "Try again"}
         </Button>
       ) : (

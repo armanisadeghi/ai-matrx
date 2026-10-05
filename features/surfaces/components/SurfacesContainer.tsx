@@ -536,11 +536,9 @@ export function SurfacesContainer() {
               .map((a) => (
                 <Button
                   key={a.key}
-                  size="sm"
                   variant="outline"
                   onClick={a.onClick}
                   disabled={a.disabled}
-                  className="h-7 gap-1.5 text-xs"
                   title={a.title}
                 >
                   <a.icon className="h-3.5 w-3.5" />
@@ -555,9 +553,8 @@ export function SurfacesContainer() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7 w-7 p-0"
+                className="w-7"
                 aria-label={isMobile ? "Registry actions" : "More registry actions"}
                 title={isMobile ? "Registry actions" : "New client, Candidates"}
               >
@@ -815,10 +812,11 @@ function NewClientDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void submit()}
             disabled={busy || !nameValid || nameClash}
           >

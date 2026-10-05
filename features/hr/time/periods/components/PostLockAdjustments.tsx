@@ -55,14 +55,12 @@ export function PostLockAdjustments({ period, rows, isLoading }: PostLockAdjustm
           </p>
         </div>
         <Button
+          icon={<Plus aria-hidden />}
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-[44px]"
           disabled={!lockedYet}
           onClick={() => void announceComingSoon("hr.time-adjustment-create")}
         >
-          <Plus className="mr-1.5 h-4 w-4" aria-hidden />
           Record a correction
         </Button>
       </div>

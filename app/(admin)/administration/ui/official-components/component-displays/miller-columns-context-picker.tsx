@@ -62,7 +62,6 @@ export default function MillerColumnsContextPickerDisplay({
           />
           <Button
             variant="outline"
-            size="sm"
             onClick={() => openContextWindow()}
           >
             Open full WindowPanel

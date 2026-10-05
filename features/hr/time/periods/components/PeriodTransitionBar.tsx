@@ -153,21 +153,19 @@ export function PeriodTransitionBar({
           return (
             <div key={offer.to} className="flex flex-col gap-1">
               <Button
+                icon={isBusy ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : offer.to === "locked" ? (
+                  <Lock aria-hidden />
+                ) : offer.to === "reopened" ? (
+                  <Undo2 aria-hidden />
+                ) : null}
                 type="button"
-                size="sm"
                 // ≥44px touch target on an approve control (UI-IA §7 responsive floor).
-                className="min-h-[44px]"
-                variant={offer.destructiveTone ? "outline" : "default"}
+                variant={offer.destructiveTone ? "outline" : "primary"}
                 disabled={blocked || isBusy}
                 onClick={() => void onClick(offer)}
               >
-                {isBusy ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-                ) : offer.to === "locked" ? (
-                  <Lock className="mr-1.5 h-4 w-4" aria-hidden />
-                ) : offer.to === "reopened" ? (
-                  <Undo2 className="mr-1.5 h-4 w-4" aria-hidden />
-                ) : null}
                 {offer.label}
               </Button>
               {blocked ? (

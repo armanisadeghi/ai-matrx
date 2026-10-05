@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import { Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import { selectAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentMessages } from "@ai-matrx/chat/agents/redux/agent-definition/slice";

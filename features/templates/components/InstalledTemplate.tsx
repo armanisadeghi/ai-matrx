@@ -167,8 +167,7 @@ function TryItCard({
         </div>
       ))}
       <div className="flex flex-wrap items-center gap-3 pt-1">
-        <Button size="sm" onClick={run} data-template-run="">
-          <Play className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Play />} variant="primary" onClick={run} data-template-run="">
           {ask ? "Run it once" : "Open"}
         </Button>
         <p className="text-xs text-muted-foreground">Uses AI credits</p>

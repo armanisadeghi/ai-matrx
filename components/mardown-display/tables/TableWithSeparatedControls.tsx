@@ -211,13 +211,12 @@ const TableControls: React.FC<TableControlsProps> = ({
     if (!debouncedTableData.normalizedData || !onSaveAsTable) return null;
     return (
       <Button
+        icon={<Database />}
         variant="outline"
-        size="sm"
         onClick={onSaveAsTable}
-        className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+        className="flex"
         disabled={isUpdating}
       >
-        <Database className="h-4 w-4" />
         Save to a table
       </Button>
     );
@@ -229,65 +228,64 @@ const TableControls: React.FC<TableControlsProps> = ({
       <div className="flex justify-end gap-2 mt-2 opacity-50">
         {debouncedTableData.normalizedData && (
           <Button
+            icon={<Eye />}
+            type="submit"
             variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
+            className="flex"
             disabled
           >
-            <Eye className="h-4 w-4" />
             {showNormalized ? "Table" : "Data"}
           </Button>
         )}
         {debouncedTableData.normalizedData && onSaveAsTable && (
           <Button
+            icon={<Database />}
+            type="submit"
             variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
+            className="flex"
             disabled
           >
-            <Database className="h-4 w-4" />
             Save to a table
           </Button>
         )}
         <Button
+          icon={<Download />} iconEnd={<ChevronDown />}
+          type="submit"
           variant="outline"
-          size="sm"
-          className="flex items-center gap-2"
+          className="flex"
           disabled
         >
-          <Download className="h-4 w-4" />
           Export
-          <ChevronDown className="h-4 w-4 ml-1" />
         </Button>
         {editMode !== "none" ? (
           <>
             <Button
+              icon={<Save />}
+              type="submit"
               variant="outline"
-              size="sm"
-              className="flex items-center gap-2 border-1 border-dashed border-green-500 rounded-xl"
+              className="flex"
               disabled
             >
-              <Save className="h-4 w-4" />
               Save
             </Button>
             <Button
+              icon={<X />}
+              type="submit"
               variant="outline"
-              size="sm"
-              className="flex items-center gap-2 border-1 border-dashed border-red-500 rounded-xl"
+              className="flex"
               disabled
             >
-              <X className="h-4 w-4" />
               Cancel
             </Button>
           </>
         ) : (
           <Button
+            icon={<Edit />}
+            type="submit"
             variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
+            className="flex"
             disabled
           >
-            <Edit className="h-4 w-4" />
             Edit
           </Button>
         )}
@@ -299,12 +297,11 @@ const TableControls: React.FC<TableControlsProps> = ({
     <div className="flex justify-end gap-2 mt-2">
       {debouncedTableData.normalizedData && (
         <Button
+          icon={<Eye />}
           variant="outline"
-          size="sm"
           onClick={() => setShowNormalized(!showNormalized)}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+          className="flex"
         >
-          <Eye className="h-4 w-4" />
           {showNormalized ? "Table" : "Data"}
         </Button>
       )}
@@ -312,13 +309,11 @@ const TableControls: React.FC<TableControlsProps> = ({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            icon={<Download />} iconEnd={<ChevronDown />}
             variant="outline"
-            size="sm"
-            className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+            className="flex"
           >
-            <Download className="h-4 w-4" />
             Export
-            <ChevronDown className="h-4 w-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
@@ -369,32 +364,29 @@ const TableControls: React.FC<TableControlsProps> = ({
       {editMode !== "none" ? (
         <>
           <Button
+            icon={<Save />}
             variant="outline"
-            size="sm"
             onClick={() => handleSave(notifyContentChange)}
-            className="flex items-center gap-2 border-1 border-dashed border-green-500 rounded-xl"
+            className="flex"
           >
-            <Save className="h-4 w-4" />
             Save
           </Button>
           <Button
+            icon={<X />}
             variant="outline"
-            size="sm"
             onClick={handleCancel}
-            className="flex items-center gap-2 border-1 border-dashed border-red-500 rounded-xl"
+            className="flex"
           >
-            <X className="h-4 w-4" />
             Cancel
           </Button>
         </>
       ) : (
         <Button
+          icon={<Edit />}
           variant="outline"
-          size="sm"
           onClick={() => toggleGlobalEditMode(notifyContentChange)}
-          className="flex items-center gap-2 hover:bg-blue-100 dark:hover:bg-blue-800/30"
+          className="flex"
         >
-          <Edit className="h-4 w-4" />
           Edit
         </Button>
       )}
@@ -542,12 +534,11 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
             {JSON.stringify(tableData.normalizedData, null, 2)}
           </pre>
           <Button
+            icon={<Eye />}
             variant="outline"
-            size="sm"
             onClick={() => setShowNormalized(false)}
-            className="absolute top-2 right-2 opacity-90 hover:opacity-100 flex items-center gap-1 shadow-md"
+            className="absolute top-2 right-2 flex"
           >
-            <Eye className="h-4 w-4" />
             View Table
           </Button>
         </div>

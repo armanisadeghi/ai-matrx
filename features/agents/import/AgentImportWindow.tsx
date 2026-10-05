@@ -354,8 +354,7 @@ function PasteBody({
 
       <div className="flex justify-end shrink-0 pt-1 border-t border-border">
         <Button
-          variant="default"
-          size="sm"
+          variant="primary"
           onClick={onConvert}
           disabled={
             !pastedText.trim() ||
@@ -417,11 +416,10 @@ function PreviewBody({
       </div>
 
       <div className="flex items-center justify-between shrink-0 pt-1 border-t border-border">
-        <Button variant="outline" onClick={onBack} disabled={isImporting}>
-          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+        <Button icon={<ArrowLeft />} variant="outline" onClick={onBack} disabled={isImporting}>
           Back
         </Button>
-        <Button onClick={onImport} disabled={isImporting}>
+        <Button variant="primary" onClick={onImport} disabled={isImporting}>
           {isImporting ? (
             <>
               <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
@@ -478,8 +476,7 @@ function ErrorBody({
         )
       )}
       <div className="flex mt-auto pt-2 border-t border-border">
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="w-3.5 h-3.5 mr-1.5" />
+        <Button icon={<ArrowLeft />} variant="outline" onClick={onBack}>
           Back
         </Button>
       </div>
@@ -516,8 +513,7 @@ function SuccessBody({
         <Button variant="outline" onClick={onClose}>
           Close
         </Button>
-        <Button onClick={onNavigate}>
-          <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" />
+        <Button icon={<ArrowUpRight />} variant="primary" onClick={onNavigate}>
           Open in Builder
         </Button>
       </div>

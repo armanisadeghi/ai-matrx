@@ -358,21 +358,18 @@ export default function AliasesContainer() {
           ) : null}
           <div className="flex items-center justify-end gap-2">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs"
+              icon={<X />}
+              variant="quiet"
               onClick={cancelEdit}
             >
-              <X className="h-3.5 w-3.5" />
               Cancel
             </Button>
             <Button
-              size="sm"
-              className="h-7 gap-1 px-3 text-xs"
+              icon={<Save />}
+              variant="primary"
               onClick={() => void handleSave()}
               disabled={saving || !form.alias.trim() || !form.model_id}
             >
-              <Save className="h-3.5 w-3.5" />
               {saving ? "Saving…" : editingId === "new" ? "Create" : "Save"}
             </Button>
           </div>

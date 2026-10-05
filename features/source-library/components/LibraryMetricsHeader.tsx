@@ -721,8 +721,7 @@ function SyncStrip({
                 </p>
                 <div className="flex h-8 items-center pl-6">
                     {sync.retryable ? (
-                        <Button size="sm" variant="outline" onClick={onBringUpToDate}>
-                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        <Button icon={<RefreshCw aria-hidden="true" />} variant="outline" onClick={onBringUpToDate}>
                             Try again
                         </Button>
                     ) : (
@@ -835,8 +834,7 @@ function SyncStrip({
                         : "Nothing was catalogued before that run stopped."}
                 </p>
                 <div className="flex h-8 items-center pl-6">
-                    <Button size="sm" variant="outline" onClick={onBringUpToDate}>
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                    <Button icon={<RefreshCw aria-hidden="true" />} variant="outline" onClick={onBringUpToDate}>
                         Try again
                     </Button>
                 </div>
@@ -888,8 +886,7 @@ function SyncStrip({
                             : "Nothing was catalogued before that run stalled."}
                     </p>
                     <div className="flex h-8 items-center pl-6">
-                        <Button size="sm" variant="outline" onClick={onBringUpToDate}>
-                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        <Button icon={<RefreshCw aria-hidden="true" />} variant="outline" onClick={onBringUpToDate}>
                             Try again
                         </Button>
                     </div>
@@ -935,8 +932,7 @@ function SyncStrip({
                     </p>
                 </div>
                 <div className="flex h-8 items-center pl-6">
-                    <Button size="sm" variant="outline" onClick={onRetryRow}>
-                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                    <Button icon={<RefreshCw aria-hidden="true" />} variant="outline" onClick={onRetryRow}>
                         Try again
                     </Button>
                 </div>
@@ -1039,10 +1035,11 @@ export function LibraryMetricsHeader(props: {
 
                 <div className="flex shrink-0 flex-col items-stretch gap-1 sm:items-end">
                     <Button
+                        variant="primary"
                         type="button"
                         onClick={onBringUpToDate}
                         disabled={disabled}
-                        className="h-11 min-w-[168px]"
+                        className="min-w-[168px]"
                         title={
                             running
                                 ? "A sync is running right now; this Library is already being brought up to date."
@@ -1092,12 +1089,11 @@ export function LibraryMetricsHeader(props: {
                     <p className="min-w-0 text-sm text-foreground">{metricsError} <ErrorAlchemyMenu error={metricsError} /></p>
                     {props.onRetryMetrics && (
                         <Button
-                            size="sm"
+                            icon={<RefreshCw aria-hidden="true" />}
                             variant="outline"
                             onClick={props.onRetryMetrics}
                             className="ml-auto"
                         >
-                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
                             Try the numbers again
                         </Button>
                     )}

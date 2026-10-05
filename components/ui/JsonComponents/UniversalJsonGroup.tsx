@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { motion, AnimatePresence } from "motion/react";

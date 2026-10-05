@@ -186,7 +186,7 @@ const menuItems: MenuItem[] = [
     >
       <div className="w-full flex justify-center p-8">
         <div className="relative">
-          <Button onClick={() => menu.open()}>
+          <Button variant="primary" onClick={() => menu.open()}>
             Open Menu
           </Button>
           

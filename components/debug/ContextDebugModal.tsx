@@ -95,18 +95,16 @@ export function ContextDebugModal({
 
   const CopyButton = ({ id, text }: { id: string; text: string }) => (
     <Button
-      variant="ghost"
-      size="icon"
-      className="h-6 w-6 shrink-0"
+      icon={copiedKey === id ? (
+        <CopyCheck className="text-green-500" />
+      ) : (
+        <Copy className="text-muted-foreground" />
+      )} aria-label="Copy"
+      variant="quiet"
+      className="shrink-0"
       onClick={() => copyToClipboard(text, id)}
       title="Copy"
-    >
-      {copiedKey === id ? (
-        <CopyCheck className="h-3.5 w-3.5 text-green-500" />
-      ) : (
-        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-      )}
-    </Button>
+    />
   );
 
   return (
@@ -120,16 +118,14 @@ export function ContextDebugModal({
             </Badge>
             <div className="ml-auto mr-6">
               <Button
+                icon={copiedKey === "__all__" ? (
+                  <CopyCheck className="text-green-500" />
+                ) : (
+                  <Copy />
+                )}
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1.5 text-xs"
                 onClick={copyAll}
               >
-                {copiedKey === "__all__" ? (
-                  <CopyCheck className="h-3.5 w-3.5 text-green-500" />
-                ) : (
-                  <Copy className="h-3.5 w-3.5" />
-                )}
                 {copiedKey === "__all__" ? "Copied!" : "Copy All"}
               </Button>
             </div>

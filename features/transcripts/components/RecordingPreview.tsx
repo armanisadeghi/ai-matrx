@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Play, Pause, Volume2, Gauge, Check } from 'lucide-react';
@@ -144,7 +144,7 @@ export function RecordingPreview({
                 />
 
                 <div className="flex items-center gap-2">
-                    <Button
+                    <SurfaceButton
                         size="icon"
                         variant="outline"
                         className="h-9 w-9 rounded-full shrink-0"
@@ -155,16 +155,15 @@ export function RecordingPreview({
                         ) : (
                             <Play className="h-4 w-4 ml-0.5" />
                         )}
-                    </Button>
+                    </SurfaceButton>
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
-                                size="sm"
+                                icon={<Gauge />}
                                 variant="outline"
-                                className="h-9 px-2 md:px-3 shrink-0 font-mono text-xs md:text-sm min-w-[52px] md:min-w-[60px]"
+                                className="shrink-0 min-w-[52px] md:min-w-[60px]"
                             >
-                                <Gauge className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 md:mr-1.5" />
                                 {formatSpeed(playbackSpeed)}
                             </Button>
                         </DropdownMenuTrigger>

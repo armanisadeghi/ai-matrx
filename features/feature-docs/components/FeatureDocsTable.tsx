@@ -337,9 +337,7 @@ export default function FeatureDocsTable({
                 aria-label="Filter version"
               />
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
+                variant="quiet"
                 onClick={() => setFilters(EMPTY_FILTERS)}
               >
                 Clear filters
@@ -348,12 +346,10 @@ export default function FeatureDocsTable({
           ),
           actions: (
             <Button
+              icon={<RefreshCw />}
               variant="outline"
-              size="sm"
-              className="h-8"
               onClick={() => void load()}
             >
-              <RefreshCw className="mr-1 h-3.5 w-3.5" />
               Refresh
             </Button>
           ),

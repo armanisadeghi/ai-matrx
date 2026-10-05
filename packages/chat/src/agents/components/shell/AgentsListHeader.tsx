@@ -3,7 +3,7 @@
 import { Link } from "../../../host/navigation";
 import { useEffect } from "react";
 import { FileChartColumn, Webhook } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { cn } from "@ai-matrx/design-system";
 import { useDriftAlerts } from "../../hooks/useDriftAlerts";
 import { DriftSeverityBadge } from "@host/features/agents/components/usages/DriftSeverityBadge";
@@ -46,20 +46,14 @@ export function AgentsListHeader() {
       <HeaderActionsSlot className="ml-auto flex shrink-0 items-center">
       <Button
         asChild
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         aria-label={worstSev ? `Agent drift report — ${totals[worstSev]} ${worstSev.replace("_", " ")}` : "Agent drift report"}
-        className={cn(
-          "h-7 gap-1.5 px-2 text-xs",
-          meta
-            ? cn(
+        className={cn(meta ? cn(
                 meta.textClass,
                 meta.bgClass,
                 "border hover:opacity-90",
                 meta.borderClass,
-              )
-            : "text-muted-foreground",
-        )}
+              ) : "")}
       >
         <Link
           href="/reports/agent-drift"

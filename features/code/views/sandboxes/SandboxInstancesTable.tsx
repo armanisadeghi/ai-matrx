@@ -385,7 +385,7 @@ export function SandboxInstancesTable({
           <AlertTitle>Sandbox operation failed</AlertTitle>
           <AlertDescription className="flex flex-wrap items-center gap-2">
             <span>{error}</span>
-            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+            <Button type="button" variant="outline" onClick={onRetry}>
               Retry
             </Button>
           </AlertDescription>

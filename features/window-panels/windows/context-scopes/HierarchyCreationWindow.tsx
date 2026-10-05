@@ -117,16 +117,13 @@ export default function HierarchyCreationWindow({
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            size="sm"
-            className="!h-7"
             onClick={onClose}
             disabled={isSubmitting}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
-            className="!h-7"
+            variant="primary"
             onClick={handleCreate}
             disabled={!name.trim() || isSubmitting}
           >

@@ -64,9 +64,12 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className="h-7 text-xs px-2 gap-1"
+      icon={copied ? (
+        <Check className="text-green-500" />
+      ) : (
+        <Copy />
+      )}
+      variant="quiet"
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text).catch(() => null);
@@ -74,11 +77,6 @@ function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 1800);
       }}
     >
-      {copied ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
       {copied ? "Copied" : "Copy"}
     </Button>
   );
@@ -357,15 +355,13 @@ export default function ToolsDemoClient() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
-                    variant={hasToken ? "outline" : "secondary"}
+                    icon={<RefreshCw
+                      className={`h-3 w-3 ${loadingTools ? "animate-spin" : ""}`}
+                    />}
+                    variant={hasToken ? "outline" : "outline"}
                     onClick={loadTools}
                     disabled={loadingTools}
-                    className="h-7 text-xs px-2.5 gap-1.5"
                   >
-                    <RefreshCw
-                      className={`h-3 w-3 ${loadingTools ? "animate-spin" : ""}`}
-                    />
                     {tools.length > 0 ? "Reload Tools" : "Load Tools"}
                   </Button>
                 </TooltipTrigger>
@@ -413,10 +409,9 @@ export default function ToolsDemoClient() {
                 </p>
               </div>
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => setLoadError(null)}
-                className="h-5 w-5 p-0 flex-shrink-0"
+                className="w-5 flex-shrink-0"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -459,13 +454,11 @@ export default function ToolsDemoClient() {
                       No tools loaded yet
                     </p>
                     <Button
-                      size="sm"
+                      icon={<RefreshCw />}
                       onClick={loadTools}
                       disabled={loadingTools}
-                      variant={hasToken ? "default" : "outline"}
-                      className="h-7 text-xs gap-1.5"
-                    >
-                      <RefreshCw className="h-3 w-3" /> Load Tools
+                      variant={hasToken ? "primary" : "outline"}
+                    > Load Tools
                     </Button>
                     {!hasToken && (
                       <p className="text-[10px] text-amber-600 dark:text-amber-500">
@@ -571,26 +564,26 @@ export default function ToolsDemoClient() {
 
                   <div className="flex-shrink-0 p-3 border-t flex gap-2">
                     <Button
+                      icon={execStatus === "running" ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Play />
+                      )}
+                      variant="primary"
                       onClick={handleExecute}
                       disabled={execStatus === "running"}
-                      className="flex-1 h-8 gap-2 text-sm"
+                      className="flex-1"
                     >
-                      {execStatus === "running" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Play className="h-3.5 w-3.5" />
-                      )}
                       {execStatus === "running" ? "Running…" : "Execute"}
                     </Button>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
                           variant="outline"
                           onClick={() =>
                             setArgValues(buildDefaults(selectedTool.parameters))
                           }
-                          className="h-8 w-8 p-0"
+                          className="w-8"
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </Button>

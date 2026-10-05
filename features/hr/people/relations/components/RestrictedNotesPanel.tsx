@@ -111,13 +111,12 @@ export function RestrictedNotesPanel({
         </div>
         {canWrite && !adding ? (
           <Button
+            icon={<Plus />}
             type="button"
-            size="sm"
             variant="outline"
-            className="min-h-11 shrink-0 sm:min-h-9"
+            className="shrink-0"
             onClick={() => setAdding(true)}
           >
-            <Plus className="mr-1.5 h-4 w-4" />
             Add
           </Button>
         ) : null}
@@ -166,20 +165,17 @@ export function RestrictedNotesPanel({
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={save}
               disabled={!body.trim() || saving}
-              className="min-h-11 sm:min-h-9"
             >
               Save note
             </Button>
             <Button
               type="button"
-              size="sm"
               variant="outline"
               onClick={() => setAdding(false)}
-              className="min-h-11 sm:min-h-9"
             >
               Cancel
             </Button>

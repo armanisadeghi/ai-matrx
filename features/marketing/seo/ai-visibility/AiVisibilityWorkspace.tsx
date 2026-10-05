@@ -156,16 +156,13 @@ function ProviderCard({
           )}
           {answer ? (
             <Button
+              icon={<PanelRightOpen />}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              variant="quiet"
               aria-label={`Read full ${title} answer`}
               title="Read full answer"
               onClick={onOpen}
-            >
-              <PanelRightOpen className="h-3.5 w-3.5" />
-            </Button>
+            />
           ) : null}
         </div>
       </header>
@@ -660,7 +657,7 @@ export function AiVisibilityWorkspace({
             description: (row) =>
               `${engineLabel(row.engine)} · citation #${row.ordinal}`,
             headerActions: (row) => (
-              <Button asChild size="sm" variant="outline">
+              <Button asChild variant="outline">
                 <a href={row.url} target="_blank" rel="noreferrer">
                   Open source
                 </a>
@@ -816,7 +813,6 @@ export function AiVisibilityWorkspace({
             <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
             <span className="flex-1">{evidenceRefreshError} <ErrorAlchemyMenu error={evidenceRefreshError} /></span>
             <Button
-              size="sm"
               variant="outline"
               onClick={() => void retryEvidence()}
             >
@@ -867,7 +863,7 @@ export function AiVisibilityWorkspace({
                 showStatus={false}
               />
             ) : null}
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link href={sitePath}>Open {site.name}</Link>
             </Button>
           </div>
@@ -931,7 +927,13 @@ export function AiVisibilityWorkspace({
             Ignore today’s saved provider result
           </label>
           <Button
-            className="ml-auto gap-2"
+            icon={running ? (
+              <PanelRightOpen />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
+            className="ml-auto"
             disabled={
               !running && (query.trim().length < 2 || engines.length === 0)
             }
@@ -949,11 +951,6 @@ export function AiVisibilityWorkspace({
               });
             }}
           >
-            {running ? (
-              <PanelRightOpen className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
             {running ? "Watch live progress" : "Analyze this query"}
           </Button>
         </div>
@@ -1053,7 +1050,6 @@ export function AiVisibilityWorkspace({
           <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
           <span className="flex-1">{evidenceRefreshError} <ErrorAlchemyMenu error={evidenceRefreshError} /></span>
           <Button
-            size="sm"
             variant="outline"
             onClick={() => void retryEvidence()}
           >

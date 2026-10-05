@@ -516,52 +516,43 @@ export function AccessRequestsSurface() {
                     ) : box === "inbox" ? (
                       <div className="flex flex-wrap gap-2">
                         <Button
-                          size="sm"
-                          className="h-11 sm:h-8"
+                          icon={<CircleCheck aria-hidden />}
+                          variant="primary"
                           disabled={busyId === row.id}
                           onClick={() => decide(row, "viewer")}
                         >
-                          <CircleCheck className="h-3.5 w-3.5" aria-hidden />
                           Let them view
                         </Button>
                         <Button
-                          size="sm"
+                          icon={<PenLine aria-hidden />}
                           variant="outline"
-                          className="h-11 sm:h-8"
                           disabled={busyId === row.id}
                           onClick={() => decide(row, "editor")}
                         >
-                          <PenLine className="h-3.5 w-3.5" aria-hidden />
                           Let them edit
                         </Button>
                         <Button
-                          size="sm"
+                          icon={<KeyRound aria-hidden />}
                           variant="outline"
-                          className="h-11 sm:h-8"
                           disabled={busyId === row.id}
                           onClick={() => decide(row, "admin")}
                         >
-                          <KeyRound className="h-3.5 w-3.5" aria-hidden />
                           Give full access
                         </Button>
                         <Button
-                          size="sm"
+                          icon={<CircleSlash aria-hidden />}
                           variant="outline"
-                          className="h-11 sm:h-8"
                           disabled={busyId === row.id}
                           onClick={() => void decline(row)}
                         >
-                          <CircleSlash className="h-3.5 w-3.5" aria-hidden />
                           Decline
                         </Button>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-11 text-muted-foreground sm:h-8"
+                          icon={<Flag aria-hidden />}
+                          variant="quiet"
                           disabled={busyId === row.id}
                           onClick={() => void report(row)}
                         >
-                          <Flag className="h-3.5 w-3.5" aria-hidden />
                           Report
                         </Button>
                       </div>
@@ -569,13 +560,11 @@ export function AccessRequestsSurface() {
                       row.status === "pending" && (
                         <div className="flex flex-wrap gap-2">
                           <Button
-                            size="sm"
+                            icon={<Undo2 aria-hidden />}
                             variant="outline"
-                            className="h-11 sm:h-8"
                             disabled={busyId === row.id}
                             onClick={() => void withdraw(row)}
                           >
-                            <Undo2 className="h-3.5 w-3.5" aria-hidden />
                             Withdraw
                           </Button>
                         </div>

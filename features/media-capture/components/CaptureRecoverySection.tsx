@@ -160,9 +160,7 @@ export function CaptureRecoverySection({
                   " Only media captured before the interruption can be recovered."}
               </span>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-6 px-2 text-[11px]"
                 disabled={busy !== null}
                 onClick={() => void handleFinish(entry)}
               >
@@ -173,9 +171,7 @@ export function CaptureRecoverySection({
                 )}
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-1.5 text-[11px]"
+                variant="quiet"
                 disabled={busy !== null}
                 onClick={() => void handleDiscard(entry.manifest.capture_id)}
                 aria-label="Discard recovered recording"

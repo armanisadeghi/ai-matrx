@@ -53,7 +53,7 @@
 
 import * as React from "react";
 
-import { Button, type ButtonProps } from "@/components/ui/button";
+import { Button, type ButtonProps } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 /** One reason an action cannot fire yet, and the condition that makes it true. */

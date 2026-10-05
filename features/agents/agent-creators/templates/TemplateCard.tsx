@@ -118,30 +118,30 @@ export function TemplateCard({
             className="flex-1"
           >
             <Button
-              size="sm"
+              icon={isNavigating ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Eye />
+              )}
+              type="submit"
               variant="outline"
               disabled={isDisabled}
               className="w-full"
             >
-              {isNavigating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Eye className="h-4 w-4 mr-2" />
-              )}
               View
             </Button>
           </Link>
           <Button
-            size="sm"
+            icon={isUsingTemplate ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Copy />
+            )}
+            variant="primary"
             onClick={handleUseTemplate}
             disabled={isDisabled}
             className="flex-1"
           >
-            {isUsingTemplate ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Copy className="h-4 w-4 mr-2" />
-            )}
             Use Template
           </Button>
         </div>

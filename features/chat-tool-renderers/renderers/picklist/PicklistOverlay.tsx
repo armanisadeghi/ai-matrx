@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Loader2, AlertTriangle, ExternalLink } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@ai-matrx/chat/store/hooks";
 import { ListDetailClient } from "@/features/user-lists/components/ListDetailClient";
 import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/types";
@@ -44,7 +44,7 @@ export function PicklistOverlay({ entry }: ToolRendererProps) {
       <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
         <AlertTriangle className="h-6 w-6 text-warning" />
         <span>{summary.message ?? "Couldn't load this list."} <ErrorAlchemyMenu /></span>
-        <Button asChild variant="outline" size="sm" className="gap-1.5">
+        <Button asChild variant="outline">
           <a
             href={`/lists/${listId}`}
             target="_blank"

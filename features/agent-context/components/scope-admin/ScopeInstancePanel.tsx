@@ -137,12 +137,10 @@ export function ScopeInstancePanel({
           </div>
         </div>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="gap-1.5 text-xs"
           onClick={() => handleAdd()}
         >
-          <Plus className="h-3.5 w-3.5" />
           Add {scopeType.label_singular}
         </Button>
       </div>
@@ -171,8 +169,7 @@ export function ScopeInstancePanel({
             <p className="text-sm text-muted-foreground mb-4">
               No {scopeType.label_plural.toLowerCase()} yet
             </p>
-            <Button size="sm" onClick={() => handleAdd()} className="gap-1.5">
-              <Plus className="h-3.5 w-3.5" />
+            <Button icon={<Plus />} variant="primary" onClick={() => handleAdd()}>
               Create First {scopeType.label_singular}
             </Button>
           </div>

@@ -4,7 +4,7 @@ import React from 'react';
 import {motion} from 'motion/react';
 import {ChevronLeft, Home} from 'lucide-react';
 import Link from "@/components/navigation/AppLink";
-import {Button} from '@/components/ui/button';
+import {Button} from "@ai-matrx/design-system";
 import AutoBreadcrumbs from "@/components/matrx/navigation/breadcumbs/AutoBreadcumbsOptions";
 import {useSearchParams} from 'next/navigation'
 import {cn} from '@/lib/utils';

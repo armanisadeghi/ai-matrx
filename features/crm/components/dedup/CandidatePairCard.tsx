@@ -392,18 +392,15 @@ export function CandidatePairCard({
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              size="sm"
-              className="h-8 gap-1 px-3 text-xs"
+              icon={<Merge />}
+              variant="primary"
               disabled={busy}
               onClick={() => void onMerge()}
             >
-              <Merge className="h-3.5 w-3.5" />
               Merge into {winner.display_name}
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-xs"
+              variant="quiet"
               disabled={busy}
               onClick={() =>
                 setWinnerId(winnerId === source.id ? target.id : source.id)
@@ -412,13 +409,12 @@ export function CandidatePairCard({
               Keep {loser.display_name} instead
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
-              className="ml-auto h-8 gap-1 px-2 text-xs text-muted-foreground"
+              icon={<X />}
+              variant="quiet"
+              className="ml-auto"
               disabled={busy}
               onClick={() => void onDismiss()}
             >
-              <X className="h-3.5 w-3.5" />
               Not duplicates
             </Button>
           </div>

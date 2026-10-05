@@ -1,9 +1,9 @@
 // features/make/gallery/publicGallery.ts — LANE MAKE-HOME (v6), wave 4b: the public gallery's pure half.
 //
 // Arman, 2026-10-02: the template gallery is public and indexed. Every published platform template
-// has a public page at /templates/<catalogue id> with "Use this template", which leads through
-// sign-up to the install for that template (/make/templates/<id>). The address uses the catalogue id
-// because it survives a new version; the install uses the version's id the page read.
+// has a public page at /templates/<slug> (lane CHAIR-GALLERY, 2026-10-05: the spec's own readable id,
+// unique and stable across versions) — the same page signed in or out. Signed in, "Use this template"
+// installs there; a guest signs up and returns to it. Catalogue-id and version-id addresses redirect.
 //
 // THE DOOR (one source, G3): the same catalogue door the signed-in gallery reads, `custom.templates`,
 // asked for platform templates only. A signed-out read reaches it only when the database lets the
@@ -17,10 +17,19 @@ import { GALLERY_PAGE, type GalleryAnswer, type GalleryCard } from "./catalogue"
 
 export const PUBLIC_GALLERY_PATH = "/templates";
 
-export const publicTemplateHref = (catalogueId: string) => `${PUBLIC_GALLERY_PATH}/${encodeURIComponent(catalogueId)}`;
+/** One template's page: its readable address, else the catalogue id (which redirects to the address). */
+export const publicTemplateHref = (card: Pick<GalleryCard, "slug" | "catalogue_id">) =>
+  `${PUBLIC_GALLERY_PATH}/${encodeURIComponent(card.slug ?? card.catalogue_id)}`;
 
-/** "Use this template": sign up, then land on the install for this exact template. */
-export const templateSignUpHref = (card: Pick<GalleryCard, "id">) => signUpHref(`/make/templates/${card.id}`);
+export const industryHref = (industry: string) => `${PUBLIC_GALLERY_PATH}/category/${encodeURIComponent(industry)}`;
+export const jobHref = (job: string) => `${PUBLIC_GALLERY_PATH}/job/${encodeURIComponent(job)}`;
+
+/** The query a guest carries through sign-up so the page installs the template on return. */
+export const INSTALL_ON_RETURN = "install";
+
+/** "Use this template" for a guest: sign up, then come back to this page and install. */
+export const templateSignUpHref = (card: Pick<GalleryCard, "slug" | "catalogue_id">) =>
+  signUpHref(`${publicTemplateHref(card)}?${INSTALL_ON_RETURN}=1`);
 
 /** What a signed-out read of the catalogue answered. */
 export type PublicRead =
@@ -71,10 +80,10 @@ export async function readPublicCatalogueWith(rpc: Rpc): Promise<PublicRead> {
   return { state: "open", cards: publicCards(cards) };
 }
 
-export const platformFilter = (offset: number) => ({ scope: "platform", limit: GALLERY_PAGE, offset });
+export const platformFilter = (offset: number) => ({ scope: "platform", limit: GALLERY_PAGE, offset, thumb: true });
 
 /** One sentence for a page's description: the template's persona, else its business. */
-export function templateDescription(card: GalleryCard): string {
+export function templateDescription(card: Pick<GalleryCard, "persona" | "business" | "name">): string {
   const text = card.persona ?? card.business ?? card.name;
   return text.length > 160 ? `${text.slice(0, 157).trimEnd()}…` : text;
 }

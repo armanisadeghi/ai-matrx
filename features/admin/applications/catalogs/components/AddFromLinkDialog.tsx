@@ -274,16 +274,17 @@ export function AddFromLinkDialog({
               </Select>
             </div>
             <Button
+              icon={state.status === "resolving" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ScanSearch />
+              )}
+              variant="primary"
               type="button"
               onClick={() => void runResolve()}
               disabled={state.status === "resolving" || url.trim().length === 0}
               className="shrink-0"
             >
-              {state.status === "resolving" ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <ScanSearch className="mr-1.5 h-4 w-4" />
-              )}
               Resolve
             </Button>
           </div>
@@ -384,6 +385,7 @@ export function AddFromLinkDialog({
 
               <div className="flex justify-end">
                 <Button
+                  variant="primary"
                   type="button"
                   disabled={!selectedFile}
                   onClick={() => {

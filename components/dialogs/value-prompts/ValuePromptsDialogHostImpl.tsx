@@ -130,6 +130,7 @@ export default function ValuePromptsDialogHostImpl() {
             </Button>
           )}
           <Button
+            variant="primary"
             type="button"
             onClick={handleSubmit}
             disabled={missingRequired}

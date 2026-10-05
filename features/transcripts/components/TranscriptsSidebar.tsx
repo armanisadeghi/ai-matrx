@@ -154,11 +154,10 @@ export function TranscriptsSidebar({
         <div className="flex items-center justify-between mb-3 md:mb-4">
           <h2 className="text-base md:text-lg font-semibold">Transcripts</h2>
           <Button
-            size="sm"
+            icon={<Plus />}
+            variant="primary"
             onClick={onCreateTranscript}
-            className="h-7 md:h-8 text-xs md:text-sm"
           >
-            <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
             <span className="ml-1">New</span>
           </Button>
         </div>
@@ -291,18 +290,16 @@ export function TranscriptsSidebar({
                     />
                     <div className="flex gap-1">
                       <Button
-                        size="sm"
-                        className="h-7 flex-1"
+                        icon={<Check />}
+                        variant="primary"
+                        className="flex-1"
                         disabled={renameBusy}
                         onClick={(e) => void saveRename(transcript.id, e)}
                       >
-                        <Check className="h-3.5 w-3.5 mr-1" />
                         Save
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7"
+                        variant="quiet"
                         disabled={renameBusy}
                         onClick={cancelRename}
                       >
@@ -339,15 +336,13 @@ export function TranscriptsSidebar({
                           </h3>
                           {transcript.is_draft && <DraftIndicator size="sm" />}
                           <Button
+                            icon={<Pencil />} aria-label="Rename recording"
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="pointer-events-auto h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                            variant="quiet"
+                            className="pointer-events-auto shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                             title="Rename recording"
                             onClick={(e) => startRename(transcript, e)}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
+                          />
                         </div>
                         {transcript.description && (
                           <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2 mt-1">

@@ -486,12 +486,10 @@ export function CloudFilesDebugClient() {
             </div>
           </div>
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
             onClick={() => void refreshSession()}
-            className="gap-1.5"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Refresh session
           </Button>
         </header>
@@ -573,7 +571,7 @@ export function CloudFilesDebugClient() {
                     placeholder="https://my-server.example.com"
                     className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
-                  <Button size="sm" onClick={onApplyCustomUrl}>
+                  <Button variant="primary" onClick={onApplyCustomUrl}>
                     Apply
                   </Button>
                 </div>
@@ -670,16 +668,15 @@ export function CloudFilesDebugClient() {
                   onChange={onFilePicked}
                 />
                 <Button
-                  size="sm"
+                  icon={running.upload ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <HardDriveUpload />
+                  )}
+                  variant="primary"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={!jwt || !!running.upload}
-                  className="gap-1.5"
                 >
-                  {running.upload ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <HardDriveUpload className="h-3.5 w-3.5" />
-                  )}
                   Pick file & upload
                 </Button>
               </div>
@@ -744,7 +741,7 @@ export function CloudFilesDebugClient() {
                 placeholder="/files/tree"
                 className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 font-mono"
               />
-              <Button size="sm" onClick={onRawSend} disabled={!!running.raw}>
+              <Button variant="primary" onClick={onRawSend} disabled={!!running.raw}>
                 {running.raw ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
@@ -774,12 +771,10 @@ export function CloudFilesDebugClient() {
             </div>
             {logs.length > 0 && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 text-xs"
+                icon={<X />}
+                variant="quiet"
                 onClick={clearLogs}
               >
-                <X className="h-3 w-3" />
                 Clear
               </Button>
             )}

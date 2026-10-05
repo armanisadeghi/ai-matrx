@@ -135,10 +135,8 @@ export default function EnumDetail({
           </div>
           <div className="flex items-center space-x-2">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={toggleExpanded}
-              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             >
               {isExpanded ? (
                 <Minimize2 className="h-4 w-4" />
@@ -147,10 +145,8 @@ export default function EnumDetail({
               )}
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onClose}
-              className="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -236,9 +232,7 @@ export default function EnumDetail({
                   </h3>
                   <Button
                     variant="outline"
-                    size="sm"
                     onClick={handleCopyValues}
-                    className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600"
                   >
                     {isCopied ? (
                       <Check className="h-3 w-3" />
@@ -322,9 +316,7 @@ export default function EnumDetail({
               </h3>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={handleCopyDefinition}
-                className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 border-slate-300 dark:border-slate-600"
               >
                 {isCopied ? (
                   <>
@@ -425,19 +417,17 @@ export default function EnumDetail({
 
       <CardFooter className="flex justify-between border-t border-slate-200 dark:border-slate-700 p-4 bg-slate-50 dark:bg-slate-800">
         <Button
-          variant="default"
+          icon={<Edit />}
+          variant="primary"
           onClick={onEdit}
-          className="bg-slate-700 hover:bg-slate-600 text-white dark:bg-slate-700 dark:hover:bg-slate-600"
         >
-          <Edit className="h-4 w-4 mr-2" />
           Edit Enum
         </Button>
         <Button
-          variant="destructive"
+          icon={<Trash2 />}
+          variant="danger"
           onClick={onDelete}
-          className="bg-red-600 hover:bg-red-700 text-white"
         >
-          <Trash2 className="h-4 w-4 mr-2" />
           Delete Enum
         </Button>
       </CardFooter>

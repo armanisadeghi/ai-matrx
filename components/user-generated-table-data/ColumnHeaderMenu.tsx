@@ -5,7 +5,7 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   ArrowDown,

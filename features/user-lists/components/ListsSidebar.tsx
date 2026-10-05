@@ -56,13 +56,12 @@ export function ListsSidebar({
           </span>
         </div>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 w-7 p-0 rounded-md"
+          icon={<Plus />}
+          variant="quiet"
+          className="w-7"
           onClick={onCreateList}
           title="Create new list"
         >
-          <Plus className="h-4 w-4" />
           <span className="sr-only">New list</span>
         </Button>
       </div>
@@ -111,8 +110,7 @@ export function ListsSidebar({
                 <p className="text-xs text-muted-foreground mt-1 mb-3">
                   Create your first list to get started
                 </p>
-                <Button size="sm" onClick={onCreateList} variant="outline">
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
+                <Button icon={<Plus />} onClick={onCreateList} variant="outline">
                   New List
                 </Button>
               </>
@@ -162,12 +160,11 @@ export function ListsSidebar({
         )}
       >
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="w-full h-8 text-xs gap-1.5"
+          className="w-full"
           onClick={onCreateList}
         >
-          <Plus className="h-3.5 w-3.5" />
           New List
         </Button>
       </div>

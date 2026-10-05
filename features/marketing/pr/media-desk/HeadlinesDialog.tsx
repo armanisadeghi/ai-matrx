@@ -69,8 +69,7 @@ export function HeadlineGroupView({
           <p className="mt-0.5 text-sm font-semibold text-foreground">{group.pick.text}</p>
           {group.pick.why ? <p className="mt-0.5 text-[11px] text-muted-foreground">{group.pick.why}</p> : null}
           {onUse ? (
-            <Button size="sm" variant="outline" className="mt-1.5 h-6 px-2 text-[10px]" onClick={() => onUse(group.pick!.text)}>
-              <Check className="mr-1 h-3 w-3" aria-hidden /> Use this
+            <Button icon={<Check aria-hidden />} variant="outline" className="mt-1.5" onClick={() => onUse(group.pick!.text)}> Use this
             </Button>
           ) : null}
         </div>
@@ -97,7 +96,7 @@ export function HeadlineGroupView({
                 </Badge>
               ) : null}
               {onUse ? (
-                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px]" onClick={() => onUse(candidate.text)}>
+                <Button variant="quiet" onClick={() => onUse(candidate.text)}>
                   Use
                 </Button>
               ) : null}
@@ -227,8 +226,7 @@ export function HeadlinesDialog({
     >
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button size="sm" variant="outline" className="h-7 text-[11px]">
-            <Heading className="mr-1 h-3 w-3" aria-hidden /> Headlines
+          <Button icon={<Heading aria-hidden />} type="submit" variant="outline"> Headlines
           </Button>
         )}
       </DialogTrigger>
@@ -324,7 +322,7 @@ export function HeadlinesDialog({
               json={() => result}
             />
           ) : null}
-          <Button onClick={() => void run()} disabled={!hasFacts || running}>
+          <Button variant="primary" onClick={() => void run()} disabled={!hasFacts || running}>
             {running ? "Writing…" : result ? "Write again" : "Write headlines"}
           </Button>
         </DialogFooter>

@@ -42,11 +42,9 @@ export function DateRangeSelector({ startDate, endDate, onChange }: DateRangeSel
         <Popover>
             <PopoverTrigger asChild>
                 <Button
+                    icon={<Calendar />}
                     variant="outline"
-                    size="sm"
-                    className="gap-2 text-gray-700 dark:text-gray-300"
                 >
-                    <Calendar className="w-4 h-4" />
                     {formatDateRange()}
                 </Button>
             </PopoverTrigger>

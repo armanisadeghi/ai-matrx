@@ -201,29 +201,27 @@ export function ShareCoverImagePicker({
 
           <div className="flex gap-2">
             <Button
+              icon={<ImageIcon />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => setView("gallery")}
               disabled={disabled || uploading}
               className="flex-1"
             >
-              <ImageIcon className="w-3.5 h-3.5 mr-1.5" />
               Gallery
             </Button>
             <Button
+              icon={uploading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Upload />
+              )}
               type="button"
               variant="outline"
-              size="sm"
               onClick={triggerUpload}
               disabled={disabled || uploading}
               className="flex-1"
             >
-              {uploading ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Upload className="w-3.5 h-3.5 mr-1.5" />
-              )}
               Upload
             </Button>
           </div>
@@ -278,8 +276,7 @@ export function ShareCoverImagePicker({
           </div>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => setView("idle")}
             className="w-full"
           >

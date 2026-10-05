@@ -530,15 +530,15 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
               aria-label="Search Google Drive file names or paste a link"
             />
             <Button
+              icon={loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Search />
+              )}
+              variant="primary"
               type="submit"
               disabled={!connectionId || loading}
-              className="min-h-10"
             >
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
-              )}
               Search
             </Button>
             <Button
@@ -553,13 +553,12 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
           {criteria.folderId ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Button
+                icon={<ChevronLeft />}
                 type="button"
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={browseAllAccessibleFiles}
                 disabled={loading}
-              >
-                <ChevronLeft className="mr-1 h-4 w-4" /> All accessible files
+              > All accessible files
               </Button>
               <span>/ {criteria.folderName ?? "Folder"}</span>
             </div>
@@ -619,8 +618,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
             Import saves a copy in Matrx Files.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" onClick={() => void importSelected()} disabled={importing || !selectedOrganizationId || alreadyAttempted}>
-              {importing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null} Import selected file
+            <Button icon={importing ? <Loader2 className="animate-spin" /> : null} variant="primary" type="button" onClick={() => void importSelected()} disabled={importing || !selectedOrganizationId || alreadyAttempted}> Import selected file
             </Button>
             <Button type="button" variant="outline" disabled={importing} onClick={() => setImportSelection(null)}>Cancel</Button>
           </div>
@@ -631,7 +629,7 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
         <section className="rounded-xl border border-primary/30 bg-primary/5 p-4 text-sm" aria-label="Saved Matrx Files copy">
           <p className="font-medium">Saved to Matrx Files</p>
           <p className="mt-1 text-muted-foreground">{receipt.fileName} from {receipt.sourceAccount} · {receipt.result.file_path}</p>
-          <Button type="button" size="sm" variant="outline" className="mt-3" onClick={() => openFilePreview(receipt.result.file_id)}>Open saved file</Button>
+          <Button type="button" variant="outline" className="mt-3" onClick={() => openFilePreview(receipt.result.file_id)}>Open saved file</Button>
         </section>
       ) : null}
       {page ? (
@@ -673,7 +671,6 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
                       {isFolder ? (
                         <Button
                           type="button"
-                          size="sm"
                           variant="outline"
                           disabled={loading}
                           onClick={() =>
@@ -690,37 +687,35 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
                         </Button>
                       ) : (
                         <Button
+                          icon={checkingFileId === file.id ? (
+                            <Loader2 className="animate-spin" />
+                          ) : null}
                           type="button"
-                          size="sm"
                           variant="outline"
                           disabled={checkingFileId !== null}
                           onClick={() => void checkAccess(file.id, driveFileResourceKey(file, criteria))}
-                        >
-                          {checkingFileId === file.id ? (
-                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                          ) : null}{" "}
+                        >{" "}
                           Check access
                         </Button>
                       )}
                       {!isFolder && importableFile(file) ? (
-                        <Button type="button" size="sm" disabled={importing} onClick={() => selectForImport(file)}>
+                        <Button variant="primary" type="button" disabled={importing} onClick={() => selectForImport(file)}>
                           Save to Matrx Files
                         </Button>
                       ) : !isFolder ? (
                         <span className="self-center text-xs text-muted-foreground">Import unavailable for this file type</span>
                       ) : null}
                       <Button
-                        type="button"
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void openInGoogle(file.id, driveFileResourceKey(file, criteria))}
-                      >
-                        {checkingFileId === file.id ? (
-                          <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                        icon={checkingFileId === file.id ? (
+                          <Loader2 className="animate-spin" />
                         ) : (
                           // new-tab-icon: openInGoogle opens the file in a new tab (window.open in openGoogleDriveBlankTab); never disabled — each click opens its own tab
-                          <ExternalLink className="mr-1 h-3.5 w-3.5" />
+                          <ExternalLink />
                         )}
+                        type="button"
+                        variant="quiet"
+                        onClick={() => void openInGoogle(file.id, driveFileResourceKey(file, criteria))}
+                      >
                         Open in Google
                       </Button>
                     </div>
@@ -736,14 +731,14 @@ export function GoogleDriveLibraryContent({ environment }: { environment: Google
           {page.next_page_token ? (
             <div className="border-t border-border p-4">
               <Button
+                icon={loading ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
                 type="button"
                 variant="outline"
                 disabled={loading}
                 onClick={() => void load({ pageToken: page.next_page_token })}
-              >
-                {loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}{" "}
+              >{" "}
                 Load next page
               </Button>
             </div>

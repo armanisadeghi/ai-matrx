@@ -1,7 +1,7 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useOpenUserSearchWindow } from "./useOpenUserSearchWindow";

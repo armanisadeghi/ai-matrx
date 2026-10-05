@@ -36,13 +36,11 @@ export function MemberPersonalTablesAction({
   return (
     <>
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 px-2 text-xs text-muted-foreground"
+        icon={<ArrowRightLeft />}
+        variant="quiet"
         onClick={() => setOpen(true)}
         data-member-transfer-tables={member.id}
       >
-        <ArrowRightLeft className="mr-1 h-3.5 w-3.5" />
         Transfer their personal tables…
       </Button>
       {open && (

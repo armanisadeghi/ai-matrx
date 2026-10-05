@@ -125,7 +125,6 @@ export function SpendBudgetCard({
           {error ?? "The billing resolver returned nothing."}
         </p>
         <Button
-          size="sm"
           variant="outline"
           className="mt-3"
           onClick={() => void refresh()}
@@ -505,35 +504,32 @@ function GuardrailRow({
             aria-label="Note"
           />
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <Check aria-hidden />
+            )}
+            variant="primary"
             onClick={() => void save()}
             disabled={busy || draftPoints === null || aboveCeiling}
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : (
-              <Check className="h-3.5 w-3.5" aria-hidden />
-            )}
             Save
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<X aria-hidden />}
+            variant="quiet"
             onClick={() => setEditing(false)}
             disabled={busy}
           >
-            <X className="h-3.5 w-3.5" aria-hidden />
             Cancel
           </Button>
           {existing ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive"
+              icon={<Trash2 aria-hidden />}
+              variant="quiet"
               onClick={() => void remove()}
               disabled={busy}
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Remove
             </Button>
           ) : null}
@@ -563,13 +559,11 @@ function GuardrailRow({
       )}
       {editable ? (
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2"
+          icon={<Pencil aria-hidden />}
+          variant="quiet"
           onClick={beginEdit}
           aria-label={value === null ? `Set ${label}` : `Edit ${label}`}
         >
-          <Pencil className="h-3.5 w-3.5" aria-hidden />
           {value === null ? "Set" : "Edit"}
         </Button>
       ) : null}

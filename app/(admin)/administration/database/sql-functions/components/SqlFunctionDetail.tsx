@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { SqlFunction } from "@/types/sql-functions";
 import { parseArguments } from "../utils/parseArguments";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import {
   X,
@@ -137,31 +138,27 @@ export default function SqlFunctionDetail({
         </div>
         <div className="flex items-center gap-1 shrink-0 ml-3">
           <Button
-            variant="default"
-            size="sm"
+            icon={<Edit />}
+            variant="primary"
             onClick={onEdit}
-            className="h-6 text-xs px-2 bg-slate-700 hover:bg-slate-600 text-white"
           >
-            <Edit className="h-3 w-3 mr-1" />
             Edit
           </Button>
           <Button
-            variant="destructive"
-            size="sm"
+            icon={<Trash2 />}
+            variant="danger"
             onClick={onDelete}
-            className="h-6 text-xs px-2"
           >
-            <Trash2 className="h-3 w-3 mr-1" />
             Delete
           </Button>
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="icon"
             onClick={onClose}
             className="h-6 w-6 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <X className="h-3.5 w-3.5" />
-          </Button>
+          </SurfaceButton>
         </div>
       </div>
 
@@ -386,10 +383,8 @@ export default function SqlFunctionDetail({
 
             {rightPanel === "definition" && func.definition && (
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={handleCopyCode}
-                className="h-5 text-[10px] text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 px-1.5"
               >
                 {defCopied ? (
                   <>

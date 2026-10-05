@@ -90,25 +90,20 @@ export function VariablesEditor({ value, onChange }: Props) {
             maxLength={2000}
           />
           <Button
+            icon={<Trash2 />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             onClick={() => push(rows.filter((_, j) => j !== i))}
-            className="h-11 w-11 text-muted-foreground hover:text-destructive lg:h-8 lg:w-8"
             aria-label="Remove variable"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       ))}
       <Button
+        icon={<Plus />}
         type="button"
         variant="outline"
-        size="sm"
         onClick={() => push([...rows, { key: "", value: "" }])}
-        className="gap-1.5"
       >
-        <Plus className="h-3.5 w-3.5" />
         Add variable
       </Button>
     </div>

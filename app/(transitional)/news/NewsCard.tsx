@@ -82,12 +82,13 @@ const NewsCard = ({ article, index }: { article: Article; index: number }) => {
             </CardContent>
             <CardFooter className="pt-4">
                 <Button
+                    iconEnd={<ExternalLink />}
+                    type="submit"
                     variant="outline"
-                    className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+                    className="w-full"
                 >
                     Read More
                     {/* new-tab-icon: the whole <Card> this Button sits in has onClick={() => window.open(article.url, '_blank')} */}
-                    <ExternalLink className="h-4 w-4 ml-2" />
                 </Button>
             </CardFooter>
         </Card>

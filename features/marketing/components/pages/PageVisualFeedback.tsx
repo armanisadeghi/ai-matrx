@@ -154,12 +154,12 @@ export function PageVisualFeedback({ page }: { page: MarketingPage }) {
           </p>
         </div>
         <Button
+          icon={<ImagePlus />}
+          variant="primary"
           type="button"
-          size="sm"
           className="shrink-0"
           onClick={feedback.openNew}
         >
-          <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
           Add visual feedback
         </Button>
       </div>

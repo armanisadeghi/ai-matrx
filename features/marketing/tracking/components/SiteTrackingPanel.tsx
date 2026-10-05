@@ -319,7 +319,7 @@ export function SiteTrackingPanel({
             (it looks like <span className="font-mono">GTM-ABC1234</span>) and this panel will
             grade what is firing, and check that the container is really on the page.
           </p>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={integrationsHref} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
               Bind a container
@@ -464,9 +464,12 @@ export function SiteTrackingPanel({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs font-medium text-foreground">Container inventory</p>
           <Button
-            size="sm"
+            icon={inventory.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            className="h-6 gap-1 px-2 text-[11px]"
             disabled={!binding.credentialRef || inventory.isPending || !productReady}
             title={
               !binding.credentialRef
@@ -482,11 +485,6 @@ export function SiteTrackingPanel({
               });
             }}
           >
-            {inventory.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3" />
-            )}
             List containers
           </Button>
         </div>
@@ -588,9 +586,12 @@ export function SiteTrackingPanel({
           <CopyButtons size="icon" {...copy} json={() => snapshotQuery.data} />
         ) : null}
         <Button
-          size="sm"
+          icon={checking ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
-          className="h-6 gap-1 px-2 text-[11px]"
           onClick={() => void runCheck()}
           disabled={!canCheck}
           title={
@@ -601,11 +602,6 @@ export function SiteTrackingPanel({
                 : "Read the container from Google and fetch this site once to check it"
           }
         >
-          {checking ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3 w-3" />
-          )}
           Re-check
         </Button>
       </div>

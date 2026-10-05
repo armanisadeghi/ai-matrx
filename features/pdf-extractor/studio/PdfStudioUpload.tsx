@@ -251,10 +251,10 @@ export function PdfStudioUpload({
           </div>
 
           <Button
+            variant="primary"
             onClick={handleExtract}
             disabled={isBusy || extractor.selectedFiles.length === 0}
-            size="sm"
-            className="w-full h-9 text-xs"
+            className="w-full"
           >
             {isExtracting ? (
               <>
@@ -314,18 +314,17 @@ export function PdfStudioUpload({
 
       <div className="mt-3 space-y-2">
         <Button
+          icon={cloudExtraction.status === "extracting" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FolderOpen />
+          )}
           type="button"
           variant="outline"
-          size="sm"
-          className="w-full h-9 text-xs"
+          className="w-full"
           disabled={isBusy}
           onClick={() => void handleChooseExisting()}
         >
-          {cloudExtraction.status === "extracting" ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
-          )}
           Choose from Files
         </Button>
         {cloudExtraction.status === "extracting" ? (

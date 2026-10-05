@@ -361,7 +361,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1 bg-primary hover:bg-primary/90">
+              <Button variant="primary" type="submit" disabled={isSubmitting} className="flex-1">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -483,7 +483,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
               >
                 Skip for now
               </Button>
-              <Button type="submit" disabled={isSubmitting} className="flex-1 bg-primary hover:bg-primary/90">
+              <Button variant="primary" type="submit" disabled={isSubmitting} className="flex-1">
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

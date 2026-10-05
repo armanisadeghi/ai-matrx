@@ -35,14 +35,13 @@ export function CxErrorPanel({ what, message }: Props) {
           </p>
         </div>
         <Button
-          size="sm"
+          icon={<RefreshCw
+            className={`w-3.5 h-3.5 mr-1.5 ${isPending ? "animate-spin" : ""}`}
+          />}
           variant="outline"
           disabled={isPending}
           onClick={() => startTransition(() => router.refresh())}
         >
-          <RefreshCw
-            className={`w-3.5 h-3.5 mr-1.5 ${isPending ? "animate-spin" : ""}`}
-          />
           {isPending ? "Retrying" : "Retry"}
         </Button>
       </div>

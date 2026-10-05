@@ -83,7 +83,7 @@ function DriftReportDialog({ onClose }: { onClose: () => void }) {
           ))}
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Close
           </Button>
         </DialogFooter>
@@ -121,7 +121,7 @@ function Section({ section }: { section: DriftSection }) {
               {row.detail}
             </code>
             <Inert what="delete this one stale mirror row, naming the CASCADE first">
-              <Button variant="outline" size="sm" className="h-6 text-[10px]">
+              <Button type="submit" variant="outline">
                 Delete this row
               </Button>
             </Inert>
@@ -163,7 +163,7 @@ function SyncReceiptDialog({ onClose }: { onClose: () => void }) {
           report can never disagree.
         </p>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Close
           </Button>
         </DialogFooter>
@@ -220,23 +220,19 @@ export function CompletenessStrip({ readOnly }: { readOnly: boolean }) {
 
         <div className="ml-auto flex items-center gap-1.5">
           <Button
+            icon={<AlertTriangle />}
             variant="outline"
-            size="sm"
-            className="h-7 gap-1 border-orange-500/40 bg-orange-500/10 text-[11px] text-orange-700 hover:bg-orange-500/20 dark:text-orange-300"
             onClick={() => setDialog("drift")}
           >
-            <AlertTriangle className="h-3.5 w-3.5" />
             Drift
             <span className="font-mono tabular-nums">{DRIFT_ISSUE_COUNT}</span>
           </Button>
           {!readOnly && (
             <Button
+              icon={<RefreshCw />}
               variant="outline"
-              size="sm"
-              className="h-7 gap-1 text-[11px]"
               onClick={() => setDialog("sync")}
             >
-              <RefreshCw className="h-3.5 w-3.5" />
               Sync manifests
             </Button>
           )}

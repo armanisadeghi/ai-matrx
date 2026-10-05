@@ -268,13 +268,11 @@ export function SeoPlanEditor({
       {variant === "bare" && (observedTitle || observedDescription) ? (
         <div className="flex justify-end">
           <Button
+            icon={<Download />}
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={useObservedMetadata}
           >
-            <Download className="mr-1.5 h-3.5 w-3.5" />
             Use current metadata
           </Button>
         </div>
@@ -295,26 +293,23 @@ export function SeoPlanEditor({
 
       <div className="flex items-center justify-end gap-2">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-8"
+          icon={<Undo2 />}
+          variant="quiet"
           disabled={!dirty || saving}
           onClick={reset}
         >
-          <Undo2 className="mr-1.5 h-3.5 w-3.5" />
           Reset
         </Button>
         <Button
-          size="sm"
-          className="h-8"
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           disabled={!dirty || saving}
           onClick={() => void save()}
         >
-          {saving ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="mr-1.5 h-3.5 w-3.5" />
-          )}
           Save SEO plan
         </Button>
       </div>

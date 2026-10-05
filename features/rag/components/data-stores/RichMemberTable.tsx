@@ -360,7 +360,7 @@ export function RichMemberTable({
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={doRemove}
               disabled={removing}
             >

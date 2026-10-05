@@ -295,21 +295,18 @@ export function FindingFixCard({
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                size="sm"
-                className="h-7"
+                icon={applying ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 disabled={applying}
                 onClick={() => setConfirming(reviewable)}
               >
-                {applying ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Apply as a draft
               </Button>
               {reviewable.pipe === "code" && fixer.state.status === "idle" ? (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 gap-1.5"
                   onClick={() => void fixer.run(false)}
                 >
                   <AGENT_ICON className="h-3.5 w-3.5" />
@@ -346,8 +343,7 @@ export function FindingFixCard({
               </p>
             ) : (
               <Button
-                size="sm"
-                className="h-7 gap-1.5"
+                variant="primary"
                 onClick={() => void fixer.run(fixer.state.status === "done")}
               >
                 <AGENT_ICON className="h-3.5 w-3.5" />

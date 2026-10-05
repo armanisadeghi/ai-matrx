@@ -226,10 +226,8 @@ function ScopeRowPicker({
       }}
     >
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" size="sm" className="h-7 text-xs">
-          <Plus className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<Plus />} iconEnd={<ChevronDown className="opacity-60" />} type="button" variant="outline">
           {`Add override for ${withArticle(nounWord(kind))}…`}
-          <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
         </Button>
       </PopoverTrigger>
       <PopoverContent sizing="content" className="p-0" align="start">
@@ -245,9 +243,7 @@ function ScopeRowPicker({
             <p className="text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="h-7 text-xs"
               onClick={() => {
                 setRows(null);
                 setError(null);
@@ -567,9 +563,7 @@ export function KnobRungOverrides({
               </span>
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-6 text-xs"
+                variant="quiet"
                 onClick={() =>
                   setDrafts((prior) =>
                     prior.filter(
@@ -635,7 +629,7 @@ function ExceptionsBody({
       <SettingsCallout tone="error" title="The exceptions could not be read">
         <p>{message} <ErrorAlchemyMenu error={message} /></p>
         <div className="mt-3">
-          <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+          <Button type="button" variant="outline" onClick={onRetry}>
             Try again
           </Button>
         </div>

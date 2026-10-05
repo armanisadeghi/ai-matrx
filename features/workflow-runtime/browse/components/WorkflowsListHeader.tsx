@@ -29,10 +29,8 @@ export function WorkflowsListHeader() {
         <>
           <Button
             asChild
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             aria-label="Runs"
-            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
           >
             <Link href="/workflows/runs" title="Every run you can see">
               Runs
@@ -40,9 +38,7 @@ export function WorkflowsListHeader() {
           </Button>
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+            variant="quiet"
           >
             <Link href="/masterwork" title="Masterworks — where workflows are built">
               <span className="hidden sm:inline">Masterworks</span>

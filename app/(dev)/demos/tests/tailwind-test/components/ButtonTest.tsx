@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ButtonProps } from '@/components/ui/button'; // Adjust this import path as necessary
+import { Button, ButtonProps } from "@ai-matrx/design-system"; // Adjust this import path as necessary
 import { Star } from 'lucide-react';
 
 const ButtonTest: React.FC = () => {

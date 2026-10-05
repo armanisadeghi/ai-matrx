@@ -1046,23 +1046,19 @@ export default function CompetitorAutopsyWorkspace({
                   <div className="flex flex-wrap items-center gap-2">
                     <Label className="mr-1">Competitor market</Label>
                     <Button
+                      icon={<Globe />}
                       type="button"
-                      size="sm"
-                      variant={autopsyScope === "national" ? "default" : "outline"}
-                      className="gap-2"
+                      variant={autopsyScope === "national" ? "primary" : "outline"}
                       onClick={() => setAutopsyScope("national")}
                     >
-                      <Globe className="size-3.5" />
                       National
                     </Button>
                     <Button
+                      icon={<MapPin />}
                       type="button"
-                      size="sm"
-                      variant={autopsyScope === "local" ? "default" : "outline"}
-                      className="gap-2"
+                      variant={autopsyScope === "local" ? "primary" : "outline"}
                       onClick={() => setAutopsyScope("local")}
                     >
-                      <MapPin className="size-3.5" />
                       Local
                     </Button>
                     <span className="text-xs text-muted-foreground">
@@ -1178,7 +1174,13 @@ export default function CompetitorAutopsyWorkspace({
                     </Label>
                   </div>
                   <Button
-                    className="mt-auto w-full gap-2"
+                    icon={run.status === "running" ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <ScanSearch />
+                    )}
+                    variant="primary"
+                    className="mt-auto w-full"
                     disabled={
                       !resolvedSiteId ||
                       run.status === "running" ||
@@ -1202,11 +1204,6 @@ export default function CompetitorAutopsyWorkspace({
                       })
                     }
                   >
-                    {run.status === "running" ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <ScanSearch className="size-4" />
-                    )}
                     {run.status === "running"
                       ? "Building the autopsy"
                       : autopsyScope === "local"
@@ -1256,7 +1253,7 @@ export default function CompetitorAutopsyWorkspace({
                 </p>
               </div>
               <Button
-                size="sm"
+                variant="primary"
                 className="shrink-0"
                 onClick={() =>
                   router.push(competitorViewHref("review", resolvedSiteId, basePath, routed))
@@ -1298,17 +1295,15 @@ export default function CompetitorAutopsyWorkspace({
             <LandscapeBriefCard site={selectedSite} onGuidanceSaved={refresh} />
             <div className="flex flex-wrap items-center gap-2">
               <Button
+                icon={discovering ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ScanSearch />
+                )}
                 variant="outline"
-                size="sm"
-                className="gap-2"
                 disabled={!selectedSite || discovering}
                 onClick={() => void findCompetitors()}
               >
-                {discovering ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ScanSearch className="size-3.5" />
-                )}
                 Find my competitors
               </Button>
               <span className="text-xs text-muted-foreground">
@@ -1347,8 +1342,12 @@ export default function CompetitorAutopsyWorkspace({
                   />
                 </div>
                 <Button
-                  size="sm"
-                  className="gap-2"
+                  icon={localSearching ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <MapPin />
+                  )}
+                  variant="primary"
                   disabled={
                     !selectedSite ||
                     localSearching ||
@@ -1357,11 +1356,6 @@ export default function CompetitorAutopsyWorkspace({
                   }
                   onClick={() => void findLocalCompetitors()}
                 >
-                  {localSearching ? (
-                    <Loader2 className="size-3.5 animate-spin" />
-                  ) : (
-                    <MapPin className="size-3.5" />
-                  )}
                   Find local competitors
                 </Button>
               </div>
@@ -1467,7 +1461,6 @@ export default function CompetitorAutopsyWorkspace({
                 <>
                   {row.status === "open" ? (
                     <Button
-                      size="sm"
                       variant="outline"
                       onClick={() => void mutateOpportunity(row.id, "accepted")}
                     >
@@ -1476,7 +1469,6 @@ export default function CompetitorAutopsyWorkspace({
                   ) : null}
                   {row.status === "accepted" ? (
                     <Button
-                      size="sm"
                       variant="outline"
                       onClick={() =>
                         void mutateOpportunity(row.id, "in_progress")
@@ -1487,7 +1479,7 @@ export default function CompetitorAutopsyWorkspace({
                   ) : null}
                   {row.status === "in_progress" ? (
                     <Button
-                      size="sm"
+                      variant="primary"
                       onClick={() =>
                         void mutateOpportunity(row.id, "completed")
                       }
@@ -1497,8 +1489,7 @@ export default function CompetitorAutopsyWorkspace({
                   ) : null}
                   {row.status !== "completed" && row.status !== "dismissed" ? (
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       onClick={() =>
                         void mutateOpportunity(row.id, "dismissed")
                       }
@@ -1589,15 +1580,13 @@ export default function CompetitorAutopsyWorkspace({
                 // canonical RPC rejects outright.
                 row.tracking_status === "tracked" ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => void mutateTracking(row.id, "ignored")}
                   >
                     Stop tracking
                   </Button>
                 ) : (
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => void mutateTracking(row.id, "tracked")}
                   >

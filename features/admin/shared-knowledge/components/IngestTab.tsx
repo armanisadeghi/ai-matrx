@@ -137,20 +137,18 @@ export function IngestTab({
           Source file
         </label>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={onPickExisting}>
-            <FolderOpen className="mr-1.5 h-3.5 w-3.5" /> Choose existing file
+          <Button icon={<FolderOpen />} variant="outline" onClick={onPickExisting}> Choose existing file
           </Button>
           <Button
+            icon={uploading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Upload />
+            )}
             variant="outline"
-            size="sm"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            {uploading ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Upload className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Upload new file
             {uploading && progress
               ? ` (${Math.round(progress.ratio * 100)}%)`
@@ -197,14 +195,15 @@ export function IngestTab({
       </div>
 
       <Button
+        icon={phase === "submitting" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Send />
+        )}
+        variant="primary"
         onClick={onSubmit}
         disabled={!storeId || !picked || phase === "submitting"}
       >
-        {phase === "submitting" ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : (
-          <Send className="mr-2 h-4 w-4" />
-        )}
         Start library ingest
       </Button>
 

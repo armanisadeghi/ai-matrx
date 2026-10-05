@@ -101,13 +101,11 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
 
         <div className="flex items-center gap-2">
           <Button
+            icon={<Upload />}
             type="button"
             variant="outline"
-            size="sm"
-            className="gap-1.5"
             onClick={() => fileRef.current?.click()}
-          >
-            <Upload className="h-4 w-4" /> Choose file
+          > Choose file
           </Button>
           <input
             ref={fileRef}
@@ -121,13 +119,11 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
             }}
           />
           <Button
+            icon={<FileDown />}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="gap-1.5"
+            variant="quiet"
             onClick={() => downloadTextFile("dictionary-template.csv", dictCsvTemplate(), "text/csv")}
-          >
-            <FileDown className="h-4 w-4" /> Download CSV template
+          > Download CSV template
           </Button>
           <div className="ml-auto inline-flex rounded-md border border-border p-0.5 text-xs">
             {(["csv", "json"] as const).map((f) => (
@@ -189,10 +185,10 @@ export function DictionaryImportDialog({ open, onOpenChange, onImport }: Props) 
         )}
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => { reset(); onOpenChange(false); }} disabled={busy}>
+          <Button variant="quiet" onClick={() => { reset(); onOpenChange(false); }} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={commit} disabled={busy || !parsed || parsed.drafts.length === 0}>
+          <Button variant="primary" onClick={commit} disabled={busy || !parsed || parsed.drafts.length === 0}>
             {busy ? "Importing…" : `Import ${parsed?.drafts.length ?? 0}`}
           </Button>
         </DialogFooter>

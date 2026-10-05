@@ -315,9 +315,14 @@ export function DiscoveryLadder({ siteId, brandId }: DiscoveryLadderProps) {
                 ) : null}
                 {implemented ? (
                   <Button
-                    size="sm"
-                    variant={completed ? "ghost" : "default"}
-                    className="h-7 gap-1 text-xs"
+                    icon={isRunning ? (
+                      <Loader2 className="animate-spin" />
+                    ) : completed ? (
+                      <RotateCcw />
+                    ) : (
+                      <Play />
+                    )}
+                    variant={completed ? "quiet" : "primary"}
                     disabled={!runnable || isRunning || run.status === "running"}
                     title={
                       missing.length > 0
@@ -330,13 +335,6 @@ export function DiscoveryLadder({ siteId, brandId }: DiscoveryLadderProps) {
                     }
                     onClick={() => void launchStep(step)}
                   >
-                    {isRunning ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : completed ? (
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    ) : (
-                      <Play className="h-3.5 w-3.5" />
-                    )}
                     {isRunning ? "Running…" : completed ? "Re-run" : "Run"}
                   </Button>
                 ) : (

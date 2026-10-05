@@ -260,13 +260,12 @@ function ConsoleBody({ frontendAccept, source = liveCheckFindingsSource, banner 
             </div>
           ) : null}
           <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto h-7 gap-1 px-2 text-xs"
+            icon={<RefreshCw className={`h-3.5 w-3.5 ${snapshot.status === "loading" ? "animate-spin" : ""}`} />}
+            variant="quiet"
+            className="ml-auto"
             onClick={() => setReloadKey((k) => k + 1)}
             disabled={snapshot.status === "loading"}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${snapshot.status === "loading" ? "animate-spin" : ""}`} />
             Refresh
           </Button>
         </header>
@@ -331,7 +330,7 @@ function LoadError({ what, message, onRetry }: { what: string; message: string; 
           Admin-only data. Retry, and report it if it persists.
         </p>
       </div>
-      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onRetry}>
+      <Button variant="outline" onClick={onRetry}>
         Retry
       </Button>
     </div>
@@ -545,7 +544,7 @@ function CheckBoard({
         tableId="admin-check-findings-board"
         data={rows}
         columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (r) => (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onOpen(r)}>
+          <Button variant="quiet" onClick={() => onOpen(r)}>
             Findings
           </Button>
         ) }]}
@@ -806,8 +805,7 @@ function CheckDetail({
     <div className="flex min-h-0 flex-1 flex-col gap-2">
       <section className="rounded-md border border-border bg-card px-3 py-2 text-xs">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <Button variant="ghost" size="sm" className="-ml-2 h-7 gap-1 px-2 text-xs" onClick={onAllChecks}>
-            <ChevronLeft className="h-3.5 w-3.5" />
+          <Button icon={<ChevronLeft />} variant="quiet" className="-ml-2" onClick={onAllChecks}>
             All checks
           </Button>
           {row ? (
@@ -903,14 +901,12 @@ function CheckDetail({
               <span className="hidden min-w-0 items-center gap-1 sm:col-span-2 sm:flex lg:col-span-4">
                 Re-run: <code className="truncate font-mono text-foreground">{row.check.command}</code>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 shrink-0"
+                  icon={<Copy />}
+                  variant="quiet"
+                  className="shrink-0"
                   aria-label="Copy the check's command"
                   onClick={() => void copyText(row.check.command ?? "", "Check command")}
-                >
-                  <Copy className="h-3 w-3" />
-                </Button>
+                />
               </span>
             ) : null}
           </div>
@@ -1035,30 +1031,26 @@ function ItemDecision({
   if (acceptable) {
     return (
       <Button
+        icon={<CheckCircle2 />}
         variant="outline"
-        size="sm"
-        className="h-7 gap-1 px-2 text-xs"
         onClick={(event) => {
           event.stopPropagation();
           onAccept(item);
         }}
       >
-        <CheckCircle2 className="h-3.5 w-3.5" />
         Mark OK
       </Button>
     );
   }
   return (
     <Button
-      variant="ghost"
-      size="sm"
-      className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+      icon={<CircleSlash />}
+      variant="quiet"
       onClick={(event) => {
         event.stopPropagation();
         onAccept(item);
       }}
     >
-      <CircleSlash className="h-3.5 w-3.5" />
       No accept — why?
     </Button>
   );
@@ -1297,31 +1289,28 @@ function AcceptDialog({
   const working = result.kind === "working";
   const footer = (
     <>
-      <Button variant="ghost" size="sm" onClick={close}>
+      <Button variant="quiet" onClick={close}>
         Close
       </Button>
       {command && !noAdapter && showCommand ? (
         <Button
+          icon={<Copy />}
           variant="outline"
-          size="sm"
-          className="gap-1"
           disabled={!canCopy}
           title={canCopy ? undefined : "Write the reason first — it goes into the allowlist entry."}
           onClick={() => void copyText(command, "Accept command")}
         >
-          <Copy className="h-3.5 w-3.5" />
           Copy command
         </Button>
       ) : null}
       {command && !noAdapter ? (
         <Button
-          size="sm"
-          className="gap-1"
+          icon={working ? <RefreshCw className="animate-spin" /> : <CheckCircle2 />}
+          variant="primary"
           disabled={!hasReason || working}
           title={hasReason ? undefined : "Write the reason first — it goes into the allowlist entry."}
           onClick={() => void markOk()}
         >
-          {working ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
           {working ? "Committing to main…" : "Mark OK"}
         </Button>
       ) : null}

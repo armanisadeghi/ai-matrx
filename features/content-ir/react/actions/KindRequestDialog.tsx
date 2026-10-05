@@ -386,7 +386,7 @@ export function KindRequestDialog({
               <p className="text-xs text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
             ) : null}
             <DialogFooter>
-              <Button onClick={submit} disabled={!canSubmit} className="gap-1.5">
+              <Button variant="primary" onClick={submit} disabled={!canSubmit}>
                 {isRunning ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (

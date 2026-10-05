@@ -234,18 +234,16 @@ export function ContactCandidatesCard({
       action={
         <div className="flex items-center gap-1">
           <Button
+            icon={finding ? (
+              <RefreshCw className="animate-spin" />
+            ) : (
+              <Search />
+            )}
             variant="outline"
-            size="sm"
             aria-label="Find contact info"
-            className="h-11 px-3 text-xs sm:h-6 sm:px-2"
             disabled={finding}
             onClick={() => void find()}
           >
-            {finding ? (
-              <RefreshCw className="h-3 w-3 animate-spin sm:mr-1" />
-            ) : (
-              <Search className="h-3 w-3 sm:mr-1" />
-            )}
             {/* One header row on a phone: a short visible word ("Find"), so
                 it never reads as a twin of the refresh icon beside it. */}
             <span className="sm:hidden">Find</span>
@@ -272,7 +270,7 @@ export function ContactCandidatesCard({
         ) : (
           <div className="flex items-center justify-between gap-2 py-2 text-xs text-destructive">
             <span>{extractErrorMessage(error)}</span>
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" onClick={() => void load()}>
               Retry
             </Button>
             <ErrorAlchemyMenu />
@@ -344,26 +342,23 @@ export function ContactCandidatesCard({
                 </p>
                 <div className="flex items-center gap-1.5">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 px-2 text-xs"
+                    icon={<ThumbsDown />}
+                    variant="quiet"
                     disabled={busy}
                     onClick={() => void refuse(candidate)}
                   >
-                    <ThumbsDown className="mr-1 h-3 w-3" />
                     Refuse
                   </Button>
                   <Button
-                    size="sm"
-                    className="h-7 px-2 text-xs"
+                    icon={candidate.verification_status === "verified" ? (
+                      <BadgeCheck />
+                    ) : (
+                      <ShieldQuestion />
+                    )}
+                    variant="primary"
                     disabled={busy}
                     onClick={() => void accept(candidate)}
                   >
-                    {candidate.verification_status === "verified" ? (
-                      <BadgeCheck className="mr-1 h-3 w-3" />
-                    ) : (
-                      <ShieldQuestion className="mr-1 h-3 w-3" />
-                    )}
                     Add as a contact
                   </Button>
                 </div>

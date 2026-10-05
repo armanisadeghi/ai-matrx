@@ -227,12 +227,11 @@ export function PlannerWorkspace({ backHref }: { backHref?: string }) {
       <div className="min-h-full w-full bg-textured">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 py-6 sm:py-8">
           <Button
-            variant="ghost"
-            size="sm"
-            className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+            icon={<ArrowLeft />}
+            variant="quiet"
+            className="mb-4"
             onClick={() => (backHref ? router.push(backHref) : router.back())}
           >
-            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
 

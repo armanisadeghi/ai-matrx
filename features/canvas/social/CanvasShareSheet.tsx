@@ -183,7 +183,7 @@ function ShareFormContent({
             <Button
               onClick={onCopy}
               variant="outline"
-              className="flex-shrink-0 whitespace-nowrap"
+              className="flex-shrink-0"
             >
               {copied ? (
                 <>
@@ -258,7 +258,7 @@ function ShareFormContent({
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={onClose}>Done</Button>
+          <Button variant="primary" onClick={onClose}>Done</Button>
         </div>
       </div>
     );
@@ -445,7 +445,7 @@ function ShareFormContent({
         <Button variant="outline" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={onShare} disabled={isSharing || !title.trim()}>
+        <Button variant="primary" onClick={onShare} disabled={isSharing || !title.trim()}>
           {isSharing ? "Creating..." : "Create Share Link"}
         </Button>
       </div>

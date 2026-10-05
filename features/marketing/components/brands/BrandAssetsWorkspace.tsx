@@ -254,7 +254,7 @@ export function BrandAssetsWorkspace({
             </div>
             <div className="flex items-center gap-1.5">
               {standardsSite ? (
-                <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+                <Button asChild variant="outline">
                   <Link
                     href={`${marketingRoutes.site(brandId, standardsSite.id)}/media?view=standards`}
                   >
@@ -264,7 +264,7 @@ export function BrandAssetsWorkspace({
                 </Button>
               ) : null}
               {firstSite ? (
-                <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+                <Button asChild variant="outline">
                   <Link href={`${marketingRoutes.site(brandId, firstSite.id)}/media`}>
                     <Globe2 className="h-3.5 w-3.5" />
                     Site media

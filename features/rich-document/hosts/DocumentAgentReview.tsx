@@ -202,14 +202,14 @@ export function DocumentAgentReview({
         ) : null}
         <div className="flex justify-end gap-2">
           {initialProposal === null ? (
-            <Button variant="ghost" onClick={() => setProposal(null)} disabled={saving}>
+            <Button variant="quiet" onClick={() => setProposal(null)} disabled={saving}>
               Back
             </Button>
           ) : null}
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Discard
           </Button>
-          <Button onClick={() => void apply()} disabled={saving || !splice}>
+          <Button variant="primary" onClick={() => void apply()} disabled={saving || !splice}>
             {saving ? "Saving…" : "Apply"}
           </Button>
         </div>

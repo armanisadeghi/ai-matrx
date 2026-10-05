@@ -309,13 +309,11 @@ export function GeneralSettings({
               <ExternalLink className="h-3 w-3" />
             </a>
             <Button
+              icon={<Copy />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={handleCopyUrl}
-              className="h-7 px-2"
             >
-              <Copy className="h-3 w-3 mr-1" />
               Copy
             </Button>
             <Badge variant="secondary" className="text-xs">
@@ -419,7 +417,6 @@ export function GeneralSettings({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setLogoModalOpen(true)}
                 disabled={isSaving}
               >
@@ -504,20 +501,18 @@ export function GeneralSettings({
             {isEditing ? (
               <>
                 <Button
+                  icon={<X />}
                   type="button"
                   onClick={handleCancel}
                   variant="outline"
-                  size="sm"
                   disabled={isSaving}
                 >
-                  <X className="h-4 w-4 mr-1" />
                   Cancel
                 </Button>
                 <Button
+                  variant="primary"
                   type="submit"
                   disabled={!hasChanges || !isFormValid || isSaving}
-                  size="sm"
-                  className="bg-blue-500 hover:bg-blue-600"
                 >
                   {isSaving ? (
                     <>
@@ -538,7 +533,6 @@ export function GeneralSettings({
                 type="button"
                 onClick={() => setIsEditing(true)}
                 variant="outline"
-                size="sm"
               >
                 Edit
               </Button>

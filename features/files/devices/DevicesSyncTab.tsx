@@ -15,7 +15,8 @@
 "use client";
 
 import { HardDrive, Loader2, MonitorSmartphone, RefreshCw } from "lucide-react";
-import { Button, TooltipProvider } from "@ai-matrx/design-system";
+import { TooltipProvider } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
@@ -95,16 +96,14 @@ export function DevicesSyncTab() {
             </span>
           )}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
+            icon={<RefreshCw
+              className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
+              aria-hidden="true"
+            />}
+            variant="quiet"
             onClick={() => void refresh()}
             disabled={loading}
           >
-            <RefreshCw
-              className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
-              aria-hidden="true"
-            />
             <span className="ml-1">Refresh</span>
           </Button>
         </div>

@@ -72,7 +72,7 @@ export function RunControlShell({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
+        <Button variant="outline">
           {icon}
           <span>{label}</span>
           {working ? (
@@ -131,13 +131,11 @@ function RunLiveBlock({ state }: { state: RunShellState }) {
           {formatElapsed(state.elapsedMs)} so far
         </span>
         <Button
+          icon={<SquareArrowOutUpRight aria-hidden />}
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-6 gap-1 text-xs"
+          variant="quiet"
           onClick={() => openLiveRun({ instanceId: state.instanceId })}
         >
-          <SquareArrowOutUpRight className="h-3 w-3" aria-hidden />
           Show run
         </Button>
       </div>
@@ -165,13 +163,12 @@ function RunErrorBlock({
       <p className="whitespace-pre-wrap text-destructive">{error}</p>
       {retry ? (
         <Button
+          icon={<RotateCcw aria-hidden />}
           type="button"
-          size="sm"
           variant="outline"
-          className="mt-2 h-6 gap-1 text-xs"
+          className="mt-2"
           onClick={() => void retry()}
         >
-          <RotateCcw className="h-3 w-3" aria-hidden />
           Run it again
         </Button>
       ) : null}

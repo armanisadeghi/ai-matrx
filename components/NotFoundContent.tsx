@@ -123,11 +123,10 @@ export function NotFoundContent({
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          <Button size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
+          <Button icon={<ArrowLeft aria-hidden />} variant="primary" onClick={() => router.back()}>
             Go back
           </Button>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href="/dashboard" data-tap-target>
               <Home className="mr-1.5 h-4 w-4" aria-hidden />
               AI Matrx home
@@ -135,12 +134,10 @@ export function NotFoundContent({
           </Button>
           {!browsing && items.length > 0 ? (
             <Button
-              size="sm"
-              variant="ghost"
+              icon={<Compass aria-hidden />}
+              variant="quiet"
               onClick={() => setBrowsing(true)}
-              className="text-muted-foreground"
             >
-              <Compass className="mr-1.5 h-4 w-4" aria-hidden />
               Browse everything
             </Button>
           ) : null}

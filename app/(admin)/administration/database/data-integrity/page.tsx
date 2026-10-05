@@ -308,16 +308,15 @@ function CheckDetail({
       )}
       {row.repair && (r?.count ?? 0) > 0 && (
         <Button
+          icon={repairing ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Wrench />
+          )}
           variant="outline"
-          size="sm"
           onClick={() => onRepair(row)}
           disabled={repairing}
         >
-          {repairing ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Wrench className="mr-1.5 h-3.5 w-3.5" />
-          )}
           {row.repair.label}
         </Button>
       )}
@@ -611,34 +610,32 @@ export default function DataIntegrityPage() {
         </div>
         <div className="flex items-center gap-2">
           {report && (
-            <Button variant="outline" size="sm" onClick={copyReport}>
-              <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy report
+            <Button icon={<Copy />} variant="outline" onClick={copyReport}> Copy report
             </Button>
           )}
           <Button
+            icon={runningAll ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
             variant="outline"
-            size="sm"
             onClick={() => runAll(true)}
             disabled={runningAll || !checks}
             title="Includes the live S3 byte probe (slower, accessible files only)"
           >
-            {runningAll ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Run all + probe
           </Button>
           <Button
-            size="sm"
+            icon={runningAll ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             onClick={() => runAll(false)}
             disabled={runningAll || !checks}
           >
-            {runningAll ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Run all checks
           </Button>
         </div>
@@ -737,21 +734,18 @@ export default function DataIntegrityPage() {
               const onDemand = rowStatus(r) === "on-demand";
               return (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
+                  icon={running ? (
+                    <Loader2 className="animate-spin" />
+                  ) : onDemand ? (
+                    <Play />
+                  ) : (
+                    <RefreshCw />
+                  )} aria-label={onDemand ? "Run this gate now" : "Re-run this check"}
+                  variant="quiet"
                   onClick={() => void runOne(r.id)}
                   disabled={running}
                   title={onDemand ? "Run this gate now" : "Re-run this check"}
-                >
-                  {running ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : onDemand ? (
-                    <Play className="h-3.5 w-3.5" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
-                </Button>
+                />
               );
             } }]}
             getRowId={(r) => r.id}

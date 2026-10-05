@@ -116,12 +116,11 @@ const StandalonePromptsPreferences: React.FC<
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => onCancel?.()}
           >
             Cancel
           </Button>
-          <Button type="button" size="sm" onClick={() => onSaveSuccess?.()}>
+          <Button variant="primary" type="button" onClick={() => onSaveSuccess?.()}>
             Done
           </Button>
         </div>

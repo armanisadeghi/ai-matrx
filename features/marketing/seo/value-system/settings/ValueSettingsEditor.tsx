@@ -183,29 +183,26 @@ export function ValueSettingsEditor({
             aria-label="Starting score"
           />
           <Button
-            size="sm"
-            className="h-8"
+            icon={save.isPending ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <Check aria-hidden />
+            )}
+            variant="primary"
             disabled={readOnly || save.isPending || baseline.trim() === ""}
             onClick={() =>
               save.mutate({ scope, id, baseline: Number(baseline) })
             }
           >
-            {save.isPending ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-            ) : (
-              <Check className="mr-1 h-3 w-3" aria-hidden />
-            )}
             Save
           </Button>
           {scope !== "platform" && baselineIsOwn ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs"
+              icon={<RotateCcw aria-hidden />}
+              variant="quiet"
               disabled={readOnly || save.isPending}
               onClick={() => save.mutate({ scope, id, clear: ["baseline"] })}
             >
-              <RotateCcw className="mr-1 h-3 w-3" aria-hidden />
               Use {parentWord}&rsquo;s ({data.inherited.baseline ?? 100})
             </Button>
           ) : null}
@@ -285,9 +282,7 @@ export function ValueSettingsEditor({
                   </td>
                   <td className="py-1.5 text-right">
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-muted-foreground"
+                      variant="quiet"
                       disabled={readOnly || !removable}
                       aria-label={`Remove ${level.label ?? level.value}`}
                       title={
@@ -313,9 +308,8 @@ export function ValueSettingsEditor({
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {scope !== "platform" ? (
             <Button
-              size="sm"
+              icon={<Plus aria-hidden />}
               variant="outline"
-              className="h-8 text-xs"
               disabled={readOnly}
               onClick={() =>
                 setLevels([
@@ -328,13 +322,16 @@ export function ValueSettingsEditor({
                 ])
               }
             >
-              <Plus className="mr-1 h-3 w-3" aria-hidden />
               Add a level
             </Button>
           ) : null}
           <Button
-            size="sm"
-            className="h-8"
+            icon={save.isPending ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <Check aria-hidden />
+            )}
+            variant="primary"
             disabled={
               readOnly ||
               save.isPending ||
@@ -343,22 +340,15 @@ export function ValueSettingsEditor({
             }
             onClick={() => save.mutate({ scope, id, levels: effectiveLevels })}
           >
-            {save.isPending ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-            ) : (
-              <Check className="mr-1 h-3 w-3" aria-hidden />
-            )}
             Save levels
           </Button>
           {scope !== "platform" && levelsAreOwn ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 text-xs"
+              icon={<RotateCcw aria-hidden />}
+              variant="quiet"
               disabled={readOnly || save.isPending}
               onClick={() => save.mutate({ scope, id, clear: ["levels"] })}
             >
-              <RotateCcw className="mr-1 h-3 w-3" aria-hidden />
               Use {parentWord}&rsquo;s levels
             </Button>
           ) : null}

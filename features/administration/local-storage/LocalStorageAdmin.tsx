@@ -14,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import {
   storageUsageBarWidth,
@@ -458,9 +458,9 @@ const ConfirmationDialog = ({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant={variant} onClick={onConfirm}>
+          <SurfaceButton variant={variant} onClick={onConfirm}>
             {confirmText}
-          </Button>
+          </SurfaceButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -713,14 +713,12 @@ const StorageManager = ({
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <Button onClick={refreshData}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button icon={<RefreshCw />} variant="primary" onClick={refreshData}>
             Refresh
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <MoreVertical className="w-4 h-4 mr-2" />
+              <Button icon={<MoreVertical />} variant="outline">
                 Bulk Operations
               </Button>
             </DropdownMenuTrigger>
@@ -753,8 +751,7 @@ const StorageManager = ({
 
         <Dialog open={newItemDialog} onOpenChange={setNewItemDialog}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button icon={<Plus />} variant="primary">
               Add New Item
             </Button>
           </DialogTrigger>
@@ -795,7 +792,7 @@ const StorageManager = ({
                 />
               </div>
             </div>
-            <Button onClick={handleAddItem}>Add Item</Button>
+            <Button variant="primary" onClick={handleAddItem}>Add Item</Button>
           </DialogContent>
         </Dialog>
       </div>
@@ -869,7 +866,7 @@ const StorageManager = ({
                         )}
                       </div>
                       <div className="flex gap-2 ml-4">
-                        <Button
+                        <SurfaceButton
                           variant="outline"
                           size="icon"
                           onClick={() =>
@@ -884,14 +881,14 @@ const StorageManager = ({
                           ) : (
                             <Edit3 className="h-4 w-4" />
                           )}
-                        </Button>
-                        <Button
+                        </SurfaceButton>
+                        <SurfaceButton
                           variant="destructive"
                           size="icon"
                           onClick={() => handleDeleteItem(module, feature, key)}
                         >
                           <Trash2 className="h-4 w-4" />
-                        </Button>
+                        </SurfaceButton>
                       </div>
                     </div>
                   </Alert>
@@ -979,16 +976,13 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex gap-2">
-          <Button onClick={refreshData}>
-            <RefreshCw className="w-4 h-4 mr-2" />
+          <Button icon={<RefreshCw />} variant="primary" onClick={refreshData}>
             Refresh
           </Button>
-          <Button onClick={handleCopyToClipboard}>
-            <Copy className="w-4 h-4 mr-2" />
+          <Button icon={<Copy />} variant="primary" onClick={handleCopyToClipboard}>
             Copy
           </Button>
-          <Button onClick={handleDownload}>
-            <Download className="w-4 h-4 mr-2" />
+          <Button icon={<Download />} variant="primary" onClick={handleDownload}>
             Download
           </Button>
         </div>
@@ -1152,14 +1146,12 @@ const CookieManager = ({ storage }: { storage: UseLocalStorageManager }) => {
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
-        <Button onClick={refreshCookies}>
-          <RefreshCw className="w-4 h-4 mr-2" />
+        <Button icon={<RefreshCw />} variant="primary" onClick={refreshCookies}>
           Refresh
         </Button>
         <Dialog open={newCookieDialog} onOpenChange={setNewCookieDialog}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button icon={<Plus />} variant="primary">
               Add Cookie
             </Button>
           </DialogTrigger>
@@ -1248,11 +1240,10 @@ const CookieManager = ({ storage }: { storage: UseLocalStorageManager }) => {
                 </select>
               </div>
             </div>
-            <Button onClick={handleAddCookie}>Add Cookie</Button>
+            <Button variant="primary" onClick={handleAddCookie}>Add Cookie</Button>
           </DialogContent>
         </Dialog>
-        <Button variant="destructive" onClick={handleClearAllCookies}>
-          <Trash2 className="w-4 h-4 mr-2" />
+        <Button icon={<Trash2 />} variant="danger" onClick={handleClearAllCookies}>
           Clear All
         </Button>
       </div>
@@ -1298,13 +1289,13 @@ const CookieManager = ({ storage }: { storage: UseLocalStorageManager }) => {
                       }}
                     />
                   </div>
-                  <Button
+                  <SurfaceButton
                     variant="destructive"
                     size="icon"
                     onClick={() => handleRemoveCookie(name)}
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </SurfaceButton>
                 </div>
               </Alert>
             </motion.div>
@@ -1411,8 +1402,7 @@ const ImportExport = ({ storage }: { storage: UseLocalStorageManager }) => {
           <p className="text-sm text-muted-foreground">
             Download a backup of all your localStorage data
           </p>
-          <Button onClick={handleExport}>
-            <Download className="w-4 h-4 mr-2" />
+          <Button icon={<Download />} variant="primary" onClick={handleExport}>
             Export Data
           </Button>
         </div>
@@ -1424,8 +1414,7 @@ const ImportExport = ({ storage }: { storage: UseLocalStorageManager }) => {
           </p>
           <div className="flex gap-2">
             <Input type="file" accept=".json" onChange={handleFileUpload} />
-            <Button onClick={handleImport}>
-              <Upload className="w-4 h-4 mr-2" />
+            <Button icon={<Upload />} variant="primary" onClick={handleImport}>
               Import
             </Button>
           </div>

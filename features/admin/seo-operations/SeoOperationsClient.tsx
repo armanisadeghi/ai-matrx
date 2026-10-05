@@ -142,7 +142,6 @@ export function AutomationsPanel() {
         cell: (row) => (
           <div className="flex justify-end gap-2">
             <Button
-              size="sm"
               variant="outline"
               disabled={runningId === row.id}
               onClick={() => void trigger(row)}
@@ -150,7 +149,7 @@ export function AutomationsPanel() {
             >
               {runningId === row.id ? "Queuing…" : "Run now"}
             </Button>
-            <Button size="sm" variant="ghost" asChild>
+            <Button variant="quiet" asChild>
               <AppLink href={adminScheduleHref(row.id)}>Open</AppLink>
             </Button>
           </div>
@@ -294,7 +293,7 @@ function MandatesPanel() {
         sortable: false,
         filter: false,
         cell: (row) => (
-          <Button size="sm" variant="ghost" asChild>
+          <Button variant="quiet" asChild>
             <AppLink
               href={adminMandateRecordHref(storedMandateKey(row.mandate_key))}
             >
@@ -651,7 +650,7 @@ export function WorkbenchPanel() {
           />
         </div>
 
-        <Button disabled={command.running} onClick={launch}>
+        <Button variant="primary" disabled={command.running} onClick={launch}>
           {command.running ? "Running the workbench…" : "Run the workbench"}
         </Button>
         {command.running && (command.waitMessage ?? command.stage) ? (
@@ -663,7 +662,7 @@ export function WorkbenchPanel() {
           <div className="flex flex-wrap items-center gap-2 text-sm text-destructive">
             <span>{command.error}</span>
             {command.retry ? (
-              <Button size="sm" variant="outline" onClick={() => void command.retry?.()}>
+              <Button variant="outline" onClick={() => void command.retry?.()}>
                 Retry this workbench run
               </Button>
             ) : null}

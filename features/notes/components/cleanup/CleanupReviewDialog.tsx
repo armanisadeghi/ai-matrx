@@ -227,18 +227,14 @@ export function CleanupReviewDialog({
           </div>
           <div className="ml-auto flex items-center gap-1">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[0.6875rem]"
+              variant="quiet"
               onClick={applyAll}
               disabled={acceptedCount === cardCount}
             >
               Apply all
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[0.6875rem]"
+              variant="quiet"
               onClick={skipAll}
               disabled={acceptedCount === 0}
             >
@@ -317,8 +313,6 @@ export function CleanupReviewDialog({
         <div className="flex shrink-0 items-center gap-2 border-t border-border px-4 py-3">
           <Button
             variant="outline"
-            size="sm"
-            className="h-8"
             onClick={() => onOpenChange(false)}
           >
             Cancel
@@ -336,8 +330,7 @@ export function CleanupReviewDialog({
               size="sm"
             />
             <Button
-              size="sm"
-              className="h-8"
+              variant="primary"
               disabled={!willWrite}
               onClick={handleApply}
             >

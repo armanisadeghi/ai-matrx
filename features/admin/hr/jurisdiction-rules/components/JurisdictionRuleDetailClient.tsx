@@ -282,14 +282,14 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
         <div className="flex flex-wrap items-center gap-1.5">
           {transitions.map((target) => (
             <Button
+              icon={target === "active" ? (
+                <ShieldCheck />
+              ) : (
+                <ArrowRightLeft />
+              )}
               key={target}
-              size="sm"
               variant={
-                target === "active"
-                  ? "default"
-                  : rule.status === "active"
-                    ? "destructive"
-                    : "outline"
+                target === "active" ? "primary" : rule.status === "active" ? "danger" : "outline"
               }
               onClick={() => {
                 setRefusal(null);
@@ -297,11 +297,6 @@ export function JurisdictionRuleDetailClient({ ruleId }: { ruleId: string }) {
                 setPendingStatus(target);
               }}
             >
-              {target === "active" ? (
-                <ShieldCheck className="h-4 w-4" />
-              ) : (
-                <ArrowRightLeft className="h-4 w-4" />
-              )}
               {target === "active"
                 ? "Promote to active"
                 : rule.status === "active" && target === "advisory"

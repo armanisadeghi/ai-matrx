@@ -400,6 +400,16 @@ function CopySubsetWindowBody<T>({
             Done
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : copied ? (
+              <Check />
+            ) : state.format === "ai" ? (
+              <CopyForAiIcon />
+            ) : (
+              <Copy />
+            )}
+            variant="primary"
             type="button"
             disabled={busy || !canCopy}
             onClick={() => void copy()}
@@ -411,15 +421,6 @@ function CopySubsetWindowBody<T>({
                   : "Nothing to copy — loosen the filters or show a column"
             }
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : copied ? (
-              <Check className="h-4 w-4" />
-            ) : state.format === "ai" ? (
-              <CopyForAiIcon className="h-4 w-4" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
             Copy {shapingActive ? "this subset" : "all"}
             {state.format === "ai" ? " for AI" : ""}
           </Button>
@@ -438,8 +439,7 @@ function CopySubsetWindowBody<T>({
               Couldn&apos;t load the rows: {loadError}
               <ErrorAlchemyMenu error={loadError} />
             </p>
-            <Button type="button" variant="outline" onClick={() => void load()}>
-              <RotateCcw className="h-4 w-4" /> Retry
+            <Button icon={<RotateCcw />} type="button" variant="outline" onClick={() => void load()}> Retry
             </Button>
           </div>
         ) : visibleColumns.length === 0 ? (
@@ -478,9 +478,7 @@ function CopySubsetWindowBody<T>({
                   <div className="ml-auto flex flex-wrap items-center gap-1.5">
                     <Button
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="h-8 px-2 text-xs"
                       onClick={() =>
                         setSelectedRowIds(
                           computation.matched.map((row) =>
@@ -494,9 +492,7 @@ function CopySubsetWindowBody<T>({
                     </Button>
                     <Button
                       type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 px-2 text-xs"
+                      variant="quiet"
                       disabled={state.selectedRowIds.length === 0}
                       onClick={() => setSelectedRowIds([])}
                     >
@@ -566,9 +562,7 @@ function ColumnChooser<T>({
           <div className="flex items-center gap-1">
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
+              variant="quiet"
               disabled={hiddenIds.length === 0}
               onClick={() => onHiddenIdsChange([])}
             >
@@ -576,9 +570,7 @@ function ColumnChooser<T>({
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
+              variant="quiet"
               disabled={hiddenIds.length === columns.length}
               onClick={() => onHiddenIdsChange(columns.map((c) => c.id))}
             >

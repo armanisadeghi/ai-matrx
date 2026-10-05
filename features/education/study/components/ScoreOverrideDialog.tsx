@@ -204,11 +204,12 @@ export function ScoreOverrideDialog({
               Cancel
             </Button>
             <Button
-              className="flex-1 gap-1.5"
+              icon={saving && <Loader2 className="animate-spin" />}
+              variant="primary"
+              className="flex-1"
               onClick={handleSave}
               disabled={saving}
             >
-              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Save
             </Button>
           </DrawerFooter>
@@ -231,8 +232,7 @@ export function ScoreOverrideDialog({
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button className="gap-1.5" onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={handleSave} disabled={saving}>
             Save
           </Button>
         </DialogFooter>

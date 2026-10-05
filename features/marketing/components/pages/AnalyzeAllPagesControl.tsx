@@ -161,13 +161,11 @@ export function AnalyzeAllPagesControl({
         </span>
       ) : null}
       <Button
+        icon={<ScanSearch />}
         variant="outline"
-        size="sm"
-        className="h-8 gap-1.5"
         onClick={() => setConfirming(true)}
         disabled={submit.isPending}
       >
-        <ScanSearch className="h-3.5 w-3.5" />
         {submit.isPending ? "Queuing analysis…" : "Analyze all pages"}
       </Button>
       <ConfirmDialog

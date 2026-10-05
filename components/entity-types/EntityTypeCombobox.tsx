@@ -98,11 +98,10 @@ export function EntityTypeCombobox({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
           role="combobox"
           aria-expanded={open}
           disabled={disabled}
-          className={cn("h-8 w-full justify-between font-normal", className)}
+          className={cn("w-full justify-between", className)}
         >
           <span className="flex min-w-0 items-center gap-1.5">
             {selected ? (

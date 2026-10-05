@@ -58,7 +58,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@ai-matrx/design-system";

@@ -97,9 +97,8 @@ export function SetupAiBar({
         />
         <Button
           asChild
-          size="sm"
-          variant={reportReady ? "ghost" : "outline"}
-          className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+          variant={reportReady ? "quiet" : "outline"}
+          className="shrink-0"
           title="Open Research to generate a proposed topic and keywords, review keyword limits and settings, then explicitly approve the run."
         >
           <Link href={researchPlanHref}>
@@ -123,8 +122,13 @@ export function SetupAiBar({
           {reportStatus}
         </span>
         <Button
-          size="sm"
-          className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+          icon={draftBusy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ClipboardList />
+          )}
+          variant="primary"
+          className="shrink-0"
           disabled={!reportReady || anyBusy}
           title={
             reportReady
@@ -133,17 +137,16 @@ export function SetupAiBar({
           }
           onClick={onBuildWithAi}
         >
-          {draftBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <ClipboardList className="h-3.5 w-3.5" />
-          )}
           Build with AI
         </Button>
         <Button
-          size="sm"
+          icon={shapeBusy && !draftBusy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Compass />
+          )}
           variant="outline"
-          className="h-7 shrink-0 gap-1.5 px-2.5 text-xs"
+          className="shrink-0"
           disabled={!reportReady || anyBusy}
           title={
             reportReady
@@ -152,11 +155,6 @@ export function SetupAiBar({
           }
           onClick={onRecommendShape}
         >
-          {shapeBusy && !draftBusy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Compass className="h-3.5 w-3.5" />
-          )}
           Shape only
         </Button>
       </div>

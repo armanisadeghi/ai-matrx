@@ -94,8 +94,7 @@ export function InterviewStartScreen({
           <ErrorAlchemyMenu />
         </p>
         <p className="text-xs text-muted-foreground">{failure.reason} <ErrorAlchemyMenu error={failure.reason} /></p>
-        <Button size="sm" variant="outline" onClick={failure.retry}>
-          <RotateCw className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<RotateCw />} variant="outline" onClick={failure.retry}>
           Try again
         </Button>
       </div>
@@ -292,16 +291,16 @@ export function InterviewStartScreen({
       <div className="shrink-0 border-t border-border bg-background/95 pb-safe backdrop-blur">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 py-3">
           <Button
-            className="h-11 flex-1 text-base sm:h-9 sm:flex-none sm:text-sm"
+            iconEnd={<ArrowRight />}
+            variant="primary"
+            className="flex-1 sm:flex-none"
             onClick={() => onStart({ mode, probes, closingSurprises, voiceOn })}
           >
             Start the interview
-            <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
           {onBack ? (
             <Button
-              variant="ghost"
-              className="h-11 sm:h-9"
+              variant="quiet"
               onClick={onBack}
             >
               Back

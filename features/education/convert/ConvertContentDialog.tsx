@@ -49,7 +49,7 @@ import {
   DrawerDescription,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
 import { useContentConverter } from "./useContentConverter";

@@ -352,8 +352,8 @@ function DecisionBar({
           />
           <div className="flex gap-2">
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               disabled={busy || reason.trim().length < MIN_REASON_LENGTH}
               onClick={() => void decide("reject", reason.trim())}
             >
@@ -361,8 +361,7 @@ function DecisionBar({
             </Button>
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={busy}
               onClick={() => setRejecting(false)}
             >
@@ -372,18 +371,16 @@ function DecisionBar({
         </div>
       ) : decidable ? (
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button type="button" size="sm" disabled={busy} onClick={() => void decide("approve", null)}>
-            <CheckCircle2 className="mr-1.5 h-4 w-4" aria-hidden />
+          <Button icon={<CheckCircle2 aria-hidden />} variant="primary" type="button" disabled={busy} onClick={() => void decide("approve", null)}>
             Approve this timecard
           </Button>
           <Button
+            icon={<Undo2 aria-hidden />}
             type="button"
-            size="sm"
             variant="outline"
             disabled={busy}
             onClick={() => setRejecting(true)}
           >
-            <Undo2 className="mr-1.5 h-4 w-4" aria-hidden />
             Send it back
           </Button>
         </div>

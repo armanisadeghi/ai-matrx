@@ -249,23 +249,20 @@ export default function SqlFunctionForm({
         </span>
         <div className="flex items-center gap-2">
           <Button
+            icon={<X />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onCancel}
             disabled={loading}
-            className="h-6 text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-700 px-2"
           >
-            <X className="h-3 w-3 mr-1" />
             Cancel
           </Button>
           <Button
+            icon={<Save />}
+            variant="primary"
             type="submit"
             disabled={loading}
-            size="sm"
-            className="h-6 text-xs bg-slate-600 hover:bg-slate-500 text-white px-3"
           >
-            <Save className="h-3 w-3 mr-1" />
             {isEdit ? "Update Function" : "Create Function"}
           </Button>
         </div>

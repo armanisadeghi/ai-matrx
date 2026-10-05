@@ -149,7 +149,7 @@ export function ContinuedAccessPortal({ organizationId }: { organizationId?: str
         {state.status === "signed_out" && (
           <div className="rounded-lg border border-border bg-card p-5">
             <p className="text-sm">{state.message}</p>
-            <Button asChild className="mt-4">
+            <Button variant="primary" asChild className="mt-4">
               <Link href={loginHref}>Sign in</Link>
             </Button>
           </div>

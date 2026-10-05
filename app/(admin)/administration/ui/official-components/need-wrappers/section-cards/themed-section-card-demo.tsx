@@ -175,21 +175,18 @@ export default function ThemedSectionCardDemo() {
               title={`${selectedPreset.charAt(0).toUpperCase() + selectedPreset.slice(1)} Theme`}
               description="Using the preset theme system"
               headerActions={[
-                <Button key="switch" size="sm" variant="outline">
-                  <Palette className="h-4 w-4 mr-2" />
+                <Button icon={<Palette />} type="submit" key="switch" variant="outline">
                   Switch View
                 </Button>
               ]}
               footerLeft={
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                <Button icon={<ArrowLeft />} type="submit" variant="outline">
                   Previous
                 </Button>
               }
               footerRight={
-                <Button size="sm">
+                <Button iconEnd={<ArrowRight />} type="submit" variant="primary">
                   Next
-                  <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               }
             >
@@ -225,8 +222,7 @@ export default function ThemedSectionCardDemo() {
                 headerActions={[
                   <Button 
                     key="select" 
-                    size="sm" 
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => setSelectedPreset(preset)}
                   >
                     <PresetIcon preset={preset} />
@@ -302,21 +298,18 @@ export default function ThemedSectionCardDemo() {
               title="Custom Color Combination"
               description={`Main: ${mainColor}, Accent: ${accentColor}`}
               headerActions={[
-                <Button key="switch" size="sm" variant="outline">
-                  <Palette className="h-4 w-4 mr-2" />
+                <Button icon={<Palette />} type="submit" key="switch" variant="outline">
                   Switch View
                 </Button>
               ]}
               footerLeft={
-                <Button variant="outline" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                <Button icon={<ArrowLeft />} type="submit" variant="outline">
                   Previous
                 </Button>
               }
               footerRight={
-                <Button size="sm">
+                <Button iconEnd={<ArrowRight />} type="submit" variant="primary">
                   Next
-                  <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               }
             >
@@ -354,8 +347,7 @@ export default function ThemedSectionCardDemo() {
                 headerActions={[
                   <Button 
                     key="action" 
-                    size="sm" 
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => {
                       setMainColor(combo.main as MainColor);
                       setAccentColor(combo.accent as AccentColor);
@@ -409,15 +401,13 @@ export default function ThemedSectionCardDemo() {
               title="Legacy Theme Example"
               description="Using the original theme system for compatibility"
               headerActions={[
-                <Button key="action" size="sm" variant="outline">
-                  <Settings className="h-4 w-4 mr-2" />
+                <Button icon={<Settings />} type="submit" key="action" variant="outline">
                   Settings
                 </Button>
               ]}
               footerRight={
-                <Button size="sm">
+                <Button iconEnd={<ArrowRight />} type="submit" variant="primary">
                   Continue
-                  <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               }
             >
@@ -441,8 +431,7 @@ export default function ThemedSectionCardDemo() {
           title="Documentation"
           description="Technical guides and resources"
           headerActions={[
-            <Button key="search" size="sm" variant="ghost">
-              <Search className="h-4 w-4 mr-2" />
+            <Button icon={<Search />} type="submit" key="search" variant="quiet">
               Search Docs
             </Button>
           ]}
@@ -458,8 +447,7 @@ export default function ThemedSectionCardDemo() {
           title="Analytics Dashboard"
           description="Performance metrics and insights"
           headerActions={[
-            <Button key="layout" size="sm" variant="outline">
-              <Layout className="h-4 w-4 mr-2" />
+            <Button icon={<Layout />} type="submit" key="layout" variant="outline">
               Change Layout
             </Button>
           ]}
@@ -475,12 +463,10 @@ export default function ThemedSectionCardDemo() {
           title="Published Content"
           description="Public-facing content management"
           headerActions={[
-            <Button key="file" size="sm" variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
+            <Button icon={<FileText />} type="submit" key="file" variant="outline">
               New Article
             </Button>,
-            <Button key="globe" size="sm" variant="default">
-              <Globe className="h-4 w-4 mr-2" />
+            <Button icon={<Globe />} type="submit" key="globe" variant="primary">
               Publish
             </Button>
           ]}
@@ -490,8 +476,7 @@ export default function ThemedSectionCardDemo() {
             </div>
           }
           footerRight={
-            <Button size="sm" variant="outline" className="border-green-200 dark:border-green-800 text-green-700 dark:text-green-400">
-              <Check className="h-4 w-4 mr-2" />
+            <Button icon={<Check />} type="submit" variant="outline">
               Mark Complete
             </Button>
           }
@@ -507,8 +492,7 @@ export default function ThemedSectionCardDemo() {
           title="System Alerts"
           description="Important notifications requiring attention"
           headerActions={[
-            <Button key="bell" size="sm" variant="outline">
-              <BellRing className="h-4 w-4 mr-2" />
+            <Button icon={<BellRing />} type="submit" key="bell" variant="outline">
               Manage Alerts
             </Button>
           ]}
@@ -524,8 +508,7 @@ export default function ThemedSectionCardDemo() {
           title="Design Studio"
           description="Creative tools and resources"
           headerActions={[
-            <Button key="palette" size="sm" variant="outline">
-              <Lightbulb className="h-4 w-4 mr-2" />
+            <Button icon={<Lightbulb />} type="submit" key="palette" variant="outline">
               Generate Ideas
             </Button>
           ]}

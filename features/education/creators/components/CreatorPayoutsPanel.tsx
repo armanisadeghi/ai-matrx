@@ -143,13 +143,12 @@ export function CreatorPayoutsPanel() {
         scope={organizationId ? { organizationId } : null}
         completeSlot={
           <div className="flex flex-wrap items-center gap-3">
-            <Button variant="outline" size="sm" disabled={busy} onClick={onOpenDashboard}>
-              {busy ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            <Button icon={busy ? (
+                <Loader2 className="animate-spin" />
               ) : (
                 // new-tab-icon: onOpenDashboard (above) calls window.open(r.url, '_blank', ...); disabled={busy} is a transient in-flight state while the Stripe URL is fetched, not "nothing to open"
-                <ExternalLink className="mr-1.5 h-4 w-4" />
-              )}
+                <ExternalLink />
+              )} variant="outline" disabled={busy} onClick={onOpenDashboard}>
               Open my Stripe dashboard
             </Button>
             <span className="text-xs text-muted-foreground">

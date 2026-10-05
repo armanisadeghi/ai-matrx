@@ -396,24 +396,22 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
           {/* Actions */}
           <div className="flex gap-2">
             <Button
+              icon={isRunning ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Send />
+              )}
+              variant="primary"
               onClick={handleRun}
               disabled={!content.trim() || isRunning}
-              size="sm"
-              className="flex-1 h-7 text-xs"
+              className="flex-1"
             >
-              {isRunning ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              ) : (
-                <Send className="w-3 h-3 mr-1" />
-              )}
               Process
             </Button>
             {isRunning && (
               <Button
                 onClick={handleStop}
-                size="sm"
-                variant="destructive"
-                className="h-7 text-xs px-3"
+                variant="danger"
               >
                 Stop
               </Button>
@@ -491,23 +489,19 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                     {/* Replay / Stop replay */}
                     {isReplaying ? (
                       <Button
-                        size="sm"
-                        variant="destructive"
-                        className="h-6 px-2 text-[10px]"
+                        variant="danger"
                         onClick={handleStopReplay}
                       >
                         Stop
                       </Button>
                     ) : (
                       <Button
-                        size="sm"
+                        icon={<Play />}
                         variant="outline"
-                        className="h-6 px-2 text-[10px] gap-1"
                         onClick={handleReplay}
                         disabled={isRunning}
                         title="Replay events with delay to observe streaming behaviour"
                       >
-                        <Play className="w-2.5 h-2.5" />
                         Replay
                       </Button>
                     )}
@@ -521,9 +515,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                 )}
               {outputTab === "processed" && (
                 <Button
-                  size="sm"
-                  variant={strictServerData ? "destructive" : "outline"}
-                  className="h-6 px-2 text-[10px] font-mono"
+                  variant={strictServerData ? "danger" : "outline"}
                   onClick={() => setStrictServerData((v) => !v)}
                   title={
                     strictServerData
@@ -535,9 +527,8 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
                 </Button>
               )}
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-5 w-5 p-0"
+                variant="quiet"
+                className="w-5"
                 onClick={() => {
                   setJsonResult(null);
                   setRawEvents([]);
@@ -551,9 +542,8 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
               </Button>
               {outputTab === "raw" && (
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-5 w-5 p-0"
+                  variant="quiet"
+                  className="w-5"
                   onClick={() => copyText(rawOutputText)}
                   disabled={!rawOutputText}
                   title="Copy raw output"

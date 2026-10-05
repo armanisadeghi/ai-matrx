@@ -128,9 +128,9 @@ export default function FactCheckerApp({
             </p>
             <div className="sm:ml-auto" />
             <Button
+              variant="primary"
               onClick={handleSubmit}
               disabled={!isFormValid || isBusy}
-              className="bg-sky-600 hover:bg-sky-700 text-white px-6"
             >
               {isExecuting ? (
                 <>
@@ -156,13 +156,12 @@ export default function FactCheckerApp({
             {claimPreview}
           </p>
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Edit2 />}
+            variant="quiet"
             onClick={handleEdit}
             disabled={isBusy}
-            className="shrink-0 text-xs h-7 px-2 text-muted-foreground hover:text-foreground"
+            className="shrink-0"
           >
-            <Edit2 className="w-3 h-3 mr-1" />
             Edit
           </Button>
         </div>

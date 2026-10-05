@@ -58,14 +58,13 @@ export function FinishedEpisode({
             </p>
 
             <div className="mt-auto flex flex-wrap items-center gap-2 pt-4">
-              <Button asChild className="gap-1.5">
+              <Button variant="primary" asChild>
                 <Link href={href} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
                   Open episode
                 </Link>
               </Button>
-              <Button variant="outline" onClick={onRunAgain} className="gap-1.5">
-                <RotateCcw className="h-4 w-4" />
+              <Button icon={<RotateCcw />} variant="outline" onClick={onRunAgain}>
                 Run again
               </Button>
             </div>

@@ -525,9 +525,8 @@ function UnconditionalRow({
           </SelectContent>
         </Select>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+          variant="quiet"
+          className="w-6 shrink-0"
           onClick={onDelete}
         >
           <Trash2 className="h-3 w-3" />
@@ -623,9 +622,8 @@ function ConditionalRow({
           </SelectContent>
         </Select>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 w-6 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+          variant="quiet"
+          className="w-6 shrink-0"
           onClick={onDelete}
         >
           <Trash2 className="h-3 w-3" />
@@ -832,9 +830,7 @@ export default function ConstraintsEditor({
         </div>
         <div className="flex items-center gap-1.5">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[10px] gap-1"
+            variant="quiet"
             onClick={() =>
               setMode(mode === "structured" ? "raw" : "structured")
             }
@@ -888,20 +884,16 @@ export default function ConstraintsEditor({
 
           <div className="flex items-center gap-1.5">
             <Button
+              icon={<Plus />}
               variant="outline"
-              size="sm"
-              className="h-7 px-2.5 text-xs gap-1"
               onClick={addSimple}
-            >
-              <Plus className="h-3 w-3" /> Simple
+            > Simple
             </Button>
             <Button
+              icon={<Plus />}
               variant="outline"
-              size="sm"
-              className="h-7 px-2.5 text-xs gap-1"
               onClick={addConditional}
-            >
-              <Plus className="h-3 w-3" /> Conditional
+            > Conditional
             </Button>
           </div>
         </div>

@@ -380,6 +380,7 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<RotateCcw />}
                     onClick={async () => {
                       // Same wipe as "Reset All to Original" on the code tab,
                       // so it states the same consequence from one helper.
@@ -389,11 +390,8 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
                       setTimeout(() => setIframeKey((prev) => prev + 1), 500);
                     }}
                     variant="outline"
-                    size="sm"
-                    className="h-8 px-3"
                     disabled={!previewUrl}
                   >
-                    <RotateCcw className="h-4 w-4 mr-2" />
                     Reset
                   </Button>
                 </TooltipTrigger>
@@ -411,24 +409,20 @@ export function SavePageTab({ state, actions, user }: HtmlPreviewTabProps) {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<RefreshCw />}
                     onClick={async () => {
                       await actions.handleRegenerateHtml();
                       setTimeout(() => setIframeKey((prev) => prev + 1), 500);
                     }}
                     variant={
                       previewUrl &&
-                      (state.isMarkdownDirty || state.isContentDirty)
-                        ? "default"
-                        : "outline"
+                      (state.isMarkdownDirty || state.isContentDirty) ? "primary" : "outline"
                     }
-                    size="sm"
-                    className="h-8 px-3"
                     disabled={
                       !previewUrl ||
                       (!state.isMarkdownDirty && !state.isContentDirty)
                     }
                   >
-                    <RefreshCw className="h-4 w-4 mr-2" />
                     Regenerate
                   </Button>
                 </TooltipTrigger>

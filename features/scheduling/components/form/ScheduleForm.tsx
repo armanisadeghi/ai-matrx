@@ -741,16 +741,15 @@ export function ScheduleForm({ task, initialAgentId, initialPrompt, initialTrigg
         <div className="flex items-center justify-end gap-2">
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             onClick={() => router.back()}
             disabled={submitting || pending}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={submitting || pending}>
-            {(submitting || pending) && (
-              <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-            )}
+          <Button icon={(submitting || pending) && (
+              <Loader2 className="animate-spin" />
+            )} variant="primary" type="submit" disabled={submitting || pending}>
             {!submitting && !pending && <Save className="h-4 w-4 mr-1.5" />}
             {task ? "Save changes" : "Create schedule"}
           </Button>

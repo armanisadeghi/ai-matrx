@@ -5,7 +5,7 @@ import { MoreHorizontal, Play } from "lucide-react";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { timeCell } from "@/lib/entity-list/columns";
 import type { EncoreListRow } from "./types";

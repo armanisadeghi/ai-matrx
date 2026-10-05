@@ -123,12 +123,11 @@ export function UnsplashPickDialog({
           className="text-base"
           disabled={busy}
         />
-        <Button type="submit" size="sm" disabled={busy || searching || !query.trim()}>
-          {searching ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+        <Button icon={searching ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Search className="h-4 w-4" />
-          )}
+            <Search />
+          )} variant="primary" type="submit" disabled={busy || searching || !query.trim()}>
           <span className="ml-1">Search</span>
         </Button>
       </form>
@@ -217,11 +216,12 @@ export function UnsplashPickDialog({
         Cancel
       </Button>
       <Button
+        icon={busy ? <Loader2 className="animate-spin" /> : null}
+        variant="primary"
         type="button"
         onClick={() => void attach()}
         disabled={busy || !selected || !alt.trim()}
       >
-        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
         Use this photo
       </Button>
     </>

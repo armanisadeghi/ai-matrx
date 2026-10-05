@@ -100,15 +100,13 @@ export function OpenRunPanel({
           </p>
         </div>
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 shrink-0"
+          icon={<X />}
+          variant="quiet"
+          className="shrink-0"
           onClick={onClose}
           aria-label="Close this result"
           title="Close this result"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
 
       <div className="mt-3">

@@ -340,12 +340,10 @@ export function SourceDetailPanel({
     const transcribeDoor = (label: string) =>
         onTranscribe ? (
             <Button
+                icon={<Sparkles aria-hidden="true" />}
                 variant="outline"
-                size="sm"
-                className="min-h-11"
                 onClick={() => onTranscribe(video)}
             >
-                <Sparkles className="mr-2 h-4 w-4" aria-hidden="true" />
                 {label}
             </Button>
         ) : (
@@ -454,12 +452,10 @@ export function SourceDetailPanel({
                             <p className="max-w-md text-xs text-muted-foreground">{remedy}</p>
                         ) : null}
                         <Button
+                            icon={<RotateCw aria-hidden="true" />}
                             variant="outline"
-                            size="sm"
-                            className="min-h-11"
                             onClick={() => setReloadNonce((n) => n + 1)}
                         >
-                            <RotateCw className="mr-2 h-4 w-4" aria-hidden="true" />
                             Try reading it again
                         </Button>
                     </div>
@@ -517,25 +513,21 @@ export function SourceDetailPanel({
                             : `${transcript.segments.length} cues`}
                     </span>
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-11 w-11 shrink-0"
+                        icon={<ChevronUp aria-hidden="true" />}
+                        variant="quiet"
+                        className="shrink-0"
                         aria-label="Previous match"
                         disabled={matchPositions.length === 0}
                         onClick={() => stepMatch(-1)}
-                    >
-                        <ChevronUp className="h-4 w-4" aria-hidden="true" />
-                    </Button>
+                    />
                     <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-11 w-11 shrink-0"
+                        icon={<ChevronDown aria-hidden="true" />}
+                        variant="quiet"
+                        className="shrink-0"
                         aria-label="Next match"
                         disabled={matchPositions.length === 0}
                         onClick={() => stepMatch(1)}
-                    >
-                        <ChevronDown className="h-4 w-4" aria-hidden="true" />
-                    </Button>
+                    />
                 </div>
 
                 {/* Anything this read could not parse is stated, never dropped in silence. */}
@@ -646,14 +638,12 @@ export function SourceDetailPanel({
                         </div>
                         {onClose ? (
                             <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-11 w-11 shrink-0"
+                                icon={<X aria-hidden="true" />}
+                                variant="quiet"
+                                className="shrink-0"
                                 aria-label="Close this source"
                                 onClick={onClose}
-                            >
-                                <X className="h-4 w-4" aria-hidden="true" />
-                            </Button>
+                            />
                         ) : null}
                     </div>
 

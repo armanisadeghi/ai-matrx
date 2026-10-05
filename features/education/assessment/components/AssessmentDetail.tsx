@@ -291,14 +291,12 @@ export function AssessmentDetail({
           {/* Header */}
           <div className="flex items-start gap-3">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0"
+              icon={<ArrowLeft />}
+              variant="quiet"
+              className="shrink-0"
               onClick={() => router.back()}
               aria-label="Back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            />
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Icon className="h-6 w-6" />
             </div>
@@ -334,19 +332,19 @@ export function AssessmentDetail({
           {/* Primary actions */}
           <div className="mt-6 flex flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:p-5">
             <Button
-              size="lg"
+              icon={<Play />}
+              variant="primary"
               onClick={() => startTake("standalone", null)}
               disabled={isPending || items.length === 0}
             >
-              <Play className="mr-1.5 h-4 w-4" />
               {config.timed ? "Start test" : `Take ${config.noun}`}
             </Button>
             <Button
+              icon={<TrendingUp />}
               variant="outline"
               onClick={startLearningGain}
               disabled={isPending || items.length === 0}
             >
-              <TrendingUp className="mr-1.5 h-4 w-4" />
               Measure my learning gain (baseline → post)
             </Button>
             <p className="text-[11px] text-muted-foreground">
@@ -363,48 +361,44 @@ export function AssessmentDetail({
                 {/* Edit is another UI for THIS record, so it is an anchor —
                   cmd-click opens the editor in a new tab without losing this
                   page. */}
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" asChild>
                   <Link href={`${base}/${assessmentId}/edit`}>
                     <Pencil className="mr-1.5 h-4 w-4" />
                     Edit
                   </Link>
                 </Button>
                 <Button
+                  icon={<Copy />}
                   variant="outline"
-                  size="sm"
                   onClick={() => void handleDuplicate()}
                   disabled={duplicating}
                 >
-                  <Copy className="mr-1.5 h-4 w-4" />
                   Duplicate
                 </Button>
                 <Button
+                  icon={<Trash2 />}
                   variant="outline"
-                  size="sm"
                   onClick={() => setConfirmDelete(true)}
                 >
-                  <Trash2 className="mr-1.5 h-4 w-4" />
                   Delete
                 </Button>
               </>
             ) : (
               <Button
+                icon={<Copy />}
                 variant="outline"
-                size="sm"
                 onClick={() => void handleDuplicate()}
                 disabled={duplicating}
               >
-                <Copy className="mr-1.5 h-4 w-4" />
                 Make a copy to edit
               </Button>
             )}
             <Button
+              icon={<Boxes />}
               variant="outline"
-              size="sm"
               onClick={() => setConvertOpen(true)}
               disabled={items.length === 0}
             >
-              <Boxes className="mr-1.5 h-4 w-4" />
               Convert
             </Button>
           </div>

@@ -324,13 +324,11 @@ export function StorageConnectionsPanel({
                         <div className="flex flex-wrap gap-2">
                           {status === "connected" ? (
                             <Button
+                              icon={<RefreshCw />}
                               variant="outline"
-                              size="sm"
-                              className="h-11 sm:h-8"
                               disabled={isBusy}
                               onClick={() => void checkAccess(connection)}
                             >
-                              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                               Check access
                             </Button>
                           ) : null}
@@ -338,26 +336,22 @@ export function StorageConnectionsPanel({
                           status === "disconnected" ||
                           status === "revoked" ? (
                             <Button
+                              icon={<RefreshCw />}
                               variant="outline"
-                              size="sm"
-                              className="h-11 sm:h-8"
                               disabled={busyKey !== null}
                               onClick={() => void connect(provider)}
                             >
-                              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                               {status === "needs_attention"
                                 ? "Reconnect"
                                 : "Connect again"}
                             </Button>
                           ) : null}
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-11 sm:h-8"
+                            icon={<Trash2 />}
+                            variant="quiet"
                             disabled={isBusy}
                             onClick={() => void disconnect(connection)}
                           >
-                            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                             Disconnect
                           </Button>
                         </div>
@@ -368,20 +362,21 @@ export function StorageConnectionsPanel({
               ) : null}
 
               <Button
+                icon={busyKey === `connect:${provider}` ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Plus />
+                )}
+                variant="primary"
                 onClick={() => void connect(provider)}
                 disabled={busyKey !== null}
-                className="h-11 max-w-full px-2 sm:px-4"
+                className="max-w-full"
                 aria-label={
                   providerConnections.length
                     ? `Connect another ${copy.name} account`
                     : `Connect ${copy.name}`
                 }
               >
-                {busyKey === `connect:${provider}` ? (
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                ) : (
-                  <Plus className="mr-1.5 h-4 w-4" />
-                )}
                 <span className="sm:hidden">
                   {providerConnections.length
                     ? "Connect another account"

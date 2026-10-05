@@ -807,18 +807,17 @@ export function LiveBuilder({
               and can be renamed later in Settings. */}
           <div className="pt-3 border-t border-border">
             <Button
+              icon={submitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Rocket />
+              )} iconEnd={!submitting && <ChevronRight />}
+              variant="primary"
               onClick={handleCreate}
               disabled={submitting || !agent}
-              size="lg"
-              className="w-full gap-2"
+              className="w-full"
             >
-              {submitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Rocket className="w-4 h-4" />
-              )}
               {submitting ? "Creating…" : "Create app"}
-              {!submitting && <ChevronRight className="w-4 h-4" />}
             </Button>
           </div>
         </div>
@@ -834,14 +833,11 @@ export function LiveBuilder({
               Live preview
             </span>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
+              icon={<RefreshCw />} aria-label="Reset preview conversation"
+              variant="quiet"
               onClick={handleResetPreview}
               title="Reset preview conversation"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </Button>
+            />
           </div>
           <div className="h-full" key={`${shellKind}-${previewSeed}`}>
             {!agent ? (

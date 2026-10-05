@@ -68,7 +68,7 @@ import {
 } from "./catalogue";
 
 /** The preview page's address for one card. */
-export const templatePreviewHref = (id: string) => `/make/templates/${id}`;
+export const templatePreviewHref = (id: string) => `/templates/${encodeURIComponent(id)}`;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // The catalogue door.
@@ -180,7 +180,7 @@ function OrganizationsRow({ installedIn }: { installedIn: string | null }) {
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="truncate text-xs font-medium text-muted-foreground">Your organizations’ templates</h3>
         <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
-        <Button size="sm" variant="outline" className="ml-auto" onClick={() => openSave({})} data-make-save-template="">
+        <Button variant="outline" className="ml-auto" onClick={() => openSave({})} data-make-save-template="">
           Save as template
         </Button>
       </div>
@@ -235,7 +235,7 @@ function Failed({ why, retry }: { why: string; retry: () => void }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm" role="alert">
       <span className="text-destructive">{why}</span>
-      <Button size="sm" variant="outline" onClick={retry}>
+      <Button variant="outline" onClick={retry}>
         Try again
       </Button>
     </div>
@@ -258,7 +258,12 @@ function refusalLine(run: { answer: TemplateDoorAnswer | null; error?: { message
   return r?.message ?? run.error?.message ?? "It stopped before it finished.";
 }
 
-export function TemplatePreview({ templateId }: { templateId: string }) {
+/**
+ * One template's install, its live progress and its landing. `bare` leaves the summary out (the
+ * public page /templates/<slug> draws its own); `autoInstall` presses Install once the card is read
+ * (a guest who signed up from "Use this template" comes back with ?install=1).
+ */
+export function TemplatePreview({ templateId, bare = false, autoInstall = false }: { templateId: string; bare?: boolean; autoInstall?: boolean }) {
   // org-filter: write-target the active organization is where this template installs; with none chosen the install asks
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
@@ -364,7 +369,18 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- replays once, when the organization lands
   }, [askOrganization, organizationId]);
 
-  if (read.phase === "reading") return <Skeleton className="h-64 w-full" />;
+  // A guest who came back from sign-up asked to install: press Install once, when the card is read.
+  const [autoPressed, setAutoPressed] = useState(false);
+  useEffect(() => {
+    if (!autoInstall || autoPressed || read.phase !== "read") return;
+    const found = read.data.cards.find((c) => c.id === templateId);
+    if (!found || found.installed?.state === "installed") return;
+    setAutoPressed(true);
+    install();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- presses once, when the card lands
+  }, [autoInstall, autoPressed, read.phase]);
+
+  if (read.phase === "reading") return <Skeleton className={bare ? "h-10 w-48" : "h-64 w-full"} />;
   if (read.phase === "failed") return <Failed why={read.why} retry={read.reload} />;
   if (!card) return <p className="text-sm text-muted-foreground">This template is not in the gallery</p>;
 
@@ -382,7 +398,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
 
   return (
     <div className="flex flex-col gap-6" data-make-template-preview={card.catalogue_id}>
-      <TemplateSummary card={card} />
+      {bare ? null : <TemplateSummary card={card} />}
 
       <section className="flex flex-col gap-3" aria-labelledby="make-template-install">
         <div className="flex flex-wrap items-center gap-2">
@@ -391,13 +407,12 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
           </h2>
           {isInstalled ? (
             <>
-              <Button onClick={install} disabled={run.phase === "running"} data-make-template-open="">
+              <Button variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-open="">
                 Show what it made
               </Button>
             </>
           ) : (
-            <Button onClick={install} disabled={run.phase === "running"} data-make-template-install="">
-              {run.phase === "running" && run.door === "template_install" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+            <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install="">
               Install
             </Button>
           )}
@@ -423,7 +438,7 @@ export function TemplatePreview({ templateId }: { templateId: string }) {
         {run.phase === "refused" ? (
           <div className="flex flex-wrap items-center gap-2 text-sm" role="alert" data-make-template-refused="">
             <span className="text-destructive">{run.why}</span>
-            <Button size="sm" variant="outline" onClick={() => void go(run.door, run.door === "template_install" ? templateId : (installId ?? ""))}>
+            <Button variant="outline" onClick={() => void go(run.door, run.door === "template_install" ? templateId : (installId ?? ""))}>
               Try again
             </Button>
           </div>
@@ -523,11 +538,11 @@ function ArchiveOrgTemplate({ templateId, name }: { templateId: string; name: st
       return;
     }
     window.dispatchEvent(new Event(TEMPLATES_CHANGED_EVENT));
-    router.push("/make#make-templates");
+    router.push("/templates");
   };
   return (
     <>
-      <Button variant="ghost" onClick={() => setConfirm(true)} data-make-template-archive="">
+      <Button variant="quiet" onClick={() => setConfirm(true)} data-make-template-archive="">
         Archive template
       </Button>
       {why ? <span className="text-sm text-destructive" role="alert">{why}</span> : null}
@@ -579,7 +594,7 @@ function RetryAt({ retryAt, retry }: { retryAt: string | null; retry: () => void
           {`Tries again at ${new Date(at).toLocaleTimeString()}`}
         </span>
       ) : null}
-      <Button size="sm" variant="outline" onClick={retry} disabled={waiting}>
+      <Button variant="outline" onClick={retry} disabled={waiting}>
         Retry
       </Button>
     </>

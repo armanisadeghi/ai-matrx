@@ -207,16 +207,14 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
       {/* Selection bar */}
       <div className="flex shrink-0 items-center gap-1.5 border-b border-border bg-card/60 px-2 py-1.5">
         <Button
-          size="sm"
-          variant="ghost"
-          onClick={selected.size === pages.length ? clearSelection : selectAll}
-          className="h-6 text-[10px]"
-        >
-          {selected.size === pages.length && pages.length > 0 ? (
-            <CheckSquare className="h-3 w-3 mr-1" />
+          icon={selected.size === pages.length && pages.length > 0 ? (
+            <CheckSquare />
           ) : (
-            <Square className="h-3 w-3 mr-1" />
+            <Square />
           )}
+          variant="quiet"
+          onClick={selected.size === pages.length ? clearSelection : selectAll}
+        >
           {selected.size === pages.length && pages.length > 0
             ? "Clear"
             : "Select all"}
@@ -277,11 +275,11 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
         />
         {lastResult ? (
           <Button
-            size="sm"
+            icon={<Download />}
+            variant="primary"
             onClick={downloadResult}
-            className="ml-auto h-6 text-[10px]"
-          >
-            <Download className="h-3 w-3 mr-1" /> {lastResult.filename}
+            className="ml-auto"
+          > {lastResult.filename}
           </Button>
         ) : null}
         <span className="basis-full text-[10px] leading-tight text-muted-foreground">
@@ -479,17 +477,12 @@ function ActionBtn({
 }) {
   return (
     <Button
-      size="sm"
+      icon={loading ? <Loader2 className="animate-spin" /> : <Icon />}
       variant={tone === "destructive" ? "outline" : "outline"}
       onClick={onClick}
       disabled={disabled}
       title={tooltip}
-      className={cn(
-        "h-6 text-[10px]",
-        tone === "destructive" ? "border-destructive/50 text-destructive hover:bg-destructive/10" : "",
-      )}
     >
-      {loading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Icon className="h-3 w-3 mr-1" />}
       {label}
     </Button>
   );

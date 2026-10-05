@@ -382,17 +382,16 @@ export function VerifyCanonicalPanel() {
           </SelectContent>
         </Select>
         <Button
-          size="sm"
-          className="h-8"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
+          variant="primary"
           onClick={() => {
             if (hasRun) void runVerify();
             else setHasRun(true);
           }}
           disabled={running}
         >
-          {running ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : null}
           Run
         </Button>
 
@@ -431,9 +430,8 @@ export function VerifyCanonicalPanel() {
             . Token FAILs below come from this.
           </span>
           <Button
-            size="sm"
             variant="outline"
-            className="h-7 shrink-0 border-amber-500/40"
+            className="shrink-0"
             onClick={applyRegisteredToken}
             disabled={running}
           >

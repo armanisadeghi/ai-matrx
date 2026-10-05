@@ -92,8 +92,7 @@ export function UsageHistory() {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" size="sm" onClick={() => setRetry((value) => value + 1)} disabled={loading}>
-          <RotateCw className="h-3.5 w-3.5" aria-hidden /> Refresh
+        <Button icon={<RotateCw aria-hidden />} variant="outline" onClick={() => setRetry((value) => value + 1)} disabled={loading}> Refresh
         </Button>
       </div>
 
@@ -101,7 +100,7 @@ export function UsageHistory() {
       {error ? (
         <div className="py-6 text-sm text-muted-foreground">
           <p>{error}</p>
-          <Button className="mt-2" variant="outline" size="sm" onClick={() => setRetry((value) => value + 1)}>Try again</Button>
+          <Button className="mt-2" variant="outline" onClick={() => setRetry((value) => value + 1)}>Try again</Button>
         </div>
       ) : null}
       {!loading && !error && result?.entries.length === 0 ? <p className="py-6 text-sm text-muted-foreground">No activity in this interval.</p> : null}
@@ -121,12 +120,11 @@ export function UsageHistory() {
             ))}
           </div>
           <div className="mt-3 flex items-center justify-between gap-3">
-            <Button variant="outline" size="sm" disabled={pageIndex === 0} onClick={previousPage}>
-              <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Previous
+            <Button icon={<ChevronLeft aria-hidden />} variant="outline" disabled={pageIndex === 0} onClick={previousPage}> Previous
             </Button>
             <span className="text-xs text-muted-foreground">Page {pageIndex + 1}</span>
-            <Button variant="outline" size="sm" disabled={!result.nextCursor} onClick={nextPage}>
-              Next <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+            <Button iconEnd={<ChevronRight aria-hidden />} variant="outline" disabled={!result.nextCursor} onClick={nextPage}>
+              Next
             </Button>
           </div>
         </>

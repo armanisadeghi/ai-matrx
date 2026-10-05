@@ -136,7 +136,7 @@ export default function ScopeMismatchDialogHostImpl() {
           >
             Combine both
           </Button>
-          <Button type="button" onClick={() => resolveWith("update")}>
+          <Button variant="primary" type="button" onClick={() => resolveWith("update")}>
             Use current selection
           </Button>
         </DialogFooter>

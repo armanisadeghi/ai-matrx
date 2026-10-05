@@ -304,8 +304,7 @@ export function BuildWithAiDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
           >
             {busy
@@ -316,7 +315,7 @@ export function BuildWithAiDialog({
           </Button>
           {!busy && !finished && !errored ? (
             <Button
-              size="sm"
+              variant="primary"
               disabled={!reportReady}
               onClick={() => onSubmit(guidance)}
             >
@@ -324,12 +323,12 @@ export function BuildWithAiDialog({
             </Button>
           ) : null}
           {errored ? (
-            <Button size="sm" onClick={onReset}>
+            <Button variant="primary" onClick={onReset}>
               Try again
             </Button>
           ) : null}
           {finished ? (
-            <Button size="sm" onClick={() => onOpenChange(false)}>
+            <Button variant="primary" onClick={() => onOpenChange(false)}>
               Review the routes
             </Button>
           ) : null}

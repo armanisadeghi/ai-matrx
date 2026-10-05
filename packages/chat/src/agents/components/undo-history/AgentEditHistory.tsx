@@ -2,7 +2,7 @@
 
 import { useCallback, type ReactNode } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";
 import { Separator } from "@ai-matrx/design-system";
@@ -179,26 +179,22 @@ export function AgentEditHistory({ agentId }: AgentEditHistoryProps) {
       </div>
       <div className="flex flex-wrap items-center gap-2 px-4 pb-2">
         <Button
-          size="sm"
+          icon={<Undo2 />}
           variant="outline"
           onClick={handleUndo}
           disabled={!canUndo}
-          className="h-7 text-xs gap-1.5"
         >
-          <Undo2 className="h-3 w-3" />
           Undo
           <kbd className="ml-1 text-[10px] text-muted-foreground">
             {getUndoShortcutHint()}
           </kbd>
         </Button>
         <Button
-          size="sm"
+          icon={<Redo2 />}
           variant="outline"
           onClick={handleRedo}
           disabled={!canRedo}
-          className="h-7 text-xs gap-1.5"
         >
-          <Redo2 className="h-3 w-3" />
           Redo
           <kbd className="ml-1 text-[10px] text-muted-foreground">
             {getRedoShortcutHint()}
@@ -206,13 +202,11 @@ export function AgentEditHistory({ agentId }: AgentEditHistoryProps) {
         </Button>
         <div className="flex-1" />
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<Trash2 />}
+          variant="quiet"
           onClick={handleClear}
           disabled={past.length === 0 && future.length === 0}
-          className="h-7 text-xs gap-1.5 text-destructive hover:text-destructive"
         >
-          <Trash2 className="h-3 w-3" />
           Clear
         </Button>
       </div>

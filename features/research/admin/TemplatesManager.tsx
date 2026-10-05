@@ -731,7 +731,6 @@ export function TemplatesManager() {
           />
           <Button
             variant="outline"
-            size="sm"
             onClick={addKeyword}
             disabled={!keywordInput.trim()}
           >
@@ -771,7 +770,6 @@ export function TemplatesManager() {
           />
           <Button
             variant="outline"
-            size="sm"
             onClick={addTag}
             disabled={!tagInput.trim()}
           >
@@ -842,9 +840,7 @@ export function TemplatesManager() {
                 {formData.agent_config[key] && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 px-2 text-xs"
+                    variant="quiet"
                     onClick={() => setAgentConfig(key, "")}
                   >
                     Default
@@ -979,11 +975,11 @@ export function TemplatesManager() {
                 Cancel
               </Button>
               <Button
+                icon={saving && <Loader2 className="animate-spin" />}
+                variant="primary"
                 onClick={handleSave}
                 disabled={saving}
-                className="gap-1.5"
               >
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create
               </Button>
             </div>
@@ -1012,11 +1008,11 @@ export function TemplatesManager() {
                 Cancel
               </Button>
               <Button
+                icon={saving && <Loader2 className="animate-spin" />}
+                variant="primary"
                 onClick={handleSave}
                 disabled={saving}
-                className="gap-1.5"
               >
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </div>

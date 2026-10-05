@@ -59,14 +59,13 @@ export function RestoreSourceButton({
   };
   return (
     <Button
+      icon={busy ? <Loader2 className="animate-spin" /> : <ArchiveRestore />}
       type="button"
       variant="outline"
-      size="sm"
-      className={cn("h-11 gap-1.5 sm:h-8", className)}
+      className={className}
       disabled={busy}
       onClick={() => void restore()}
     >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
       Restore
     </Button>
   );

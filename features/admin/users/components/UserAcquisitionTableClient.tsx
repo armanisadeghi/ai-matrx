@@ -275,15 +275,13 @@ export function UserAcquisitionTableClient() {
         width: 110,
         cell: (row) => (
           <Button
-            size="sm"
+            icon={<Route />}
             variant="outline"
-            className="h-7 gap-1 px-2 text-xs"
             onClick={(event) => {
               event.stopPropagation();
               openJourney(row);
             }}
-          >
-            <Route className="h-3.5 w-3.5" /> View
+          > View
           </Button>
         ),
       },
@@ -361,30 +359,28 @@ export function UserAcquisitionTableClient() {
               </span>
               {state === "blocked" ? (
                 <Button
-                  size="sm"
+                  icon={<ShieldCheck />}
                   variant="outline"
                   disabled={busy}
-                  className="ml-auto h-6 shrink-0 gap-1 px-2 text-xs"
+                  className="ml-auto shrink-0"
                   onClick={(event) => {
                     event.stopPropagation();
                     void requestUnblock(row);
                   }}
                 >
-                  <ShieldCheck className="h-3.5 w-3.5" />
                   {busy ? "Unblocking…" : "Unblock"}
                 </Button>
               ) : (
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={<Ban />}
+                  variant="quiet"
                   disabled={busy}
-                  className="ml-auto h-6 shrink-0 gap-1 px-2 text-xs text-rose-700 hover:text-rose-800"
+                  className="ml-auto shrink-0"
                   onClick={(event) => {
                     event.stopPropagation();
                     setBlockTarget(row);
                   }}
-                >
-                  <Ban className="h-3.5 w-3.5" /> Block
+                > Block
                 </Button>
               )}
             </div>
@@ -572,12 +568,11 @@ export function UserAcquisitionTableClient() {
         <div className="flex items-center rounded-md border px-3 py-1.5 text-xs">
           Focused on {focused[0]?.display_name ?? focusUser}
           <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-6 gap-1 px-2 text-xs"
+            icon={<X />}
+            variant="quiet"
+            className="ml-auto"
             onClick={() => pushAppHref(router, "/administration/users/acquisition")}
-          >
-            <X className="h-3 w-3" /> Clear
+          > Clear
           </Button>
         </div>
       ) : null}

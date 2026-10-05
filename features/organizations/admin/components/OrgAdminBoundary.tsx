@@ -57,11 +57,10 @@ export function OrgAdminBoundary({ orgIdParam, children }: OrgAdminBoundaryProps
             Only organization owners and admins can manage users.
           </p>
           <Button
+            icon={<ArrowLeft />}
             onClick={() => router.push(`/organizations/${organization.slug}`)}
             variant="outline"
-            size="sm"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to {organization.name}
           </Button>
         </Card>

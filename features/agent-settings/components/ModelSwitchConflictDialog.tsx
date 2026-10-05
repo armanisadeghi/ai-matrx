@@ -455,23 +455,20 @@ export function ModelSwitchConflictDialog({
           {/* Footer */}
           <DialogFooter className="px-5 py-3 flex-row items-center justify-between gap-2 shrink-0">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={handleCancel}
-              className="text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel — Undo Switch
             </Button>
             <Button
-              size="sm"
-              onClick={handleConfirm}
-              className="text-xs gap-1.5"
-            >
-              {hasConflicts ? (
-                <RefreshCw className="w-3.5 h-3.5" />
+              icon={hasConflicts ? (
+                <RefreshCw />
               ) : (
-                <CheckCircle2 className="w-3.5 h-3.5" />
+                <CheckCircle2 />
               )}
+              variant="primary"
+              onClick={handleConfirm}
+            >
               {hasConflicts ? "Apply & Switch" : "Switch Model"}
             </Button>
           </DialogFooter>

@@ -267,8 +267,6 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className={cn("h-6 text-[11px]", !row.subjectName && "font-mono text-[10px]")}
                     title={`Record reference ${row.employmentId}`}
                     onClick={() => void announceComingSoon("hr.employment-record")}
                   >

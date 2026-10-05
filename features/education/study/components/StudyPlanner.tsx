@@ -249,12 +249,11 @@ export function StudyPlanner({
       >
         {!embedded && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+            icon={<ArrowLeft />}
+            variant="quiet"
+            className="mb-4"
             onClick={() => (backHref ? router.push(backHref) : router.back())}
           >
-            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
         )}
@@ -266,8 +265,7 @@ export function StudyPlanner({
               {embedded ? "Your goals" : "Study planner"}
             </h1>
           </div>
-          <Button size="sm" className="gap-1.5" onClick={openCreate}>
-            <Plus className="h-4 w-4" />
+          <Button icon={<Plus />} variant="primary" onClick={openCreate}>
             New goal
           </Button>
         </div>
@@ -296,8 +294,7 @@ export function StudyPlanner({
               goals by urgency and how much you&apos;re struggling with that
               material.
             </p>
-            <Button size="sm" className="mt-2 gap-1.5" onClick={openCreate}>
-              <Plus className="h-4 w-4" />
+            <Button icon={<Plus />} variant="primary" className="mt-2" onClick={openCreate}>
               Create your first goal
             </Button>
           </div>
@@ -339,41 +336,29 @@ export function StudyPlanner({
                     </div>
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
+                        icon={<Pencil />}
+                        variant="quiet"
                         onClick={() => openEdit(goal)}
                         aria-label={`Edit ${goal.title}`}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-green-600 dark:text-green-400"
+                        icon={<CheckCircle2 />} aria-label="Mark achieved"
+                        variant="quiet"
                         onClick={() => handleSetStatus(goal, "achieved")}
                         title="Mark achieved"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
+                        icon={<Archive />} aria-label="Archive"
+                        variant="quiet"
                         onClick={() => handleSetStatus(goal, "archived")}
                         title="Archive"
-                      >
-                        <Archive className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-destructive"
+                        icon={<Trash2 />}
+                        variant="quiet"
                         onClick={() => setPendingDelete(goal)}
                         aria-label={`Remove ${goal.title}`}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </div>
 
@@ -428,11 +413,12 @@ export function StudyPlanner({
                 Cancel
               </Button>
               <Button
-                className="flex-1 gap-1.5"
+                icon={saving && <Loader2 className="animate-spin" />}
+                variant="primary"
+                className="flex-1"
                 onClick={handleSave}
                 disabled={saving || !form.title.trim()}
               >
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 Save
               </Button>
             </DrawerFooter>
@@ -459,11 +445,11 @@ export function StudyPlanner({
                 Cancel
               </Button>
               <Button
-                className="gap-1.5"
+                icon={saving && <Loader2 className="animate-spin" />}
+                variant="primary"
                 onClick={handleSave}
                 disabled={saving || !form.title.trim()}
               >
-                {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                 Save
               </Button>
             </DialogFooter>

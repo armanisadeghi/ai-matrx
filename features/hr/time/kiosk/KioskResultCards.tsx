@@ -16,7 +16,7 @@
 
 import { AlertTriangle, CheckCircle2, MapPin } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { KioskPunchResult } from "@/features/hr/time/api/types";
 import { formatStampedTimeWithZone } from "@/features/hr/time/clock/stampedTime";
 import { punchKindPresentation } from "@/features/hr/time/clock/punchVocabulary";

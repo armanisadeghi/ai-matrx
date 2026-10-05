@@ -101,7 +101,7 @@ export function YouTubeVideoPreviewContent({
           </div>
         )}
         <div className="mt-6 flex flex-wrap gap-2">
-          <Button asChild className="rounded-xl">
+          <Button variant="primary" asChild>
             <a
               href={youTubeWatchUrl(video.video_id)}
               target="_blank"
@@ -171,8 +171,8 @@ export function YouTubeVideoPreviewSurface({
       <div className="mx-auto max-w-5xl">
         <Button
           asChild
-          variant="ghost"
-          className="mb-4 rounded-xl text-muted-foreground"
+          variant="quiet"
+          className="mb-4"
         >
           <Link href={marketingRoutes.youtubeDiscovery()}>
             <ArrowLeft className="mr-2 h-4 w-4" />

@@ -132,15 +132,12 @@ export function SnapshotCompare({
 
   const closeButton = (
     <Button
-      variant="ghost"
-      size="icon"
-      className="h-6 w-6"
+      icon={<X />}
+      variant="quiet"
       onClick={onClose}
       aria-label="Close comparison"
       title="Close comparison"
-    >
-      <X className="h-3.5 w-3.5" />
-    </Button>
+    />
   );
 
   if (first.isLoading || second.isLoading) {

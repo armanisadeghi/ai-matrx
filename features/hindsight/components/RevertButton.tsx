@@ -67,7 +67,7 @@ export function RevertButton({
   return (
     <>
       <Button
-        size="sm"
+        icon={<Undo2 />}
         variant="outline"
         className={className}
         disabled={revert.isPending}
@@ -75,7 +75,6 @@ export function RevertButton({
         title="Undo this change — the agent returns to how it was before"
         data-testid="hindsight-revert"
       >
-        <Undo2 className="mr-1 h-3.5 w-3.5" />
         {revert.isPending ? "Reverting…" : "Revert"}
       </Button>
       <ConfirmDialog

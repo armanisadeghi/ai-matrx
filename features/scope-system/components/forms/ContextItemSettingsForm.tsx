@@ -508,7 +508,6 @@ export function ContextItemSettingsForm({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={addTag}
             disabled={busy || !tagInput.trim()}
           >
@@ -611,28 +610,26 @@ export function ContextItemSettingsForm({
 
       <div className="flex gap-2 pt-4 border-t border-border">
         <Button
+          icon={<Trash2 />}
           type="button"
           variant="outline"
           onClick={handleDelete}
           disabled={busy}
-          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
         >
-          <Trash2 className="h-4 w-4 mr-1.5" />
           Delete
         </Button>
         <div className="flex-1" />
         {onCancelled && (
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             onClick={onCancelled}
             disabled={busy}
           >
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={busy || !displayName.trim()}>
-          {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+        <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" type="submit" disabled={busy || !displayName.trim()}>
           Save changes
         </Button>
       </div>

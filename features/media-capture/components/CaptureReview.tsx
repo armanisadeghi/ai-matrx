@@ -217,38 +217,32 @@ export function CaptureReview({
 
       <div className="mt-2 flex shrink-0 items-center gap-2 pb-safe">
         <Button
+          icon={<RotateCcw />}
           variant="outline"
-          size="sm"
-          className="h-9"
           onClick={onRetake}
           disabled={saving}
         >
-          <RotateCcw className="mr-1.5 h-4 w-4" />
           {savedFileId ? "New capture" : "Retake"}
         </Button>
         <Button
+          icon={<Download />}
           variant="outline"
-          size="sm"
-          className="h-9"
           onClick={onDownload}
           disabled={saving || (kind === "photo" && savedFileId !== null)}
         >
-          <Download className="mr-1.5 h-4 w-4" />
           Download
         </Button>
         {canTranscribe && (
           <Button
+            icon={transcribing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <FileText />
+            )}
             variant="outline"
-            size="sm"
-            className="h-9"
             onClick={() => void handleTranscribe()}
             disabled={transcribing}
           >
-            {transcribing ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <FileText className="mr-1.5 h-4 w-4" />
-            )}
             {transcribing
               ? "Transcribing…"
               : transcript
@@ -258,16 +252,16 @@ export function CaptureReview({
         )}
         {!savedFileId && (
           <Button
-            size="sm"
-            className="ml-auto h-9"
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
+            className="ml-auto"
             onClick={onSave}
             disabled={saving}
           >
-            {saving ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-4 w-4" />
-            )}
             {saving ? "Saving…" : "Save"}
           </Button>
         )}
@@ -314,8 +308,7 @@ export function CaptureReview({
                 </p>
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="mt-1.5 h-7 text-xs"
+                  className="mt-1.5"
                   onClick={() => void handleTranscribe()}
                 >
                   Try again

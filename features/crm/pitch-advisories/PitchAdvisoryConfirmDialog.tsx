@@ -81,11 +81,10 @@ export function PitchAdvisoryConfirmDialog({
           </p>
         )}
         <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={running}>
+          <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={running}>
             Cancel
           </Button>
-          <Button onClick={() => void confirmNow()} disabled={running}>
-            {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button icon={running && <Loader2 className="animate-spin" />} variant="primary" onClick={() => void confirmNow()} disabled={running}>
             {confirmLabel}
           </Button>
         </DialogFooter>

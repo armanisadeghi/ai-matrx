@@ -561,7 +561,7 @@ export function RedPenDialog({
           <div className="space-y-3">
             <p className="text-sm text-foreground">{summary}</p>
             <Button
-              size="sm"
+              variant="primary"
               onClick={() => {
                 reset();
                 sitting.forget();
@@ -628,13 +628,12 @@ export function RedPenDialog({
                   }}
                 />
                 <Button
+                  icon={<FileUp aria-hidden />}
                   type="button"
                   variant="outline"
-                  size="sm"
                   className="shrink-0"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <FileUp className="mr-1.5 size-3.5" aria-hidden />
                   Upload a text file
                 </Button>
                 {/* NOTHING FAILS SILENTLY: the picker offers exactly what this
@@ -718,8 +717,7 @@ export function RedPenDialog({
                     Save this correction
                   </GatedActionButton>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => {
                       setPending(null);
                       setComment("");
@@ -766,8 +764,7 @@ export function RedPenDialog({
                         ) : null}
                       </div>
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        variant="quiet"
                         aria-label={`Remove correction ${index + 1}`}
                         onClick={() =>
                           setCorrections((list) =>

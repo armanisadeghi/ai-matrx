@@ -298,15 +298,12 @@ export function SourceInput({
               {set.topic}
             </span>
             <Button
+              icon={<X />}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              variant="quiet"
               aria-label="Remove the topic"
               onClick={() => set.setTopic("")}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            />
           </li>
         ) : null}
         {set.sources.map((card) => (
@@ -351,13 +348,12 @@ export function SourceInput({
           {set.measuring ? <Loader2 className="ml-1.5 inline h-3 w-3 animate-spin" /> : null}
         </span>
         <Button
+          icon={<ListChecks />}
           type="button"
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-11 shrink-0 gap-1.5 sm:h-8"
+          variant="quiet"
+          className="ml-auto shrink-0"
           onClick={() => void openReview("requested")}
         >
-          <ListChecks className="h-4 w-4" />
           Review
         </Button>
       </header>
@@ -465,7 +461,7 @@ export function SourceInput({
           <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{set.manifestError}</span>
           <ErrorAlchemyMenu error={set.manifestError} operation="Measure the Sources" />
-          <Button type="button" variant="ghost" size="sm" className="h-7" onClick={() => void set.manifest()}>
+          <Button type="button" variant="quiet" onClick={() => void set.manifest()}>
             Try again
           </Button>
         </p>
@@ -537,7 +533,7 @@ function TileArea({
               aria-label="Name (optional)"
             />
             <span className="shrink-0 text-xs text-muted-foreground">{text.length ? formatChars(text.length) : ""}</span>
-            <Button type="submit" className="h-11 shrink-0 sm:h-9" disabled={!text.trim()}>
+            <Button variant="primary" type="submit" className="shrink-0" disabled={!text.trim()}>
               Add
             </Button>
           </div>
@@ -577,9 +573,8 @@ function TileArea({
             />
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-11 self-start text-xs sm:h-8"
+              variant="quiet"
+              className="self-start"
               onClick={() => setUploadRecording(true)}
             >
               Upload a recording

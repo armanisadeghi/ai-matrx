@@ -66,8 +66,7 @@ export function ApproachCatalogPage() {
     return (
       <div className="mx-auto max-w-5xl space-y-3 px-4 py-8">
         <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
-        <Button variant="outline" size="sm" onClick={reload}>
-          <RefreshCw className="h-3.5 w-3.5" />
+        <Button icon={<RefreshCw />} variant="outline" onClick={reload}>
           Try again
         </Button>
       </div>

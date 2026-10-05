@@ -456,7 +456,6 @@ export function DailyDripDialog({
               </p>
               {canEdit ? (
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={saving}
                   onClick={async () => {
@@ -648,19 +647,18 @@ export function DailyDripDialog({
             </p>
 
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" disabled={saving} onClick={save}>
+              <Button variant="primary" disabled={saving} onClick={save}>
                 {saving ? <LoadingSpinner size="sm" /> : null}
                 {running ? "Save these settings" : "Start asking me"}
               </Button>
               {running ? (
                 <>
-                  <Button size="sm" variant="outline" disabled={sending} onClick={sendNow}>
+                  <Button variant="outline" disabled={sending} onClick={sendNow}>
                     {sending ? <LoadingSpinner size="sm" /> : <Send className="h-3.5 w-3.5" />}
                     Send today&apos;s question now
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     disabled={saving}
                     onClick={async () => {
                       setSaving(true);
@@ -722,7 +720,7 @@ export function DailyDripDialog({
             )}
           </p>
           <Button
-            size="sm"
+            variant="primary"
             disabled={!canEdit || run.running || !enoughToDistill || pending.length === 0}
             onClick={distill}
           >

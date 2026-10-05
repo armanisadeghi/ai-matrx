@@ -153,11 +153,10 @@ export function PrCalendarPage() {
               />
               Research events and earnings
             </label>
-            <Button size="sm" onClick={() => void refresh()} disabled={running}>
-              {running ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 size-3.5" />}
+            <Button icon={running ? <Loader2 className="animate-spin" /> : <RefreshCw />} variant="primary" onClick={() => void refresh()} disabled={running}>
               {plan ? "Refresh the calendar" : "Build the calendar"}
             </Button>
-            <Button size="sm" variant="outline" asChild>
+            <Button variant="outline" asChild>
               <Link href={pressRoom}>
                 <Megaphone className="mr-1.5 size-3.5" />
                 Press Room
@@ -224,26 +223,20 @@ export function PrCalendarPage() {
                 <section className="rounded-md border" aria-label="Month calendar">
                   <header className="flex items-center justify-between border-b px-3 py-2">
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-7"
+                      icon={<ChevronLeft />}
+                      variant="quiet"
                       aria-label="Previous month"
                       onClick={() => setMonth((m) => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-                    >
-                      <ChevronLeft className="size-4" />
-                    </Button>
+                    />
                     <h3 className="text-sm font-medium">
                       {month.toLocaleDateString(undefined, { month: "long", year: "numeric" })}
                     </h3>
                     <Button
-                      size="icon"
-                      variant="ghost"
-                      className="size-7"
+                      icon={<ChevronRight />}
+                      variant="quiet"
                       aria-label="Next month"
                       onClick={() => setMonth((m) => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-                    >
-                      <ChevronRight className="size-4" />
-                    </Button>
+                    />
                   </header>
                   <div className="grid grid-cols-7 border-b text-center text-[10px] uppercase text-muted-foreground">
                     {WEEKDAYS.map((d) => (
@@ -468,7 +461,7 @@ function MomentDetail({
       </div>
 
       {moment.bucket !== "avoid" ? (
-        <Button size="sm" asChild>
+        <Button variant="primary" asChild>
           <Link href={draftHref}>
             <Megaphone className="mr-1.5 size-3.5" />
             Draft angles with the PR Director

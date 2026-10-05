@@ -53,22 +53,19 @@ export function UnassignedMandateCard({
       </span>
       <div className="flex shrink-0 gap-1">
         <Button
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-7 gap-1.5 px-2 text-xs"
           onClick={() => open("create-agent")}
         >
           <AGENT_ICON className="h-3.5 w-3.5" aria-hidden="true" />
           Create agent
         </Button>
         <Button
+          icon={<Link2 aria-hidden="true" />}
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 px-2 text-xs"
+          variant="quiet"
           onClick={() => open("holder")}
         >
-          <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
           Use existing
         </Button>
       </div>

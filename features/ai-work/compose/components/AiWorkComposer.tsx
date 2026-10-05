@@ -770,17 +770,16 @@ function ComposerBody({
                 className="h-8 text-sm"
               />
               <Button
+                icon={saving ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <BookmarkPlus />
+                )}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={handleSave}
                 disabled={saving}
               >
-                {saving ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <BookmarkPlus className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 {saved ? "Update" : "Save"}
               </Button>
             </div>
@@ -798,7 +797,7 @@ function ComposerBody({
           </div>
 
           <div className="flex items-center gap-2 border-t border-border pt-3">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <Link href={scheduleHref}>
                 <CalendarClock className="mr-1.5 h-3.5 w-3.5" />
                 Schedule it instead
@@ -865,12 +864,11 @@ function ComposerBody({
       </ComposerSection>
 
       <div className="sticky bottom-0 flex items-center gap-2 border-t border-border bg-background/95 py-3 backdrop-blur">
-        <Button onClick={handleRun} disabled={!canRun || launching}>
-          {launching ? (
-            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+        <Button icon={launching ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Play className="mr-1.5 h-4 w-4" />
-          )}
+            <Play />
+          )} variant="primary" onClick={handleRun} disabled={!canRun || launching}>
           Run it now
         </Button>
         {!requestText.trim() && (

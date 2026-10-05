@@ -158,12 +158,10 @@ export default function ModelPricingEditor({
           )}
         </div>
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="h-7 text-xs gap-1"
           onClick={addTier}
         >
-          <Plus className="h-3.5 w-3.5" />
           Add Tier
         </Button>
       </div>
@@ -201,9 +199,8 @@ export default function ModelPricingEditor({
                   )}
                 </div>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  variant="quiet"
+                  className="w-6"
                   onClick={() => removeTier(i)}
                 >
                   <Trash2 className="h-3.5 w-3.5" />

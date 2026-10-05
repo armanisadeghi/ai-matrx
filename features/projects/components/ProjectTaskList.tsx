@@ -768,10 +768,9 @@ function QuickAddRow({
         <TableCell className="py-1.5">
           <div className="flex items-center gap-1">
             <Button
-              size="sm"
+              variant="primary"
               onClick={() => void submitAndContinue()}
               disabled={!title.trim()}
-              className="h-7 px-2 text-[11px]"
             >
               {inFlight > 0 ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -821,10 +820,8 @@ function QuickAddRow({
             )}
             <div className="flex items-center gap-2">
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={resetAll}
-                className="h-7 px-2 text-[11px]"
               >
                 Cancel
               </Button>

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { FolderOpen, FolderPlus, Tag as TagIcon, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import type { FolderReference } from "../../types";
 
@@ -157,14 +157,14 @@ export default function MobileNoteToolbar({
                   onKeyPress={(e) => e.key === "Enter" && handleAddTag()}
                   className="flex-1"
                 />
-                <Button
+                <SurfaceButton
                   size="icon"
                   onClick={handleAddTag}
                   disabled={!newTag.trim() || tags.includes(newTag.trim())}
                   className="flex-shrink-0"
                 >
                   <Plus size={18} />
-                </Button>
+                </SurfaceButton>
               </div>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function MobileNoteToolbar({
 
       {/* Footer */}
       <div className="flex-shrink-0 border-t border-border p-4">
-        <Button onClick={onClose} className="w-full" size="lg">
+        <Button variant="primary" onClick={onClose} className="w-full">
           Done
         </Button>
       </div>

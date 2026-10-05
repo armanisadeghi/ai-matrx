@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { Cloud, FileUp, FolderOpen, FolderUp, Loader2 } from "lucide-react";
 import { GoogleDrive } from "@/components/icons/brand-icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";

@@ -317,12 +317,11 @@ export default function RecoveryWindowImpl() {
             </div>
             <div className="px-3 py-2 border-t border-border">
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<X />}
+                variant="quiet"
                 onClick={close}
-                className="w-full justify-start text-xs"
+                className="w-full justify-start"
               >
-                <X className="w-3.5 h-3.5 mr-2" />
                 Close
               </Button>
             </div>
@@ -369,12 +368,10 @@ export default function RecoveryWindowImpl() {
                             Raw JSON
                           </div>
                           <Button
-                            size="sm"
-                            variant="ghost"
+                            icon={<Copy />}
+                            variant="quiet"
                             onClick={handleCopyJson}
-                            className="h-7 px-2 text-xs gap-1"
                           >
-                            <Copy className="w-3 h-3" />
                             Copy JSON
                           </Button>
                         </div>
@@ -422,56 +419,47 @@ export default function RecoveryWindowImpl() {
                 </div>
 
                 <footer className="px-5 py-3 border-t border-border flex items-center gap-2 flex-wrap">
-                  <Button size="sm" onClick={handleRetry} className="gap-1.5">
-                    <RotateCw className="w-3.5 h-3.5" />
+                  <Button icon={<RotateCw />} variant="primary" onClick={handleRetry}>
                     Retry
                   </Button>
                   {isEditing ? (
                     <Button
-                      size="sm"
+                      icon={<Save />}
                       variant="outline"
                       onClick={handleSaveEdit}
-                      className="gap-1.5"
                     >
-                      <Save className="w-3.5 h-3.5" />
                       Save Edit
                     </Button>
                   ) : (
                     <Button
-                      size="sm"
+                      icon={<Pencil />}
                       variant="outline"
                       onClick={() => {
                         setActiveViewTab("input");
                         setIsEditing(true);
                       }}
                       disabled={activeViewTab === "json" && !isMobile}
-                      className="gap-1.5"
                     >
-                      <Pencil className="w-3.5 h-3.5" />
                       Edit
                     </Button>
                   )}
                   <Button
-                    size="sm"
+                    icon={copied ? (
+                      <Check />
+                    ) : (
+                      <Copy />
+                    )}
                     variant="outline"
                     onClick={handleCopy}
-                    className="gap-1.5"
                   >
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5" />
-                    )}
                     {copied ? "Copied" : copyLabel}
                   </Button>
                   <div className="flex-1" />
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    icon={<Trash2 />}
+                    variant="quiet"
                     onClick={handleDelete}
-                    className="gap-1.5 text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
                     Delete
                   </Button>
                 </footer>

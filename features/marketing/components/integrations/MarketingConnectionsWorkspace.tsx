@@ -393,9 +393,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                 {canUseReadOnlyReview ? (
                   <Button
                     asChild
-                    size="sm"
                     variant="outline"
-                    className="h-7 gap-1 text-xs"
                   >
                     <Link href="/google-read-only-review">
                       Google read-only review
@@ -403,9 +401,12 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                   </Button>
                 ) : null}
                 <Button
-                  size="sm"
+                  icon={connectingOwner === "user" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <UserRound />
+                  )}
                   variant="outline"
-                  className="h-7 gap-1 text-xs"
                   disabled={
                     connectingOwner !== null ||
                     google.isInitializing ||
@@ -413,18 +414,16 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                   }
                   onClick={() => startConnection("user")}
                 >
-                  {connectingOwner === "user" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <UserRound className="h-3.5 w-3.5" />
-                  )}
                   Add personal account
                 </Button>
                 {organizations.activeOrgId ? (
                   <Button
-                    size="sm"
+                    icon={connectingOwner === "organization" ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Building2 />
+                    )}
                     variant="outline"
-                    className="h-7 gap-1 text-xs"
                     disabled={
                       connectingOwner !== null ||
                       google.isInitializing ||
@@ -432,26 +431,19 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                     }
                     onClick={() => startConnection("organization")}
                   >
-                    {connectingOwner === "organization" ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Building2 className="h-3.5 w-3.5" />
-                    )}
                     Add shared account
                   </Button>
                 ) : null}
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
+                  icon={inventory.isFetching ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
+                  variant="quiet"
                   disabled={inventory.isFetching}
                   onClick={() => inventory.refetch()}
                 >
-                  {inventory.isFetching ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
                   Refresh
                 </Button>
               </div>
@@ -468,7 +460,6 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                   <ErrorAlchemyMenu />
                 </p>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => inventory.refetch()}
                 >
@@ -566,7 +557,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                 </SelectContent>
               </Select>
               {selectedSite ? (
-                <Button asChild size="sm" className="h-8 gap-1.5">
+                <Button variant="primary" asChild>
                   <Link
                     href={marketingRoutes.siteSettings(
                       selectedSite.brand_id,
@@ -579,11 +570,11 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                   </Link>
                 </Button>
               ) : sites.data?.length ? (
-                <Button size="sm" variant="outline" className="h-8" disabled>
+                <Button type="submit" variant="outline" disabled>
                   Select a managed site
                 </Button>
               ) : (
-                <Button asChild size="sm" variant="outline" className="h-8">
+                <Button asChild variant="outline">
                   <Link href="/marketing/sites/new">Add a site first</Link>
                 </Button>
               )}
@@ -642,33 +633,30 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                     </label>
                     <div className="flex flex-wrap gap-1.5">
                       <Button
-                        size="sm"
-                        className="h-7 text-xs"
+                        icon={authorizingYouTubeOwner === "user" ? (
+                          <Loader2 className="animate-spin" />
+                        ) : null}
+                        variant="primary"
                         disabled={
                           !youtubeDisclosureAccepted ||
                           authorizingYouTubeOwner !== null
                         }
                         onClick={() => void authorizeYouTube("user")}
                       >
-                        {authorizingYouTubeOwner === "user" ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : null}
                         Authorize personal channel
                       </Button>
                       {organizations.activeOrgId ? (
                         <Button
-                          size="sm"
+                          icon={authorizingYouTubeOwner === "organization" ? (
+                            <Loader2 className="animate-spin" />
+                          ) : null}
                           variant="outline"
-                          className="h-7 text-xs"
                           disabled={
                             !youtubeDisclosureAccepted ||
                             authorizingYouTubeOwner !== null
                           }
                           onClick={() => void authorizeYouTube("organization")}
                         >
-                          {authorizingYouTubeOwner === "organization" ? (
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          ) : null}
                           Authorize shared channel
                         </Button>
                       ) : null}
@@ -701,17 +689,15 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                           </SelectContent>
                         </Select>
                         <Button
-                          size="sm"
+                          icon={youtubePreview.isPending ? (
+                            <Loader2 className="animate-spin" />
+                          ) : null}
                           variant="outline"
-                          className="h-8"
                           disabled={
                             !selectedYoutubeChannel || youtubePreview.isPending
                           }
                           onClick={() => void loadYouTubePreview()}
                         >
-                          {youtubePreview.isPending ? (
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          ) : null}
                           Load channel preview
                         </Button>
                       </div>
@@ -813,7 +799,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                 </div>
               </div>
               {selectedSite ? (
-                <Button asChild size="sm" variant="outline" className="h-8">
+                <Button asChild variant="outline">
                   <Link
                     href={marketingRoutes.siteSettings(
                       selectedSite.brand_id,
@@ -826,7 +812,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                   </Link>
                 </Button>
               ) : (
-                <Button asChild size="sm" variant="outline" className="h-8">
+                <Button asChild variant="outline">
                   <Link href="#site-bindings">Choose a managed site</Link>
                 </Button>
               )}
@@ -852,7 +838,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
                   </p>
                 </div>
               </div>
-              <Button asChild size="sm" variant="outline" className="h-8">
+              <Button asChild variant="outline">
                 <Link href={marketingRoutes.connectionsBing()}>
                   Manage Bing
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -961,30 +947,27 @@ function ConnectionRow({
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <Button
-          size="sm"
-          className="h-7 gap-1.5 text-xs"
+          icon={reconnecting ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
+          variant="primary"
           disabled={reconnecting}
           onClick={onReconnect}
         >
-          {reconnecting ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
           Reconnect
         </Button>
         <Button
-          size="sm"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Unplug />
+          )}
           variant="outline"
-          className="h-7 gap-1.5 text-xs text-destructive"
           disabled={busy}
           onClick={onDisconnect}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Unplug className="h-3.5 w-3.5" />
-          )}
           Disconnect
         </Button>
       </div>

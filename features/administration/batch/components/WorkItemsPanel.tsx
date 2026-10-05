@@ -441,7 +441,7 @@ export function WorkItemsPanel({
           ? "The queue holds items — none of them look like this."
           : "Nothing has been enqueued for batch processing. Items appear here when a background job is submitted at batch pricing.",
         action: filtersActive ? (
-          <Button variant="outline" size="sm" onClick={clearAll}>
+          <Button variant="outline" onClick={clearAll}>
             Clear filters
           </Button>
         ) : undefined,
@@ -462,9 +462,7 @@ export function WorkItemsPanel({
         ),
         actions: filtersActive ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
+            variant="quiet"
             onClick={clearAll}
           >
             Clear

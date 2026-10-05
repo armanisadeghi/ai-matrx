@@ -143,16 +143,14 @@ export function CatalogueAnalysisPanel() {
 
   const analyzeButton = (
     <Button
+      icon={analyzing ? (
+        <Radio className="text-primary" />
+      ) : (
+        <Play />
+      )}
       variant="outline"
-      size="sm"
-      className="h-7"
       onClick={() => (analyzing ? analysis.openWindow() : void runAnalysis())}
     >
-      {analyzing ? (
-        <Radio className="mr-1.5 h-3.5 w-3.5 text-primary" />
-      ) : (
-        <Play className="mr-1.5 h-3.5 w-3.5" />
-      )}
       {analyzing ? "Watch progress" : "Analyze now"}
     </Button>
   );

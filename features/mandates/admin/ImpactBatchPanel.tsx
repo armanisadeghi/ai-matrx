@@ -676,51 +676,43 @@ export function ImpactBatchPanel({
         cell: (r) => (
           <div className="flex flex-wrap items-center gap-1" onClick={(event) => event.stopPropagation()}>
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 gap-1 px-1.5 text-[11px]"
+              icon={<AppWindow />}
+              variant="quiet"
               title="Open this mandate in place — review its settings, test it, or fix why it is set aside."
               onClick={() => openOne(r)}
             >
-              <AppWindow className="h-3 w-3" />
               Open
             </Button>
             {isSettingsFixable(r) ? (
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<Wrench />}
+                variant="quiet"
                 disabled={busy}
-                className="h-6 gap-1 px-1.5 text-[11px]"
                 title="Repairs flagged settings as a new agent version and grades again; the pin does not move."
                 onClick={() => fixOne(r)}
               >
-                <Wrench className="h-3 w-3" />
                 Fix settings
               </Button>
             ) : null}
             {mode === "post_batch" && isBatchActionable(r.verdict, writeContext) && r.tier !== "safe" ? (
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<FastForward />}
+                variant="quiet"
                 disabled={busy}
-                className="h-6 gap-1 px-1.5 text-[11px] text-rose-700 dark:text-rose-400"
                 title="Move this pin even though the check found something — the next dialog says exactly what moves."
                 onClick={() => advanceOne(r)}
               >
-                <FastForward className="h-3 w-3" />
                 Advance anyway
               </Button>
             ) : null}
             {mode === "post_batch" && isBatchActionable(r.verdict, writeContext) && r.tier === "safe" ? (
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<FastForward />}
+                variant="quiet"
                 disabled={busy}
-                className="h-6 gap-1 px-1.5 text-[11px]"
                 title="Move this one pin to the newest saved version."
                 onClick={() => advanceOne(r)}
               >
-                <FastForward className="h-3 w-3" />
                 Advance
               </Button>
             ) : null}
@@ -760,14 +752,13 @@ export function ImpactBatchPanel({
           )}
           {sourceSentence ? <span className="font-medium">{sourceSentence}</span> : null}
           <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-6 gap-1 px-1.5 text-[11px]"
+            icon={loading ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+            variant="quiet"
+            className="ml-auto"
             disabled={loading || !hasScope || !sessionReady}
             title="Grade these pins again"
             onClick={() => setEpoch((value) => value + 1)}
           >
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
             Re-grade
           </Button>
         </div>
@@ -832,26 +823,22 @@ export function ImpactBatchPanel({
               <div className="ml-auto flex flex-wrap items-center gap-1">
                 {fixableRows.length > 0 ? (
                   <Button
-                    size="sm"
+                    icon={settingsFix.busy ? <Loader2 className="animate-spin" /> : <Wrench />}
                     variant="outline"
-                    className="h-7 gap-1 text-xs"
                     disabled={busy}
                     title={`Repairs flagged settings on ${fixableAgents} agent${fixableAgents === 1 ? "" : "s"} as new versions and grades again; rows it can't fix keep Advance.`}
                     onClick={fixAllSettings}
                   >
-                    {settingsFix.busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Wrench className="h-3 w-3" />}
                     Fix all fixable ({fixableRows.length})
                   </Button>
                 ) : null}
                 <Button
-                  size="sm"
+                  icon={writes.busy ? <Loader2 className="animate-spin" /> : <CheckCircle2 />}
                   variant="outline"
-                  className="h-7 gap-1 text-xs"
                   disabled={busy || safeCount === 0}
                   title={BATCH_TIER_META.safe.meaning}
                   onClick={advanceAllSafe}
                 >
-                  {writes.busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
                   Advance all safe ({safeCount})
                 </Button>
               </div>
@@ -871,11 +858,9 @@ export function ImpactBatchPanel({
           ).map((tab) => (
             <Button
               key={tab.id}
-              size="sm"
               role="tab"
               aria-selected={section === tab.id}
-              variant={section === tab.id ? "secondary" : "ghost"}
-              className="h-7 gap-1 px-2 text-xs"
+              variant={section === tab.id ? "outline" : "quiet"}
               title={tab.title}
               onClick={() => setSection(tab.id)}
             >
@@ -946,12 +931,11 @@ export function ImpactBatchPanel({
             actions: (selectedRows) =>
               mode === "post_batch" ? (
                 <Button
-                  size="sm"
-                  className="h-7 gap-1 text-xs"
+                  icon={busy ? <Loader2 className="animate-spin" /> : null}
+                  variant="primary"
                   disabled={busy || selectedRows.length === 0}
                   onClick={() => advanceSelected(selectedRows)}
                 >
-                  {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
                   Advance selected ({selectedRows.length})
                 </Button>
               ) : (

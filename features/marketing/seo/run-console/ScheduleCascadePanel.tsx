@@ -391,23 +391,21 @@ export function ScheduleCascadePanel({
             />
           </div>
           <Button
-            size="sm"
-            className="h-7 gap-1 text-xs"
+            icon={save.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <CalendarClock />
+            )}
+            variant="primary"
             disabled={save.isPending}
             onClick={() => save.mutate()}
           >
-            {save.isPending ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <CalendarClock className="h-3 w-3" />
-            )}
             {own ? "Update schedule" : "Save schedule"}
           </Button>
           {own ? (
             <Button
-              size="sm"
+              icon={<Trash2 />}
               variant="outline"
-              className="h-7 gap-1 text-xs"
               disabled={retire.isPending}
               onClick={() => {
                 void (async () => {
@@ -422,7 +420,6 @@ export function ScheduleCascadePanel({
                 })();
               }}
             >
-              <Trash2 className="h-3 w-3" />
               Remove
             </Button>
           ) : null}

@@ -213,9 +213,8 @@ function HoleCard({ hole }: { hole: InterviewHoleRow }) {
           )}
           {!settled && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-11 px-2 text-xs text-muted-foreground sm:h-7"
+              variant="quiet"
+              className="ml-auto"
               disabled={busy}
               onClick={() => setConfirmRisk(true)}
             >

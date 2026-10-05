@@ -217,8 +217,7 @@ export function ShareableResourceForm({
             <Button
               key={role}
               type="button"
-              size="sm"
-              variant={editor.contentRole === role ? "default" : "outline"}
+              variant={editor.contentRole === role ? "primary" : "outline"}
               onClick={() =>
                 onChange({
                   ...editor,
@@ -317,7 +316,7 @@ export function ShareableResourceForm({
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button disabled={saving || !valid} onClick={onSave}>
+        <Button variant="primary" disabled={saving || !valid} onClick={onSave}>
           {editor.mode === "create" ? "Register resource" : "Save resource"}
         </Button>
       </div>

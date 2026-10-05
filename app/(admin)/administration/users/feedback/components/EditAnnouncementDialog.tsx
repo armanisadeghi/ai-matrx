@@ -230,14 +230,13 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
                     {/* Preview Toggle */}
                     <div className="pt-2">
                         <Button
+                            icon={showPreview ? <EyeOff /> : <Eye />}
                             type="button"
                             variant="outline"
-                            size="sm"
                             onClick={() => setShowPreview(!showPreview)}
-                            className="w-full gap-2"
+                            className="w-full"
                             disabled={!title.trim() && !message.trim()}
                         >
-                            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                             {showPreview ? 'Hide Preview' : 'Preview as User'}
                         </Button>
                     </div>
@@ -276,10 +275,10 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
                                         </div>
                                     </div>
                                     <div className="flex gap-3 justify-end">
-                                        <Button variant="outline" size="sm" disabled className="min-w-[100px]">
+                                        <Button type="submit" variant="outline" disabled className="min-w-[100px]">
                                             Close
                                         </Button>
-                                        <Button size="sm" disabled className="min-w-[100px]">
+                                        <Button type="submit" variant="primary" disabled className="min-w-[100px]">
                                             Don't Show Again
                                         </Button>
                                     </div>
@@ -298,6 +297,7 @@ export default function EditAnnouncementDialog({ announcement, open, onOpenChang
                         Cancel
                     </Button>
                     <Button
+                        variant="primary"
                         onClick={handleSubmit}
                         disabled={isSubmitting || !title.trim() || !message.trim()}
                     >

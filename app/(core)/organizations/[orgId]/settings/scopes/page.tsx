@@ -76,11 +76,10 @@ export default function OrganizationScopesPage() {
               Only admins and owners can manage organization scopes.
             </p>
             <Button
+              icon={<ArrowLeft />}
               onClick={() => router.push(`/organizations/${orgId}/settings`)}
               variant="outline"
-              size="sm"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Settings
             </Button>
           </div>

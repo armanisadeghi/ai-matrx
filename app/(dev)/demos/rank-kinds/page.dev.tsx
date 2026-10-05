@@ -260,8 +260,7 @@ export default function RankKindsDemoPage() {
           placeholder="Optional: a specific seo.serp_snapshot id"
           className="min-w-64 flex-1"
         />
-        <Button type="submit" disabled={phase === "running"}>
-          <Play className="mr-1.5 h-4 w-4" />
+        <Button icon={<Play />} variant="primary" type="submit" disabled={phase === "running"}>
           Translate
         </Button>
       </form>

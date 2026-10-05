@@ -15,7 +15,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { useMeetHost, type MeetingRecord } from "@ai-matrx/meet/react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import {
   claimGuestAttendance,
@@ -28,7 +28,7 @@ export function KeepNotesPrompt({ slug }: { slug: string }) {
   return (
     <div className="flex items-center gap-2 rounded-full border border-white/20 bg-black/40 py-1 pl-3 pr-1 text-sm text-[color:var(--mx-meet-stage-text)] backdrop-blur">
       <span className="hidden sm:inline">Keep these notes</span>
-      <Button asChild size="sm" className="h-9 rounded-full">
+      <Button variant="primary" asChild>
         <Link href={keepNotesHref(slug)}>Create free account</Link>
       </Button>
     </div>

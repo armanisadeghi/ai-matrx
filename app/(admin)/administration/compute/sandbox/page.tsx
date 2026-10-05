@@ -637,46 +637,39 @@ export default function AdminSandboxManagementPage() {
                   <>
                     {active && (
                       <Button
+                        icon={<KeyRound />}
                         variant="outline"
-                        size="sm"
                         onClick={() => handleRequestSsh(instance)}
-                        className="text-xs"
                       >
-                        <KeyRound className="mr-1 h-4 w-4" />
                         SSH
                       </Button>
                     )}
                     {active && (
                       <Button
+                        icon={busy ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Square />
+                        )}
                         variant="outline"
-                        size="sm"
                         onClick={() => handleStop(instance)}
                         disabled={busy}
-                        className="text-xs"
                       >
-                        {busy ? (
-                          <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-                        ) : (
-                          <Square className="mr-1 h-4 w-4" />
-                        )}
                         Stop
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      icon={busy ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Trash2 />
+                      )}
+                      variant="quiet"
                       aria-label="Delete sandbox"
                       title="Delete sandbox"
                       onClick={() => setDeleteTarget(instance)}
                       disabled={busy}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                    />
                   </>
                 );
               } }]}
@@ -944,12 +937,11 @@ export default function AdminSandboxManagementPage() {
                       {sshAccess.ssh_command}
                     </code>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant="quiet"
                       onClick={() =>
                         copyToClipboard(sshAccess.ssh_command, "command")
                       }
-                      className="shrink-0 h-8 w-8 p-0"
+                      className="shrink-0 w-8"
                     >
                       {copiedField === "command" ? (
                         <Check className="w-3.5 h-3.5 text-green-500" />
@@ -962,21 +954,17 @@ export default function AdminSandboxManagementPage() {
 
                 <div className="flex items-center gap-2">
                   <Button
+                    icon={<Download />}
                     variant="outline"
-                    size="sm"
                     onClick={handleDownloadKey}
-                    className="text-xs"
                   >
-                    <Download className="w-3.5 h-3.5 mr-1.5" />
                     Download Key (.pem)
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() =>
                       copyToClipboard(sshAccess.private_key, "key")
                     }
-                    className="text-xs"
                   >
                     {copiedField === "key" ? (
                       <>

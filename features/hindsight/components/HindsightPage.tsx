@@ -121,8 +121,7 @@ export function HindsightPage() {
           <span />
         )}
         <AssistStrip surfaceName={HINDSIGHT_ASSIST_SURFACE} className="flex-1" />
-        <Button onClick={() => setEnrollOpen(true)} data-testid="hindsight-enroll-open">
-          <Plus className="mr-1 h-4 w-4" />
+        <Button icon={<Plus />} variant="primary" onClick={() => setEnrollOpen(true)} data-testid="hindsight-enroll-open">
           Enroll
         </Button>
       </div>

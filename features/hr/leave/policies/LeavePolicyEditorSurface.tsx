@@ -296,21 +296,20 @@ function BlackoutEditor({
           </div>
 
           <Button
+            icon={<Trash2 />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onChange(rules.filter((_, i) => i !== index))}
           >
-            <Trash2 className="mr-2 h-4 w-4" />
             Remove this window
           </Button>
         </div>
       ))}
 
       <Button
+        icon={<Plus />}
         type="button"
         variant="outline"
-        size="sm"
         onClick={() =>
           onChange([
             ...rules,
@@ -328,7 +327,6 @@ function BlackoutEditor({
           ])
         }
       >
-        <Plus className="mr-2 h-4 w-4" />
         Add a blackout window
       </Button>
     </div>
@@ -549,7 +547,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
         <div className="space-y-4 p-4 sm:p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 space-y-1">
-              <Button asChild variant="ghost" size="sm" className="-ml-2 h-8">
+              <Button asChild variant="quiet" className="-ml-2">
                 <Link href={hrSettingsHref("leave-policies", { org: orgRef })}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   All leave policies
@@ -571,7 +569,7 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
             </div>
 
             {!isNew && saved ? (
-              <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
+              <Button asChild variant="outline">
                 <Link href={leavePolicyEnrollmentHref(saved.id, orgRef)}>
                   <Users className="mr-2 h-4 w-4" />
                   {saved.enrolledCount === null
@@ -709,12 +707,11 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
 
             {canWrite ? (
               <div className="flex items-center gap-2 sm:col-span-2">
-                <Button type="button" variant="outline" size="sm" onClick={runTwin}>
-                  {validating ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Button icon={validating ? (
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <ShieldCheck className="mr-2 h-4 w-4" />
-                  )}
+                    <ShieldCheck />
+                  )} type="button" variant="outline" onClick={runTwin}>
                   Check this against the law now
                 </Button>
               </div>
@@ -1164,14 +1161,12 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
                     .filter((use) => !form.mandatedUses.includes(use))
                     .map((use) => (
                       <Button
+                        icon={<Plus />}
                         key={use}
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="h-8"
                         onClick={() => set("mandatedUses", [...form.mandatedUses, use])}
                       >
-                        <Plus className="mr-1.5 h-3.5 w-3.5" />
                         {humanizeIdentifier(use) || use}
                       </Button>
                     ))}
@@ -1193,26 +1188,25 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
               {!form.isActive ? (
                 <>
                   <Button
+                    icon={busy ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Save />
+                    )}
                     type="button"
                     variant="outline"
                     disabled={busy}
                     onClick={() => void persist(false)}
-                    className="min-h-11 sm:min-h-9"
                   >
-                    {busy ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
                     Save as a draft
                   </Button>
                   <Button
+                    icon={<CheckCircle2 />}
+                    variant="primary"
                     type="button"
                     disabled={busy}
                     onClick={() => void persist(true)}
-                    className="min-h-11 sm:min-h-9"
                   >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
                     Activate
                   </Button>
                   <p className="w-full text-[11px] text-muted-foreground">
@@ -1224,23 +1218,23 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
               ) : (
                 <>
                   <Button
+                    icon={busy ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Save />
+                    )}
+                    variant="primary"
                     type="button"
                     disabled={busy}
                     onClick={() => void persist(true)}
-                    className="min-h-11 sm:min-h-9"
                   >
-                    {busy ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="mr-2 h-4 w-4" />
-                    )}
                     Save changes
                   </Button>
                   <Button
+                    icon={<Ban />}
                     type="button"
                     variant="outline"
                     disabled={busy}
-                    className="min-h-11 sm:min-h-9"
                     onClick={async () => {
                       const confirmed = await confirm({
                         title: "Stop this policy earning time?",
@@ -1263,7 +1257,6 @@ export function LeavePolicyEditorSurface({ policyId }: { policyId: string }) {
                       if (confirmed) void persist(false);
                     }}
                   >
-                    <Ban className="mr-2 h-4 w-4" />
                     Stop accrual
                   </Button>
                   {/*

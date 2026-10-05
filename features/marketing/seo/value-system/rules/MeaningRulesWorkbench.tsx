@@ -1141,12 +1141,12 @@ export function MeaningRulesWorkbench() {
                 </p>
               </div>
               <Button
+                icon={<Plus aria-hidden />}
+                variant="primary"
                 type="button"
-                size="sm"
                 onClick={() => setEditingRule(null)}
-                className="h-7 shrink-0 gap-1 text-xs"
+                className="shrink-0"
               >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
                 New rule
               </Button>
             </div>
@@ -1224,14 +1224,13 @@ export function MeaningRulesWorkbench() {
                   </p>
                 </div>
                 <Button
+                  icon={<PlugZap aria-hidden />}
                   type="button"
-                  size="sm"
-                  variant="destructive"
+                  variant="danger"
                   disabled={reconnectingRules}
                   onClick={() => void runRuleReconnect()}
-                  className="h-7 shrink-0 gap-1 text-xs"
+                  className="shrink-0"
                 >
-                  <PlugZap className="h-3.5 w-3.5" aria-hidden />
                   {reconnectingRules ? "Reconnecting…" : "Reconnect them"}
                 </Button>
               </div>
@@ -1303,12 +1302,12 @@ export function MeaningRulesWorkbench() {
                 </p>
               </div>
               <Button
+                icon={<Plus aria-hidden />}
+                variant="primary"
                 type="button"
-                size="sm"
                 onClick={() => setEditingArea(null)}
-                className="h-7 shrink-0 gap-1 text-xs"
+                className="shrink-0"
               >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
                 New area
               </Button>
             </div>
@@ -1378,14 +1377,13 @@ export function MeaningRulesWorkbench() {
                   </p>
                 </div>
                 <Button
+                  icon={<PlugZap aria-hidden />}
                   type="button"
-                  size="sm"
-                  variant="destructive"
+                  variant="danger"
                   disabled={reconnecting}
                   onClick={() => void runReconnect()}
-                  className="h-7 shrink-0 gap-1 text-xs"
+                  className="shrink-0"
                 >
-                  <PlugZap className="h-3.5 w-3.5" aria-hidden />
                   {reconnecting ? "Reconnecting…" : "Reconnect them"}
                 </Button>
               </div>
@@ -1610,25 +1608,21 @@ export function MeaningRulesWorkbench() {
               </div>
               <div className="flex shrink-0 items-center gap-1.5">
                 <Button
+                  icon={<Pencil aria-hidden />}
                   type="button"
-                  size="sm"
                   variant="outline"
                   onClick={() => setEditingBands("value_band")}
-                  className="h-7 gap-1 text-xs"
                 >
-                  <Pencil className="h-3 w-3" aria-hidden />
                   {bands.data?.[0]?.is_template
                     ? "Adopt & edit tiers"
                     : "Edit tiers"}
                 </Button>
                 <Button
+                  icon={<Pencil aria-hidden />}
                   type="button"
-                  size="sm"
                   variant="outline"
                   onClick={() => setEditingBands("geo_band")}
-                  className="h-7 gap-1 text-xs"
                 >
-                  <Pencil className="h-3 w-3" aria-hidden />
                   {geoBands.data?.[0]?.is_template
                     ? "Adopt & edit geo bands"
                     : "Edit geo bands"}

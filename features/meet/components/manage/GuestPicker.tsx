@@ -246,12 +246,7 @@ export function GuestPicker({
               {canNameCohosts && guest.userId ? (
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-7 px-2 text-xs",
-                    guest.cohost && "text-primary",
-                  )}
+                  variant="quiet"
                   aria-pressed={guest.cohost}
                   title={
                     guest.cohost
@@ -270,17 +265,14 @@ export function GuestPicker({
                 </Button>
               ) : null}
               <Button
+                icon={<X aria-hidden="true" />}
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
+                variant="quiet"
                 aria-label={`Remove ${guestName(guest)}`}
                 onClick={() =>
                   onChange(guests.filter((g) => g.key !== guest.key))
                 }
-              >
-                <X className="h-4 w-4" aria-hidden="true" />
-              </Button>
+              />
             </li>
           ))}
         </ul>

@@ -128,11 +128,9 @@ export function MindMapHome() {
           label="mind maps"
         />
         <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={() => router.push("/education/mind-maps/new/manual")}>
-          <Plus className="mr-1 h-4 w-4" /> Write my own
+        <Button icon={<Plus />} variant="outline" onClick={() => router.push("/education/mind-maps/new/manual")}> Write my own
         </Button>
-        <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/mind-maps/new")}>
-          <Plus className="h-4 w-4" />
+        <Button icon={<Plus />} variant="primary" onClick={() => router.push("/education/mind-maps/new")}>
           New mind map
         </Button>
         </div>
@@ -151,8 +149,7 @@ export function MindMapHome() {
           <p className="text-sm text-muted-foreground">
             No mind maps yet. Turn a deck or a topic into a visual concept map.
           </p>
-          <Button size="sm" className="gap-1.5" onClick={() => router.push("/education/mind-maps/new")}>
-            <Plus className="h-4 w-4" />
+          <Button icon={<Plus />} variant="primary" onClick={() => router.push("/education/mind-maps/new")}>
             New mind map
           </Button>
         </div>

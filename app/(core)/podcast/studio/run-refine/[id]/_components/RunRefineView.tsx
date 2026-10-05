@@ -355,16 +355,14 @@ export function RunRefineView({ runId }: { runId: string }) {
         </Link>
         <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={refresh}
-            className="gap-1.5 text-muted-foreground"
             title="Re-sync this run from the server"
           >
-            <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button asChild size="sm" className="gap-1.5">
+          <Button variant="primary" asChild>
             <Link href="/podcast/studio/create-refine">
               <Plus className="h-4 w-4" />
               New episode

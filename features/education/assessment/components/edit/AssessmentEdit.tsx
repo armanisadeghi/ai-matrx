@@ -415,22 +415,19 @@ export function AssessmentEdit({ assessmentId }: { assessmentId: string }) {
         <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
           <div className="flex items-center gap-3">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 shrink-0"
+              icon={<ArrowLeft />}
+              variant="quiet"
+              className="shrink-0"
               onClick={() =>
                 startTransition(() => router.push(`${base}/${assessmentId}`))
               }
               aria-label="Back"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            />
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
               Edit {config.noun}
             </h1>
             <Button
               variant="outline"
-              size="sm"
               className="ml-auto"
               onClick={() =>
                 startTransition(() => router.push(`${base}/${assessmentId}`))
@@ -563,9 +560,7 @@ function ItemEditor({
         </span>
         <div className="flex items-center gap-1">
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
+            variant="quiet"
             onClick={async () => {
               setDeepening(true);
               await onDeepen();
@@ -582,14 +577,11 @@ function ItemEditor({
             Make deeper
           </Button>
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+            icon={<Trash2 />} aria-label="Delete question"
+            variant="quiet"
             onClick={onDelete}
             title="Delete question"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       </div>
 
@@ -641,8 +633,7 @@ function ItemEditor({
       />
 
       <div className="mt-2 flex justify-end">
-        <Button size="sm" variant="outline" onClick={onSave}>
-          <Save className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Save />} variant="outline" onClick={onSave}>
           Save
         </Button>
       </div>
@@ -664,8 +655,7 @@ function CenteredNotice({
       <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-4 py-20 text-center">
         <Icon className="h-7 w-7 text-muted-foreground" />
         <p className="text-sm font-medium text-foreground">{text}</p>
-        <Button variant="outline" onClick={onBack}>
-          <ArrowLeft className="mr-1.5 h-4 w-4" />
+        <Button icon={<ArrowLeft />} variant="outline" onClick={onBack}>
           Back
         </Button>
       </div>

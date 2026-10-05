@@ -460,7 +460,7 @@ export function BacklinkEnrichmentDetail({
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            <Button asChild type="button" size="sm" variant="outline">
+            <Button asChild type="button" variant="outline">
               <a
                 href={row.source_url}
                 target="_blank"
@@ -470,7 +470,7 @@ export function BacklinkEnrichmentDetail({
                 Open source page
               </a>
             </Button>
-            <Button asChild type="button" size="sm" variant="outline">
+            <Button asChild type="button" variant="outline">
               <a
                 href={row.target_url}
                 target="_blank"
@@ -480,7 +480,7 @@ export function BacklinkEnrichmentDetail({
                 Open target page
               </a>
             </Button>
-            <Button asChild type="button" size="sm" variant="outline">
+            <Button asChild type="button" variant="outline">
               <Link
                 href={
                   brandId
@@ -496,8 +496,8 @@ export function BacklinkEnrichmentDetail({
             </Button>
             {onAnalyze ? (
               <Button
+                variant="primary"
                 type="button"
-                size="sm"
                 disabled={analysisAction.disabled}
                 title={analysisAction.title}
                 onClick={onAnalyze}
@@ -702,8 +702,8 @@ export function BacklinkEnrichmentDetail({
                 </div>
                 {onAnalyze ? (
                   <Button
+                    variant="primary"
                     type="button"
-                    size="sm"
                     className="mt-3"
                     disabled={analysisAction.disabled}
                     title={analysisAction.title}
@@ -837,8 +837,8 @@ export function BacklinkEnrichmentDetail({
             </p>
             {onAnalyze ? (
               <Button
+                variant="primary"
                 type="button"
-                size="sm"
                 className="mt-3"
                 disabled={analysisAction.disabled}
                 title={analysisAction.title}
@@ -990,17 +990,17 @@ export function BacklinkEnrichmentDetail({
                   className="mt-2 min-h-20 text-xs"
                 />
                 <Button
+                  icon={saving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   className="mt-2"
                   disabled={saving}
                   onClick={() => void save()}
                 >
-                  {saving ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
                   Save ruling
                 </Button>
               </>,

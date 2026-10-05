@@ -127,13 +127,13 @@ export function ItemWorkspace({
         }
         actions={
           <div className="flex flex-wrap items-center gap-1.5">
-            <Button asChild variant="outline" size="sm" className="h-8">
+            <Button asChild variant="outline">
               <Link href={`/tools/product-capture?item=${item.id}`}>
                 <Camera className="mr-1 h-3.5 w-3.5" />
                 Capture
               </Link>
             </Button>
-            <Button asChild variant="outline" size="sm" className="h-8">
+            <Button asChild variant="outline">
               <Link href={`/tools/product-capture/item/${item.id}`} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-1 h-3.5 w-3.5" />
                 Images &amp; files
@@ -141,8 +141,7 @@ export function ItemWorkspace({
             </Button>
             {primary && (
               <Button
-                size="sm"
-                className="h-8"
+                variant="primary"
                 onClick={() => void move(primary.to)}
               >
                 {primary.label}

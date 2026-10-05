@@ -679,7 +679,7 @@ export function ShadowInboxDialog({
           <p className="text-sm text-foreground">{summary}</p>
           <div className="flex flex-wrap gap-2">
             <Button
-              size="sm"
+              variant="primary"
               onClick={() => {
                 reset();
                 onOpenChange(false);
@@ -689,7 +689,6 @@ export function ShadowInboxDialog({
             </Button>
             {run.result?.followupSeed && onFollowupSeed ? (
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => {
                   const seed = run.result?.followupSeed;
@@ -732,7 +731,6 @@ export function ShadowInboxDialog({
             {shadowable > 0 ? (
               <>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() =>
                     setSelected(
@@ -743,7 +741,6 @@ export function ShadowInboxDialog({
                   Select all
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setSelected(new Set())}
                 >
@@ -959,16 +956,14 @@ export function ShadowInboxDialog({
                     {file.name}
                   </p>
                   <Button
-                    variant="ghost"
-                    size="icon"
+                    icon={<X />}
+                    variant="quiet"
                     aria-label="Remove the chosen file"
                     onClick={() => {
                       setFile(null);
                       if (fileInputRef.current) fileInputRef.current.value = "";
                     }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  />
                 </div>
               ) : (
                 <button
@@ -1133,7 +1128,7 @@ export function ShadowInboxDialog({
               {preparing ? "Reading…" : "Read the thread"}
             </GatedActionButton>
           ) : (
-            <Button onClick={() => void distill()} disabled={running}>
+            <Button variant="primary" onClick={() => void distill()} disabled={running}>
               {running ? "Shadowing…" : `Shadow my last ${daysBack} days`}
             </Button>
           )}

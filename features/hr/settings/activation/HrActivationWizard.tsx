@@ -760,41 +760,37 @@ export function HrActivationWizard({
         {/* ── The rail ─────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Button
+            icon={<ArrowLeft />}
             type="button"
             variant="outline"
-            size="sm"
-            className="min-h-11 sm:min-h-9"
             disabled={step === 1 || submitting}
             onClick={() => setStep((current) => Math.max(1, current - 1))}
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
 
           {step < 3 ? (
             <Button
+              iconEnd={<ArrowRight />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={step === 1 ? !step1Ready : !step2Ready}
               onClick={() => setStep((current) => Math.min(3, current + 1))}
             >
               Next
-              <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
             <Button
+              icon={submitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <CheckCircle2 />
+              )}
+              variant="primary"
               type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={!step3Ready || submitting}
               onClick={submit}
             >
-              {submitting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-              )}
               Set up HR
             </Button>
           )}
@@ -977,7 +973,7 @@ function ActivationDone({
                 created none of them a second time.
               </p>
             )}
-            <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+            <Button asChild variant="outline">
               <Link href={hrSettingsHref("codes", { org: orgRef })}>
                 Open earning and deduction codes
               </Link>
@@ -986,18 +982,18 @@ function ActivationDone({
         </section>
 
         <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+          <Button variant="primary" asChild>
             <Link href={hrPeopleNewHref({ org: orgRef })}>
               <UserPlus className="mr-2 h-4 w-4" />
               Add the first person
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+          <Button asChild variant="outline">
             <Link href={hrSettingsHref("employer", { org: orgRef })}>
               Finish the employer profile
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+          <Button asChild variant="outline">
             <Link href={hrSettingsHref("structure", { org: orgRef })}>
               Departments, locations and job titles
             </Link>
@@ -1063,7 +1059,7 @@ function FirstHireDoor({ href, className }: { href: string; className?: string }
           exist. Everything else in HR starts from a person, so the next step is to add
           one.
         </p>
-        <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+        <Button variant="primary" asChild>
           <Link href={href}>
             <UserPlus className="mr-2 h-4 w-4" />
             Add the first person
@@ -1126,17 +1122,15 @@ function RefusalPanel({
         <p className="text-sm text-muted-foreground">{detail?.trim() || shown.body}</p>
         <div className="flex flex-wrap gap-2">
           {shown.door ? (
-            <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+            <Button variant="primary" asChild>
               <Link href={shown.door.href}>{shown.door.label}</Link>
             </Button>
           ) : null}
           {onRetry ? (
             <Button
               type="button"
-              size="sm"
               variant="outline"
               onClick={onRetry}
-              className="min-h-11 sm:min-h-9"
             >
               Back to setup
             </Button>

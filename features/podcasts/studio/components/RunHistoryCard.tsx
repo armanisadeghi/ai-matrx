@@ -152,9 +152,9 @@ export function RunHistoryCard({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            icon={<MoreHorizontal />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             disabled={deleting}
             aria-label={`${title} actions`}
             onPointerDown={(event) => {
@@ -164,10 +164,8 @@ export function RunHistoryCard({
                 y: rect.top + rect.height / 2,
               };
             }}
-            className="absolute left-1 top-1 z-20 h-11 w-11 rounded-full bg-black/45 text-white backdrop-blur hover:bg-black/65 hover:text-white"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+            className="absolute left-1 top-1 z-20"
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
           <DropdownMenuItem asChild>

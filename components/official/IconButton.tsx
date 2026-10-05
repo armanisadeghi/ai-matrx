@@ -4,7 +4,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button, ButtonProps } from "@/components/ui/button";
+import { Button, ButtonProps } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { LucideIcon } from "lucide-react";
 

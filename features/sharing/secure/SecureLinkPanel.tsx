@@ -17,7 +17,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Mail, MessageSquare, ShieldCheck } from "lucide-react";
 
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";

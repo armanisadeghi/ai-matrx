@@ -209,9 +209,7 @@ export function HrFieldsPanel() {
             </p>
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="min-h-11 sm:min-h-9"
               onClick={() => announceComingSoon("hr-settings.custom-field-authoring")}
             >
               Add a custom field

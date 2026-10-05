@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { getDebugModule, DebugModule } from './debugModuleRegistry';
 import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Button } from "@ai-matrx/design-system";
 
 /**
  * DebugModulePanel

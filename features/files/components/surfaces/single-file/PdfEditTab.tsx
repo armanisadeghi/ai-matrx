@@ -219,9 +219,7 @@ export function PdfEditTab({ fileId, className }: PdfEditTabProps) {
         <div className="ml-auto">
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
+            variant="quiet"
             title="Open the full Analysis Studio (3-pane workshop with content + tools panels)"
           >
             <Link

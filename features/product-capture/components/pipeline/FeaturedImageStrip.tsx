@@ -109,13 +109,12 @@ export function FeaturedImageStrip({
           })}
           {featuredFileId && (
             <Button
+              icon={<Crop />}
               variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
+              className="shrink-0"
               disabled={busy}
               onClick={() => void startCrop(featuredFileId)}
             >
-              <Crop className="mr-1 h-3.5 w-3.5" />
               Crop featured
             </Button>
           )}

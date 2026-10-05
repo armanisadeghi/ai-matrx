@@ -213,23 +213,19 @@ export function EditableRows<T>({
             )}
           </div>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 shrink-0 text-muted-foreground"
+            icon={<Trash2 />}
+            variant="quiet"
+            className="shrink-0"
             aria-label="Remove row"
             onClick={() => onChange(rows.filter((_, j) => j !== i))}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          />
         </div>
       ))}
       <Button
+        icon={<Plus />}
         variant="outline"
-        size="sm"
-        className="h-8"
         onClick={() => onChange([...rows, makeNew()])}
       >
-        <Plus className="mr-1 h-3.5 w-3.5" />
         {addLabel}
       </Button>
     </div>

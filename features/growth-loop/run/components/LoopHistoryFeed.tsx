@@ -216,17 +216,16 @@ function TerminalMeasurementCard({
       </div>
       {measurement.quarantined ? (
         <Button
+          icon={releaseState === "releasing" ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <RotateCcw aria-hidden />
+          )}
           type="button"
           variant="outline"
-          size="sm"
           disabled={releaseState !== "idle"}
           onClick={() => void release()}
         >
-          {releaseState === "releasing" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
-          )}
           {releaseState === "released" ? "Released" : "Release and try again"}
         </Button>
       ) : null}

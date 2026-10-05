@@ -99,8 +99,7 @@ export function LoginCapturePanel({
           {savedChoices.map((choice) => (
             <Button
               key={choice.itemId}
-              size="sm"
-              variant="secondary"
+              variant="outline"
               disabled={saving}
               onClick={() => void fillFromSaved(choice)}
             >
@@ -136,7 +135,7 @@ export function LoginCapturePanel({
         />
       </div>
       <Button
-        size="sm"
+        variant="primary"
         disabled={saving || !displayName || !username || !password}
         onClick={() => void submit()}
       >

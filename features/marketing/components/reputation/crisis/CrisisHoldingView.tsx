@@ -77,8 +77,8 @@ function SendToPress({
         surfaceName="marketing-reputation"
       />
       <Button
-        size="sm"
-        className="h-7 text-[11px]"
+        icon={busy ? <Loader2 className="animate-spin" /> : <Copy />}
+        variant="primary"
         disabled={busy}
         onClick={async () => {
           setBusy(true);
@@ -93,7 +93,6 @@ function SendToPress({
           }
         }}
       >
-        {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Copy className="mr-1 h-3 w-3" />}
         Copy and go ahead
       </Button>
       <p className="text-[10px] text-muted-foreground">
@@ -160,20 +159,17 @@ function Statement({
         ) : null}
         <div className="mt-2 flex flex-wrap gap-1.5">
           <Button
-            size="sm"
+            icon={<Copy />}
             variant="outline"
-            className="h-7 text-[11px]"
             onClick={() => {
               void navigator.clipboard.writeText(full).then(
                 () => toast.success("Copied."),
                 () => toast.warning("Could not copy automatically."),
               );
             }}
-          >
-            <Copy className="mr-1 h-3 w-3" /> Copy
+          > Copy
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => setSending((v) => !v)}>
-            <Send className="mr-1 h-3 w-3" /> Send to press
+          <Button icon={<Send />} variant="outline" onClick={() => setSending((v) => !v)}> Send to press
           </Button>
         </div>
         {sending ? <SendToPress text={full} organizationId={organizationId} name={name} /> : null}
@@ -220,8 +216,7 @@ export function CrisisStopBlock({
               <li key={s}>{s}</li>
             ))}
           </ol>
-          <Button variant="outline" size="sm" onClick={onDraftAnyway} disabled={drafting} data-testid="draft-for-counsel">
-            {drafting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
+          <Button icon={drafting ? <Loader2 className="animate-spin" /> : null} variant="outline" onClick={onDraftAnyway} disabled={drafting} data-testid="draft-for-counsel">
             Draft for counsel anyway
           </Button>
           <p className="text-[11px] text-muted-foreground">
@@ -272,10 +267,9 @@ export function CrisisHoldingView({
           <Clock className="h-3 w-3" aria-hidden /> {valid.text}
         </p>
         <div className="mt-2 flex flex-wrap gap-1.5">
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => downloadIcs(reminder)}>
-            <CalendarClock className="mr-1 h-3 w-3" /> Remind me at valid-until (.ics)
+          <Button icon={<CalendarClock />} variant="outline" onClick={() => downloadIcs(reminder)}> Remind me at valid-until (.ics)
           </Button>
-          <Button asChild size="sm" variant="ghost" className="h-7 text-[11px]">
+          <Button asChild variant="quiet">
             <a href={googleCalendarUrl(reminder)} target="_blank" rel="noreferrer">
               Add to Google Calendar
             </a>

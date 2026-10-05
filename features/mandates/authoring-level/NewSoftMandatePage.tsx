@@ -343,9 +343,7 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
               {restoredDraftSentence(restoredAt)}
             </span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 text-[11.5px]"
+              variant="quiet"
               onClick={() => {
                 setLabel(EMPTY_DRAFT.label);
                 setMandateKey(EMPTY_DRAFT.mandateKey);
@@ -500,15 +498,15 @@ export function NewSoftMandatePage({ level, orgId = null, orgName = null }: NewS
             2026-09-26: Create sat below the fold at 1440x900). */}
         <div className="sticky bottom-0 z-10 flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-border bg-background/95 py-2 pb-safe backdrop-blur">
           <Button
+            icon={creating || pending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ArrowRight />
+            )}
+            variant="primary"
             disabled={creating || pending || missing.length > 0 || keyIsTaken}
             onClick={() => void create()}
-            className="gap-1.5"
           >
-            {creating || pending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowRight className="h-4 w-4" />
-            )}
             {creating ? "Creating…" : "Create mandate"}
           </Button>
           {/* The refused control's reason, ADJACENT — never a red sentence

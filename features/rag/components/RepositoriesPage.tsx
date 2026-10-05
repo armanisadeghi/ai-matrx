@@ -358,8 +358,7 @@ export function RepositoriesPage() {
                 const fullyIndexed = isFullyIndexed(repo);
                 return (
                   <Button
-                    size="sm"
-                    variant={fullyIndexed ? "outline" : "default"}
+                    variant={fullyIndexed ? "outline" : "primary"}
                     onClick={() =>
                       repo.repository_id &&
                       indexRepo(repo.repository_id, fullyIndexed)

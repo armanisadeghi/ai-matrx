@@ -180,9 +180,8 @@ export default function ModelAuditDashboard() {
             </label>
             <div className="w-px h-4 bg-border" />
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
+              variant="quiet"
+              className="w-7"
               onClick={loadModels}
               disabled={loading}
               title="Refresh models"
@@ -194,9 +193,8 @@ export default function ModelAuditDashboard() {
               )}
             </Button>
             <Button
-              variant={activeTab === "settings" ? "default" : "ghost"}
-              size="sm"
-              className="h-7 w-7 p-0"
+              variant={activeTab === "settings" ? "primary" : "quiet"}
+              className="w-7"
               onClick={() =>
                 setActiveTab(activeTab === "settings" ? "overview" : "settings")
               }

@@ -130,7 +130,7 @@ export function HrActionDialog({
 
                 <DialogFooter>
                     {answered ? (
-                        <Button onClick={() => onOpenChange(false)}>Done</Button>
+                        <Button variant="primary" onClick={() => onOpenChange(false)}>Done</Button>
                     ) : (
                         <>
                             <Button
@@ -141,13 +141,13 @@ export function HrActionDialog({
                                 Cancel
                             </Button>
                             <Button
-                                variant={variant === "destructive" ? "destructive" : "default"}
+                                icon={busy ? (
+                                    <Loader2 className="animate-spin" />
+                                ) : null}
+                                variant={variant === "destructive" ? "danger" : "primary"}
                                 disabled={busy || reasonMissing}
                                 onClick={() => void onConfirm()}
                             >
-                                {busy ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : null}
                                 {confirmLabel}
                             </Button>
                         </>

@@ -10,7 +10,12 @@ import { cache } from "react";
 
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 
-import { platformFilter, readPublicCatalogueWith, type PublicRead } from "./publicGallery";
+import { resolveRelativeDates, type TemplateSpec } from "@ai-matrx/records/templates";
+
+import type { ShowSpec } from "./TemplateShowcase";
+
+import type { GalleryCard } from "./catalogue";
+import { closedReason, platformFilter, readPublicCatalogueWith, type PublicRead } from "./publicGallery";
 
 async function readOnce(): Promise<PublicRead> {
   const sb = getScriptSupabaseClient();
@@ -26,4 +31,30 @@ export const readPublicCatalogue = cache(async (): Promise<PublicRead> => {
     );
   }
   return read;
+});
+
+/** One template's public page: its card and its spec with every relative date resolved to today. */
+export interface PublicTemplatePage {
+  card: GalleryCard;
+  spec: ShowSpec;
+  updatedAt: string | null;
+}
+
+/**
+ * THE PAGE READ (`public.template_public_page`): one published platform template by its readable
+ * address, its catalogue id or a version id — so an old address finds the template and the page
+ * sends it on to the readable one. Null when no published platform template answers to the key.
+ */
+export const readTemplatePage = cache(async (key: string): Promise<PublicTemplatePage | null> => {
+  const sb = getScriptSupabaseClient();
+  const { data, error } = await sb.schema("public").rpc("template_public_page", { p_key: key });
+  if (error) {
+    if (closedReason(error)) return null;
+    throw new Error(`The template page could not be read: ${error.message ?? error.code ?? "unknown error"}`);
+  }
+  const answer = data as { card: GalleryCard; spec: TemplateSpec; updated_at: string | null } | null;
+  if (!answer?.card) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const spec = resolveRelativeDates(answer.spec as TemplateSpec, today) as unknown as ShowSpec;
+  return { card: answer.card, spec, updatedAt: answer.updated_at };
 });

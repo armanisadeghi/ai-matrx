@@ -23,9 +23,8 @@ export function AuthorityRouterDoor({
     return (
       <Button
         asChild
-        size="sm"
         variant="outline"
-        className={cn("gap-1.5", className)}
+        className={className}
       >
         <Link href={href}>
           <Route className="h-3.5 w-3.5" />

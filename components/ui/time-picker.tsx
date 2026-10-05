@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Clock } from "lucide-react";
 import { format, parse } from "date-fns";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
     Popover,
     PopoverContent,

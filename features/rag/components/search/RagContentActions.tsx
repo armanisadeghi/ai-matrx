@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
 import { useOpenRagAiCopyWindow } from "@/features/overlays/openers/ragAiCopyWindow";
 import type {

@@ -15,7 +15,7 @@
 
 import React, { useState } from "react";
 import { Building2, FolderKanban, ListTodo, Tags } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";

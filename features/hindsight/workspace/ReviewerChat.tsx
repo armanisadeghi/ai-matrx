@@ -171,15 +171,15 @@ export function ReviewerChat({
           </p>
         </div>
         <Button
-          size="sm"
+          icon={reviewRunning ? (
+            <RefreshCw className="animate-spin" />
+          ) : (
+            <Eye />
+          )}
+          variant="primary"
           disabled={reviewRunning || pendingExamples === 0}
           onClick={onRunReview}
         >
-          {reviewRunning ? (
-            <RefreshCw className="mr-1 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Eye className="mr-1 h-3.5 w-3.5" />
-          )}
           {reviewRunning ? "Reviewing…" : "Run the first review"}
         </Button>
       </div>
@@ -207,14 +207,13 @@ export function ReviewerChat({
           </span>
         ) : (
           <Button
-            size="sm"
+            icon={<Eye />}
             variant="outline"
             className="shrink-0"
             onClick={onRunReview}
             title="Reads the new runs end to end — costs real money and takes a few minutes. You confirm first."
             data-testid="hindsight-chat-review-now"
           >
-            <Eye className="mr-1 h-3.5 w-3.5" />
             Run a new review
           </Button>
         )}
@@ -302,12 +301,12 @@ export function ReviewerChat({
               : "Your guidance usually produces new proposals rather than edits. Takes about a minute; you can leave this page."}
           </span>
           <Button
-            size="sm"
+            icon={<Send />}
+            variant="primary"
             disabled={!draft.trim() || send.isPending || unavailable}
             onClick={() => send.mutate(draft.trim())}
             data-testid="hindsight-chat-send"
           >
-            <Send className="mr-1 h-3.5 w-3.5" />
             {send.isPending ? "Sending…" : "Send guidance"}
           </Button>
         </div>

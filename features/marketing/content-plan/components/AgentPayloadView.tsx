@@ -424,9 +424,7 @@ export function AgentPayloadView({
                   return (
                     <Button
                       key={entry.key}
-                      variant={active === entry.key ? "secondary" : "ghost"}
-                      size="sm"
-                      className="h-6 gap-1.5 px-2 text-xs"
+                      variant={active === entry.key ? "outline" : "quiet"}
                       onClick={() => setShape(entry.key)}
                     >
                       {entry.title}
@@ -552,14 +550,13 @@ export function AgentPayloadButton({
   const tab = useToolToggle(agentPayloadToggleInput(siteId ?? "", nodeId, nodeRoute ?? null));
   return (
     <Button
+      icon={<Info />}
       variant="outline"
-      size="sm"
-      className={cn("h-6 gap-1 px-2 text-xs", tab.isVisible && "bg-accent text-foreground", className)}
+      className={className}
       disabled={!siteId}
       onClick={tab.toggle}
       aria-pressed={tab.isVisible}
     >
-      <Info className="h-3 w-3" />
       {label}
     </Button>
   );

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { ArrowRight, Loader2, AlertCircle, ExternalLink } from "lucide-react";
 import { Youtube } from "@/components/icons/brand-icons";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
     PickerSearchField,
     PickerView,

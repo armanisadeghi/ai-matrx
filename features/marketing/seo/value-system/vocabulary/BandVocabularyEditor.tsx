@@ -492,9 +492,11 @@ export function BandVocabularyEditor({
                       </label>
                     )}
                     <Button
+                      icon={<Trash2 />} aria-label={reserved
+                          ? "The Negative band is reserved — you may rename it, never remove it."
+                          : `Remove this ${copy.noun}`}
                       type="button"
-                      size="icon"
-                      variant="ghost"
+                      variant="quiet"
                       disabled={busy || reserved}
                       title={
                         reserved
@@ -502,10 +504,8 @@ export function BandVocabularyEditor({
                           : `Remove this ${copy.noun}`
                       }
                       onClick={() => removeRow(row.value)}
-                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                      className="shrink-0"
+                    />
                   </div>
 
                   <Input
@@ -570,14 +570,12 @@ export function BandVocabularyEditor({
 
             {vocab.isSuccess ? (
               <Button
+                icon={<Plus />}
                 type="button"
-                size="sm"
                 variant="outline"
                 disabled={busy}
                 onClick={addRow}
-                className="h-8 gap-1.5 text-xs"
-              >
-                <Plus className="h-3.5 w-3.5" /> Add a {copy.noun}
+              > Add a {copy.noun}
               </Button>
             ) : null}
 
@@ -625,14 +623,12 @@ export function BandVocabularyEditor({
                       </SelectContent>
                     </Select>
                     <Button
+                      icon={<RotateCcw />}
                       type="button"
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       disabled={busy}
                       onClick={() => restoreRow(value)}
-                      className="h-8 gap-1 px-2 text-xs text-muted-foreground"
-                    >
-                      <RotateCcw className="h-3 w-3" /> Put it back
+                    > Put it back
                     </Button>
                   </div>
                 </div>
@@ -757,25 +753,26 @@ export function BandVocabularyEditor({
           <div className="flex items-center gap-2">
             {isTemplate ? (
               <Button
+                icon={adopt.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
                 type="button"
-                size="sm"
                 variant="outline"
                 disabled={busy}
                 onClick={() => adopt.mutate()}
-                className="h-8 gap-1.5 text-xs"
               >
-                {adopt.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Adopt the starter set
               </Button>
             ) : (
               <Button
+                icon={reset.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RotateCcw />
+                )}
                 type="button"
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 disabled={busy}
-                className="h-8 gap-1.5 text-xs text-muted-foreground"
                 onClick={async () => {
                   const ok = await confirm({
                     title: `Hand ${copy.title.toLowerCase()} back to the platform defaults?`,
@@ -786,11 +783,6 @@ export function BandVocabularyEditor({
                   if (ok) reset.mutate();
                 }}
               >
-                {reset.isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RotateCcw className="h-3.5 w-3.5" />
-                )}
                 Restore platform defaults
               </Button>
             )}
@@ -798,29 +790,26 @@ export function BandVocabularyEditor({
           <div className="flex items-center gap-2">
             <Button
               type="button"
-              size="sm"
               variant="outline"
               disabled={busy}
               onClick={onClose}
-              className="h-8 text-xs"
             >
               Close
             </Button>
             <Button
+              icon={save.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              variant="primary"
               type="button"
-              size="sm"
               disabled={busy || blockingIssue || unrouted.length > 0 || !dirty}
               onClick={() => save.mutate()}
-              className="h-8 gap-1.5 text-xs"
               title={
                 unrouted.length > 0
                   ? "Say where the removed band's keywords go first."
                   : undefined
               }
             >
-              {save.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : null}
               {isTemplate ? "Adopt & save" : "Save"}
             </Button>
           </div>

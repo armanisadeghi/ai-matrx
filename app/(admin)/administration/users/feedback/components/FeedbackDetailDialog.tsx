@@ -1044,13 +1044,11 @@ export default function FeedbackDetailDialog({
               </div>
               <div className="flex basis-full flex-shrink-0 items-center gap-1 self-start sm:basis-auto sm:mr-6">
                 <Button
+                  icon={<Copy />}
                   variant="outline"
-                  size="sm"
                   onClick={handleCopyAll}
-                  className="gap-1.5 text-xs"
                   title="Copy all feedback data to clipboard"
                 >
-                  <Copy className="w-3.5 h-3.5" />
                   Copy All
                 </Button>
                 <CopyButtons
@@ -1698,10 +1696,8 @@ export default function FeedbackDetailDialog({
                       {onOpenFeedback ? (
                         <Button
                           type="button"
-                          variant="ghost"
-                          size="sm"
+                          variant="quiet"
                           onClick={() => onOpenFeedback(parentId)}
-                          className="h-8 px-2"
                           title="Open parent ticket"
                         >
                           <ArrowRight className="w-4 h-4" />
@@ -1728,10 +1724,8 @@ export default function FeedbackDetailDialog({
                       </a>
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={() => setParentId("none")}
-                        className="h-8 px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
                         title="Unlink parent"
                       >
                         <Unlink className="w-4 h-4" />
@@ -1795,13 +1789,12 @@ export default function FeedbackDetailDialog({
                               </div>
                               <Button
                                 type="button"
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={() => {
                                   setShowParentPicker(false);
                                   setParentSearchQuery("");
                                 }}
-                                className="w-full mt-1 h-7 text-xs"
+                                className="w-full mt-1"
                               >
                                 Cancel
                               </Button>
@@ -1810,14 +1803,12 @@ export default function FeedbackDetailDialog({
                         })()
                       ) : (
                         <Button
+                          icon={<Link />}
                           type="button"
                           variant="outline"
-                          size="sm"
                           onClick={() => setShowParentPicker(true)}
-                          className="h-8 text-xs gap-1.5"
                           disabled={allFeedbackItems.length === 0}
                         >
-                          <Link className="w-3.5 h-3.5" />
                           Link to parent ticket
                         </Button>
                       )}
@@ -2005,8 +1996,8 @@ export default function FeedbackDetailDialog({
                     {(item.admin_decision === "pending" ||
                       !item.admin_decision) && (
                       <Button
+                        icon={<CheckCircle2 />}
                         variant="outline"
-                        size="sm"
                         onClick={() => {
                           setDecision("approved");
                           setFormStatus(
@@ -2015,9 +2006,7 @@ export default function FeedbackDetailDialog({
                               : item.status,
                           );
                         }}
-                        className="gap-1.5 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950/30"
                       >
-                        <CheckCircle2 className="w-4 h-4" />
                         Approve
                       </Button>
                     )}
@@ -2026,14 +2015,12 @@ export default function FeedbackDetailDialog({
                       item.status,
                     ) && (
                       <Button
+                        icon={<TestTube />}
                         variant="outline"
-                        size="sm"
                         onClick={() => {
                           setFormStatus("awaiting_review");
                         }}
-                        className="gap-1.5 text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950/30"
                       >
-                        <TestTube className="w-4 h-4" />
                         Send to Testing
                       </Button>
                     )}
@@ -2042,42 +2029,36 @@ export default function FeedbackDetailDialog({
                       item.status,
                     ) && (
                       <Button
+                        icon={<RotateCcw />}
                         variant="outline"
-                        size="sm"
                         onClick={() => {
                           setDecision("approved");
                           setFormStatus("in_progress");
                         }}
-                        className="gap-1.5 text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30"
                       >
-                        <RotateCcw className="w-4 h-4" />
                         Reopen
                       </Button>
                     )}
                     {/* Reject */}
                     <Button
+                      icon={<XCircle />}
                       variant="outline"
-                      size="sm"
                       onClick={() => {
                         setDecision("rejected");
                         setFormStatus("wont_fix");
                       }}
-                      className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
                     >
-                      <XCircle className="w-4 h-4" />
                       Reject
                     </Button>
                     {/* Defer */}
                     <Button
+                      icon={<Clock />}
                       variant="outline"
-                      size="sm"
                       onClick={() => {
                         setDecision("deferred");
                         setFormStatus("deferred");
                       }}
-                      className="gap-1.5 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50 dark:hover:bg-yellow-950/30"
                     >
-                      <Clock className="w-4 h-4" />
                       Defer
                     </Button>
                   </div>
@@ -2096,7 +2077,7 @@ export default function FeedbackDetailDialog({
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleSaveDecision} disabled={isSaving}>
+                  <Button variant="primary" onClick={handleSaveDecision} disabled={isSaving}>
                     {isSaving ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
@@ -2217,10 +2198,10 @@ export default function FeedbackDetailDialog({
                     }}
                   />
                   <Button
+                    variant="primary"
                     onClick={handleSendComment}
                     disabled={!newComment.trim() || isSendingComment}
-                    size="sm"
-                    className="absolute right-2 bottom-2 h-8 w-8 p-0"
+                    className="absolute right-2 bottom-2 w-8"
                   >
                     {isSendingComment ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -2290,107 +2271,75 @@ export default function FeedbackDetailDialog({
                       </label>
                       <div className="flex gap-2 flex-wrap">
                         <Button
+                          icon={isSaving && !pendingTestResult ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <CheckCircle2 />
+                          )}
                           variant={
-                            item.testing_result === "pass"
-                              ? "default"
-                              : "outline"
+                            item.testing_result === "pass" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => handleTestingResult("pass")}
                           disabled={
                             isSaving ||
                             !!pendingTestResult ||
                             showUserReviewCompose
                           }
-                          className={cn(
-                            "gap-1.5",
-                            item.testing_result === "pass" &&
-                              "bg-green-600 hover:bg-green-700",
-                          )}
                         >
-                          {isSaving && !pendingTestResult ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="w-4 h-4" />
-                          )}
                           Pass
                         </Button>
                         <Button
+                          icon={isSaving && !pendingTestResult ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <XCircle />
+                          )}
                           variant={
                             pendingTestResult === "fail" ||
-                            item.testing_result === "fail"
-                              ? "default"
-                              : "outline"
+                            item.testing_result === "fail" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => handleTestingResult("fail")}
                           disabled={
                             isSaving ||
                             !!pendingTestResult ||
                             showUserReviewCompose
                           }
-                          className={cn(
-                            "gap-1.5",
-                            (pendingTestResult === "fail" ||
-                              item.testing_result === "fail") &&
-                              "bg-red-600 hover:bg-red-700",
-                          )}
                         >
-                          {isSaving && !pendingTestResult ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <XCircle className="w-4 h-4" />
-                          )}
                           Fail
                         </Button>
                         <Button
+                          icon={isSaving && !pendingTestResult ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <MinusCircle />
+                          )}
                           variant={
                             pendingTestResult === "partial" ||
-                            item.testing_result === "partial"
-                              ? "default"
-                              : "outline"
+                            item.testing_result === "partial" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => handleTestingResult("partial")}
                           disabled={
                             isSaving ||
                             !!pendingTestResult ||
                             showUserReviewCompose
                           }
-                          className={cn(
-                            "gap-1.5",
-                            (pendingTestResult === "partial" ||
-                              item.testing_result === "partial") &&
-                              "bg-yellow-600 hover:bg-yellow-700",
-                          )}
                         >
-                          {isSaving && !pendingTestResult ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <MinusCircle className="w-4 h-4" />
-                          )}
                           Partial
                         </Button>
 
                         {/* User Review button */}
                         <Button
+                          icon={<UserCheck />}
                           variant={
-                            showUserReviewCompose ? "default" : "outline"
+                            showUserReviewCompose ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={handleStartUserReview}
                           disabled={
                             isSaving ||
                             !!pendingTestResult ||
                             showUserReviewCompose
                           }
-                          className={cn(
-                            "gap-1.5",
-                            showUserReviewCompose &&
-                              "bg-cyan-600 hover:bg-cyan-700",
-                          )}
                         >
-                          <UserCheck className="w-4 h-4" />
                           User Review
                         </Button>
                       </div>
@@ -2516,8 +2465,7 @@ export default function FeedbackDetailDialog({
                             </p>
                             <div className="flex gap-2">
                               <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={() => {
                                   setPendingTestResult(null);
                                   setTestFeedbackText("");
@@ -2527,24 +2475,18 @@ export default function FeedbackDetailDialog({
                                 Skip
                               </Button>
                               <Button
-                                size="sm"
+                                icon={isSendingTestFeedback ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Send />
+                                )}
+                                variant="primary"
                                 onClick={handleSendTestFeedback}
                                 disabled={
                                   !testFeedbackText.trim() ||
                                   isSendingTestFeedback
                                 }
-                                className={cn(
-                                  "gap-1.5",
-                                  pendingTestResult === "fail"
-                                    ? "bg-red-600 hover:bg-red-700"
-                                    : "bg-yellow-600 hover:bg-yellow-700",
-                                )}
                               >
-                                {isSendingTestFeedback ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Send className="w-4 h-4" />
-                                )}
                                 Send Feedback to Agent
                               </Button>
                             </div>
@@ -2612,9 +2554,13 @@ export default function FeedbackDetailDialog({
                                 needed.
                               </p>
                               <Button
+                                icon={isUploadingCompose ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Paperclip />
+                                )}
                                 type="button"
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={() =>
                                   pickAndUploadImages(
                                     setComposeImages,
@@ -2624,21 +2570,14 @@ export default function FeedbackDetailDialog({
                                 disabled={
                                   isSendingUserReview || isUploadingCompose
                                 }
-                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
                                 title="Attach image"
                               >
-                                {isUploadingCompose ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  <Paperclip className="w-3 h-3" />
-                                )}
                                 Attach
                               </Button>
                             </div>
                             <div className="flex gap-2">
                               <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={() => {
                                   setShowUserReviewCompose(false);
                                   setUserReviewMessage("");
@@ -2649,7 +2588,12 @@ export default function FeedbackDetailDialog({
                                 Cancel
                               </Button>
                               <Button
-                                size="sm"
+                                icon={isSendingUserReview ? (
+                                  <Loader2 className="animate-spin" />
+                                ) : (
+                                  <Send />
+                                )}
+                                variant="primary"
                                 onClick={handleSendUserReview}
                                 disabled={
                                   (!userReviewMessage.trim() &&
@@ -2657,13 +2601,7 @@ export default function FeedbackDetailDialog({
                                   isSendingUserReview ||
                                   isUploadingCompose
                                 }
-                                className="gap-1.5 bg-cyan-600 hover:bg-cyan-700"
                               >
-                                {isSendingUserReview ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Send className="w-4 h-4" />
-                                )}
                                 Send to User
                               </Button>
                             </div>
@@ -2895,8 +2833,7 @@ export default function FeedbackDetailDialog({
                     <div className="absolute right-2 bottom-2 flex items-center gap-1">
                       <Button
                         type="button"
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={() =>
                           pickAndUploadImages(
                             setReplyImages,
@@ -2904,7 +2841,7 @@ export default function FeedbackDetailDialog({
                           )
                         }
                         disabled={isSendingUserReply || isUploadingReply}
-                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        className="w-8"
                         title="Attach image"
                       >
                         {isUploadingReply ? (
@@ -2914,14 +2851,14 @@ export default function FeedbackDetailDialog({
                         )}
                       </Button>
                       <Button
+                        variant="primary"
                         onClick={handleAdminReplyUserMessage}
                         disabled={
                           (!userReplyText.trim() && replyImages.length === 0) ||
                           isSendingUserReply ||
                           isUploadingReply
                         }
-                        size="sm"
-                        className="h-8 w-8 p-0"
+                        className="w-8"
                       >
                         {isSendingUserReply ? (
                           <Loader2 className="w-4 h-4 animate-spin" />

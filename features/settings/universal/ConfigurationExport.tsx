@@ -121,12 +121,10 @@ export function ConfigurationExport(props: {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void copy()}>
-        <ClipboardCopy className="mr-1.5 h-4 w-4" />
+      <Button icon={<ClipboardCopy />} variant="outline" disabled={busy} onClick={() => void copy()}>
         Copy configuration
       </Button>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => setOpen(true)}>
-        <GitCompareArrows className="mr-1.5 h-4 w-4" />
+      <Button icon={<GitCompareArrows />} variant="outline" disabled={busy} onClick={() => setOpen(true)}>
         Compare
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -169,7 +167,7 @@ export function ConfigurationExport(props: {
                 </SelectContent>
               </Select>
             )}
-            <Button size="sm" disabled={busy || !canCompare} onClick={() => void compare()}>
+            <Button variant="primary" disabled={busy || !canCompare} onClick={() => void compare()}>
               {busy ? "Comparing…" : "Compare"}
             </Button>
           </div>

@@ -249,14 +249,12 @@ function ItemList({
             />
             <BasisChip basis={item.basis} refs={refs} />
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 shrink-0"
+              icon={<X />}
+              variant="quiet"
+              className="shrink-0"
               aria-label={`Remove ${item.text}`}
               onClick={() => onChange(items.filter((_, i) => i !== index))}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            />
           </li>
         ))}
       </ul>
@@ -274,13 +272,11 @@ function ItemList({
           className="h-8 text-sm"
         />
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="h-8"
           onClick={add}
           disabled={!adding.trim()}
-        >
-          <Plus className="h-3.5 w-3.5" /> Add
+        > Add
         </Button>
       </div>
       <Warning text={warning ?? null} />
@@ -343,23 +339,18 @@ function PersonOffers({
             </span>
             <span className="text-foreground">{offer.text}</span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-1.5 text-xs text-primary"
+              icon={<Plus />}
+              variant="quiet"
               onClick={() => onAccept(offer)}
-            >
-              <Plus className="h-3 w-3" /> Add to{" "}
+            > Add to{" "}
               {OFFER_TARGET_LABEL[offer.target]}
             </Button>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
+              icon={<X />}
+              variant="quiet"
               aria-label={`Leave out ${offer.text}`}
               onClick={() => onDismiss(offer)}
-            >
-              <X className="h-3 w-3" />
-            </Button>
+            />
           </li>
         ))}
       </ul>
@@ -818,15 +809,15 @@ function MonitorSetupEditorBody({
               </p>
             </div>
             <Button
-              size="sm"
+              icon={proposing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Wand2 />
+              )}
+              variant="primary"
               onClick={() => void propose()}
               disabled={Boolean(proposing)}
             >
-              {proposing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Wand2 className="h-3.5 w-3.5" />
-              )}
               {proposing ? "Suggesting…" : "Suggest from what we know"}
             </Button>
           </header>
@@ -1019,9 +1010,9 @@ function MonitorSetupEditorBody({
                     />
                     <BasisChip basis={k.basis} refs={refs} />
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
+                      icon={<X />}
+                      variant="quiet"
+                      className="shrink-0"
                       aria-label={`Remove ${k.keyword}`}
                       onClick={() =>
                         update({
@@ -1030,9 +1021,7 @@ function MonitorSetupEditorBody({
                           ),
                         })
                       }
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                   <Input
                     value={k.means}
@@ -1067,9 +1056,9 @@ function MonitorSetupEditorBody({
                 </div>
               ))}
               <Button
+                icon={<Plus />}
                 variant="outline"
-                size="sm"
-                className="h-8 self-start"
+                className="self-start"
                 onClick={() =>
                   update({
                     keywords: [
@@ -1083,8 +1072,7 @@ function MonitorSetupEditorBody({
                     ],
                   })
                 }
-              >
-                <Plus className="h-3.5 w-3.5" /> Add a keyword
+              > Add a keyword
               </Button>
             </Section>
           ) : null}
@@ -1123,9 +1111,9 @@ function MonitorSetupEditorBody({
                     />
                     <BasisChip basis={c.basis} refs={refs} />
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0"
+                      icon={<X />}
+                      variant="quiet"
+                      className="shrink-0"
                       aria-label={`Remove ${c.name}`}
                       onClick={() =>
                         update({
@@ -1134,9 +1122,7 @@ function MonitorSetupEditorBody({
                           ),
                         })
                       }
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                   {draft.coverage ? (
                     <>
@@ -1161,9 +1147,9 @@ function MonitorSetupEditorBody({
                 </div>
               ))}
               <Button
+                icon={<Plus />}
                 variant="outline"
-                size="sm"
-                className="mt-1 h-8"
+                className="mt-1"
                 onClick={() =>
                   update({
                     competitors: [
@@ -1177,8 +1163,7 @@ function MonitorSetupEditorBody({
                     ],
                   })
                 }
-              >
-                <Plus className="h-3.5 w-3.5" /> Add a competitor
+              > Add a competitor
               </Button>
               <Warning
                 text={countWarning(
@@ -1360,13 +1345,11 @@ function MonitorSetupEditorBody({
                     className="h-8 w-48 text-sm"
                   />
                   <Button
+                    icon={<Plus />}
                     variant="outline"
-                    size="sm"
-                    className="h-8"
                     disabled={!newSpokesperson.name.trim()}
                     onClick={() => void addFact("spokesperson")}
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add spokesperson
+                  > Add spokesperson
                   </Button>
                 </div>
               </div>
@@ -1399,13 +1382,11 @@ function MonitorSetupEditorBody({
                     className="h-8 w-56 text-sm"
                   />
                   <Button
+                    icon={<Plus />}
                     variant="outline"
-                    size="sm"
-                    className="h-8"
                     disabled={!newProof.summary.trim()}
                     onClick={() => void addFact("proof")}
-                  >
-                    <Plus className="h-3.5 w-3.5" /> Add proof
+                  > Add proof
                   </Button>
                 </div>
               </div>
@@ -1580,9 +1561,7 @@ function MonitorSetupEditorBody({
                 </span>
                 {costAdvice.cheaper ? (
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7"
                     onClick={() => {
                       setScheduleTouched(true);
                       update({ schedule: costAdvice.cheaper?.presetId ?? "" });
@@ -1700,28 +1679,27 @@ function MonitorSetupEditorBody({
       <div className="shrink-0 border-t border-border bg-card pb-safe">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-end gap-2 p-2">
           <Button
+            icon={saving === "save" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
             variant="outline"
-            size="sm"
             onClick={() => void save(false)}
             disabled={Boolean(saving)}
           >
-            {saving === "save" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
             Save
           </Button>
           <Button
-            size="sm"
+            icon={saving === "run" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             onClick={() => void save(true)}
             disabled={Boolean(saving)}
           >
-            {saving === "run" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
             {saving === "run" ? "Running…" : "Save and run now"}
           </Button>
         </div>

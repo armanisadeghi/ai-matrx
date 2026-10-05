@@ -58,7 +58,7 @@ function InlineCopyButton({ text }: { text: string }) {
     }
   };
   return (
-    <Button size="sm" variant="ghost" className="h-6 w-6 p-0 flex-shrink-0" onClick={handleCopy}>
+    <Button variant="quiet" className="w-6 flex-shrink-0" onClick={handleCopy}>
       {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
     </Button>
   );

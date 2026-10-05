@@ -52,8 +52,8 @@ export default function FeaturesIndexPage() {
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
+              variant="primary"
+              className="w-full sm:w-auto"
               asChild
             >
               <Link href="/sign-up?source=features-index">
@@ -63,8 +63,7 @@ export default function FeaturesIndexPage() {
             </Button>
             <Button
               variant="outline"
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8"
+              className="w-full sm:w-auto"
               asChild
             >
               <Link href="#groups">See every module</Link>
@@ -135,8 +134,7 @@ export default function FeaturesIndexPage() {
             the rest the moment you sign up.
           </p>
           <Button
-            size="lg"
-            className="min-h-[44px] text-base px-10 gap-2"
+            variant="primary"
             asChild
           >
             <Link href="/sign-up?source=features-index-cta">

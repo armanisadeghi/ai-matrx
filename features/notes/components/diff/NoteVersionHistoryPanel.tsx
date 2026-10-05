@@ -330,17 +330,16 @@ export function NoteVersionHistoryPanel({
 
       {leftVersion != null && (
         <Button
+          icon={restoring ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RotateCcw />
+          )}
           variant="outline"
-          size="sm"
-          className={cn("h-8 gap-1.5", isEmbedded && "w-full")}
+          className={cn(isEmbedded && "w-full")}
           onClick={handleRestore}
           disabled={restoring}
         >
-          {restoring ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RotateCcw className="h-3.5 w-3.5" />
-          )}
           Restore v{leftVersion}
         </Button>
       )}
@@ -375,7 +374,6 @@ export function NoteVersionHistoryPanel({
             </span>
             <Button
               variant="outline"
-              size="sm"
               onClick={() => {
                 setCurrentNoteError(null);
                 void dispatch(fetchNoteContent(noteId));
@@ -591,30 +589,26 @@ function NoteHistoryTimeline({
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   {prevVersion ? (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-[0.625rem] gap-0.5"
+                      icon={<ArrowRight />}
+                      variant="quiet"
                       onClick={() =>
                         onCompare(
                           prevVersion.version_number,
                           version.version_number,
                         )
                       }
-                    >
-                      <ArrowRight className="h-2.5 w-2.5" />v
+                    >v
                       {prevVersion.version_number}
                     </Button>
                   ) : null}
                   {!isLatest && currentVersion != null ? (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5 text-[0.625rem] gap-0.5"
+                      icon={<GitCompareArrows />}
+                      variant="quiet"
                       onClick={() =>
                         onCompare(version.version_number, "current")
                       }
                     >
-                      <GitCompareArrows className="h-2.5 w-2.5" />
                       Current
                     </Button>
                   ) : null}
@@ -712,30 +706,26 @@ function NoteHistoryTimeline({
                   <div className="flex items-center justify-end gap-1 transition-opacity max-sm:opacity-100 sm:opacity-0 sm:group-hover:opacity-100">
                     {prevVersion ? (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 gap-0.5 px-1.5 text-[0.5625rem] text-muted-foreground"
+                        icon={<ArrowRight />}
+                        variant="quiet"
                         onClick={() =>
                           onCompare(
                             prevVersion.version_number,
                             version.version_number,
                           )
                         }
-                      >
-                        <ArrowRight className="h-2.5 w-2.5" />v
+                      >v
                         {prevVersion.version_number}
                       </Button>
                     ) : null}
                     {!isLatest && currentVersion != null ? (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 gap-0.5 px-1.5 text-[0.5625rem] text-muted-foreground"
+                        icon={<GitCompareArrows />}
+                        variant="quiet"
                         onClick={() =>
                           onCompare(version.version_number, "current")
                         }
                       >
-                        <GitCompareArrows className="h-2.5 w-2.5" />
                         Current
                       </Button>
                     ) : null}

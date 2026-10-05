@@ -420,18 +420,15 @@ export default function PressRoomWorkspace({
               </span>
             ) : null}
             <Button
-              size="sm"
               variant="outline"
-              className="h-8 text-[11px]"
               onClick={press.refetch}
             >
               Refresh
             </Button>
             {siteId ? (
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7 shrink-0 text-[11px]"
+                className="shrink-0"
                 onClick={() => void runAnalysis()}
                 disabled={analysis.running}
                 title="Re-read this site and look for new angles. Existing angles you have ruled on are never overwritten."
@@ -518,9 +515,8 @@ export default function PressRoomWorkspace({
                     )}
                   </span>
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="ml-auto h-6 shrink-0 text-[10px]"
+                    className="ml-auto shrink-0"
                     onClick={rulings.discard}
                   >
                     Discard them
@@ -543,9 +539,8 @@ export default function PressRoomWorkspace({
             </span>
             <Button
               asChild
-              size="sm"
               variant="outline"
-              className="ml-auto h-6 text-[10px]"
+              className="ml-auto"
             >
               <Link href={href({ scenario: "live" })}>Back to live data</Link>
             </Button>
@@ -591,9 +586,7 @@ export default function PressRoomWorkspace({
             {press.isStalled ? (
               <div className="border-t border-border px-3 py-2 text-center">
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 text-[11px]"
                   onClick={press.refetch}
                 >
                   Try again
@@ -620,9 +613,7 @@ export default function PressRoomWorkspace({
                   hasNoBrands ? (
                     <Button
                       asChild
-                      size="sm"
                       variant="outline"
-                      className="h-7 text-[11px]"
                     >
                       <Link href={marketingRoutes.brands()}>
                         Add a business
@@ -633,8 +624,7 @@ export default function PressRoomWorkspace({
                     // analysed" and previously offered nothing, while the
                     // endpoint that fixes it existed and was tested.
                     <Button
-                      size="sm"
-                      className="h-7 text-[11px]"
+                      variant="primary"
                       onClick={() => void runAnalysis()}
                       disabled={analysis.running}
                     >
@@ -682,9 +672,7 @@ export default function PressRoomWorkspace({
                 title="The analysis did not run"
                 action={
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 text-[11px]"
                     onClick={() => void runAnalysis()}
                   >
                     Try again
@@ -707,9 +695,7 @@ export default function PressRoomWorkspace({
                 }
                 action={
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 text-[11px]"
                     onClick={() => setAnalysis((a) => ({ ...a, result: null }))}
                   >
                     Dismiss

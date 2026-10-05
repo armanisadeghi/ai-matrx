@@ -1,6 +1,6 @@
 "use client";
 import React, { ReactNode, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

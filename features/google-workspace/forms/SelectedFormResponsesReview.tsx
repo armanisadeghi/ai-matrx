@@ -132,7 +132,7 @@ export function SelectedFormResponsesReview({ connectionId, accountLabel, organi
     <section className="rounded-md border border-border p-3" aria-label="Google Form responses">
       <div className="flex flex-wrap items-center gap-2">
         <h3 className="mr-auto text-sm font-semibold">Form responses</h3>
-        <Button type="button" size="sm" variant="outline" onClick={() => void chooseForm()} disabled={busy !== null}>
+        <Button type="button" variant="outline" onClick={() => void chooseForm()} disabled={busy !== null}>
           {busy === "pick" ? "Opening Forms…" : "Choose Form"}
         </Button>
       </div>
@@ -147,12 +147,12 @@ export function SelectedFormResponsesReview({ connectionId, accountLabel, organi
             <p>Responses may include personal information.</p>
             <p>Preview does not send responses to an AI model.</p>
           </div>
-          <Button type="button" size="sm" onClick={() => void preview()} disabled={busy !== null}>
+          <Button variant="primary" type="button" onClick={() => void preview()} disabled={busy !== null}>
             {busy === "preview" ? "Loading responses…" : "Preview responses"}
           </Button>
         </div>
       ) : <p className="mt-2 text-sm text-muted-foreground">Choose a Form to review its responses.</p>}
-      {error ? <div role="alert" className="mt-2 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /> {failedOperation ? <Button type="button" size="sm" variant="outline" disabled={busy !== null} onClick={() => void (failedOperation.kind === "pick" ? chooseForm() : preview(failedOperation.pageToken))}>Retry</Button> : null}</div> : null}
+      {error ? <div role="alert" className="mt-2 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /> {failedOperation ? <Button type="button" variant="outline" disabled={busy !== null} onClick={() => void (failedOperation.kind === "pick" ? chooseForm() : preview(failedOperation.pageToken))}>Retry</Button> : null}</div> : null}
       {page?.respondent_data_present ? <p className="mt-2 text-xs text-muted-foreground">Respondent data present; review before saving.</p> : null}
       {page?.status === "forms_api_unavailable" || page?.status === "selected_form_unavailable" ? (
         <p className="mt-2 text-sm" role="status">{page.unavailable_reason || "This Form is unavailable. Choose another Form or retry."}</p>
@@ -182,10 +182,10 @@ export function SelectedFormResponsesReview({ connectionId, accountLabel, organi
               </li>
             ))}
           </ul>
-          {openSaveToTable ? <Button type="button" size="sm" onClick={save} disabled={!selected.size}>Save selected rows ({selected.size})</Button> : null}
+          {openSaveToTable ? <Button variant="primary" type="button" onClick={save} disabled={!selected.size}>Save selected rows ({selected.size})</Button> : null}
         </div>
       ) : null}
-      {page?.next_page_token ? <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void preview(page.next_page_token ?? undefined)} disabled={busy !== null}>Next page</Button> : null}
+      {page?.next_page_token ? <Button type="button" variant="outline" className="mt-2" onClick={() => void preview(page.next_page_token ?? undefined)} disabled={busy !== null}>Next page</Button> : null}
       {savedTable ? <a className="mt-2 block text-sm text-primary underline" href={tableHref(savedTable.id)}>Open {savedTable.name || "saved table"}</a> : null}
     </section>
   );

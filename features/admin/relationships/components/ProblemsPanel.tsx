@@ -165,7 +165,6 @@ export function ProblemsPanel({
         columns={[...(problemColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
           row.kind === "unregistered_pair" ? (
             <Button
-              size="sm"
               variant="outline"
               disabled={busy}
               onClick={() =>
@@ -176,7 +175,6 @@ export function ProblemsPanel({
             </Button>
           ) : row.kind === "conveying_container_not_shareable" ? (
             <Button
-              size="sm"
               variant="outline"
               onClick={() =>
                 onRegisterShareable(
@@ -190,8 +188,7 @@ export function ProblemsPanel({
             </Button>
           ) : (
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() =>
                 onEdit(row.source_type, row.target_type, row.label)
               }

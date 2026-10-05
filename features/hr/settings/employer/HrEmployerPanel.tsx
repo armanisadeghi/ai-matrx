@@ -849,17 +849,15 @@ function IdentitySection({
       {why ? <ErrorNotice size="inline" className="mt-4 text-sm" message={why} /> : null}
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" onClick={save} disabled={busy || !dirty}>
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Button icon={busy ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
+            <Save />
+          )} variant="primary" type="button" onClick={save} disabled={busy || !dirty}>
           Save changes
         </Button>
         {dirty ? (
-          <Button type="button" size="sm" variant="ghost" onClick={onDiscard} disabled={busy}>
-            <RotateCcw className="mr-2 h-4 w-4" />
+          <Button icon={<RotateCcw />} type="button" variant="quiet" onClick={onDiscard} disabled={busy}>
             Discard
           </Button>
         ) : null}
@@ -987,7 +985,7 @@ function ApplicabilityRow({
             {flagValueText(flag)}
           </Badge>
           {declaring ? null : (
-            <Button type="button" size="sm" variant="outline" onClick={() => setDeclaring(true)}>
+            <Button type="button" variant="outline" onClick={() => setDeclaring(true)}>
               Declare
             </Button>
           )}
@@ -1053,8 +1051,8 @@ function ApplicabilityRow({
             {isList ? (
               <>
                 <Button
+                  variant="primary"
                   type="button"
-                  size="sm"
                   disabled={busy || states.length === 0}
                   onClick={() => declare(true)}
                 >
@@ -1062,7 +1060,6 @@ function ApplicabilityRow({
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() => declare(false)}
@@ -1072,12 +1069,11 @@ function ApplicabilityRow({
               </>
             ) : (
               <>
-                <Button type="button" size="sm" disabled={busy} onClick={() => declare(true)}>
+                <Button variant="primary" type="button" disabled={busy} onClick={() => declare(true)}>
                   Declare it applies
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() => declare(false)}
@@ -1088,8 +1084,7 @@ function ApplicabilityRow({
             )}
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={busy}
               onClick={() => {
                 setDeclaring(false);
@@ -1251,8 +1246,7 @@ function EstablishmentsSection({
         <h2 id="hr-employer-establishments" className="text-sm font-semibold text-foreground">
           Establishments
         </h2>
-        <Button type="button" size="sm" variant="outline" onClick={onAdd}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button icon={<Plus />} type="button" variant="outline" onClick={onAdd}>
           Add establishment
         </Button>
       </div>
@@ -1447,23 +1441,22 @@ function EstablishmentDialog({
         <DialogFooter>
           {editor?.mode === "edit" ? (
             <Button
+              icon={<Archive />}
               type="button"
-              variant="ghost"
+              variant="quiet"
               className="sm:mr-auto"
               onClick={() => {
                 if (editor) void onArchive(editor);
               }}
               disabled={busy}
             >
-              <Archive className="mr-2 h-4 w-4" />
               Archive
             </Button>
           ) : null}
-          <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+          <Button type="button" variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button type="button" onClick={save} disabled={busy}>
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" type="button" onClick={save} disabled={busy}>
             Save
           </Button>
         </DialogFooter>

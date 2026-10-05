@@ -369,7 +369,6 @@ export function RsvpLanding({
                   aria-label="Note for the host"
                 />
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={sending !== null || !current || note.trim() === ""}
                   onClick={() => current && void answer(current, note.trim())}
@@ -392,8 +391,8 @@ export function RsvpLanding({
         {meeting.cancelledAt ? null : (
           <Button
             asChild
-            variant={closed ? "default" : "outline"}
-            className="w-full gap-1.5"
+            variant={closed ? "primary" : "outline"}
+            className="w-full"
           >
             <a href={joinHref}>
               <Video className="h-4 w-4" aria-hidden="true" />

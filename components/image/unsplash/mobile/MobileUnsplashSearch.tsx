@@ -123,15 +123,13 @@ export function MobileUnsplashSearch({
         />
 
         <Button
+          icon={<SlidersHorizontal />}
           type="button"
           variant="outline"
-          size="icon"
           onClick={() => setSheetOpen(true)}
-          className="h-10 w-10 flex-shrink-0"
+          className="flex-shrink-0"
           aria-label="Open Unsplash filters"
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-        </Button>
+        />
       </div>
 
       <BottomSheet

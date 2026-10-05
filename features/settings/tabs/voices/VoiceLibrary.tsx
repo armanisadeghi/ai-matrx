@@ -11,6 +11,7 @@ import { ChevronRight, Loader2, Play, Square } from "lucide-react";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { useVoiceSample } from "@/features/audio/service/useVoiceSample";
 import { SettingAnchor } from "@/features/settings/doors/SettingAnchor";
 import { useVoiceSamplePlayer } from "@/features/podcasts/generator/useVoiceSamplePlayer";
@@ -79,9 +80,9 @@ export function VoiceLibrary() {
         {error && (
           <SettingsCallout tone="error" title="The voice library could not load">
             {error}{" "}
-            <Button variant="link" size="sm" className="h-auto p-0" onClick={reload}>
+            <SurfaceButton variant="link" size="sm" className="h-auto p-0" onClick={reload}>
               Try again
-            </Button>
+            </SurfaceButton>
             <ErrorAlchemyMenu error={error} />
           </SettingsCallout>
         )}
@@ -117,23 +118,21 @@ export function VoiceLibrary() {
                     className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1 hover:bg-accent"
                   >
                     <Button
+                      icon={loadingNow ? (
+                        <Loader2 className="animate-spin" />
+                      ) : playing ? (
+                        <Square />
+                      ) : (
+                        <Play />
+                      )}
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 shrink-0"
+                      variant="quiet"
+                      className="shrink-0"
                       disabled={!playable}
                       aria-label={playing ? `Stop ${voice.name}` : `Play ${voice.name}`}
                       title={playable ? undefined : "This voice has no sample and no model to render one."}
                       onClick={() => play(voice)}
-                    >
-                      {loadingNow ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : playing ? (
-                        <Square className="h-3.5 w-3.5" />
-                      ) : (
-                        <Play className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm text-foreground">{voice.name}</p>
                       {detail && (

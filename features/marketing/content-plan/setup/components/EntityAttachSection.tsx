@@ -71,9 +71,7 @@ export function EntityAttachSection({
         <div className="flex items-center gap-1">
           {plan && !busy ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs text-muted-foreground"
+              variant="quiet"
               title="Discard this entity plan — it is saved with your setup until you do."
               onClick={onDismiss}
             >
@@ -81,9 +79,12 @@ export function EntityAttachSection({
             </Button>
           ) : null}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 gap-1.5 px-2 text-xs"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <UserCheck />
+            )}
+            variant="quiet"
             disabled={Boolean(disabledReason) || anyBusy}
             title={
               disabledReason ??
@@ -91,11 +92,6 @@ export function EntityAttachSection({
             }
             onClick={onRun}
           >
-            {busy ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <UserCheck className="h-3 w-3" />
-            )}
             {plan ? "Re-assign" : "Assign entities"}
           </Button>
         </div>
@@ -145,12 +141,12 @@ export function EntityAttachSection({
               <span className="text-[11px] font-medium text-success">applied</span>
             ) : (
               <Button
-                size="sm"
-                className="ml-auto h-6 px-2 text-[11px]"
+                icon={applying ? <Loader2 className="animate-spin" /> : null}
+                variant="primary"
+                className="ml-auto"
                 disabled={applying || plan.attachments.length === 0}
                 onClick={onApply}
               >
-                {applying ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
                 Apply to plan
               </Button>
             )}

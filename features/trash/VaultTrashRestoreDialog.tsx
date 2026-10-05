@@ -307,11 +307,12 @@ export function VaultTrashRestoreDialog({
                   Cancel
                 </Button>
                 <Button
+                  icon={running && <Loader2 className="animate-spin" />}
+                  variant="primary"
                   type="button"
                   onClick={() => void confirmIdentity()}
                   disabled={running}
                 >
-                  {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Confirm identity
                 </Button>
               </div>
@@ -359,15 +360,16 @@ export function VaultTrashRestoreDialog({
                   Cancel
                 </Button>
                 <Button
+                  icon={running ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RotateCcw />
+                  )}
+                  variant="primary"
                   type="button"
                   onClick={() => void restore()}
                   disabled={running || !restoreActor}
                 >
-                  {running ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <RotateCcw className="mr-2 h-4 w-4" />
-                  )}
                   Restore disabled credential
                 </Button>
               </div>
@@ -379,7 +381,7 @@ export function VaultTrashRestoreDialog({
                 <p>{refusalText(preview.reason)}</p>
               </div>
               <div className="flex justify-end">
-                <Button type="button" onClick={close}>
+                <Button variant="primary" type="button" onClick={close}>
                   Close
                 </Button>
               </div>

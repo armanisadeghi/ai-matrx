@@ -325,14 +325,12 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
     <div className="matrx-touch-targets mx-auto w-full max-w-2xl space-y-4 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          variant="ghost"
-          size="icon"
+          icon={<ArrowLeft />}
+          variant="quiet"
           className="shrink-0"
           onClick={() => void navigate("/education/memory")}
           aria-label="Back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        />
         <div className="min-w-0 flex-1">
           <h1
             className="truncate text-lg font-semibold text-foreground"
@@ -344,8 +342,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
         <div className={findOpen ? "flex w-full min-w-0 justify-end sm:w-auto" : "flex shrink-0 items-center gap-1"}>
           <ContentFindControl rootRef={contentRef} label="Find in memory aids" inline onOpenChange={setFindOpen} />
           {!findOpen && canEdit && <>
-            <Button variant="outline" size="sm" onClick={() => void navigate(`/education/memory/${media.id}/edit`)}>
-              <Pencil className="mr-1 h-4 w-4" /> Edit all
+            <Button icon={<Pencil />} variant="outline" onClick={() => void navigate(`/education/memory/${media.id}/edit`)}> Edit all
             </Button>
             {isOwner && <>
             <ShareButton
@@ -356,7 +353,7 @@ export function MemoryDetail({ mediaId, edit = false }: { mediaId: string; edit?
               size="sm"
             />
             <DropdownMenu>
-              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label="More memory aid actions"><Ellipsis className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuTrigger asChild><Button icon={<Ellipsis />} variant="quiet" aria-label="More memory aid actions" /></DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onSelect={() => void navigate(media.source_kind === "topic" ? "/education/memory/new?source=topic" : `/education/memory/new?source=deck&deck=${media.source_id ?? ""}`)}>
                   <RefreshCw className="mr-2 h-4 w-4" /> Regenerate set

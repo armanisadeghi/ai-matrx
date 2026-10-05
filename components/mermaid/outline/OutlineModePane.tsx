@@ -210,8 +210,7 @@ function SectionHeading({ children, action }: { children: React.ReactNode; actio
 
 function AddButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
-    <Button size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs text-muted-foreground" onClick={onClick}>
-      <Plus className="h-3.5 w-3.5" />
+    <Button icon={<Plus />} variant="quiet" onClick={onClick}>
       {label}
     </Button>
   );

@@ -102,14 +102,12 @@ function ItemShell({
           {label}
         </span>
         <Button
+          icon={<Trash2 className="text-destructive" />}
           type="button"
-          variant="ghost"
-          size="icon"
+          variant="quiet"
           onClick={onRemove}
           aria-label={`Remove ${label.toLowerCase()}`}
-        >
-          <Trash2 className="h-4 w-4 text-destructive" />
-        </Button>
+        />
       </div>
       {children}
     </div>
@@ -125,12 +123,12 @@ function AddItemButton({
 }) {
   return (
     <Button
+      icon={<Plus />}
       type="button"
       variant="outline"
       onClick={onClick}
       className="w-full"
-    >
-      <Plus className="h-4 w-4" /> {label}
+    > {label}
     </Button>
   );
 }
@@ -682,16 +680,17 @@ function SectionFields({
                 onChange={(secondary) => onChange({ ...section, secondary })}
               />
               <Button
+                icon={<Trash2 className="text-destructive" />}
                 type="button"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => onChange({ ...section, secondary: undefined })}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" /> Remove secondary
+              > Remove secondary
                 button
               </Button>
             </div>
           ) : (
             <Button
+              icon={<Plus />}
               type="button"
               variant="outline"
               onClick={() =>
@@ -700,8 +699,7 @@ function SectionFields({
                   secondary: { label: "Learn more", href: "/education" },
                 })
               }
-            >
-              <Plus className="h-4 w-4" /> Add secondary button
+            > Add secondary button
             </Button>
           )}
         </>
@@ -753,38 +751,32 @@ export function SectionBlockEditor({
             </div>
             <div className="flex items-center">
               <Button
+                icon={<ArrowUp />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 disabled={index === 0}
                 onClick={() => move(index, -1)}
                 aria-label={`Move block ${index + 1} up`}
-              >
-                <ArrowUp className="h-4 w-4" />
-              </Button>
+              />
               <Button
+                icon={<ArrowDown />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 disabled={index === sections.length - 1}
                 onClick={() => move(index, 1)}
                 aria-label={`Move block ${index + 1} down`}
-              >
-                <ArrowDown className="h-4 w-4" />
-              </Button>
+              />
               <Button
+                icon={<Trash2 className="text-destructive" />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 onClick={() =>
                   onChange(
                     sections.filter((_, itemIndex) => itemIndex !== index),
                   )
                 }
                 aria-label={`Remove block ${index + 1}`}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              />
             </div>
           </div>
           <SectionFields
@@ -800,12 +792,12 @@ export function SectionBlockEditor({
         <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {EDU_SECTION_KINDS.map((kind) => (
             <Button
+              icon={<Plus />}
               key={kind}
               type="button"
               variant="outline"
               onClick={() => onChange([...sections, newSection(kind)])}
-            >
-              <Plus className="h-4 w-4" /> {SECTION_LABELS[kind]}
+            > {SECTION_LABELS[kind]}
             </Button>
           ))}
         </div>

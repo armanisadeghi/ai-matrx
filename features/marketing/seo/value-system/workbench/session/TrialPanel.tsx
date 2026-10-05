@@ -551,14 +551,12 @@ export function TrialPanel({
           </p>
         </div>
         <Button
+          icon={<ArrowLeft />}
           type="button"
           variant="outline"
-          size="sm"
-          className="h-8 gap-1.5 text-xs"
           onClick={() => onExit(seenIds)}
           disabled={finish.isPending}
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
           Back to ruling
         </Button>
       </div>
@@ -623,17 +621,16 @@ export function TrialPanel({
               · the rest are taken as right
             </p>
             <Button
+              icon={finish.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Zap />
+              )}
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
               disabled={finish.isPending}
               onClick={() => finish.mutate()}
             >
-              {finish.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Zap className="h-3.5 w-3.5" />
-              )}
               Save these {verdicts.length} and improve my rules
             </Button>
           </div>
@@ -684,18 +681,16 @@ export function TrialPanel({
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Button
+                  icon={runEngine.isPending ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Play />
+                  )}
                   type="button"
-                  size="sm"
                   variant="outline"
-                  className="h-7 gap-1.5 text-xs"
                   disabled={runEngine.isPending}
                   onClick={() => runEngine.mutate()}
                 >
-                  {runEngine.isPending ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Play className="h-3.5 w-3.5" />
-                  )}
                   Run my rules over the site
                 </Button>
                 {engine && describeMatcherRun(engine).waiting ? (
@@ -732,12 +727,11 @@ export function TrialPanel({
 
           <div className="flex justify-end">
             <Button
+              icon={<Gavel />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
               onClick={() => onExit(seenIds)}
             >
-              <Gavel className="h-3.5 w-3.5" />
               Back to ruling
             </Button>
           </div>
@@ -850,24 +844,20 @@ function VerdictCard({
         {wrong ? (
           <>
             <Button
+              icon={<Check />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-6 gap-1 px-1.5 text-[11px] text-muted-foreground"
+              variant="quiet"
               onClick={onRight}
             >
-              <Check className="h-3 w-3" />
               Actually it was right
             </Button>
             {!open ? (
               <Button
+                icon={<Pencil />}
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-6 gap-1 px-1.5 text-[11px]"
+                variant="quiet"
                 onClick={onOpen}
               >
-                <Pencil className="h-3 w-3" />
                 Change the answer
               </Button>
             ) : null}
@@ -875,9 +865,7 @@ function VerdictCard({
         ) : (
           <Button
             type="button"
-            size="sm"
             variant="outline"
-            className="h-6 px-2 text-[11px]"
             onClick={onWrong}
           >
             This one is wrong
@@ -984,10 +972,9 @@ function RuleProposalCard({
           </span>
         ) : (
           <Button
+            icon={<ShieldCheck />}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-7 gap-1.5 text-xs"
             disabled={busy || !card.valueId}
             onClick={onSend}
             title={
@@ -996,7 +983,6 @@ function RuleProposalCard({
                 : "This rule names a value that no longer exists on the dimension."
             }
           >
-            <ShieldCheck className="h-3.5 w-3.5" />
             Send for my approval
           </Button>
         )}

@@ -154,17 +154,15 @@ function RequestBlock({ session }: { session: BatchExtractDebugSession }) {
           API call
         </div>
         <Button
+          icon={copied ? (
+            <Check className="text-green-500" />
+          ) : (
+            <Copy />
+          )}
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-[10px]"
+          variant="quiet"
           onClick={copy}
         >
-          {copied ? (
-            <Check className="mr-1 h-3 w-3 text-green-500" />
-          ) : (
-            <Copy className="mr-1 h-3 w-3" />
-          )}
           Copy curl
         </Button>
       </div>
@@ -245,26 +243,22 @@ function StreamLog({ session }: { session: BatchExtractDebugSession }) {
         <div className="flex items-center gap-1">
           <Button
             type="button"
-            variant={autoScroll ? "secondary" : "ghost"}
-            size="sm"
-            className="h-6 px-2 text-[10px]"
+            variant={autoScroll ? "outline" : "quiet"}
             onClick={() => setAutoScroll((v) => !v)}
           >
             Auto-scroll {autoScroll ? "ON" : "OFF"}
           </Button>
           <Button
+            icon={copied ? (
+              <Check className="text-green-500" />
+            ) : (
+              <Copy />
+            )}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[10px]"
+            variant="quiet"
             onClick={copy}
             disabled={session.lines.length === 0}
           >
-            {copied ? (
-              <Check className="mr-1 h-3 w-3 text-green-500" />
-            ) : (
-              <Copy className="mr-1 h-3 w-3" />
-            )}
             Copy log
           </Button>
         </div>
@@ -364,14 +358,12 @@ function PdfBatchExtractDebugWindowInner({
             Persists across route changes · Redux-backed
           </span>
           <Button
+            icon={<Trash2 />}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 text-[10px]"
+            variant="quiet"
             onClick={() => dispatch(clearBatchExtractDebugSessions())}
             disabled={sessions.length === 0}
           >
-            <Trash2 className="mr-1 h-3 w-3" />
             Clear sessions
           </Button>
         </div>

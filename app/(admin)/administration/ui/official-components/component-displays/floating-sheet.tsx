@@ -283,9 +283,9 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
             This is a left-side sheet. Great for navigation or settings panels.
           </p>
           <div className="space-y-2">
-            <Button className="w-full" variant="outline">Menu Item 1</Button>
-            <Button className="w-full" variant="outline">Menu Item 2</Button>
-            <Button className="w-full" variant="outline">Menu Item 3</Button>
+            <Button type="submit" className="w-full" variant="outline">Menu Item 1</Button>
+            <Button type="submit" className="w-full" variant="outline">Menu Item 2</Button>
+            <Button type="submit" className="w-full" variant="outline">Menu Item 3</Button>
           </div>
         </div>
       </FloatingSheet>
@@ -330,7 +330,7 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
             <Button variant="outline" onClick={() => setCenterModal(false)}>
               Cancel
             </Button>
-            <Button onClick={() => {
+            <Button variant="primary" onClick={() => {
               toast.success('Confirmed!');
               setCenterModal(false);
             }}>
@@ -354,7 +354,7 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
         position="bottom"
         isMobile={true}
         footer={
-          <Button className="w-full" onClick={() => setMobileSheet(false)}>
+          <Button variant="primary" className="w-full" onClick={() => setMobileSheet(false)}>
             Close
           </Button>
         }
@@ -364,9 +364,9 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
             Mobile mode provides a native-feeling bottom sheet with sticky header and footer.
           </p>
           <div className="space-y-2">
-            <Button className="w-full" variant="outline">Action 1</Button>
-            <Button className="w-full" variant="outline">Action 2</Button>
-            <Button className="w-full" variant="outline">Action 3</Button>
+            <Button type="submit" className="w-full" variant="outline">Action 1</Button>
+            <Button type="submit" className="w-full" variant="outline">Action 2</Button>
+            <Button type="submit" className="w-full" variant="outline">Action 3</Button>
           </div>
         </div>
       </FloatingSheet>
@@ -379,8 +379,8 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
         width="lg"
         headerContent={
           <div className="flex gap-2">
-            <Button size="sm" variant="outline">Save</Button>
-            <Button size="sm" variant="ghost">More</Button>
+            <Button type="submit" variant="outline">Save</Button>
+            <Button type="submit" variant="quiet">More</Button>
           </div>
         }
         footer={
@@ -389,8 +389,8 @@ export default function FloatingSheetDisplay({ component }: ComponentDisplayProp
               Cancel
             </Button>
             <div className="flex gap-2">
-              <Button variant="outline">Draft</Button>
-              <Button>Publish</Button>
+              <Button type="submit" variant="outline">Draft</Button>
+              <Button type="submit" variant="primary">Publish</Button>
             </div>
           </div>
         }

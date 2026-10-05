@@ -38,15 +38,8 @@ import {
   TableScope,
   useTablesAnywhere,
 } from "@ai-matrx/records-ui/pickers";
-import {
-  BasicInput,
-  Button,
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@ai-matrx/design-system";
+import { BasicInput, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { StatusBadge } from "@/components/official/status-badge/StatusBadge";
 import { WORKFLOWS_APP_URL } from "@/features/shell/constants/nav-data";
@@ -692,13 +685,12 @@ function WorkflowList({
   return (
     <nav aria-label="Workflows on this table" className="flex flex-col gap-1">
       <Button
+        icon={<Plus />}
         type="button"
         variant="outline"
-        size="sm"
-        className="mb-2 justify-start gap-2"
+        className="mb-2 justify-start"
         onClick={onNew}
       >
-        <Plus className="h-4 w-4" />
         New workflow
       </Button>
       {error ? <p className="text-sm text-destructive">{error}</p> : null}
@@ -825,6 +817,7 @@ function TestWithRecord({
         </TableScope>
         <DialogFooter>
           <Button
+            variant="primary"
             type="button"
             disabled={!recordId}
             onClick={() => {

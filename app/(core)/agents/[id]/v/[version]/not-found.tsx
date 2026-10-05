@@ -16,7 +16,7 @@ export default function VersionNotFound() {
           </p>
         </div>
         <Link href="/agents/all">
-          <Button>Back to Agents</Button>
+          <Button type="submit" variant="primary">Back to Agents</Button>
         </Link>
       </div>
     </div>

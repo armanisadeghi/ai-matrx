@@ -86,10 +86,8 @@ export function LiveEventLog({
           <div className="ml-auto flex gap-1">
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onTogglePaused}
-              className="h-7 text-xs"
             >
               {paused ? (
                 <>
@@ -104,14 +102,12 @@ export function LiveEventLog({
               )}
             </Button>
             <Button
+              icon={<Trash2 />}
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onClear}
-              className="h-7 text-xs"
               disabled={entries.length === 0}
             >
-              <Trash2 className="mr-1 h-3 w-3" />
               Clear
             </Button>
           </div>

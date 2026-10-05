@@ -108,9 +108,8 @@ function SidebarItem({
       {!hasContent && (
         <div className="px-3 pb-3">
           <Button
-            size="sm"
             variant="outline"
-            className="w-full h-7 text-xs gap-1.5"
+            className="w-full"
             disabled={scrapeState?.loading}
             onClick={(e) => {
               e.stopPropagation();
@@ -471,9 +470,9 @@ export default function SearchAndScrapeDemoPage() {
         </Label>
       </div>
       <Button
+        variant="primary"
         onClick={handleSearchAndScrape}
         disabled={!keyword.trim() || isLoading}
-        className="px-6"
       >
         {isLoading ? (
           <>

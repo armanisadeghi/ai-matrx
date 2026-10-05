@@ -138,10 +138,8 @@ export function PiiCandidatesContent({ results, onJumpToPage, initialTier = "med
                   </span>
                   {onJumpToPage ? (
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       onClick={() => onJumpToPage(s.page_number)}
-                      className="h-6 text-[10px]"
                     >
                       Open
                     </Button>

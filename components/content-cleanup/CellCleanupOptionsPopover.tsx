@@ -10,7 +10,7 @@
 
 import { Eraser, RotateCcw } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { VALUE_CLEANUP_OPERATION_META } from "@/lib/content-cleanup/value-operations";
 import type {
   CellsCleanupReport,

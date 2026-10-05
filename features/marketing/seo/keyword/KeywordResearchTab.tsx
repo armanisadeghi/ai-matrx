@@ -298,8 +298,15 @@ export function KeywordResearchTab({
           </div>
         </div>
         <Button
-          size="sm"
-          className={saved.data || running ? "h-8 shrink-0" : "h-10 px-5"}
+          icon={running || saved.isLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : saved.data ? (
+            <RotateCcw />
+          ) : (
+            <Play />
+          )}
+          variant="primary"
+          className={saved.data || running ? "shrink-0" : ""}
           disabled={running || saved.isLoading || !phrase.trim() || !siteId}
           title={
             !siteId
@@ -310,13 +317,6 @@ export function KeywordResearchTab({
           }
           onClick={() => void startResearch()}
         >
-          {running || saved.isLoading ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : saved.data ? (
-            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-          ) : (
-            <Play className="mr-1.5 h-3.5 w-3.5" />
-          )}
           {running
             ? "Running"
             : saved.isLoading
@@ -358,16 +358,15 @@ export function KeywordResearchTab({
             {selectedPhrases.size} selected
           </span>
           <Button
-            size="sm"
-            className="h-8"
+            icon={addSelected.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
+            variant="primary"
             disabled={addSelected.isPending}
             onClick={() => addSelected.mutate()}
           >
-            {addSelected.isPending ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Add as supporting
           </Button>
         </div>

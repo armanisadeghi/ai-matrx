@@ -284,17 +284,15 @@ export default function PowerShellPage() {
         <>
           <div className="px-3 py-1.5 flex items-center justify-end gap-2 bg-card border-b">
             <Button
+              icon={psChecking ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
-              size="sm"
-              className="h-7 text-xs px-2 gap-1"
               onClick={checkPs}
               disabled={psChecking || !!loading}
             >
-              {psChecking ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <RefreshCw className="w-3 h-3" />
-              )}
               Check PowerShell
             </Button>
           </div>
@@ -332,9 +330,14 @@ export default function PowerShellPage() {
                     placeholder="PATH"
                   />
                   <Button
-                    size="sm"
+                    icon={isLoading("env-get") ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Search />
+                    )}
+                    variant="primary"
                     disabled={!!loading}
-                    className="w-full h-7 text-xs gap-1"
+                    className="w-full"
                     onClick={() =>
                       run(
                         "env-get",
@@ -343,11 +346,6 @@ export default function PowerShellPage() {
                       )
                     }
                   >
-                    {isLoading("env-get") ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Search className="w-3 h-3" />
-                    )}
                     Get Env
                   </Button>
                 </div>
@@ -394,9 +392,14 @@ export default function PowerShellPage() {
                     <option value="Machine">Machine (Windows, admin)</option>
                   </select>
                   <Button
-                    size="sm"
+                    icon={isLoading("env-set") ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Settings />
+                    )}
+                    variant="primary"
                     disabled={!!loading || !envSetName}
-                    className="w-full h-7 text-xs gap-1"
+                    className="w-full"
                     onClick={() =>
                       run("env-set", "PsSetEnv", {
                         name: envSetName,
@@ -405,11 +408,6 @@ export default function PowerShellPage() {
                       })
                     }
                   >
-                    {isLoading("env-set") ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Settings className="w-3 h-3" />
-                    )}
                     Set Env
                   </Button>
                 </div>
@@ -456,9 +454,14 @@ export default function PowerShellPage() {
                     placeholder="ProductName"
                   />
                   <Button
-                    size="sm"
+                    icon={isLoading("reg-read") ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Search />
+                    )}
+                    variant="primary"
                     disabled={!!loading || !regReadKey}
-                    className="w-full h-7 text-xs gap-1"
+                    className="w-full"
                     onClick={() =>
                       run("reg-read", "RegistryRead", {
                         key_path: regReadKey,
@@ -466,11 +469,6 @@ export default function PowerShellPage() {
                       })
                     }
                   >
-                    {isLoading("reg-read") ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Search className="w-3 h-3" />
-                    )}
                     Read Registry
                   </Button>
                 </div>
@@ -538,10 +536,14 @@ export default function PowerShellPage() {
                     ))}
                   </select>
                   <Button
-                    size="sm"
-                    variant="destructive"
+                    icon={isLoading("reg-write") ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Shield />
+                    )}
+                    variant="danger"
                     disabled={!!loading || !regWriteKey || !regWriteName}
-                    className="w-full h-7 text-xs gap-1"
+                    className="w-full"
                     onClick={() =>
                       run("reg-write", "RegistryWrite", {
                         key_path: regWriteKey,
@@ -551,11 +553,6 @@ export default function PowerShellPage() {
                       })
                     }
                   >
-                    {isLoading("reg-write") ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Shield className="w-3 h-3" />
-                    )}
                     Write Registry
                   </Button>
                 </div>
@@ -604,9 +601,14 @@ export default function PowerShellPage() {
                     <option value="paused">Paused</option>
                   </select>
                   <Button
-                    size="sm"
+                    icon={isLoading("svc-list") ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <List />
+                    )}
+                    variant="primary"
                     disabled={!!loading}
-                    className="w-full h-7 text-xs gap-1"
+                    className="w-full"
                     onClick={() =>
                       run("svc-list", "ServiceList", {
                         ...(svcFilter ? { filter: svcFilter } : {}),
@@ -614,11 +616,6 @@ export default function PowerShellPage() {
                       })
                     }
                   >
-                    {isLoading("svc-list") ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <List className="w-3 h-3" />
-                    )}
                     List Services
                   </Button>
                 </div>
@@ -657,10 +654,14 @@ export default function PowerShellPage() {
                     <option value="resume">resume</option>
                   </select>
                   <Button
-                    size="sm"
-                    variant={svcAction === "stop" ? "destructive" : "default"}
+                    icon={isLoading("svc-control") ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Power />
+                    )}
+                    variant={svcAction === "stop" ? "danger" : "primary"}
                     disabled={!!loading || !svcControlName}
-                    className="w-full h-7 text-xs gap-1"
+                    className="w-full"
                     onClick={() =>
                       run("svc-control", "ServiceControl", {
                         name: svcControlName,
@@ -668,11 +669,6 @@ export default function PowerShellPage() {
                       })
                     }
                   >
-                    {isLoading("svc-control") ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Power className="w-3 h-3" />
-                    )}
                     {svcAction.charAt(0).toUpperCase() + svcAction.slice(1)}{" "}
                     Service
                   </Button>
@@ -763,9 +759,14 @@ export default function PowerShellPage() {
                   placeholder="e.g. Kernel-Power"
                 />
                 <Button
-                  size="sm"
+                  icon={isLoading("eventlog") ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Logs />
+                  )}
+                  variant="primary"
                   disabled={!!loading}
-                  className="w-full h-7 text-xs gap-1 mt-1"
+                  className="w-full mt-1"
                   onClick={() =>
                     run("eventlog", "EventLog", {
                       log_name: evtLog,
@@ -775,11 +776,6 @@ export default function PowerShellPage() {
                     })
                   }
                 >
-                  {isLoading("eventlog") ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Logs className="w-3 h-3" />
-                  )}
                   Query Event Log
                 </Button>
               </div>
@@ -818,9 +814,14 @@ export default function PowerShellPage() {
                   Installed only
                 </label>
                 <Button
-                  size="sm"
+                  icon={isLoading("features") ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Grid2X2 />
+                  )}
+                  variant="primary"
                   disabled={!!loading}
-                  className="w-full h-7 text-xs gap-1 mt-1"
+                  className="w-full mt-1"
                   onClick={() =>
                     run("features", "WindowsFeatures", {
                       ...(featFilter ? { filter: featFilter } : {}),
@@ -828,11 +829,6 @@ export default function PowerShellPage() {
                     })
                   }
                 >
-                  {isLoading("features") ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Grid2X2 className="w-3 h-3" />
-                  )}
                   List Features
                 </Button>
               </div>

@@ -71,7 +71,7 @@ export function TopicalMapStartDoor() {
           <div className="mt-3 flex flex-wrap items-end gap-3">
             <BrandPicker organizationId={null} value={brandId} onChange={setBrandId} />
             {brandValue ? (
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline">
                 <Link href={marketingRoutes.brandTopicalMapHome(brandValue.seg)} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" aria-hidden />
                   Open {brandValue.name}&apos;s Content home

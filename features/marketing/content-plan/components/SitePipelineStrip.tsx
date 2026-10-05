@@ -111,21 +111,13 @@ export function SitePipelineStrip({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<StageIcon state={stage.state} />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => onSelectStage?.(stage.key)}
                   aria-pressed={activeStageKey === stage.key}
-                  className={cn(
-                    "h-6 shrink-0 gap-1 rounded-full px-1.5 text-[11px] font-medium",
-                    activeStageKey === stage.key &&
-                      "bg-accent text-accent-foreground ring-1 ring-border",
-                    stage.state === "not_started" && "text-muted-foreground",
-                    stage.state === "attention" &&
-                      "text-amber-700 dark:text-amber-400",
-                  )}
+                  className="shrink-0"
                 >
-                  <StageIcon state={stage.state} />
                   {stage.label}
                   {perPage ? (
                     <span className="text-muted-foreground">

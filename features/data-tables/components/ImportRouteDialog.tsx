@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { FileSpreadsheet, FileText, Loader2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

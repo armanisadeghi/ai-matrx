@@ -334,8 +334,8 @@ export function ExceptionResolveControls({
           />
           <div className="flex gap-2">
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               disabled={busy || note.trim().length < MIN_NOTE_LENGTH}
               onClick={() => void commit(pending, note.trim())}
             >
@@ -343,8 +343,7 @@ export function ExceptionResolveControls({
             </Button>
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={busy}
               onClick={() => {
                 setPending(null);
@@ -361,7 +360,6 @@ export function ExceptionResolveControls({
             <Button
               key={state}
               type="button"
-              size="sm"
               variant="outline"
               disabled={busy}
               onClick={() => start(state)}

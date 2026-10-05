@@ -122,9 +122,7 @@ export default function AttachMenuStudio() {
             <ComposerPlusMenu
               conversationId={DEMO_CONVERSATION}
               trigger={
-                <Button type="button" variant="outline" size="icon" aria-label="Open">
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Button icon={<Plus />} type="button" variant="outline" aria-label="Open" />
               }
               mode="chat"
               size="page"

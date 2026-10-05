@@ -132,9 +132,7 @@ function ScrapePanel({ local }: { local: UseMatrxLocalReturn }) {
           {(["rich", "research"] as const).map((m) => (
             <Button
               key={m}
-              size="sm"
-              variant={outputMode === m ? "default" : "outline"}
-              className="h-6 text-[10px] px-2"
+              variant={outputMode === m ? "primary" : "outline"}
               onClick={() => setOutputMode(m)}
             >
               {m}
@@ -142,16 +140,16 @@ function ScrapePanel({ local }: { local: UseMatrxLocalReturn }) {
           ))}
         </div>
         <Button
-          size="sm"
+          icon={loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Globe />
+          )}
+          variant="primary"
           disabled={isDisabled}
           onClick={runScrape}
-          className="ml-auto gap-1.5"
+          className="ml-auto"
         >
-          {loading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Globe className="w-3.5 h-3.5" />
-          )}
           Scrape
         </Button>
       </div>
@@ -391,16 +389,15 @@ function SearchPanel({ local }: { local: UseMatrxLocalReturn }) {
 
       <div className="flex justify-end">
         <Button
-          size="sm"
+          icon={loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Search />
+          )}
+          variant="primary"
           disabled={isDisabled}
           onClick={runSearch}
-          className="gap-1.5"
         >
-          {loading ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Search className="w-3.5 h-3.5" />
-          )}
           Search
         </Button>
       </div>
@@ -517,9 +514,7 @@ function ResearchPanel({ local }: { local: UseMatrxLocalReturn }) {
             {(Object.keys(effortMap) as (keyof typeof effortMap)[]).map((e) => (
               <Button
                 key={e}
-                size="sm"
-                variant={effort === e ? "default" : "outline"}
-                className="h-7 text-xs px-2"
+                variant={effort === e ? "primary" : "outline"}
                 onClick={() => setEffort(e)}
               >
                 {e} ({effortMap[e]})
@@ -560,25 +555,22 @@ function ResearchPanel({ local }: { local: UseMatrxLocalReturn }) {
         <div className="flex gap-2 ml-auto mt-4">
           {loading && wsConnected && (
             <Button
-              size="sm"
-              variant="destructive"
+              icon={<XCircle />}
+              variant="danger"
               onClick={cancelAll}
-              className="gap-1 h-8"
-            >
-              <XCircle className="w-3.5 h-3.5" /> Cancel
+            > Cancel
             </Button>
           )}
           <Button
-            size="sm"
+            icon={loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Zap />
+            )}
+            variant="primary"
             disabled={isDisabled || !query.trim()}
             onClick={runResearch}
-            className="gap-1.5 h-8"
           >
-            {loading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Zap className="w-3.5 h-3.5" />
-            )}
             Research
           </Button>
         </div>
@@ -899,16 +891,15 @@ function ComparisonPanel({ local }: { local: UseMatrxLocalReturn }) {
           onKeyDown={(e) => e.key === "Enter" && runComparison()}
         />
         <Button
-          size="sm"
+          icon={comparing ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Globe />
+          )}
+          variant="primary"
           disabled={comparing || !!loading}
           onClick={runComparison}
-          className="gap-1.5"
         >
-          {comparing ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            <Globe className="w-3.5 h-3.5" />
-          )}
           Compare
         </Button>
       </div>

@@ -394,21 +394,19 @@ export function McpServersAdminPage() {
             </div>
           )}
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={() => void load()}
             className={`h-7 gap-1.5 text-xs ${servers.length > 0 ? "" : "ml-auto"}`}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Refresh list
           </Button>
           <Button
-            size="sm"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setAdding(true)}
-            className="h-7 gap-1.5 text-xs"
             title="Provision a new MCP server (server + executor kind + system bundle + lister tool, atomically)"
           >
-            <Plus className="h-3.5 w-3.5" />
             Add server
           </Button>
         </div>
@@ -728,9 +726,7 @@ function ServerDetail({
             {server.docs_url && (
               <Button
                 asChild
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
+                variant="quiet"
               >
                 <a
                   href={server.docs_url}
@@ -743,32 +739,28 @@ function ServerDetail({
               </Button>
             )}
             <Button
-              size="sm"
+              icon={testing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <PlugZap />
+              )}
               variant="outline"
               onClick={() => void onTest()}
               disabled={testing}
-              className="h-8 gap-1.5 text-xs"
               title="Probe the endpoint URL — does the server respond?"
             >
-              {testing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <PlugZap className="h-3.5 w-3.5" />
-              )}
               Test connection
             </Button>
             <Button
-              size="sm"
+              icon={refreshing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
               onClick={() => void onRefresh()}
               disabled={refreshing}
-              className="h-8 gap-1.5 text-xs"
             >
-              {refreshing ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               Refresh sync
             </Button>
           </div>
@@ -1053,11 +1045,11 @@ function ConfigsTab({
             </>
           )}
           <Button
-            size="sm"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setCreating(true)}
-            className="h-7 gap-1.5 text-xs flex-shrink-0"
+            className="flex-shrink-0"
           >
-            <Plus className="h-3.5 w-3.5" />
             Add config
           </Button>
         </div>
@@ -1115,28 +1107,23 @@ function ConfigsTab({
                 />
                 {!c.is_default && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => void onSetDefault(c)}
-                    className="h-7 text-xs px-2"
                     title="Make this the default config for new user connections"
                   >
                     Set default
                   </Button>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => setEditing(c)}
-                  className="h-7 text-xs px-2"
                 >
                   Edit
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => void onDelete(c)}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                  className="w-7"
                   aria-label="Delete config"
                 >
                   <XCircle className="h-3.5 w-3.5" />
@@ -1446,10 +1433,11 @@ function ConfigDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void submit()}
             disabled={busy || !label.trim()}
           >
@@ -1611,12 +1599,11 @@ function MetaTabEditor({
             </p>
           </div>
           <Button
-            size="sm"
+            icon={saving && <Loader2 className="animate-spin" />}
+            variant="primary"
             onClick={() => void saveToolAllowlist()}
             disabled={saving}
-            className="h-8 text-xs"
           >
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
             Save allowed tools
           </Button>
         </div>

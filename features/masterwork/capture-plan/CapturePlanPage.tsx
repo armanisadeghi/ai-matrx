@@ -526,7 +526,7 @@ export function CapturePlanPage({
       <Refusal
         title="We could not read this plan's settings"
         body={`${settings.reason} Nothing is guessed — the plan waits until the settings can be read.`}
-        action={<Button size="sm" onClick={settings.retry}>Try again</Button>}
+        action={<Button variant="primary" onClick={settings.retry}>Try again</Button>}
       />
     );
   }
@@ -636,6 +636,7 @@ export function CapturePlanPage({
                   "Build my plan" with the "n" cut off (jobs-bar item 2). */}
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <Button
+                  variant="primary"
                   className="w-full sm:w-auto"
                   onClick={startPlan}
                   disabled={!canEdit || busy || goal.trim().length < 5}
@@ -706,14 +707,13 @@ export function CapturePlanPage({
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
-                  size="sm"
+                  variant="primary"
                   disabled={busy}
                   onClick={() => void logSession(openMark!, openSession)}
                 >
                   Log it
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() => void notToday(openSession)}
@@ -758,7 +758,6 @@ export function CapturePlanPage({
                   />
                 ) : null}
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={!canEdit || busy}
                   onClick={() => void notToday(next)}
@@ -785,8 +784,7 @@ export function CapturePlanPage({
 
           <div className="flex justify-end">
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               disabled={!canEdit || busy}
               onClick={() => void endPlan()}
             >

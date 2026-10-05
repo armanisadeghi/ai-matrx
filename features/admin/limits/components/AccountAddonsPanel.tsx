@@ -695,11 +695,11 @@ export function AccountAddonsPanel() {
               Grant one to lift an org above its plan for one capability.
             </p>
             <Button
+              icon={<Plus />}
+              variant="primary"
               className="mt-4"
-              size="sm"
               onClick={() => setGrantOpen(true)}
             >
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
               Grant the first add-on
             </Button>
           </div>
@@ -875,9 +875,10 @@ function GrantAddonDialog({
             <Popover open={orgPickerOpen} onOpenChange={setOrgPickerOpen}>
               <PopoverTrigger asChild>
                 <Button
+                  iconEnd={<ChevronDown className="opacity-60" />}
                   type="button"
                   variant="outline"
-                  className="w-full justify-between font-normal"
+                  className="w-full justify-between"
                 >
                   {org ? (
                     <span className="truncate">
@@ -888,7 +889,6 @@ function GrantAddonDialog({
                       Search {orgs.length} organizations…
                     </span>
                   )}
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-60" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent
@@ -1039,13 +1039,14 @@ function GrantAddonDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={submitting}
           >
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void submit()}
             disabled={submitting || !orgId || !cap}
           >

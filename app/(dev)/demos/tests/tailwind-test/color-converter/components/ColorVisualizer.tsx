@@ -101,13 +101,13 @@ export default function ColorVisualizer({ color }: ColorVisualizerProps) {
         <TextDivider text="Button Colors" />
 
         <div className="h-12 flex-1 grid grid-cols-3 gap-2">
-          <Button style={{ backgroundColor: currentColor }}>
+          <Button type="submit" variant="primary" style={{ backgroundColor: currentColor }}>
             Button Color, System Text Color
           </Button>
-          <Button style={{ backgroundColor: currentColor, color: blackColor }}>
+          <Button type="submit" variant="primary" style={{ backgroundColor: currentColor, color: blackColor }}>
             Button Color, Dark Text Color
           </Button>
-          <Button style={{ backgroundColor: currentColor, color: whiteColor }}>
+          <Button type="submit" variant="primary" style={{ backgroundColor: currentColor, color: whiteColor }}>
             Button Color, Light Text Color
           </Button>
         </div>

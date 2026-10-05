@@ -695,9 +695,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               {pending.data ? (
                 <Button
                   asChild
-                  size="sm"
                   variant="outline"
-                  className="h-8 gap-1.5"
                 >
                   <Link href={marketingRoutes.brandDiscovery(brandId)}>
                     <Inbox className="h-3.5 w-3.5" />
@@ -706,21 +704,17 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
                 </Button>
               ) : null}
               <Button
-                size="sm"
+                icon={<Pencil />}
                 variant="outline"
-                className="h-8 gap-1.5"
                 onClick={() => setEditorOpen(true)}
               >
-                <Pencil className="h-3.5 w-3.5" />
                 Edit brand
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 gap-1.5 text-muted-foreground hover:text-destructive"
+                icon={<Trash2 />}
+                variant="quiet"
                 onClick={() => setConfirmingDelete(true)}
               >
-                <Trash2 className="h-3.5 w-3.5" />
                 Delete
               </Button>
             </div>
@@ -1050,9 +1044,7 @@ export function BrandWorkspace({ brandId }: { brandId: string }) {
               // place you work.
               <Button
                 asChild
-                size="sm"
                 variant="outline"
-                className="h-7 gap-1.5"
               >
                 <Link href={marketingRoutes.brandAssets(brandId)}>
                   <Images className="h-3.5 w-3.5" />

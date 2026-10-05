@@ -237,9 +237,8 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
         {/* Header */}
         <div className="flex items-start gap-3">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 mt-0.5"
+            variant="quiet"
+            className="mt-0.5"
             onClick={() => router.back()}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -277,9 +276,8 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
             </div>
           </div>
           <Button
+            icon={<Download />}
             variant="outline"
-            size="sm"
-            className="h-7 text-xs"
             onClick={() =>
               exportToJSON(
                 [detail.user_request, ...detail.requests],
@@ -287,7 +285,6 @@ export function RequestDetailContent({ detail }: { detail: Detail }) {
               )
             }
           >
-            <Download className="w-3 h-3 mr-1" />
             Export
           </Button>
         </div>

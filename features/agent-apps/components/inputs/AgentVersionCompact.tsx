@@ -109,8 +109,6 @@ export function AgentVersionCompact({
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="h-7 px-2 text-xs"
             disabled={disabled || !agentId}
           >
             Change

@@ -414,9 +414,8 @@ export default function AdminSystemAppsListPage() {
                       {app.status === "published" && (
                         <Button
                           asChild
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          variant="quiet"
+                          className="w-7"
                           title="Open public URL"
                         >
                           <AppLink
@@ -429,9 +428,8 @@ export default function AdminSystemAppsListPage() {
                         </Button>
                       )}
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0"
+                        variant="quiet"
+                        className="w-7"
                         disabled={isPending}
                         onClick={() => handleOpenEditor(app.id)}
                         title="Open editor"
@@ -439,9 +437,8 @@ export default function AdminSystemAppsListPage() {
                         <ArrowUpRight className="h-3.5 w-3.5" />
                       </Button>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        variant="quiet"
+                        className="w-7"
                         disabled={busyIds.has(app.id) || deleting}
                         onClick={() => setDeleteTarget(app)}
                         title="Move system app to Trash"

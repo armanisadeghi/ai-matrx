@@ -501,8 +501,7 @@ export default function KindRecordsTable({
             </span>
           </span>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => setConfirmedByEdit(null)}
           >
             Got it
@@ -564,16 +563,14 @@ export default function KindRecordsTable({
           <>
             {row.confirmation === "unconfirmed" ? (
               <Button
-                size="sm"
+                icon={<Check />}
                 variant="outline"
-                className="h-7 px-2 text-xs"
                 disabled={busy}
                 onClick={(e) => {
                   e.stopPropagation();
                   confirmOne(row);
                 }}
               >
-                <Check className="mr-1 h-3.5 w-3.5" />
                 Confirm
               </Button>
             ) : null}
@@ -692,37 +689,35 @@ export default function KindRecordsTable({
               {/* Absent, not greyed, when nothing in the selection needs it. */}
               {unconfirmedSelected.length > 0 ? (
                 <Button
-                  size="sm"
+                  icon={<BadgeCheck />}
+                  variant="primary"
                   onClick={() =>
                     confirmMany(unconfirmedSelected.map((r) => r.id))
                   }
                   disabled={busy}
                 >
-                  <BadgeCheck className="mr-1.5 h-4 w-4" />
                   Confirm {unconfirmedSelected.length}
                 </Button>
               ) : null}
               {liveSelected.length > 0 ? (
                 <Button
-                  size="sm"
+                  icon={<Archive />}
                   variant="outline"
                   onClick={() => setArchived(liveSelected.map((r) => r.id), true)}
                   disabled={busy}
                 >
-                  <Archive className="mr-1.5 h-4 w-4" />
                   Archive {liveSelected.length}
                 </Button>
               ) : null}
               {archivedSelected.length > 0 ? (
                 <Button
-                  size="sm"
+                  icon={<ArchiveRestore />}
                   variant="outline"
                   onClick={() =>
                     setArchived(archivedSelected.map((r) => r.id), false)
                   }
                   disabled={busy}
                 >
-                  <ArchiveRestore className="mr-1.5 h-4 w-4" />
                   Restore {archivedSelected.length}
                 </Button>
               ) : null}
@@ -765,8 +760,7 @@ export default function KindRecordsTable({
                   description:
                     "Nothing is live under this scope and these filters. The archived ones are one click away.",
                   action: (
-                    <Button size="sm" onClick={() => setArchiveFilter("archived")}>
-                      <Archive className="mr-1.5 h-4 w-4" />
+                    <Button icon={<Archive />} variant="primary" onClick={() => setArchiveFilter("archived")}>
                       Show archived
                     </Button>
                   ),
@@ -778,7 +772,7 @@ export default function KindRecordsTable({
                     description: `This scope holds none of your ${label} records, but ${otherScope.label} does. Nothing is missing and nothing was lost — they are one click away.`,
                     action: (
                       <Button
-                        size="sm"
+                        variant="primary"
                         onClick={() => {
                           scopeSettled.current = true;
                           setScope(makeScope(otherScope.kind));

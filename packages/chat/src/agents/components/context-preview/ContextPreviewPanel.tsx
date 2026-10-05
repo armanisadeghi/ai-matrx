@@ -24,7 +24,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, Braces, FileCode2, RefreshCw } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import { useAppSelector } from "../../../store/hooks";
 import { SurfaceRuntimeProvider } from "../../../surfaces/runtime/SurfaceRuntimeContext";
@@ -339,15 +339,13 @@ function ResolvedView({
           </span>
         )}
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 gap-1 px-2 text-[11px] text-primary hover:text-primary"
+          icon={<RefreshCw
+            className={cn("h-3 w-3", status === "loading" && "animate-spin")}
+          />}
+          variant="quiet"
           onClick={refresh}
           disabled={status === "loading"}
         >
-          <RefreshCw
-            className={cn("h-3 w-3", status === "loading" && "animate-spin")}
-          />
           Refresh
         </Button>
       </div>

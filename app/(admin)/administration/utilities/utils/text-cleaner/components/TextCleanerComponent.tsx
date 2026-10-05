@@ -8,6 +8,7 @@ import AnimatedSelect from "@/components/matrx/AnimatedForm/AnimatedSelect";
 import { FormField } from "@/types/AnimatedFormTypes";
 import { Copy, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
@@ -224,12 +225,11 @@ export const TextCleanerComponent: React.FC = () => {
                   </div>
                 )}
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={<Copy />}
+                  variant="quiet"
                   className="mt-2"
                   onClick={() => copyText(error.parsed?.essential || "")}
                 >
-                  <Copy className="w-4 h-4 mr-2" />
                   Copy
                 </Button>
               </Card>
@@ -244,12 +244,11 @@ export const TextCleanerComponent: React.FC = () => {
                 {error.parsed?.basic}
               </pre>
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<Copy />}
+                variant="quiet"
                 className="mt-2"
                 onClick={() => copyText(error.parsed?.basic || "")}
               >
-                <Copy className="w-4 h-4 mr-2" />
                 Copy
               </Button>
             </Card>
@@ -262,12 +261,11 @@ export const TextCleanerComponent: React.FC = () => {
                 {error.parsed?.verbose}
               </pre>
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<Copy />}
+                variant="quiet"
                 className="mt-2"
                 onClick={() => copyText(error.parsed?.verbose || "")}
               >
-                <Copy className="w-4 h-4 mr-2" />
                 Copy
               </Button>
             </Card>
@@ -280,12 +278,11 @@ export const TextCleanerComponent: React.FC = () => {
                 {error.parsed?.json}
               </pre>
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<Copy />}
+                variant="quiet"
                 className="mt-2"
                 onClick={() => copyText(error.parsed?.json || "")}
               >
-                <Copy className="w-4 h-4 mr-2" />
                 Copy
               </Button>
             </Card>
@@ -399,11 +396,11 @@ export const TextCleanerComponent: React.FC = () => {
 
             <div className="ml-auto">
               <Button
+                icon={<RefreshCw />}
                 variant="outline"
                 onClick={handleRefresh}
-                className="flex items-center space-x-2"
+                className="flex"
               >
-                <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh
               </Button>
             </div>
@@ -428,12 +425,12 @@ export const TextCleanerComponent: React.FC = () => {
                   : "Paste your text here"
               }
             />
-            <Button
+            <SurfaceButton
               className="absolute right-2 bottom-2 p-2 h-[40px] min-h-[40px]"
               onClick={() => copyText(inputText)}
             >
               <Copy size={20} />
-            </Button>
+            </SurfaceButton>
           </div>
           <Card className="border bg-muted">
             <CardContent className="p-3">
@@ -459,12 +456,12 @@ export const TextCleanerComponent: React.FC = () => {
                   : "Your cleaned text will appear here"
               }
             />
-            <Button
+            <SurfaceButton
               className="absolute right-2 bottom-2 p-2 h-[40px] min-h-[40px]"
               onClick={() => copyText(cleanedText)}
             >
               <Copy size={20} />
-            </Button>
+            </SurfaceButton>
           </div>
           <Card className="border bg-muted">
             <CardContent className="p-3">
@@ -493,7 +490,7 @@ export const TextCleanerComponent: React.FC = () => {
         <CardContent className="p-4">
           <Collapsible>
             <CollapsibleTrigger asChild>
-              <Button variant="ghost" className="w-full justify-between">
+              <Button variant="quiet" className="w-full justify-between">
                 Pattern Selection
                 <span className="text-muted-foreground">
                   {/* read-gate-exempt: cleaning patterns the person switched on in this tool, not a fetched list */}
@@ -564,12 +561,12 @@ export const TextCleanerComponent: React.FC = () => {
                 hideLabel={true}
                 className="flex-grow h-[40px] min-h-[40px]"
               />
-              <Button
+              <SurfaceButton
                 onClick={() => handleCopyTextWithPrefixSuffix(index)}
                 className="p-2 flex-shrink-0 flex items-center justify-center h-[40px] min-h-[40px]"
               >
                 <Copy size={20} />
-              </Button>
+              </SurfaceButton>
             </div>
             <Textarea
               value={prefixes[index] || ""}
@@ -589,7 +586,7 @@ export const TextCleanerComponent: React.FC = () => {
         ))}
       </div>
 
-      <Button onClick={() => copyText(extractText(inputText))}>
+      <Button variant="primary" onClick={() => copyText(extractText(inputText))}>
         Extract and Copy Text Between Markers
       </Button>
     </div>

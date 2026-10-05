@@ -79,8 +79,7 @@ export function IssueList({
 
             {fix.kind === "action" && onRunFix ? (
               <Button
-                size="sm"
-                variant={waiting ? "outline" : "default"}
+                variant={waiting ? "outline" : "primary"}
                 className="shrink-0"
                 disabled={running}
                 onClick={() => onRunFix(issue.fix_action)}
@@ -97,7 +96,7 @@ export function IssueList({
             ) : null}
 
             {fix.kind === "link" && fix.href ? (
-              <Button size="sm" variant="outline" className="shrink-0" asChild>
+              <Button variant="outline" className="shrink-0" asChild>
                 <Link href={fix.href}>
                   {fix.label}
                   <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -107,8 +106,7 @@ export function IssueList({
 
             {fix.kind === "guide" && onShowGuide ? (
               <Button
-                size="sm"
-                variant="default"
+                variant="primary"
                 className="shrink-0"
                 onClick={onShowGuide}
               >

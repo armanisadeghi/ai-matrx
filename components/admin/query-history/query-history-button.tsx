@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { History } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@ai-matrx/design-system";
 import { QueryHistoryOverlay } from './query-history-overlay';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 

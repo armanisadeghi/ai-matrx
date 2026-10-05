@@ -542,16 +542,14 @@ export function IntakeCaptureScreen({
       {!controlsHidden && (
         <div className="absolute inset-x-0 top-0 z-30 flex items-center gap-2 bg-gradient-to-b from-black/70 to-transparent p-3 pt-safe">
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white"
+            icon={<X />}
+            variant="quiet"
+            className="shrink-0"
             // Always land on the assets list — the overlay covers the whole
             // shell, so router.back() could strand the user.
             onClick={() => router.push("/commerce/intake/assets")}
             aria-label="Close capture and open the intake assets list"
-          >
-            <X className="h-5 w-5" />
-          </Button>
+          />
           <div className="min-w-0 flex-1 text-center">
             <p className="truncate text-sm font-semibold text-white">
               {itemLabel}
@@ -565,12 +563,9 @@ export function IntakeCaptureScreen({
             </p>
           </div>
           <Button
-            variant="ghost"
-            size="icon"
-            className={cn(
-              "h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white",
-              qrMode && "bg-primary text-primary-foreground hover:bg-primary",
-            )}
+            icon={<ScanLine />}
+            variant="quiet"
+            className="shrink-0"
             onClick={toggleQrMode}
             aria-label={
               qrMode
@@ -578,19 +573,15 @@ export function IntakeCaptureScreen({
                 : "Switch to QR (serialized) capture"
             }
             aria-pressed={qrMode}
-          >
-            <ScanLine className="h-5 w-5" />
-          </Button>
+          />
           {numberOfCameras > 1 && !cameraBlocked && (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full text-white hover:bg-white/10 hover:text-white"
+              icon={<SwitchCamera />}
+              variant="quiet"
+              className="shrink-0"
               onClick={switchCamera}
               aria-label="Switch camera"
-            >
-              <SwitchCamera className="h-5 w-5" />
-            </Button>
+            />
           )}
         </div>
       )}
@@ -680,16 +671,14 @@ export function IntakeCaptureScreen({
             </p>
           )}
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
-              <CameraIcon className="mr-1.5 h-4 w-4" />
+            <Button icon={<CameraIcon />} variant="primary" onClick={() => fallbackInputRef.current?.click()}>
               Open system camera
             </Button>
             <Button
-              size="sm"
-              variant="secondary"
+              icon={<ImagePlus />}
+              variant="outline"
               onClick={() => uploadInputRef.current?.click()}
             >
-              <ImagePlus className="mr-1.5 h-4 w-4" />
               Upload from device
             </Button>
           </div>
@@ -760,13 +749,8 @@ export function IntakeCaptureScreen({
             />
           )}
           <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "h-10 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
-              session.notes.trim() !== "" ? "bg-white/20" : "bg-white/10",
-              !qrMode && "flex-1",
-            )}
+            variant="quiet"
+            className={cn("shrink-0", !qrMode && "flex-1")}
             onClick={() => setNotesOpen((o) => !o)}
             aria-label={qrMode ? "Item notes" : "Batch notes"}
           >
@@ -798,7 +782,8 @@ export function IntakeCaptureScreen({
         {instantMode && qrMode && (
           <div className="px-2 pb-1">
             <Button
-              className="h-11 w-full rounded-full"
+              variant="primary"
+              className="w-full"
               onClick={onProcess}
               disabled={
                 currentAsset === null ||
@@ -828,14 +813,11 @@ export function IntakeCaptureScreen({
         <div className="flex items-center justify-between py-2">
           <div className="flex w-20 justify-start">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 rounded-full text-white hover:bg-white/10 hover:text-white"
+              icon={<LayoutGrid />}
+              variant="quiet"
               onClick={() => router.push("/commerce/intake/assets")}
               aria-label="Open the intake assets list"
-            >
-              <LayoutGrid className="h-5 w-5" />
-            </Button>
+            />
           </div>
           <button
             type="button"
@@ -864,12 +846,11 @@ export function IntakeCaptureScreen({
           <div className="flex w-20 justify-end">
             {qrMode ? (
               <Button
-                size="sm"
-                className="h-11 whitespace-nowrap rounded-full px-4"
+                icon={<PackagePlus />}
+                variant="primary"
                 onClick={session.nextItem}
                 disabled={currentAsset === null || recording}
               >
-                <PackagePlus className="mr-1.5 h-4 w-4" />
                 Next
               </Button>
             ) : (
@@ -877,13 +858,11 @@ export function IntakeCaptureScreen({
               // shoots one immediately, flagged `is_delineator`, so the
               // boundary is in the artifact stream itself.
               <Button
-                size="sm"
-                variant="secondary"
-                className="h-11 whitespace-nowrap rounded-full px-4"
+                icon={<Scissors />}
+                variant="outline"
                 onClick={() => takePhoto({ isDelineator: true })}
                 disabled={recording || cameraBlocked}
               >
-                <Scissors className="mr-1.5 h-4 w-4" />
                 Break
               </Button>
             )}
@@ -963,22 +942,20 @@ export function IntakeCaptureScreen({
           </div>
           <div className="flex shrink-0 items-center justify-center gap-3 bg-black px-4 py-3 pb-safe">
             <Button
-              variant="destructive"
-              className="h-11 px-5"
+              icon={<Trash2 />}
+              variant="danger"
               onClick={() => {
                 session.removeArtifact(previewArtifact.localId);
                 setPreviewArtifact(null);
               }}
             >
-              <Trash2 className="mr-1.5 h-4 w-4" />
               Delete
             </Button>
             <Button
-              variant="secondary"
-              className="h-11 px-5"
+              icon={<X />}
+              variant="outline"
               onClick={() => setPreviewArtifact(null)}
             >
-              <X className="mr-1.5 h-4 w-4" />
               Close
             </Button>
           </div>

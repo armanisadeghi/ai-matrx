@@ -199,18 +199,15 @@ export function Actions({
   return (
     <span className={cn("inline-flex flex-wrap items-center gap-1.5", className)}>
       {job.canDuplicate ? (
-        <Button size="sm" className={h} onClick={ctx.onDuplicate} disabled={ctx.busy}>
-          {ctx.busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
+        <Button icon={ctx.busy ? <Loader2 className="animate-spin" /> : <Copy />} variant="primary" className={h} onClick={ctx.onDuplicate} disabled={ctx.busy}>
           Duplicate &amp; modify
         </Button>
       ) : null}
-      <Button size="sm" variant="outline" className={h} onClick={ctx.onUseOwn} disabled={ctx.busy}>
-        <UserRoundCog className="mr-1.5 h-3.5 w-3.5" />
+      <Button icon={<UserRoundCog />} variant="outline" className={h} onClick={ctx.onUseOwn} disabled={ctx.busy}>
         <span className="min-w-0 truncate">{job.useOwnLabel}</span>
       </Button>
       {job.canReset ? (
-        <Button size="sm" variant="ghost" className={h} onClick={ctx.onReset} disabled={ctx.busy}>
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<RotateCcw />} variant="quiet" className={h} onClick={ctx.onReset} disabled={ctx.busy}>
           <span className="min-w-0 truncate">{compact ? "Reset" : job.resetLabel}</span>
         </Button>
       ) : null}

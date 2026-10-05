@@ -1,6 +1,6 @@
 // components/AIHelpButton.tsx
 import {useState} from 'react';
-import {Button} from '@/components/ui/button';
+import {Button} from "@ai-matrx/design-system";
 import {HelpCircle} from 'lucide-react';
 import {useToast} from '@/components/ui/use-toast';
 import {useContextCollection} from '@/hooks/useContextCollection';

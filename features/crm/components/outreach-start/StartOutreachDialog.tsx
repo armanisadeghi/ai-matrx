@@ -373,8 +373,7 @@ export function StartOutreachDialog({
   const footer = (
     <>
       <Button
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         onClick={() => onOpenChange(false)}
         disabled={phase === "enrolling"}
       >
@@ -382,17 +381,21 @@ export function StartOutreachDialog({
       </Button>
       {phase === "refused" ? (
         <Button
-          size="sm"
+          icon={<Search />}
           variant="outline"
           onClick={() => setAttempt((n) => n + 1)}
-          className="gap-1"
-        >
-          <Search className="h-3.5 w-3.5" /> Try again
+        > Try again
         </Button>
       ) : (
         <Button
-          size="sm"
-          className="gap-1"
+          icon={phase === "enrolling" || navigating ? (
+            <Loader2 className="animate-spin" />
+          ) : phase === "done" ? (
+            <Check />
+          ) : (
+            <ArrowRight />
+          )}
+          variant="primary"
           onClick={() => void enroll()}
           disabled={
             !party ||
@@ -403,13 +406,6 @@ export function StartOutreachDialog({
             navigating
           }
         >
-          {phase === "enrolling" || navigating ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : phase === "done" ? (
-            <Check className="h-3.5 w-3.5" />
-          ) : (
-            <ArrowRight className="h-3.5 w-3.5" />
-          )}
           Add and open the campaign
         </Button>
       )}

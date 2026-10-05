@@ -48,8 +48,7 @@ export function WizardAnswersLost({
           </p>
         </div>
       </div>
-      <Button onClick={onStartOver} className="min-h-[44px] gap-2">
-        <ArrowLeft className="h-4 w-4" />
+      <Button icon={<ArrowLeft />} variant="primary" onClick={onStartOver}>
         {startOverLabel}
       </Button>
     </div>

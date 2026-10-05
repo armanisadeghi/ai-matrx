@@ -384,16 +384,16 @@ function AccountToolbar({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" onClick={onAddAccount}>
-            <Plus className="mr-1.5 h-4 w-4" />
+          <Button icon={<Plus />} variant="outline" onClick={onAddAccount}>
             Add account
           </Button>
           {selectedConnection?.health !== "connected" && selectedConnection ? (
             <Button
+              icon={<RefreshCw />}
+              variant="primary"
               onClick={onReconnect}
               disabled={authorizationActionDisabled}
             >
-              <RefreshCw className="mr-1.5 h-4 w-4" />
               {busy
                 ? "Reconnecting…"
                 : !googleLoaded
@@ -596,7 +596,6 @@ function CapabilityCatalog({
               {capability.key === "gmail_read" && capability.eligible ? (
                 <Button
                   className="mt-3"
-                  size="sm"
                   variant="outline"
                   onClick={onManageGmailReading}
                 >
@@ -605,14 +604,14 @@ function CapabilityCatalog({
                     : "Connect Gmail reading"}
                 </Button>
               ) : capability.key === "search_console" ? (
-                <Button className="mt-3" size="sm" variant="outline" asChild>
+                <Button className="mt-3" variant="outline" asChild>
                   <Link href={marketingRoutes.connectionsGoogle()}>
                     Manage Search Console
                   </Link>
                 </Button>
               ) : capability.key === "analytics" ||
                 capability.key === "youtube" ? (
-                <Button className="mt-3" size="sm" variant="outline" asChild>
+                <Button className="mt-3" variant="outline" asChild>
                   <Link href={marketingRoutes.connectionsGoogle()}>
                     Manage {capability.title}
                   </Link>
@@ -620,7 +619,7 @@ function CapabilityCatalog({
               ) : canEnable ? (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Button
-                    size="sm"
+                    variant="primary"
                     onClick={() => onEnableCapability(capability)}
                     disabled={authorizationActionDisabled}
                   >
@@ -629,7 +628,6 @@ function CapabilityCatalog({
                       : `Enable ${capability.title}`}
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => onEnableCapability(capability, true)}
                     disabled={authorizationActionDisabled}
@@ -646,7 +644,6 @@ function CapabilityCatalog({
                   capability.key === "gmail_send") ? (
                 <Button
                   className="mt-3"
-                  size="sm"
                   variant="outline"
                   onClick={() => {
                     if (connection) onManageWorkspace(connection.id);
@@ -725,8 +722,7 @@ function OverviewError({
       role="alert"
     >
       <p>{message}</p>
-      <Button className="mt-3" size="sm" variant="outline" onClick={onRetry}>
-        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+      <Button icon={<RefreshCw />} className="mt-3" variant="outline" onClick={onRetry}>
         {retryLabel}
       </Button>
       <ErrorAlchemyMenu className="ml-auto" />
@@ -757,7 +753,6 @@ function UnavailableRequestedAccount({
           {connections.map((connection) => (
             <Button
               key={connection.id}
-              size="sm"
               variant="outline"
               onClick={() => onChoose(connection.id)}
             >
@@ -766,8 +761,7 @@ function UnavailableRequestedAccount({
           ))}
         </div>
       ) : null}
-      <Button className="mt-3" size="sm" variant="outline" onClick={onRetry}>
-        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+      <Button icon={<RefreshCw />} className="mt-3" variant="outline" onClick={onRetry}>
         Try again
       </Button>
       <ErrorAlchemyMenu className="ml-auto" />

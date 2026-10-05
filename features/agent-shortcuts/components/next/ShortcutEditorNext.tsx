@@ -524,34 +524,33 @@ export function ShortcutEditorNext({
         <div className="flex items-center gap-2">
         {!isNew && (
           <Button
-            variant="ghost"
+            icon={<Trash2 />}
+            variant="quiet"
             onClick={() => void onDelete()}
             disabled={busy}
-            className="h-9 gap-1.5 text-sm text-muted-foreground hover:text-destructive"
           >
-            <Trash2 className="h-4 w-4" />
             Delete
           </Button>
         )}
         <div className="ml-auto flex items-center gap-2">
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={onCancel}
             disabled={busy}
-            className="h-9 text-sm"
           >
             Cancel
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             onClick={() => void onSave()}
             disabled={busy || saveRefusal}
-            className="h-9 gap-1.5 text-sm min-w-[120px]"
+            className="min-w-[120px]"
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
             {isNew ? "Create shortcut" : "Save"}
           </Button>
         </div>

@@ -11,7 +11,7 @@
  */
 
 import { useState } from "react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { Check, Pencil, SkipForward } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -185,21 +185,20 @@ export default function NeedsYouQueue({
         <div className="flex items-center justify-end gap-0.5 whitespace-nowrap">
           {r.cell ? (
             <Button
+              icon={<Check />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-7 shrink-0 gap-1 whitespace-nowrap px-2 text-xs"
+              className="shrink-0"
               disabled={busy}
               onClick={() => requestApprove([r])}
             >
-              <Check className="h-3.5 w-3.5" />
               Approve
             </Button>
           ) : null}
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0"
+            variant="quiet"
+            className="w-7"
             disabled={busy}
             aria-label={r.cell ? "Change" : "Write rule"}
             title={r.cell ? "Change" : "Write rule"}
@@ -209,9 +208,8 @@ export default function NeedsYouQueue({
           </Button>
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-7 w-7 p-0 text-muted-foreground"
+            variant="quiet"
+            className="w-7"
             disabled={busy}
             aria-label="Skip"
             title="Skip"
@@ -256,8 +254,7 @@ export default function NeedsYouQueue({
             const batch = ids.map((id) => byId.get(id)).filter((i): i is QueueItem => !!i?.cell);
             if (batch.length === 0) return null;
             return (
-              <Button type="button" size="sm" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => setPending(batch)}>
-                <Check className="h-3.5 w-3.5" />
+              <Button icon={<Check />} variant="primary" type="button" disabled={busy} onClick={() => setPending(batch)}>
                 Approve {batch.length}
               </Button>
             );
@@ -287,17 +284,14 @@ export default function NeedsYouQueue({
             ) : null}
             <div className="flex items-center gap-1 pt-1">
               {r.cell ? (
-                <Button type="button" size="sm" className="h-8 gap-1 text-xs" disabled={busy} onClick={() => requestApprove([r])}>
-                  <Check className="h-3.5 w-3.5" />
+                <Button icon={<Check />} variant="primary" type="button" disabled={busy} onClick={() => requestApprove([r])}>
                   Approve
                 </Button>
               ) : null}
-              <Button type="button" size="sm" variant="outline" className="h-8 gap-1 text-xs" disabled={busy} onClick={() => onOpen(r)}>
-                <Pencil className="h-3.5 w-3.5" />
+              <Button icon={<Pencil />} type="button" variant="outline" disabled={busy} onClick={() => onOpen(r)}>
                 {r.cell ? "Change" : "Write rule"}
               </Button>
-              <Button type="button" size="sm" variant="ghost" className="h-8 gap-1 text-xs" disabled={busy} onClick={() => onSkip(r)}>
-                <SkipForward className="h-3.5 w-3.5" />
+              <Button icon={<SkipForward />} type="button" variant="quiet" disabled={busy} onClick={() => onSkip(r)}>
                 Skip
               </Button>
             </div>

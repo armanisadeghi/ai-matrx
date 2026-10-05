@@ -3,7 +3,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -99,8 +99,6 @@ export default function AgentAssistantMarkdownDebugWindow({
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="h-8 text-xs"
             disabled={keys.length === 0}
             onClick={() => dispatch(clearAssistantMarkdownDrafts())}
           >

@@ -155,27 +155,23 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
                   />
                   {urls.length > 1 && (
                     <Button
+                      icon={<X />}
                       type="button"
-                      variant="ghost"
-                      size="icon"
+                      variant="quiet"
                       onClick={() =>
                         setUrls((prev) => prev.filter((_, idx) => idx !== i))
                       }
                       aria-label="Remove URL"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                   )}
                 </div>
               ))}
               <Button
+                icon={<Plus />}
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setUrls((prev) => [...prev, ""])}
-                className="gap-1.5 text-muted-foreground"
               >
-                <Plus className="h-4 w-4" />
                 Add another file URL
               </Button>
             </div>
@@ -381,11 +377,11 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
               );
             })}
             <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-1.5 text-muted-foreground"
+              icon={<Plus />}
+              type="submit"
+              variant="quiet"
+              className="w-full justify-start"
             >
-              <Plus className="h-4 w-4" />
               New show
             </Button>
           </div>
@@ -489,14 +485,13 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
             : "Add a source to get started."}
         </p>
         <Button
-          size="lg"
+          iconEnd={<ArrowRight />}
+          variant="primary"
           onClick={onGenerate}
           disabled={!canGenerate}
-          className="gap-2 shadow-md"
         >
           <AGENT_ICON className="h-4.5 w-4.5" />
           Generate episode
-          <ArrowRight className="h-4 w-4" />
         </Button>
       </div>
     </div>

@@ -21,7 +21,7 @@ import { Label } from "@/components/ui/label";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Loader2, WandSparkles } from "lucide-react";
 import { toast } from "@/lib/toast";

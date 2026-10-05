@@ -19,7 +19,7 @@ export function PrintHubHeader() {
                 </span>
             }
             right={
-                <Button asChild size="sm" variant="outline">
+                <Button asChild variant="outline">
                     <Link href="/print/order">Order printed copies</Link>
                 </Button>
             }

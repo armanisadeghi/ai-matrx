@@ -161,9 +161,7 @@ export function UnplacedQueue({
                   aria-label="Industry territory for the offering assigner"
                 />
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
                   disabled={
                     assigner.running || !territory.trim() || batch.length === 0
                   }
@@ -192,8 +190,8 @@ export function UnplacedQueue({
           selectionActions={({ keywordIds, openServiceAssign, clear }) => (
             <div className="flex flex-wrap items-center gap-1.5">
               <Button
-                size="sm"
-                className="h-7 gap-1 text-xs"
+                icon={<Network />}
+                variant="primary"
                 disabled={keywordIds.length === 0}
                 onClick={() =>
                   openServiceAssign(
@@ -202,13 +200,10 @@ export function UnplacedQueue({
                   )
                 }
               >
-                <Network className="h-3.5 w-3.5" />
                 Place under an offering…
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
+                variant="quiet"
                 onClick={clear}
               >
                 Clear selection

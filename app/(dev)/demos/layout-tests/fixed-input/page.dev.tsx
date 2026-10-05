@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import AppLink from "@/components/navigation/AppLink";
 import { ArrowLeft, CheckCircle2, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@ai-matrx/design-system";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { ProTextarea } from "@/components/official/ProTextarea";
 

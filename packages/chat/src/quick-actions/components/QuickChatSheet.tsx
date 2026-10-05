@@ -3,7 +3,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquarePlus, PanelLeft } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -395,14 +395,12 @@ function QuickChatSheetBody({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={showHistory ? "secondary" : "ghost"}
-                size="icon"
-                className="h-7 w-7 shrink-0"
+                icon={<PanelLeft />}
+                variant={showHistory ? "outline" : "quiet"}
+                className="shrink-0"
                 onClick={() => setShowHistory((v) => !v)}
                 aria-label="Toggle conversation history"
-              >
-                <PanelLeft className="h-4 w-4" />
-              </Button>
+              />
             </TooltipTrigger>
             <TooltipContent>Conversations</TooltipContent>
           </Tooltip>
@@ -416,12 +414,10 @@ function QuickChatSheetBody({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-xs"
+                icon={<MessageSquarePlus />}
+                variant="quiet"
                 onClick={handleNewChat}
               >
-                <MessageSquarePlus className="h-3.5 w-3.5" />
                 New chat
               </Button>
             </TooltipTrigger>

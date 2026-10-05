@@ -160,17 +160,15 @@ export function ActionItemsSection({
         </h2>
         {canManage && loose.length > 1 ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 px-2 text-xs"
+            icon={bulk ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : (
+              <ListPlus aria-hidden="true" />
+            )}
+            variant="quiet"
             disabled={bulk || linked.loading}
             onClick={() => void createAll()}
           >
-            {bulk ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <ListPlus className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
             Create {loose.length} tasks
           </Button>
         ) : null}
@@ -232,8 +230,7 @@ export function ActionItemsSection({
                 ) : canManage ? (
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="h-7 shrink-0 px-2 text-xs"
+                    className="shrink-0"
                     disabled={linked.creating.has(item.id) || bulk}
                     onClick={() => setEditing(item)}
                   >
@@ -348,10 +345,11 @@ function CreateTaskDialog({
           </label>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             disabled={saving}
             onClick={async () => {
               setSaving(true);

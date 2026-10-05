@@ -3,7 +3,7 @@
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, LucideIcon } from 'lucide-react';
-import { Button, ButtonProps } from '@/components/ui/button';
+import { Button, ButtonProps } from "@ai-matrx/design-system";
 import { cn } from '@/lib/utils';
 
 type ComponentSize = 'default' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | 'icon' | 'roundIcon';

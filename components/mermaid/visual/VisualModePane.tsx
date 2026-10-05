@@ -184,10 +184,10 @@ export function VisualModePane({
     return (
       <div className="flex h-full items-center justify-center p-6">
         <Button
+          icon={<Plus />}
+          variant="primary"
           onClick={() => apply({ type: "addNode", label: "First step" })}
-          className="gap-1.5"
         >
-          <Plus className="h-4 w-4" />
           Add your first step
         </Button>
       </div>
@@ -365,12 +365,11 @@ function NodeActions(props: {
       </div>
 
       <Button
-        size="sm"
+        icon={<Plus />}
         variant="outline"
-        className="w-full justify-start gap-1.5"
+        className="w-full justify-start"
         onClick={props.onAddConnected}
       >
-        <Plus className="h-3.5 w-3.5" />
         Add connected step
       </Button>
 
@@ -420,12 +419,11 @@ function NodeActions(props: {
       </div>
 
       <Button
-        size="sm"
-        variant="ghost"
-        className="w-full justify-start gap-1.5 text-destructive hover:text-destructive"
+        icon={<Trash2 />}
+        variant="quiet"
+        className="w-full justify-start"
         onClick={props.onDelete}
       >
-        <Trash2 className="h-3.5 w-3.5" />
         Delete step
       </Button>
     </div>
@@ -495,22 +493,20 @@ function EdgeActions(props: {
       </div>
 
       <Button
-        size="sm"
+        icon={<ArrowLeftRight />}
         variant="outline"
-        className="w-full justify-start gap-1.5"
+        className="w-full justify-start"
         onClick={props.onReverse}
       >
-        <ArrowLeftRight className="h-3.5 w-3.5" />
         Reverse direction
       </Button>
 
       <Button
-        size="sm"
-        variant="ghost"
-        className="w-full justify-start gap-1.5 text-destructive hover:text-destructive"
+        icon={<Trash2 />}
+        variant="quiet"
+        className="w-full justify-start"
         onClick={props.onDelete}
       >
-        <Trash2 className="h-3.5 w-3.5" />
         Delete connection
       </Button>
     </div>

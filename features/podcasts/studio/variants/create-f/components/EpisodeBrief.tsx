@@ -125,12 +125,12 @@ export function EpisodeBrief({
         {/* Action */}
         <div className="space-y-2 bg-card p-4">
           <Button
-            size="lg"
-            className="w-full gap-2 shadow-md"
+            icon={<AudioLines />}
+            variant="primary"
+            className="w-full"
             disabled={!canGenerate || busy}
             onClick={onGenerate}
           >
-            <AudioLines className="h-4.5 w-4.5" />
             {busy ? "Starting…" : "Generate episode"}
           </Button>
           {!canGenerate && !busy && (

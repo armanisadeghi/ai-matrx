@@ -11,6 +11,7 @@ import ThinkingVisualization from "@/components/mardown-display/blocks/thinking-
 import ReasoningVisualization from "@/components/mardown-display/blocks/thinking-reasoning/ReasoningVisualization";
 import ConsolidatedReasoningVisualization from "@/components/mardown-display/blocks/thinking-reasoning/ConsolidatedReasoningVisualization";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 
@@ -305,20 +306,18 @@ export function ModelActivityIndicatorsDemo() {
             </span>
             {active && (
               <Button
+                icon={<X />}
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs"
+                variant="quiet"
                 onClick={() => setActive(null)}
               >
-                <X className="h-3 w-3" />
                 Clear preview
               </Button>
             )}
           </div>
           <div className="flex flex-col gap-2">
             {DEMOS.map((d) => (
-              <Button
+              <SurfaceButton
                 key={d.id}
                 type="button"
                 variant={active === d.id ? "secondary" : "outline"}
@@ -332,7 +331,7 @@ export function ModelActivityIndicatorsDemo() {
                 <span className="block text-xs text-muted-foreground font-normal">
                   {d.hint}
                 </span>
-              </Button>
+              </SurfaceButton>
             ))}
           </div>
         </section>

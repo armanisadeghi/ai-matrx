@@ -46,24 +46,20 @@ export function EduNoteActionBar({ noteId }: { noteId: string }) {
     <div className="flex shrink-0 flex-col gap-1.5 border-b border-border bg-card/60 px-3 py-2">
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => router.push("/education/notes")}
-          className="gap-1.5"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
           Notes
         </Button>
         <div className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
           {label}
         </div>
         {canEdit && <LiveCaptureButton noteId={noteId} />}
-        <Button size="sm" variant="ghost" onClick={() => router.push(`/education/study-guides/${noteId}`)} className="gap-1.5">
-          <BookOpen className="h-3.5 w-3.5" />
+        <Button icon={<BookOpen />} variant="quiet" onClick={() => router.push(`/education/study-guides/${noteId}`)}>
           Study guide
         </Button>
-        <Button size="sm" onClick={openConvert} className="gap-1.5">
-          <Boxes className="h-3.5 w-3.5" />
+        <Button icon={<Boxes />} variant="primary" onClick={openConvert}>
           Convert
         </Button>
         <ShareButton

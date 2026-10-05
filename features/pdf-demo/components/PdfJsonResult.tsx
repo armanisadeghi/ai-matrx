@@ -42,7 +42,7 @@ export function PdfJsonResult({ data, title = "Response" }: Props) {
           <Code2 className="h-4 w-4 text-primary" />
           {title}
         </div>
-        <Button variant="outline" size="sm" onClick={copy}>
+        <Button variant="outline" onClick={copy}>
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 mr-1" /> Copied

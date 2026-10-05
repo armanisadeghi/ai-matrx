@@ -220,10 +220,10 @@ const BasicExample = () => {
       <CardContent>
         <div className="space-y-4">
           <div className="flex gap-2">
-            <Button onClick={handleRegister} disabled={!!callbackId}>
+            <Button variant="primary" onClick={handleRegister} disabled={!!callbackId}>
               Register Callback
             </Button>
-            <Button onClick={handleTrigger} disabled={!callbackId} variant="secondary">
+            <Button onClick={handleTrigger} disabled={!callbackId} variant="outline">
               Trigger Callback
             </Button>
           </div>
@@ -300,11 +300,12 @@ const LongRunningExample = () => {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <Button 
+          <Button
+            icon={<PlayCircle />}
+            variant="primary" 
             onClick={startLongRunningTask} 
             disabled={status === 'running'}
           >
-            <PlayCircle className="mr-2 h-4 w-4" />
             Start Task
           </Button>
           
@@ -382,7 +383,7 @@ const MultiSubscriberExample = () => {
       <CardContent>
         <div className="space-y-4">
           <div className="flex gap-2 flex-wrap">
-            <Button onClick={createGroup} disabled={!!groupId}>
+            <Button variant="primary" onClick={createGroup} disabled={!!groupId}>
               Create Group
             </Button>
             <Button 
@@ -395,7 +396,7 @@ const MultiSubscriberExample = () => {
             <Button 
               onClick={triggerGroup} 
               disabled={!groupId || subscribers.length === 0}
-              variant="secondary"
+              variant="outline"
             >
               Notify All ({subscribers.length})
             </Button>

@@ -234,9 +234,8 @@ export function ChangePositionForm({
         cancel={
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             onClick={onCancel}
-            className="min-h-11 sm:min-h-9"
           >
             Cancel
           </Button>
@@ -372,9 +371,7 @@ export function ChangePositionForm({
             </span>
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="min-h-11 sm:min-h-8"
               onClick={() => setFlsaStatus(chosenTitle.default_flsa_status ?? "")}
             >
               Use that
@@ -408,7 +405,7 @@ export function ChangePositionForm({
               {nextLocation.name} has no jurisdiction set, so nothing can be
               scheduled or stamped against it.
             </p>
-            <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+            <Button asChild variant="outline">
               <Link
                 href={hrSettingsHref("structure", {
                   org: organizationId,
@@ -456,7 +453,7 @@ function Refusal({
           "That change wasn't accepted, and nothing was written."}
       </p>
       {needsStructure ? (
-        <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+        <Button asChild variant="outline">
           <Link href={hrSettingsHref("structure", { org: organizationId })}>
             Open departments, locations and job titles
           </Link>

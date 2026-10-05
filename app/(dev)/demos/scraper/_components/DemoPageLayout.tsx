@@ -19,8 +19,7 @@ export function DemoPageLayout({ title, description, children, inputSection }: D
             <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-white dark:bg-zinc-900">
                 <div className="flex items-center gap-3 max-w-[1800px] mx-auto">
                     <AppLink href="/demos/scraper">
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                            <ArrowLeft className="w-4 h-4 mr-1" />
+                        <Button icon={<ArrowLeft />} type="submit" variant="quiet">
                             Back
                         </Button>
                     </AppLink>

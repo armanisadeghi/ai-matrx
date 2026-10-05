@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   MessageSquare,
   History,
@@ -38,50 +38,38 @@ export function AssistantControlBar({
           {/* Heartbeat frequency controls */}
           <div className="flex items-center gap-0 bg-muted/50 rounded-lg border border-border">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              icon={<ChevronDown />} aria-label="Decrease frequency"
+              variant="quiet"
               onClick={onHeartbeatDown}
               title="Decrease frequency"
-            >
-              <ChevronDown className="w-3 h-3" />
-            </Button>
+            />
             <span className="text-[10px] text-muted-foreground tabular-nums w-7 text-center">
               {heartbeatInterval > 0 ? `${heartbeatInterval}s` : "off"}
             </span>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              icon={<ChevronUp />} aria-label="Increase frequency"
+              variant="quiet"
               onClick={onHeartbeatUp}
               title="Increase frequency"
-            >
-              <ChevronUp className="w-3 h-3" />
-            </Button>
+            />
           </div>
 
           {onHistoryToggle && (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground"
+              icon={<History />} aria-label="History"
+              variant="quiet"
               onClick={onHistoryToggle}
               title="History"
-            >
-              <History className="w-3.5 h-3.5" />
-            </Button>
+            />
           )}
 
           {onSettingsToggle && (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground"
+              icon={<Settings />} aria-label="Settings"
+              variant="quiet"
               onClick={onSettingsToggle}
               title="Settings"
-            >
-              <Settings className="w-3.5 h-3.5" />
-            </Button>
+            />
           )}
         </div>
       )}

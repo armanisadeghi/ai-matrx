@@ -244,20 +244,14 @@ function FlagToggle({
   const isFlagged = Boolean(flags.flagged[entry.id]);
   return (
     <Button
+      icon={<Flag aria-hidden />}
       type="button"
-      variant={isFlagged ? "default" : "outline"}
-      size="sm"
+      variant={isFlagged ? "primary" : "outline"}
       disabled={disabled}
       onClick={(e) => {
         e.stopPropagation();
         flags.toggle(entry);
       }}
-      className={cn(
-        "h-6 gap-1 rounded-full px-2 text-[10px]",
-        isFlagged
-          ? "border-amber-600 bg-amber-500 text-amber-950 hover:bg-amber-500/90"
-          : "border-border text-muted-foreground hover:border-amber-500/50 hover:text-amber-700 dark:hover:text-amber-300",
-      )}
       aria-pressed={isFlagged}
       title={
         isFlagged
@@ -265,7 +259,6 @@ function FlagToggle({
           : "Flag this item as part of the problem — flag as many as apply"
       }
     >
-      <Flag className="h-3 w-3" aria-hidden />
       {isFlagged ? "Flagged" : "Flag"}
     </Button>
   );

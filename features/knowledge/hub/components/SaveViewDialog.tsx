@@ -152,10 +152,10 @@ export function SaveViewDialog({
             </p>
           ) : null}
           <DialogFooter>
-            <Button type="button" variant="ghost" disabled={busy} onClick={() => onOpenChange(false)}>
+            <Button type="button" variant="quiet" disabled={busy} onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button variant="primary" type="submit" disabled={busy}>
               {busy ? "Saving…" : mode === "create" ? "Save view" : "Rename"}
             </Button>
           </DialogFooter>

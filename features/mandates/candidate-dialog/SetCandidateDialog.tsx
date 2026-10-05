@@ -316,16 +316,17 @@ function SetCandidateBody({
       ) : null}
 
       <div className="flex items-center justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onClose} disabled={busy}>
+        <Button type="button" variant="quiet" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
         <Button
+          icon={busy ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           type="button"
           data-testid="set-candidate-confirm"
           disabled={!holder || busy || Boolean(knownRefusal) || runsInvalid || liveRungPending}
           onClick={() => void confirm()}
         >
-          {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
           Start collecting
         </Button>
       </div>

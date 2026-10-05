@@ -86,13 +86,10 @@ export default function AdminNavTreeMenu() {
           <TooltipTrigger asChild>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-gray-800 hover:bg-accent dark:text-gray-300"
+                icon={<ListTree />}
+                variant="quiet"
                 aria-label="Browse administration"
-              >
-                <ListTree className="h-4 w-4" />
-              </Button>
+              />
             </DropdownMenuTrigger>
           </TooltipTrigger>
           <TooltipContent>Browse administration</TooltipContent>

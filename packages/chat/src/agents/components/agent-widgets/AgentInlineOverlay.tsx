@@ -24,7 +24,7 @@
  */
 
 import { useEffect } from "react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { useAppSelector } from "../../../store/hooks";
 import { selectInstanceStatus } from "../../redux/execution-system/conversations/conversations.selectors";
@@ -87,14 +87,12 @@ export function AgentInlineOverlay({
           {title || "Agent Result"}
         </span>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 shrink-0"
+          icon={<X />}
+          variant="quiet"
+          className="shrink-0"
           aria-label="Close agent result"
           onClick={onClose}
-        >
-          <X className="w-3.5 h-3.5" />
-        </Button>
+        />
       </div>
       {isBound ? (
         <AgentRunner

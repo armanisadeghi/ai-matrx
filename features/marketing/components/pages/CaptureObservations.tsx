@@ -302,7 +302,7 @@ function CaptureObservationsDialog({
                 Broken — needs fix
               </label>
               <Button
-                size="sm"
+                variant="primary"
                 onClick={() => void saveObservation()}
                 disabled={!draft.trim() || saving}
               >

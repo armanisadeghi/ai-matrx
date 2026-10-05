@@ -61,18 +61,16 @@ export function KioskNumericKeypad({
           variant="outline"
           disabled={busy}
           onClick={() => onPress(digit)}
-          className="size-24 text-4xl font-semibold tabular-nums"
         >
           {digit}
         </Button>
       ))}
       <Button
         type="button"
-        variant="ghost"
+        variant="quiet"
         disabled={busy}
         onClick={onCancel}
         aria-label="Cancel"
-        className="size-24"
       >
         <X className="size-9" />
       </Button>
@@ -81,17 +79,15 @@ export function KioskNumericKeypad({
         variant="outline"
         disabled={busy}
         onClick={() => onPress("0")}
-        className="size-24 text-4xl font-semibold tabular-nums"
       >
         0
       </Button>
       <Button
         type="button"
-        variant="ghost"
+        variant="quiet"
         disabled={busy || !canDelete}
         onClick={onDelete}
         aria-label="Delete last digit"
-        className="size-24"
       >
         <Delete className="size-9" />
       </Button>

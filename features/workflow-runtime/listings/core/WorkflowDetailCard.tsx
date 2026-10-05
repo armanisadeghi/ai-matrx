@@ -336,7 +336,8 @@ export function WorkflowDetailCard({
             <div className="flex shrink-0 items-center gap-2 border-t border-border pt-3">
               <WorkflowSneakPeekCopyMenu workflowId={workflow.id} />
               <Button
-                size="sm"
+                icon={<CircleCheck />}
+                variant="primary"
                 className="ml-auto"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -344,7 +345,6 @@ export function WorkflowDetailCard({
                   onSelect();
                 }}
               >
-                <CircleCheck />
                 Select Workflow
               </Button>
             </div>

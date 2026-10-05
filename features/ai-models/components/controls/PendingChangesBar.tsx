@@ -55,22 +55,21 @@ export default function PendingChangesBar({
         )}
       </div>
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-7 px-2 text-xs gap-1 shrink-0"
+        icon={<RotateCcw />}
+        variant="quiet"
+        className="shrink-0"
         onClick={onDiscardAll}
         disabled={saving}
       >
-        <RotateCcw className="h-3 w-3" />
         Discard
       </Button>
       <Button
-        size="sm"
-        className="h-7 px-3 text-xs gap-1.5 shrink-0"
+        icon={<Save />}
+        variant="primary"
+        className="shrink-0"
         onClick={onSave}
         disabled={saving}
       >
-        <Save className="h-3.5 w-3.5" />
         {saving ? "Saving…" : "Save changes"}
       </Button>
     </div>

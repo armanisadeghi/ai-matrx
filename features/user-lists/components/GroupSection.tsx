@@ -94,9 +94,8 @@ export function GroupSection({
         >
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 shrink-0 p-0 text-muted-foreground lg:hidden"
+            variant="quiet"
+            className="w-11 shrink-0 lg:hidden"
             aria-label={`Actions for ${displayName}`}
             aria-haspopup="menu"
             onClick={() => openContextMenuForElement(groupRef.current)}
@@ -110,15 +109,14 @@ export function GroupSection({
           />
           {isOwner && onAddItem && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 text-muted-foreground hover:text-primary"
+              icon={<Plus />}
+              variant="quiet"
+              className="w-6"
               onClick={() =>
                 onAddItem(groupName === "Ungrouped" ? "" : groupName)
               }
               title={`Add item to ${displayName}`}
             >
-              <Plus className="h-3.5 w-3.5" />
               <span className="sr-only">Add item to {displayName}</span>
             </Button>
           )}

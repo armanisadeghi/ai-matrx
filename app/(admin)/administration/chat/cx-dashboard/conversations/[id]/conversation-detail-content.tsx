@@ -110,9 +110,8 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
       {/* Header */}
       <div className="flex items-start gap-3">
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 mt-0.5"
+          variant="quiet"
+          className="mt-0.5"
           onClick={() => router.back()}
         >
           <ArrowLeft className="w-3.5 h-3.5" />
@@ -144,8 +143,6 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
         <div className="flex gap-1">
           <Button
             variant="outline"
-            size="sm"
-            className="h-7 text-xs"
             onClick={() =>
               openMakeAgent({ conversationId: conv.id, conversationTitle: conv.title })
             }
@@ -154,12 +151,10 @@ export function ConversationDetailContent({ detail }: { detail: Detail }) {
             Make an agent
           </Button>
           <Button
+            icon={<Download />}
             variant="outline"
-            size="sm"
-            className="h-7 text-xs"
             onClick={() => exportToJSON(messages, "conversation-messages")}
           >
-            <Download className="w-3 h-3 mr-1" />
             Export
           </Button>
         </div>

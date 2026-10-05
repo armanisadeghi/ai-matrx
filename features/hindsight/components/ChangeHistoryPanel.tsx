@@ -168,8 +168,7 @@ export function ChangeHistoryPanel({
           </p>
         </div>
         <Button
-          variant={withFindingsOnly ? "default" : "outline"}
-          size="sm"
+          variant={withFindingsOnly ? "primary" : "outline"}
           onClick={() => {
             setWithFindingsOnly((v) => !v);
             setOffset(0);
@@ -282,7 +281,6 @@ export function ChangeHistoryPanel({
         <footer className="mt-3 flex items-center justify-between">
           <Button
             variant="outline"
-            size="sm"
             disabled={offset === 0}
             onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
           >
@@ -293,7 +291,6 @@ export function ChangeHistoryPanel({
           </span>
           <Button
             variant="outline"
-            size="sm"
             disabled={!history.data?.has_more}
             onClick={() => setOffset((o) => o + PAGE_SIZE)}
           >

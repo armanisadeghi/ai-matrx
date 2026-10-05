@@ -38,7 +38,7 @@ import {
   VideoOff,
   Volume2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,

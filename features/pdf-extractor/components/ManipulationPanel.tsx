@@ -136,12 +136,10 @@ function ResultBar({
   return (
     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
       <Button
-        size="sm"
+        icon={<Download />}
         variant="outline"
-        className="h-7 text-[10px] px-2"
         onClick={() => downloadBlob(result)}
       >
-        <Download className="w-3 h-3 mr-1" />
         Download
       </Button>
 
@@ -151,8 +149,7 @@ function ResultBar({
         </span>
       ) : (
         <Button
-          size="sm"
-          className="h-7 text-[10px] px-2"
+          variant="primary"
           disabled={saveState.saving}
           onClick={() => void onSave()}
         >
@@ -231,9 +228,7 @@ function OpCard({
           {children}
 
           <Button
-            size="sm"
-            variant="secondary"
-            className="h-7 text-[10px] px-2.5"
+            variant="outline"
             disabled={op.running}
             onClick={() => void onRun()}
           >
@@ -385,9 +380,8 @@ function VisualToolCard({
                 </span>
               </div>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-[10px] px-2 shrink-0"
+                variant="quiet"
+                className="shrink-0"
                 onClick={onCancel}
               >
                 Cancel
@@ -395,9 +389,8 @@ function VisualToolCard({
             </div>
           ) : (
             <Button
-              size="sm"
-              variant="secondary"
-              className="h-7 text-[10px] px-2.5 w-full"
+              variant="outline"
+              className="w-full"
               onClick={onLaunch}
               disabled={!available}
             >
@@ -1109,8 +1102,8 @@ export function ManipulationPanel({
           </p>
         </div>
         <Button
-          size="sm"
-          className="h-7 text-[10px] px-2 shrink-0"
+          variant="primary"
+          className="shrink-0"
           disabled={!onRunPipeline || pipelineRunning}
           onClick={onRunPipeline ? () => void onRunPipeline() : undefined}
         >

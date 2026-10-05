@@ -74,41 +74,36 @@ export function InterviewChooser({
                 ) : null}
               </div>
               <Button
+                icon={<ExternalLink />} aria-label="Open the full conversation in a new tab"
                 asChild
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 shrink-0"
+                variant="quiet"
+                className="shrink-0"
                 title="Open the full conversation in a new tab"
               >
                 <Link
                   href={`/chat/${interview.conversationId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                  <span className="sr-only">Open in a new tab</span>
-                </Link>
+                />
               </Button>
             </div>
             <Button
-              size="sm"
-              className="mt-2 h-8 w-full"
+              iconEnd={<ArrowRight />}
+              variant="primary"
+              className="mt-2 w-full"
               onClick={() => onContinue(interview.conversationId)}
             >
               Continue this one
-              <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
           </li>
         ))}
       </ul>
 
       <Button
-        size="sm"
+        icon={<Plus />}
         variant="outline"
-        className="h-9"
         onClick={onStartNew}
       >
-        <Plus className="mr-1 h-4 w-4" />
         Start a new interview
       </Button>
     </div>

@@ -966,9 +966,7 @@ export function CaptureStudio({
                   " Only media captured before the interruption can be recovered."}
               </span>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7 px-2 text-xs"
                 disabled={recovering !== null}
                 onClick={() => void handleFinishRecovery(entry)}
               >
@@ -979,9 +977,7 @@ export function CaptureStudio({
                 )}
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs"
+                variant="quiet"
                 disabled={recovering !== null}
                 onClick={() => void handleDiscardRecovery(entry.manifest.capture_id)}
                 aria-label="Discard recovered recording"
@@ -1078,32 +1074,27 @@ export function CaptureStudio({
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   {needsCamera && (
                     <Button
-                      size="sm"
+                      icon={<RefreshCw />}
                       variant="outline"
-                      className="h-9"
                       onClick={handleRetryCamera}
                     >
-                      <RefreshCw className="mr-1.5 h-4 w-4" />
                       Try again
                     </Button>
                   )}
                   {showFallbackOffer && (
                     <Button
-                      size="sm"
-                      className="h-9"
+                      icon={<Camera />}
+                      variant="primary"
                       onClick={() => fallbackRef.current?.open()}
                     >
-                      <Camera className="mr-1.5 h-4 w-4" />
                       Use device camera
                     </Button>
                   )}
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-9"
+                    icon={<LifeBuoy />}
+                    variant="quiet"
                     onClick={() => setShowTroubleshooting(true)}
                   >
-                    <LifeBuoy className="mr-1.5 h-4 w-4" />
                     Get help
                   </Button>
                 </div>

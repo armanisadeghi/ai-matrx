@@ -113,10 +113,10 @@ function PagePicker({ onPick, onCancel }: PickerProps) {
       />
       {value.trim() && !path && <p className="text-xs text-destructive">Not a page of this app.</p>}
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!path}>
+        <Button variant="primary" type="submit" disabled={!path}>
           Add to board
         </Button>
       </div>

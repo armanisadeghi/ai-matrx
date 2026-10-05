@@ -280,9 +280,7 @@ function buildBrandColumns({
       width: 40,
       cell: (r) => (
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[10px]"
+          variant="quiet"
           disabled={running}
           onClick={(event) => {
             event.stopPropagation();
@@ -805,16 +803,15 @@ function TopicPlacementConsole({
           </div>
 
           <Button
-            size="sm"
-            className="h-7 gap-1 text-xs"
+            icon={running ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             disabled={running || selected.length === 0 || knobsBroken}
             onClick={() => startRun(selected)}
           >
-            {running ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Play className="h-3 w-3" />
-            )}
             {running
               ? queue.length > 0
                 ? `Running… ${queue.length} queued`
@@ -880,9 +877,7 @@ function TopicPlacementConsole({
             >
               <div className="flex items-center gap-1.5 border-b border-border px-2 py-1.5">
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-[10px]"
+                  variant="quiet"
                   onClick={() =>
                     setSelected(
                       selected.length === visible.length
@@ -896,9 +891,7 @@ function TopicPlacementConsole({
                     : "All"}
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-1.5"
+                  variant="quiet"
                   title="Re-read coverage"
                   onClick={() =>
                     void queryClient.invalidateQueries({

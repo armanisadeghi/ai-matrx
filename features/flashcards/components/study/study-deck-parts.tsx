@@ -134,13 +134,12 @@ export function StudyWindowFooter({
       </div>
       <div className="flex w-full items-center gap-1">
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 shrink-0 px-2 text-xs"
+          icon={<ChevronLeft />}
+          variant="quiet"
+          className="shrink-0"
           onClick={onPrev}
           disabled={currentIndex === 0}
         >
-          <ChevronLeft className="mr-0.5 h-3.5 w-3.5" />
           Prev
         </Button>
 
@@ -152,14 +151,13 @@ export function StudyWindowFooter({
         />
 
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 shrink-0 px-2 text-xs"
+          iconEnd={<ChevronRight />}
+          variant="quiet"
+          className="shrink-0"
           onClick={onNext}
           disabled={currentIndex >= cardCount - 1}
         >
           Next
-          <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
         </Button>
       </div>
     </div>
@@ -201,8 +199,7 @@ export function StudyCompletionSummary({
         <StudyStat label="Accuracy" value={`${accuracy}%`} />
       </div>
       {onRestart && (
-        <Button variant="outline" size="sm" onClick={onRestart}>
-          <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<RotateCcw />} variant="outline" onClick={onRestart}>
           Study again
         </Button>
       )}

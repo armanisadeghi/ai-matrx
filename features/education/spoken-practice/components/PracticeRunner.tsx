@@ -92,9 +92,7 @@ export function PracticeRunner({
           {cfg.label} · {index + 1} of {total}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="text-xs text-muted-foreground"
+          variant="quiet"
           onClick={practice.quit}
         >
           End session
@@ -129,8 +127,7 @@ export function PracticeRunner({
             {phase === "answering" && (
               <>
                 <MicMeter level={micLevel} />
-                <Button className="gap-2" onClick={practice.submitAnswer}>
-                  <Square className="h-4 w-4" />
+                <Button icon={<Square />} variant="primary" onClick={practice.submitAnswer}>
                   Done answering
                 </Button>
                 <button
@@ -189,9 +186,8 @@ export function PracticeRunner({
               <SourceCitations trust={current.trust} className="mt-2" />
             </div>
 
-            <Button className="w-full gap-1.5" onClick={practice.next}>
+            <Button iconEnd={<ChevronRight />} variant="primary" className="w-full" onClick={practice.next}>
               {index + 1 >= total ? "Finish & get review" : "Next"}
-              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         )}

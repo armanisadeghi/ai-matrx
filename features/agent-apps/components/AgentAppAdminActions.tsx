@@ -173,13 +173,8 @@ export function AgentAppAdminActions({
   return (
     <div className={containerCls}>
       <Button
-        variant={app.is_featured ? "default" : "outline"}
-        size="sm"
-        onClick={handleToggleFeatured}
-        disabled={busy !== null}
-      >
-        {busy === "featured" ? (
-          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
+        icon={busy === "featured" ? (
+          <Loader2 className="animate-spin" />
         ) : (
           <Star
             className={`w-3.5 h-3.5 mr-1 ${
@@ -187,43 +182,44 @@ export function AgentAppAdminActions({
             }`}
           />
         )}
+        variant={app.is_featured ? "primary" : "outline"}
+        onClick={handleToggleFeatured}
+        disabled={busy !== null}
+      >
         {app.is_featured ? "Featured" : "Feature"}
       </Button>
 
       <Button
-        variant={app.is_verified ? "default" : "outline"}
-        size="sm"
+        icon={busy === "verified" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <ShieldCheck />
+        )}
+        variant={app.is_verified ? "primary" : "outline"}
         onClick={handleToggleVerified}
         disabled={busy !== null}
       >
-        {busy === "verified" ? (
-          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-        ) : (
-          <ShieldCheck className="w-3.5 h-3.5 mr-1" />
-        )}
         {app.is_verified ? "Verified" : "Verify"}
       </Button>
 
       <Button
-        variant={app.published_to_web ? "default" : "outline"}
-        size="sm"
+        icon={busy === "public" ? (
+          <Loader2 className="animate-spin" />
+        ) : app.published_to_web ? (
+          <CheckCircle />
+        ) : (
+          <Ban />
+        )}
+        variant={app.published_to_web ? "primary" : "outline"}
         onClick={handleTogglePublic}
         disabled={busy !== null}
       >
-        {busy === "public" ? (
-          <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />
-        ) : app.published_to_web ? (
-          <CheckCircle className="w-3.5 h-3.5 mr-1" />
-        ) : (
-          <Ban className="w-3.5 h-3.5 mr-1" />
-        )}
         {publishedToWebLabel(app.published_to_web)}
       </Button>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" disabled={busy !== null}>
-            <StatusIcon status={app.status} className="w-3.5 h-3.5 mr-1" />
+          <Button icon={<StatusIcon status={app.status} />} variant="outline" disabled={busy !== null}>
             {app.status}
           </Button>
         </DropdownMenuTrigger>
@@ -273,10 +269,8 @@ export function AgentAppAdminActions({
               />
               {!rlEditing && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => setRlEditing(true)}
-                  className="h-6 text-xs"
                 >
                   Edit
                 </Button>
@@ -326,8 +320,7 @@ export function AgentAppAdminActions({
               </div>
               <div className="col-span-3 flex items-center justify-end gap-2 pt-1">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => {
                     setRlEditing(false);
                     setRlIp(app.rate_limit_per_ip ?? 20);
@@ -339,7 +332,7 @@ export function AgentAppAdminActions({
                   Cancel
                 </Button>
                 <Button
-                  size="sm"
+                  variant="primary"
                   onClick={handleSaveRateLimits}
                   disabled={busy === "rate-limits"}
                 >
@@ -371,12 +364,11 @@ export function AgentAppAdminActions({
       {onDelete && (
         <>
           <Button
-            variant="destructive"
-            size="sm"
+            icon={<Trash2 />}
+            variant="danger"
             onClick={() => setConfirmDelete(true)}
             disabled={busy !== null}
           >
-            <Trash2 className="w-3.5 h-3.5 mr-1" />
             Move to Trash
           </Button>
 

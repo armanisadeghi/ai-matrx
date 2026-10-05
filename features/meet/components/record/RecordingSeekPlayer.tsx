@@ -103,17 +103,15 @@ export function RecordingSeekPlayer({
     return (
       <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border border-border bg-black/90">
         <Button
-          variant="secondary"
-          size="sm"
-          className="gap-1.5"
+          icon={loading ? (
+            <Loader2 className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Play aria-hidden="true" />
+          )}
+          variant="outline"
           disabled={loading}
           onClick={() => void load()}
         >
-          {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Play className="h-4 w-4" aria-hidden="true" />
-          )}
           {loading ? "Loading the recording…" : "Play recording"}
         </Button>
         {error ? (

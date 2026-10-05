@@ -18,12 +18,10 @@ export default function SitemapViewerPage() {
     <div className="relative">
       <div className="fixed top-4 left-4 z-50">
         <Button
+          icon={<ArrowLeft />}
           onClick={handleBack}
           variant="outline"
-          size="sm"
-          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-300 dark:border-gray-600 shadow-lg hover:bg-white dark:hover:bg-gray-800"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
       </div>

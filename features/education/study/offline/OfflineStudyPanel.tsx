@@ -79,14 +79,13 @@ export function OfflineStudyPanel() {
             </p>
           </div>
           <Button
-            size="sm"
+            icon={<RefreshCw
+              className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`}
+            />}
             variant="outline"
             onClick={flushNow}
             disabled={syncing || !online}
           >
-            <RefreshCw
-              className={`mr-2 h-4 w-4 ${syncing ? "animate-spin" : ""}`}
-            />
             {syncing ? "Syncing" : "Sync now"}
           </Button>
         </div>
@@ -124,7 +123,7 @@ export function OfflineStudyPanel() {
               `disabled` <Button asChild>, which only paints an anchor grey
               while it stays fully clickable. */}
           {online ? (
-            <Button asChild variant="outline" size="sm" className="mt-3">
+            <Button asChild variant="outline" className="mt-3">
               <Link href="/education/flashcards">
                 <Layers className="mr-1.5 h-4 w-4" />
                 Browse your decks

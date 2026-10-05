@@ -442,15 +442,14 @@ export function AddMembersDialog({
         </div>
         <DialogFooter>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={adding}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            variant="primary"
             onClick={() => void submit()}
             disabled={
               adding || previewing || !query || !preview || (willAdd ?? 0) === 0

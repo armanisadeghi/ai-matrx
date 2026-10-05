@@ -2,7 +2,7 @@
 
 import { ReactNode } from "react";
 import { X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 interface MobileOverlayWrapperProps {

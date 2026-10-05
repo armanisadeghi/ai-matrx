@@ -400,9 +400,13 @@ export function EditScopeTypeSheet({
                     }
                   />
                   <Button
+                    icon={removed ? (
+                      <Check />
+                    ) : (
+                      <Trash2 />
+                    )}
                     type="button"
-                    variant="ghost"
-                    size="icon"
+                    variant="quiet"
                     onClick={() => toggleDelete(row.rowId)}
                     disabled={busy}
                     aria-label={`${removed ? "Restore" : "Remove"} ${row.display_name || `context item ${idx + 1}`}`}
@@ -412,25 +416,18 @@ export function EditScopeTypeSheet({
                         ? "text-emerald-600"
                         : "text-muted-foreground hover:text-rose-600"
                     }`}
-                  >
-                    {removed ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
+                  />
                 </div>
               );
             })}
           </div>
           <Button
+            icon={<Plus />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={appendNewRow}
             disabled={busy}
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
             Add context item
           </Button>
         </div>
@@ -474,7 +471,6 @@ export function EditScopeTypeSheet({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={() => setSlug(toSlug(labelPlural))}
                   disabled={busy || !labelPlural.trim()}
                 >
@@ -521,24 +517,22 @@ export function EditScopeTypeSheet({
 
         <div className="flex gap-2 pt-4 border-t border-border">
           <Button
+            icon={<Trash2 />}
             variant="outline"
             onClick={handleDelete}
             disabled={busy}
-            className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30"
           >
-            <Trash2 className="h-4 w-4 mr-1.5" />
             Delete
           </Button>
           <div className="flex-1" />
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={busy}
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={busy || !labelSingular.trim()}>
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" onClick={handleSave} disabled={busy || !labelSingular.trim()}>
             Save changes
           </Button>
         </div>

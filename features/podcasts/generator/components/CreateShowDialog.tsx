@@ -163,14 +163,13 @@ export function CreateShowDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={busy}
           >
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={busy || !title.trim()}>
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
+          <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" onClick={handleCreate} disabled={busy || !title.trim()}>
             Create podcast
           </Button>
         </DialogFooter>

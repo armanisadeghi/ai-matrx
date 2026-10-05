@@ -82,8 +82,7 @@ export function ExportMenu({
         {iconOnly ? (
           <DownloadTapButton ariaLabel="Export" disabled={disabled || empty} />
         ) : (
-          <Button variant="outline" size="sm" disabled={disabled || empty}>
-            <Download className="h-4 w-4 sm:mr-2" />
+          <Button icon={<Download />} type="submit" variant="outline" disabled={disabled || empty}>
             <span className="hidden sm:inline">Export</span>
           </Button>
         )}

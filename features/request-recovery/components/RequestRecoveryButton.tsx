@@ -21,13 +21,12 @@ export function RequestRecoveryButton({
 
   return (
     <Button
-      variant="ghost"
-      size="sm"
+      icon={<Inbox />}
+      variant="quiet"
       onClick={open}
-      className={cn("relative h-8 gap-1.5 text-xs", className)}
+      className={cn("relative", className)}
       title={`${items.length} recovered submission${items.length === 1 ? "" : "s"}`}
     >
-      <Inbox className="w-3.5 h-3.5" />
       <span>Recovery</span>
       <span
         className={cn(

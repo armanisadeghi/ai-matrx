@@ -186,12 +186,11 @@ export function ProjectCard({
               }}
             >
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<Settings />}
+                type="submit"
+                variant="quiet"
                 disabled={isDisabled}
-                className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 dark:text-indigo-400 dark:hover:bg-indigo-900/30"
               >
-                <Settings className="h-4 w-4" />
                 Settings
               </Button>
             </Link>
@@ -205,13 +204,12 @@ export function ProjectCard({
               }}
             >
               <Button
-                variant="ghost"
-                size="sm"
+                iconEnd={<ChevronRight />}
+                type="submit"
+                variant="quiet"
                 disabled={isDisabled}
-                className="text-muted-foreground"
               >
                 View
-                <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </Link>
           )}

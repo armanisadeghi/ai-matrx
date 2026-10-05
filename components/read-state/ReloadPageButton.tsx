@@ -14,7 +14,7 @@
  * its own read passes `onRetry` to `ReadFailure` instead.
  */
 import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 
 export const RELOAD_PAGE_LABEL = "Reload page";
 

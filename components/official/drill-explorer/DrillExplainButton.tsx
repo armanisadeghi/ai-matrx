@@ -40,15 +40,13 @@ export function DrillExplainButton({ input }: { input: DrillExplainInput }) {
   };
   return (
     <Button
+      icon={<MessageCircleQuestion />}
       type="button"
-      variant="ghost"
-      size="xs"
-      className="gap-1"
+      variant="quiet"
       data-drill-explorer-explain
       title="Open this question and its answer in Alchemy, then choose an agent to ask about it"
       onClick={open}
-    >
-      <MessageCircleQuestion className="h-3 w-3" /> Explain this
+    > Explain this
     </Button>
   );
 }

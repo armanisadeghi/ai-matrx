@@ -173,18 +173,13 @@ export function TasksWorkbenchHome() {
             const active = view.key === smartView;
             return (
               <Button
+                icon={<Icon />}
                 key={view.key}
                 type="button"
-                variant={active ? "secondary" : "ghost"}
-                size="sm"
+                variant={active ? "outline" : "quiet"}
                 title={view.description}
                 onClick={() => dispatch(setSmartView(view.key))}
-                className={cn(
-                  "h-8 gap-1.5 px-2 text-xs",
-                  active && "bg-primary/10 text-primary hover:bg-primary/15",
-                )}
               >
-                <Icon className="size-3.5" />
                 <span>{view.label}</span>
                 <span className="tabular-nums text-muted-foreground">
                   {smartViewCounts[view.key]}

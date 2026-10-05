@@ -2507,12 +2507,10 @@ function BindingDraft({
                 <div className="rounded-xl border border-border bg-card px-3 py-2">
                   {!activeSection ? (
                     <Button
-                      variant={overriddenCount > 0 ? "secondary" : "ghost"}
-                      size="sm"
-                      className="gap-1.5"
+                      icon={<Settings2 />}
+                      variant={overriddenCount > 0 ? "outline" : "quiet"}
                       onClick={() => void openSettings()}
                     >
-                      <Settings2 className="h-3.5 w-3.5" />
                       {overriddenCount > 0
                         ? `Settings (${overriddenCount} overridden)`
                         : "Overrides"}
@@ -2536,7 +2534,6 @@ function BindingDraft({
                         />
                         <Button
                           variant="outline"
-                          size="sm"
                           onClick={() => setSettingsRetry((retry) => retry + 1)}
                         >
                           Retry
@@ -2648,7 +2645,6 @@ function BindingDraft({
                     again is the remedy — never a control that cannot work. */}
                 {saveError.retry ? (
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={saveError.retry}
                     disabled={busy}
@@ -2685,19 +2681,17 @@ function BindingDraft({
             ) : null}
             {binding && !accessTarget ? (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<Trash2 />}
+                variant="quiet"
                 disabled={disabled}
-                className="gap-1.5 text-muted-foreground"
                 onClick={() => void remove()}
               >
-                <Trash2 className="h-3.5 w-3.5" />
                 Remove {rungWords(rung).noun}
               </Button>
             ) : null}
             {accessTarget ? null : (
               <Button
-                size="sm"
+                variant="primary"
                 disabled={disabled || Boolean(saveRefusal)}
                 onClick={() => void save()}
               >

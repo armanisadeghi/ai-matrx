@@ -278,24 +278,21 @@ export function OvertimeRequestPanel({
 
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
+                  icon={<Check aria-hidden />}
+                  variant="primary"
                   type="button"
-                  size="sm"
-                  className="min-h-[44px]"
                   disabled={busy}
                   onClick={() => setPending("approve")}
                 >
-                  <Check className="mr-1.5 h-4 w-4" aria-hidden />
                   {capText.trim() ? "Approve with this cap" : "Approve"}
                 </Button>
                 <Button
+                  icon={<X aria-hidden />}
                   type="button"
-                  size="sm"
                   variant="outline"
-                  className="min-h-[44px]"
                   disabled={busy}
                   onClick={() => setPending("reject")}
                 >
-                  <X className="mr-1.5 h-4 w-4" aria-hidden />
                   Deny
                 </Button>
               </div>

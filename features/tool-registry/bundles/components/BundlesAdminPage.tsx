@@ -194,21 +194,19 @@ function BundlesAdminPageInner() {
             <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
           )}
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={() => void loadList()}
-            className="h-7 ml-auto gap-1.5 text-xs"
+            className="ml-auto"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </Button>
           <Button
-            size="sm"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setCreating(true)}
-            className="h-7 gap-1.5 text-xs"
             title="Create a new bundle (auto-creates its lister tool)"
           >
-            <Plus className="h-3.5 w-3.5" />
             New bundle
           </Button>
         </div>
@@ -228,18 +226,16 @@ function BundlesAdminPageInner() {
               </div>
               <div className="flex gap-1.5">
                 <Button
-                  size="sm"
-                  variant={filter === "active" ? "default" : "ghost"}
+                  variant={filter === "active" ? "primary" : "quiet"}
                   onClick={() => setFilter("active")}
-                  className="h-7 text-xs flex-1"
+                  className="flex-1"
                 >
                   Active
                 </Button>
                 <Button
-                  size="sm"
-                  variant={filter === "all" ? "default" : "ghost"}
+                  variant={filter === "all" ? "primary" : "quiet"}
                   onClick={() => setFilter("all")}
-                  className="h-7 text-xs flex-1"
+                  className="flex-1"
                 >
                   All
                 </Button>
@@ -476,10 +472,11 @@ function NewBundleDialog({
           </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void submit()}
             disabled={busy || !nameValid || nameClash}
           >
@@ -606,7 +603,7 @@ function BundleDetail({
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-medium">Identity</h2>
           <Button
-            size="sm"
+            variant="primary"
             onClick={() => void onSaveMeta()}
             disabled={savingMeta}
           >
@@ -761,13 +758,11 @@ function MemberAliasCell({
       />
       {dirty && (
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={() => {
             onAliasChange(item.member.tool_id, alias);
             setDirty(false);
           }}
-          className="h-7 text-xs px-2"
         >
           Save
         </Button>
@@ -981,10 +976,8 @@ function AddMemberDialog({
                   />
                 </span>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => setSelectedTool(null)}
-                  className="h-6 text-xs"
                 >
                   Change
                 </Button>
@@ -1017,10 +1010,11 @@ function AddMemberDialog({
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void onAdd()}
             disabled={busy || !selectedTool || !alias.trim()}
           >

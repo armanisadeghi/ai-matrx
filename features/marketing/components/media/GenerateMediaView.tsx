@@ -350,8 +350,7 @@ export function GenerateMediaView({
       <section className="space-y-2">
         <div className="flex items-center gap-2">
           <Button
-            size="sm"
-            className="h-8"
+            variant="primary"
             disabled={generating || createAsset.isPending}
             onClick={() => void placeOrder()}
           >

@@ -145,9 +145,7 @@ export function ConversationAnalyzePanel({
                 </div>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
-                  className="gap-1.5"
                   disabled={state.phase === "running"}
                   onClick={() => void runAnalysis(kind)}
                 >

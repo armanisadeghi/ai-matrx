@@ -104,12 +104,10 @@ export function FlashcardItemWindow({
       footerRight={
         front ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
+            icon={<Smartphone />}
+            variant="quiet"
             onClick={() => enterMobileView(0)}
           >
-            <Smartphone className="mr-1 h-3 w-3" />
             Swipe mode
           </Button>
         ) : undefined

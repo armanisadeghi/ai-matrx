@@ -56,11 +56,11 @@ export function DurableRunStopButton({
   if (running && cancel) {
     return (
       <Button
+        icon={<OctagonX aria-hidden />}
         variant="outline"
         disabled={cancelling}
         onClick={() => void cancel(reason)}
       >
-        <OctagonX className="size-4" aria-hidden />
         {cancelling ? "Stopping…" : "Stop this run"}
       </Button>
     );
@@ -101,7 +101,7 @@ export function DurableRunStopped({
       </div>
       {retry ? (
         <div className="pl-6">
-          <Button size="sm" variant="outline" onClick={() => void retry()}>
+          <Button variant="outline" onClick={() => void retry()}>
             Start it again
           </Button>
         </div>

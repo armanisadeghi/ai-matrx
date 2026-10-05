@@ -91,13 +91,10 @@ export default function MobileFilterMenu() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<MoreVertical size={16} />}
+            variant="quiet"
             aria-label="Task views and filters"
-            className="h-11 w-11 rounded-full"
-          >
-            <MoreVertical size={16} />
-          </Button>
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           <DropdownMenuLabel>Views</DropdownMenuLabel>

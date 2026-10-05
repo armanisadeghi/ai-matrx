@@ -181,7 +181,7 @@ function RecordPart({ loaded, part }: { loaded: LoadedMeeting; part: MeetingPart
       <div role="alert" className="space-y-2 p-4 text-sm">
         <p className="font-medium">This meeting record could not be opened.</p>
         <p className="text-muted-foreground">{`${record.failure.message} ${record.failure.remedy}`}</p>
-        <Button size="sm" variant="outline" onClick={record.reload}>
+        <Button variant="outline" onClick={record.reload}>
           Try again
         </Button>
       </div>

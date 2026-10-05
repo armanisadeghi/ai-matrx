@@ -23,7 +23,7 @@ import {
   Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
 import type {
@@ -172,27 +172,23 @@ export function Composer({ shows }: ComposerProps) {
                   />
                   {urls.length > 1 && (
                     <Button
+                      icon={<X />}
                       type="button"
-                      variant="ghost"
-                      size="icon"
+                      variant="quiet"
                       onClick={() =>
                         setUrls((p) => p.filter((_, idx) => idx !== i))
                       }
                       aria-label="Remove file URL"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                   )}
                 </div>
               ))}
               <Button
+                icon={<Plus />}
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setUrls((p) => [...p, ""])}
-                className="gap-1.5 text-muted-foreground"
               >
-                <Plus className="h-4 w-4" />
                 Add another file
               </Button>
             </div>
@@ -280,7 +276,7 @@ export function Composer({ shows }: ComposerProps) {
               )}
             </p>
           </div>
-          <Button
+          <SurfaceButton
             size="lg"
             onClick={handleGenerate}
             disabled={!canGenerate}
@@ -297,7 +293,7 @@ export function Composer({ shows }: ComposerProps) {
                 <ArrowRight className="h-5 w-5" />
               </>
             )}
-          </Button>
+          </SurfaceButton>
         </div>
       </div>
     </div>

@@ -262,10 +262,11 @@ export function OrganizationGateDialog() {
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={cancel}>
+          <Button variant="quiet" onClick={cancel}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={confirm}
             disabled={!userId || !sorted.some((org) => org.id === chosenId)}
           >

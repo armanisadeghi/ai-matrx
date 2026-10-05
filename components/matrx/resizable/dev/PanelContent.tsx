@@ -51,10 +51,8 @@ const PanelContent = ({
                 </div>
                 <div className="flex gap-2 flex-shrink-0">
                     <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={() => setIsFullScreen(!isFullScreen)}
-                        className="h-6 px-2"
                     >
                         {isFullScreen ? (
                             <Minimize2 className="h-3 w-3" />
@@ -63,10 +61,8 @@ const PanelContent = ({
                          )}
                     </Button>
                     <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="h-6 px-2"
                     >
                         {getChevron()}
                     </Button>

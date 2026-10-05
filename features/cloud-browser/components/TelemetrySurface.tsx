@@ -120,8 +120,7 @@ export function TelemetrySurface({
           <Activity className="h-4 w-4" /> Usage &amp; resources
         </h3>
         {onRefresh ? (
-          <Button size="sm" variant="ghost" onClick={onRefresh}>
-            <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
+          <Button icon={<RefreshCw />} variant="quiet" onClick={onRefresh}> Refresh
           </Button>
         ) : null}
       </div>

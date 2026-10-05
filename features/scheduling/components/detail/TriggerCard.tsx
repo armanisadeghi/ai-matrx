@@ -109,7 +109,7 @@ export function TriggerCard({ task, editHref = `/schedules/${task.id}/edit` }: P
               })}
             />
             {editHref ? (
-              <Button asChild variant="outline" size="sm" className="h-11 lg:h-8">
+              <Button asChild variant="outline">
                 <Link href={editHref}>
                   <Edit className="h-3.5 w-3.5 mr-1.5" /> Edit
                 </Link>

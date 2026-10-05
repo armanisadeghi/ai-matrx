@@ -116,15 +116,15 @@ export default function GlobalTaskShortcutImpl({ onClose }: Props) {
                 ))}
             </select>
             <Button
+              icon={isBusy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               onClick={submit}
               disabled={!title.trim() || isBusy}
-              className="h-8"
             >
-              {isBusy ? (
-                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
-              ) : (
-                <Plus className="w-3.5 h-3.5 mr-1.5" />
-              )}
               Create
             </Button>
           </div>

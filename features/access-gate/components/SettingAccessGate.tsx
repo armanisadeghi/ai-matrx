@@ -120,15 +120,15 @@ export function SettingAccessGate({
             aria-label="Message to organization admins"
           />
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <Send aria-hidden />
+            )}
+            variant="primary"
             disabled={busy || !message.trim() || !requestReady}
             onClick={() => void send()}
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : (
-              <Send className="h-3.5 w-3.5" aria-hidden />
-            )}
             Request this change
           </Button>
         </div>

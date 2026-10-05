@@ -560,8 +560,7 @@ export function OrganizationsAdminClient() {
             Only organizations on {audienceLabel(planAudienceFilter)} plans
           </span>
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => {
               const params = new URLSearchParams(searchParams.toString());
               params.delete("plan");
@@ -591,8 +590,7 @@ export function OrganizationsAdminClient() {
               />
             </Badge>
           </div>
-          <Button size="sm" variant="ghost" onClick={clearUserFocus}>
-            <X className="mr-1 h-4 w-4" /> Show all organizations
+          <Button icon={<X />} variant="quiet" onClick={clearUserFocus}> Show all organizations
           </Button>
         </div>
       ) : null}
@@ -619,8 +617,7 @@ export function OrganizationsAdminClient() {
               </p>
             </div>
             <Button
-              size="sm"
-              variant={showGuestWorkspaces ? "secondary" : "outline"}
+              variant={showGuestWorkspaces ? "outline" : "outline"}
               aria-pressed={showGuestWorkspaces}
               title="Show guest workspaces"
               onClick={() => setShowGuestWorkspaces((on) => !on)}
@@ -628,18 +625,16 @@ export function OrganizationsAdminClient() {
               Guests
             </Button>
             <Button
-              size="icon"
-              variant="ghost"
+              icon={loading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )} aria-label="Refresh organizations"
+              variant="quiet"
               title="Refresh organizations"
               onClick={() => setRefreshKey((current) => current + 1)}
               disabled={loading}
-            >
-              {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
+            />
           </div>
           <div className="min-h-0 flex-1 p-2">
             <NonEditableContextMenu
@@ -760,7 +755,7 @@ export function OrganizationsAdminClient() {
               ) : null}
             </div>
             <Button
-              size="sm"
+              icon={<WalletCards />}
               variant="outline"
               disabled={!selectedOrganization || Boolean(plansError)}
               onClick={() =>
@@ -772,15 +767,14 @@ export function OrganizationsAdminClient() {
                   currentPlanKey: orgPlans.get(selectedOrganization.id)?.plan_id ?? null,
                 })
               }
-            >
-              <WalletCards className="mr-1 h-4 w-4" /> Change plan
+            > Change plan
             </Button>
             <Button
-              size="sm"
+              icon={<Plus />}
+              variant="primary"
               onClick={() => setAddOpen(true)}
               disabled={!selectedOrganization}
-            >
-              <Plus className="mr-1 h-4 w-4" /> Add member
+            > Add member
             </Button>
           </div>
           {selectedOrganization && orgPlanAudience(selectedOrganization.id) === "enterprise" ? (
@@ -847,28 +841,22 @@ export function OrganizationsAdminClient() {
               columns={[...(memberColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (member) => (
                 <>
                   <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
+                    icon={<Building2 />} aria-label="View this user's organizations"
+                    variant="quiet"
                     title="View this user's organizations"
                     onClick={() => setUserFocus(member.user_id)}
-                  >
-                    <Building2 className="h-4 w-4" />
-                  </Button>
+                  />
                   <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    icon={savingMembershipId === member.id ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Trash2 />
+                    )} aria-label="Remove member"
+                    variant="quiet"
                     title="Remove member"
                     disabled={savingMembershipId === member.id}
                     onClick={() => void removeMember(member)}
-                  >
-                    {savingMembershipId === member.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4" />
-                    )}
-                  </Button>
+                  />
                 </>
               ) }]}
               getRowId={(member) => member.id}
@@ -969,18 +957,19 @@ export function OrganizationsAdminClient() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddOpen(false)}>
+            <Button variant="quiet" onClick={() => setAddOpen(false)}>
               Cancel
             </Button>
             <Button
+              icon={savingMembershipId ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               onClick={() => void addMember()}
               disabled={!addUserId || savingMembershipId !== null}
             >
-              {savingMembershipId ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="mr-2 h-4 w-4" />
-              )}
               Add member
             </Button>
           </DialogFooter>

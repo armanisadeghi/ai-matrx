@@ -121,7 +121,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
       <div className="flex flex-col gap-2 text-sm">
         <p className="text-destructive">{problem} <ErrorAlchemyMenu error={problem} /></p>
         <div>
-          <Button variant="outline" size="sm" onClick={() => void load()}>
+          <Button variant="outline" onClick={() => void load()}>
             Try again
           </Button>
         </div>
@@ -139,8 +139,7 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
         <span>Checked {whenText(board.checkedAt)}</span>
-        <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => void load()} disabled={loading}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />
+        <Button icon={<RefreshCw className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`} />} variant="quiet" onClick={() => void load()} disabled={loading}>
           Check again
         </Button>
         {!board.mayPress && <span>{board.mayPressDetail}</span>}
@@ -163,12 +162,12 @@ export function OrgDataSwitches({ organizationId }: { organizationId: string }) 
               </div>
               <div className="flex items-center gap-2">
                 {seam.mayFlip && (
-                  <Button size="sm" onClick={() => setPending({ seam, to: "new" })}>
+                  <Button variant="primary" onClick={() => setPending({ seam, to: "new" })}>
                     Switch to the new system
                   </Button>
                 )}
                 {seam.mayReverse && (
-                  <Button size="sm" variant="outline" onClick={() => setPending({ seam, to: "old" })}>
+                  <Button variant="outline" onClick={() => setPending({ seam, to: "old" })}>
                     Switch back
                   </Button>
                 )}

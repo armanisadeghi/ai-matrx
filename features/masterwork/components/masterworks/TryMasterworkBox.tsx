@@ -958,21 +958,19 @@ export function TryMasterworkBox({
           <div className="flex flex-wrap gap-2">
             {onCompare ? (
               <Button
-                size="sm"
+                icon={<Scale />}
                 variant="outline"
                 onClick={() => onCompare(candidateText)}
               >
-                <Scale className="mr-1 h-4 w-4" />
                 Judge this against your own work
               </Button>
             ) : null}
             {onCompareTwo ? (
               <Button
-                size="sm"
+                icon={<GitCompareArrows />}
                 variant="outline"
                 onClick={() => onCompareTwo(candidateText)}
               >
-                <GitCompareArrows className="mr-1 h-4 w-4" />
                 Compare it to another answer
               </Button>
             ) : null}

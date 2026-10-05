@@ -361,16 +361,15 @@ export function LinkAgentToShortcutModal({
                 Category <span className="text-destructive">*</span>
               </Label>
               <Button
+                icon={<Plus />}
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => {
                   setCategoryFormMounted(true);
                   setCategoryFormOpen(true);
                 }}
                 disabled={isProcessing}
               >
-                <Plus className="h-3.5 w-3.5 mr-1" />
                 New category
               </Button>
             </div>
@@ -597,14 +596,13 @@ export function LinkAgentToShortcutModal({
     <>
       <Button
         variant="outline"
-        size="sm"
         onClick={onClose}
         disabled={isProcessing || isLoading}
       >
         Cancel
       </Button>
       <Button
-        size="sm"
+        variant="primary"
         onClick={activeTab === "create" ? handleCreate : handleLinkExisting}
         disabled={
           isProcessing ||

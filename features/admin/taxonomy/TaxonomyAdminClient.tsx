@@ -135,19 +135,18 @@ export default function TaxonomyAdminClient() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            icon={<RefreshCw />} aria-label="Refresh"
             variant="outline"
-            size="icon"
             title="Refresh"
             onClick={() => void load()}
-          >
-            <RefreshCw className="h-4 w-4" />
-          </Button>
+          />
           <Button
+            icon={<Plus />}
+            variant="primary"
             onClick={() =>
               setDialog({ mode: "create", level: "domain", parentId: null })
             }
-          >
-            <Plus className="mr-1.5 h-4 w-4" /> New domain
+          > New domain
           </Button>
         </div>
       </div>

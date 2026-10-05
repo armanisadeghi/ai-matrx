@@ -225,7 +225,7 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
         <div className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-6 print:max-w-none">
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             {mySigner && (
-              <Button size="sm" asChild>
+              <Button variant="primary" asChild>
                 <Link href={signHref(envelopeId)}>
                   <PenLine className="h-4 w-4" />
                   Sign now
@@ -234,24 +234,21 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
             )}
             {isOpen && (
               <Button
-                size="sm"
+                icon={busy === "remind" ? <Loader2 className="animate-spin" /> : <BellRing />}
                 variant="outline"
                 disabled={busy !== null}
                 onClick={() => void run("remind", () => remindEnvelope(dispatch, envelopeId), "Reminder sent.")}
               >
-                {busy === "remind" ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellRing className="h-4 w-4" />}
                 Remind
               </Button>
             )}
             {isOpen && (
-              <Button size="sm" variant="ghost" disabled={busy !== null} onClick={() => setVoidOpen(true)}>
-                <XCircle className="h-4 w-4" />
+              <Button icon={<XCircle />} variant="quiet" disabled={busy !== null} onClick={() => setVoidOpen(true)}>
                 Void
               </Button>
             )}
             {status === "completed" && (
-              <Button size="sm" variant="outline" onClick={() => window.print()}>
-                <Printer className="h-4 w-4" />
+              <Button icon={<Printer />} variant="outline" onClick={() => window.print()}>
                 Print record
               </Button>
             )}
@@ -288,15 +285,13 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
                   </div>
                   {isOpen && !signed && signerStatus !== "declined" && (
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      icon={<RotateCw />}
+                      variant="quiet"
                       aria-label={`Send again to ${text(s, "full_name") ?? "this signer"}`}
                       className="print:hidden"
                       disabled={busy !== null}
                       onClick={() => setResendFor({ id, email: text(s, "email") ?? "", outsider: text(s, "actor_type") !== "internal_user" })}
-                    >
-                      <RotateCw className="h-4 w-4" />
-                    </Button>
+                    />
                   )}
                 </div>
               );
@@ -398,11 +393,12 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
             onChange={(ev) => setVoidReason(ev.target.value)}
           />
           <DialogFooter>
-            <Button variant="ghost" disabled={busy === "void"} onClick={() => setVoidOpen(false)}>
+            <Button variant="quiet" disabled={busy === "void"} onClick={() => setVoidOpen(false)}>
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              icon={busy === "void" && <Loader2 className="animate-spin" />}
+              variant="danger"
               disabled={!voidReason.trim() || busy === "void"}
               onClick={() =>
                 void run("void", () => voidEnvelope(dispatch, envelopeId, voidReason.trim()), "Envelope voided.").then(() =>
@@ -410,7 +406,6 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
                 )
               }
             >
-              {busy === "void" && <Loader2 className="h-4 w-4 animate-spin" />}
               Void
             </Button>
           </DialogFooter>
@@ -438,10 +433,12 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
           </div>
           )}
           <DialogFooter>
-            <Button variant="ghost" disabled={busy === "resend"} onClick={() => setResendFor(null)}>
+            <Button variant="quiet" disabled={busy === "resend"} onClick={() => setResendFor(null)}>
               Cancel
             </Button>
             <Button
+              icon={busy === "resend" && <Loader2 className="animate-spin" />}
+              variant="primary"
               disabled={busy === "resend" || (resendFor?.outsider === true && !resendFor.email.trim())}
               onClick={() => {
                 const target = resendFor;
@@ -453,7 +450,6 @@ export function EnvelopeDetail({ envelopeId }: { envelopeId: string }) {
                 ).then(() => setResendFor(null));
               }}
             >
-              {busy === "resend" && <Loader2 className="h-4 w-4 animate-spin" />}
               Send again
             </Button>
           </DialogFooter>

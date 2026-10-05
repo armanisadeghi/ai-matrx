@@ -119,12 +119,11 @@ export function StudyAnalyticsView({
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
         {backHref && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="mb-3 h-8 px-2 text-xs text-muted-foreground"
+            icon={<ArrowLeft />}
+            variant="quiet"
+            className="mb-3"
             onClick={() => router.push(backHref)}
           >
-            <ArrowLeft className="mr-1 h-4 w-4" />
             Back
           </Button>
         )}
@@ -138,11 +137,10 @@ export function StudyAnalyticsView({
             analytics &&
             (analytics.byMode.find((m) => m.itemType === "fc_card")?.dueNow ?? 0) > 0 && (
             <Button
-              size="sm"
-              className="gap-1.5"
+              icon={<CalendarClock />}
+              variant="primary"
               onClick={() => router.push("/education/flashcards/review")}
             >
-              <CalendarClock className="h-4 w-4" />
               {/* No count here: the review opens due FLASHCARDS (capped by the
                   study plan), while the tile below counts every mode. */}
               Review due flashcards
@@ -172,7 +170,7 @@ export function StudyAnalyticsView({
             </p>
             {!readOnly && (
               <Button
-                size="sm"
+                variant="primary"
                 className="mt-2"
                 onClick={() => router.push("/education/flashcards")}
               >

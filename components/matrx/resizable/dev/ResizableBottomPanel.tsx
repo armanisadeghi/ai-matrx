@@ -113,12 +113,10 @@ const ResizableBottomPanel: React.FC<ResizableBottomPanelProps> = ({
     return (
       <div className="fixed bottom-4 right-4 z-50">
         <Button
+          icon={<ChevronUp />}
           variant="outline"
-          size="sm"
           onClick={handleToggle}
-          className="bg-background border shadow-md h-6 px-2 py-1 text-xs"
         >
-          <ChevronUp className="h-3 w-3 mr-1" />
           {expandButtonProps.label}
         </Button>
       </div>
@@ -175,10 +173,8 @@ const ResizableBottomPanel: React.FC<ResizableBottomPanelProps> = ({
               <div className="flex-1">{header}</div>
               <div className="flex gap-2">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={handleFullScreenToggle}
-                  className="h-6 px-2"
                 >
                   {isFullScreen ? (
                     <Minimize2 className="h-3 w-3" />
@@ -187,10 +183,8 @@ const ResizableBottomPanel: React.FC<ResizableBottomPanelProps> = ({
                   )}
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={handleToggle}
-                  className="h-6 px-2"
                 >
                   <ChevronDown className="h-3 w-3" />
                 </Button>

@@ -183,15 +183,16 @@ export function CreateConsole() {
 
       {/* Desktop generate (lg+) */}
       <Button
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Radio />
+        )}
+        variant="primary"
         onClick={handleGenerate}
         disabled={!canGenerate || busy}
-        className="ml-auto hidden h-9 shrink-0 gap-2 shadow-sm lg:flex"
+        className="ml-auto hidden shrink-0 lg:flex"
       >
-        {busy ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Radio className="h-4 w-4" />
-        )}
         {busy ? "Starting…" : "Generate episode"}
       </Button>
     </div>
@@ -246,16 +247,16 @@ export function CreateConsole() {
             {/* Mobile/tablet generate (sticky bottom, below lg) */}
             <div className="sticky bottom-0 -mx-4 mt-6 border-t border-border bg-card/90 px-4 py-3 pb-safe backdrop-blur-sm lg:hidden">
                 <Button
+                  icon={busy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Radio />
+                  )}
+                  variant="primary"
                   onClick={handleGenerate}
                   disabled={!canGenerate || busy}
-                  className="w-full gap-2"
-                  size="lg"
+                  className="w-full"
                 >
-                  {busy ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Radio className="h-4 w-4" />
-                  )}
                   {busy ? "Starting…" : "Generate episode"}
                 </Button>
             </div>
@@ -347,10 +348,9 @@ function SourceStage({
                 {urls.length > 1 && (
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => onUrls(urls.filter((_, idx) => idx !== i))}
-                    className="shrink-0 text-muted-foreground"
+                    className="shrink-0"
                   >
                     Remove
                   </Button>
@@ -359,10 +359,8 @@ function SourceStage({
             ))}
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => onUrls([...urls, ""])}
-              className="text-muted-foreground"
             >
               Add another file URL
             </Button>

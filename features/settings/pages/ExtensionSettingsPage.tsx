@@ -54,7 +54,7 @@ function InstalledHere() {
 
   return (
     <Card className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 md:p-4">
-      <Button asChild size="sm" className="gap-1.5 self-start sm:self-auto">
+      <Button variant="primary" asChild className="self-start sm:self-auto">
         <a href={MATRX_EXTEND_STORE_URL} target="_blank" rel="noopener noreferrer">
           <Chrome className="h-3.5 w-3.5" />
           Add to Chrome

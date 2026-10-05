@@ -150,7 +150,7 @@ export function AnnotationPanel({
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="sm" variant="outline" className="h-7 shrink-0 px-2 text-xs">Add</Button>
+            <Button variant="outline" className="shrink-0">Add</Button>
           </DropdownMenuTrigger>
           {/* The composer this opens takes focus itself; the menu must not hand
               focus back to its trigger afterwards (it stole the caret mid-typing). */}
@@ -178,9 +178,7 @@ export function AnnotationPanel({
           </DropdownMenuContent>
         </DropdownMenu>
         {onClose && (
-          <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0" aria-label="Close notes and comments" onClick={onClose}>
-            <X className="h-3.5 w-3.5" aria-hidden />
-          </Button>
+          <Button icon={<X aria-hidden />} variant="quiet" className="shrink-0" aria-label="Close notes and comments" onClick={onClose} />
         )}
       </div>
 
@@ -220,7 +218,7 @@ export function AnnotationPanel({
             message={`Part of this list could not be loaded: ${error}`}
             operation="Load annotations"
             records={[{ type: source.token, id: source.id, label: source.title }]}
-            actions={<Button className="h-7 text-xs" size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>}
+            actions={<Button variant="outline" onClick={() => void api.reload()}>Try again</Button>}
           />
         )}
 
@@ -233,7 +231,7 @@ export function AnnotationPanel({
             message={error}
             operation="Load annotations"
             records={[{ type: source.token, id: source.id, label: source.title }]}
-            actions={<Button size="sm" variant="outline" onClick={() => void api.reload()}>Try again</Button>}
+            actions={<Button variant="outline" onClick={() => void api.reload()}>Try again</Button>}
           />
         ) : visible.length === 0 ? (
           <p className="px-1 py-8 text-center text-sm text-muted-foreground">
@@ -329,9 +327,8 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
           <p className="text-foreground">{item.resolution?.reason}</p>
           {(item.kind === "highlight" || item.kind === "link") && item.saveState === "confirmed" && (
             <Button
-              size="sm"
               variant="outline"
-              className="mt-1 h-7 text-xs"
+              className="mt-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setPendingReattach(item.key);
@@ -367,17 +364,16 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
           actions={
             <>
             {item.retryable !== false && (
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void api.retry(item); }}>
-                <RotateCcw className="mr-1 h-3 w-3" aria-hidden />Retry
+              <Button icon={<RotateCcw aria-hidden />} variant="outline" onClick={(e) => { e.stopPropagation(); void api.retry(item); }}>Retry
               </Button>
             )}
             {item.retryable === false && item.anchor && (item.kind === "comment" || item.kind === "suggestion") && (
               // The real remedy when a passage cannot be saved: the same words on the whole document.
-              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void api.postOnWholeDocument(item); }}>
+              <Button variant="outline" onClick={(e) => { e.stopPropagation(); void api.postOnWholeDocument(item); }}>
                 Post on the whole document
               </Button>
             )}
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={(e) => { e.stopPropagation(); void run(api.discardDraft(item.key)); }}>
+            <Button variant="quiet" onClick={(e) => { e.stopPropagation(); void run(api.discardDraft(item.key)); }}>
               Discard
             </Button>
             </>
@@ -403,7 +399,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
         <div className="mt-1.5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <EntityRef token={item.link.token} id={item.link.id} name={item.link.title} className="min-w-0 flex-1" />
           {item.saveState === "confirmed" && (
-            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" title="Detach — the record itself is kept" onClick={() => {
+            <Button icon={<Unlink aria-hidden />} variant="quiet" title="Detach — the record itself is kept" onClick={() => {
               const link = item.link!;
               void removeWithUndo(
                 api.unlink(link.token, link.id),
@@ -411,8 +407,7 @@ function ItemCard({ item, active }: { item: ResolvedItem; active: boolean }) {
                 async () => ((await api.link(link.token, link.id, link.title, item.anchor ?? null)) ? null : "The link could not be restored — the panel says why."),
                 "Link restored to its passage.",
               );
-            }}>
-              <Unlink className="mr-1 h-3 w-3" aria-hidden />Detach
+            }}>Detach
             </Button>
           )}
         </div>
@@ -492,11 +487,11 @@ function ReplyRow({
               <p className="font-medium text-foreground">Someone changed this reply while you were editing it.</p>
               <p className="mt-0.5 whitespace-pre-wrap text-foreground">{conflict.theirs || "(empty)"}</p>
               <div className="mt-1 flex gap-1">
-                <Button size="sm" className="h-7 px-2 text-xs" onClick={async () => {
+                <Button variant="primary" onClick={async () => {
                   try { await api.editComment(reply.id, conflict.mine, base, true); setConflict(null); setEditing(false); }
                   catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
                 }}>Replace theirs with mine</Button>
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setConflict(null); setEditing(false); }}>Keep theirs</Button>
+                <Button variant="quiet" onClick={() => { setConflict(null); setEditing(false); }}>Keep theirs</Button>
               </div>
               <ErrorAlchemyMenu />
             </div>
@@ -552,8 +547,7 @@ function ThreadActions({
       <p className="mt-1 text-muted-foreground">Your version is still in the box above.</p>
       <div className="mt-1.5 flex gap-1">
         <Button
-          size="sm"
-          className="h-7 px-2 text-xs"
+          variant="primary"
           onClick={async () => {
             try {
               await api.editComment(id, conflict.mine, base, true);
@@ -566,7 +560,7 @@ function ThreadActions({
         >
           Replace theirs with mine
         </Button>
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => { setConflict(null); setEditing(false); }}>
+        <Button variant="quiet" onClick={() => { setConflict(null); setEditing(false); }}>
           Keep theirs
         </Button>
       </div>
@@ -632,27 +626,24 @@ function ThreadActions({
     <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
       <div className="flex flex-wrap items-center gap-1">
         {item.kind === "suggestion" && !item.resolvedAt && canApply && canEdit && (
-          <Button size="sm" className="h-7 px-2 text-xs" onClick={() => void run(api.acceptSuggestion(item), "Applied — only that part of the document changed.")}>
-            <Check className="mr-1 h-3 w-3" aria-hidden />Accept
+          <Button icon={<Check aria-hidden />} variant="primary" onClick={() => void run(api.acceptSuggestion(item), "Applied — only that part of the document changed.")}>Accept
           </Button>
         )}
         {item.kind === "suggestion" && !item.resolvedAt && canEdit && (
-          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => void run(api.rejectSuggestion(id), "Suggestion rejected — it stays under resolved.")}>
+          <Button variant="outline" onClick={() => void run(api.rejectSuggestion(id), "Suggestion rejected — it stays under resolved.")}>
             Reject
           </Button>
         )}
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setReplying(true)}>Reply</Button>
+        <Button variant="quiet" onClick={() => setReplying(true)}>Reply</Button>
         {doors && (
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => void run(api.resolveComment(id, !item.resolvedAt))}>
+          <Button variant="quiet" onClick={() => void run(api.resolveComment(id, !item.resolvedAt))}>
             {item.resolvedAt ? "Reopen" : "Resolve"}
           </Button>
         )}
         {(item.mine || item.kind === "comment") && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="ml-auto h-7 w-7" aria-label="More">
-                <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
-              </Button>
+              <Button icon={<MoreHorizontal aria-hidden />} variant="quiet" className="ml-auto" aria-label="More" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
               {item.kind === "comment" ? <ContinueInNewChatItem item={item} source={source} /> : null}
@@ -705,8 +696,8 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
           ))}
         {dirty && (
           <Button
-            size="sm"
-            className="ml-auto h-7 px-2 text-xs"
+            variant="primary"
+            className="ml-auto"
             disabled={saving}
             onClick={async () => {
               setSaving(true);
@@ -719,9 +710,9 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
           </Button>
         )}
         <Button
-          size="sm"
-          variant="ghost"
-          className={cn("h-7 px-2 text-xs text-muted-foreground hover:text-destructive", !dirty && "ml-auto")}
+          icon={<Trash2 aria-hidden />}
+          variant="quiet"
+          className={cn(!dirty && "ml-auto")}
           onClick={async () => {
             const noun = item.kind === "highlight" ? "Highlight" : "Note";
             await removeWithUndo(
@@ -731,8 +722,7 @@ function PrivateNote({ item }: { item: ResolvedItem }) {
               `${noun} restored.`,
             );
           }}
-        >
-          <Trash2 className="mr-1 h-3 w-3" aria-hidden />Remove
+        >Remove
         </Button>
       </div>
     </div>

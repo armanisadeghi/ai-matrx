@@ -66,14 +66,14 @@ export default function SandboxGateHostImpl() {
         ) : null}
 
         <DialogFooter className="gap-2 sm:justify-between">
-          <Button variant="ghost" onClick={() => settle("cancel")}>
+          <Button variant="quiet" onClick={() => settle("cancel")}>
             Cancel
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => settle("detach")}>
               Send without sandbox
             </Button>
-            <Button onClick={() => settle("attach")}>Retry with sandbox</Button>
+            <Button variant="primary" onClick={() => settle("attach")}>Retry with sandbox</Button>
           </div>
         </DialogFooter>
       </DialogContent>

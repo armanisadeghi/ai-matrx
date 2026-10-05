@@ -39,7 +39,7 @@ import {
 import { recordToast, toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";

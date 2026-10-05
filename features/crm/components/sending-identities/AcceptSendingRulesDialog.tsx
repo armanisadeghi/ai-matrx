@@ -100,12 +100,11 @@ export function AcceptSendingRulesDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
             Not now
           </Button>
-          <Button onClick={() => void accept()} disabled={saving}>
-            {saving ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          <Button icon={saving ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <ShieldCheck className="mr-1.5 h-4 w-4" />
-            )}
+              <ShieldCheck />
+            )} variant="primary" onClick={() => void accept()} disabled={saving}>
             I agree to these rules
           </Button>
         </div>

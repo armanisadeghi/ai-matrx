@@ -85,15 +85,13 @@ export function Error({
         </CardContent>
         <CardFooter className="flex justify-center space-x-4">
           <Button
+            icon={<Home />}
             variant="outline"
             onClick={() => router.push("/")}
-            className="space-x-2"
           >
-            <Home className="h-4 w-4" />
             <span>Home</span>
           </Button>
-          <Button onClick={() => reset()} className="space-x-2">
-            <RefreshCcw className="h-4 w-4" />
+          <Button icon={<RefreshCcw />} variant="primary" onClick={() => reset()}>
             <span>Try Again</span>
           </Button>
         </CardFooter>
@@ -130,8 +128,7 @@ export function NotFound() {
           </div>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Button onClick={() => router.push("/")} className="space-x-2">
-            <Home className="h-4 w-4" />
+          <Button icon={<Home />} variant="primary" onClick={() => router.push("/")}>
             <span>Return Home</span>
           </Button>
         </CardFooter>

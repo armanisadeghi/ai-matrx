@@ -109,9 +109,7 @@ export function CaptureTransportStrip() {
             <ErrorAlchemyMenu error={f.message} />
           </span>
           <Button
-            size="sm"
             variant="outline"
-            className="h-6 px-2 text-[11px]"
             disabled={retrying !== null}
             onClick={() => void handleRetry(f.id)}
           >
@@ -125,9 +123,7 @@ export function CaptureTransportStrip() {
             )}
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[11px]"
+            variant="quiet"
             disabled={retrying !== null}
             onClick={() => dismissCaptureFailure(f.id)}
             aria-label="Dismiss failed upload"

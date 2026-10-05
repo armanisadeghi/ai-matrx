@@ -120,8 +120,7 @@ export function ConversationArtifactsPanel({
           {artifacts.state === "ready" && folderKeys.length > 0 ? (
             <Button
               type="button"
-              size="xs"
-              variant="ghost"
+              variant="quiet"
               onClick={() =>
                 setCollapsedFolders(
                   collapsedFolders.size === folderKeys.length

@@ -90,15 +90,13 @@ export function FindTimePanel({
   return (
     <div className="relative rounded-md border border-border bg-muted/30 p-2 pr-9 sm:ml-6">
       <Button
+        icon={<X aria-hidden="true" />}
         type="button"
-        variant="ghost"
-        size="icon"
-        className="absolute right-1 top-1 h-7 w-7"
+        variant="quiet"
+        className="absolute right-1 top-1"
         aria-label="Close suggestions"
         onClick={onClose}
-      >
-        <X className="h-3.5 w-3.5" aria-hidden="true" />
-      </Button>
+      />
       {loading ? (
         <div
           className="flex flex-wrap gap-1.5"
@@ -124,13 +122,7 @@ export function FindTimePanel({
             <Button
               key={slot.start}
               type="button"
-              size="sm"
               variant="outline"
-              className={cn(
-                "h-7 px-2 text-xs tabular-nums",
-                selected === `${slot.date} ${slot.time}` &&
-                  "border-primary bg-primary/10",
-              )}
               onClick={() => onPick(slot)}
             >
               {slotLabel(slot)}

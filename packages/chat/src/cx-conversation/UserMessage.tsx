@@ -13,7 +13,7 @@ import {
   Paperclip,
 } from "lucide-react";
 import { Youtube } from "@host/components/icons/brand-icons";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   parseResourcesFromMessage,
   extractMessageWithoutResources,
@@ -251,19 +251,15 @@ export function UserMessage({
             />
             <div className="flex items-center gap-2 justify-end">
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={handleEditCancel}
-                className="h-6 px-2 text-xs text-muted-foreground"
               >
                 Cancel
               </Button>
               <Button
-                variant="default"
-                size="sm"
+                variant="primary"
                 onClick={handleEditSave}
                 disabled={!hasUnsavedChanges}
-                className="h-6 px-2 text-xs"
               >
                 Save
               </Button>
@@ -279,10 +275,9 @@ export function UserMessage({
             <div className="absolute top-1 right-1 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
               {onContentChange && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={handleEditStart}
-                  className="h-6 w-6 p-0 text-muted-foreground bg-muted/80 hover:bg-muted"
+                  className="w-6"
                   title="Edit message"
                 >
                   <svg
@@ -301,10 +296,9 @@ export function UserMessage({
                 </Button>
               )}
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={handleCopy}
-                className="h-6 w-6 p-0 text-muted-foreground bg-muted/80 hover:bg-muted"
+                className="w-6"
                 title="Copy"
               >
                 {isCopied ? (
@@ -337,13 +331,12 @@ export function UserMessage({
                       <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-muted via-muted/60 to-transparent pointer-events-none" />
                       <div className="absolute -bottom-2 left-0 right-0 flex justify-center">
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant="quiet"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleToggleCollapse();
                           }}
-                          className="h-6 w-6 p-0 rounded-full bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground"
+                          className="w-6"
                           title="Expand message"
                         >
                           <ChevronDown className="w-4 h-4" />
@@ -354,13 +347,12 @@ export function UserMessage({
                   {shouldBeCollapsible && !isCollapsed && (
                     <div className="flex justify-center mt-1">
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleToggleCollapse();
                         }}
-                        className="h-6 w-6 p-0 rounded-full text-muted-foreground hover:text-foreground"
+                        className="w-6"
                         title="Collapse message"
                       >
                         <ChevronUp className="w-4 h-4" />

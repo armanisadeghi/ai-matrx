@@ -53,7 +53,7 @@ export default async function MarketingScreenshotPage({
           <div><dt className="text-xs text-muted-foreground">Captured</dt><dd>{new Date(screenshot.captured_at).toLocaleString()}</dd></div>
           <div><dt className="text-xs text-muted-foreground">Dimensions</dt><dd>{screenshot.width && screenshot.height ? `${screenshot.width} × ${screenshot.height}` : "Not recorded"}</dd></div>
         </dl>
-        <Button asChild className="w-fit"><Link href={`/files/f/${screenshot.file_id}`}>Open screenshot image</Link></Button>
+        <Button variant="primary" asChild className="w-fit"><Link href={`/files/f/${screenshot.file_id}`}>Open screenshot image</Link></Button>
         <p className="text-sm text-muted-foreground">
           Notes and supplemental files attached to this screenshot inherit this screenshot's viewer access.
         </p>

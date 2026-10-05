@@ -56,14 +56,12 @@ export function GoogleImportReadFailureNotice({
         <div className="flex flex-wrap gap-2">
           {failure.accounts.map((account) => (
             <Button
+              icon={<UserCheck />}
               key={account}
-              size="sm"
-              variant={account === chosenAccount ? "secondary" : "outline"}
-              className="h-8 gap-1 px-2 text-xs"
+              variant={account === chosenAccount ? "outline" : "outline"}
               disabled={busy}
               onClick={() => onChooseAccount(account)}
             >
-              <UserCheck className="h-3.5 w-3.5" />
               {account}
             </Button>
           ))}
@@ -80,13 +78,11 @@ export function GoogleImportReadFailureNotice({
       ) : (
         <div>
           <Button
-            size="sm"
+            icon={<RefreshCw />}
             variant="outline"
-            className="h-8 gap-1 px-2 text-xs"
             disabled={busy}
             onClick={onRetry}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Try again
           </Button>
         </div>

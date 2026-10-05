@@ -278,23 +278,20 @@ export function ImageManager(props: ImageManagerProps) {
             {!enforceSelectionMode ? (
               <div className="flex items-center gap-2">
                 <Button
-                  variant={selectionMode === "none" ? "default" : "outline"}
-                  size="sm"
+                  variant={selectionMode === "none" ? "primary" : "outline"}
                   onClick={() => setSelectionMode("none")}
                   title="Browse mode — click an image to open the viewer."
                 >
                   Browse
                 </Button>
                 <Button
-                  variant={selectionMode === "single" ? "default" : "outline"}
-                  size="sm"
+                  variant={selectionMode === "single" ? "primary" : "outline"}
                   onClick={() => setSelectionMode("single")}
                 >
                   Single
                 </Button>
                 <Button
-                  variant={selectionMode === "multiple" ? "default" : "outline"}
-                  size="sm"
+                  variant={selectionMode === "multiple" ? "primary" : "outline"}
                   onClick={() => setSelectionMode("multiple")}
                 >
                   Multiple

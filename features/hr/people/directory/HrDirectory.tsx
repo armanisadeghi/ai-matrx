@@ -320,7 +320,7 @@ export function HrDirectory() {
             </div>
 
             {canCreate ? (
-              <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+              <Button variant="primary" asChild>
                 <Link href={hrPeopleNewHref({ org: orgRef })}>
                   <UserPlus className="mr-2 h-4 w-4" aria-hidden />
                   New employee
@@ -393,13 +393,11 @@ export function HrDirectory() {
                   }
                 >
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-11 w-11 lg:h-5 lg:w-5"
+                    icon={<MoreHorizontal aria-hidden />}
+                    type="submit"
+                    variant="quiet"
                     aria-label={`Actions for ${row.display_name}`}
-                  >
-                    <MoreHorizontal className="h-4 w-4" aria-hidden />
-                  </Button>
+                  />
                 </ItemMenu>
               ) }]}
               getRowId={(row) => row.employee_id}
@@ -561,10 +559,9 @@ function FilteredEmpty({
       </ul>
       <Button
         type="button"
-        size="sm"
         variant="outline"
         onClick={onClear}
-        className="mt-3 min-h-11 sm:min-h-9"
+        className="mt-3"
       >
         Clear all filters
       </Button>
@@ -596,7 +593,7 @@ function FirstHireDoor({
           : "Whoever runs HR here adds people. Your own record is always yours."}
       </p>
       {canCreate ? (
-        <Button asChild size="sm" className="mt-3 min-h-11 sm:min-h-9">
+        <Button variant="primary" asChild className="mt-3">
           <Link href={hrPeopleNewHref({ org })}>
             <UserPlus className="mr-2 h-4 w-4" aria-hidden />
             Add the first person
@@ -620,32 +617,26 @@ function BulkActions({ count }: { count: number }) {
         {count} selected
       </Badge>
       <Button
+        icon={<GraduationCap aria-hidden />}
         type="button"
-        size="sm"
         variant="outline"
-        className="min-h-11 sm:min-h-8"
         onClick={() => void announceComingSoon("hr.people.assign-training")}
       >
-        <GraduationCap className="mr-2 h-4 w-4" aria-hidden />
         Assign training
       </Button>
       <Button
         type="button"
-        size="sm"
         variant="outline"
-        className="min-h-11 sm:min-h-8"
         onClick={() => void announceComingSoon("hr.people.send-acknowledgment")}
       >
         Send acknowledgment
       </Button>
       <Button
+        icon={<Download aria-hidden />}
         type="button"
-        size="sm"
         variant="outline"
-        className="min-h-11 sm:min-h-8"
         onClick={() => void announceComingSoon("hr.people.directory-export")}
       >
-        <Download className="mr-2 h-4 w-4" aria-hidden />
         Export
       </Button>
     </div>
@@ -682,9 +673,7 @@ function CardPager({
       <div className="flex items-center gap-2">
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-8"
           disabled={page <= 1}
           onClick={() => onPage(page - 1)}
         >
@@ -695,9 +684,7 @@ function CardPager({
         </span>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-8"
           disabled={page >= lastPage}
           onClick={() => onPage(page + 1)}
         >

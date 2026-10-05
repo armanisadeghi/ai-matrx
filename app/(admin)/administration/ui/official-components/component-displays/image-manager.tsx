@@ -376,9 +376,9 @@ function BasicImageManagerDemo() {
   return (
     <div className="w-full space-y-4">
       <div className="flex justify-between items-center">
-        <Button 
+        <Button
+          variant="primary" 
           onClick={() => setIsOpen(true)}
-          className="px-4 py-2"
         >
           Open Image Manager
         </Button>
@@ -386,7 +386,6 @@ function BasicImageManagerDemo() {
         {selectedImages.length > 0 && (
           <Button
             variant="outline"
-            size="sm"
             onClick={clearImages}
           >
             Clear Selection
@@ -437,16 +436,14 @@ function SelectionModeDemo() {
       <div className="flex flex-wrap gap-2 items-center mb-4">
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Selection Mode:</span>
         <Button 
-          size="sm" 
-          variant={selectionMode === "single" ? "default" : "outline"}
+          variant={selectionMode === "single" ? "primary" : "outline"}
           onClick={() => setSelectionMode("single")}
           className="min-w-24"
         >
           Single
         </Button>
         <Button 
-          size="sm" 
-          variant={selectionMode === "multiple" ? "default" : "outline"}
+          variant={selectionMode === "multiple" ? "primary" : "outline"}
           onClick={() => setSelectionMode("multiple")}
           className="min-w-24"
         >
@@ -461,9 +458,9 @@ function SelectionModeDemo() {
       </div>
       
       <div className="flex justify-between items-center">
-        <Button 
+        <Button
+          variant="primary" 
           onClick={() => setIsOpen(true)}
-          className="px-4 py-2"
         >
           Open Image Manager
         </Button>
@@ -471,7 +468,6 @@ function SelectionModeDemo() {
         {selectedImages.length > 0 && (
           <Button
             variant="outline"
-            size="sm"
             onClick={clearImages}
           >
             Clear Selection
@@ -530,8 +526,7 @@ function CustomTabDemo() {
           {tabOptions.map(tab => (
             <Button
               key={tab.value}
-              size="sm"
-              variant={activeTab === tab.value ? "default" : "outline"}
+              variant={activeTab === tab.value ? "primary" : "outline"}
               onClick={() => setActiveTab(tab.value)}
             >
               {tab.label}
@@ -540,9 +535,9 @@ function CustomTabDemo() {
         </div>
       </div>
       
-      <Button 
+      <Button
+        variant="primary" 
         onClick={() => setIsOpen(true)}
-        className="px-4 py-2"
       >
         Open with "{tabOptions.find(t => t.value === activeTab)?.label}" Tab
       </Button>
@@ -618,15 +613,13 @@ function AdvancedControlsDemo() {
             <Label className="mb-2 block">Selection Mode</Label>
             <div className="flex gap-2">
               <Button 
-                size="sm" 
-                variant={selectionMode === "single" ? "default" : "outline"}
+                variant={selectionMode === "single" ? "primary" : "outline"}
                 onClick={() => setSelectionMode("single")}
               >
                 Single Selection
               </Button>
               <Button 
-                size="sm" 
-                variant={selectionMode === "multiple" ? "default" : "outline"}
+                variant={selectionMode === "multiple" ? "primary" : "outline"}
                 onClick={() => setSelectionMode("multiple")}
               >
                 Multiple Selection
@@ -659,9 +652,9 @@ function AdvancedControlsDemo() {
       
       <div className="flex items-center gap-4">
         <Button
+          variant="primary"
           onClick={() => setIsOpen(true)}
           disabled={visibleTabIds.length === 0}
-          className="px-4 py-2"
         >
           Open Configured Image Manager
         </Button>
@@ -681,7 +674,6 @@ function AdvancedControlsDemo() {
             </h3>
             <Button
               variant="outline"
-              size="sm"
               onClick={clearImages}
             >
               Clear Selection

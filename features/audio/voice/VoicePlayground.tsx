@@ -6,7 +6,7 @@ import { motion } from "motion/react";
 import { useCartesia } from "@/hooks/tts/useCartesia";
 import { availableVoices } from "@/lib/cartesia/voices";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -148,9 +148,9 @@ export default function PlaygroundPage() {
                                     ))}
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" size="icon" className="ml-2">
+                            <SurfaceButton variant="outline" size="icon" className="ml-2">
                                 <RefreshCw className="h-4 w-4" />
-                            </Button>
+                            </SurfaceButton>
                         </div>
                     </div>
                 </div>
@@ -215,6 +215,7 @@ export default function PlaygroundPage() {
                 <div className="flex justify-between items-center">
                     <div className="space-x-2">
                         <Button
+                            variant="primary"
                             onClick={() => {
                                 if (!hasPlayed) {
                                     // First time playing - start the process
@@ -234,7 +235,7 @@ export default function PlaygroundPage() {
                                 <Play className="h-4 w-4" />
                             )}
                         </Button>
-                        <Button onClick={handleStop} disabled={!isConnected}>
+                        <Button variant="primary" onClick={handleStop} disabled={!isConnected}>
                             <Square className="h-4 w-4" />
                         </Button>
                     </div>

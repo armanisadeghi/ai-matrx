@@ -27,17 +27,15 @@ const BasicExample = () => (
       title="Project Settings"
       description="Configure your project properties and options"
       headerActions={[
-        <Button key="settings" size="sm" variant="outline">
-          <Settings className="h-4 w-4 mr-2" />
+        <Button icon={<Settings />} type="submit" key="settings" variant="outline">
           Settings
         </Button>,
-        <Button key="new" size="sm" variant="default">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button icon={<Plus />} type="submit" key="new" variant="primary">
           New Project
         </Button>
       ]}
       footerLeft={
-        <Button variant="outline" size="sm">
+        <Button type="submit" variant="outline">
           Cancel
         </Button>
       }
@@ -47,9 +45,8 @@ const BasicExample = () => (
         </div>
       }
       footerRight={
-        <Button size="sm">
+        <Button iconEnd={<ArrowRight />} type="submit" variant="primary">
           Save Changes
-          <ArrowRight className="h-4 w-4 ml-2" />
         </Button>
       }
     >

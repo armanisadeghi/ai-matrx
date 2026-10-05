@@ -298,14 +298,14 @@ export function KeptSourceReader({
             the time; the original is the only copy of the words.
           </p>
           {source.file_id ? (
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link href={`/files/f/${source.file_id}`} target="_blank">
                 <FileText className="h-3.5 w-3.5" />
                 Open the file
               </Link>
             </Button>
           ) : source.url ? (
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <a href={source.url} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5" />
                 Open the original

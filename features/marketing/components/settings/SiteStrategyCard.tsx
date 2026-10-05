@@ -90,16 +90,15 @@ export function SiteStrategyCard({
         />
         <div className="flex justify-end">
           <Button
-            size="sm"
-            className="h-8 gap-1.5"
+            icon={submitting ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Send />
+            )}
+            variant="primary"
             disabled={!businessContext.trim() || submitting}
             onClick={submit}
           >
-            {submitting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Send className="h-3.5 w-3.5" />
-            )}
             Run strategy interview
           </Button>
         </div>

@@ -4,6 +4,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import {Button} from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {ChevronDown, ChevronUp} from "lucide-react";
 import {tailwindColors} from "@/constants/tailwind-colors";
 import {Colord, colord, extend} from "colord";
@@ -105,7 +106,7 @@ export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
 
                 <div className="col-span-2 flex items-center justify-center">
                     <CollapsibleTrigger asChild>
-                        <Button
+                        <SurfaceButton
                             variant="ghost"
                             size="sm"
                             className="w-full h-full flex flex-col items-center justify-center space-y-1 py-2"
@@ -118,7 +119,7 @@ export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
                             ) : (
                                 <ChevronDown className="h-10 w-10"/>
                             )}
-                        </Button>
+                        </SurfaceButton>
                     </CollapsibleTrigger>
                 </div>
             </div>
@@ -132,7 +133,7 @@ export default function TailwindColors({ onColorChange }: TailwindColorsProps) {
                         <div key={colorGroup.name} className="space-y-2">
                             <div className="flex items-center space-x-2">
                                 <h3 className="font-medium">{colorGroup.name}</h3>
-                                <Button variant="ghost" size="sm" onClick={() => toggleColorExpand(colorGroup.name)}>
+                                <Button variant="quiet" onClick={() => toggleColorExpand(colorGroup.name)}>
                                     {expandedColors[colorGroup.name] ? <ChevronUp className="h-4 w-4"/> :
                                         <ChevronDown className="h-4 w-4"/>}
                                 </Button>

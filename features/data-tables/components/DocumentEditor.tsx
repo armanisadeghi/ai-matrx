@@ -56,7 +56,7 @@ import { useRealtimeManager } from "@ai-matrx/realtime/react";
 import { supabase } from "@/utils/supabase/client";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useToolToggle } from "@/features/canvas/host/toolCanvas";
 import { toast } from "@/components/ui/use-toast";

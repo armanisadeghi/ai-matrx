@@ -427,26 +427,22 @@ export function BrandLibraryView({
             onChange={(event) => void onUploadFiles(event.target.files)}
           />
           <Button
-            size="sm"
+            icon={uploading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Upload />
+            )}
             variant="outline"
-            className="h-7"
             disabled={uploading}
             onClick={() => fileInputRef.current?.click()}
           >
-            {uploading ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Upload className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Upload
           </Button>
           <Button
-            size="sm"
+            icon={<ImageIcon />}
             variant="outline"
-            className="h-7"
             onClick={() => setCreating(true)}
           >
-            <ImageIcon className="mr-1.5 h-3.5 w-3.5" />
             Add by URL
           </Button>
         </div>

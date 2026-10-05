@@ -22,8 +22,7 @@ export default function NewSystemAgentChoicePage() {
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card flex items-center gap-3">
         <AppLink href="/administration/agents/system-agents/agents">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
+          <Button icon={<ArrowLeft />} type="submit" variant="quiet">
             Back to system agents
           </Button>
         </AppLink>

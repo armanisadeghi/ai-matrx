@@ -9,7 +9,7 @@
 
 import Link from "next/link";
 import { Settings } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { settingDoorHref, type SettingDoorTarget } from "./settingDoorTarget";

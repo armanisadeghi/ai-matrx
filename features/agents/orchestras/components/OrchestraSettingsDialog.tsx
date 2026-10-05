@@ -235,25 +235,22 @@ function SettingsForm({
 
       <DialogFooter className="items-center sm:justify-between">
         <Button
-          variant="ghost"
-          size="sm"
+          icon={<Trash2 />}
+          variant="quiet"
           onClick={handleDelete}
-          className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-        >
-          <Trash2 className="h-4 w-4" /> Delete Orchestra
+        > Delete Orchestra
         </Button>
         <div className="flex gap-2">
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : null}
+          <Button icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : null} variant="primary" onClick={handleSave} disabled={saving}>
             Save
           </Button>
         </div>

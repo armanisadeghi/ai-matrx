@@ -435,9 +435,8 @@ function ExtraSources({
               )}
               <div className="ml-auto flex items-center gap-0.5">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
+                  variant="quiet"
+                  className="w-6"
                   disabled={disabled || index === 0}
                   aria-label={`Move ${handle} earlier in ${targetName}`}
                   onClick={() => onMove(index, -1)}
@@ -445,9 +444,8 @@ function ExtraSources({
                   <ArrowUp className="h-3 w-3" />
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0"
+                  variant="quiet"
+                  className="w-6"
                   disabled={disabled || index === sources.length - 1}
                   aria-label={`Move ${handle} later in ${targetName}`}
                   onClick={() => onMove(index, 1)}
@@ -455,9 +453,8 @@ function ExtraSources({
                   <ArrowDown className="h-3 w-3" />
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 text-muted-foreground"
+                  variant="quiet"
+                  className="w-6"
                   disabled={disabled}
                   aria-label={`Remove ${handle} from ${targetName}`}
                   onClick={() => onRemove(index)}
@@ -529,12 +526,9 @@ function AbsenceControl({
         {choices.map((choice) => (
           <Button
             key={choice.value}
-            size="sm"
-            className={cn(CONFIGURATION_CHOICE_SIZE, "px-2")}
+            className={CONFIGURATION_CHOICE_SIZE}
             variant={
-              !unavailable && (entry.when_absent ?? "skip") === choice.value
-                ? "default"
-                : "outline"
+              !unavailable && (entry.when_absent ?? "skip") === choice.value ? "primary" : "outline"
             }
             aria-pressed={
               !unavailable && (entry.when_absent ?? "skip") === choice.value
@@ -546,9 +540,9 @@ function AbsenceControl({
           </Button>
         ))}
         <Button
-          size="sm"
-          className={cn(CONFIGURATION_CHOICE_SIZE, "px-2")}
-          variant={offered?.guaranteed ? "default" : "outline"}
+          type="submit"
+          className={CONFIGURATION_CHOICE_SIZE}
+          variant={offered?.guaranteed ? "primary" : "outline"}
           disabled
           aria-pressed={offered?.guaranteed === true}
         >

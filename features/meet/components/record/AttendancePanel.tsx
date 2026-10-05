@@ -90,9 +90,9 @@ export function AttendancePanel({
           <span>{totals.neverAdmitted} not let in</span>
         ) : null}
         <Button
-          variant="ghost"
-          size="sm"
-          className="ml-auto h-7 gap-1 px-2 text-xs"
+          icon={<Download aria-hidden="true" />}
+          variant="quiet"
+          className="ml-auto"
           onClick={() =>
             downloadBlob(
               new Blob([attendanceCsv([{ meeting, rows }])], {
@@ -101,8 +101,7 @@ export function AttendancePanel({
               `${fileSafe(meeting.title)}-attendance.csv`,
             )
           }
-        >
-          <Download className="h-3.5 w-3.5" aria-hidden="true" /> CSV
+        > CSV
         </Button>
       </div>
       {meeting.recurrenceRule ? (

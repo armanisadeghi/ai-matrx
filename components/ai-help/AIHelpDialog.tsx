@@ -4,6 +4,7 @@ import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Button} from '@/components/ui/button';
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {Cuboid, Code, Copy, Download, FileJson, Image, Loader2} from 'lucide-react';
 import type {AIHelpContext} from '@/types/contextCollection';
 import type {ImageQuality} from '@/types/screenshot';
@@ -139,11 +140,10 @@ export function AIHelpDialog(
                                     <div className="flex flex-col h-full">
                                         <div className="flex justify-end mb-2">
                                             <Button
+                                                icon={<Copy/>}
                                                 variant="outline"
-                                                size="sm"
                                                 onClick={() => onCopy(getAIReadyFormat())}
                                             >
-                                                <Copy className="h-4 w-4 mr-2"/>
                                                 Copy AI Format
                                             </Button>
                                         </div>
@@ -159,11 +159,10 @@ export function AIHelpDialog(
                                     <div className="flex flex-col h-full">
                                         <div className="flex justify-end mb-2">
                                             <Button
+                                                icon={<Copy/>}
                                                 variant="outline"
-                                                size="sm"
                                                 onClick={() => onCopy(getAPIReadyFormat())}
                                             >
-                                                <Copy className="h-4 w-4 mr-2"/>
                                                 Copy API Format
                                             </Button>
                                         </div>
@@ -193,11 +192,10 @@ export function AIHelpDialog(
                                                 </SelectContent>
                                             </Select>
                                             <Button
+                                                icon={<Download/>}
                                                 variant="outline"
-                                                size="sm"
                                                 onClick={() => onSaveImage(imageQuality)}
                                             >
-                                                <Download className="h-4 w-4 mr-2"/>
                                                 Save Current View
                                             </Button>
                                         </div>
@@ -217,11 +215,10 @@ export function AIHelpDialog(
                                     <div className="flex flex-col h-full">
                                         <div className="flex justify-end mb-2">
                                             <Button
+                                                icon={<Copy/>}
                                                 variant="outline"
-                                                size="sm"
                                                 onClick={() => onCopy(JSON.stringify(lastContext, null, 2))}
                                             >
-                                                <Copy className="h-4 w-4 mr-2"/>
                                                 Copy Context
                                             </Button>
                                         </div>
@@ -244,22 +241,22 @@ export function AIHelpDialog(
                                                 />
                                             </div>
                                         )}
-                                        <Button className="w-auto" onClick={() => onSaveImage('full')}>
+                                        <SurfaceButton className="w-auto" onClick={() => onSaveImage('full')}>
                                             <Image className="h-4 w-4 mr-2"/>
                                             Save Full Resolution Screenshot
-                                        </Button>
-                                        <Button className="w-auto" onClick={onSaveContext}>
-                                            <FileJson className="h-4 w-4 mr-2"/>
+                                        </SurfaceButton>
+                                        <Button icon={<FileJson/>} variant="primary" className="w-auto" onClick={onSaveContext}>
                                             Save Context Data
                                         </Button>
                                         <Button
+                                            icon={<Download/>}
+                                            variant="primary"
                                             className="w-auto"
                                             onClick={() => {
                                                 onSaveImage('full');
                                                 onSaveContext();
                                             }}
                                         >
-                                            <Download className="h-4 w-4 mr-2"/>
                                             Save All
                                         </Button>
                                     </div>

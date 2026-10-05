@@ -267,8 +267,7 @@ export function SchemaConvertTab({
           />
         </CollapsiblePanel>
 
-        <Button size="sm" className="w-full shrink-0" onClick={handleConvert}>
-          <Zap className="mr-1.5 size-3.5" />
+        <Button icon={<Zap />} variant="primary" className="w-full shrink-0" onClick={handleConvert}>
           Convert schema
         </Button>
 
@@ -388,12 +387,12 @@ export function SchemaConvertTab({
           </ul>
         )}
         <Button
-          size="sm"
+          icon={<Shapes />}
+          variant="primary"
           className="w-full"
           disabled={!canCreate}
           onClick={() => setShapeDialogOpen(true)}
         >
-          <Shapes className="mr-1.5 size-3.5" />
           Create Shape
         </Button>
       </div>

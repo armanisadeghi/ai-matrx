@@ -17,15 +17,12 @@ import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/relea
 function AuthFallback() {
   return (
     <Button
-      variant="ghost"
-      size="sm"
-      className={cn(
-        PUBLIC_HEADER_ICON_BUTTON,
-        "w-auto gap-1.5 px-3 text-xs opacity-50 cursor-default",
-      )}
+      icon={<LogIn />}
+      type="submit"
+      variant="quiet"
+      className={cn(PUBLIC_HEADER_ICON_BUTTON, "w-auto")}
       disabled
     >
-      <LogIn className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">Sign In</span>
     </Button>
   );
@@ -76,15 +73,8 @@ export function PublicHeader() {
               (PUBLIC_HEADER_ICON_BUTTON); from sm up it grows to show text. */}
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className={cn(
-              PUBLIC_HEADER_ICON_BUTTON,
-              "gap-1.5 rounded-lg px-0 text-xs font-medium matrx-glass-thin-border sm:h-7 sm:w-auto sm:px-3",
-              "text-zinc-600 dark:text-zinc-400",
-              "hover:text-zinc-900 dark:hover:text-zinc-100",
-              "transition-all duration-200",
-            )}
+            variant="quiet"
+            className={cn(PUBLIC_HEADER_ICON_BUTTON, "sm:w-auto")}
           >
             <Link href={MATRX_LOCAL_DOWNLOAD_PATH} aria-label="Download">
               <Download className="h-3.5 w-3.5" aria-hidden="true" />
@@ -94,16 +84,14 @@ export function PublicHeader() {
 
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "hidden h-7 px-3 text-xs font-medium matrx-glass-thin-border rounded-lg md:inline-flex",
-              "text-zinc-600 dark:text-zinc-400",
-              "hover:text-zinc-900 dark:hover:text-zinc-100",
-              "transition-all duration-200",
-            )}
+            variant="quiet"
+            className="hidden md:inline-flex"
           >
             <Link href="/canvas/discover">Discover</Link>
+          </Button>
+
+          <Button asChild variant="quiet" className="hidden md:inline-flex">
+            <Link href="/templates">Templates</Link>
           </Button>
 
           <Suspense fallback={null}>

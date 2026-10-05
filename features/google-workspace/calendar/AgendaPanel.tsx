@@ -103,16 +103,14 @@ export function AgendaPanel({
         <div className="ml-auto flex items-center gap-1">
           {agenda.connectionId ? (
             <Button
+              icon={<RefreshCw
+                className={cn("h-3.5 w-3.5", agenda.isRefreshing && "animate-spin")}
+              />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 px-2 text-xs max-sm:min-h-11"
+              variant="quiet"
               onClick={() => void agenda.refresh()}
               disabled={agenda.isRefreshing}
             >
-              <RefreshCw
-                className={cn("h-3.5 w-3.5", agenda.isRefreshing && "animate-spin")}
-              />
               {agenda.isRefreshing ? "Refreshing" : "Refresh"}
             </Button>
           ) : null}
@@ -402,15 +400,13 @@ function AgendaEventRow({
           </a>
         ) : null}
         <Button
+          icon={<StickyNote />}
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-6 gap-1 px-1.5 text-xs max-sm:min-h-11"
+          variant="quiet"
           onClick={() => void createNote()}
           disabled={savingNote}
           data-agenda-create-note
         >
-          <StickyNote className="h-3.5 w-3.5" />
           {savingNote ? "Creating a note" : createdNoteId ? "Create another note" : "Create a note"}
         </Button>
         {createdNoteId ? (

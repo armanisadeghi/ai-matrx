@@ -112,16 +112,14 @@ export function CaptureControls(props: CaptureControlsProps) {
         >
           {MODES.map(({ mode: m, label, Icon }) => (
             <Button
+              icon={<Icon />}
               key={m}
               role="tab"
               aria-selected={mode === m}
-              variant={mode === m ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8 px-2.5"
+              variant={mode === m ? "outline" : "quiet"}
               disabled={modeLocked && mode !== m}
               onClick={() => onModeChange(m)}
             >
-              <Icon className="mr-1 h-4 w-4" />
               {label}
             </Button>
           ))}
@@ -131,9 +129,12 @@ export function CaptureControls(props: CaptureControlsProps) {
           <>
             {mode === "photo" && (
               <Button
+                icon={framing === "viewport-crop" ? (
+                  <Crop />
+                ) : (
+                  <Frame />
+                )}
                 variant="outline"
-                size="sm"
-                className="h-9"
                 onClick={() =>
                   onFramingChange(
                     framing === "viewport-crop" ? "full-frame" : "viewport-crop",
@@ -145,11 +146,6 @@ export function CaptureControls(props: CaptureControlsProps) {
                     : "Switch to viewport crop"
                 }
               >
-                {framing === "viewport-crop" ? (
-                  <Crop className="mr-1.5 h-4 w-4" />
-                ) : (
-                  <Frame className="mr-1.5 h-4 w-4" />
-                )}
                 {framing === "viewport-crop" ? "Crop to view" : "Full frame"}
               </Button>
             )}
@@ -158,13 +154,11 @@ export function CaptureControls(props: CaptureControlsProps) {
                 device selection. On mobile a front/rear flip beats a list. */}
             {isMobile && (
               <Button
+                icon={<SwitchCamera />}
                 variant="outline"
-                size="sm"
-                className="h-11 sm:h-9"
                 onClick={onToggleFacing}
                 aria-label="Switch camera"
               >
-                <SwitchCamera className="mr-1.5 h-4 w-4" />
                 {facing === "user" ? "Front" : "Rear"}
               </Button>
             )}
@@ -173,17 +167,15 @@ export function CaptureControls(props: CaptureControlsProps) {
 
         {mode === "video" && !isRecordingLive && (
           <Button
+            icon={withMic ? (
+              <Mic />
+            ) : (
+              <MicOff />
+            )}
             variant="outline"
-            size="sm"
-            className="h-9"
             onClick={onToggleMic}
             aria-label={withMic ? "Record without microphone" : "Record with microphone"}
           >
-            {withMic ? (
-              <Mic className="mr-1.5 h-4 w-4" />
-            ) : (
-              <MicOff className="mr-1.5 h-4 w-4" />
-            )}
             {withMic ? "Mic on" : "Mic off"}
           </Button>
         )}
@@ -197,18 +189,18 @@ export function CaptureControls(props: CaptureControlsProps) {
 
         {mode === "photo" ? (
           <Button
-            size="sm"
-            className="ml-auto h-9 max-sm:w-full"
+            icon={capturing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Camera />
+            )}
+            variant="primary"
+            className="ml-auto max-sm:w-full"
             onClick={onShutter}
             disabled={shutterDisabled}
             title={blockedReason ?? undefined}
             aria-label="Take photo"
           >
-            {capturing ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Camera className="mr-1.5 h-4 w-4" />
-            )}
             Capture
           </Button>
         ) : (
@@ -216,18 +208,18 @@ export function CaptureControls(props: CaptureControlsProps) {
           // ever starts a recording.
           !isRecordingLive && (
             <Button
-              size="sm"
-              className="ml-auto h-11 max-sm:w-full sm:h-9"
+              icon={recordingState === "starting" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Circle className="fill-destructive text-destructive" />
+              )}
+              variant="primary"
+              className="ml-auto max-sm:w-full"
               onClick={onStartRecording}
               disabled={recordDisabled || recordingState === "starting"}
               title={blockedReason ?? undefined}
               aria-label="Start recording"
             >
-              {recordingState === "starting" ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Circle className="mr-1.5 h-4 w-4 fill-destructive text-destructive" />
-              )}
               Record
             </Button>
           )

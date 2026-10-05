@@ -150,20 +150,18 @@ export function AddToOutreachListDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
-            className="gap-1"
+            icon={<Megaphone />}
+            variant="primary"
             onClick={() => void submit()}
             disabled={saving || enrollIds.length === 0 || !ctx || !choice.ready}
           >
-            <Megaphone className="h-3.5 w-3.5" />
             {saving ? "Adding…" : `Add ${enrollIds.length.toLocaleString()}`}
           </Button>
         </DialogFooter>

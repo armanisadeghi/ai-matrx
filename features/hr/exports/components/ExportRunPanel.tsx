@@ -412,29 +412,28 @@ export function ExportRunPanel({
       {/* ── Preview → generate ────────────────────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
+          icon={busy === "preview" ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Play aria-hidden />
+          )}
           variant="outline"
           onClick={() => void runPreview()}
           disabled={!selected?.available || busy !== null}
         >
-          {busy === "preview" ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Play className="mr-2 h-4 w-4" aria-hidden />
-          )}
           Check what it would contain
         </Button>
 
         <Button
-          size="sm"
+          icon={busy === "generate" ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <CheckCircle2 aria-hidden />
+          )}
+          variant="primary"
           onClick={() => void runGenerate()}
           disabled={!canGenerate}
         >
-          {busy === "generate" ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden />
-          )}
           Build the file
         </Button>
 

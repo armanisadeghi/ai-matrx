@@ -437,8 +437,7 @@ export function CodexUsageDashboard() {
           ).map(([value, label]) => (
             <Button
               key={value}
-              variant={preset === value ? "default" : "outline"}
-              size="sm"
+              variant={preset === value ? "primary" : "outline"}
               onClick={() => {
                 setResumeRange(null);
                 setPreset(value);
@@ -492,21 +491,20 @@ export function CodexUsageDashboard() {
             <option value="model_effort">By model and effort</option>
           </select>
           <Button
+            icon={refreshing ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <RefreshCw aria-hidden />
+            )}
             variant="outline"
-            size="sm"
             disabled={refreshing}
             onClick={() => void load("refresh")}
-          >
-            {refreshing ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            ) : (
-              <RefreshCw className="h-4 w-4" aria-hidden />
-            )}{" "}
+          >{" "}
             Refresh
           </Button>
           {canResume ? (
             <Button
-              size="sm"
+              variant="primary"
               disabled={refreshing}
               onClick={() => void load("continue")}
             >
@@ -713,7 +711,6 @@ export function CodexUsageDashboard() {
                 </div>
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => setScope(null)}
                 >
                   Clear selection

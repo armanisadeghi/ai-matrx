@@ -539,11 +539,10 @@ export function FilterBar({
         >
           <PopoverTrigger asChild>
             <Button
+              icon={<Plus />}
               variant="outline"
-              size="sm"
-              className="h-6 gap-1 rounded-full border-dashed px-2 text-xs text-muted-foreground max-lg:h-11 max-lg:min-w-11"
+              className="max-lg:min-w-11"
             >
-              <Plus className="h-3 w-3" />
               Filter
             </Button>
           </PopoverTrigger>
@@ -781,16 +780,13 @@ export function FilterBar({
               no second, worse way out of this menu. */}
             <div className="flex justify-end gap-2">
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs"
+                variant="quiet"
                 onClick={() => setOpen(false)}
               >
                 Cancel
               </Button>
               <Button
-                size="sm"
-                className="h-7 text-xs"
+                variant="primary"
                 disabled={!canAdd}
                 onClick={addFilter}
               >

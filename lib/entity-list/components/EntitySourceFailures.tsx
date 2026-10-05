@@ -11,7 +11,7 @@
 // canceling statement due to statement timeout` (2026-09-26).
 
 import { RotateCcw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { plainFailureReason } from "@/lib/entity-list/failure";
 

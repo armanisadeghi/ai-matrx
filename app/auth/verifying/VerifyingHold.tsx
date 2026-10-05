@@ -69,8 +69,7 @@ export function VerifyingHold({ next }: { next?: string }) {
               We could not confirm who you are right now. You have not been signed
               out — this usually clears in a few seconds.
             </p>
-            <Button className="mt-4" size="sm" onClick={tryAgain}>
-              <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
+            <Button icon={<RotateCw aria-hidden />} variant="primary" className="mt-4" onClick={tryAgain}>
               Try again
             </Button>
           </>

@@ -610,13 +610,11 @@ export function EditModeShell({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 shrink-0"
+                  icon={<ChevronLeft />} aria-label="Back to image picker"
+                  variant="quiet"
+                  className="shrink-0"
                   onClick={handleBack}
-                >
-                  <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>Back to image picker</TooltipContent>
             </Tooltip>
@@ -641,12 +639,11 @@ export function EditModeShell({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant={mask.active ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
+                icon={<Layers />}
+                variant={mask.active ? "outline" : "quiet"}
+                className="shrink-0"
                 onClick={() => mask.toggle()}
               >
-                <Layers className="h-3.5 w-3.5" />
                 Mask
                 {mask.hasPixels ? (
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
@@ -666,9 +663,8 @@ export function EditModeShell({
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
+                    variant="quiet"
+                    className="shrink-0"
                     disabled={!effectiveCloudFileId || savingVariants !== null}
                   >
                     {savingVariants ? (
@@ -719,17 +715,16 @@ export function EditModeShell({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="default"
-                  size="sm"
-                  className="h-7 shrink-0 gap-1 text-xs"
+                  icon={saving ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
+                  className="shrink-0"
                   disabled={saving}
                   onClick={handleSaveAsDuplicate}
                 >
-                  {saving ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Save className="h-3.5 w-3.5" />
-                  )}
                   Save as new file
                 </Button>
               </TooltipTrigger>
@@ -743,16 +738,15 @@ export function EditModeShell({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="default"
-                      size="sm"
-                      className="h-7 shrink-0 gap-1 text-xs"
+                      icon={saving ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Save />
+                      )}
+                      variant="primary"
+                      className="shrink-0"
                       disabled={saving}
                     >
-                      {saving ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Save className="h-3.5 w-3.5" />
-                      )}
                       Save
                     </Button>
                   </DropdownMenuTrigger>
@@ -783,14 +777,12 @@ export function EditModeShell({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant={railOpen ? "secondary" : "ghost"}
-                  size="icon"
-                  className="h-7 w-7 shrink-0 text-foreground/80 hover:text-foreground"
+                  icon={<History />} aria-label={railOpen ? "Hide version history" : "Show version history"}
+                  variant={railOpen ? "outline" : "quiet"}
+                  className="shrink-0"
                   onClick={() => setRailOpen((v) => !v)}
                   disabled={!effectiveCloudFileId}
-                >
-                  <History className="h-3.5 w-3.5" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 {railOpen ? "Hide version history" : "Show version history"}
@@ -856,12 +848,11 @@ export function EditModeShell({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="secondary"
-                  size="sm"
-                  className="absolute top-3 left-3 z-30 h-8 gap-1.5 shadow-md backdrop-blur bg-card/95 border border-border"
+                  icon={<RotateCcw />}
+                  variant="outline"
+                  className="absolute top-3 left-3 z-30"
                   onClick={handleReset}
                 >
-                  <RotateCcw className="h-3.5 w-3.5" />
                   Reset
                 </Button>
               </TooltipTrigger>
@@ -898,14 +889,11 @@ export function EditModeShell({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      icon={<ChevronLeft className="rotate-180" />}
+                      variant="quiet"
                       onClick={() => setRailOpen(false)}
                       aria-label="Close version history"
-                    >
-                      <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
-                    </Button>
+                    />
                   </TooltipTrigger>
                   <TooltipContent side="left">
                     Close version history

@@ -20,7 +20,8 @@ import { useState } from "react";
 import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 import Link from "next/link";
 import { HouseWifi, Loader2, Trash2 } from "lucide-react";
-import { Badge, Button, EditableLabel, Switch } from "@ai-matrx/design-system";
+import { Badge, EditableLabel, Switch } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
@@ -204,13 +205,11 @@ export function HomeConnectionRow({
             aria-label={`Use ${device.display_name}'s internet connection when AI Matrx gets blocked`}
           />
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+            icon={<Trash2 aria-hidden="true" />}
+            variant="quiet"
             disabled={busy}
             onClick={() => void remove()}
           >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
             <span className="ml-1">Remove</span>
           </Button>
         </>
@@ -221,7 +220,7 @@ export function HomeConnectionRow({
             let AI Matrx browse through it when a site blocks our servers.
           </span>
           <span className="flex-1" />
-          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" asChild>
+          <Button variant="outline" asChild>
             <Link href="/connect-computer">Set up</Link>
           </Button>
         </>

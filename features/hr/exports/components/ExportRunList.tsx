@@ -900,14 +900,14 @@ export function ExportRunList({
               Building a replacement is safe, and both files are kept.
             </p>
             <Button
-              size="sm"
+              icon={<RefreshCw aria-hidden />}
+              variant="primary"
               className="mt-3"
               disabled={busyId === newestFailed.export_id}
               onClick={() =>
                 setDialog({ kind: "supersede", row: newestFailed })
               }
             >
-              <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
               Build a replacement
             </Button>
           </AlertDescription>
@@ -1052,8 +1052,7 @@ export function ExportRunList({
             search: true,
             searchPlaceholder: "Search this period's exports…",
             actions: (
-              <Button size="sm" variant="outline" onClick={() => reload()}>
-                <RefreshCw className="mr-2 h-4 w-4" aria-hidden />
+              <Button icon={<RefreshCw aria-hidden />} variant="outline" onClick={() => reload()}>
                 Refresh
               </Button>
             ),

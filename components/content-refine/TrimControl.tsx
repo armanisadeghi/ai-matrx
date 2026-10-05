@@ -233,15 +233,14 @@ export function TrimControl({
           />
 
           <Button
+            icon={<ZoomIn />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={fineTune}
             disabled={disabled || sliderWidth <= FINE_WIDTH}
-            className="col-start-4 row-start-2 h-8 justify-center gap-1 px-2 text-xs @[600px]:col-start-6 @[600px]:row-start-1"
+            className="col-start-4 row-start-2 justify-center @[600px]:col-start-6 @[600px]:row-start-1"
             aria-label="Fine tune trim range"
           >
-            <ZoomIn className="size-3.5" />
             <span className="hidden @[600px]:inline">
               Fine tune
             </span>

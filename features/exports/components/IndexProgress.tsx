@@ -96,8 +96,7 @@ export function IndexProgress({
             )}
           </span>
         </p>
-        <Button variant="outline" size="sm" className="mt-2" onClick={onRetry}>
-          <RotateCcw className="h-4 w-4" />
+        <Button icon={<RotateCcw />} variant="outline" className="mt-2" onClick={onRetry}>
           Index it again
         </Button>
         <ErrorAlchemyMenu error={state.message} />

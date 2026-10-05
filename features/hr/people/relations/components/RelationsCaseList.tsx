@@ -377,20 +377,16 @@ export function RelationsCaseList() {
                         door comes FIRST and reads like what a manager
                         actually wants to do. */}
                     <Button
+                      icon={<Plus />}
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="min-h-11 sm:min-h-9"
                       onClick={() => setNewAction("coaching")}
                     >
-                      <Plus className="mr-1.5 h-4 w-4" />
                       Log a coaching conversation
                     </Button>
                     <Button
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="min-h-11 sm:min-h-9"
                       onClick={() => setNewAction("formal")}
                     >
                       Start a corrective action
@@ -399,12 +395,11 @@ export function RelationsCaseList() {
                 ) : null}
                 {canReport ? (
                   <Button
+                    icon={<Plus />}
+                    variant="primary"
                     type="button"
-                    size="sm"
-                    className="min-h-11 sm:min-h-9"
                     onClick={() => setNewIncident(true)}
                   >
-                    <Plus className="mr-1.5 h-4 w-4" />
                     Report an incident
                   </Button>
                 ) : null}

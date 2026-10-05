@@ -247,15 +247,14 @@ function CorrespondenceRow({
           </p>
         </Link>
         <Button
-          size="sm"
+          icon={promoting ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
           variant="outline"
           className="shrink-0"
           disabled={promoting}
           onClick={() => void promote()}
         >
-          {promoting ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : null}
           Use for campaigns
         </Button>
       </div>
@@ -316,11 +315,12 @@ export function SendingIdentitiesPage() {
             one sender&apos;s mistakes from affecting anyone else&apos;s email.
           </p>
           <Button
+            icon={<MailPlus />}
+            variant="primary"
             className="shrink-0"
             onClick={() => setConnectOpen(true)}
             disabled={policy ? !policy.outreach_enabled : false}
           >
-            <MailPlus className="mr-1.5 h-4 w-4" />
             Connect a mailbox
           </Button>
         </div>
@@ -356,17 +356,16 @@ export function SendingIdentitiesPage() {
                 </div>
               </div>
               <Button
-                size="sm"
+                icon={togglingPolicy ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Power />
+                )}
                 variant="outline"
                 className="shrink-0"
                 disabled={togglingPolicy}
                 onClick={() => void togglePolicy(true)}
               >
-                {togglingPolicy ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Power className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 Turn outreach back on
               </Button>
             </CardContent>
@@ -402,7 +401,7 @@ export function SendingIdentitiesPage() {
           <Card className="border-destructive/40">
             <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
-              <Button size="sm" variant="outline" onClick={reload}>
+              <Button variant="outline" onClick={reload}>
                 Try again
               </Button>
             </CardContent>
@@ -436,8 +435,7 @@ export function SendingIdentitiesPage() {
                   weeks before campaigns can use it.
                 </p>
               </div>
-              <Button onClick={() => setConnectOpen(true)}>
-                <MailPlus className="mr-1.5 h-4 w-4" />
+              <Button icon={<MailPlus />} variant="primary" onClick={() => setConnectOpen(true)}>
                 Connect a mailbox
               </Button>
             </CardContent>
@@ -458,8 +456,7 @@ export function SendingIdentitiesPage() {
                 {CORRESPONDENCE_SECTION_TITLE}
               </p>
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => setShowCorrespondence(false)}
               >
                 Hide
@@ -476,7 +473,7 @@ export function SendingIdentitiesPage() {
                     {correspondence.error}
                     <ErrorAlchemyMenu error={correspondence.error} />
                   </p>
-                  <Button size="sm" variant="outline" onClick={correspondence.reload}>
+                  <Button variant="outline" onClick={correspondence.reload}>
                     Try again
                   </Button>
                 </CardContent>
@@ -500,12 +497,11 @@ export function SendingIdentitiesPage() {
           </div>
         ) : (
           <Button
-            size="sm"
-            variant="ghost"
-            className="self-start text-muted-foreground"
+            icon={<FileClock />}
+            variant="quiet"
+            className="self-start"
             onClick={() => setShowCorrespondence(true)}
           >
-            <FileClock className="mr-1.5 h-3.5 w-3.5" />
             {correspondenceRevealLabel(
               correspondence.identities?.length ?? null,
             )}
@@ -524,17 +520,16 @@ export function SendingIdentitiesPage() {
               </p>
             </div>
             <Button
-              size="sm"
+              icon={togglingPolicy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Power />
+              )}
               variant="outline"
-              className="shrink-0 border-destructive/40 text-destructive hover:bg-destructive/10"
+              className="shrink-0"
               disabled={togglingPolicy}
               onClick={() => void togglePolicy(false)}
             >
-              {togglingPolicy ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Power className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Stop all sending
             </Button>
           </div>

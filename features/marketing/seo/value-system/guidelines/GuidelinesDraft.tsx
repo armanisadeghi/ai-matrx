@@ -98,8 +98,7 @@ export function GuidelinesDraftButton({
   return (
     <Button
       type="button"
-      size="sm"
-      variant={hasDocument ? "outline" : "default"}
+      variant={hasDocument ? "outline" : "primary"}
       className={className ?? "h-7 gap-1.5 px-2 text-xs"}
       disabled={busy}
       title={

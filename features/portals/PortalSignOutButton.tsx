@@ -10,7 +10,7 @@
 
 import { LogOut } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { reportSignOutFailure, useSignOut } from "@/features/shell/auth/useSignOut";
 
 export function PortalSignOutButton({

@@ -191,8 +191,7 @@ export function CreateFolderDialog({
       >
         Cancel
       </Button>
-      <Button type="submit" disabled={busy || !folderName.trim()}>
-        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+      <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" type="submit" disabled={busy || !folderName.trim()}>
         {confirmLabel}
       </Button>
     </>

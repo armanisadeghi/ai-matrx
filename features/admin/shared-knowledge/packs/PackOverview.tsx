@@ -220,8 +220,7 @@ export function PackOverview({
         ) : null}
         {canAuthor ? (
           <div className="flex justify-end">
-            <Button size="sm" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
-              {save.isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <Save className="mr-1 size-3.5" />}
+            <Button icon={save.isPending ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
               Save changes
             </Button>
           </div>

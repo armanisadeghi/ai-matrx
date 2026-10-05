@@ -47,10 +47,11 @@ export default function SearchConsolePage() {
 
                         {!isAuthenticated && isGoogleLoaded && (
                             <Button
+                                icon={<LogIn />}
+                                variant="primary"
                                 onClick={handleSignIn}
-                                className="bg-textured text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-gray-700 font-semibold flex items-center gap-2"
+                                className="flex"
                             >
-                                <LogIn className="w-4 h-4" />
                                 Sign In with Google
                             </Button>
                         )}
@@ -88,10 +89,10 @@ export default function SearchConsolePage() {
                             Connect your Google account to access Search Console data
                         </p>
                         <Button
+                            icon={<LogIn />}
+                            variant="primary"
                             onClick={handleSignIn}
-                            className="bg-green-600 hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600 text-white"
                         >
-                            <LogIn className="w-4 h-4 mr-2" />
                             Sign In with Google
                         </Button>
                     </div>
@@ -140,9 +141,9 @@ export default function SearchConsolePage() {
                         <AlertDescription className="text-orange-800 dark:text-orange-200">
                             Missing required permissions. Please sign in again to grant Search Console access.
                             <Button
+                                variant="primary"
                                 onClick={handleSignIn}
-                                size="sm"
-                                className="ml-3 bg-orange-600 hover:bg-orange-700 text-white"
+                                className="ml-3"
                             >
                                 Re-authenticate
                             </Button>

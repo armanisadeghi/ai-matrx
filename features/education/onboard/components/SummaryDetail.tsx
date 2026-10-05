@@ -186,13 +186,11 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
     <div className="mx-auto w-full max-w-2xl space-y-5 p-4 sm:p-6">
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          variant="ghost"
-          size="icon"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => router.back()}
           aria-label="Back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        />
         <div className="min-w-0 flex-[1_1_12rem]">
           <h1 className="truncate text-lg font-semibold text-foreground">
             {row.title}
@@ -204,11 +202,10 @@ export function SummaryDetail({ id, edit = false }: { id: string; edit?: boolean
         </div>
         <ContentFindControl rootRef={contentRef} label="Find in summary" />
         {(access.isOwner || access.level === "admin") ? <ShareButton resourceType="study_media" resourceId={row.id} resourceName={row.title} organizationId={row.organization_id} showStatus={false} size="sm" /> : null}
-        <Button variant="outline" size="sm" onClick={onExport}>
-          <Download className="h-4 w-4" /> Markdown
+        <Button icon={<Download />} variant="outline" onClick={onExport}> Markdown
         </Button>
-        {canEdit ? <Button variant="outline" size="sm" onClick={() => router.push(`/education/summaries/${row.id}/edit`)}><Pencil className="h-4 w-4" />Edit</Button> : null}
-        {access.isOwner ? <Button variant="outline" size="icon" onClick={() => { void onDelete(); }} aria-label="Move summary to Trash"><Trash2 className="h-4 w-4" /></Button> : null}
+        {canEdit ? <Button icon={<Pencil />} variant="outline" onClick={() => router.push(`/education/summaries/${row.id}/edit`)}>Edit</Button> : null}
+        {access.isOwner ? <Button icon={<Trash2 />} variant="outline" onClick={() => { void onDelete(); }} aria-label="Move summary to Trash" /> : null}
       </div>
 
       <div ref={contentRef} className="space-y-5">

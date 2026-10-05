@@ -66,16 +66,15 @@ export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
               </TabsList>
             </Tabs>
             <Button
+              icon={copied === "example" ? (
+                <Check />
+              ) : (
+                <Copy />
+              )}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => void copy(example, "example")}
             >
-              {copied === "example" ? (
-                <Check className="mr-1.5 h-3.5 w-3.5" />
-              ) : (
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Copy example
             </Button>
           </div>
@@ -93,16 +92,15 @@ export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
           <div className="mt-6 flex items-center justify-between">
             <h3 className="text-sm font-semibold">Actual JSON Schema</h3>
             <Button
+              icon={copied === "schema" ? (
+                <Check />
+              ) : (
+                <Copy />
+              )}
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => void copy(schema, "schema")}
             >
-              {copied === "schema" ? (
-                <Check className="mr-1.5 h-3.5 w-3.5" />
-              ) : (
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Copy schema
             </Button>
           </div>

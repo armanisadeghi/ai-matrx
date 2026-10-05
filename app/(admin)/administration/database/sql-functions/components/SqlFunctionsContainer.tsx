@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo } from "react";
 import { useSqlFunctions } from "@/lib/hooks/useSqlFunctions";
 import { SqlFunction } from "@/types/sql-functions";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -244,10 +244,9 @@ export default function SqlFunctionsContainer({
           </TabsList>
           {activeTab !== "list" && (
             <Button
+              type="submit"
               onClick={handleBackToList}
               variant="outline"
-              size="sm"
-              className="h-7 text-xs border-slate-300 dark:border-slate-700"
             >
               Back to List
             </Button>
@@ -277,22 +276,22 @@ export default function SqlFunctionsContainer({
                     className="pl-8 h-8 w-52 text-sm border-slate-300 dark:border-slate-700"
                   />
                 </div>
-                <Button
+                <SurfaceButton
                   type="submit"
                   size="icon"
                   className="h-8 w-8 bg-slate-700 hover:bg-slate-600 text-white shrink-0"
                 >
                   <Search className="h-3.5 w-3.5" />
-                </Button>
-                <Button
+                </SurfaceButton>
+                <SurfaceButton
                   type="button"
                   onClick={handleNewFunction}
                   size="icon"
                   className="h-8 w-8 bg-slate-700 hover:bg-slate-600 text-white shrink-0"
                 >
                   <Plus className="h-3.5 w-3.5" />
-                </Button>
-                <Button
+                </SurfaceButton>
+                <SurfaceButton
                   type="button"
                   onClick={refreshFunctions}
                   disabled={isRefreshing || loading}
@@ -302,7 +301,7 @@ export default function SqlFunctionsContainer({
                   <RefreshCw
                     className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}
                   />
-                </Button>
+                </SurfaceButton>
               </form>
 
               <div className="flex items-center gap-4 ml-auto flex-wrap">
@@ -322,7 +321,7 @@ export default function SqlFunctionsContainer({
                           }
                           className="h-8 pr-7 text-sm border-slate-300 dark:border-slate-700"
                         />
-                        <Button
+                        <SurfaceButton
                           type="button"
                           variant="ghost"
                           size="sm"
@@ -330,7 +329,7 @@ export default function SqlFunctionsContainer({
                           onClick={() => setCustomSchemaSearch(false)}
                         >
                           <X className="h-3.5 w-3.5" />
-                        </Button>
+                        </SurfaceButton>
                       </div>
                     ) : (
                       <Select

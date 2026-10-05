@@ -688,12 +688,10 @@ function JobActions({
         </p>
         {onCancel && (
           <Button
-            size="sm"
+            icon={<XIcon />}
             variant="outline"
             onClick={onCancel}
-            className="h-7 text-xs"
           >
-            <XIcon className="h-3 w-3 mr-1" />
             Stop
           </Button>
         )}
@@ -704,12 +702,10 @@ function JobActions({
   return (
     <div className="flex items-center justify-end gap-2 pt-1">
       <Button
-        size="sm"
-        variant="ghost"
+        icon={<Trash2 />}
+        variant="quiet"
         onClick={onDismiss}
-        className="h-7 text-xs"
       >
-        <Trash2 className="h-3 w-3 mr-1" />
         Clear
       </Button>
     </div>

@@ -375,11 +375,9 @@ export default function ProofRunsClient() {
                 {MODES.map((option) => (
                   <Button
                     key={option.value}
-                    size="sm"
-                    variant={mode === option.value ? "default" : "outline"}
+                    variant={mode === option.value ? "primary" : "outline"}
                     onClick={() => setMode(option.value)}
                     title={option.hint}
-                    className="h-9 px-3 text-xs"
                   >
                     {option.label}
                   </Button>
@@ -387,10 +385,9 @@ export default function ProofRunsClient() {
               </div>
             </div>
             <Button
-              size="lg"
+              variant="primary"
               onClick={() => void run(selected)}
               disabled={runningSlug !== null || !selected}
-              className="h-9"
             >
               {runningSlug ? (
                 <>
@@ -430,7 +427,7 @@ export default function ProofRunsClient() {
             — they ship with the next aidream deploy. Nothing here is broken;
             there is just nothing to talk to yet.
           </p>
-          <Button size="sm" variant="outline" className="h-7" onClick={() => void refresh()}>
+          <Button variant="outline" onClick={() => void refresh()}>
             Retry
           </Button>
           <ErrorAlchemyMenu error={loadError} />
@@ -458,7 +455,7 @@ export default function ProofRunsClient() {
                 />
                 <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
                   <Button
-                    size="sm"
+                    variant="primary"
                     onClick={() => void run(check.slug ?? "")}
                     disabled={runningSlug !== null || !check.slug}
                   >
@@ -529,11 +526,10 @@ export default function ProofRunsClient() {
           </div>
           {!editing ? (
             <Button
-              size="sm"
+              icon={<Plus />}
               variant="outline"
               onClick={() => setEditing(emptyScenario())}
             >
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
               New scenario
             </Button>
           ) : null}
@@ -597,28 +593,24 @@ export default function ProofRunsClient() {
                   </div>
                   <div className="flex items-center gap-1">
                     <Button
-                      size="sm"
+                      icon={<PlayCircle />}
+                      variant="primary"
                       onClick={() => void run(scenario.check_slug)}
                       disabled={runningSlug !== null}
-                      className="h-7 px-2 text-xs"
                     >
-                      <PlayCircle className="mr-1 h-3.5 w-3.5" />
                       Run
                     </Button>
                     <Button
-                      size="sm"
+                      icon={<Pencil />}
                       variant="outline"
                       onClick={() => setEditing(scenario)}
-                      className="h-7 px-2 text-xs"
                     >
-                      <Pencil className="mr-1 h-3.5 w-3.5" />
                       Edit
                     </Button>
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       onClick={() => void removeScenario(scenario.slug)}
-                      className="h-7 w-7 p-0 text-muted-foreground hover:text-red-600"
+                      className="w-7"
                       aria-label={`Delete ${scenario.slug}`}
                     >
                       <Trash2 className="h-3.5 w-3.5" />

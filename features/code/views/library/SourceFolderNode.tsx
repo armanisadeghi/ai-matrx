@@ -213,9 +213,8 @@ export const SourceFolderNode: React.FC<SourceFolderNodeProps> = ({
           )}
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+            variant="quiet"
+            className="w-11 shrink-0 lg:hidden"
             aria-label={`Actions for ${adapter.label}`}
             aria-haspopup="menu"
             onClick={(event) => {

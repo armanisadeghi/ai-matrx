@@ -436,7 +436,9 @@ export function ExamContentPipeline() {
           </div>
 
           <Button
-            className="min-h-11 w-full"
+            icon={running ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
+            className="w-full"
             onClick={() => void generate()}
             disabled={
               running ||
@@ -445,7 +447,6 @@ export function ExamContentPipeline() {
               plansToGenerate.length === 0
             }
           >
-            {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Generate and verify {plansToGenerate.length} missing draft
             {plansToGenerate.length === 1 ? "" : "s"}
           </Button>
@@ -548,8 +549,6 @@ export function ExamContentPipeline() {
                   <Button
                     asChild
                     variant="outline"
-                    size="sm"
-                    className="min-h-11"
                   >
                     <Link href={draft.href} target="_blank">
                       Open draft
@@ -558,8 +557,7 @@ export function ExamContentPipeline() {
                 ) : null}
                 {draft.status === "ready" ? (
                   <Button
-                    size="sm"
-                    className="min-h-11"
+                    variant="primary"
                     onClick={() => void publish(draft)}
                   >
                     Publish as AI-built starter
@@ -567,9 +565,7 @@ export function ExamContentPipeline() {
                 ) : null}
                 {draft.status === "failed" && draft.allowedChunkIds?.length ? (
                   <Button
-                    size="sm"
-                    variant="secondary"
-                    className="min-h-11"
+                    variant="outline"
                     onClick={() => void resumeVerification(draft)}
                   >
                     Resume verification

@@ -23,7 +23,8 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
 
-import { Button, Checkbox } from "@ai-matrx/design-system";
+import { Checkbox } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
@@ -223,12 +224,11 @@ export function ReviewDeck({
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" disabled={busy} onClick={() => void decideCurrent("accept")}>
+            <Button variant="primary" disabled={busy} onClick={() => void decideCurrent("accept")}>
               {acceptLabel}
               <kbd className="ml-1.5 text-[10px] opacity-70">A</kbd>
             </Button>
             <Button
-              size="sm"
               variant="outline"
               disabled={busy}
               onClick={() => void decideCurrent("reject")}
@@ -239,8 +239,7 @@ export function ReviewDeck({
             {rejectOptions}
             {onSkip ? (
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 disabled={busy}
                 onClick={() => {
                   onSkip(current.id);
@@ -260,8 +259,7 @@ export function ReviewDeck({
           <ReviewList items={items} />
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              size="sm"
-              variant={mode === "reject_all" ? "outline" : "default"}
+              variant={mode === "reject_all" ? "outline" : "primary"}
               disabled={busy}
               onClick={() =>
                 setPending({
@@ -297,14 +295,13 @@ export function ReviewDeck({
               {checkedIds.length} selected
             </span>
             <Button
-              size="sm"
+              variant="primary"
               disabled={busy || checkedIds.length === 0}
               onClick={() => setPending({ ids: checkedIds, verb: "accept" })}
             >
               {acceptLabel}
             </Button>
             <Button
-              size="sm"
               variant="outline"
               disabled={busy || checkedIds.length === 0}
               onClick={() => setPending({ ids: checkedIds, verb: "reject" })}

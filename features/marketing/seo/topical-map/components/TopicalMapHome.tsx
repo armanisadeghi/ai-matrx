@@ -126,21 +126,21 @@ export function TopicalMapHome() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline">
                   <Link href={marketingRoutes.brandContentPlan(brand.seg)}>
                     <ListTree className="h-4 w-4" aria-hidden />
                     Content plan
                   </Link>
                 </Button>
                 {startMode ? (
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline">
                     <Link href={homeHref}>
                       <X className="h-4 w-4" aria-hidden />
                       Close
                     </Link>
                   </Button>
                 ) : (
-                  <Button asChild size="sm">
+                  <Button variant="primary" asChild>
                     <Link href={startMapHref(brand.seg)}>
                       <AGENT_ICON className="h-4 w-4" aria-hidden />
                       Start a map
@@ -196,13 +196,13 @@ export function TopicalMapHome() {
                 detail="A map is built from the brand's description, business facts, locations and its sites' data — or from documents, a description, a web page, or research. Nothing exists for this brand yet."
                 action={
                   <div className="flex flex-wrap gap-2">
-                    <Button asChild size="sm">
+                    <Button variant="primary" asChild>
                       <Link href={startMapHref(brand.seg, { source: "data" })}>
                         <AGENT_ICON className="h-4 w-4" aria-hidden />
                         Start a map from this brand&apos;s data
                       </Link>
                     </Button>
-                    <Button asChild size="sm" variant="outline">
+                    <Button asChild variant="outline">
                       <Link href={marketingRoutes.brandIdentity(brand.seg)}>
                         Review the brand profile it would read
                       </Link>

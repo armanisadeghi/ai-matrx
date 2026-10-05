@@ -265,7 +265,6 @@ export default function AdminRunsPage() {
             ],
             actions: (
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => load()}
                 disabled={fetching}

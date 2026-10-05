@@ -71,9 +71,7 @@ export function SourceStateCell({
                         </span>
                         {canRun ? (
                             <Button
-                                size="sm"
                                 variant="outline"
-                                className="h-6 px-2 text-[11px]"
                                 onClick={(event) => {
                                     event.stopPropagation();
                                     onTranscribe(row);

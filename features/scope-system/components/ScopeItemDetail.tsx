@@ -207,14 +207,13 @@ export function ScopeItemDetail({
           </div>
           {canManage && (
             <Button
+              icon={<Pencil />}
               ref={editItemButtonRef}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => setEditingItem(true)}
               className="shrink-0"
             >
-              <Pencil className="h-3.5 w-3.5 mr-1.5" />
               Edit item
             </Button>
           )}
@@ -272,7 +271,7 @@ export function ScopeItemDetail({
       {/* Prev / next item within this scope */}
       <div className="flex items-center justify-between">
         {prevItem ? (
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild variant="quiet">
             <Link
               href={scopeItemHref(orgSlugOrId, scopeType, scope, prevItem)}
               className="text-muted-foreground"
@@ -285,7 +284,7 @@ export function ScopeItemDetail({
           <span />
         )}
         {nextItem ? (
-          <Button asChild variant="ghost" size="sm">
+          <Button asChild variant="quiet">
             <Link
               href={scopeItemHref(orgSlugOrId, scopeType, scope, nextItem)}
               className="text-muted-foreground"

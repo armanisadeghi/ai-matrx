@@ -353,7 +353,12 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
               // No source → quick-create mode only
               <div className="p-2">
                 <Button
-                  size="sm"
+                  icon={isBusy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Plus />
+                  )}
+                  variant="primary"
                   onClick={async () => {
                     const title = query.trim();
                     if (!title) return;
@@ -364,13 +369,8 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                     }
                   }}
                   disabled={!query.trim() || isBusy}
-                  className="w-full h-7 text-xs"
+                  className="w-full"
                 >
-                  {isBusy ? (
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  ) : (
-                    <Plus className="w-3 h-3 mr-1" />
-                  )}
                   Create task
                 </Button>
               </div>
@@ -415,16 +415,16 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
               rows={2}
             />
             <Button
-              size="sm"
+              icon={isBusy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               onClick={handleCreate}
               disabled={(!newTitle.trim() && !query.trim()) || isBusy}
-              className="w-full h-7 text-xs"
+              className="w-full"
             >
-              {isBusy ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Plus className="w-3 h-3 mr-1" />
-              )}
               Create & attach
             </Button>
           </div>

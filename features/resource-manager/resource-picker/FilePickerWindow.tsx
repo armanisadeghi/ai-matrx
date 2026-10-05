@@ -221,7 +221,7 @@ export function FilePickerWindow({
                 ? "Check files to attach them"
                 : `${attached.ids.size} file${attached.ids.size === 1 ? "" : "s"} attached`}
             </span>
-            <Button type="button" size="sm" className="h-7 text-xs" onClick={onClose}>
+            <Button variant="primary" type="button" onClick={onClose}>
               Done
             </Button>
           </div>
@@ -233,7 +233,7 @@ export function FilePickerWindow({
                 ? "Check the files to attach"
                 : `${pickedCount} file${pickedCount === 1 ? "" : "s"} selected`}
             </span>
-            <Button type="button" size="sm" className="h-7 text-xs" disabled={pickedCount === 0} onClick={onClose}>
+            <Button variant="primary" type="button" disabled={pickedCount === 0} onClick={onClose}>
               Attach {pickedCount > 0 ? pickedCount : ""} {pickedCount === 1 ? "file" : "files"}
             </Button>
           </div>

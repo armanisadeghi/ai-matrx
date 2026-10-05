@@ -91,7 +91,7 @@ export function SavedRequestsList() {
             nobody else sees them.
           </p>
         </div>
-        <Button asChild size="sm">
+        <Button variant="primary" asChild>
           <Link href="/work/new">
             <Plus className="mr-1.5 h-3.5 w-3.5" />
             New request
@@ -121,7 +121,7 @@ export function SavedRequestsList() {
           <p className="mt-1 text-xs text-muted-foreground">
             Compose one on Start work and press Save in the Timing step.
           </p>
-          <Button asChild size="sm" variant="outline" className="mt-3">
+          <Button asChild variant="outline" className="mt-3">
             <Link href="/work/new">Start work</Link>
           </Button>
         </div>
@@ -151,13 +151,12 @@ export function SavedRequestsList() {
                     ` · filed under ${request.homes.map((home) => home.label).join(", ")}`}
                 </span>
               </button>
-              <Button asChild size="sm" variant="outline">
+              <Button asChild variant="outline">
                 <Link href={`/work/new?request=${request.id}`}>Open</Link>
               </Button>
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => setPendingDelete(request)}
                 aria-label={`Delete ${request.label}`}
               >

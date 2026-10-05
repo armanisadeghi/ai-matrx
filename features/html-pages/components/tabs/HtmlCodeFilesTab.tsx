@@ -162,15 +162,13 @@ export function HtmlCodeFilesTab({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<RefreshCw
+                    className={`h-4 w-4 mr-2 ${isUpdating ? "animate-spin" : ""}`}
+                  />}
                   onClick={handleUpdate}
                   disabled={!state.isMarkdownDirty || isUpdating}
-                  variant={state.isMarkdownDirty ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 px-3"
+                  variant={state.isMarkdownDirty ? "primary" : "outline"}
                 >
-                  <RefreshCw
-                    className={`h-4 w-4 mr-2 ${isUpdating ? "animate-spin" : ""}`}
-                  />
                   Update from Markdown
                 </Button>
               </TooltipTrigger>
@@ -188,15 +186,13 @@ export function HtmlCodeFilesTab({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<RotateCcw
+                    className={`h-4 w-4 mr-2 ${isResetting ? "animate-spin" : ""}`}
+                  />}
                   onClick={handleReset}
                   disabled={isResetting}
                   variant="outline"
-                  size="sm"
-                  className="h-8 px-3"
                 >
-                  <RotateCcw
-                    className={`h-4 w-4 mr-2 ${isResetting ? "animate-spin" : ""}`}
-                  />
                   Reset All to Original
                 </Button>
               </TooltipTrigger>

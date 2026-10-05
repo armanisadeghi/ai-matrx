@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/matrx/buttons/CopyButton";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -354,12 +354,12 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
         />
         <div className="min-w-0 flex-1">
           <Button
+            icon={<History />}
             type="button"
             variant="outline"
             onClick={() => setHistoryOpen(true)}
-            className="mb-5 rounded-xl lg:hidden"
+            className="mb-5 lg:hidden"
           >
-            <History className="mr-2 h-4 w-4" />
             Search history
           </Button>
           <header className="mb-7 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -406,7 +406,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                   aria-label="YouTube search query"
                 />
               </div>
-              <Button
+              <SurfaceButton
                 type="submit"
                 disabled={!form.query.trim() || loading}
                 className="h-14 rounded-2xl bg-red-500 px-7 font-semibold text-white hover:bg-red-400"
@@ -417,7 +417,7 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                   <Search className="mr-2 h-5 w-5" />
                 )}
                 Search YouTube
-              </Button>
+              </SurfaceButton>
             </div>
 
             <div className="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-6 dark:border-white/10">
@@ -577,16 +577,16 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
                 </p>
                 {topicId && selectedIds.size > 0 && (
                   <Button
+                    icon={adding ? (
+                      <LoaderCircle className="animate-spin" />
+                    ) : (
+                      <ListPlus />
+                    )}
+                    variant="primary"
                     type="button"
                     onClick={() => void addSelected()}
                     disabled={adding}
-                    className="rounded-xl bg-red-500 text-white hover:bg-red-400"
                   >
-                    {adding ? (
-                      <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <ListPlus className="mr-2 h-4 w-4" />
-                    )}
                     Add {selectedIds.size} to research
                   </Button>
                 )}
@@ -607,26 +607,26 @@ export function YouTubeDiscovery({ topicId }: { topicId?: string }) {
               </div>
               <div className="mt-8 flex justify-center gap-3">
                 <Button
+                  icon={<ChevronLeft />}
+                  type="submit"
                   variant="outline"
                   disabled={!page.prev_page_token || loading}
                   onClick={() =>
                     void runSearch(page.prev_page_token ?? undefined)
                   }
-                  className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
                 >
-                  <ChevronLeft className="mr-2 h-4 w-4" />
                   Previous
                 </Button>
                 <Button
+                  iconEnd={<ChevronRight />}
+                  type="submit"
                   variant="outline"
                   disabled={!page.next_page_token || loading}
                   onClick={() =>
                     void runSearch(page.next_page_token ?? undefined)
                   }
-                  className="rounded-xl border-border bg-card dark:border-white/10 dark:bg-white/[0.03]"
                 >
                   Next
-                  <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
             </>
@@ -951,21 +951,17 @@ function VideoCard({
               <>
                 <Button
                   type="button"
-                  variant={isSelected ? "default" : "outline"}
-                  size="sm"
+                  variant={isSelected ? "primary" : "outline"}
                   onClick={onToggleSelected}
-                  className="rounded-xl"
                 >
                   {isSelected ? "Selected" : "Select"}
                 </Button>
                 <Button
+                  icon={<ListPlus />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={onAdd}
-                  className="rounded-xl"
                 >
-                  <ListPlus className="mr-1.5 h-3.5 w-3.5" />
                   Add now
                 </Button>
               </>
@@ -1019,16 +1015,18 @@ function VideoCard({
         </div>
         <div className="mt-4 grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_2.5rem_2.5rem] gap-2">
           <Button
+            icon={<Play />}
+            type="submit"
+            variant="primary"
             onClick={onPreview}
-            className="min-w-0 rounded-xl bg-foreground text-background hover:bg-foreground/85 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+            className="min-w-0"
           >
-            <Play className="mr-2 h-4 w-4" />
             Preview
           </Button>
           <Button
             asChild
             variant="outline"
-            className="min-w-0 rounded-xl border-border bg-transparent dark:border-white/10"
+            className="min-w-0"
           >
             <Link href={marketingRoutes.youtubeVideo(video.video_id)}>
               <ArrowUpRight className="mr-1.5 h-4 w-4" />
@@ -1038,7 +1036,6 @@ function VideoCard({
           <Button
             asChild
             variant="outline"
-            className="rounded-xl border-border bg-transparent dark:border-white/10"
           >
             <a
               href={youTubeWatchUrl(video.video_id)}

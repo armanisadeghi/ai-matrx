@@ -257,10 +257,9 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                             placeholder={getPlaceholder()}
                         />
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={handleFormatValue}
-                            className="absolute top-0 right-0 h-6 w-6 p-0"
+                            className="absolute top-0 right-0 w-6"
                             title="Format JSON"
                         >
                             <AlignLeft className="h-3 w-3" />
@@ -326,10 +325,10 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
                     
                     <div className="flex gap-1">
                         <Button
+                            variant="primary"
                             ref={addButtonRef}
                             onClick={validateAndAddField}
-                            className="flex-1 text-xs h-7"
-                            size="sm"
+                            className="flex-1"
                         >
                             {isEditing ? "Update" : "Add"}
                         </Button>

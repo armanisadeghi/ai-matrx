@@ -259,13 +259,12 @@ function BrandAssetEditorDialogBody({
                   }}
                 />
                 <Button
+                  icon={<Upload />}
                   type="button"
-                  size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Upload className="mr-1.5 h-3.5 w-3.5" />
                   {asset?.file_id || stagedFile ? "Replace file" : "Upload file"}
                 </Button>
                 <p className="truncate text-[10px] leading-4 text-muted-foreground">
@@ -306,14 +305,13 @@ function BrandAssetEditorDialogBody({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
-          <Button disabled={busy} onClick={() => void save()}>
-            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={busy} onClick={() => void save()}>
             {asset ? "Save asset" : "Add asset"}
           </Button>
         </DialogFooter>

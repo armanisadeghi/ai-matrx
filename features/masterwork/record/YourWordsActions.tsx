@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ExternalLink, Quote } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
 import { cn } from "@/lib/utils";
 

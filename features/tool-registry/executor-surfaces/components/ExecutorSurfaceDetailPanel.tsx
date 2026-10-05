@@ -211,10 +211,9 @@ export function ExecutorSurfaceDetailPanel({
           </div>
           {onClose && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onClose}
-              className="h-6 w-6 p-0 shrink-0"
+              className="w-6 shrink-0"
             >
               <X className="h-3.5 w-3.5" />
             </Button>
@@ -242,22 +241,19 @@ export function ExecutorSurfaceDetailPanel({
             </Badge>
           )}
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />}
+            variant="quiet"
             onClick={() => void load()}
-            className="h-5 px-1 ml-auto text-[10px] gap-1"
+            className="ml-auto"
             disabled={loading}
           >
-            <RefreshCw className={`h-3 w-3 ${loading ? "animate-spin" : ""}`} />
             Refresh
           </Button>
           <Button
-            variant="default"
-            size="sm"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setAddOpen(true)}
-            className="h-5 px-1.5 text-[10px] gap-1"
           >
-            <Plus className="h-3 w-3" />
             Add tool
           </Button>
         </div>
@@ -443,10 +439,9 @@ function BindingRow({
             <span>{pending ? "Saving…" : "Active"}</span>
           </label>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onRemove(row)}
-            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+            className="w-6"
             title="Remove binding"
           >
             <Trash2 className="h-3.5 w-3.5" />

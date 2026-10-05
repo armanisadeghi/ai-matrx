@@ -892,20 +892,17 @@ function StreamedTurn({
       {/* Controls — a SEPARATE toolbar row. It never shares a flex row with the
           render column, so it can't change the column's width or position. */}
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={run} className="gap-1.5">
-          {started ? (
-            <RotateCcw className="h-3.5 w-3.5" />
+        <Button icon={started ? (
+            <RotateCcw />
           ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
+            <Play />
+          )} variant="primary" onClick={run}>
           {started ? "Replay" : "Play"}
         </Button>
         <Button
-          size="sm"
           variant="outline"
           onClick={reset}
           disabled={!started}
-          className="gap-1.5"
         >
           Reset
         </Button>

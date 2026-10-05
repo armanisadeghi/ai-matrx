@@ -695,12 +695,11 @@ export function LeaveRequestForm({
       ) : null}
 
       <div className="flex justify-end">
-        <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="h-11 gap-2 md:h-9">
-          {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+        <Button icon={submitting ? (
+            <Loader2 className="animate-spin" aria-hidden />
           ) : (
-            <Send className="h-4 w-4" aria-hidden />
-          )}
+            <Send aria-hidden />
+          )} variant="primary" type="button" onClick={handleSubmit} disabled={!canSubmit}>
           Send request
         </Button>
       </div>

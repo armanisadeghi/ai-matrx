@@ -118,18 +118,16 @@ export function VerificationRowActions({
       {generatable ? (
         <span className="flex items-center gap-1.5">
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <FileSignature />
+            )}
             type="button"
-            size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-8"
             disabled={needsConsent || busy}
             onClick={onGenerate}
           >
-            {busy ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <FileSignature className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Generate
           </Button>
           {needsConsent ? (
@@ -166,9 +164,7 @@ export function VerificationRowActions({
       {state === "generated" && canGenerate ? (
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-8"
           onClick={() => setDelivering(true)}
         >
           Record delivery
@@ -184,9 +180,7 @@ export function VerificationRowActions({
       {row.letter_file_id ? (
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
-          className="min-h-11 sm:min-h-8"
+          variant="quiet"
           // The file lane owns the viewer. This is a door into it, never a
           // second file renderer.
           asChild
@@ -200,13 +194,11 @@ export function VerificationRowActions({
 
       {canGenerate && state !== "denied" && !delivered ? (
         <Button
+          icon={<ShieldX />}
           type="button"
-          size="sm"
-          variant="ghost"
-          className="min-h-11 sm:min-h-8"
+          variant="quiet"
           onClick={() => setDenying(true)}
         >
-          <ShieldX className="mr-1.5 h-3.5 w-3.5" />
           Deny
         </Button>
       ) : null}
@@ -255,15 +247,14 @@ export function VerificationRowActions({
                 type="button"
                 variant="outline"
                 onClick={() => setDenying(false)}
-                className="min-h-11 sm:min-h-9"
               >
                 Cancel
               </Button>
               <Button
+                variant="primary"
                 type="button"
                 onClick={deny}
                 disabled={saving}
-                className="min-h-11 sm:min-h-9"
               >
                 Deny
               </Button>
@@ -323,15 +314,14 @@ export function VerificationRowActions({
                 type="button"
                 variant="outline"
                 onClick={() => setDelivering(false)}
-                className="min-h-11 sm:min-h-9"
               >
                 Cancel
               </Button>
               <Button
+                variant="primary"
                 type="button"
                 onClick={deliver}
                 disabled={saving}
-                className="min-h-11 sm:min-h-9"
               >
                 Record it
               </Button>

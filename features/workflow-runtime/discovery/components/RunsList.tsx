@@ -242,9 +242,7 @@ export function RunsList({ definitionId }: { definitionId?: string }) {
               <EntityOrgFilter orgId={orgFilter} onChange={setOrgFilter} />
               {orgFilter && !loading && view.length === 0 ? (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 px-2 text-xs"
                   onClick={() => setOrgFilter(null)}
                 >
                   View all organizations

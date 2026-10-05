@@ -119,12 +119,12 @@ export default function AdminNewSystemAppPage() {
               <p className="text-xs text-muted-foreground mt-1">Saved as draft</p>
             </div>
             <div className="flex items-center gap-2 pt-2 flex-wrap justify-center">
-              <Button asChild variant="default" size="sm">
+              <Button asChild variant="primary">
                 <AppLink href={`/administration/agents/agent-apps/edit/${created.id}`}>
                   Open editor
                 </AppLink>
               </Button>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline">
                 <AppLink
                   href={`/p/${created.slug}`}
                   target="_blank"
@@ -135,8 +135,7 @@ export default function AdminNewSystemAppPage() {
                 </AppLink>
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() =>
                   pushAppHref(router, "/administration/agents/system-agents/apps")
                 }
@@ -178,11 +177,10 @@ export default function AdminNewSystemAppPage() {
             </div>
             <div className="flex items-center gap-2 pt-2">
               <AppLink href="/administration/agents/system-agents/agents/new">
-                <Button size="sm">Create system agent</Button>
+                <Button type="submit" variant="primary">Create system agent</Button>
               </AppLink>
               <AppLink href="/administration/agents/system-agents/apps">
-                <Button size="sm" variant="outline">
-                  <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
+                <Button icon={<ArrowLeft />} type="submit" variant="outline">
                   Back
                 </Button>
               </AppLink>
@@ -197,8 +195,7 @@ export default function AdminNewSystemAppPage() {
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-shrink-0 px-4 py-3 border-b border-border bg-card flex items-center gap-3">
         <AppLink href="/administration/agents/system-agents/apps">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
+          <Button icon={<ArrowLeft />} type="submit" variant="quiet">
             Back to apps
           </Button>
         </AppLink>

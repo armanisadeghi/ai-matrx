@@ -143,14 +143,13 @@ export function ReorderDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={handleSave} disabled={saving}>
             Save order
           </Button>
         </DialogFooter>

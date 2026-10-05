@@ -49,7 +49,6 @@ export function RefusalNotice({
       {onAnswerAnyway && (
         <Button
           type="button"
-          size="sm"
           variant="outline"
           onClick={onAnswerAnyway}
           disabled={busy}

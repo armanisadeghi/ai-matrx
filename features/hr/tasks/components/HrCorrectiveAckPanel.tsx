@@ -137,9 +137,9 @@ export function HrCorrectiveAckPanel({
 
       <div className="flex flex-wrap gap-2">
         <Button
+          variant="primary"
           disabled={busy}
           onClick={() => void submit("esign")}
-          className="min-h-11 sm:min-h-9"
         >
           Sign it
         </Button>
@@ -148,7 +148,6 @@ export function HrCorrectiveAckPanel({
         <Button
           variant="outline"
           disabled={busy}
-          className="min-h-11 sm:min-h-9"
           onClick={() => {
             if (!declining) {
               setDeclining(true);

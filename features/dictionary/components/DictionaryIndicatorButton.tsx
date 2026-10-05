@@ -7,6 +7,7 @@
 
 import { BookA } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,
@@ -32,8 +33,7 @@ export function DictionaryIndicatorButton({ surfaceKey, className, variant = "ic
 
   if (variant === "labeled") {
     return (
-      <Button variant="outline" size="sm" className={cn("gap-1.5", className)} onClick={onClick}>
-        <BookA className="h-4 w-4" />
+      <Button icon={<BookA />} variant="outline" className={className} onClick={onClick}>
         Dictionary
         {activeCount > 0 && (
           <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-[11px] font-medium text-primary">
@@ -47,7 +47,7 @@ export function DictionaryIndicatorButton({ surfaceKey, className, variant = "ic
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
+        <SurfaceButton
           variant="ghost"
           size="icon"
           className={cn("relative h-8 w-8", className)}
@@ -60,7 +60,7 @@ export function DictionaryIndicatorButton({ surfaceKey, className, variant = "ic
               {activeCount > 99 ? "99+" : activeCount}
             </span>
           )}
-        </Button>
+        </SurfaceButton>
       </TooltipTrigger>
       <TooltipContent>
         {activeCount > 0

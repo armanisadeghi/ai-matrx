@@ -355,12 +355,10 @@ export function AgentAppsGrid({
             <Popover>
               <PopoverTrigger asChild>
                 <Button
+                  icon={<SlidersHorizontal />}
                   variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5"
                   title="Filters"
                 >
-                  <SlidersHorizontal className="h-3.5 w-3.5" />
                   Filters
                   {activeFilterCount > 0 && (
                     <span className="ml-0.5 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
@@ -408,12 +406,11 @@ export function AgentAppsGrid({
                   />
                   {hasActiveFilters && (
                     <Button
+                      icon={<RotateCcw />}
                       variant="outline"
-                      size="sm"
                       onClick={resetFilters}
-                      className="w-full gap-1.5"
+                      className="w-full"
                     >
-                      <RotateCcw className="h-3.5 w-3.5" />
                       Reset filters
                     </Button>
                   )}
@@ -467,12 +464,7 @@ export function AgentAppsGrid({
                 <Button
                   key={t.value}
                   onClick={() => setTab(t.value)}
-                  size="sm"
-                  variant={tab === t.value ? "default" : "outline"}
-                  className={cn(
-                    "h-8 gap-1.5 px-3 text-xs",
-                    tab !== t.value && "text-muted-foreground",
-                  )}
+                  variant={tab === t.value ? "primary" : "outline"}
                 >
                   {t.label}
                 </Button>
@@ -555,7 +547,7 @@ export function AgentAppsGrid({
             )}
 
             {/* New app */}
-            <Button asChild size="sm" className="h-8 gap-1.5">
+            <Button variant="primary" asChild>
               <Link href={newAppHref} aria-label="Create a new agent app">
                 <Plus className="h-3.5 w-3.5" />
               </Link>
@@ -620,7 +612,7 @@ export function AgentAppsGrid({
                     </p>
                   </div>
                   {!hasActiveFilters ? (
-                    <Button asChild>
+                    <Button variant="primary" asChild>
                       <Link href={newAppHref}>
                         <Plus className="h-4 w-4 mr-2" />
                         New app
@@ -683,12 +675,7 @@ function FilterSection<T extends string>({
           <Button
             key={opt.value}
             onClick={() => onChange(opt.value)}
-            size="sm"
-            variant={value === opt.value ? "default" : "outline"}
-            className={cn(
-              "h-7 px-2.5 text-xs",
-              value !== opt.value && "text-muted-foreground",
-            )}
+            variant={value === opt.value ? "primary" : "outline"}
           >
             {opt.label}
           </Button>
@@ -727,12 +714,8 @@ function CheckboxSection({
             <Button
               key={item.key}
               onClick={() => onToggle(item.key)}
-              size="sm"
-              variant={isOn ? "secondary" : "ghost"}
-              className={cn(
-                "h-7 w-full justify-start gap-2 px-2 text-left text-xs",
-                isOn ? "text-foreground" : "text-muted-foreground",
-              )}
+              variant={isOn ? "outline" : "quiet"}
+              className="w-full justify-start text-left"
             >
               <span
                 className={cn(

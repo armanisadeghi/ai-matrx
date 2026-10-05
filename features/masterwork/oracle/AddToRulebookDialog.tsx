@@ -168,7 +168,7 @@ export function AddToRulebookDialog({
         ) : rulebooks.length === 0 ? (
           <div className="space-y-2 py-2 text-sm text-muted-foreground">
             <p>You don&apos;t have a Rulebook yet.</p>
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link href="/masterwork" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-1 h-3.5 w-3.5" aria-hidden />
                 Start one on the Masterwork page

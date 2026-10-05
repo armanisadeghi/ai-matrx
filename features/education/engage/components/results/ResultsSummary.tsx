@@ -62,7 +62,7 @@ export function ResultsSummary({
         >
           Your result could not be verified yet.
           {onRetryVerification && (
-            <Button className="ml-3" size="sm" onClick={onRetryVerification}>
+            <Button variant="primary" className="ml-3" onClick={onRetryVerification}>
               Retry verification
             </Button>
           )}
@@ -164,6 +164,7 @@ export function ResultsSummary({
       <div className="flex justify-center gap-3">
         {onPlayAgain && (
           <Button
+            variant="primary"
             onClick={onPlayAgain}
             disabled={!verified && !verificationError}
           >

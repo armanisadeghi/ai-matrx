@@ -241,17 +241,15 @@ export function ConnectedAccountHealth({
             {management.allowed && accountScoped.length > 0 ? (
               <div className="mt-1.5">
                 <Button
+                  icon={accountBusy ? (
+                    <Loader2 className="animate-spin" aria-hidden />
+                  ) : (
+                    <RefreshCw aria-hidden />
+                  )}
                   variant="outline"
-                  size="sm"
                   onClick={onReconnectAccount}
                   disabled={accountBusy}
-                  className="h-11 text-sm sm:h-7 sm:text-xs"
                 >
-                  {accountBusy ? (
-                    <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-                  ) : (
-                    <RefreshCw className="mr-1 h-3 w-3" aria-hidden />
-                  )}
                   Reconnect
                 </Button>
                 <p className="mt-1 text-[11px] text-muted-foreground">
@@ -291,17 +289,16 @@ export function ConnectedAccountHealth({
           </div>
           {management.allowed ? (
           <Button
-            variant="ghost"
-            size="sm"
+            icon={revoking ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <Trash2 aria-hidden />
+            )}
+            variant="quiet"
             onClick={onRevoke}
             disabled={revoking}
-            className="ml-auto h-11 shrink-0 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive sm:ml-0 sm:h-8 sm:text-xs"
+            className="ml-auto shrink-0 sm:ml-0"
           >
-            {revoking ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : (
-              <Trash2 className="mr-1 h-3.5 w-3.5" aria-hidden />
-            )}
             Disconnect
           </Button>
           ) : null}
@@ -399,20 +396,19 @@ export function ConnectedAccountHealth({
 
                 {productAction ? (
                   <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onReconnect(row.product.key)}
-                    disabled={rowBusy}
-                    className="ml-6 h-11 shrink-0 text-sm sm:ml-0 sm:h-7 sm:text-xs"
-                  >
-                    {rowBusy ? (
+                    icon={rowBusy ? (
                       <Loader2
-                        className="mr-1 h-3 w-3 animate-spin"
+                        className="animate-spin"
                         aria-hidden
                       />
                     ) : (
-                      <ActionIcon className="mr-1 h-3 w-3" aria-hidden />
+                      <ActionIcon aria-hidden />
                     )}
+                    variant="outline"
+                    onClick={() => onReconnect(row.product.key)}
+                    disabled={rowBusy}
+                    className="ml-6 shrink-0 sm:ml-0"
+                  >
                     {productAction}
                   </Button>
                 ) : null}

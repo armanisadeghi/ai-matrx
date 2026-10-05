@@ -269,19 +269,16 @@ export function ScopeFieldInput({
               hasValue={row.has_value || canonical(value).length > 0}
             />
             <Button
+              icon={<Maximize2 className="text-muted-foreground" />}
               ref={advancedEditorButtonRef}
               type="button"
-              variant="ghost"
-              size="icon"
+              variant="quiet"
               onClick={() => setEditingValue(true)}
               title="Open advanced value editor"
               aria-label={`Open advanced value editor for ${nameLabel ?? row.display_name}`}
               tabIndex={-1}
               aria-keyshortcuts="F6"
-              className="h-6 w-6"
-            >
-              <Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />
-            </Button>
+            />
           </div>
         </div>
         <ContextValueInput

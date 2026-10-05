@@ -390,7 +390,7 @@ export function RunsManageView({
                   and all.
                 </p>
               </div>
-              <Button asChild className="gap-2">
+              <Button variant="primary" asChild>
                 <Link href="/podcast/studio/create">
                   <AudioLines className="h-4 w-4" />
                   Create your first episode

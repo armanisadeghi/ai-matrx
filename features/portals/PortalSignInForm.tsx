@@ -87,7 +87,7 @@ export function PortalSignInForm({ slug }: { slug: string }) {
         className="h-11 text-base"
         aria-describedby={problem ? "portal-email-problem" : undefined}
       />
-      <Button type="submit" className="h-11 w-full text-base" disabled={state === "sending"}>
+      <Button variant="primary" type="submit" className="w-full" disabled={state === "sending"}>
         {state === "sending" ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />

@@ -23,7 +23,7 @@
  */
 
 import { Brain, Landmark, Lightbulb, Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   coerceMemoryAidPartial,
   type MemoryAidData,

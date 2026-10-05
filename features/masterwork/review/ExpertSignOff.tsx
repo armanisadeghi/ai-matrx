@@ -167,9 +167,12 @@ export function ExpertSignOff({
           </span>
         ) : null}
         <Button
-          size="sm"
-          variant={signed ? "default" : "outline"}
-          className="h-7"
+          icon={isSaving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ThumbsUp />
+          )}
+          variant={signed ? "primary" : "outline"}
           onClick={() => void sign()}
           disabled={isSaving}
           aria-pressed={signed}
@@ -179,11 +182,6 @@ export function ExpertSignOff({
               : "Yes, that's mine — this is the result I'd have produced."
           }
         >
-          {isSaving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <ThumbsUp className="h-3.5 w-3.5" />
-          )}
           {/* ONE VOCABULARY (jobs-bar-2026-09-16, item 7). Pressing "Yes,
               that's mine" used to turn the button into "Signed" — a word that
               appears nowhere else on the page, in front of someone who has
@@ -192,22 +190,18 @@ export function ExpertSignOff({
           {signed ? "That's mine" : "Yes, that's mine"}
         </Button>
         <Button
-          size="sm"
-          variant={wrong ? "destructive" : "outline"}
-          className="h-7"
+          icon={<ThumbsDown />}
+          variant={wrong ? "danger" : "outline"}
           onClick={() => void markWrong()}
           disabled={isSaving}
           aria-pressed={wrong}
           title="Not how you'd have done it — say what it should have said, and that becomes a rule."
         >
-          <ThumbsDown className="h-3.5 w-3.5" />
           Not right
         </Button>
         {wrong ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7"
+            variant="quiet"
             onClick={() => {
               setCorrection("");
               setCorrecting(true);
@@ -245,10 +239,11 @@ export function ExpertSignOff({
               Cancel
             </Button>
             <Button
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
+              variant="primary"
               onClick={() => void submitCorrection()}
               disabled={busy || !correction.trim()}
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Save my version
             </Button>
           </DialogFooter>

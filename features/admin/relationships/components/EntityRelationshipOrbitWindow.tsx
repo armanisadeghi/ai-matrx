@@ -44,9 +44,8 @@ export default function EntityRelationshipOrbitWindow({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       actionsRight={
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
+          icon={<Maximize2 />} aria-label="Open full page"
+          variant="quiet"
           title="Open full page"
           onClick={() => {
             router.push(
@@ -54,9 +53,7 @@ export default function EntityRelationshipOrbitWindow({
             );
             onClose();
           }}
-        >
-          <Maximize2 className="h-3.5 w-3.5" />
-        </Button>
+        />
       }
     >
       <EntityRelationshipOrbit

@@ -173,12 +173,11 @@ export function RelationshipsOverviewClient({ status, problems }: Props) {
             })}
           />
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
             disabled={busy}
             onClick={() => setConfirmRebuild(true)}
           >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
             Rebuild cache
           </Button>
           <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">

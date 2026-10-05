@@ -335,7 +335,7 @@ export function SiteAnalyticsPanel({
           <p className="text-xs leading-5 text-destructive/90">
             {bindingDiagnosis.reason}
           </p>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={integrationsHref}>
               <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
               {bindingDiagnosis.recoverableConnectionId
@@ -371,7 +371,7 @@ export function SiteAnalyticsPanel({
             {verdict.reason} {verdict.remedy}
           </p>
           {verdict.kind === "access" ? (
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link href={integrationsHref}>
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                 Restore Analytics access
@@ -446,13 +446,13 @@ export function SiteAnalyticsPanel({
             without failing loudly.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button asChild size="sm" variant="outline">
+            <Button asChild variant="outline">
               <Link href={integrationsHref}>
                 <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                 {ready ? "Check the Analytics binding" : "Bind an Analytics property"}
               </Link>
             </Button>
-            <Button asChild size="sm" variant="ghost">
+            <Button asChild variant="quiet">
               <a
                 href="https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com"
                 target="_blank"
@@ -643,9 +643,12 @@ export function SiteAnalyticsPanel({
           <CopyButtons size="icon" {...copy} json={() => data} />
         ) : null}
         <Button
-          size="sm"
+          icon={syncing ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
-          className="h-6 gap-1 px-2 text-[11px]"
           onClick={() => void runSync()}
           disabled={syncing || !ready || !campaignActive}
           title={
@@ -656,11 +659,6 @@ export function SiteAnalyticsPanel({
                 : "Bind a Google Analytics 4 property to this site first"
           }
         >
-          {syncing ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3 w-3" />
-          )}
           Sync
         </Button>
       </div>

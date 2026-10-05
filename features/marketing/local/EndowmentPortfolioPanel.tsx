@@ -564,9 +564,8 @@ function PlatformAction({
   return (
     <div className="flex flex-col items-end gap-0.5">
       <Button
-        size="sm"
+        icon={<Plus aria-hidden />}
         variant="outline"
-        className="h-6 gap-1 px-2 text-xs"
         onClick={onAdd}
         disabled={disabled || state.kind === "working"}
         title={
@@ -575,7 +574,6 @@ function PlatformAction({
             : undefined
         }
       >
-        <Plus className="size-3" aria-hidden />
         {state.kind === "working" ? "Adding…" : "Add to registry"}
       </Button>
       {state.kind === "failed" ? (
@@ -603,13 +601,11 @@ function ArtifactAction({ state, onQueue }: { state: RowState; onQueue: () => vo
   return (
     <div className="flex shrink-0 flex-col items-end gap-0.5">
       <Button
-        size="sm"
+        icon={<ListPlus aria-hidden />}
         variant="outline"
-        className="h-6 gap-1 px-2 text-xs"
         onClick={onQueue}
         disabled={state.kind === "working"}
       >
-        <ListPlus className="size-3" aria-hidden />
         {state.kind === "working" ? "Queueing…" : "Queue as task"}
       </Button>
       {state.kind === "failed" ? (

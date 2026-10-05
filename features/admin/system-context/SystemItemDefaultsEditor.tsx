@@ -17,7 +17,8 @@
 import { useEffect, useState } from "react";
 import { Plus, RotateCcw, X } from "lucide-react";
 
-import { Button, Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 import { setFeatureKnob } from "@/features/admin/limits/service";
@@ -167,22 +168,21 @@ export function SystemItemDefaultsEditor({
         <div className="flex items-center gap-2">
           {!isDefault && (
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<RotateCcw aria-hidden />}
+              variant="quiet"
               disabled={saving}
               onClick={() => void commit(null)}
               title={`Back to the platform default: ${data.defaultValue.join(", ")}`}
             >
-              <RotateCcw className="mr-1 h-3.5 w-3.5" aria-hidden />
               Use the default
             </Button>
           )}
           {dirty && (
             <>
-              <Button variant="ghost" size="sm" disabled={saving} onClick={() => setDraft(data.value)}>
+              <Button variant="quiet" disabled={saving} onClick={() => setDraft(data.value)}>
                 Discard
               </Button>
-              <Button size="sm" disabled={saving} onClick={() => void commit(draft)}>
+              <Button variant="primary" disabled={saving} onClick={() => void commit(draft)}>
                 {saving ? "Saving…" : "Save"}
               </Button>
             </>
@@ -233,15 +233,13 @@ export function SystemItemDefaultsEditor({
         />
         {candidates.map((i) => (
           <Button
+            icon={<Plus aria-hidden />}
             key={i.key}
             variant="outline"
-            size="sm"
-            className="h-7"
             disabled={saving}
             onClick={() => setDraft([...draft, i.key])}
             aria-label={`Add ${i.display_name}`}
           >
-            <Plus className="mr-1 h-3 w-3" aria-hidden />
             {i.display_name}
           </Button>
         ))}

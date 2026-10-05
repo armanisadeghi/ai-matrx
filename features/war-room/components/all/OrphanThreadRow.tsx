@@ -100,17 +100,15 @@ export function OrphanThreadRow({ threadId }: { threadId: string }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                icon={attaching ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FolderInput />
+                )}
                 type="button"
                 variant="outline"
-                size="sm"
                 disabled={busy}
-                className="gap-1.5"
               >
-                {attaching ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <FolderInput className="size-3.5" />
-                )}
                 Attach to room
               </Button>
             </DropdownMenuTrigger>
@@ -132,17 +130,16 @@ export function OrphanThreadRow({ threadId }: { threadId: string }) {
         ) : null}
 
         <Button
+          icon={opening || pending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <PlusSquare />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
           disabled={busy}
           onClick={() => void handleOpenInNewRoom()}
-          className="gap-1.5"
         >
-          {opening || pending ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <PlusSquare className="size-3.5" />
-          )}
           Open in new room
         </Button>
       </div>

@@ -45,6 +45,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
@@ -286,51 +287,42 @@ function FaceRow({
         }}
       />
       <Button
-        size="icon"
-        variant="ghost"
-        className="h-7 w-7"
+        icon={busy === "upload" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Upload />
+        )}
+        variant="quiet"
         disabled={busy !== null}
         title={`Upload your own picture for the ${face}`}
         aria-label={`Upload your own picture for the ${face}`}
         onClick={() => fileInputRef.current?.click()}
-      >
-        {busy === "upload" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Upload className="h-3.5 w-3.5" />
-        )}
-      </Button>
+      />
       <Button
-        size="icon"
-        variant="ghost"
-        className="h-7 w-7"
+        icon={busy === "stock" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Images />
+        )}
+        variant="quiet"
         disabled={busy !== null}
         title={`Pick a free stock photo for the ${face}`}
         aria-label={`Pick a free stock photo for the ${face}`}
         onClick={() => setStockOpen(true)}
-      >
-        {busy === "stock" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Images className="h-3.5 w-3.5" />
-        )}
-      </Button>
+      />
       <Button
-        size="icon"
-        variant="ghost"
-        className="h-7 w-7"
+        icon={busy === "find" ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Globe />
+        )}
+        variant="quiet"
         disabled={busy !== null || source.isChecking}
         onClick={() => void source.guard(() => runLane("find", "/education/images/source-card"))}
         title="An agent finds an expert image on the open web and judges the source"
         aria-label={`Find an expert image for the ${face}`}
-      >
-        {busy === "find" ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Globe className="h-3.5 w-3.5" />
-        )}
-      </Button>
-      <Button
+      />
+      <SurfaceButton
         size="icon"
         variant="ghost"
         className="h-7 w-7"
@@ -346,23 +338,20 @@ function FaceRow({
         ) : (
           <AGENT_ICON className="h-3.5 w-3.5" />
         )}
-      </Button>
+      </SurfaceButton>
       {image && (
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          icon={busy === "remove" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Trash2 />
+          )}
+          variant="quiet"
           title={`Remove ${face} image`}
           aria-label={`Remove ${face} image`}
           disabled={busy !== null}
           onClick={() => void remove()}
-        >
-          {busy === "remove" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" />
-          )}
-        </Button>
+        />
       )}
       <source.Paywall />
       <generate.Paywall />

@@ -179,14 +179,12 @@ export default function MobileTasksList({
                 />
               )}
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<Plus size={16} />}
+                type="submit"
+                variant="quiet"
                 onClick={() => setShowQuickAdd(!showQuickAdd)}
                 aria-label="Add task"
-                className="h-11 w-11 rounded-full"
-              >
-                <Plus size={16} />
-              </Button>
+              />
               <MobileFilterMenu />
             </div>
           </div>
@@ -243,8 +241,8 @@ export default function MobileTasksList({
                 />
                 <div className="flex items-center gap-2">
                   <Button
+                    type="submit"
                     variant="outline"
-                    size="sm"
                     className="flex-1 justify-start"
                     onClick={() => setShowProjectSelector(true)}
                   >
@@ -273,13 +271,13 @@ export default function MobileTasksList({
                     />
                   </MatrxDynamicPanelHost>
                   <Button
+                    variant="primary"
                     type="submit"
                     disabled={
                       !newTaskTitle.trim() ||
                       isCreatingTask ||
                       !selectedProjectForTask
                     }
-                    size="sm"
                   >
                     {isCreatingTask ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -315,7 +313,7 @@ export default function MobileTasksList({
                 operation="Load your tasks"
                 actions={
                   <Button
-                    size="sm"
+                    type="submit"
                     variant="outline"
                     onClick={() => void dispatchThunk(fetchFullContext())}
                   >

@@ -104,7 +104,7 @@ export function PunchConfirmationCard({
         </div>
       )}
 
-      <Button type="button" variant="outline" onClick={onDismiss} className="min-h-[48px] w-fit">
+      <Button type="button" variant="outline" onClick={onDismiss} className="w-fit">
         Done
       </Button>
     </section>

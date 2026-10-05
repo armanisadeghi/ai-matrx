@@ -34,18 +34,15 @@ export function RunStoppedNotice({
     >
       <CircleAlert className="h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
       <p className="min-w-0 flex-1 text-sm text-foreground">{message}</p>
-      <Button type="button" variant="outline" size="sm" onClick={onRedo} className="min-h-[36px] gap-1.5">
-        <RedoIcon className="h-3.5 w-3.5" />
+      <Button icon={<RedoIcon />} type="button" variant="outline" onClick={onRedo}>
         {redoLabel}
       </Button>
       {onDismiss ? (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onDismiss}
           aria-label="Hide this message"
-          className="min-h-[36px] px-2 text-muted-foreground"
         >
           <X className="h-4 w-4" />
         </Button>

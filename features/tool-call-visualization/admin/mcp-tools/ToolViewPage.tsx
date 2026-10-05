@@ -97,16 +97,14 @@ function JsonDisplay({ data, label }: { data: unknown; label: string }) {
           {label}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          className="h-6 px-2 gap-1 text-[11px]"
-        >
-          {copied ? (
-            <Check className="h-3 w-3 text-success" />
+          icon={copied ? (
+            <Check className="text-success" />
           ) : (
-            <Copy className="h-3 w-3" />
+            <Copy />
           )}
+          variant="quiet"
+          onClick={handleCopy}
+        >
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
@@ -432,13 +430,11 @@ export function ToolViewPage({ tool }: Props) {
         <div className="flex-shrink-0 border-b border-border">
           <div className="flex items-center gap-3 px-6 py-3 flex-wrap">
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<ArrowLeft />}
+              variant="quiet"
               onClick={() => navigateTo("/administration/agents/mcp-tools")}
               disabled={isPending}
-              className="gap-1.5 h-8"
             >
-              <ArrowLeft className="h-4 w-4" />
               Tools
             </Button>
 
@@ -506,40 +502,35 @@ export function ToolViewPage({ tool }: Props) {
                 />
               </div>
               <Button
+                icon={<Bug />}
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   navigateTo(
                     `/administration/agents/mcp-tools/${tool.id}/incidents`,
                   )
                 }
                 disabled={isPending}
-                className="h-8 gap-1.5 text-xs"
               >
-                <Bug className="h-3.5 w-3.5" />
                 Incidents
               </Button>
               <Button
+                icon={<Zap />}
                 variant="outline"
-                size="sm"
                 onClick={() =>
                   navigateTo(`/administration/agents/mcp-tools/${tool.id}/ui`)
                 }
                 disabled={isPending}
-                className="h-8 gap-1.5 text-xs"
               >
-                <Zap className="h-3.5 w-3.5" />
                 UI Component
               </Button>
               <Button
-                size="sm"
+                icon={<Edit />}
+                variant="primary"
                 onClick={() =>
                   navigateTo(`/administration/agents/mcp-tools/${tool.id}/edit`)
                 }
                 disabled={isPending}
-                className="h-8 gap-1.5 text-xs"
               >
-                <Edit className="h-3.5 w-3.5" />
                 Edit
               </Button>
             </div>

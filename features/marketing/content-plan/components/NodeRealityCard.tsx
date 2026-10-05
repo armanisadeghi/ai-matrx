@@ -321,15 +321,13 @@ export function NodeRealityCard({
                     {/* A problem we can detect ships with its one-click fix. */}
                     {isWritePolicyBlocked(reality.failure) ? (
                         <Button
+                            icon={<Unlock />}
                             variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
                             disabled={busy !== null}
                             onClick={() =>
                                 void reality.allowWrites(retryAction)
                             }
                         >
-                            <Unlock className="h-3 w-3" />
                             Let the plan build this website
                         </Button>
                     ) : null}
@@ -359,25 +357,23 @@ export function NodeRealityCard({
                         // tab said "the live page is behind" with no next step.
                         verdict.action === "rewrite") ? (
                         <Button
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
+                            icon={busy !== null ? (
+                                <Loader2 className="animate-spin" />
+                            ) : (
+                                <ActionIcon />
+                            )}
+                            variant="primary"
                             disabled={busy !== null || reality.isLoadingPage}
                             onClick={() => void runAction()}
                         >
-                            {busy !== null ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                                <ActionIcon className="h-3 w-3" />
-                            )}
                             {verdict.actionLabel}
                         </Button>
                     ) : null}
 
                     {cmsPage && cmsSiteId && !publishHalf ? (
                         <Button
+                            icon={<PenLine />}
                             variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
                             onClick={() =>
                                 window.open(
                                     cmsPageEditorHref(
@@ -388,19 +384,16 @@ export function NodeRealityCard({
                                 )
                             }
                         >
-                            <PenLine className="h-3 w-3" />
                             Edit in CMS
                         </Button>
                     ) : null}
 
                     {pageUrl ? (
                         <Button
+                            icon={<ExternalLink />}
                             variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
                             onClick={() => window.open(pageUrl, "_blank")}
                         >
-                            <ExternalLink className="h-3 w-3" />
                             {cmsPage?.isPublished ? "Open live" : "Preview"}
                         </Button>
                     ) : null}
@@ -410,13 +403,11 @@ export function NodeRealityCard({
                       stays reachable without waiting for a "stale" verdict. */}
                     {verdict.state === "unpublished" && !publishHalf ? (
                         <Button
+                            icon={<RefreshCw />}
                             variant="outline"
-                            size="sm"
-                            className="h-7 gap-1 text-xs"
                             disabled={busy !== null}
                             onClick={() => void rewrite()}
                         >
-                            <RefreshCw className="h-3 w-3" />
                             Rewrite
                         </Button>
                     ) : null}

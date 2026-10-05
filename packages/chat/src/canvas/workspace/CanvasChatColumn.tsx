@@ -24,7 +24,7 @@ import { AgentConversationColumn } from "../../agents/components/shared/AgentCon
 import type { AttachedContextRailItem } from "../../agents/components/inputs/smart-input/ConversationContextRail";
 import { setContextEntries } from "../../agents/redux/execution-system/instance-context/instance-context.slice";
 import { useAppDispatch } from "../../store/hooks";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@ai-matrx/chat/host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import type { ContextObjectType } from "../../agents/types/agent-api-types";
@@ -137,8 +137,7 @@ export function CanvasChatColumn({
         <p className="text-xs text-muted-foreground">
           Every chat is kept in an organization, and none is active yet. The page works meanwhile.
         </p>
-        <Button size="sm" variant="outline" onClick={conversation.choose}>
-          <Building2 className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Building2 />} variant="outline" onClick={conversation.choose}>
           Choose organization
         </Button>
       </div>
@@ -154,8 +153,7 @@ export function CanvasChatColumn({
           message={conversation.reason}
           operation={conversation.purpose === "open" ? "Open conversation in canvas workspace" : "Start canvas workspace chat"}
           actions={
-            <Button size="sm" variant="outline" onClick={conversation.retry}>
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+            <Button icon={<RotateCcw />} variant="outline" onClick={conversation.retry}>
               Try again
             </Button>
           }

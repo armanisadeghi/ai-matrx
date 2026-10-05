@@ -203,12 +203,11 @@ export default function ScraperKindsDemoPage() {
             placeholder="https://your-site.com/a-page"
             className="min-w-64 flex-1"
           />
-          <Button type="submit" disabled={busy || !url.trim()}>
-            {busy ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          <Button icon={busy ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <Globe className="mr-1.5 h-4 w-4" />
-            )}
+              <Globe />
+            )} variant="primary" type="submit" disabled={busy || !url.trim()}>
             Scrape
           </Button>
         </div>
@@ -236,9 +235,7 @@ export default function ScraperKindsDemoPage() {
         {activeServer !== "localhost" && loopbackAllowed && (
           <Button
             type="button"
-            size="sm"
             variant="outline"
-            className="h-6 px-2 text-[11px]"
             onClick={() => void dispatch(switchServer({ env: "localhost" }))}
           >
             Use localhost:8000
@@ -247,9 +244,7 @@ export default function ScraperKindsDemoPage() {
         {activeServer === "localhost" && (
           <Button
             type="button"
-            size="sm"
             variant="outline"
-            className="h-6 px-2 text-[11px]"
             onClick={() => void dispatch(switchServer({ env: "production" }))}
           >
             Back to production

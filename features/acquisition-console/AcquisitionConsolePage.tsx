@@ -206,9 +206,7 @@ export function AcquisitionConsolePage() {
             </select>
           )}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs"
+            variant="quiet"
             onClick={() => void refresh()}
             disabled={loading}
           >
@@ -234,7 +232,7 @@ export function AcquisitionConsolePage() {
               <span>
                 No sources or blocks in {memberOrgs.find((o) => o.id === organizationId)?.name ?? "this organization"}.
               </span>
-              <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setOrganization("all")}>
+              <Button variant="outline" onClick={() => setOrganization("all")}>
                 View all organizations
               </Button>
             </div>

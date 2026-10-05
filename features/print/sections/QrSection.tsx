@@ -183,8 +183,7 @@ export function QrSection() {
                                 <code className="break-all rounded bg-muted px-1.5 py-1 font-mono text-[11px]">
                                     {resolverUrl}
                                 </code>
-                                <Button size="sm" variant="outline" onClick={() => setValue(resolverUrl)}>
-                                    <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />
+                                <Button icon={<ArrowDownToLine />} variant="outline" onClick={() => setValue(resolverUrl)}>
                                     Encode this
                                 </Button>
                             </>
@@ -227,8 +226,7 @@ export function QrSection() {
                                 <code className="break-all rounded bg-muted px-1.5 py-1 font-mono text-[11px]">
                                     {gs1Url}
                                 </code>
-                                <Button size="sm" variant="outline" onClick={() => setValue(gs1Url)}>
-                                    <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />
+                                <Button icon={<ArrowDownToLine />} variant="outline" onClick={() => setValue(gs1Url)}>
                                     Encode this
                                 </Button>
                             </>

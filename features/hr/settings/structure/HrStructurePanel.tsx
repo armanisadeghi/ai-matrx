@@ -225,17 +225,15 @@ function NewRowButton({
 }) {
   return (
     <Button
+      icon={<Plus />}
+      variant="primary"
       type="button"
-      size="sm"
       onClick={onClick}
       disabled={disabled}
       className={
-        full
-          ? "min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
-          : "min-h-11 shrink-0 sm:min-h-9"
+        full ? "w-full shrink-0 sm:w-auto" : "shrink-0"
       }
     >
-      <Plus className="mr-2 h-4 w-4" />
       {label}
     </Button>
   );
@@ -1566,29 +1564,26 @@ function EditorActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : isCreate ? (
+          <Plus />
+        ) : (
+          <Save />
+        )}
+        variant="primary"
         type="button"
-        size="sm"
         onClick={onSave}
         disabled={busy}
-        className="min-h-11 sm:min-h-9"
       >
-        {busy ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        ) : isCreate ? (
-          <Plus className="mr-2 h-4 w-4" />
-        ) : (
-          <Save className="mr-2 h-4 w-4" />
-        )}
         {isCreate ? createLabel : "Save"}
       </Button>
       {onCancel ? (
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={onCancel}
           disabled={busy}
-          className="min-h-11 sm:min-h-9"
         >
           Cancel
         </Button>

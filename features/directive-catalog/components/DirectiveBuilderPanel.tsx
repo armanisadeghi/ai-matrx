@@ -577,17 +577,15 @@ export function DirectiveBuilderPanel({
           Matrx envelope {requiredFilled || !isReference ? "" : "example"}
         </span>
         <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          className="h-11 gap-1 text-xs lg:h-7"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5" />
+          icon={copied ? (
+            <Check />
           ) : (
-            <Copy className="h-3.5 w-3.5" />
+            <Copy />
           )}
+          type="button"
+          variant="quiet"
+          onClick={handleCopy}
+        >
           Copy
         </Button>
       </div>
@@ -718,14 +716,13 @@ export function DirectiveBuilderPanel({
                   />
                   {picker ? (
                     <Button
+                      icon={<Search />}
                       type="button"
-                      variant="default"
-                      size="sm"
-                      className="h-11 shrink-0 gap-1 px-3 lg:h-8 lg:px-2"
+                      variant="primary"
+                      className="shrink-0"
                       onClick={() => void chooseIdentity(f.key, picker)}
                       aria-label={`Search ${picker.labelPlural} for ${f.label}`}
                     >
-                      <Search className="h-3.5 w-3.5" />
                       Select
                     </Button>
                   ) : null}
@@ -753,13 +750,13 @@ export function DirectiveBuilderPanel({
         <div className="flex flex-col gap-2">
           {state === "yes" && (
             <Button
+              icon={<Play />}
+              variant="primary"
               type="button"
-              size="sm"
               disabled={!canLiveRender}
               onClick={() => setRenderNonce((n) => n + 1)}
-              className="h-11 w-fit gap-1 lg:h-8"
+              className="w-fit"
             >
-              <Play className="h-3.5 w-3.5" />
               Render live
             </Button>
           )}
@@ -895,20 +892,19 @@ export function DirectiveBuilderPanel({
                 )}
               <div className="flex items-center gap-2">
                 <Button
+                  icon={executing ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Play />
+                  )}
                   type="button"
-                  size="sm"
                   // A delete looks like one before the click, not only in
                   // its confirm (reviewer, 2026-10-02: it was blue).
-                  variant={verb === "delete" ? "destructive" : "default"}
+                  variant={verb === "delete" ? "danger" : "primary"}
                   disabled={!canExecute}
                   onClick={() => void handleExecute()}
-                  className="h-11 w-fit gap-1 lg:h-8"
+                  className="w-fit"
                 >
-                  {executing ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Play className="h-3.5 w-3.5" />
-                  )}
                   {VERB_BUTTON[verb] ?? "Execute"}
                 </Button>
                 {verb === "delete" && (
@@ -1003,8 +999,6 @@ export function DirectiveBuilderPanel({
                               key={v}
                               type="button"
                               variant="outline"
-                              size="sm"
-                              className="h-11 px-2 text-xs lg:h-7"
                               onClick={() =>
                                 continueWith(v, r.resource_ids?.[0] ?? "")
                               }

@@ -349,16 +349,16 @@ export function StartMapScreen({
                 className="text-base"
               />
               <Button
+                icon={webFetching ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <Globe aria-hidden />
+                )}
                 type="button"
                 variant="outline"
                 onClick={() => void fetchWebPage()}
                 disabled={busy || !webUrl.trim()}
               >
-                {webFetching ? (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <Globe className="h-4 w-4" aria-hidden />
-                )}
                 Fetch and clean
               </Button>
             </div>
@@ -477,17 +477,17 @@ export function StartMapScreen({
           <div className="flex items-center gap-2">
             {run.running && run.cancel ? (
               <Button
+                icon={<Square aria-hidden />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => void run.cancel?.()}
                 disabled={run.cancelling}
               >
-                <Square className="h-4 w-4" aria-hidden />
                 Stop
               </Button>
             ) : null}
             <Button
+              variant="primary"
               type="button"
               onClick={() => {
                 setAskedMode(null);
@@ -551,7 +551,6 @@ export function StartMapScreen({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               className="mt-3"
               onClick={() => void run.retry?.()}
             >

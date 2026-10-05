@@ -405,8 +405,7 @@ export function ContactPointsCard({
             className="h-11 w-24 text-base sm:h-7 sm:w-20 sm:text-xs"
           />
           <Button
-            size="sm"
-            className="h-11 px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
+            variant="primary"
             onClick={submit}
             disabled={saving || !value.trim()}
           >
@@ -473,10 +472,8 @@ export function ContactPointsCard({
                   {/* A problem we can detect ships with its one-click fix. */}
                   {isTenantSuppressed(point.medium) && (
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant="quiet"
                       onClick={() => void unsuppress(point)}
-                      className="h-6 px-1.5 text-xs font-medium text-primary"
                     >
                       Allow contact
                     </Button>

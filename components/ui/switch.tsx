@@ -1,26 +1,27 @@
 "use client";
 
 /**
- * HOST BINDING ONLY — Switch lives in `@ai-matrx/design-system`. This app uses
- * the compact 16px track with a visible border and an overhanging thumb, so it
- * binds `size="sm"`; the other three hosts use the 20px `md` track, which is
- * the package default.
+ * THE ONE CONTROL (2026-10-05, wave 1B): Switch is the controls' switch — a 20px track inside
+ * the 28px control box, so it lines up with every control beside it. NO size (`size=` is gone).
+ * Codemod + census: `scripts/ui-rollout/doors-codemod.mjs`.
  *
- * The OFF track now reads the `input` token in every host — one fork used the
- * surface token, which makes an off switch disappear into a muted panel.
+ * `SwitchLegacy` is FROZEN — the pre-rollout compact 16px track (the package-root Switch bound
+ * to `size="sm"`), for the areas the rollout may not touch (the agent builder, other lanes'
+ * files). Never import it in new code; each importer is listed in the census.
  */
 
-import { Switch as PackageSwitch, type SwitchProps } from "@ai-matrx/design-system";
+import { Switch as PackageSwitch, type SwitchProps as PackageSwitchProps } from "@ai-matrx/design-system";
 import * as React from "react";
 
-export type { SwitchProps, SwitchSize } from "@ai-matrx/design-system";
+export { Switch } from "@ai-matrx/design-system/controls";
+export type { SwitchProps } from "@ai-matrx/design-system/controls";
 
-const Switch = React.forwardRef<
+const SwitchLegacy = React.forwardRef<
   React.ComponentRef<typeof PackageSwitch>,
-  SwitchProps
+  PackageSwitchProps
 >(({ size = "sm", ...props }, ref) => (
   <PackageSwitch ref={ref} size={size} {...props} />
 ));
-Switch.displayName = "Switch";
+SwitchLegacy.displayName = "SwitchLegacy";
 
-export { Switch };
+export { SwitchLegacy };

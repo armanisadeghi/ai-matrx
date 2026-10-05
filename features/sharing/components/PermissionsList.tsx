@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Card } from "@/components/ui/card";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {

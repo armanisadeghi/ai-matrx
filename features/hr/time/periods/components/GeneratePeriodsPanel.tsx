@@ -201,13 +201,12 @@ export function GeneratePeriodsPanel({
         </div>
 
         <Button
+          icon={busy ? <Loader2 className="animate-spin" aria-hidden /> : null}
+          variant="primary"
           type="button"
-          size="sm"
-          className="min-h-[44px]"
           disabled={!selected || busy}
           onClick={() => void run()}
         >
-          {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
           Generate
         </Button>
       </div>

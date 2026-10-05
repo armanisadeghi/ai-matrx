@@ -139,15 +139,13 @@ export function DimensionSearchField({
       />
       {value ? (
         <Button
+          icon={<X />}
           type="button"
-          variant="ghost"
-          size="icon"
+          variant="quiet"
           aria-label="Clear search"
-          className="absolute right-0.5 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground"
+          className="absolute right-0.5 top-1/2 -translate-y-1/2"
           onClick={() => onChange("")}
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
+        />
       ) : null}
     </div>
   );

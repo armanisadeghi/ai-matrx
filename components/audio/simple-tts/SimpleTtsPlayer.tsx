@@ -35,7 +35,7 @@ export default function SimpleTtsPlayer() {
                     onChange={(e) => handleScriptChange(e.target.value)}
                 />
                 <div className="w-full flex flex-col gap-2 mt-2">
-                    <Button disabled={connectionState !== "ready" || playerState === "playing"} onClick={speak}>
+                    <Button variant="primary" disabled={connectionState !== "ready" || playerState === "playing"} onClick={speak}>
                         Speak
                     </Button>
                     <VoiceConfigSelects

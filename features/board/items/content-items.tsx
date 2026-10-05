@@ -47,10 +47,10 @@ function UrlPicker({
       />
       {value.trim() && !url && <p className="text-xs text-destructive">That is not a web address.</p>}
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={!url}>
+        <Button variant="primary" type="submit" disabled={!url}>
           Add to board
         </Button>
       </div>

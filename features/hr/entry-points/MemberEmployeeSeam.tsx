@@ -201,9 +201,7 @@ export function MemberEmployeeSeam({
     return (
       <Button
         asChild
-        variant="ghost"
-        size="sm"
-        className="h-8 gap-1.5 px-2 text-xs"
+        variant="quiet"
       >
         <Link
           href={hrEmployeeHref(link.employeeId, null, { org: seam.orgRef })}
@@ -229,9 +227,7 @@ export function MemberEmployeeSeam({
   return (
     <Button
       asChild
-      variant="ghost"
-      size="sm"
-      className="h-8 gap-1.5 px-2 text-xs"
+      variant="quiet"
     >
       <Link
         href={hrPeopleNewHref({

@@ -120,7 +120,7 @@ export default function SessionIntegrityBanner({
         title={notice.title}
         description={notice.description}
         actions={
-          <Button size="sm" onClick={() => router.push(loginHref)}>
+          <Button variant="primary" onClick={() => router.push(loginHref)}>
             Sign in again
           </Button>
         }

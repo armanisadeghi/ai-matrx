@@ -358,10 +358,10 @@ export function MandatePeekModal({ mandate, isOpen, onClose, href }: MandatePeek
 
         {pageHref ? (
           <div className="flex items-center gap-2 border-t border-border pt-3">
-            <Button variant="ghost" size="sm" onClick={onClose} className="ml-auto">
+            <Button variant="quiet" onClick={onClose} className="ml-auto">
               Close
             </Button>
-            <Button asChild size="sm">
+            <Button variant="primary" asChild>
               <Link href={pageHref} onClick={onClose}>
                 Open
                 <ArrowRight />

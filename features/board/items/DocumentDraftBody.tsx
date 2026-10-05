@@ -80,8 +80,7 @@ export function DocumentDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">)
           A new document, saved to Documents and editable here and at its own page.
         </p>
       )}
-      <Button type="button" onClick={() => void create()} disabled={creating} className="gap-1.5">
-        {creating ? <Loader2 className="size-4 animate-spin" /> : <FilePlus2 className="size-4" />}
+      <Button icon={creating ? <Loader2 className="animate-spin" /> : <FilePlus2 />} variant="primary" type="button" onClick={() => void create()} disabled={creating}>
         {failure ? "Try again" : "Create document"}
       </Button>
     </div>

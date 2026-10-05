@@ -398,18 +398,18 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
           )}
         </div>
         <Button
-          size="sm"
+          icon={buildingAll ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Library />
+          )}
+          variant="primary"
           onClick={handleRunAll}
           disabled={
             buildingAll || anyRunning || loading || allComplete || !!loadError
           }
-          className="h-8 shrink-0"
+          className="shrink-0"
         >
-          {buildingAll ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-          ) : (
-            <Library className="h-3.5 w-3.5 mr-1" />
-          )}
           {buildingAll
             ? "Building…"
             : allComplete
@@ -433,10 +433,9 @@ export function KnowledgeAssetPanel({ doc }: { doc: KnowledgeAssetDoc }) {
             <ErrorAlchemyMenu error={loadError} />
           </span>
           <Button
-            size="sm"
             variant="outline"
             onClick={() => void refresh()}
-            className="h-7 shrink-0 text-[10px]"
+            className="shrink-0"
           >
             Retry status
           </Button>
@@ -726,78 +725,74 @@ function RepresentationCard({
       <div className="mt-2 flex items-center gap-1.5">
         {running ? (
           <Button
-            size="sm"
+            icon={<XIcon />}
             variant="outline"
             onClick={onCancel}
-            className="h-7 flex-1 text-[10px]"
+            className="flex-1"
           >
-            <XIcon className="h-3 w-3 mr-1" />
             Cancel
           </Button>
         ) : status.complete ? (
           <Button
-            size="sm"
+            icon={rebuildChecking ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
             onClick={onRebuild}
             disabled={rebuildChecking || statusUnavailable}
-            className="h-7 flex-1 text-[10px]"
+            className="flex-1"
           >
-            {rebuildChecking ? (
-              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3 mr-1" />
-            )}
             {rebuildChecking ? "Checking impact…" : "Rebuild"}
           </Button>
         ) : status.resumable ? (
           <>
             <Button
-              size="sm"
+              icon={<Play />}
+              variant="primary"
               onClick={() => void handleBuild(true)}
               disabled={statusUnavailable}
-              className="h-7 flex-1 text-[10px]"
+              className="flex-1"
             >
-              <Play className="h-3 w-3 mr-1" />
               Resume
             </Button>
             {built && (
               <Button
-                size="icon"
-                variant="ghost"
+                icon={rebuildChecking ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
+                variant="quiet"
                 onClick={onRebuild}
                 disabled={rebuildChecking || statusUnavailable}
-                className="h-7 w-7 shrink-0 text-muted-foreground"
+                className="shrink-0"
                 aria-label="Start over from scratch"
                 title="Start over from scratch (destructive)"
-              >
-                {rebuildChecking ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3 w-3" />
-                )}
-              </Button>
+              />
             )}
           </>
         ) : built ? (
           <>
             <Button
-              size="sm"
+              icon={<Play />}
+              variant="primary"
               onClick={() => void handleBuild(true)}
               disabled={statusUnavailable}
-              className="h-7 flex-1 text-[10px]"
+              className="flex-1"
             >
-              <Play className="h-3 w-3 mr-1" />
               Resume
             </Button>
           </>
         ) : (
           <Button
-            size="sm"
+            icon={<Play />}
+            variant="primary"
             onClick={() => void handleBuild(false)}
             disabled={estimateLoading || statusUnavailable}
-            className="h-7 flex-1 text-[10px]"
+            className="flex-1"
           >
-            <Play className="h-3 w-3 mr-1" />
             {estimateLoading ? "Estimating cost…" : `Build${costLabel}`}
           </Button>
         )}
@@ -809,12 +804,11 @@ function RepresentationCard({
       {built && derivativeId && (
         <>
           <Button
-            size="sm"
+            icon={<ArrowUpRight />}
             variant="outline"
             onClick={() => setResultsOpen(true)}
-            className="mt-2 h-7 w-full text-[10px]"
+            className="mt-2 w-full"
           >
-            <ArrowUpRight className="h-3 w-3 mr-1" />
             View {chunkCount.toLocaleString()} {meta.unit}
           </Button>
           <DerivativeResultsDialog
@@ -962,12 +956,10 @@ function LiveActivityRow({
             {elapsed}
           </span>
           <Button
-            size="sm"
+            icon={<XIcon />}
             variant="outline"
             onClick={onCancel}
-            className="h-7 text-[10px]"
           >
-            <XIcon className="h-3 w-3 mr-1" />
             Cancel
           </Button>
         </div>

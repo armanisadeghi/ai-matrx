@@ -266,8 +266,7 @@ function AvailabilityNotice({
         states are hidden until it is available.
         <ErrorAlchemyMenu />
       </p>
-      <Button type="button" size="sm" variant="outline" onClick={onRetry}>
-        <RefreshCw className="h-3.5 w-3.5" />
+      <Button icon={<RefreshCw />} type="button" variant="outline" onClick={onRetry}>
         Retry
       </Button>
     </section>

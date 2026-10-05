@@ -37,7 +37,7 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {

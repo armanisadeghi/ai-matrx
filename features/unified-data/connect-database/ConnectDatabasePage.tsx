@@ -126,8 +126,7 @@ export function ConnectDatabasePage() {
                     onChange={(e) => setConnection(e.target.value)}
                     disabled={step.phase === "testing" || step.phase === "adding"}
                   />
-                  <Button type="submit" disabled={!connection.trim() || step.phase === "testing" || step.phase === "adding"}>
-                    {step.phase === "testing" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Database className="h-4 w-4" aria-hidden />}
+                  <Button icon={step.phase === "testing" ? <Loader2 className="animate-spin" aria-hidden /> : <Database aria-hidden />} variant="primary" type="submit" disabled={!connection.trim() || step.phase === "testing" || step.phase === "adding"}>
                     <span className="ml-1.5">Connect</span>
                   </Button>
                 </div>
@@ -191,12 +190,13 @@ export function ConnectDatabasePage() {
                           <span className="text-xs text-muted-foreground">Needs a primary key to sync</span>
                         ) : null}
                         <Button
+                          icon={step.phase === "adding" ? <Loader2 className="animate-spin" aria-hidden /> : null}
+                          variant="primary"
                           type="button"
                           disabled={!pickedTable || pickedTable.key.length === 0 || step.phase === "adding"}
                           onClick={() => pickedTable && void add(pickedTable)}
                           data-connect-database-add=""
                         >
-                          {step.phase === "adding" ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden /> : null}
                           Add as synced table
                         </Button>
                       </div>

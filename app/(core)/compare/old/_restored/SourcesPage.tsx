@@ -240,9 +240,8 @@ function StageCell({
           {STAGE_CELL_LABEL.read_failed}
         </span>
         <Button
+          type="submit"
           variant="outline"
-          size="sm"
-          className="h-6 px-2 text-xs"
           onClick={(e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -270,9 +269,8 @@ function StageCell({
         Index stale
       </span>
       <Button
+        type="submit"
         variant="outline"
-        size="sm"
-        className="h-6 px-2 text-xs"
         disabled={busy}
         onClick={(e) => {
           e.stopPropagation();
@@ -1063,40 +1061,36 @@ export function SourcesPage() {
             actions: (sel) => (
               <div className="flex flex-wrap items-center gap-1">
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<Save />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => void bulkSave(sel)}
-                >
-                  <Save className="h-3 w-3" /> Save
+                > Save
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<Paperclip />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => openSaveFor(sel.map(toSaveItem), [], false)}
-                >
-                  <Paperclip className="h-3 w-3" /> Attach
+                > Attach
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<Sparkles />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => void bulkProcess(sel)}
-                >
-                  <Sparkles className="h-3 w-3" /> Process now
+                > Process now
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10"
+                  icon={<Trash2 />}
+                  type="submit"
+                  variant="quiet"
                   disabled={bulkBusy}
                   onClick={() => setDeleteRows(sel)}
-                >
-                  <Trash2 className="h-3 w-3" /> Delete
+                > Delete
                 </Button>
                 {bulkBusy ? (
                   <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
@@ -1181,15 +1175,14 @@ export function SourcesPage() {
               {formatCount(total)} matching capture records
             </span>
             <Button
-              size="sm"
+              icon={loadingMore ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              type="submit"
               variant="outline"
-              className="h-7 text-xs"
               disabled={loadingMore}
               onClick={loadMore}
             >
-              {loadingMore ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : null}
               Load more
             </Button>
           </div>
@@ -1242,20 +1235,19 @@ export function SourcesPage() {
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setAddMode(null)}
               >
                 Cancel
               </Button>
               <Button
+                icon={adding ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 type="submit"
-                size="sm"
                 disabled={adding || !urlInput.trim()}
               >
-                {adding ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Read the page
               </Button>
             </div>
@@ -1299,20 +1291,21 @@ export function SourcesPage() {
             </p>
             <div className="flex justify-end gap-2">
               <Button
-                variant="ghost"
-                size="sm"
+                type="submit"
+                variant="quiet"
                 onClick={() => setAddMode(null)}
               >
                 Cancel
               </Button>
               <Button
-                size="sm"
+                icon={adding ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                type="submit"
+                variant="primary"
                 disabled={adding || !textInput.trim()}
                 onClick={() => void handleAddText()}
               >
-                {adding ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Add to Sources
               </Button>
             </div>
@@ -1376,20 +1369,22 @@ export function SourcesPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <Button
-              variant="ghost"
+              type="submit"
+              variant="quiet"
               onClick={() => setDeleteRows(null)}
               disabled={deleting}
             >
               Cancel
             </Button>
             <Button
-              variant="destructive"
+              icon={deleting ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              type="submit"
+              variant="danger"
               onClick={() => void confirmDelete()}
               disabled={deleting}
             >
-              {deleting ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : null}
               Move to trash
             </Button>
           </AlertDialogFooter>

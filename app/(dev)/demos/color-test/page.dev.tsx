@@ -454,12 +454,12 @@ export default function ColorTestPage() {
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">All Variants (Default Size)</h3>
             <div className="flex flex-wrap gap-3">
-              <Button variant="default">Default</Button>
-              <Button variant="destructive">Destructive</Button>
-              <Button variant="outline">Outline</Button>
-              <Button variant="secondary">Secondary</Button>
-              <Button variant="ghost">Ghost</Button>
-              <Button variant="link">Link</Button>
+              <Button type="submit" variant="primary">Default</Button>
+              <Button type="submit" variant="danger">Destructive</Button>
+              <Button type="submit" variant="outline">Outline</Button>
+              <Button type="submit" variant="outline">Secondary</Button>
+              <Button type="submit" variant="quiet">Ghost</Button>
+              <Button type="submit" variant="link">Link</Button>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
               Hover over each button to test hover states. Expected hover classes documented below.
@@ -478,12 +478,10 @@ export default function ColorTestPage() {
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">All Sizes (Default Variant)</h3>
             <div className="flex flex-wrap items-center gap-3">
-              <Button size="sm">Small</Button>
-              <Button size="default">Default</Button>
-              <Button size="lg">Large</Button>
-              <Button size="icon" aria-label="Search">
-                <Search aria-hidden="true" />
-              </Button>
+              <Button type="submit" variant="primary">Small</Button>
+              <Button type="submit" variant="primary">Default</Button>
+              <Button type="submit" variant="primary">Large</Button>
+              <Button icon={<Search aria-hidden="true" />} type="submit" variant="primary" aria-label="Search" />
             </div>
           </div>
 
@@ -504,45 +502,45 @@ export default function ColorTestPage() {
                 <tbody>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Default</td>
-                    <td className="py-2 px-2 text-center"><Button variant="default" size="sm">Sm</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="default" size="default">Default</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="default" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="default" size="icon" aria-label="Search"><Search aria-hidden="true" /></Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="primary">Sm</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="primary">Default</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="primary">Large</Button></td>
+                    <td className="py-2 px-2 text-center"><Button icon={<Search aria-hidden="true" />} type="submit" variant="primary" aria-label="Search" /></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Destructive</td>
-                    <td className="py-2 px-2 text-center"><Button variant="destructive" size="sm">Sm</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="destructive" size="default">Default</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="destructive" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="destructive" size="icon" aria-label="Close"><X aria-hidden="true" /></Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="danger">Sm</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="danger">Default</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="danger">Large</Button></td>
+                    <td className="py-2 px-2 text-center"><Button icon={<X aria-hidden="true" />} type="submit" variant="danger" aria-label="Close" /></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Outline</td>
-                    <td className="py-2 px-2 text-center"><Button variant="outline" size="sm">Sm</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="outline" size="default">Default</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="outline" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="outline" size="icon" aria-label="Edit"><Pencil aria-hidden="true" /></Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="outline">Sm</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="outline">Default</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="outline">Large</Button></td>
+                    <td className="py-2 px-2 text-center"><Button icon={<Pencil aria-hidden="true" />} type="submit" variant="outline" aria-label="Edit" /></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Secondary</td>
-                    <td className="py-2 px-2 text-center"><Button variant="secondary" size="sm">Sm</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="secondary" size="default">Default</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="secondary" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="secondary" size="icon" aria-label="Settings"><Settings aria-hidden="true" /></Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="outline">Sm</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="outline">Default</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="outline">Large</Button></td>
+                    <td className="py-2 px-2 text-center"><Button icon={<Settings aria-hidden="true" />} type="submit" variant="outline" aria-label="Settings" /></td>
                   </tr>
                   <tr className="border-b">
                     <td className="py-2 px-2 font-semibold">Ghost</td>
-                    <td className="py-2 px-2 text-center"><Button variant="ghost" size="sm">Sm</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="ghost" size="default">Default</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="ghost" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="ghost" size="icon" aria-label="Ghost"><Ghost aria-hidden="true" /></Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="quiet">Sm</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="quiet">Default</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="quiet">Large</Button></td>
+                    <td className="py-2 px-2 text-center"><Button icon={<Ghost aria-hidden="true" />} type="submit" variant="quiet" aria-label="Ghost" /></td>
                   </tr>
                   <tr>
                     <td className="py-2 px-2 font-semibold">Link</td>
-                    <td className="py-2 px-2 text-center"><Button variant="link" size="sm">Sm</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="link" size="default">Default</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="link" size="lg">Large</Button></td>
-                    <td className="py-2 px-2 text-center"><Button variant="link" size="icon" aria-label="Link"><Link2 aria-hidden="true" /></Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="link">Sm</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="link">Default</Button></td>
+                    <td className="py-2 px-2 text-center"><Button type="submit" variant="link">Large</Button></td>
+                    <td className="py-2 px-2 text-center"><Button icon={<Link2 aria-hidden="true" />} type="submit" variant="link" aria-label="Link" /></td>
                   </tr>
                 </tbody>
               </table>
@@ -553,12 +551,12 @@ export default function ColorTestPage() {
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">Disabled States (All Variants)</h3>
             <div className="flex flex-wrap gap-3">
-              <Button variant="default" disabled>Default Disabled</Button>
-              <Button variant="destructive" disabled>Destructive Disabled</Button>
-              <Button variant="outline" disabled>Outline Disabled</Button>
-              <Button variant="secondary" disabled>Secondary Disabled</Button>
-              <Button variant="ghost" disabled>Ghost Disabled</Button>
-              <Button variant="link" disabled>Link Disabled</Button>
+              <Button type="submit" variant="primary" disabled>Default Disabled</Button>
+              <Button type="submit" variant="danger" disabled>Destructive Disabled</Button>
+              <Button type="submit" variant="outline" disabled>Outline Disabled</Button>
+              <Button type="submit" variant="outline" disabled>Secondary Disabled</Button>
+              <Button type="submit" variant="quiet" disabled>Ghost Disabled</Button>
+              <Button type="submit" variant="link" disabled>Link Disabled</Button>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
               Disabled buttons should have opacity-50 and no hover effect (disabled:pointer-events-none disabled:opacity-50)
@@ -571,21 +569,21 @@ export default function ColorTestPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 bg-background border rounded-lg space-y-2">
                 <div className="text-xs font-mono mb-2">bg-background</div>
-                <Button variant="default">Default</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
+                <Button type="submit" variant="primary">Default</Button>
+                <Button type="submit" variant="outline">Outline</Button>
+                <Button type="submit" variant="quiet">Ghost</Button>
               </div>
               <div className="p-4 bg-card border rounded-lg space-y-2">
                 <div className="text-xs font-mono mb-2">bg-card</div>
-                <Button variant="default">Default</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
+                <Button type="submit" variant="primary">Default</Button>
+                <Button type="submit" variant="outline">Outline</Button>
+                <Button type="submit" variant="quiet">Ghost</Button>
               </div>
               <div className="p-4 bg-muted border rounded-lg space-y-2">
                 <div className="text-xs font-mono mb-2">bg-muted</div>
-                <Button variant="default">Default</Button>
-                <Button variant="outline">Outline</Button>
-                <Button variant="ghost">Ghost</Button>
+                <Button type="submit" variant="primary">Default</Button>
+                <Button type="submit" variant="outline">Outline</Button>
+                <Button type="submit" variant="quiet">Ghost</Button>
               </div>
             </div>
           </div>
@@ -594,9 +592,9 @@ export default function ColorTestPage() {
           <div className="space-y-2">
             <h3 className="text-sm font-semibold">Focus States (Click/Tab to test)</h3>
             <div className="flex flex-wrap gap-3">
-              <Button variant="default">Focus Me (Default)</Button>
-              <Button variant="outline">Focus Me (Outline)</Button>
-              <Button variant="ghost">Focus Me (Ghost)</Button>
+              <Button type="submit" variant="primary">Focus Me (Default)</Button>
+              <Button type="submit" variant="outline">Focus Me (Outline)</Button>
+              <Button type="submit" variant="quiet">Focus Me (Ghost)</Button>
             </div>
             <div className="text-xs text-muted-foreground mt-2">
               Should show ring-ring on focus (focus-visible:ring-1 focus-visible:ring-ring)
@@ -608,17 +606,17 @@ export default function ColorTestPage() {
             <h3 className="text-sm font-semibold">Button Groups (Common Patterns)</h3>
             <div className="space-y-3">
               <div className="flex gap-2">
-                <Button variant="default">Save</Button>
-                <Button variant="outline">Cancel</Button>
+                <Button type="submit" variant="primary">Save</Button>
+                <Button type="submit" variant="outline">Cancel</Button>
               </div>
               <div className="flex gap-2">
-                <Button variant="destructive">Delete</Button>
-                <Button variant="ghost">Cancel</Button>
+                <Button type="submit" variant="danger">Delete</Button>
+                <Button type="submit" variant="quiet">Cancel</Button>
               </div>
               <div className="flex gap-2">
-                <Button variant="secondary">Edit</Button>
-                <Button variant="outline">Duplicate</Button>
-                <Button variant="ghost">View</Button>
+                <Button type="submit" variant="outline">Edit</Button>
+                <Button type="submit" variant="outline">Duplicate</Button>
+                <Button type="submit" variant="quiet">View</Button>
               </div>
             </div>
           </div>
@@ -633,7 +631,7 @@ export default function ColorTestPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <div className="text-xs font-semibold mb-2">Default Variant (hover:bg-primary/90)</div>
-                  <Button variant="default">Hover to Test Primary/90</Button>
+                  <Button type="submit" variant="primary">Hover to Test Primary/90</Button>
                   <div className="text-xs font-mono space-y-1 bg-muted p-2 rounded">
                     <div>Expected: bg-primary → bg-primary/90 on hover</div>
                     <div className="text-muted-foreground">Class: hover:bg-primary/90</div>
@@ -641,7 +639,7 @@ export default function ColorTestPage() {
                 </div>
                 <div className="space-y-3">
                   <div className="text-xs font-semibold mb-2">Secondary Variant (hover:bg-secondary/80)</div>
-                  <Button variant="secondary">Hover to Test Secondary/80</Button>
+                  <Button type="submit" variant="outline">Hover to Test Secondary/80</Button>
                   <div className="text-xs font-mono space-y-1 bg-muted p-2 rounded">
                     <div>Expected: bg-secondary → bg-secondary/80 on hover</div>
                     <div className="text-muted-foreground">Class: hover:bg-secondary/80</div>

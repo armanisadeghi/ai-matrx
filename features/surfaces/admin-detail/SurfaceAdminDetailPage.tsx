@@ -388,17 +388,15 @@ export function SurfaceAdminDetailPage({
           {!embedded && (
             <>
               <Button
-                variant="ghost"
-                size="sm"
+                icon={isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowLeft />
+                )}
+                variant="quiet"
                 onClick={() => navigateTo("/administration/ui/surfaces")}
                 disabled={isPending}
-                className="gap-1.5 h-7 text-xs"
               >
-                {isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                )}
                 Surfaces
               </Button>
               <span className="text-xs text-muted-foreground">/</span>
@@ -450,11 +448,10 @@ export function SurfaceAdminDetailPage({
                 // which took the whole page down for every parameterized
                 // surface. Show the template honestly instead of crashing.
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  type="submit"
+                  variant="quiet"
                   disabled
                   title={`This surface lives at ${surface.url_pattern} — open it from a specific record, since the route needs real ids.`}
-                  className="h-7 gap-1.5 text-xs"
                 >
                   {/* new-tab-icon: permanently disabled by design — this surface needs a real record id and the title says so honestly; this admin listing shows every registered surface even ones that can't be opened from here */}
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -463,9 +460,7 @@ export function SurfaceAdminDetailPage({
               ) : (
                 <Button
                   asChild
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1.5 text-xs"
+                  variant="quiet"
                 >
                   <AppLink
                     href={surface.url_pattern}
@@ -478,40 +473,34 @@ export function SurfaceAdminDetailPage({
                 </Button>
               ))}
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<RefreshCw
+                className={`h-3.5 w-3.5 ${loadingData ? "animate-spin" : ""}`}
+              />}
+              variant="quiet"
               onClick={() => void load(surface.name)}
               disabled={loadingData}
-              className="h-7 gap-1.5 text-xs"
             >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${loadingData ? "animate-spin" : ""}`}
-              />
               Refresh
             </Button>
             {!renaming && (
               <Button
+                icon={<Edit2 />}
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   setNewName(surface.name);
                   setRenaming(true);
                 }}
                 disabled={busy}
-                className="h-7 gap-1.5 text-xs"
               >
-                <Edit2 className="h-3.5 w-3.5" />
                 Rename
               </Button>
             )}
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<Trash2 />}
+              variant="quiet"
               onClick={() => void onDelete()}
               disabled={busy}
-              className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="h-3.5 w-3.5" />
               Move to Trash
             </Button>
           </div>
@@ -528,10 +517,9 @@ export function SurfaceAdminDetailPage({
               disabled={busy}
             />
             <Button
-              size="sm"
+              variant="primary"
               onClick={() => void onRename()}
               disabled={busy || !newName || newName === surface.name}
-              className="h-8"
             >
               {busy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -540,14 +528,12 @@ export function SurfaceAdminDetailPage({
               )}
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => {
                 setRenaming(false);
                 setNewName("");
               }}
               disabled={busy}
-              className="h-8"
             >
               Cancel
             </Button>
@@ -818,7 +804,12 @@ function IdentitySection({
         </div>
         <div className="flex justify-end">
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Check />
+            )}
+            variant="primary"
             onClick={() =>
               void onSave(
                 {
@@ -829,13 +820,7 @@ function IdentitySection({
               )
             }
             disabled={busy || !dirty}
-            className="h-7 gap-1.5 text-xs"
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Check className="h-3.5 w-3.5" />
-            )}
             Save
           </Button>
         </div>
@@ -986,10 +971,7 @@ function ClassificationSection({
                 role="combobox"
                 aria-expanded={parentOpen}
                 disabled={busy}
-                className={cn(
-                  "h-8 w-full justify-between text-xs font-mono font-normal",
-                  ACTIVE_FIELD,
-                )}
+                className={cn("w-full justify-between", ACTIVE_FIELD)}
               >
                 <span className="truncate">
                   {surface.parent_surface_name ?? "(none)"}
@@ -1201,13 +1183,12 @@ function HierarchySection({
                 </Badge>
               </Label>
               <Button
+                icon={<Plus />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={onAddChild}
-                className="h-7 gap-1.5 text-xs shrink-0"
+                className="shrink-0"
               >
-                <Plus className="h-3.5 w-3.5" />
                 Add child
               </Button>
             </div>
@@ -1255,9 +1236,8 @@ function HierarchySection({
                         <td className="px-2 py-1.5 text-right align-middle">
                           <Button
                             asChild
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
+                            variant="quiet"
+                            className="w-6"
                           >
                             <AppLink
                               href={surfaceAdminHref(child.name)}
@@ -1531,13 +1511,11 @@ function ToolChipList({
       <div className="flex items-center justify-between">
         <Label className="text-xs">{label}</Label>
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
           onClick={onAdd}
           disabled={busy}
-          className="h-6 gap-1 px-2 text-[11px]"
         >
-          <Plus className="h-3 w-3" />
           Add
         </Button>
       </div>
@@ -1743,11 +1721,10 @@ function JsonRecordEditor({
                   </span>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => removeKey(key)}
                   disabled={busy}
-                  className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+                  className="w-5"
                   aria-label={`Remove ${key}`}
                 >
                   <X className="h-3 w-3" />
@@ -1786,13 +1763,11 @@ function JsonRecordEditor({
           disabled={busy}
         />
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
           onClick={addKey}
           disabled={busy || !newKey.trim() || newKey.trim() in record}
-          className="h-7 gap-1 px-2 text-[11px]"
         >
-          <Plus className="h-3 w-3" />
           Add key
         </Button>
       </div>
@@ -2185,16 +2160,15 @@ function RoleOverridePicker({
       compact
       triggerSlot={
         <Button
-          variant="outline"
-          size="sm"
-          disabled={busy}
-          className="h-6 gap-1 px-2 text-[11px]"
-        >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Plus className="h-3 w-3" />
+            <Plus />
           )}
+          type="submit"
+          variant="outline"
+          disabled={busy}
+        >
           Set platform override
         </Button>
       }
@@ -2385,10 +2359,10 @@ function NamespaceConfigEditorRow({
             aria-label={`${namespace} global configuration JSON`}
           />
           <Button
-            size="sm"
+            variant="primary"
             onClick={() => void save()}
             disabled={saving || draft === serialized}
-            className="h-8 shrink-0"
+            className="shrink-0"
           >
             {saving ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

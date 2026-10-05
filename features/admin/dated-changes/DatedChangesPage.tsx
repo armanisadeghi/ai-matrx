@@ -112,7 +112,7 @@ export default function DatedChangesPage() {
           <AlertDescription className="text-xs">
             {query.error instanceof Error ? query.error.message : String(query.error)} — a refused or overdue change
             would not be visible here until this read works, so treat this as unknown, not healthy.
-            <Button variant="outline" size="sm" className="ml-2 h-6 text-xs" onClick={refresh}>
+            <Button variant="outline" className="ml-2" onClick={refresh}>
               Try again
             </Button>
           </AlertDescription>
@@ -219,9 +219,7 @@ export default function DatedChangesPage() {
                 ) : null}
                 {change.status === "scheduled" && !change.timeZone ? (
                   <Button
-                    size="sm"
-                    variant={change.attention === "zone_unconfirmed" ? "default" : "outline"}
-                    className="h-7 text-xs"
+                    variant={change.attention === "zone_unconfirmed" ? "primary" : "outline"}
                     onClick={() => setPending({ kind: "zone", change })}
                   >
                     Confirm time zone
@@ -229,9 +227,7 @@ export default function DatedChangesPage() {
                 ) : null}
                 {change.status === "scheduled" ? (
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 text-xs"
                     onClick={() => setPending({ kind: "cancel", change })}
                   >
                     Cancel this change
@@ -239,9 +235,7 @@ export default function DatedChangesPage() {
                 ) : null}
                 {(change.status === "refused" || change.status === "failed") && !change.resolvedAt ? (
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 text-xs"
                     onClick={() => setPending({ kind: "resolve", change })}
                   >
                     Mark resolved

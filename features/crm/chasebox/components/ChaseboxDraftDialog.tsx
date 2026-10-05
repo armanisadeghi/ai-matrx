@@ -450,28 +450,22 @@ export function ChaseboxDraftDialog({
             </DialogTitle>
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+                icon={<ChevronLeft aria-hidden />} aria-label="Previous draft (K)"
+                variant="quiet"
                 onClick={() => step(-1)}
                 disabled={index === 0}
                 title="Previous draft (K)"
-              >
-                <ChevronLeft className="h-4 w-4" aria-hidden />
-              </Button>
+              />
               <span className="tabular-nums">
                 {index + 1} of {rows.length}
               </span>
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+                icon={<ChevronRight aria-hidden />} aria-label="Next draft (J)"
+                variant="quiet"
                 onClick={() => step(1)}
                 disabled={index >= rows.length - 1}
                 title="Next draft (J)"
-              >
-                <ChevronRight className="h-4 w-4" aria-hidden />
-              </Button>
+              />
             </div>
           </div>
           <DialogDescription>
@@ -765,31 +759,30 @@ export function ChaseboxDraftDialog({
             <div className="flex flex-wrap gap-2">
               {mode === "edit" ? (
                 <>
-                  <Button variant="ghost" onClick={() => setMode("read")}>
+                  <Button variant="quiet" onClick={() => setMode("read")}>
                     Cancel
                   </Button>
-                  <Button onClick={() => void saveEdits()} disabled={busy !== null}>
-                    {busy === "save" && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                    )}
+                  <Button icon={busy === "save" && (
+                      <Loader2 className="animate-spin" aria-hidden />
+                    )} variant="primary" onClick={() => void saveEdits()} disabled={busy !== null}>
                     Save line
                   </Button>
                 </>
               ) : mode === "reject" ? (
                 <>
-                  <Button variant="ghost" onClick={() => setMode("read")}>
+                  <Button variant="quiet" onClick={() => setMode("read")}>
                     Keep it
                   </Button>
                   <Button
-                    variant="destructive"
+                    icon={busy === "reject" ? (
+                      <Loader2 className="animate-spin" aria-hidden />
+                    ) : (
+                      <X aria-hidden />
+                    )}
+                    variant="danger"
                     onClick={() => void reject()}
                     disabled={!draftId || busy !== null || resolved}
                   >
-                    {busy === "reject" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                    ) : (
-                      <X className="mr-2 h-4 w-4" aria-hidden />
-                    )}
                     Reject and remove
                   </Button>
                 </>
@@ -802,59 +795,60 @@ export function ChaseboxDraftDialog({
                       fingerprint check, and still nothing sent. */}
                   {pendingRead.length > 1 && (
                     <Button
-                      variant="ghost"
+                      icon={busy === "approve-rest" ? (
+                        <Loader2 className="animate-spin" aria-hidden />
+                      ) : (
+                        <CheckCheck aria-hidden />
+                      )}
+                      variant="quiet"
                       onClick={() => void approveRest()}
                       disabled={busy !== null}
                       title={`Approve the ${pendingRead.length} drafts you have opened. Nothing is sent.`}
                     >
-                      {busy === "approve-rest" ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                      ) : (
-                        <CheckCheck className="mr-2 h-4 w-4" aria-hidden />
-                      )}
                       Approve the {pendingRead.length} you have read
                     </Button>
                   )}
                   <Button
-                    variant="ghost"
+                    icon={<X aria-hidden />}
+                    variant="quiet"
                     onClick={() => setMode("reject")}
                     disabled={!draftId || busy !== null || resolved}
                   >
-                    <X className="mr-2 h-4 w-4" aria-hidden />
                     Reject
                   </Button>
                   {personalization && (
                     <Button
+                      icon={<Pencil aria-hidden />}
                       variant="outline"
                       onClick={() => setMode("edit")}
                       disabled={!draftId || busy !== null || resolved}
                     >
-                      <Pencil className="mr-2 h-4 w-4" aria-hidden />
                       Edit line
                     </Button>
                   )}
                   {!approvedAt && (
                     <Button
+                      icon={busy === "approve" && (
+                        <Loader2 className="animate-spin" aria-hidden />
+                      )}
                       variant="outline"
                       onClick={() => void approve()}
                       disabled={!draftId || busy !== null || resolved}
                     >
-                      {busy === "approve" && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                      )}
                       Approve exact message
                     </Button>
                   )}
                   <Button
+                    icon={busy === "send" ? (
+                      <Loader2 className="animate-spin" aria-hidden />
+                    ) : (
+                      <Send aria-hidden />
+                    )}
+                    variant="primary"
                     onClick={() => void send()}
                     disabled={!draftId || !approvedAt || busy !== null || resolved}
                     title={approvedAt ? undefined : "Approve the exact message first."}
                   >
-                    {busy === "send" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-                    ) : (
-                      <Send className="mr-2 h-4 w-4" aria-hidden />
-                    )}
                     Send email
                   </Button>
                 </>

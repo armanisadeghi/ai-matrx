@@ -38,19 +38,13 @@ export function MeetingInviteButton({
   return (
     <>
       <Button
+        icon={<UserPlus aria-hidden="true" />}
         type="button"
-        variant={look === "row" ? "outline" : "ghost"}
-        size="sm"
+        variant={look === "row" ? "outline" : "quiet"}
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        className={cn(
-          "gap-1.5",
-          look === "stage" &&
-            "h-11 border border-white/30 bg-white/10 px-3 text-[color:var(--mx-meet-stage-text)] hover:bg-white/20 hover:text-[color:var(--mx-meet-stage-text)] focus-visible:ring-white/60 sm:h-9",
-          className,
-        )}
+        className={className}
       >
-        <UserPlus className="h-4 w-4" aria-hidden="true" />
         Invite
       </Button>
       {open ? (

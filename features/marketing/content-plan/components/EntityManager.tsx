@@ -668,18 +668,16 @@ export function EntityManager({
             </div>
             <div className="flex items-center gap-1.5">
               <Button
-                size="sm"
+                icon={agents.entitiesBusy ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Lightbulb />
+                )}
                 variant="outline"
-                className="h-7 text-xs"
                 disabled={agents.entitiesBusy}
                 title="Read the site's linked research report and propose the real people, standards, and sources this content should cite."
                 onClick={() => void handleSuggestFromResearch()}
               >
-                {agents.entitiesBusy ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : (
-                  <Lightbulb className="mr-1 h-3 w-3" />
-                )}
                 Suggest from research
               </Button>
             </div>
@@ -717,9 +715,7 @@ export function EntityManager({
                 <div className="flex shrink-0 items-center gap-1.5">
                   {proposals.length > 0 ? (
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs"
+                      variant="quiet"
                       onClick={() =>
                         setProposals((current) => {
                           const selectAll = current.some(
@@ -737,9 +733,7 @@ export function EntityManager({
                     </Button>
                   ) : null}
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
+                    variant="quiet"
                     onClick={() => {
                       setProposals([]);
                       setCurationNotes("");
@@ -749,16 +743,15 @@ export function EntityManager({
                   </Button>
                   {proposals.length > 0 ? (
                     <Button
-                      size="sm"
-                      className="h-7 text-xs"
+                      icon={addingProposals ? (
+                        <Loader2 className="animate-spin" />
+                      ) : null}
+                      variant="primary"
                       disabled={
                         pendingProposals.length === 0 || addingProposals
                       }
                       onClick={() => setConfirmingAdd(true)}
                     >
-                      {addingProposals ? (
-                        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                      ) : null}
                       Add {pendingProposals.length} selected
                     </Button>
                   ) : null}
@@ -904,11 +897,10 @@ export function EntityManager({
                 }
               />
               <Button
-                size="sm"
-                className="h-7 text-xs"
+                icon={<Plus />}
+                variant="primary"
                 onClick={() => setCreatingParty(true)}
-              >
-                <Plus className="mr-1 h-3 w-3" /> New person / company
+              > New person / company
               </Button>
             </div>
           </div>
@@ -961,9 +953,8 @@ export function EntityManager({
                     </span>
                   ) : null}
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                    variant="quiet"
+                    className="w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label={`Unlink ${party.display_name} from this site`}
                     onClick={() => setUnlinking(party)}
                   >
@@ -1014,13 +1005,12 @@ export function EntityManager({
                 </>
               ) : null}
               <Button
-                size="sm"
-                className="h-7 text-xs"
+                icon={<Plus />}
+                variant="primary"
                 onClick={() => {
                   openEditor(null);
                 }}
-              >
-                <Plus className="mr-1 h-3 w-3" /> New source
+              > New source
               </Button>
             </div>
           </div>
@@ -1045,13 +1035,13 @@ export function EntityManager({
                 No sources yet
               </p>
               <Button
-                size="sm"
-                className="mt-4 h-7 text-xs"
+                icon={<Plus />}
+                variant="primary"
+                className="mt-4"
                 onClick={() => {
                   openEditor(null);
                 }}
-              >
-                <Plus className="mr-1 h-3 w-3" /> New source
+              > New source
               </Button>
             </div>
           ) : (
@@ -1068,9 +1058,8 @@ export function EntityManager({
                     {entity.label}
                   </span>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+                    variant="quiet"
+                    className="w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label="Edit entity"
                     onClick={() => {
                       openEditor(entity);
@@ -1079,9 +1068,8 @@ export function EntityManager({
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 text-muted-foreground opacity-0 hover:text-destructive focus-visible:opacity-100 group-hover:opacity-100"
+                    variant="quiet"
+                    className="w-7 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
                     aria-label="Delete entity"
                     onClick={() => setDeleting(entity)}
                   >
@@ -1268,8 +1256,7 @@ function LinkExistingPartyPopover({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="sm" variant="outline" className="h-7 text-xs">
-          <Link2 className="mr-1 h-3 w-3" /> Link existing
+        <Button icon={<Link2 />} variant="outline"> Link existing
         </Button>
       </PopoverTrigger>
       <PopoverContent sizing="content" className="p-2" align="end">
@@ -1417,11 +1404,11 @@ function EntityEditorDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            size="sm"
+            variant="primary"
             disabled={!draft.label.trim() || busy}
             onClick={onSave}
           >

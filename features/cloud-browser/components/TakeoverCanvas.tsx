@@ -108,7 +108,7 @@ export function TakeoverCanvas({
                 closes the live view there.
               </p>
             </div>
-            <Button size="sm" onClick={onReconnect}>
+            <Button variant="primary" onClick={onReconnect}>
               Show it here
             </Button>
           </div>
@@ -172,8 +172,7 @@ export function TakeoverCanvas({
             ? `Session ${ticket.streamSessionId} · lease revision ${controller.controlRevision}`
             : "No live session"}
         </span>
-        <Button size="sm" variant="outline" onClick={onReconnect}>
-          <RotateCw className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<RotateCw />} variant="outline" onClick={onReconnect}>
           Reconnect
         </Button>
       </div>

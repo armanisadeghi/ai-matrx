@@ -395,7 +395,7 @@ export function AccountsTableClient() {
       },
       { id: "email", accessorKey: "email", header: "Email", width: 220 },
       { id: "my_category", header: "My category", accessorFn: row => researchError ? "—" : RELATIONSHIP_LABELS[researchByUser.get(row.id)?.category ?? "unknown"], filter: "select", width: 150,
-        cell: row => <Button variant="ghost" size="sm" onClick={() => setResearchTarget(row)}>{researchError ? "—" : RELATIONSHIP_LABELS[researchByUser.get(row.id)?.category ?? "unknown"]}</Button> },
+        cell: row => <Button variant="quiet" onClick={() => setResearchTarget(row)}>{researchError ? "—" : RELATIONSHIP_LABELS[researchByUser.get(row.id)?.category ?? "unknown"]}</Button> },
       { id: "contact_status", header: "Contact status", accessorFn: row => researchError ? "—" : CONTACT_STATE_LABELS[researchByUser.get(row.id)?.contact_state ?? (row.banned ? "hold" : "not_contacted")], filter: "select", width: 130 },
       { id: "my_notes", header: "My notes", accessorFn: row => researchByUser.get(row.id)?.notes ?? "", hidden: true, width: 240 },
       {
@@ -882,8 +882,7 @@ export function AccountsTableClient() {
               </>
             )}
           </div>
-          <Button size="sm" variant="ghost" onClick={clearUserFocus}>
-            <X className="mr-1 h-4 w-4" /> Show all accounts
+          <Button icon={<X />} variant="quiet" onClick={clearUserFocus}> Show all accounts
           </Button>
         </div>
       ) : null}
@@ -928,13 +927,10 @@ export function AccountsTableClient() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
+                  icon={<MoreHorizontal />} aria-label="Actions"
+                  variant="quiet"
                   title="Actions"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuLabel className="truncate">
@@ -1075,7 +1071,7 @@ export function AccountsTableClient() {
             noun: "account",
             actions: (selected) => (
               <Button
-                size="sm"
+                icon={<Gift />}
                 variant="outline"
                 disabled={selected.length === 0}
                 onClick={() =>
@@ -1083,8 +1079,7 @@ export function AccountsTableClient() {
                     selected.map((row) => ({ id: row.id, label: row.display_name ?? row.email ?? row.id })),
                   )
                 }
-              >
-                <Gift className="mr-1.5 h-3.5 w-3.5" /> Give free months…
+              > Give free months…
               </Button>
             ),
           }}
@@ -1161,7 +1156,6 @@ export function AccountsTableClient() {
                 ],
             actions: (
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => setRefreshKey((current) => current + 1)}
               >
@@ -1267,18 +1261,19 @@ export function AccountsTableClient() {
             autoFocus
           />
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setDmTarget(null)}>
+            <Button variant="quiet" onClick={() => setDmTarget(null)}>
               Cancel
             </Button>
             <Button
+              icon={dmSending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <MessageSquare />
+              )}
+              variant="primary"
               onClick={() => void sendDm()}
               disabled={dmSending || !dmContent.trim()}
             >
-              {dmSending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <MessageSquare className="mr-2 h-4 w-4" />
-              )}
               Send message
             </Button>
           </DialogFooter>

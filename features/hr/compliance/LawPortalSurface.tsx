@@ -365,12 +365,12 @@ export function LawPortalSurface() {
             <Badge variant="neutral">{portal?.org_rules.length ?? 0}</Badge>
             {!editor && organizationId && configurableClasses.length > 0 ? (
               <Button
+                icon={<Plus />}
+                variant="primary"
                 type="button"
-                size="sm"
-                className="ml-auto h-7"
+                className="ml-auto"
                 onClick={() => setEditor({ mode: "add" })}
               >
-                <Plus className="mr-1 h-3.5 w-3.5" />
                 Add a rule
               </Button>
             ) : null}

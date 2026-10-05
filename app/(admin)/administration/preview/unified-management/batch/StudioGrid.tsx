@@ -423,8 +423,8 @@ function FillButton({
         <p className="text-[11px] text-muted-foreground">{caveat}</p>
         {render(value, setValue)}
         <Button
-          size="sm"
-          className="h-8 w-full text-xs"
+          variant="primary"
+          className="w-full"
           onClick={() => {
             onApply(value);
             setOpen(false);

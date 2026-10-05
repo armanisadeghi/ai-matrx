@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HighlightedText } from "@/features/agents/components/variables-management/HighlightedText";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,

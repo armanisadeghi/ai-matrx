@@ -36,10 +36,9 @@ export default function YourWordsWindow({
       onClose={onClose}
       actionsRight={
         <Button
+          icon={<ExternalLink />} aria-label="Open Your words in a new tab"
           asChild
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7"
+          variant="quiet"
           title="Open Your words in a new tab"
         >
           <Link
@@ -47,9 +46,7 @@ export default function YourWordsWindow({
             target="_blank"
             rel="noopener noreferrer"
             aria-label="Open Your words in a new tab"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Link>
+          />
         </Button>
       }
       bodyClassName="bg-textured p-0"

@@ -165,7 +165,7 @@ function AiAssistModal({ isOpen, onClose, defaultTab, message }: AiAssistModalPr
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={onClose}>Save changes</Button>
+          <Button variant="primary" onClick={onClose}>Save changes</Button>
         </CredenzaFooter>
       </CredenzaContent>
     </Credenza>

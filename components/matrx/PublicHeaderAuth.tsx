@@ -81,19 +81,10 @@ export function PublicHeaderAuth() {
 
         {/* Dashboard Button */}
         <Button
+          variant="primary"
           onClick={() => router.push("/dashboard")}
-          size="sm"
           aria-label="Open dashboard"
-          className={cn(
-            PUBLIC_HEADER_ICON_BUTTON,
-            "gap-1.5 p-0 text-xs",
-            "bg-gradient-to-r from-blue-600 to-violet-600",
-            "hover:from-blue-700 hover:to-violet-700",
-            "text-white border-0",
-            "shadow-md shadow-blue-500/20",
-            "hover:shadow-lg hover:shadow-blue-500/30",
-            "transition-all duration-300",
-          )}
+          className={PUBLIC_HEADER_ICON_BUTTON}
         >
           <LayoutDashboard className="h-3.5 w-3.5" />
         </Button>
@@ -104,21 +95,12 @@ export function PublicHeaderAuth() {
   // Not authenticated - show sign in button
   return (
     <Button
+      icon={<LogIn />}
+      variant="primary"
       onClick={() => router.push(loginHref)}
-      size="sm"
       aria-label="Sign in"
-      className={cn(
-        PUBLIC_HEADER_ICON_BUTTON,
-        "gap-1.5 p-0 text-xs sm:w-auto sm:px-3",
-        "bg-gradient-to-r from-blue-600 to-violet-600",
-        "hover:from-blue-700 hover:to-violet-700",
-        "text-white border-0",
-        "shadow-md shadow-blue-500/20",
-        "hover:shadow-lg hover:shadow-blue-500/30",
-        "transition-all duration-300",
-      )}
+      className={cn(PUBLIC_HEADER_ICON_BUTTON, "sm:w-auto")}
     >
-      <LogIn className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">Sign In</span>
     </Button>
   );

@@ -421,9 +421,8 @@ export function SavedViewBar<TDef>({
       )}
 
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        icon={<Plus />}
+        variant="quiet"
         disabled={!orgId || current === null}
         title={
           current === null
@@ -435,7 +434,6 @@ export function SavedViewBar<TDef>({
         }
         onClick={() => setSaveOpen(true)}
       >
-        <Plus className="h-3.5 w-3.5" />
         Save view
       </Button>
 
@@ -547,15 +545,14 @@ function SaveViewDialog({
         </div>
         <DialogFooter>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            variant="primary"
             onClick={() => void submit()}
             disabled={saving || !name.trim()}
           >

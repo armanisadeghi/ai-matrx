@@ -123,35 +123,26 @@ function TreeRow({
         <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-within:opacity-100">
           {node.level !== "subfeature" && (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              icon={<Plus />} aria-label={`Add ${childLevel}`}
+              variant="quiet"
               title={`Add ${childLevel}`}
               onClick={() =>
                 onOpenDialog({ mode: "create", parentId: node.id, level: childLevel })
               }
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </Button>
+            />
           )}
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            icon={<Pencil />} aria-label="Edit"
+            variant="quiet"
             title="Edit"
             onClick={() => onOpenDialog({ mode: "edit", node })}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-destructive hover:text-destructive"
+            icon={<Trash2 />} aria-label="Delete (refuses when anything still references the node)"
+            variant="quiet"
             title="Delete (refuses when anything still references the node)"
             onClick={() => onDelete(node)}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       </div>
       <AnimatePresence initial={false}>

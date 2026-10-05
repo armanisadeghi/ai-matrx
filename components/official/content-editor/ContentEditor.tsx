@@ -347,9 +347,8 @@ export function ContentEditor({
                 {headerActions.map((action) => (
                   <Button
                     key={action.id}
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0"
+                    variant="quiet"
+                    className="w-7"
                     onClick={() => handleActionClick(action)}
                     title={action.label}
                   >

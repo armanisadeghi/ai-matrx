@@ -203,7 +203,7 @@ export function RuleReviewWizard({
               Rejected rules come back rewritten after your next interview turn.
             </p>
             <Button
-              size="sm"
+              variant="primary"
               className="mt-2"
               onClick={() => onOpenChange(false)}
             >
@@ -293,16 +293,14 @@ export function RuleReviewWizard({
                   />
                   <div className="flex justify-end gap-2">
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       onClick={() => setRejecting(false)}
                       disabled={busy}
                     >
                       Cancel
                     </Button>
                     <Button
-                      size="sm"
-                      variant="destructive"
+                      variant="danger"
                       onClick={() => void reject()}
                       disabled={busy || !feedback.trim()}
                     >
@@ -326,20 +324,20 @@ export function RuleReviewWizard({
                 />
                 <div className="flex items-center gap-1">
                   <Button
-                    variant="ghost"
+                    icon={<ArrowLeft />}
+                    variant="quiet"
                     onClick={() => moveTo(index - 1)}
                     disabled={busy || index === 0}
                   >
-                    <ArrowLeft className="h-4 w-4" />
                     Back
                   </Button>
                   <Button
-                    variant="ghost"
+                    iconEnd={<ArrowRight />}
+                    variant="quiet"
                     onClick={() => moveTo(index + 1)}
                     disabled={busy || index >= queueIds.length - 1}
                   >
                     Next
-                    <ArrowRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>

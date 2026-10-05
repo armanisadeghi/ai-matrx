@@ -238,15 +238,16 @@ export function BulkApproveDialog({
 
         <DialogFooter>
           {outcomes ? (
-            <Button type="button" onClick={() => onOpenChange(false)}>
+            <Button variant="primary" type="button" onClick={() => onOpenChange(false)}>
               Done
             </Button>
           ) : (
             <>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="quiet" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
               <Button
+                variant="primary"
                 type="button"
                 disabled={busy || overCap || eligible.length === 0}
                 onClick={() => void commit()}

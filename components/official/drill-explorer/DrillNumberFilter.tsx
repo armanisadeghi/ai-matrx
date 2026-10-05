@@ -72,8 +72,7 @@ export function DrillNumberFilter({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="ghost" size="xs" className="gap-1" data-drill-explorer-number-filter>
-          <ListFilter className="h-3 w-3" /> Filter{mine.length > 0 ? ` (${mine.length})` : ""}
+        <Button icon={<ListFilter />} type="button" variant="quiet" data-drill-explorer-number-filter> Filter{mine.length > 0 ? ` (${mine.length})` : ""}
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-2 text-sm">
@@ -120,7 +119,7 @@ export function DrillNumberFilter({
             placeholder="1,000"
             className="h-7 w-20 rounded border border-border bg-background px-1 text-base lg:text-xs"
           />
-          <Button type="submit" size="xs" variant="secondary" disabled={value === null || typed.trim() === ""}>
+          <Button type="submit" variant="outline" disabled={value === null || typed.trim() === ""}>
             Add
           </Button>
         </form>

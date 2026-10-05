@@ -225,12 +225,11 @@ openUploader({
 
         <div className="flex items-center justify-between">
           <Button
+            icon={<AppWindow />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleOpenWindow}
           >
-            <AppWindow className="h-3.5 w-3.5 mr-1.5" />
             Open as floating window
           </Button>
           {result && (

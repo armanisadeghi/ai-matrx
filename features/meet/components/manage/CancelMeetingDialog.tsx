@@ -153,20 +153,20 @@ export function CancelMeetingDialog({
         </div>
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={busy}
           >
             Keep meeting
           </Button>
           <Button
-            variant="destructive"
+            icon={busy ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : null}
+            variant="danger"
             onClick={() => void run()}
             disabled={busy}
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : null}
             {series && occurrence && scope === "occurrence"
               ? "Cancel this occurrence"
               : "Cancel meeting"}

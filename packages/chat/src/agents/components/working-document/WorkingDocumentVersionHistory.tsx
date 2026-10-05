@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { NoteVersionHistoryPanel } from "../../../next/lazy/NoteVersionHistoryPanel";
 import { ChevronLeft, ChevronRight, Loader2, RotateCcw } from "lucide-react";
 import { DiffViewer } from "@ai-matrx/diff/react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { cn } from "@ai-matrx/design-system";
 import { useAppSelector } from "../../../store/hooks";
 import {
@@ -180,16 +180,15 @@ function DbVersionPanel({
         </span>
         {onApplySnapshot && selected && !selected.isCurrent && (
           <Button
+            icon={<RotateCcw />}
             type="button"
-            size="sm"
             variant="outline"
             disabled={resolving || selectedContent == null}
-            className="ml-auto h-7 gap-1 text-xs"
+            className="ml-auto"
             onClick={() => {
               if (selectedContent != null) onApplySnapshot(selectedContent);
             }}
           >
-            <RotateCcw className="h-3 w-3" />
             Restore
           </Button>
         )}

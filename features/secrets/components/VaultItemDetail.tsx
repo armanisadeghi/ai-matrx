@@ -376,9 +376,13 @@ export function VaultItemDetail({
         </div>
         {caps.can_edit && (
           <Button
-            size="sm"
-            variant={editingCredential ? "default" : "outline"}
-            className="h-7 shrink-0 rounded-full px-3"
+            icon={editingCredential ? (
+              <Check />
+            ) : (
+              <Pencil />
+            )}
+            variant={editingCredential ? "primary" : "outline"}
+            className="shrink-0"
             disabled={metadataBusy}
             onClick={() => {
               if (!editingCredential) {
@@ -395,11 +399,6 @@ export function VaultItemDetail({
               setEditingCredential((current) => !current);
             }}
           >
-            {editingCredential ? (
-              <Check className="mr-1.5 h-3.5 w-3.5" />
-            ) : (
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            )}
             {editingCredential ? "Done editing" : "Edit credential"}
           </Button>
         )}
@@ -472,9 +471,7 @@ export function VaultItemDetail({
               />
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs"
+                variant="quiet"
                 disabled={
                   metadataBusy ||
                   !newTagDraft.trim() ||
@@ -487,9 +484,7 @@ export function VaultItemDetail({
               {tagsDraft.length > 0 && (
                 <Button
                   type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 px-2 text-xs text-muted-foreground"
+                  variant="quiet"
                   disabled={metadataBusy}
                   onClick={() => setTagsDraft([])}
                 >
@@ -499,16 +494,13 @@ export function VaultItemDetail({
             </div>
           </div>
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-11 w-11 sm:h-9 sm:w-9"
+            icon={<Save />}
+            variant="quiet"
             aria-label="Save credential"
             title="Save credential"
             disabled={metadataBusy || !nameDraft.trim() || !credentialChanged}
             onClick={() => void saveCredential()}
-          >
-            <Save className="h-4 w-4" />
-          </Button>
+          />
         </div>
       )}
 
@@ -611,8 +603,7 @@ export function VaultItemDetail({
         {overflowActions.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8">
-                <MoreHorizontal className="mr-1.5 h-4 w-4" />
+              <Button icon={<MoreHorizontal />} variant="quiet">
                 More
               </Button>
             </DropdownMenuTrigger>
@@ -854,15 +845,15 @@ function AttachmentsSection({
           </div>
           <div className="flex justify-end">
             <Button
-              size="sm"
+              icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Upload />
+              )}
+              variant="primary"
               disabled={busy || !file || !label.trim()}
               onClick={() => void add()}
             >
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="mr-2 h-4 w-4" />
-              )}
               Encrypt and add file
             </Button>
           </div>
@@ -926,7 +917,11 @@ function AttachmentRow({
           )}
         </dl>
         <Button
-          size="sm"
+          icon={attachment.handling === "sealed" ? (
+            <Lock />
+          ) : (
+            <Download />
+          )}
           variant="outline"
           disabled={busy || !canDownload}
           title={
@@ -942,11 +937,6 @@ function AttachmentRow({
             )
           }
         >
-          {attachment.handling === "sealed" ? (
-            <Lock className="mr-1.5 h-3.5 w-3.5" />
-          ) : (
-            <Download className="mr-1.5 h-3.5 w-3.5" />
-          )}
           {attachment.handling === "sealed" ? "Sealed" : "Download"}
         </Button>
       </div>
@@ -1000,7 +990,6 @@ function AttachmentRow({
           </div>
           <div className="flex flex-wrap justify-end gap-2 sm:col-span-2">
             <Button
-              size="sm"
               variant="outline"
               disabled={
                 busy ||
@@ -1028,12 +1017,11 @@ function AttachmentRow({
               Save file details
             </Button>
             <Button
-              size="sm"
-              variant="destructive"
+              icon={<Trash2 />}
+              variant="danger"
               disabled={busy}
               onClick={() => setConfirmDelete(true)}
             >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
               Delete file
             </Button>
           </div>
@@ -1103,13 +1091,11 @@ function ActionToggle({
   const active = current === panel;
   return (
     <Button
-      size="sm"
-      variant="ghost"
+      icon={<Icon />}
+      variant="quiet"
       aria-pressed={active}
-      className={cn("h-8", active && "bg-accent text-accent-foreground")}
       onClick={() => setPanel(active ? "none" : panel)}
     >
-      <Icon className="mr-1.5 h-4 w-4" />
       {label}
     </Button>
   );
@@ -1255,29 +1241,25 @@ function FieldRow({
             onUse={(value) => setValueDraft(value)}
           />
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 shrink-0"
+            icon={<Save />}
+            variant="quiet"
+            className="shrink-0"
             disabled={busy || !valueDraft}
             onClick={() => void saveValue()}
             aria-label={`Save ${displayLabel}`}
             title="Save"
-          >
-            <Save className="h-4 w-4" />
-          </Button>
+          />
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8 shrink-0"
+            icon={<X />}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => {
               setValueDraft("");
               setEditingValue(false);
             }}
             aria-label={`Cancel editing ${displayLabel}`}
             title="Cancel"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          />
         </div>
       ) : (
         <SecretValue
@@ -1290,27 +1272,23 @@ function FieldRow({
             <>
               {field.editable && (
                 <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                  icon={<Pencil />}
+                  variant="quiet"
+                  className="shrink-0"
                   onClick={() => setEditingValue(true)}
                   aria-label={`Edit ${displayLabel}`}
                   title="Edit"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                />
               )}
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 shrink-0 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                icon={<Trash2 />}
+                variant="quiet"
+                className="shrink-0"
                 disabled={busy}
                 onClick={() => void actions.deleteField(item.id, field.id)}
                 aria-label={`Delete ${displayLabel}`}
                 title="Delete"
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </>
           )}
         </SecretValue>
@@ -1363,9 +1341,8 @@ function FieldRow({
               />
             </label>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
+              icon={<Save />}
+              variant="quiet"
               disabled={
                 busy ||
                 !metadataChanged ||
@@ -1374,9 +1351,7 @@ function FieldRow({
               onClick={() => void saveMetadata()}
               aria-label={`Save ${displayLabel} metadata`}
               title="Save runtime key and description"
-            >
-              <Save className="h-4 w-4" />
-            </Button>
+            />
           </div>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <label className="flex items-center gap-2 text-xs">
@@ -1574,7 +1549,12 @@ function AddFieldPanel({
             />
           </label>
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
+            variant="primary"
             disabled={busy || !valid}
             onClick={() =>
               void onAdd({
@@ -1590,11 +1570,6 @@ function AddFieldPanel({
               })
             }
           >
-            {busy ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="mr-2 h-4 w-4" />
-            )}
             Add field
           </Button>
         </div>
@@ -1661,7 +1636,7 @@ function RecoveryCodesSection({
       />
       <div className="flex justify-end">
         <Button
-          size="sm"
+          variant="primary"
           disabled={busy || !newCodes.trim()}
           onClick={async () => {
             await actions.addField(item.id, {
@@ -1735,16 +1710,15 @@ function StoredRecoveryCodes({
           <Badge variant="outline">Automation only</Badge>
         ) : (
           <Button
-            size="sm"
+            icon={secret.value === null ? (
+              <Eye />
+            ) : (
+              <EyeOff />
+            )}
             variant="outline"
             disabled={busy || secret.working || !secret.allowed}
             onClick={() => secret.toggle()}
           >
-            {secret.value === null ? (
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-            ) : (
-              <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-            )}
             {secret.value === null ? "Show codes" : "Hide codes"}
           </Button>
         )}
@@ -1761,21 +1735,19 @@ function StoredRecoveryCodes({
                 {code}
               </code>
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<Copy />}
+                variant="quiet"
                 onClick={() => void copyCode(code)}
               >
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
                 Copy
               </Button>
               {item.capabilities.can_edit && (
                 <Button
-                  size="sm"
+                  icon={<Check />}
                   variant="outline"
                   disabled={busy}
                   onClick={() => void markUsed(index)}
                 >
-                  <Check className="mr-1.5 h-3.5 w-3.5" />
                   Mark used
                 </Button>
               )}
@@ -1808,7 +1780,7 @@ function StoredRecoveryCodes({
           />
           <div className="flex justify-end">
             <Button
-              size="sm"
+              variant="primary"
               disabled={busy || !replacement.trim()}
               onClick={async () => {
                 secret.clear();
@@ -1941,9 +1913,7 @@ function AuthenticatorSection({ item }: { item: VaultItem }) {
               aria-label="Authenticator on"
             />
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-1.5 text-xs text-muted-foreground"
+              variant="quiet"
               disabled={working}
               onClick={() => setConfirmRemove(true)}
             >
@@ -1987,8 +1957,7 @@ function AuthenticatorSection({ item }: { item: VaultItem }) {
               className="h-7 flex-1 font-mono text-xs"
             />
             <Button
-              size="sm"
-              className="h-7 text-xs"
+              variant="primary"
               disabled={working || setupKey.trim().length === 0}
               onClick={enroll}
             >
@@ -2245,17 +2214,14 @@ function DestinationSection({
                   autoFocus
                 />
                 <Button
-                  size="sm"
-                  className="h-7"
+                  variant="primary"
                   disabled={busy || !urlDraft.trim()}
                   onClick={() => void addUrl(urlDraft)}
                 >
                   Add
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7"
+                  variant="quiet"
                   onClick={() => {
                     setAdding(false);
                     setUrlDraft("");
@@ -2289,13 +2255,11 @@ function DestinationSection({
             </div>
           ) : (
             <Button
-              size="sm"
+              icon={<Plus />}
               variant="outline"
-              className="h-7"
               onClick={() => setAdding(true)}
               disabled={busy}
             >
-              <Plus className="mr-1.5 h-3 w-3" />
               Add login URL
             </Button>
           )}
@@ -2312,17 +2276,16 @@ function DestinationSection({
                 fillable — the address becomes visible, unencrypted metadata.
               </p>
               <Button
-                size="sm"
+                icon={promoting === field.id ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Globe />
+                )}
                 variant="outline"
-                className="mt-1.5 h-7"
+                className="mt-1.5"
                 disabled={busy || promoting === field.id}
                 onClick={() => void promote(field)}
               >
-                {promoting === field.id ? (
-                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                ) : (
-                  <Globe className="mr-1.5 h-3 w-3" />
-                )}
                 Use as login URL
               </Button>
             </div>
@@ -2496,9 +2459,8 @@ function NotEncryptedSection({
                   placeholder={VAULT_LABELS.value}
                 />
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
+                  icon={<X />}
+                  variant="quiet"
                   onClick={() =>
                     setDetailDrafts((current) =>
                       current.filter(
@@ -2507,13 +2469,12 @@ function NotEncryptedSection({
                     )
                   }
                 >
-                  <X className="mr-1.5 h-3.5 w-3.5" />
                   Remove
                 </Button>
               </div>
             ))}
             <Button
-              size="sm"
+              icon={<Plus />}
               variant="outline"
               onClick={() =>
                 setDetailDrafts((current) => [
@@ -2526,13 +2487,12 @@ function NotEncryptedSection({
                 ])
               }
             >
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
               Add other detail
             </Button>
           </div>
           <div className="flex justify-end">
             <Button
-              size="sm"
+              variant="primary"
               disabled={busy}
               onClick={async () => {
                 const next = draft.trim();
@@ -2696,7 +2656,6 @@ function SharePanel({
               </SelectContent>
             </Select>
             <Button
-              size="sm"
               variant="outline"
               disabled={busy || !orgTarget}
               onClick={() => void shareToOrganization()}
@@ -2736,7 +2695,6 @@ function SharePanel({
                 className="h-8 text-xs"
               />
               <Button
-                size="sm"
                 variant="outline"
                 disabled={busy || !email.trim()}
                 onClick={() => void addRecipient()}
@@ -2895,16 +2853,15 @@ function GiveOwnershipPanel({
       </div>
       <div className="flex justify-end">
         <Button
-          size="sm"
-          variant="destructive"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ArrowLeftRight />
+          )}
+          variant="danger"
           disabled={busy || !email.trim()}
           onClick={() => setConfirming(true)}
         >
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <ArrowLeftRight className="mr-2 h-4 w-4" />
-          )}
           Give ownership
         </Button>
       </div>
@@ -2977,7 +2934,8 @@ function PrincipalPicker({
           </SelectContent>
         </Select>
         <Button
-          size="sm"
+          icon={busy ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           disabled={busy || !target}
           onClick={() =>
             void onSubmit(
@@ -2987,7 +2945,6 @@ function PrincipalPicker({
             )
           }
         >
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
           {verb}
         </Button>
       </div>

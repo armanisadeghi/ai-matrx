@@ -507,25 +507,22 @@ export function IntakeCaptureScreenV3({
           ),
           shutterTrailing: qrMode ? (
             <Button
-              size="sm"
-              className="h-9 whitespace-nowrap rounded-full px-3 text-xs"
+              icon={<PackagePlus />}
+              variant="primary"
               onClick={session.nextItem}
               disabled={currentAsset === null || host.recording}
             >
-              <PackagePlus className="mr-1 h-3.5 w-3.5" />
               Next
             </Button>
           ) : (
             <Button
-              size="sm"
-              variant="secondary"
-              className="h-9 whitespace-nowrap rounded-full px-3 text-xs"
+              icon={<Scissors />}
+              variant="outline"
               onClick={() =>
                 host.capturePhotoWith({ fileNamePrefix: "delineator" })
               }
               disabled={host.recording || host.cameraBlocked}
             >
-              <Scissors className="mr-1 h-3.5 w-3.5" />
               Break
             </Button>
           ),

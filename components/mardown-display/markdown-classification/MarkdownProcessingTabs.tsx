@@ -122,7 +122,7 @@ const MarkdownProcessingTabs = ({
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full p-4 text-center">
                             <p className="text-gray-500 dark:text-gray-400 mb-4">Click "Parse Markdown" to see the structured view</p>
-                            <Button onClick={onParse}>Parse Markdown</Button>
+                            <Button variant="primary" onClick={onParse}>Parse Markdown</Button>
                         </div>
                     )}
                 </TabsContent>

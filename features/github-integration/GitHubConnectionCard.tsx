@@ -187,22 +187,20 @@ export function GitHubConnectionCard({
           Don&apos;t see the repos you want?
         </p>
         <Button
+          icon={github.busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )} iconEnd={<ArrowUpRight />}
           variant="outline"
-          size="sm"
-          className="h-11 max-w-full px-2 text-sm sm:h-7"
+          className="max-w-full"
           onClick={() => void github.install()}
           disabled={github.busy || github.loading}
         >
-          {github.busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
-          )}
           <span className="sm:hidden">Add repository access</span>
           <span className="hidden sm:inline">
             Add an organization or more repositories
           </span>
-          <ArrowUpRight className="h-3 w-3" />
         </Button>
       </div>
       <p className="mt-1 text-[11px] leading-tight text-muted-foreground">
@@ -312,44 +310,39 @@ export function GitHubConnectionCard({
             {connected ? (
               <>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-11 sm:h-8"
-                  onClick={() => void github.sync()}
-                  disabled={github.busy}
-                >
-                  <RefreshCw
+                  icon={<RefreshCw
                     className={
                       github.busy ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"
                     }
-                  />
+                  />}
+                  variant="outline"
+                  onClick={() => void github.sync()}
+                  disabled={github.busy}
+                >
                   Refresh
                 </Button>
               </>
             ) : (
               <Button
-                size="sm"
-                className="h-11 sm:h-8"
+                icon={github.busy ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <GitBranch />
+                )}
+                variant="primary"
                 onClick={() => void github.connect()}
                 disabled={github.loading || github.busy}
-              >
-                {github.busy ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <GitBranch className="h-3.5 w-3.5" />
-                )}{" "}
+              >{" "}
                 {connection ? "Reconnect GitHub" : "Connect GitHub"}
               </Button>
             )}
             {connection && !compact && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-11 sm:h-8"
+                icon={<Unplug />}
+                variant="quiet"
                 onClick={() => void handleDisconnect()}
                 disabled={github.loading || github.busy}
-              >
-                <Unplug className="h-3.5 w-3.5" /> Disconnect
+              > Disconnect
               </Button>
             )}
           </div>

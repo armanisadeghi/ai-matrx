@@ -165,7 +165,7 @@ function TileBar({ children, actions }: { children: ReactNode; actions?: ReactNo
 
 function DoorButton({ href, children, primary }: { href: string; children: ReactNode; primary?: boolean }) {
   return (
-    <Button asChild size="sm" variant={primary ? "default" : "outline"} className="h-7 gap-1 px-2 text-xs">
+    <Button asChild variant={primary ? "primary" : "outline"}>
       <Link href={href}>{children}</Link>
     </Button>
   );
@@ -241,7 +241,7 @@ export function RecordList<T>({
         <ArchivedDisclosure count={archivedCount} open={showArchived} onOpenChange={setShowArchived} />
       ) : null}
       <div className="flex justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>
@@ -423,8 +423,7 @@ function WarRoomDraftBody({ onSource }: ItemBodyProps) {
         Several threads of work, side by side.
       </p>
       <div className="flex justify-end">
-        <Button type="submit" disabled={busy} className="gap-1.5">
-          {busy ? <Loader2 className="size-4 animate-spin" /> : null}
+        <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" type="submit" disabled={busy}>
           Create War Room
         </Button>
       </div>
@@ -707,7 +706,7 @@ function WorkflowRunStartPicker({ onPick, onCancel }: PickerProps) {
         />
       ) : (
         <div className="flex justify-end">
-          <Button type="button" variant="ghost" onClick={onCancel}>
+          <Button type="button" variant="quiet" onClick={onCancel}>
             Cancel
           </Button>
         </div>
@@ -920,7 +919,7 @@ function ProjectPickerPanel({ onPick, onCancel }: PickerProps) {
         }}
       />
       <div className="flex justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>

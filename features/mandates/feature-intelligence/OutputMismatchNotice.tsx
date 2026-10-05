@@ -119,16 +119,14 @@ export function OutputMismatchNotice({
         </span>
       </p>
       <span className="flex shrink-0 items-center gap-1.5">
-        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={onPickAnother}>
+        <Button variant="outline" onClick={onPickAnother}>
           Pick another
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs"
+          icon={<Wand2 />}
+          variant="quiet"
           onClick={() => void announceComingSoon("mandates.fix-output-mismatch-with-ai")}
         >
-          <Wand2 className="mr-1 h-3.5 w-3.5" />
           Fix with AI
           <span className="ml-1 rounded bg-muted px-1 text-[10px] text-muted-foreground">Soon</span>
         </Button>

@@ -359,13 +359,11 @@ export function AiVisibilityPanelsView({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {!designing ? (
-            <Button size="sm" onClick={() => setDesigning(true)}>
-              <ClipboardList className="h-3.5 w-3.5" /> Design a panel
+            <Button icon={<ClipboardList />} variant="primary" onClick={() => setDesigning(true)}> Design a panel
             </Button>
           ) : null}
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             aria-label="Reload panels"
             onClick={() => void load()}
             disabled={isLoading}
@@ -387,8 +385,7 @@ export function AiVisibilityPanelsView({
               sure each number is.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button size="sm" onClick={() => setDesigning(true)}>
-                <ClipboardList className="h-3.5 w-3.5" /> Design a panel
+              <Button icon={<ClipboardList />} variant="primary" onClick={() => setDesigning(true)}> Design a panel
               </Button>
               <span>
                 Or ask one question right now with the{" "}

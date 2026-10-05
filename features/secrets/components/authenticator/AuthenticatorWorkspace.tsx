@@ -132,14 +132,12 @@ function EntryRow({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<EllipsisVertical />}
+            variant="quiet"
             disabled={busy}
-            className="col-start-3 row-start-1 h-11 w-11 sm:col-start-4"
+            className="col-start-3 row-start-1 sm:col-start-4"
             aria-label={`Manage ${title}`}
-          >
-            <EllipsisVertical className="h-5 w-5" />
-          </Button>
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-52">
           <DropdownMenuItem asChild className="h-11 gap-2">
@@ -261,12 +259,12 @@ export function AuthenticatorWorkspace() {
               </div>
             )}
             <Button
+              icon={<Plus />}
               onClick={() => setEnrollOpen(true)}
               disabled={busy || !websiteDefinition}
               variant="outline"
-              className="h-11 shrink-0 gap-1.5 px-3"
+              className="shrink-0"
             >
-              <Plus className="h-4 w-4" />
               Add
             </Button>
           </div>
@@ -281,8 +279,7 @@ export function AuthenticatorWorkspace() {
           ) : error ? (
             <div className="flex items-center justify-between gap-3 border-b border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:border-x">
               <span>{error}</span>
-              <Button variant="ghost" size="sm" onClick={refresh}>
-                <RefreshCw className="h-4 w-4" />
+              <Button icon={<RefreshCw />} variant="quiet" onClick={refresh}>
                 Retry
               </Button>
               <ErrorAlchemyMenu error={error} />
@@ -299,11 +296,12 @@ export function AuthenticatorWorkspace() {
             <div className="px-5 py-14 text-center sm:rounded-b-xl sm:border-x sm:border-b sm:bg-card">
               <p className="font-medium text-foreground">No codes yet</p>
               <Button
-                className="mt-4 h-11 gap-1.5"
+                icon={<Plus />}
+                variant="primary"
+                className="mt-4"
                 onClick={() => setEnrollOpen(true)}
                 disabled={busy || !websiteDefinition}
               >
-                <Plus className="h-4 w-4" />
                 Add authenticator
               </Button>
             </div>

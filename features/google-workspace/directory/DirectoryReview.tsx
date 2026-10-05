@@ -215,15 +215,16 @@ function DirectoryReviewBodyInner({
           className="min-w-0 flex-1"
         />
         <Button
-          className="min-h-11 shrink-0"
+          icon={loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <UsersRound />
+          )}
+          variant="primary"
+          className="shrink-0"
           disabled={!connectionId || loading}
           onClick={() => void load()}
         >
-          {loading ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <UsersRound className="mr-2 h-4 w-4" />
-          )}
           Preview directory
         </Button>
       </div>
@@ -237,11 +238,10 @@ function DirectoryReviewBodyInner({
           actions={
             failedSource ? (
               <Button
+                icon={<RefreshCw />}
                 variant="outline"
-                size="sm"
                 onClick={() => void load(failedSource)}
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
                 Try again
               </Button>
             ) : null
@@ -365,7 +365,6 @@ export function DirectoryReview({
           actions={
             <Button
               variant="outline"
-              size="sm"
               onClick={() => void inventory.refetch()}
             >
               Try again

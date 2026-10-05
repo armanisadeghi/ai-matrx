@@ -42,14 +42,12 @@ function MobileTaskDetailsLoader({
     <div className="flex h-full flex-col bg-background">
       <div className="flex h-[68px] shrink-0 items-center gap-3 border-b border-border bg-card px-3">
         <Button
-          variant="ghost"
-          size="icon"
+          icon={<ChevronLeft />}
+          variant="quiet"
           onClick={onBack}
           aria-label="Back to tasks"
-          className="h-11 w-11 shrink-0 rounded-full"
-        >
-          <ChevronLeft className="h-[18px] w-[18px]" />
-        </Button>
+          className="shrink-0"
+        />
         <Skeleton className="h-5 w-48 max-w-[60vw]" />
       </div>
       <div className="flex-1 space-y-5 overflow-y-auto p-4" role="status">

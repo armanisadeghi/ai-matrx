@@ -287,9 +287,8 @@ const MyFilesRoot: React.FC<MyFilesRootProps> = ({
           <span className="min-w-0 flex-1 truncate">My Files</span>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 shrink-0 rounded-sm p-0 lg:hidden"
+            variant="quiet"
+            className="w-11 shrink-0 lg:hidden"
             aria-label="Actions for My Files"
             aria-haspopup="menu"
             onClick={(event) => {

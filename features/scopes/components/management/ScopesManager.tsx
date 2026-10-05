@@ -280,16 +280,14 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
 
           <div className="flex items-center justify-center gap-2 pt-2">
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<Plus />}
+              variant="quiet"
               onClick={() => setAddScopeOpen(true)}
-              className="text-muted-foreground hover:text-foreground"
             >
-              <Plus className="h-4 w-4 mr-1.5" />
               Add Scope Type
             </Button>
             <span className="text-muted-foreground/50">·</span>
-            <Button asChild variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+            <Button asChild variant="quiet">
               <Link href={TEMPLATE_GALLERY_HREF} data-templates-entry="">
                 <LayoutTemplate className="h-4 w-4 mr-1.5" />
                 Add from template
@@ -299,12 +297,10 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
               <>
                 <span className="text-muted-foreground/50">·</span>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<ArrowUpDown />}
+                  variant="quiet"
                   onClick={() => setReorderTypesOpen(true)}
-                  className="text-muted-foreground hover:text-foreground"
                 >
-                  <ArrowUpDown className="h-4 w-4 mr-1.5" />
                   Reorder types
                 </Button>
               </>
@@ -352,11 +348,10 @@ export function ScopesManager({ organization, role }: ScopesManagerProps) {
             </div>
             {canManage && (
               <Button
+                icon={<Undo2 />}
                 variant="outline"
-                size="sm"
                 onClick={() => setRestoreTarget(row)}
               >
-                <Undo2 className="h-3.5 w-3.5 mr-1.5" />
                 Restore
               </Button>
             )}

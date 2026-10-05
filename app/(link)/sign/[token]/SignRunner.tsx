@@ -160,13 +160,13 @@ export function SignRunner({
           {error ? <p className="text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p> : null}
           <div className="flex gap-2">
             <Button
-              variant="destructive"
+              variant="danger"
               disabled={busy}
               onClick={() => void send({ action: "decline", reason: reason.trim() || null })}
             >
               {busy ? "Sending…" : "Decline to sign"}
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={() => setDeclining(false)}>
+            <Button variant="quiet" disabled={busy} onClick={() => setDeclining(false)}>
               Back
             </Button>
           </div>
@@ -175,18 +175,16 @@ export function SignRunner({
         <div className="flex flex-col gap-3">
           <div className="flex gap-2">
             <Button
-              variant={mark === "typed" ? "secondary" : "ghost"}
-              size="sm"
+              icon={<TypeIcon aria-hidden />}
+              variant={mark === "typed" ? "outline" : "quiet"}
               onClick={() => setMark("typed")}
-            >
-              <TypeIcon className="size-4" aria-hidden /> Type it
+            > Type it
             </Button>
             <Button
-              variant={mark === "drawn" ? "secondary" : "ghost"}
-              size="sm"
+              icon={<PenLine aria-hidden />}
+              variant={mark === "drawn" ? "outline" : "quiet"}
               onClick={() => setMark("drawn")}
-            >
-              <PenLine className="size-4" aria-hidden /> Draw it
+            > Draw it
             </Button>
           </div>
 
@@ -219,6 +217,7 @@ export function SignRunner({
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
+              variant="primary"
               disabled={!ready || busy}
               onClick={() =>
                 void send({
@@ -231,7 +230,7 @@ export function SignRunner({
             >
               {busy ? "Signing…" : "Sign this document"}
             </Button>
-            <Button variant="ghost" disabled={busy} onClick={() => setDeclining(true)}>
+            <Button variant="quiet" disabled={busy} onClick={() => setDeclining(true)}>
               I do not want to sign this
             </Button>
           </div>
@@ -334,7 +333,7 @@ function DrawPad({
     <div className="flex flex-col gap-2">
       <div className="flex items-baseline justify-between">
         <span className="text-sm font-medium">Draw your signature</span>
-        <Button variant="ghost" size="sm" onClick={clear}>
+        <Button variant="quiet" onClick={clear}>
           Clear
         </Button>
       </div>

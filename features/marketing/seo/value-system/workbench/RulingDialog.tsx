@@ -168,15 +168,15 @@ export function RulingDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+          <Button variant="quiet" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
           <Button
-            size="sm"
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
             disabled={busy || (!clearing && !tier)}
             onClick={() => onApply(clearing ? null : tier, notes.trim())}
           >
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             {clearing
               ? `Clear ${count === 1 ? "ruling" : `${count} rulings`}`
               : `Apply to ${count === 1 ? "1 keyword" : `${count} keywords`}`}

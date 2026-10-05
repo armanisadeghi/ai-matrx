@@ -165,8 +165,6 @@ export function FilesystemPropertiesDialog({
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
                         disabled={sizeBusy}
                         onClick={() => void handleCalculateSize()}
                       >

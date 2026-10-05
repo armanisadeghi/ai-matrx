@@ -9,6 +9,7 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -143,12 +144,13 @@ export function ListEditor({
           }}
         />
         <Button
+          icon={<Plus />}
+          variant="primary"
           type="button"
           onClick={commitAdd}
           disabled={items.length >= MAX_LIST_ITEMS}
           className="flex-none"
         >
-          <Plus className="h-4 w-4" />
           {items.length >= MAX_LIST_ITEMS ? "Limit reached" : "Add"}
         </Button>
       </div>
@@ -198,73 +200,57 @@ export function ListEditor({
                     }}
                   />
                   <Button
+                    icon={<Check className="text-emerald-500" />}
                     type="button"
-                    size="icon"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={commitEdit}
                     aria-label="Save"
-                  >
-                    <Check className="h-4 w-4 text-emerald-500" />
-                  </Button>
+                  />
                   <Button
+                    icon={<X />}
                     type="button"
-                    size="icon"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => setEditingIndex(null)}
                     aria-label="Cancel"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+                  />
                 </div>
               ) : (
                 <>
                   <div className="flex-1 break-words text-sm leading-relaxed"><RichContent source={text ?? ""} level="standard" /></div>
                   <div className="flex flex-none items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 print:hidden">
                     <Button
+                      icon={<ArrowUp />}
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
+                      variant="quiet"
                       disabled={i === 0}
                       onClick={() => onMove(i, -1)}
                       aria-label="Move up"
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                     <Button
+                      icon={<ArrowDown />}
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
+                      variant="quiet"
                       disabled={i === items.length - 1}
                       onClick={() => onMove(i, 1)}
                       aria-label="Move down"
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                     <Button
+                      icon={<Pencil />}
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
+                      variant="quiet"
                       onClick={() => {
                         setEditingIndex(i);
                         setEditingText(text);
                       }}
                       aria-label="Edit"
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                     <Button
+                      icon={<Trash2 />}
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 hover:text-destructive"
+                      variant="quiet"
                       onClick={() => onRemove(i)}
                       aria-label="Delete"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                 </>
               )}
@@ -289,7 +275,7 @@ export function RatingScale({
       {([1, 2, 3, 4, 5] as RatingValue[]).map((v) => {
         const selected = value === v;
         return (
-          <Button
+          <SurfaceButton
             key={v}
             type="button"
             variant="outline"
@@ -305,7 +291,7 @@ export function RatingScale({
             )}
           >
             {v}
-          </Button>
+          </SurfaceButton>
         );
       })}
     </div>

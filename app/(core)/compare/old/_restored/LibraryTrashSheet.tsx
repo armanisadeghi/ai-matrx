@@ -216,30 +216,26 @@ export function LibraryTrashSheet({
                       </div>
                     </div>
                     <Button
-                      size="sm"
+                      icon={busy ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <ArchiveRestore />
+                      )}
                       variant="outline"
-                      className="h-7 gap-1 px-2 text-xs"
                       disabled={busy}
                       onClick={() => handleRestore(row)}
                     >
-                      {busy ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <ArchiveRestore className="h-3.5 w-3.5" />
-                      )}
                       {isFamily ? "Restore file" : "Restore"}
                     </Button>
                     {!isFamily && (
                       // Family rows purge together via the file — the RPC
                       // rejects per-doc purge for them, so no button.
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
+                        icon={<Trash2 />}
+                        variant="quiet"
                         disabled={busy}
                         onClick={() => handlePurge(group)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
                         Purge
                       </Button>
                     )}

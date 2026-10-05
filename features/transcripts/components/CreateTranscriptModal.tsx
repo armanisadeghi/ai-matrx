@@ -10,7 +10,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -503,7 +503,7 @@ export function CreateTranscriptModal({
               <p className="text-sm text-muted-foreground text-center mb-4">
                 Choose how you'd like to create your transcript:
               </p>
-              <Button
+              <SurfaceButton
                 onClick={() => {
                   setInputMethod("upload");
                   setStep("upload");
@@ -518,8 +518,8 @@ export function CreateTranscriptModal({
                     Upload an audio or video file
                   </div>
                 </div>
-              </Button>
-              <Button
+              </SurfaceButton>
+              <SurfaceButton
                 onClick={() => {
                   setInputMethod("record");
                   setStep("record");
@@ -534,7 +534,7 @@ export function CreateTranscriptModal({
                     Record directly in your browser
                   </div>
                 </div>
-              </Button>
+              </SurfaceButton>
             </div>
           )}
 
@@ -546,10 +546,8 @@ export function CreateTranscriptModal({
                   Upload an audio or video file
                 </p>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => setStep("choose")}
-                  className="text-xs"
                 >
                   ← Back
                 </Button>
@@ -574,10 +572,8 @@ export function CreateTranscriptModal({
                   Record audio directly
                 </p>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => setStep("choose")}
-                  className="text-xs"
                 >
                   ← Back
                 </Button>
@@ -779,13 +775,13 @@ export function CreateTranscriptModal({
                       Go Back
                     </Button>
                     <Button
-                      variant="default"
+                      icon={isSaving && (
+                        <Loader2 className="animate-spin" />
+                      )}
+                      variant="primary"
                       onClick={handleSaveWithoutTranscription}
                       disabled={isSaving}
                     >
-                      {isSaving && (
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                      )}
                       Save Without Transcription
                     </Button>
                   </div>
@@ -840,33 +836,34 @@ export function CreateTranscriptModal({
 
         <DialogFooter>
           {(step === "upload" || step === "record") && (
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="quiet" onClick={onClose}>
               Cancel
             </Button>
           )}
           {step === "details" && (
             <>
-              <Button variant="ghost" onClick={() => setStep("upload")}>
+              <Button variant="quiet" onClick={() => setStep("upload")}>
                 Back
               </Button>
               <div className="flex gap-2">
                 <Button
+                  icon={isSaving && (
+                    <Loader2 className="animate-spin" />
+                  )}
                   variant="outline"
                   onClick={handleSaveWithoutTranscription}
                   disabled={isSaving}
                   className="min-w-[120px]"
                 >
-                  {isSaving && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
                   Upload Only
                 </Button>
                 <Button
+                  icon={<FileAudio />}
+                  variant="primary"
                   onClick={handleStartProcessing}
                   disabled={isSaving}
                   className="min-w-[160px]"
                 >
-                  <FileAudio className="mr-2 h-4 w-4" />
                   Upload & Transcribe
                 </Button>
               </div>
@@ -874,15 +871,16 @@ export function CreateTranscriptModal({
           )}
           {step === "preview" && (
             <>
-              <Button variant="ghost" onClick={onClose}>
+              <Button variant="quiet" onClick={onClose}>
                 Close (Draft Saved)
               </Button>
               <Button
+                icon={isSaving && <Loader2 className="animate-spin" />}
+                variant="primary"
                 onClick={handleFinalizeDraft}
                 disabled={isSaving}
                 className="min-w-[140px]"
               >
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Finalize Transcript
               </Button>
             </>

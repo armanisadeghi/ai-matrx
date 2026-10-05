@@ -40,7 +40,7 @@ import {
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import EditableProjectName from "./EditableProjectName";
 import TaskScopeFilter from "./TaskScopeFilter";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { ReadFailure } from "@/components/read-state/ReadFailure";

@@ -27,7 +27,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { PunchKind } from "@/features/hr/time/api/types";
 import { punchKindPresentation } from "@/features/hr/time/clock/punchVocabulary";
 

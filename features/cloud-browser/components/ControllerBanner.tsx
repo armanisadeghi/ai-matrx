@@ -145,8 +145,7 @@ export function ControllerBanner({
           Please wait while we tell your agent you&apos;re taking over.
         </span>
         {onTakeImmediately ? (
-          <Button size="sm" variant="outline" onClick={onTakeImmediately}>
-            <Zap className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<Zap />} variant="outline" onClick={onTakeImmediately}>
             Take over immediately
           </Button>
         ) : null}
@@ -179,27 +178,24 @@ export function ControllerBanner({
       <div className="flex items-center gap-2">
         {kind === "human" && isMe ? (
           <Button
-            size="sm"
-            variant={pendingRequestFrom ? "default" : "outline"}
+            icon={<LogOut />}
+            variant={pendingRequestFrom ? "primary" : "outline"}
             onClick={onReturn}
             disabled={busy || returnGuarded}
           >
-            <LogOut className="mr-1.5 h-3.5 w-3.5" />
             Return control
           </Button>
         ) : kind === "human" && !isMe ? (
           <Button
-            size="sm"
+            icon={<Hand />}
             variant="outline"
             onClick={onRequest}
             disabled={busy || !onRequest}
           >
-            <Hand className="mr-1.5 h-3.5 w-3.5" />
             Request control
           </Button>
         ) : canTake ? (
-          <Button size="sm" onClick={onTake} disabled={busy}>
-            <MousePointerClick className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<MousePointerClick />} variant="primary" onClick={onTake} disabled={busy}>
             Take control
           </Button>
         ) : null}

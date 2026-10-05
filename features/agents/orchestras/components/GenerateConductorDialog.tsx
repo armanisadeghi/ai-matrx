@@ -130,11 +130,10 @@ export function GenerateConductorDialog({ open, onOpenChange }: GenerateConducto
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => handleOpenChange(false)} disabled={creating}>
+          <Button variant="quiet" onClick={() => handleOpenChange(false)} disabled={creating}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={creating} className="gap-1.5">
-            {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Network className="h-4 w-4" />}
+          <Button icon={creating ? <Loader2 className="animate-spin" /> : <Network />} variant="primary" onClick={handleCreate} disabled={creating}>
             Create &amp; open builder
           </Button>
         </DialogFooter>

@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/styles/themes/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
@@ -298,8 +299,8 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
         </div>
         <Button
           type="button"
-          variant="secondary"
-          className="h-11 w-11 shrink-0 rounded-full p-0"
+          variant="outline"
+          className="w-11 shrink-0"
           aria-label="Close demo player"
           onClick={() => setActionsOpen(false)}
         >
@@ -349,8 +350,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             <Button
               key={grade}
               type="button"
-              variant={reviewed[card.id] === grade ? "default" : "outline"}
-              className="h-11 capitalize"
+              variant={reviewed[card.id] === grade ? "primary" : "outline"}
               onClick={() =>
                 setReviewed((value) => ({ ...value, [card.id]: grade }))
               }
@@ -377,7 +377,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
         </div>
 
         <div className="mt-2 grid grid-cols-4 border-t border-border">
-          <Button
+          <SurfaceButton
             type="button"
             variant="ghost"
             className="h-14 rounded-none"
@@ -386,8 +386,8 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             aria-label="Previous card"
           >
             <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <Button
+          </SurfaceButton>
+          <SurfaceButton
             type="button"
             variant="ghost"
             className="h-14 rounded-none"
@@ -395,8 +395,8 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             aria-label="Flip card"
           >
             <RotateCcw className="h-5 w-5" />
-          </Button>
-          <Button
+          </SurfaceButton>
+          <SurfaceButton
             type="button"
             variant="ghost"
             className="h-14 rounded-none"
@@ -404,8 +404,8 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             aria-label="Reverse card order"
           >
             <Shuffle className={cn("h-5 w-5", shuffled && "text-primary")} />
-          </Button>
-          <Button
+          </SurfaceButton>
+          <SurfaceButton
             type="button"
             variant="ghost"
             className="h-14 rounded-none"
@@ -414,7 +414,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             aria-label="Next card"
           >
             <ChevronRight className="h-5 w-5" />
-          </Button>
+          </SurfaceButton>
         </div>
 
         <button
@@ -452,19 +452,18 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
                 </p>
               </div>
               <Button
+                icon={<Volume2 />}
                 type="button"
                 variant="outline"
-                className="h-11 gap-2"
                 onClick={announceCard}
               >
-                <Volume2 className="h-4 w-4" />
                 Listen
               </Button>
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               {assistActions.map(({ kind, label, icon: Icon }) => (
-                <Button
+                <SurfaceButton
                   key={kind}
                   type="button"
                   variant={assistKind === kind ? "default" : "outline"}
@@ -473,7 +472,7 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
                 >
                   <Icon className="h-4 w-4" />
                   {label}
-                </Button>
+                </SurfaceButton>
               ))}
             </div>
 
@@ -519,8 +518,8 @@ function CanonicalFlashcardPlayer({ deck, style }: CanonicalPlayerProps) {
             </div>
             <Button
               type="button"
-              variant="ghost"
-              className="h-11 w-11 p-0"
+              variant="quiet"
+              className="w-11"
               onClick={() => setJumpOpen(false)}
               aria-label="Close card filmstrip"
             >
@@ -584,8 +583,7 @@ export default function CanonicalFlashcardsRefineDemoPage() {
                 <Button
                   key={item}
                   type="button"
-                  variant={source === item ? "default" : "ghost"}
-                  className="h-9 px-2.5 text-xs capitalize"
+                  variant={source === item ? "primary" : "quiet"}
                   onClick={() => setSource(item)}
                 >
                   {item}
@@ -598,19 +596,18 @@ export default function CanonicalFlashcardsRefineDemoPage() {
             >
               {(["focused", "embedded", "review"] as const).map((item) => (
                 <Button
+                  icon={item === "focused" ? (
+                    <Maximize2 />
+                  ) : item === "embedded" ? (
+                    <Minimize2 />
+                  ) : (
+                    <CircleHelp />
+                  )}
                   key={item}
                   type="button"
-                  variant={displayStyle === item ? "default" : "ghost"}
-                  className="h-9 gap-1.5 px-2.5 text-xs capitalize"
+                  variant={displayStyle === item ? "primary" : "quiet"}
                   onClick={() => setDisplayStyle(item)}
                 >
-                  {item === "focused" ? (
-                    <Maximize2 className="h-3.5 w-3.5" />
-                  ) : item === "embedded" ? (
-                    <Minimize2 className="h-3.5 w-3.5" />
-                  ) : (
-                    <CircleHelp className="h-3.5 w-3.5" />
-                  )}
                   <span className="hidden sm:inline">{item}</span>
                 </Button>
               ))}

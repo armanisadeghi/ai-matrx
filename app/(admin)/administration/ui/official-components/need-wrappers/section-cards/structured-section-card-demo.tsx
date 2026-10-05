@@ -27,12 +27,10 @@ export default function StructuredSectionCardDemo() {
           title="Project Settings"
           description="Configure your project properties and options"
           headerActions={[
-            <Button key="settings" size="sm" variant="outline">
-              <Settings className="h-4 w-4 mr-2" />
+            <Button icon={<Settings />} type="submit" key="settings" variant="outline">
               Settings
             </Button>,
-            <Button key="new" size="sm" variant="default">
-              <Plus className="h-4 w-4 mr-2" />
+            <Button icon={<Plus />} type="submit" key="new" variant="primary">
               New Project
             </Button>
           ]}
@@ -50,15 +48,13 @@ export default function StructuredSectionCardDemo() {
           title="Step 2: User Details"
           description="Enter user information to continue"
           footerLeft={
-            <Button variant="outline" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+            <Button icon={<ArrowLeft />} type="submit" variant="outline">
               Previous
             </Button>
           }
           footerRight={
-            <Button size="sm">
+            <Button iconEnd={<ArrowRight />} type="submit" variant="primary">
               Next
-              <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
           }
         >
@@ -75,22 +71,18 @@ export default function StructuredSectionCardDemo() {
           title="Document Editor"
           description="Edit document properties and content"
           headerActions={[
-            <Button key="edit" size="sm" variant="ghost">
-              <Edit className="h-4 w-4 mr-2" />
+            <Button icon={<Edit />} type="submit" key="edit" variant="quiet">
               Edit
             </Button>,
-            <Button key="download" size="sm" variant="outline">
-              <Download className="h-4 w-4 mr-2" />
+            <Button icon={<Download />} type="submit" key="download" variant="outline">
               Download
             </Button>,
-            <Button key="save" size="sm" variant="default">
-              <Save className="h-4 w-4 mr-2" />
+            <Button icon={<Save />} type="submit" key="save" variant="primary">
               Save
             </Button>
           ]}
           footerLeft={
-            <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 border-red-200 hover:border-red-400 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-900/20">
-              <Trash className="h-4 w-4 mr-2" />
+            <Button icon={<Trash />} type="submit" variant="outline">
               Delete
             </Button>
           }
@@ -100,8 +92,7 @@ export default function StructuredSectionCardDemo() {
             </div>
           }
           footerRight={
-            <Button size="sm" variant="default" className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800">
-              <Check className="h-4 w-4 mr-2" />
+            <Button icon={<Check />} type="submit" variant="primary">
               Publish
             </Button>
           }
@@ -120,13 +111,13 @@ export default function StructuredSectionCardDemo() {
             title="Mobile View"
             description="This card is constrained to a narrow width to demonstrate responsive behavior"
             headerActions={[
-              <Button key="action" size="sm" variant="default">
+              <Button type="submit" key="action" variant="primary">
                 <Plus className="h-4 w-4" />
               </Button>
             ]}
-            footerLeft={<Button size="sm" variant="outline">Cancel</Button>}
-            footerCenter={<Button size="sm" variant="secondary">Save Draft</Button>}
-            footerRight={<Button size="sm">Submit</Button>}
+            footerLeft={<Button type="submit" variant="outline">Cancel</Button>}
+            footerCenter={<Button type="submit" variant="outline">Save Draft</Button>}
+            footerRight={<Button type="submit" variant="primary">Submit</Button>}
           >
             <div className="py-6 text-center text-gray-500 dark:text-gray-400">
               Notice how the footer items stack on narrow screens

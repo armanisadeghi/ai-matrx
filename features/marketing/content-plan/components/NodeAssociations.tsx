@@ -197,8 +197,7 @@ function TopicSection({
         </h4>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-6 px-1.5 text-xs">
-              <Plus className="mr-1 h-3 w-3" /> Add
+            <Button icon={<Plus />} variant="quiet"> Add
             </Button>
           </PopoverTrigger>
           <PopoverContent sizing="content" className="p-2" align="end">
@@ -433,8 +432,8 @@ function EntitySection({
           </div>
         ) : null}
         <Button
-          size="sm"
-          className="h-7 text-xs"
+          icon={<Plus />}
+          variant="primary"
           disabled={
             !target || (effectiveRole === "reviewed_by" && !reviewDate)
           }
@@ -450,8 +449,7 @@ function EntitySection({
             setReviewDate("");
             setNotes("");
           }}
-        >
-          <Plus className="mr-1 h-3 w-3" /> Attach
+        > Attach
         </Button>
         {effectiveRole === "reviewed_by" ? (
           <p className="text-[11px] text-muted-foreground">

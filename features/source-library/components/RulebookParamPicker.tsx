@@ -157,27 +157,27 @@ export function RulebookParamPicker({
                                 }
                             />
                             <Button
+                                icon={creating ? (
+                                    <Loader2 className="animate-spin" aria-hidden />
+                                ) : (
+                                    <Plus aria-hidden />
+                                )}
+                                variant="primary"
                                 type="button"
-                                className="h-11 shrink-0 gap-2"
+                                className="shrink-0"
                                 disabled={!newName.trim() || creating || !organizationId}
                                 onClick={() => void create()}
                             >
-                                {creating ? (
-                                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                                ) : (
-                                    <Plus className="size-4" aria-hidden />
-                                )}
                                 Create
                             </Button>
                         </div>
                     ) : (
                         <Button
+                            icon={<Plus aria-hidden />}
                             type="button"
-                            variant="ghost"
-                            className="h-11 gap-2 px-2 text-sm"
+                            variant="quiet"
                             onClick={() => setShowCreate(true)}
                         >
-                            <Plus className="size-4" aria-hidden />
                             Or make a new Rulebook
                         </Button>
                     )}

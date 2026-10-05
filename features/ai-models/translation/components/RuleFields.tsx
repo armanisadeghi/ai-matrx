@@ -11,18 +11,8 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import {
-  Button,
-  Input,
-  Label,
-  SegmentedControl,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
-} from "@ai-matrx/design-system";
+import { Input, Label, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import RuleValueInput from "@/features/ai-models/components/controls/RuleValueInput";
 import type { ControlRule } from "../../types";
@@ -191,9 +181,7 @@ export default function RuleFields({
               <Button
                 key={o.value}
                 type="button"
-                size="sm"
                 variant="outline"
-                className="h-7 text-xs"
                 onClick={() => setMode(o.value)}
               >
                 {o.label}
@@ -411,29 +399,24 @@ export default function RuleFields({
                       }}
                     />
                     <Button
+                      icon={<X />}
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
+                      variant="quiet"
                       aria-label="Remove cut-off"
                       onClick={() =>
                         setLadder(ladder.filter((_, j) => j !== i))
                       }
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                 ))}
                 <Button
+                  icon={<Plus />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 gap-1 px-2 text-xs"
+                  variant="quiet"
                   onClick={() =>
                     setLadder([...ladder, { lte: null, to: null }])
                   }
                 >
-                  <Plus className="h-3.5 w-3.5" />
                   Cut-off
                 </Button>
               </div>
@@ -467,15 +450,12 @@ export default function RuleFields({
                       }
                     />
                     <Button
+                      icon={<X />}
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
+                      variant="quiet"
                       aria-label={`Remove ${word}`}
                       onClick={() => setToNumber(word, undefined)}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </div>
                 ))}
                 <div className="flex items-center gap-2">
@@ -487,17 +467,15 @@ export default function RuleFields({
                     onChange={(e) => setNewWord(e.target.value)}
                   />
                   <Button
+                    icon={<Plus />}
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 gap-1 px-2 text-xs"
+                    variant="quiet"
                     disabled={!newWord.trim() || newWord.trim() in toNumber}
                     onClick={() => {
                       setToNumber(newWord.trim(), 0);
                       setNewWord("");
                     }}
                   >
-                    <Plus className="h-3.5 w-3.5" />
                     Value
                   </Button>
                 </div>

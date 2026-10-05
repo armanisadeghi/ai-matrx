@@ -40,8 +40,7 @@ export function SiteTopicalMapButton({
   }
   if (link.status === "loading") {
     return (
-      <Button variant="outline" className={className} disabled>
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+      <Button icon={<Loader2 className="animate-spin" aria-hidden />} type="submit" variant="outline" className={className} disabled>
         Finding this site&apos;s map…
       </Button>
     );

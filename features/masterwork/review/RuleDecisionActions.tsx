@@ -40,7 +40,7 @@ import {
   Pencil,
   XCircle,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import {
   REVIEW_VOCABULARY_LABELS,

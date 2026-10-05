@@ -4,6 +4,7 @@ import { useRef, useEffect } from 'react';
 import { X, Loader2, CheckCircle2, AlertCircle, Search, Download, Brain, Layers, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { PIPELINE_STEPS } from '../../constants';
 import type { ResearchStreamStep } from '../../types';
 import type { StreamMessage } from '../../hooks/useResearchStream';
@@ -68,14 +69,14 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                 </div>
                 <div className="flex items-center gap-2">
                     {isStreaming && (
-                        <Button variant="ghost" size="sm" onClick={onCancel} className="text-xs">
+                        <Button variant="quiet" onClick={onCancel}>
                             Cancel
                         </Button>
                     )}
                     {!isStreaming && (
-                        <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 rounded-full">
+                        <SurfaceButton variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 rounded-full">
                             <X className="h-3.5 w-3.5" />
-                        </Button>
+                        </SurfaceButton>
                     )}
                 </div>
             </div>

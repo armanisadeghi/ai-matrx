@@ -224,14 +224,13 @@ export function DefaultRulesEditor() {
           </p>
         </div>
         <Button
-          size="sm"
-          className="gap-1.5"
+          icon={<Plus />}
+          variant="primary"
           onClick={() => {
             setValidationMessage(null);
             setDraft(blankDraft());
           }}
-        >
-          <Plus className="h-4 w-4" /> New rule
+        > New rule
         </Button>
       </header>
 
@@ -366,8 +365,12 @@ export function DefaultRulesEditor() {
 
           <div className="flex items-center gap-2">
             <Button
-              size="sm"
-              className="gap-1.5"
+              icon={save.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               disabled={save.isPending}
               onClick={() => {
                 const message = defaultRuleValidationMessage(draft);
@@ -375,16 +378,10 @@ export function DefaultRulesEditor() {
                 if (!message) save.mutate(draft);
               }}
             >
-              {save.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Save className="h-4 w-4" />
-              )}
               Save rule
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => {
                 setValidationMessage(null);
                 setDraft(null);
@@ -455,9 +452,7 @@ export function DefaultRulesEditor() {
                   <td className="px-2 py-1.5">
                     <div className="flex items-center justify-end gap-1">
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-2 text-[11px]"
+                        variant="quiet"
                         onClick={() => {
                           setValidationMessage(null);
                           setDraft(toDraft(rule));
@@ -466,10 +461,8 @@ export function DefaultRulesEditor() {
                         Edit
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        variant="quiet"
                         aria-label={`Delete ${rule.label}`}
-                        className="h-6 px-1.5 text-muted-foreground hover:text-destructive"
                         onClick={() => {
                           void confirm({
                             title: `Delete “${rule.label}”?`,

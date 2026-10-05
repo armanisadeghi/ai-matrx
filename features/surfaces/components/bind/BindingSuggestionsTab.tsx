@@ -262,8 +262,8 @@ export function BindingSuggestionsTab({
           </p>
           <div className="flex items-center gap-2">
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => void handleSuggest()}
               disabled={disabled || running || targetNames.length === 0}
             >
@@ -308,15 +308,14 @@ export function BindingSuggestionsTab({
           {/* THE REMEDY — both of them, on screen, not in a toast. */}
           <div className="flex flex-wrap items-center gap-2 pl-5 pt-0.5">
             <Button
+              icon={running ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
               type="button"
-              size="sm"
               variant="outline"
               onClick={() => void handleSuggest()}
               disabled={disabled || running}
             >
-              {running ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
               Try again
             </Button>
             <span className="text-[10px] text-muted-foreground">
@@ -422,20 +421,18 @@ export function BindingSuggestionsTab({
           )}
 
           <div className="flex items-center gap-2">
-            <Button type="button" size="sm" onClick={handleAccept} disabled={disabled}>
-              <CheckCheck className="mr-1.5 h-3.5 w-3.5" />
+            <Button icon={<CheckCheck />} variant="primary" type="button" onClick={handleAccept} disabled={disabled}>
               Use this configuration
             </Button>
             <Button
+              icon={running ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => void handleSuggest()}
               disabled={disabled || running}
             >
-              {running ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
               Try again
             </Button>
           </div>

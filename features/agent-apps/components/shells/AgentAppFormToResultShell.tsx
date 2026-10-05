@@ -187,29 +187,26 @@ export function AgentAppFormToResultShell({
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/60 mt-4">
               {hasResponse && (
                 <Button
+                  icon={<RotateCcw />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={handleReset}
                   disabled={ctx.isExecuting}
-                  className="gap-1.5"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
                   Reset
                 </Button>
               )}
               <Button
+                icon={ctx.isExecuting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Play />
+                )}
+                variant="primary"
                 type="button"
-                size="sm"
                 onClick={handleSubmit}
                 disabled={ctx.isExecuting}
-                className="gap-1.5"
               >
-                {ctx.isExecuting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Play className="w-3.5 h-3.5" />
-                )}
                 {hasResponse ? "Run again" : (app.name ?? "Run")}
               </Button>
             </div>
@@ -347,7 +344,7 @@ function DefaultPreGate({ onContinue, app }: DefaultSlotProps) {
   return (
     <div className="max-w-md mx-auto p-6 rounded-lg border border-border bg-card">
       <h2 className="text-lg font-semibold mb-2">{app.name ?? "Welcome"}</h2>
-      <Button onClick={onContinue} size="sm">
+      <Button variant="primary" onClick={onContinue}>
         Continue
       </Button>
     </div>

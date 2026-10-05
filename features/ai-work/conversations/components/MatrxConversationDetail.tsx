@@ -65,7 +65,7 @@ export function MatrxConversationDetail({
             </div>
           </div>
           {runnable ? (
-            <Button asChild size="sm" className="gap-1.5">
+            <Button variant="primary" asChild>
               <Link href={`/chat/${conversation.id}`}>
                 Open in chat
                 <ArrowRight className="h-3.5 w-3.5" />

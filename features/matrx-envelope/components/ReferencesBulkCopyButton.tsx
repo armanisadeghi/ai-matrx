@@ -79,21 +79,20 @@ export function ReferencesBulkCopyButton({
   if (showLabel) {
     return (
       <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={handleCopy}
-        disabled={isDisabled}
-        className={className}
-        title={`Copy ${count} references`}
-      >
-        {copied ? (
+        icon={copied ? (
           <BookmarkCheck
             className={cn(iconSize, "mr-1.5 fill-primary text-primary")}
           />
         ) : (
           <Bookmark className={cn(iconSize, "mr-1.5")} />
         )}
+        type="button"
+        variant="outline"
+        onClick={handleCopy}
+        disabled={isDisabled}
+        className={className}
+        title={`Copy ${count} references`}
+      >
         Copy references ({count})
       </Button>
     );

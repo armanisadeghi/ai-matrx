@@ -203,16 +203,16 @@ function AgentAccessForm({
       {declaresTargets && (
         <footer className="shrink-0 px-3 py-2 border-t border-border bg-muted flex items-center">
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             onClick={() => void onSave()}
             disabled={busy || !dirty}
-            className="ml-auto h-8 gap-1.5 text-xs min-w-[90px]"
-            size="sm"
+            className="ml-auto min-w-[90px]"
           >
-            {busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
             Save
           </Button>
         </footer>

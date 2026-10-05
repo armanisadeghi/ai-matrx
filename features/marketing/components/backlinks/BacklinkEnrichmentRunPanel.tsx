@@ -114,15 +114,13 @@ export function BacklinkEnrichmentRunPanel({
           </div>
           {!running ? (
             <Button
+              icon={<X />}
               type="button"
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 shrink-0"
+              variant="quiet"
+              className="shrink-0"
               aria-label="Hide this progress panel"
               onClick={onDismiss}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            />
           ) : null}
         </div>
       </div>

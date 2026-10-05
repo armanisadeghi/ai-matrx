@@ -72,7 +72,7 @@ export function OverridesPreviewPage({
               <ErrorAlchemyMenu error={failure?.message} />
             </span>
             {failure?.retryable ? (
-              <Button size="sm" variant="outline" onClick={refresh}>
+              <Button variant="outline" onClick={refresh}>
                 Retry
               </Button>
             ) : null}

@@ -74,7 +74,7 @@ export function SharedCanvasView({
           <p className="mb-6 text-sm text-muted-foreground">
             This link may be incorrect, expired, or no longer shared.
           </p>
-          <Button asChild className="w-full max-w-xs">
+          <Button variant="primary" asChild className="w-full max-w-xs">
             <Link href="/">Go to AI Matrx</Link>
           </Button>
         </div>

@@ -249,13 +249,11 @@ function ArtifactDialog({
               {editable ? (
                 <div className="flex flex-wrap items-center gap-1.5">
                   <Button
+                    icon={<PenLine aria-hidden />}
                     type="button"
-                    variant={editing ? "ghost" : "outline"}
-                    size="sm"
-                    className="h-7 gap-1 text-xs"
+                    variant={editing ? "quiet" : "outline"}
                     onClick={() => setEditing((open) => !open)}
                   >
-                    <PenLine className="h-3 w-3" aria-hidden />
                     {editing ? "Just read it" : "Edit these words"}
                   </Button>
                 </div>
@@ -558,44 +556,28 @@ export function NodeStepRail({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<StatusIcon
+                      status={busyHere ? "running" : status}
+                      stale={Boolean(staleness) && !busyHere}
+                    />} iconEnd={!tabMode && opens ? (
+                      <FileText className="opacity-60" aria-hidden />
+                    ) : null}
                     type="button"
-                    variant={tabMode ? "ghost" : "outline"}
-                    size="sm"
+                    variant={tabMode ? "quiet" : "outline"}
                     disabled={tabMode ? false : !opens}
                     onClick={() =>
                       tabMode
                         ? onSelectStep?.(step)
                         : opens && setOpenArtifact(opens)
                     }
-                    className={cn(
-                      tabMode ? stepSegmentClass(isActive) : STEP_CHIP_CLASS,
-                      status === "failed" &&
-                        (tabMode
-                          ? "text-destructive"
-                          : "border-destructive/50"),
-                      staleness &&
-                        status !== "failed" &&
-                        (tabMode
-                          ? "text-amber-700 dark:text-amber-400"
-                          : "border-amber-500/50 text-amber-700 dark:text-amber-400"),
-                      // Tab mode: an un-run step is a place to GO (that's where
-                      // you run it), never a dimmed dead control.
-                      !status && !tabMode && "opacity-60",
-                    )}
+                    className={cn(tabMode ? stepSegmentClass(isActive) : STEP_CHIP_CLASS)}
                   >
-                    <StatusIcon
-                      status={busyHere ? "running" : status}
-                      stale={Boolean(staleness) && !busyHere}
-                    />
                     {label}
                     {/* read-gate-exempt: shown only when stepArtifacts.length > 1 — a count of artifact rows actually read; a failed read yields none and hides it */}
                     {stepArtifacts.length > 1 ? (
                       <span className="text-muted-foreground">
                         ×{stepArtifacts.length}
                       </span>
-                    ) : null}
-                    {!tabMode && opens ? (
-                      <FileText className="h-3 w-3 opacity-60" aria-hidden />
                     ) : null}
                   </Button>
                 </TooltipTrigger>
@@ -620,8 +602,7 @@ export function NodeStepRail({
                   <TooltipTrigger asChild>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
+                      variant="quiet"
                       // A truly `disabled` button swallows hover, so the reason
                       // would never surface — aria-disabled keeps the tooltip
                       // alive while the guard stops the run.
@@ -631,14 +612,7 @@ export function NodeStepRail({
                         blockedReason === null && void stepRun.start(runnable)
                       }
                       aria-label={`${RUNNABLE_STEP_ACTIONS[runnable].action} for this page`}
-                      className={cn(
-                        STEP_RUN_BUTTON_CLASS,
-                        // The detected problem's one-click fix — so it reads as
-                        // the thing to press, not as an ambient re-run.
-                        staleness && "text-amber-600 dark:text-amber-400",
-                        blockedReason !== null &&
-                          "cursor-not-allowed opacity-40 hover:bg-transparent",
-                      )}
+                      className={STEP_RUN_BUTTON_CLASS}
                     >
                       {busyHere ? (
                         <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
@@ -675,18 +649,12 @@ export function NodeStepRail({
                   <TooltipTrigger asChild>
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
+                      variant="quiet"
                       disabled={override.busy}
                       aria-disabled={Boolean(override.blockedReason)}
                       onClick={() => !override.blockedReason && override.run()}
                       aria-label={`${override.action} for this page`}
-                      className={cn(
-                        STEP_RUN_BUTTON_CLASS,
-                        staleness && "text-amber-600 dark:text-amber-400",
-                        override.blockedReason &&
-                          "cursor-not-allowed opacity-40 hover:bg-transparent",
-                      )}
+                      className={STEP_RUN_BUTTON_CLASS}
                     >
                       {override.busy ? (
                         <Loader2 className="h-3 w-3 animate-spin" aria-hidden />

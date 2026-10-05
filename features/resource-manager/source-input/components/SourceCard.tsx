@@ -199,15 +199,13 @@ export function SourceCard({
           </p>
         </div>
         <Button
+          icon={<X />}
           type="button"
-          variant="ghost"
-          size="icon"
-          className="h-11 w-11 shrink-0 sm:h-8 sm:w-8"
+          variant="quiet"
+          className="shrink-0"
           aria-label={`Remove ${card.draft.label}`}
           onClick={() => set.remove(card.id)}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
 
       {card.status === "resolving" || card.status === "pending" ? (
@@ -233,24 +231,22 @@ export function SourceCard({
           <span className="min-w-0 flex-1">{card.error ?? "This could not be added. Remove it and try again."}</span>
           {waitingForOrganization ? (
             <Button
+              icon={<Building2 />}
               type="button"
               variant="outline"
-              size="sm"
-              className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+              className="shrink-0"
               onClick={() => void chooseOrganization()}
             >
-              <Building2 className="h-3.5 w-3.5" />
               Choose organization
             </Button>
           ) : resumableInput(card.draft) && onTryAgain ? (
             <Button
+              icon={<RotateCcw />}
               type="button"
               variant="outline"
-              size="sm"
-              className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+              className="shrink-0"
               onClick={onTryAgain}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
               Try again
             </Button>
           ) : null}
@@ -282,13 +278,12 @@ export function SourceCard({
           <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span className="min-w-0 flex-1">{WAITING_FOR_ORGANIZATION}</span>
           <Button
+            icon={<Building2 />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-11 shrink-0 gap-1.5 text-foreground sm:h-7"
+            className="shrink-0"
             onClick={() => void chooseOrganization()}
           >
-            <Building2 className="h-3.5 w-3.5" />
             Choose organization
           </Button>
         </p>
@@ -322,26 +317,22 @@ export function SourceCard({
       {card.status === "ready" && ref && entry && entry.state !== "failed" && entry.state !== "unavailable" ? (
         <div className="flex flex-wrap items-center gap-2 border-t border-border px-3 py-2">
           <Button
+            iconEnd={open === "form" ? <ChevronUp /> : <ChevronDown />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-11 gap-1 sm:h-8"
             onClick={() => setOpen(open === "form" ? null : "form")}
             aria-expanded={open === "form"}
           >
             <span className="text-muted-foreground">Use:</span> {formLabel}
-            {open === "form" ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </Button>
           {segments.length > 1 && delivery === "direct" ? (
             <Button
+              icon={<Scissors />}
               type="button"
               variant="outline"
-              size="sm"
-              className="h-11 gap-1.5 sm:h-8"
               onClick={() => setOpen(open === "parts" ? null : "parts")}
               aria-expanded={open === "parts"}
             >
-              <Scissors className="h-3.5 w-3.5" />
               {partsCount ? `${partsCount} of ${segments.length} parts` : "Choose parts"}
             </Button>
           ) : null}
@@ -483,7 +474,7 @@ function PartsChooser({
   return (
     <div className="space-y-2 border-t border-border px-3 py-3">
       {picked.length > 0 ? (
-        <Button type="button" variant="ghost" size="sm" className="h-9" onClick={() => onChange([])}>
+        <Button type="button" variant="quiet" onClick={() => onChange([])}>
           Use all of it
         </Button>
       ) : null}
@@ -590,7 +581,7 @@ export function ProcessingLine({
             ) : null}
           </span>
           {stalled && cleanNow ? (
-            <Button type="button" variant="outline" size="sm" className="h-11 shrink-0 sm:h-7" onClick={cleanNow}>
+            <Button type="button" variant="outline" className="shrink-0" onClick={cleanNow}>
               Clean now
             </Button>
           ) : null}

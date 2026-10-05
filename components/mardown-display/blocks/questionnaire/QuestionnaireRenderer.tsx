@@ -27,7 +27,7 @@ import {
   useQuestionnaireContext,
 } from "./QuestionnaireContext";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import { questionnaireAnswers } from "./questionnaire-answers";

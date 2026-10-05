@@ -180,8 +180,7 @@ const SplitScreenOverlay: React.FC<SplitScreenOverlayProps> = ({
                             </Button>
                         )}
                         {showSaveButton && (
-                            <Button onClick={handleSave} disabled={saveButtonDisabled}>
-                                <Save className="h-4 w-4 mr-2" />
+                            <Button icon={<Save />} variant="primary" onClick={handleSave} disabled={saveButtonDisabled}>
                                 {saveButtonLabel}
                             </Button>
                         )}

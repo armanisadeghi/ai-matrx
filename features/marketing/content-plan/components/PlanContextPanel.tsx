@@ -102,13 +102,12 @@ export function PlanContextPanel({
         <div className="flex flex-wrap gap-2">
           <Button
             variant="outline"
-            size="sm"
             onClick={() => void node.refetch()}
           >
             Retry
           </Button>
           {planSiteId ? (
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" asChild>
               <Link
                 href={planNodeHref(planSiteId)}
                 target="_blank"
@@ -167,7 +166,7 @@ export function PlanContextPanel({
             ) : null}
           </div>
         </div>
-        <Button size="sm" className="shrink-0 gap-1.5 text-xs" asChild>
+        <Button variant="primary" className="shrink-0" asChild>
           <Link href={workspaceHref} target="_blank" rel="noopener noreferrer">
             Open in plan workspace
             <ExternalLink className="h-3.5 w-3.5" />

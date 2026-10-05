@@ -372,14 +372,14 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
         </p>
       ) : null}
       <Button
+        icon={<RefreshCw
+          className={`mr-1.5 h-4 w-4 ${busy === "discover" ? "animate-spin" : ""}`}
+        />}
+        variant="primary"
         type="button"
         onClick={() => void discover()}
         disabled={!connectionId || busy !== null}
-        className="min-h-11"
       >
-        <RefreshCw
-          className={`mr-1.5 h-4 w-4 ${busy === "discover" ? "animate-spin" : ""}`}
-        />
         {busy === "discover" ? "Discovering calendars…" : "Discover calendars"}
       </Button>
       {calendars.length ? (
@@ -421,12 +421,12 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
       ) : null}
       {calendarId ? (
         <Button
+          icon={<CalendarSearch />}
+          variant="primary"
           type="button"
           onClick={() => void readEvents()}
           disabled={busy !== null}
-          className="min-h-11"
         >
-          <CalendarSearch className="mr-1.5 h-4 w-4" />
           {busy === "read"
             ? "Reading selected calendar…"
             : "Read selected events"}
@@ -467,7 +467,6 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
             <Button
               type="button"
               variant="outline"
-              size="sm"
               className="mt-3"
               onClick={() =>
                 openGoogleConnect({
@@ -497,8 +496,9 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
             change events in Google.
           </p>
           <Button
+            variant="primary"
             type="button"
-            className="mt-3 min-h-11"
+            className="mt-3"
             onClick={() => void saveSelected()}
             disabled={busy !== null}
           >

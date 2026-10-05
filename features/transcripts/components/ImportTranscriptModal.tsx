@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+import { Button } from "@ai-matrx/design-system";
 import { Input } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';

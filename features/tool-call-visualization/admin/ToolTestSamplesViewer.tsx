@@ -52,8 +52,7 @@ function CopyButton({ content, label = "Copy" }: { content: string; label?: stri
         }
     };
     return (
-        <Button size="sm" variant="ghost" className="h-7 text-xs px-2 gap-1" onClick={handleCopy} disabled={!content}>
-            {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
+        <Button icon={copied ? <Check className="text-success" /> : <Copy />} variant="quiet" onClick={handleCopy} disabled={!content}>
             {copied ? "Copied" : label}
         </Button>
     );
@@ -172,12 +171,11 @@ function InlineEditRow({ sample, onUpdate }: InlineEditRowProps) {
                 )}
 
                 <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-[11px] gap-1 ml-auto"
+                    icon={<Pencil />}
+                    variant="quiet"
+                    className="ml-auto"
                     onClick={() => setEditing(true)}
                 >
-                    <Pencil className="h-3 w-3" />
                     Edit
                 </Button>
             </div>
@@ -190,30 +188,27 @@ function InlineEditRow({ sample, onUpdate }: InlineEditRowProps) {
                 <Label className="text-[11px] text-muted-foreground">Success?</Label>
                 <div className="flex gap-1.5">
                     <Button
-                        size="sm"
-                        variant={isSuccess === true ? "default" : "outline"}
-                        className="h-7 text-xs px-2.5 gap-1 flex-1"
+                        icon={<ThumbsUp />}
+                        variant={isSuccess === true ? "primary" : "outline"}
+                        className="flex-1"
                         onClick={() => setIsSuccess(isSuccess === true ? null : true)}
                     >
-                        <ThumbsUp className="h-3 w-3" />
                         Yes
                     </Button>
                     <Button
-                        size="sm"
-                        variant={isSuccess === null ? "secondary" : "outline"}
-                        className="h-7 text-xs px-2.5 gap-1 flex-1"
+                        icon={<Minus />}
+                        variant={isSuccess === null ? "outline" : "outline"}
+                        className="flex-1"
                         onClick={() => setIsSuccess(null)}
                     >
-                        <Minus className="h-3 w-3" />
                         Unset
                     </Button>
                     <Button
-                        size="sm"
-                        variant={isSuccess === false ? "destructive" : "outline"}
-                        className="h-7 text-xs px-2.5 gap-1 flex-1"
+                        icon={<ThumbsDown />}
+                        variant={isSuccess === false ? "danger" : "outline"}
+                        className="flex-1"
                         onClick={() => setIsSuccess(isSuccess === false ? null : false)}
                     >
-                        <ThumbsDown className="h-3 w-3" />
                         No
                     </Button>
                 </div>
@@ -242,11 +237,10 @@ function InlineEditRow({ sample, onUpdate }: InlineEditRowProps) {
             </div>
 
             <div className="flex justify-end gap-2">
-                <Button size="sm" variant="ghost" className="h-7 text-xs px-2" onClick={handleCancel} disabled={saving}>
+                <Button variant="quiet" onClick={handleCancel} disabled={saving}>
                     Cancel
                 </Button>
-                <Button size="sm" className="h-7 text-xs px-3 gap-1" onClick={handleSave} disabled={saving}>
-                    {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+                <Button icon={saving ? <Loader2 className="animate-spin" /> : <Check />} variant="primary" onClick={handleSave} disabled={saving}>
                     {saving ? "Saving…" : "Save"}
                 </Button>
             </div>
@@ -755,9 +749,7 @@ export function ToolTestSamplesViewer({ toolName, toolId }: ToolTestSamplesViewe
                     data={filtered}
                     columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (sample, controls) => (
                         <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
+                            variant="quiet"
                             onClick={controls.toggleExpanded}
                         >
                             {controls.isExpanded ? "Collapse" : "Inspect"}

@@ -155,12 +155,12 @@ function DecisionSection({
           )}
         </div>
         {state.winner ? (
-          <Button size="sm" variant="ghost" onClick={() => onPick(undefined)}>
+          <Button variant="quiet" onClick={() => onPick(undefined)}>
             Clear
           </Button>
         ) : (
           !showNote && (
-            <Button size="sm" variant="ghost" onClick={() => setNoteOpen(true)}>
+            <Button variant="quiet" onClick={() => setNoteOpen(true)}>
               Note
             </Button>
           )
@@ -375,8 +375,7 @@ export function DecisionBoardView({
           {DECISIONS.map((d) => (
             <Button
               key={d.id}
-              size="sm"
-              variant={picks[d.id]?.winner ? "secondary" : "ghost"}
+              variant={picks[d.id]?.winner ? "outline" : "quiet"}
               onClick={() => jump(d.id)}
             >
               {d.id}

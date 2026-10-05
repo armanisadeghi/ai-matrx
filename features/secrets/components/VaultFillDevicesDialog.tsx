@@ -128,17 +128,16 @@ export function VaultFillDevicesDialog({
                     </div>
                     {!off && (
                       <Button
+                        icon={busyId === device.id ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <PowerOff />
+                        )}
                         variant="outline"
-                        size="sm"
-                        className="h-8 shrink-0"
+                        className="shrink-0"
                         onClick={() => void turnOff(device)}
                         disabled={busyId !== null}
                       >
-                        {busyId === device.id ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <PowerOff className="mr-1.5 h-3.5 w-3.5" />
-                        )}
                         Turn off
                       </Button>
                     )}

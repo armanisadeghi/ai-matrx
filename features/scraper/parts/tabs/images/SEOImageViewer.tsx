@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Copy, Check, ExternalLink, ChevronDown, Chev
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Skeleton } from "@ai-matrx/design-system";
+import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -141,7 +141,7 @@ export function SEOImageViewer({
           
           {/* Navigation controls */}
           <div className="absolute bottom-0 left-0 right-0 flex justify-between p-2">
-            <Button 
+            <SurfaceButton 
               variant="secondary" 
               size="icon" 
               onClick={goToPreviousImage} 
@@ -149,8 +149,8 @@ export function SEOImageViewer({
               disabled={images.length <= 1}
             >
               <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <Button 
+            </SurfaceButton>
+            <SurfaceButton 
               variant="secondary" 
               size="icon" 
               onClick={goToNextImage} 
@@ -158,7 +158,7 @@ export function SEOImageViewer({
               disabled={images.length <= 1}
             >
               <ChevronRight className="h-5 w-5" />
-            </Button>
+            </SurfaceButton>
           </div>
           
           {/* Image count indicator */}
@@ -175,7 +175,7 @@ export function SEOImageViewer({
                 {currentImageUrl.split('/').pop()}
               </div>
               <div className="flex gap-1">
-                <Button 
+                <SurfaceButton 
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8" 
@@ -186,15 +186,15 @@ export function SEOImageViewer({
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}
-                </Button>
-                <Button 
+                </SurfaceButton>
+                <SurfaceButton 
                   variant="ghost" 
                   size="icon" 
                   className="h-8 w-8" 
                   onClick={() => window.open(currentImageUrl, '_blank')}
                 >
                   <ExternalLink className="h-4 w-4" />
-                </Button>
+                </SurfaceButton>
               </div>
             </div>
           </CardContent>
@@ -224,7 +224,7 @@ export function SEOImageViewer({
                 <div className="mb-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold mb-1">Meta Title</h3>
-                    <Button 
+                    <SurfaceButton 
                       variant="ghost" 
                       size="icon" 
                       className="h-8 w-8" 
@@ -235,7 +235,7 @@ export function SEOImageViewer({
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
-                    </Button>
+                    </SurfaceButton>
                   </div>
                   <p className="text-muted-foreground">
                     {currentMetadata.metaTitle || "No meta title available"}
@@ -244,12 +244,12 @@ export function SEOImageViewer({
 
                 {/* SEO Recommendations Toggle */}
                 <Button
+                  iconEnd={showSEO ? <ChevronUp /> : <ChevronDown />}
                   variant="outline"
                   className="w-full justify-between mb-6"
                   onClick={() => setShowSEO(!showSEO)}
                 >
                   <span>SEO Recommendations</span>
-                  {showSEO ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
 
                 {/* SEO Recommendations Content */}
@@ -260,7 +260,7 @@ export function SEOImageViewer({
                       <div>
                         <div className="flex justify-between items-center">
                           <h4 className="font-medium mb-2">Description:</h4>
-                          <Button 
+                          <SurfaceButton 
                             variant="ghost" 
                             size="icon" 
                             className="h-8 w-8" 
@@ -271,7 +271,7 @@ export function SEOImageViewer({
                             ) : (
                               <Copy className="h-4 w-4" />
                             )}
-                          </Button>
+                          </SurfaceButton>
                         </div>
                         <p className="text-sm text-muted-foreground">{currentMetadata.description}</p>
                       </div>
@@ -286,7 +286,7 @@ export function SEOImageViewer({
                             <li key={index} className="bg-secondary/50 p-3 rounded-md">
                               <div className="flex justify-between items-start gap-2">
                                 <span className="text-sm">{title}</span>
-                                <Button 
+                                <SurfaceButton 
                                   variant="ghost" 
                                   size="icon" 
                                   className="h-6 w-6 shrink-0 mt-0" 
@@ -297,7 +297,7 @@ export function SEOImageViewer({
                                   ) : (
                                     <Copy className="h-3 w-3" />
                                   )}
-                                </Button>
+                                </SurfaceButton>
                               </div>
                             </li>
                           ))}

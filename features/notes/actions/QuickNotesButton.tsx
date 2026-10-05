@@ -24,13 +24,11 @@ export function QuickNotesButton({ className }: QuickNotesButtonProps) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<StickyNote />} aria-label="Quick Notes"
+            variant="quiet"
             className={className}
             onClick={() => openQuickNotes()}
-          >
-            <StickyNote className="h-5 w-5" />
-          </Button>
+          />
         </TooltipTrigger>
         <TooltipContent>Quick Notes</TooltipContent>
       </Tooltip>

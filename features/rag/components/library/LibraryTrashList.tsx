@@ -135,8 +135,7 @@ export function LibraryTrashList({
                     ) : null}
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="h-7 gap-1 px-2 text-xs" disabled={busy} onClick={() => void restore(row)}>
-                  {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArchiveRestore className="h-3.5 w-3.5" />}
+                <Button icon={busy ? <Loader2 className="animate-spin" /> : <ArchiveRestore />} variant="outline" disabled={busy} onClick={() => void restore(row)}>
                   {family ? "Restore file" : "Restore"}
                 </Button>
               </li>

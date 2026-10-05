@@ -79,12 +79,10 @@ export function RunConsole() {
               </span>
             )}
             <Button
+              icon={<RotateCcw />}
               variant="outline"
-              size="sm"
               onClick={replay}
-              className="gap-1.5"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{isDone ? "Replay" : "Restart demo"}</span>
             </Button>
           </HeaderActionsSlot>

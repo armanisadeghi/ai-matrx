@@ -180,9 +180,8 @@ export function WorkflowImpactBlockerCell({
       </Badge>
       {lead.behind_latest || lead.blocker === "unreachable" || lead.blocker === "set_aside" ? (
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 gap-1 px-1.5 text-[11px]"
+          icon={<AppWindow />}
+          variant="quiet"
           onClick={() =>
             openMandateWindow({
               initialMandateKey: storedMandateKey(lead.mandate_key),
@@ -192,7 +191,6 @@ export function WorkflowImpactBlockerCell({
             })
           }
         >
-          <AppWindow className="h-3 w-3" />
           Open
         </Button>
       ) : null}

@@ -328,15 +328,13 @@ const RemovalDetailsBody = ({ allRemovals }: RemovalDetailsProps) => {
             </div>
             <div className="mt-4 flex justify-end space-x-2">
               <Button
-                variant="secondary"
-                size="sm"
+                variant="outline"
                 onClick={() => setFilterModal(null)}
               >
                 Close
               </Button>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   const newFilters = { ...filters, [filterModal]: new Set() };
                   setFilters(newFilters);

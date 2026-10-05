@@ -227,8 +227,7 @@ export function PricePanel({
             {state.detail}
           </p>
         ) : null}
-        <Button size="sm" variant="outline" onClick={onRetry}>
-          <RefreshCcw className="size-3.5" />
+        <Button icon={<RefreshCcw />} variant="outline" onClick={onRetry}>
           Retry pricing
         </Button>
         <ErrorAlchemyMenu error={state.detail} />
@@ -363,16 +362,15 @@ export function BulkTierTable({
           Bulk pricing
         </h3>
         <Button
-          size="sm"
+          icon={calculating ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCcw />
+          )}
           variant="outline"
           onClick={() => onCalculate?.()}
           disabled={onCalculate === null || calculating}
         >
-          {calculating ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <RefreshCcw className="size-3.5" />
-          )}
           {calculating ? "Pricing tiers…" : "Price these tiers"}
         </Button>
       </div>

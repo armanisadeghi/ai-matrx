@@ -21,7 +21,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -320,12 +320,11 @@ export default function CategoriesTab() {
                     </TabsList>
                     {activeView === 'manage' && (
                         <Button
-                            size="sm"
-                            className="gap-2"
+                            icon={<Plus />}
+                            variant="primary"
                             onClick={() => setEditing({ ...EMPTY_EDIT })}
                             disabled={editing !== null}
                         >
-                            <Plus className="w-4 h-4" />
                             New Category
                         </Button>
                     )}
@@ -357,9 +356,7 @@ export default function CategoriesTab() {
                         </Select>
                         {(filterStatus !== 'all' || filterType !== 'all') && (
                             <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 text-xs"
+                                variant="quiet"
                                 onClick={() => { setFilterStatus('all'); setFilterType('all'); }}
                             >
                                 Clear filters
@@ -653,14 +650,12 @@ export default function CategoriesTab() {
                                                 })}
                                             />
                                             <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7 px-2 text-xs text-muted-foreground"
+                                                variant="quiet"
                                                 onClick={() => handleToggleActive(cat)}
                                             >
                                                 {cat.is_active ? 'Active' : 'Inactive'}
                                             </Button>
-                                            <Button
+                                            <SurfaceButton
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-7 w-7"
@@ -673,15 +668,15 @@ export default function CategoriesTab() {
                                                 })}
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
-                                            </Button>
-                                            <Button
+                                            </SurfaceButton>
+                                            <SurfaceButton
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-7 w-7 text-destructive hover:text-destructive"
                                                 onClick={() => setDeleteTarget(cat)}
                                             >
                                                 <Trash2 className="w-3.5 h-3.5" />
-                                            </Button>
+                                            </SurfaceButton>
                                         </div>
                                     </Card>
                                 );
@@ -810,12 +805,10 @@ function CategoryForm({
                 </div>
             </div>
             <div className="flex items-center gap-2 mt-3 justify-end">
-                <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
-                    <X className="w-3.5 h-3.5 mr-1" />
+                <Button icon={<X />} variant="quiet" onClick={onCancel} disabled={saving}>
                     Cancel
                 </Button>
-                <Button size="sm" onClick={onSave} disabled={saving || !editing.name.trim()}>
-                    {saving ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1.5" />}
+                <Button icon={saving ? <Loader2 className="animate-spin" /> : <Check />} variant="primary" onClick={onSave} disabled={saving || !editing.name.trim()}>
                     {isNew ? 'Create' : 'Save'}
                 </Button>
             </div>

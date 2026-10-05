@@ -398,7 +398,6 @@ function BasicUsageDemo() {
       <div className="flex justify-center">
         <Button
           variant="outline"
-          size="sm"
           onClick={clearImages}
         >
           Clear Image
@@ -622,7 +621,7 @@ function RealWorldExamplesDemo() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full">Update Profile</Button>
+            <Button type="submit" variant="primary" className="w-full">Update Profile</Button>
           </CardFooter>
         </Card>
         
@@ -661,7 +660,7 @@ function RealWorldExamplesDemo() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full">Add Product</Button>
+            <Button type="submit" variant="primary" className="w-full">Add Product</Button>
           </CardFooter>
         </Card>
       </div>
@@ -719,7 +718,7 @@ function RealWorldExamplesDemo() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full">Submit for Verification</Button>
+            <Button type="submit" variant="primary" className="w-full">Submit for Verification</Button>
           </CardFooter>
         </Card>
       </div>

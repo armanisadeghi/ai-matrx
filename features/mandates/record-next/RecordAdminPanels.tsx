@@ -232,7 +232,7 @@ export function RecordAdminPanels({
       {loadError ? (
         <div role="alert" className="flex items-center gap-2 text-sm text-destructive">
           {loadError}
-          <Button variant="outline" size="sm" onClick={load}>
+          <Button variant="outline" onClick={load}>
             Retry
           </Button>
           <ErrorAlchemyMenu className="ml-auto" />

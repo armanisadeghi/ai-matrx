@@ -332,9 +332,7 @@ export function DeadEndsConsole({
         const key = `${f.file}:${f.line}:${f.column}`;
         return (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[10px]"
+            variant="quiet"
             title="Copy a paste-ready repair brief for an agent"
             aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
             onClick={(e) => {
@@ -498,9 +496,7 @@ export function DeadEndsConsole({
           </code>
           <Badge variant="secondary">{findings.length}</Badge>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-xs"
+            variant="quiet"
             onClick={() => setBucket({ kind: "none" })}
           >
             Clear
@@ -777,12 +773,10 @@ function Header({
 
       <div className="ml-auto flex items-center gap-2">
         <Button
-          size="sm"
+          icon={<Copy />}
           variant="outline"
           onClick={onCopyAll}
-          className="h-7 text-xs"
         >
-          <Copy className="mr-1.5 h-3 w-3" />
           Campaign brief
         </Button>
         <AppLink
@@ -1177,12 +1171,11 @@ function FindingDetail({
       </dl>
 
       <Button
-        size="sm"
+        icon={<Copy />}
         variant="outline"
         onClick={onCopyFix}
         className="w-full"
       >
-        <Copy className="mr-1.5 h-3.5 w-3.5" />
         Copy repair brief for an agent
       </Button>
     </div>

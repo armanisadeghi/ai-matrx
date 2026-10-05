@@ -437,8 +437,7 @@ export function VaultLoginExportDialog({
               {error && <ErrorNotice size="inline" className="text-sm" message={error} />}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close}>Cancel</Button>
-                <Button type="button" onClick={() => void confirmIdentity()} disabled={running}>
-                  {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button icon={running && <Loader2 className="animate-spin" />} variant="primary" type="button" onClick={() => void confirmIdentity()} disabled={running}>
                   Confirm identity
                 </Button>
               </div>
@@ -507,13 +506,11 @@ export function VaultLoginExportDialog({
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={close}>Cancel</Button>
                 {preview ? (
-                  <Button type="button" onClick={() => void download()} disabled={running || !plaintextAcknowledged || eligible === 0}>
-                    {running ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                  <Button icon={running ? <Loader2 className="animate-spin" /> : <Download />} variant="primary" type="button" onClick={() => void download()} disabled={running || !plaintextAcknowledged || eligible === 0}>
                     Download CSV
                   </Button>
                 ) : (
-                  <Button type="button" onClick={() => void reviewSelection()} disabled={running || selectedIds.size === 0}>
-                    {running && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  <Button icon={running && <Loader2 className="animate-spin" />} variant="primary" type="button" onClick={() => void reviewSelection()} disabled={running || selectedIds.size === 0}>
                     Review selected logins
                   </Button>
                 )}

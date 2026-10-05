@@ -381,27 +381,27 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
               already inside this app's surface. The tab strip in the header
               owns "selected sub-route" visual state. ─────────────────────── */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href={runHref}>
               <Eye className="w-3.5 h-3.5" /> Run
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href={publicUrl} target="_blank" rel="noreferrer">
               <ExternalLink className="w-3.5 h-3.5" /> Open public
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href={codeHref}>
               <Code className="w-3.5 h-3.5" /> Edit code
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href={settingsHref}>
               <SettingsIcon className="w-3.5 h-3.5" /> Settings
             </Link>
           </Button>
-          <Button asChild variant="outline" size="sm" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href={versionsHref}>
               <History className="w-3.5 h-3.5" /> Versions
             </Link>
@@ -684,7 +684,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
         <Card>
           <CardHeader className="pb-2 flex-row items-center justify-between">
             <CardTitle className="text-sm">Code</CardTitle>
-            <Button asChild variant="outline" size="sm" className="gap-1.5">
+            <Button asChild variant="outline">
               <Link href={codeHref}>
                 <Code className="w-3.5 h-3.5" /> Open editor
               </Link>

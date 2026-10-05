@@ -211,17 +211,17 @@ export function ThreadNewFileDialog({
         <DialogFooter className="shrink-0">
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
           <Button
+            variant="primary"
             type="button"
             onClick={() => void handleSave()}
             disabled={saving || !body.trim()}
-            className={cn(saving && "cursor-not-allowed")}
           >
             {saving ? (
               <>

@@ -72,10 +72,11 @@ export function AgentParamPicker({
                 showPinnedAgent={Boolean(value)}
                 triggerSlot={
                     <Button
+                        iconEnd={<ChevronDown className="text-muted-foreground" />}
                         type="button"
                         variant="outline"
                         id="param-agent_id"
-                        className="h-11 w-full justify-between font-normal"
+                        className="w-full justify-between"
                     >
                         <span className="flex min-w-0 items-center gap-2">
                             <Bot className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -84,7 +85,6 @@ export function AgentParamPicker({
                                     (value ? "This agent" : "Choose an agent")}
                             </span>
                         </span>
-                        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </Button>
                 }
             />

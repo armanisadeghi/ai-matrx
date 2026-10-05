@@ -266,15 +266,14 @@ export function FastFireScoreboard({
         {/* Actions */}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row">
           <Button
+            icon={<RotateCcw />}
             variant="outline"
-            className="flex-1 gap-1.5"
+            className="flex-1"
             onClick={onRestart}
           >
-            <RotateCcw className="h-4 w-4" />
             Run again
           </Button>
-          <Button className="flex-1 gap-1.5" onClick={onExit}>
-            <Layers className="h-4 w-4" />
+          <Button icon={<Layers />} variant="primary" className="flex-1" onClick={onExit}>
             {config.setId ? "Back to deck" : "Back to flashcards"}
           </Button>
         </div>

@@ -230,7 +230,7 @@ export function ChaseboxPage() {
           />
           {/* The Chasebox answers "what needs me now"; the inbox answers "who
               replied". Each reaches the other. */}
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href="/crm/inbox">
               <Inbox className="h-4 w-4" aria-hidden />
               Inbox
@@ -301,7 +301,7 @@ export function ChaseboxPage() {
           <p className="flex-1">{meta.description}</p>
           {/* Drafts are reviewed at volume — one door into the whole queue. */}
           {queue === "pending_drafts" && rows && rows.length > 0 && (
-            <Button size="sm" onClick={() => setReviewIndex(0)}>
+            <Button variant="primary" onClick={() => setReviewIndex(0)}>
               Review {rows.length} draft{rows.length === 1 ? "" : "s"}
             </Button>
           )}
@@ -311,7 +311,7 @@ export function ChaseboxPage() {
           <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
             <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
             <span className="flex-1">{error}</span>
-            <Button size="sm" variant="ghost" onClick={refresh}>
+            <Button variant="quiet" onClick={refresh}>
               Retry
             </Button>
             <ErrorAlchemyMenu error={error} />
@@ -353,7 +353,6 @@ export function ChaseboxPage() {
               {Math.min(page * PAGE_SIZE, total)} of {total}
             </span>
             <Button
-              size="sm"
               variant="outline"
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
@@ -361,7 +360,6 @@ export function ChaseboxPage() {
               Previous
             </Button>
             <Button
-              size="sm"
               variant="outline"
               disabled={page * PAGE_SIZE >= total}
               onClick={() => setPage(page + 1)}
@@ -463,12 +461,12 @@ function ChaseboxItem({
 
         <div className="flex shrink-0 flex-wrap items-center gap-1.5">
           {isDraft && (
-            <Button size="sm" onClick={onOpenDraft}>
+            <Button variant="primary" onClick={onOpenDraft}>
               Review and approve
             </Button>
           )}
           {fixHref && (
-            <Button asChild size="sm" variant={isDraft ? "ghost" : "outline"}>
+            <Button asChild variant={isDraft ? "quiet" : "outline"}>
               <Link href={fixHref}>
                 {isDraft ? "Open campaign" : chaseboxFixLabel(row)}
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden />
@@ -478,7 +476,7 @@ function ChaseboxItem({
           {row.queue === "stalled_sequences" &&
             row.problem_code === "mailbox_paused" &&
             row.sending_identity_id && (
-              <Button asChild size="sm" variant="ghost">
+              <Button asChild variant="quiet">
                 <Link href={`/crm/sending-identities/${row.sending_identity_id}`}>
                   Mailbox checklist
                 </Link>

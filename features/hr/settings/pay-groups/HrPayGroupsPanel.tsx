@@ -242,13 +242,13 @@ export function HrPayGroupsPanel() {
             {/* Present whether or not rows exist — an org with forty pay groups still
                 needs to add the forty-first. */}
             <Button
+              icon={<Plus />}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => setCreating(true)}
               disabled={creating || !organizationId}
-              className="min-h-11 w-full shrink-0 sm:min-h-9 sm:w-auto"
+              className="w-full shrink-0 sm:w-auto"
             >
-              <Plus className="mr-2 h-4 w-4" />
               New pay group
             </Button>
           </header>
@@ -336,13 +336,12 @@ export function HrPayGroupsPanel() {
                 // thing matters and then offering nothing to click is the F3 defect.
                 action: (
                   <Button
+                    icon={<Plus />}
+                    variant="primary"
                     type="button"
-                    size="sm"
                     onClick={() => setCreating(true)}
                     disabled={creating || !organizationId}
-                    className="min-h-11 sm:min-h-9"
                   >
-                    <Plus className="mr-2 h-4 w-4" />
                     New pay group
                   </Button>
                 ),
@@ -762,29 +761,26 @@ function PayGroupEditor({
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : isCreate ? (
+            <Plus />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
           onClick={save}
           disabled={busy}
-          className="min-h-11 sm:min-h-9"
         >
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : isCreate ? (
-            <Plus className="mr-2 h-4 w-4" />
-          ) : (
-            <Save className="mr-2 h-4 w-4" />
-          )}
           {isCreate ? "Create pay group" : "Save"}
         </Button>
         {onCancel ? (
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={onCancel}
             disabled={busy}
-            className="min-h-11 sm:min-h-9"
           >
             Cancel
           </Button>

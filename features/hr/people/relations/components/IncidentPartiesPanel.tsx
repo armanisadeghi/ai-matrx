@@ -118,13 +118,12 @@ export function IncidentPartiesPanel({
         </h3>
         {canWrite && !adding ? (
           <Button
+            icon={<Plus />}
             type="button"
-            size="sm"
             variant="outline"
-            className="min-h-11 shrink-0 sm:min-h-9"
+            className="shrink-0"
             onClick={() => setAdding(true)}
           >
-            <Plus className="mr-1.5 h-4 w-4" />
             Add a party
           </Button>
         ) : null}
@@ -179,20 +178,17 @@ export function IncidentPartiesPanel({
 
           <div className="flex flex-wrap gap-2">
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={save}
               disabled={!canSave}
-              className="min-h-11 sm:min-h-9"
             >
               Add
             </Button>
             <Button
               type="button"
-              size="sm"
               variant="outline"
               onClick={() => setAdding(false)}
-              className="min-h-11 sm:min-h-9"
             >
               Cancel
             </Button>

@@ -117,21 +117,21 @@ export function SettingRequestActionButtons({
     <div className="flex flex-wrap gap-2">
       {action ? (
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Check aria-hidden />
+          )}
+          variant="primary"
           className={size}
-          size="sm"
           disabled={busy}
           onClick={() => void apply()}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <Check className="h-3.5 w-3.5" aria-hidden />
-          )}
           {action.label}
         </Button>
       ) : null}
       {safeHref ? (
-        <Button asChild className={size} size="sm" variant="outline">
+        <Button asChild className={size} variant="outline">
           <Link href={safeHref} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             Open setting
@@ -139,13 +139,12 @@ export function SettingRequestActionButtons({
         </Button>
       ) : null}
       <Button
+        icon={<CircleSlash aria-hidden />}
         className={size}
-        size="sm"
-        variant="ghost"
+        variant="quiet"
         disabled={busy}
         onClick={() => void decline()}
       >
-        <CircleSlash className="h-3.5 w-3.5" aria-hidden />
         Decline
       </Button>
     </div>

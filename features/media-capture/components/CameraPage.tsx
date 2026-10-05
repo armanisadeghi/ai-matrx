@@ -38,12 +38,11 @@ export default function CameraPage() {
         right={
           !studioOpen ? (
             <Button
-              size="sm"
-              className="h-8"
+              icon={<Camera />}
+              variant="primary"
               onClick={() => setStudioOpen(true)}
               aria-label="New capture"
             >
-              <Camera className="mr-1.5 h-4 w-4" />
               New capture
             </Button>
           ) : undefined

@@ -37,9 +37,8 @@ export function NotesHeaderCompact({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0 rounded-full hover:bg-accent"
+                            variant="quiet" 
+                            className="w-6"
                             onClick={onCreateNote}
                             title="New Note"
                         >
@@ -55,9 +54,8 @@ export function NotesHeaderCompact({
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-6 w-6 p-0 rounded-full hover:bg-accent"
+                            variant="quiet" 
+                            className="w-6"
                             onClick={onCreateFolder}
                             title="New Folder"
                         >
@@ -75,9 +73,8 @@ export function NotesHeaderCompact({
                         <TooltipTrigger asChild>
                             <DropdownMenuTrigger asChild>
                                 <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-6 w-6 p-0 rounded-full hover:bg-accent"
+                                    variant="quiet" 
+                                    className="w-6"
                                     title="Sort Options"
                                 >
                                     {sortConfig.order === 'asc' ? (

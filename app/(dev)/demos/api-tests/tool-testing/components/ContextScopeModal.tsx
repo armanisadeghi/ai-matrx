@@ -81,11 +81,10 @@ export function ContextScopeModal({
     <Credenza open={open} onOpenChange={setOpen}>
       <CredenzaTrigger asChild>
         <Button
+          icon={<Settings2 />}
           variant="outline"
-          size="sm"
-          className="relative h-10 gap-1.5 px-3 text-sm sm:h-7 sm:px-2 sm:text-[10px]"
+          className="relative"
         >
-          <Settings2 className="h-3 w-3" />
           Scope
           {activeScopeCount > 0 && (
             <Badge
@@ -157,20 +156,18 @@ export function ContextScopeModal({
 
         <CredenzaFooter className="flex items-center gap-2 sm:justify-between">
           <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs gap-1"
+            icon={<X />}
+            variant="quiet"
             onClick={handleClear}
-          >
-            <X className="h-3 w-3" /> Clear All
+          > Clear All
           </Button>
           <div className="flex items-center gap-2">
             <CredenzaClose asChild>
-              <Button variant="outline" size="sm" className="text-xs">
+              <Button variant="outline">
                 Cancel
               </Button>
             </CredenzaClose>
-            <Button size="sm" className="text-xs" onClick={handleApply}>
+            <Button variant="primary" onClick={handleApply}>
               Apply Scope
             </Button>
           </div>

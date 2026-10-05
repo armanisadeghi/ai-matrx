@@ -169,9 +169,9 @@ export function ConnectorPromptCard({
           </p>
           <div className="mt-2.5">
             <Button
-              size="sm"
+              variant="primary"
               onClick={onConnect}
-              className="h-11 w-full text-sm sm:h-8 sm:w-auto"
+              className="w-full sm:w-auto"
             >
               {provider.prompt.cta}
             </Button>

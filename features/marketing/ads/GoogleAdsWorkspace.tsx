@@ -270,7 +270,10 @@ export function GoogleAdsWorkspace() {
                 </span>
               </label>
               <Button
-                className="min-h-11"
+                icon={connect.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 onClick={authorize}
                 disabled={
                   !disclosureAccepted ||
@@ -278,21 +281,18 @@ export function GoogleAdsWorkspace() {
                   !google.isGoogleLoaded
                 }
               >
-                {connect.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
                 Authorize a dedicated Ads identity
               </Button>
             </div>
           ) : (
             <Button
-              className="min-h-11"
+              icon={customers.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              variant="primary"
               onClick={discoverCustomers}
               disabled={customers.isPending}
             >
-              {customers.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
               Discover accessible Ads accounts
             </Button>
           )}
@@ -352,13 +352,13 @@ export function GoogleAdsWorkspace() {
               />
             </div>
             <Button
-              className="min-h-11"
+              icon={report.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              variant="primary"
               onClick={loadReport}
               disabled={!selectedCustomer || report.isPending}
             >
-              {report.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
               Load report
             </Button>
           </CardContent>
@@ -402,9 +402,7 @@ export function GoogleAdsWorkspace() {
               </div>
               <Button
                 asChild
-                className="min-h-11 sm:min-h-8"
                 variant="outline"
-                size="sm"
               >
                 <a
                   href="https://ads.google.com/"

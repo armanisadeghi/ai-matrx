@@ -138,6 +138,7 @@ export function NotificationConsent({
       {variant === "prompt" ? (
         <div className="flex items-center justify-end gap-2">
           <Button
+            variant="primary"
             onClick={() => {
               onAcknowledge?.();
             }}

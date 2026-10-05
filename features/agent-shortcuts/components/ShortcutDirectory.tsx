@@ -192,20 +192,19 @@ export function ShortcutDirectory({
       cellKind: "text",
       cell: (row) => (
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-full justify-start gap-1 px-1 font-mono text-xs"
+          icon={copiedId === row.id ? (
+            <Check className="text-success" />
+          ) : (
+            <Copy />
+          )}
+          variant="quiet"
+          className="w-full justify-start"
           title={`Copy full shortcut ID: ${row.id}`}
           onClick={(event) => {
             event.stopPropagation();
             void copyId(row.id);
           }}
         >
-          {copiedId === row.id ? (
-            <Check className="size-3 shrink-0 text-success" />
-          ) : (
-            <Copy className="size-3 shrink-0" />
-          )}
           <span>{row.id.slice(0, 8)}</span>
         </Button>
       ),
@@ -387,8 +386,8 @@ export function ShortcutDirectory({
             rel="noopener noreferrer"
           >
             <Button
+              type="submit"
               variant="outline"
-              size="sm"
               aria-label={`Open ${row.label}`}
             >
               <ExternalLink className="size-3" />
@@ -544,17 +543,16 @@ export function ShortcutDirectory({
           actions: (
             <div className="flex items-center gap-2">
               {manageHref && manageLabel && (
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" asChild>
                   <Link href={manageHref}>{manageLabel}</Link>
                 </Button>
               )}
               {hasDirectoryFilters && (
                 <Button
+                  icon={<X />}
                   variant="outline"
-                  size="sm"
                   onClick={clearDirectoryFilters}
                 >
-                  <X className="mr-2 size-4" />
                   Clear filters
                 </Button>
               )}
@@ -588,7 +586,7 @@ export function ShortcutDirectory({
                     className="h-8 font-mono text-xs"
                     aria-label="Shortcut UUID"
                   />
-                  <Button size="sm" onClick={handleIdLookup}>
+                  <Button variant="primary" onClick={handleIdLookup}>
                     Go
                   </Button>
                 </div>

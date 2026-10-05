@@ -99,7 +99,7 @@ const BookmarkViewer = ({ pageData }: { pageData: unknown }) => {
               Cancel
             </Button>
           ) : (
-            <Button onClick={() => setShowImport(true)}>
+            <Button variant="primary" onClick={() => setShowImport(true)}>
               Import Bookmarks
             </Button>
           )}
@@ -134,7 +134,7 @@ const BookmarkViewer = ({ pageData }: { pageData: unknown }) => {
                 className="min-h-32"
                 placeholder="Paste your bookmark JSON here..."
               />
-              <Button onClick={handleImport}>Import</Button>
+              <Button variant="primary" onClick={handleImport}>Import</Button>
             </div>
           </CardContent>
         </Card>

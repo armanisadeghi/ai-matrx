@@ -7,7 +7,7 @@
 
 import React from "react";
 import { FileCode } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,

@@ -128,21 +128,18 @@ export function JsonExtractionPanel({ content }: JsonExtractionPanelProps) {
           </div>
           <Separator orientation="vertical" className="h-5" />
           <Button
-            size="sm"
+            icon={<Play />}
+            variant="primary"
             onClick={runExtraction}
-            className="h-7 px-2.5 text-xs"
             disabled={!content.trim()}
           >
-            <Play className="mr-1 h-3 w-3" />
             Extract now
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<RotateCcw />}
+            variant="quiet"
             onClick={resetAll}
-            className="h-7 px-2.5 text-xs"
           >
-            <RotateCcw className="mr-1 h-3 w-3" />
             Reset
           </Button>
         </div>
@@ -293,9 +290,8 @@ function JsonResultCard({
           )}
           <div className="relative">
             <Button
-              size="sm"
-              variant="ghost"
-              className="absolute right-1 top-1 z-10 h-5 px-1.5 text-[10px]"
+              variant="quiet"
+              className="absolute right-1 top-1 z-10"
               onClick={() => void handleCopy()}
               aria-label="Copy JSON"
             >

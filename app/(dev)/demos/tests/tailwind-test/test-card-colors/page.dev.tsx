@@ -39,7 +39,7 @@ const CardTest = () => {
           </div>
         </CardContent>
         <CardFooter>
-          <Button>Sample Button</Button>
+          <Button type="submit" variant="primary">Sample Button</Button>
         </CardFooter>
       </Card>
       

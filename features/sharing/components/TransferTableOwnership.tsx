@@ -21,7 +21,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRightLeft, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

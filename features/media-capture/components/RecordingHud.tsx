@@ -169,33 +169,28 @@ export function RecordingHud({
 
       <div className="flex items-center gap-2">
         <Button
+          icon={paused ? (
+            <Play />
+          ) : (
+            <Pause />
+          )}
           variant="outline"
-          size="sm"
-          className="h-11 sm:h-9"
           onClick={onPauseResume}
           aria-label={paused ? "Resume recording" : "Pause recording"}
         >
-          {paused ? (
-            <Play className="mr-1.5 h-4 w-4" />
-          ) : (
-            <Pause className="mr-1.5 h-4 w-4" />
-          )}
           {paused ? "Resume" : "Pause"}
         </Button>
         <Button
-          variant="destructive"
-          size="sm"
-          className="h-11 flex-1 sm:h-9"
+          icon={<Square />}
+          variant="danger"
+          className="flex-1"
           onClick={onStop}
           aria-label="Stop recording and review"
         >
-          <Square className="mr-1.5 h-4 w-4" />
           Stop
         </Button>
         <Button
           variant="outline"
-          size="sm"
-          className="h-11 sm:h-9"
           onClick={onCancel}
           aria-label="Discard recording"
         >

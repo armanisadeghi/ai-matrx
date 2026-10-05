@@ -67,7 +67,6 @@ export default function DrillDeckContextPickerDisplay({
           />
           <Button
             variant="outline"
-            size="sm"
             onClick={() => openContextWindow()}
           >
             Open WindowPanel

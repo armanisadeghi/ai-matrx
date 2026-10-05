@@ -552,6 +552,14 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
     color: "cyan",
   },
   {
+    // THE template gallery (lane CHAIR-GALLERY): one public route for everyone, signed in or out.
+    label: "Templates",
+    href: "/templates",
+    iconName: "LayoutTemplate",
+    description: "Ready-made tables, forms and booking pages with sample data",
+    color: "cyan",
+  },
+  {
     label: "Data Tables Window",
     href: "/data",
     iconName: NAV_WINDOW_PANEL_ICON,

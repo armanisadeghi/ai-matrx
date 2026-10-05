@@ -402,9 +402,8 @@ export function RulingSession({
         <div className="flex items-center gap-2">
           {trialReady ? (
             <Button
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
               onClick={() => setTrialOpen(true)}
               title={`Have the system answer ${trialDimension?.label.toLowerCase()} for the next ${trialBatch} the way you just did`}
             >
@@ -414,25 +413,21 @@ export function RulingSession({
           ) : null}
           {fastDimension ? (
             <Button
+              icon={<ShieldQuestion />}
               type="button"
               variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 text-xs"
               onClick={() => setVerifyOpen(true)}
               title={`The system re-answers your ${fastDimension.label.toLowerCase()} rulings cold — never shown your answers — and you argue the disagreements`}
             >
-              <ShieldQuestion className="h-3.5 w-3.5" />
               Blind-check my rulings
             </Button>
           ) : null}
           <Button
+            icon={<X />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
             onClick={onExit}
           >
-            <X className="h-3.5 w-3.5" />
             Done for now
           </Button>
         </div>
@@ -488,17 +483,14 @@ export function RulingSession({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs"
                   onClick={() => setSeen([])}
                 >
                   Show me the ones I skipped
                 </Button>
               ) : null}
               <Button
+                variant="primary"
                 type="button"
-                size="sm"
-                className="h-7 text-xs"
                 onClick={onExit}
               >
                 Back to the workbench
@@ -677,14 +669,12 @@ export function RulingSession({
 
             <div className="mt-2.5 flex items-center justify-between gap-2">
               <Button
+                icon={<SkipForward />}
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1.5 px-2 text-xs text-muted-foreground"
+                variant="quiet"
                 disabled={busy}
                 onClick={() => advance(current.keywordId)}
               >
-                <SkipForward className="h-3.5 w-3.5" />
                 Not sure — skip
                 <span className="ml-1 rounded bg-muted px-1 text-[10px]">s</span>
               </Button>

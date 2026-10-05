@@ -368,20 +368,17 @@ export function AgentSurfacesPanel({ agent }: Props) {
         )}
         <div className="ml-auto flex items-center gap-1.5">
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={() => void load(true)}
-            className="h-7 gap-1.5 text-xs"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </Button>
           <Button
-            size="sm"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => openNew(null)}
-            className="h-7 gap-1.5 text-xs"
           >
-            <Plus className="h-3.5 w-3.5" />
             New binding
           </Button>
         </div>
@@ -591,12 +588,11 @@ function SurfaceRow({
           <SurfaceMandateRoles surfaceName={surface.name} />
         </div>
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<Plus />}
+          variant="quiet"
           onClick={onAdd}
-          className="h-7 gap-1 text-xs shrink-0"
+          className="shrink-0"
         >
-          <Plus className="h-3.5 w-3.5" />
           Bind
         </Button>
       </div>
@@ -716,10 +712,8 @@ function BindingRow({
       {scopeTags.length > 0 && (
         <Button
           type="button"
-          size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={openScopeAssignments}
-          className="h-5 px-1.5 text-[10px] font-normal"
           aria-label={`Edit ${scopeTags.length} scope ${scopeTags.length === 1 ? "assignment" : "assignments"} for ${label}`}
         >
           {scopeTags.length} scope{scopeTags.length === 1 ? "" : "s"}
@@ -727,29 +721,25 @@ function BindingRow({
       )}
       <div className="ml-auto flex items-center gap-0.5">
         <Button
-          size="sm"
-          variant="ghost"
+          icon={<Zap />}
+          variant="quiet"
           onClick={() => onCreateShortcut(binding)}
-          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
           aria-label="Create shortcut from this binding"
         >
-          <Zap className="h-3 w-3" />
           Shortcut
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={onEdit}
-          className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
+          className="w-6"
           aria-label="Edit binding"
         >
           <Pencil className="h-3 w-3" />
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={onDelete}
-          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+          className="w-6"
           aria-label="Remove binding"
         >
           <Trash2 className="h-3 w-3" />
@@ -1101,10 +1091,10 @@ function BindingEditorDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={() => void onSave()} disabled={busy || !surfaceName}>
+          <Button variant="primary" onClick={() => void onSave()} disabled={busy || !surfaceName}>
             {busy ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : existing ? (
@@ -1299,10 +1289,11 @@ function CreateShortcutFromBindingDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={() => void onCreate()}
             disabled={busy || !categoryId}
           >

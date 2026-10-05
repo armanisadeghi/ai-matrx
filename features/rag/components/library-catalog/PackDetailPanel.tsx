@@ -165,19 +165,18 @@ function UseOnSite({ packId }: { packId: string }) {
         </Select>
       ) : null}
       <Button
-        size="sm"
-        className="h-8"
+        icon={going ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <ArrowRight />
+        )}
+        variant="primary"
         disabled={going}
         onClick={() => {
           setGoing(true);
           router.push(packReviewHref(chosen.brand_id, chosen.id, packId));
         }}
       >
-        {going ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <ArrowRight className="h-3.5 w-3.5" />
-        )}
         Use on {options.length > 1 ? "this site" : (chosen.name || chosen.domain)}
       </Button>
     </div>

@@ -109,8 +109,7 @@ function UndeliveredBand({
         </p>
       </div>
       <Button
-        size="sm"
-        variant="destructive"
+        variant="danger"
         onClick={onShow}
         className="basis-full sm:basis-auto"
       >
@@ -503,12 +502,11 @@ export function BatchDashboard() {
             KG Cost
           </AppLink>
           <Button
+            icon={<RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", refreshing && "animate-spin")} />}
             variant="outline"
-            size="sm"
             onClick={() => setRefreshTick((t) => t + 1)}
             disabled={refreshing}
           >
-            <RefreshCw className={cn("mr-1.5 h-3.5 w-3.5", refreshing && "animate-spin")} />
             Refresh
           </Button>
         </div>

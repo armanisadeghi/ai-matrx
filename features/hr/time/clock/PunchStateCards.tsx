@@ -61,7 +61,7 @@ export function PunchBlockedCard({ blocked }: { blocked: NonNullable<ClockState[
           {/* The server's sentence, verbatim. Never replaced with a generic one. */}
           <p className="text-base text-foreground">{blocked.message}</p>
           {blocked.door && (
-            <Button asChild variant="outline" className="min-h-[48px] w-fit gap-2">
+            <Button asChild variant="outline" className="w-fit">
               <Link href={blocked.door}>
                 {doorLabel(blocked.reasonCode)}
                 <ArrowRight className="size-4" />
@@ -118,13 +118,13 @@ export function PunchOfflineCard({
           </div>
           {intent && (
             <Button
+              icon={<RotateCcw />}
               type="button"
               variant="outline"
               disabled={busy}
               onClick={onRetry}
-              className="min-h-[48px] w-fit gap-2"
+              className="w-fit"
             >
-              <RotateCcw className="size-4" />
               Try {punchKindPresentation(intent.kind).label.toLowerCase()} again
             </Button>
           )}
@@ -170,26 +170,26 @@ export function PunchErrorCard({
           <p className="text-base text-foreground">{error.userMessage}</p>
           {!intent && (
             <Button
+              icon={<RotateCcw />}
               type="button"
               variant="outline"
               disabled={busy}
               onClick={onReload}
-              className="min-h-[48px] w-fit gap-2"
+              className="w-fit"
             >
-              <RotateCcw className="size-4" />
               Try again
             </Button>
           )}
           {intent && error.retryable && (
             <div className="flex flex-col gap-2">
               <Button
+                icon={<RotateCcw />}
                 type="button"
                 variant="outline"
                 disabled={busy}
                 onClick={onRetry}
-                className="min-h-[48px] w-fit gap-2"
+                className="w-fit"
               >
-                <RotateCcw className="size-4" />
                 Try again
               </Button>
               {onStartOver && (
@@ -200,10 +200,10 @@ export function PunchErrorCard({
                 */
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="quiet"
                   disabled={busy}
                   onClick={onStartOver}
-                  className="min-h-[44px] w-fit"
+                  className="w-fit"
                 >
                   Change something and start over
                 </Button>

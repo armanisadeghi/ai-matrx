@@ -13,7 +13,7 @@
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { RotateCcw } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Label } from "@ai-matrx/design-system";
 import { VOICE_INTRO_MANDATE_KEY } from "../../constants";
 import { useMandateAgentInstructions } from "../../agentInstructions";
@@ -48,9 +48,9 @@ export function InstructionsEditor({
           Instructions
         </Label>
         <Button
+          icon={<RotateCcw />}
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           disabled={!canReset}
           title={
             error
@@ -66,7 +66,6 @@ export function InstructionsEditor({
             );
           }}
         >
-          <RotateCcw className="h-3.5 w-3.5 mr-1" />
           Reset
         </Button>
       </div>

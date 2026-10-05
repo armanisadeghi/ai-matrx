@@ -181,7 +181,7 @@ export function UpdateAgentAppModal({
       <Button variant="outline" onClick={() => onOpenChange(false)}>
         Cancel
       </Button>
-      <Button onClick={handleSubmit} disabled={saving}>
+      <Button variant="primary" onClick={handleSubmit} disabled={saving}>
         {saving ? (
           <>
             <Loader2 className="w-4 h-4 animate-spin" />

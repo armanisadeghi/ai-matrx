@@ -1652,39 +1652,31 @@ export function KnowledgeHubPage({
     >
       {/* read-gate-exempt: count of rows the person selected on screen, local selection state */}
       <span className="px-1 font-medium tabular-nums">{selectedHits.length} selected</span>
-      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => setFileUnderFor(selectedHits)}>
-        <FolderInput className="h-3.5 w-3.5" /> File under…
+      <Button icon={<FolderInput />} variant="quiet" disabled={busy} onClick={() => setFileUnderFor(selectedHits)}> File under…
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => setTagFor(selectedHits)} title="Tag (t)">
-        <Hash className="h-3.5 w-3.5" /> Tag…
+      <Button icon={<Hash />} variant="quiet" disabled={busy} onClick={() => setTagFor(selectedHits)} title="Tag (t)"> Tag…
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doTriage(selectedHits, "kept")} title="Keep (s)">
-        <Check className="h-3.5 w-3.5" /> Keep
+      <Button icon={<Check />} variant="quiet" disabled={busy} onClick={() => void doTriage(selectedHits, "kept")} title="Keep (s)"> Keep
       </Button>
-      <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doTriage(selectedHits, "archived")} title="Archive (e)">
-        <Archive className="h-3.5 w-3.5" /> Archive
+      <Button icon={<Archive />} variant="quiet" disabled={busy} onClick={() => void doTriage(selectedHits, "archived")} title="Archive (e)"> Archive
       </Button>
       {triageView && triageView !== "inbox" ? (
-        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doTriage(selectedHits, "inbox")} title="Back to Inbox (i)">
-          <Inbox className="h-3.5 w-3.5" /> Back to Inbox
+        <Button icon={<Inbox />} variant="quiet" disabled={busy} onClick={() => void doTriage(selectedHits, "inbox")} title="Back to Inbox (i)"> Back to Inbox
         </Button>
       ) : null}
       {sourceTargets(selectedHits).length ? (
         <>
-          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doAttach(selectedHits)} title="Attach the selected Sources to a data store, project or Library">
-            <Paperclip className="h-3.5 w-3.5" /> Attach…
+          <Button icon={<Paperclip />} variant="quiet" disabled={busy} onClick={() => void doAttach(selectedHits)} title="Attach the selected Sources to a data store, project or Library"> Attach…
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" disabled={busy} onClick={() => void doProcess(selectedHits)} title="Make the selected Sources searchable now">
-            <Sparkles className="h-3.5 w-3.5" /> Process now
+          <Button icon={<Sparkles />} variant="quiet" disabled={busy} onClick={() => void doProcess(selectedHits)} title="Make the selected Sources searchable now"> Process now
           </Button>
         </>
       ) : null}
       {selectedTranscriptHits ? (
         <>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs"
+            icon={<Download />}
+            variant="quiet"
             disabled={busy || !selectedTranscriptRows.length}
             onClick={() => void doTranscriptExport()}
             title={
@@ -1692,19 +1684,16 @@ export function KnowledgeHubPage({
                 ? "Download a CSV of the selected transcript items"
                 : "Reading the selected transcripts' details…"
             }
-          >
-            <Download className="h-3.5 w-3.5" /> Export
+          > Export
           </Button>
           {serverTranscripts && (transcriptList.total ?? 0) > selectedHits.length ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 text-xs"
+              icon={<Download />}
+              variant="quiet"
               disabled={busy}
               onClick={() => void doTranscriptExportAll()}
               title="Download a CSV of every transcript these filters match, not only the selected ones"
-            >
-              <Download className="h-3.5 w-3.5" /> Export all {(transcriptList.total ?? 0).toLocaleString()} matching
+            > Export all {(transcriptList.total ?? 0).toLocaleString()} matching
             </Button>
           ) : null}
           {selectedTranscriptRows.length ? (
@@ -1739,15 +1728,13 @@ export function KnowledgeHubPage({
         </>
       ) : null}
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-7 gap-1 text-xs text-destructive hover:bg-destructive/10"
+        icon={<Trash2 />}
+        variant="quiet"
         disabled={busy}
         onClick={() => void doTrash(selectedHits)}
-      >
-        <Trash2 className="h-3.5 w-3.5" /> Trash
+      > Trash
       </Button>
-      <Button size="sm" variant="ghost" className="ml-auto h-7 w-7 p-0" aria-label="Clear selection (Esc)" onClick={() => setSelected(new Set())}>
+      <Button variant="quiet" className="ml-auto w-7" aria-label="Clear selection (Esc)" onClick={() => setSelected(new Set())}>
         <X className="h-3.5 w-3.5" />
       </Button>
     </div>
@@ -1760,7 +1747,7 @@ export function KnowledgeHubPage({
     <>
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="ghost" className="h-8 w-8 p-0 @2xl:hidden" aria-label={`Layout: ${LAYOUT_LABEL[state.layout]}. Change`}>
+        <Button variant="quiet" className="w-8 @2xl:hidden" aria-label={`Layout: ${LAYOUT_LABEL[state.layout]}. Change`}>
           <LayoutIcon className="h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
@@ -1883,7 +1870,7 @@ export function KnowledgeHubPage({
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="sm" variant="ghost" className="h-8 w-8 p-0" aria-label="Search settings" title="Search settings">
+              <Button variant="quiet" className="w-8" aria-label="Search settings" title="Search settings">
                 <Settings2 className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -1901,20 +1888,18 @@ export function KnowledgeHubPage({
           </DropdownMenu>
           {dirty && openSavedView?.mine ? (
             <Button
-              size="sm"
-              variant="default"
-              className="h-8 gap-1.5"
+              icon={<Save />}
+              variant="primary"
               onClick={() => void onViewAction(openSavedView, "save_changes")}
               title="Save these filters and layout to this view"
-            >
-              <Save className="h-3.5 w-3.5" /> Save changes
+            > Save changes
             </Button>
           ) : null}
           {transcriptsView ? (
             // The Transcripts module is its own home (Arman, 2026-09-29): this view is
             // transcripts as knowledge; managing them happens at /transcripts. Same
             // search, scope and filters carried across.
-            <Button asChild size="sm" variant="ghost" className="h-8 gap-1 px-2.5">
+            <Button asChild variant="quiet">
               <Link href={hubToTranscriptsHref(state)} title="Manage transcripts, recordings and meetings in the Transcripts module, on the same search and filters">
                 <ArrowLeft className="h-4 w-4" />
                 <span className="hidden @3xl:inline">Open in Transcripts</span>
@@ -1923,7 +1908,7 @@ export function KnowledgeHubPage({
             </Button>
           ) : null}
           {transcriptsView ? (
-            <Button asChild size="sm" className="h-8 gap-1 px-2.5">
+            <Button variant="primary" asChild>
               <Link href="/transcripts/new" aria-label="New transcript" title="Record, upload or paste a new transcript">
                 <Plus className="h-4 w-4" />
                 <span className="@3xl:hidden">New</span>
@@ -1932,13 +1917,11 @@ export function KnowledgeHubPage({
             </Button>
           ) : null}
           <Button
-            size="sm"
+            icon={<BookmarkPlus />}
             variant="outline"
-            className="h-8 gap-1.5"
             onClick={() => setSaveDialog({ mode: "create" })}
             title="Save view (⌥V)"
           >
-            <BookmarkPlus className="h-3.5 w-3.5" />
             <span className="@3xl:hidden">Save</span>
             <span className="hidden @3xl:inline">{dirty ? "Save as new view" : "Save view"}</span>
             <kbd className="ml-0.5 hidden rounded border border-border px-1 text-[10px] text-muted-foreground @4xl:inline">⌥V</kbd>
@@ -2115,13 +2098,12 @@ export function KnowledgeHubPage({
               // A narrowed list says how to widen it first — "Nothing in Acme matches" + Clear filters —
               // even in Everything, where the empty library would otherwise show the getting-started kit.
               viewFiltered || hasFacetSelection(facetSel) || state.stage.length ? (
-                <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={clearFilters}>
-                  <X className="h-4 w-4" /> Clear filters
+                <Button icon={<X />} variant="outline" onClick={clearFilters}> Clear filters
                 </Button>
               ) : state.view.kind === "everything" && !sample ? (
                 <HubGettingStarted />
               ) : transcriptsView ? (
-                <Button asChild size="sm" className="h-8 gap-1.5">
+                <Button variant="primary" asChild>
                   <Link href="/transcripts/new">
                     <Plus className="h-4 w-4" /> Record, upload or paste a transcript
                   </Link>

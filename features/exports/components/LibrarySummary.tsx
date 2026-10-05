@@ -167,8 +167,7 @@ export function LibrarySummary({
         )}
         <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 shrink-0">
-              <Info className="h-4 w-4" />
+            <Button icon={<Info />} variant="outline" className="shrink-0">
               <span className="max-sm:sr-only">Details</span>
             </Button>
           </DialogTrigger>

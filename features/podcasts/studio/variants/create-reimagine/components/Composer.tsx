@@ -123,7 +123,7 @@ export function Composer() {
           The podcast studio turns any idea, document, or note into a fully
           produced two-host episode — with cover art, video, and audio.
         </p>
-        <Button asChild className="gap-2">
+        <Button variant="primary" asChild>
           <Link href="/login?next=/podcast/studio/create-reimagine">
             <LogIn className="h-4 w-4" />
             Sign in
@@ -260,27 +260,23 @@ export function Composer() {
                   />
                   {urls.length > 1 && (
                     <Button
+                      icon={<X />}
                       type="button"
-                      variant="ghost"
-                      size="icon"
+                      variant="quiet"
                       onClick={() =>
                         setUrls((prev) => prev.filter((_, idx) => idx !== i))
                       }
                       aria-label="Remove URL"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                   )}
                 </div>
               ))}
               <Button
+                icon={<Plus />}
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setUrls((prev) => [...prev, ""])}
-                className="gap-1.5 text-muted-foreground"
               >
-                <Plus className="h-4 w-4" />
                 Add another file URL
               </Button>
             </div>
@@ -306,18 +302,17 @@ export function Composer() {
             onHostCount={setHostCount}
           />
           <Button
-            size="lg"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <AudioLines />
+            )} iconEnd={!busy && <ArrowRight />}
+            variant="primary"
             onClick={handleGenerate}
             disabled={!canGenerate}
-            className="gap-2 self-end rounded-full shadow-md sm:self-auto"
+            className="self-end sm:self-auto"
           >
-            {busy ? (
-              <Loader2 className="h-4.5 w-4.5 animate-spin" />
-            ) : (
-              <AudioLines className="h-4.5 w-4.5" />
-            )}
             {busy ? "Starting…" : "Generate episode"}
-            {!busy && <ArrowRight className="h-4 w-4" />}
           </Button>
         </div>
       </div>

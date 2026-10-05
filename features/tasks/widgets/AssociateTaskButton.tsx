@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import {
   useAssociateTask,

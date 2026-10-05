@@ -14,7 +14,7 @@
 
 import { useState } from "react";
 import { AlertCircle, ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
 import type { ScrapeFailure } from "@/features/scraper/failure/scrapeFailure";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

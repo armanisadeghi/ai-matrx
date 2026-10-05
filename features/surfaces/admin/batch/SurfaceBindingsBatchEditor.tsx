@@ -557,19 +557,20 @@ export function SurfaceBindingsBatchEditor({
           )}
         </div>
         <Button
+          icon={applying ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Rocket />
+          )}
+          variant="primary"
           onClick={() => void onApply()}
           disabled={
             applying ||
             targetSurfaceNames.size === 0 ||
             countReadState({ read: bindingsRead }) !== "ready"
           }
-          className="ml-auto h-9 gap-1.5 text-sm min-w-[120px]"
+          className="ml-auto min-w-[120px]"
         >
-          {applying ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Rocket className="h-4 w-4" />
-          )}
           Apply to {targetSurfaceNames.size || ""}
         </Button>
       </footer>

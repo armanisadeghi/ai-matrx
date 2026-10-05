@@ -801,9 +801,7 @@ export function GscDimensionTable({
                       {BULK_CLASS_OPTIONS.map((option) => (
                         <Button
                           key={option.value}
-                          size="sm"
                           variant="outline"
-                          className="h-7 px-2 text-xs"
                           disabled={bulkPending || !selected.some((row) => Boolean(row.keyword_id))}
                           onClick={() =>
                             void runBulkClassAssign(option.value, selected)

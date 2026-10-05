@@ -151,8 +151,12 @@ export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProp
                     {connection.scopeGranted ? (
                       <>
                         <Button
-                          size="sm"
-                          className="h-8 gap-1.5 text-xs"
+                          icon={fetching === `${busyKey}:auto` ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <CloudDownload />
+                          )}
+                          variant="primary"
                           disabled={fetching !== null}
                           onClick={() =>
                             void runImport(
@@ -162,19 +166,17 @@ export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProp
                             )
                           }
                         >
-                          {fetching === `${busyKey}:auto` ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <CloudDownload className="h-3.5 w-3.5" />
-                          )}
                           {connection.hasSyncCursor ? "Sync changes" : "Import"}
                         </Button>
                         {connection.hasSyncCursor && (
                           <>
                             <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 gap-1.5 text-xs"
+                              icon={fetching === `${busyKey}:full` ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <RefreshCcw />
+                              )}
+                              variant="quiet"
                               disabled={fetching !== null}
                               onClick={() =>
                                 void runImport(
@@ -184,11 +186,6 @@ export function ConnectorSources({ orgId, kind, onLoaded }: ConnectorSourcesProp
                                 )
                               }
                             >
-                              {fetching === `${busyKey}:full` ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <RefreshCcw className="h-3.5 w-3.5" />
-                              )}
                               Full re-import
                             </Button>
                             {connection.lastSyncedAt && (
@@ -285,13 +282,11 @@ function GoogleAuthorizeContactsButtonBody({
 
   return (
     <Button
-      size="sm"
+      icon={busy ? <Loader2 className="animate-spin" /> : null}
       variant="outline"
-      className="h-8 gap-1.5 text-xs"
       disabled={busy}
       onClick={() => void authorize()}
     >
-      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
       {label}
     </Button>
   );

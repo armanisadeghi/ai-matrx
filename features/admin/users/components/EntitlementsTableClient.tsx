@@ -246,7 +246,7 @@ export function EntitlementsTableClient() {
             search: true,
             searchPlaceholder: "Search capability…",
             actions: (
-              <Button size="sm" variant="outline" onClick={() => void load()}>
+              <Button variant="outline" onClick={() => void load()}>
                 Refresh
               </Button>
             ),

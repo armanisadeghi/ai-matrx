@@ -1269,7 +1269,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                 pageId={page.id}
               />
               {cmsEditorHref ? (
-                <Button asChild variant="outline" size="sm" className="h-8">
+                <Button asChild variant="outline">
                   <Link
                     href={cmsEditorHref}
                     target="_blank"
@@ -1281,7 +1281,7 @@ export function PageWorkspace({ pageId }: { pageId: string }) {
                   </Link>
                 </Button>
               ) : null}
-              <Button asChild variant="outline" size="sm" className="h-8">
+              <Button asChild variant="outline">
                 <Link
                   href={marketingRoutes.site(
                     brandId,

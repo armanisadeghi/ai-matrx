@@ -225,9 +225,7 @@ export function SeoSpendPanel() {
             {data.organizationCount > 1 ? ` (${data.organizationCount} organizations)` : ""}
           </h2>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-[10px]"
+            variant="quiet"
             onClick={() => void spend.refetch()}
             disabled={spend.isFetching}
           >

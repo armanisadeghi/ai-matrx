@@ -125,11 +125,11 @@ export function DangerZone({ organization }: DangerZoneProps) {
             </p>
           </div>
           <Button
+            icon={<Archive />}
+            type="submit"
             variant="outline"
-            size="sm"
             onClick={() => setIsDialogOpen(true)}
           >
-            <Archive className="h-4 w-4 mr-1" />
             Archive
           </Button>
         </div>

@@ -117,17 +117,16 @@ export function DetectorsPanel({ fileId, onJumpToPage }: Props) {
           </button>
         ))}
         <Button
-          size="sm"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check />
+          )}
           variant="outline"
-          className="ml-auto h-6 text-[10px]"
+          className="ml-auto"
           disabled={busy}
           onClick={() => void handleAcceptAllPii()}
         >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-          ) : (
-            <Check className="h-3 w-3 mr-1" />
-          )}
           Accept all PII@{tier}
         </Button>
       </div>

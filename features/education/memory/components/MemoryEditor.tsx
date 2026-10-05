@@ -149,9 +149,9 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
 
       <section className="space-y-3">
         <div className="flex items-center justify-between"><h2 className="text-base font-semibold">Mnemonics</h2>
-          <Button type="button" variant="outline" size="sm" onClick={() => update({ mnemonics: [...aid.mnemonics, { __kind: "mnemonic", technique: "sentence", target: "", device: "", explanation: "" }] })}><Plus className="mr-1 h-4 w-4" />Add mnemonic</Button></div>
+          <Button icon={<Plus />} type="button" variant="outline" onClick={() => update({ mnemonics: [...aid.mnemonics, { __kind: "mnemonic", technique: "sentence", target: "", device: "", explanation: "" }] })}>Add mnemonic</Button></div>
         {aid.mnemonics.map((row, i) => <div key={i} className="space-y-3 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium">Mnemonic {i + 1}</span><Button type="button" variant="ghost" size="icon" aria-label={`Remove mnemonic ${i + 1}`} onClick={() => update({ mnemonics: aid.mnemonics.filter((_, n) => n !== i) })}><Trash2 className="h-4 w-4" /></Button></div>
+          <div className="flex items-center justify-between"><span className="text-sm font-medium">Mnemonic {i + 1}</span><Button icon={<Trash2 />} type="button" variant="quiet" aria-label={`Remove mnemonic ${i + 1}`} onClick={() => update({ mnemonics: aid.mnemonics.filter((_, n) => n !== i) })} /></div>
           <Field label="Material to remember" value={row.target} onChange={(value) => update({ mnemonics: aid.mnemonics.map((item, n) => n === i ? { ...item, target: value } : item) })} />
           <div className="space-y-1"><Label htmlFor={`technique-${i}`}>Technique</Label><select id={`technique-${i}`} className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm" value={row.technique} onChange={(event) => update({ mnemonics: aid.mnemonics.map((item, n) => n === i ? { ...item, technique: event.target.value as typeof item.technique } : item) })}>{MNEMONIC_TECHNIQUES.map((technique) => <option key={technique} value={technique}>{technique}</option>)}</select></div>
           <Field label="Memory device" value={row.device} onChange={(value) => update({ mnemonics: aid.mnemonics.map((item, n) => n === i ? { ...item, device: value } : item) })} />
@@ -160,9 +160,9 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center justify-between"><h2 className="text-base font-semibold">Analogies</h2><Button type="button" variant="outline" size="sm" onClick={() => update({ analogies: [...aid.analogies, { __kind: "analogy", concept: "", analogy: "", mapping: "" }] })}><Plus className="mr-1 h-4 w-4" />Add analogy</Button></div>
+        <div className="flex items-center justify-between"><h2 className="text-base font-semibold">Analogies</h2><Button icon={<Plus />} type="button" variant="outline" onClick={() => update({ analogies: [...aid.analogies, { __kind: "analogy", concept: "", analogy: "", mapping: "" }] })}>Add analogy</Button></div>
         {aid.analogies.map((row, i) => <div key={i} className="space-y-3 rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between"><span className="text-sm font-medium">Analogy {i + 1}</span><Button type="button" variant="ghost" size="icon" aria-label={`Remove analogy ${i + 1}`} onClick={() => update({ analogies: aid.analogies.filter((_, n) => n !== i) })}><Trash2 className="h-4 w-4" /></Button></div>
+          <div className="flex items-center justify-between"><span className="text-sm font-medium">Analogy {i + 1}</span><Button icon={<Trash2 />} type="button" variant="quiet" aria-label={`Remove analogy ${i + 1}`} onClick={() => update({ analogies: aid.analogies.filter((_, n) => n !== i) })} /></div>
           {(["concept", "analogy", "mapping"] as const).map((key) => <Field key={key} label={key === "mapping" ? "How they match" : key[0].toUpperCase() + key.slice(1)} value={row[key] ?? ""} onChange={(value) => update({ analogies: aid.analogies.map((item, n) => n === i ? { ...item, [key]: value } : item) })} />)}
         </div>)}
       </section>
@@ -172,15 +172,15 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
         {aid.memory_palace.applicable && <>
           <Field label="Journey setting" value={aid.memory_palace.theme ?? ""} onChange={(value) => update({ memory_palace: { ...aid.memory_palace, theme: value } })} />
           {aid.memory_palace.loci.map((row, i) => <div key={i} className="space-y-3 rounded-lg border border-border p-3">
-            <div className="flex items-center justify-between"><span className="text-sm font-medium">Stop {i + 1}</span><Button type="button" variant="ghost" size="icon" aria-label={`Remove stop ${i + 1}`} onClick={() => update({ memory_palace: { ...aid.memory_palace, loci: aid.memory_palace.loci.filter((_, n) => n !== i) } })}><Trash2 className="h-4 w-4" /></Button></div>
+            <div className="flex items-center justify-between"><span className="text-sm font-medium">Stop {i + 1}</span><Button icon={<Trash2 />} type="button" variant="quiet" aria-label={`Remove stop ${i + 1}`} onClick={() => update({ memory_palace: { ...aid.memory_palace, loci: aid.memory_palace.loci.filter((_, n) => n !== i) } })} /></div>
             {(["place", "item", "image"] as const).map((key) => <Field key={key} label={key[0].toUpperCase() + key.slice(1)} value={row[key] ?? ""} onChange={(value) => update({ memory_palace: { ...aid.memory_palace, loci: aid.memory_palace.loci.map((item, n) => n === i ? { ...item, [key]: value } : item) } })} />)}
           </div>)}
-          <Button type="button" variant="outline" size="sm" onClick={() => update({ memory_palace: { ...aid.memory_palace, loci: [...aid.memory_palace.loci, { __kind: "locus", place: "", item: "", image: "" }] } })}><Plus className="mr-1 h-4 w-4" />Add stop</Button>
+          <Button icon={<Plus />} type="button" variant="outline" onClick={() => update({ memory_palace: { ...aid.memory_palace, loci: [...aid.memory_palace.loci, { __kind: "locus", place: "", item: "", image: "" }] } })}>Add stop</Button>
         </>}
       </section>
 
       {errorMessage && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{errorMessage}<ErrorAlchemyMenu error={errorMessage} /></p>}
-      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.back(); }}>Cancel</Button><Button type="button" disabled={saving} onClick={save}>{saving ? "Saving…" : media ? "Save changes" : "Create memory aid"}</Button></div>
+      <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.back(); }}>Cancel</Button><Button variant="primary" type="button" disabled={saving} onClick={save}>{saving ? "Saving…" : media ? "Save changes" : "Create memory aid"}</Button></div>
     </main>
   </SurfaceRuntimeProvider>;
 }

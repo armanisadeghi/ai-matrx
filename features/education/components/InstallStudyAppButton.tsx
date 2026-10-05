@@ -40,12 +40,11 @@ export function InstallStudyAppButton({
     return (
       <>
         <Button
+          icon={<Download />}
           variant="outline"
-          size="sm"
           className={className}
           onClick={() => setIosOpen(true)}
         >
-          <Download className="mr-2 h-4 w-4" />
           Add to Home Screen
         </Button>
         <Drawer open={iosOpen} onOpenChange={setIosOpen}>
@@ -82,8 +81,8 @@ export function InstallStudyAppButton({
 
   return (
     <Button
+      icon={<Download />}
       variant="outline"
-      size="sm"
       className={className}
       onClick={async () => {
         const outcome = await install();
@@ -92,7 +91,6 @@ export function InstallStudyAppButton({
         }
       }}
     >
-      <Download className="mr-2 h-4 w-4" />
       Install the study app
     </Button>
   );

@@ -869,7 +869,7 @@ export function NewRulebookFlow() {
           </section>
 
           <div className="flex items-center justify-between border-t border-border pt-6">
-            <Button asChild variant="ghost" className="min-h-[44px] gap-2">
+            <Button asChild variant="quiet">
               <Link href="/masterwork/all">
                 <ArrowLeft className="h-4 w-4" />
                 Back
@@ -908,7 +908,6 @@ export function NewRulebookFlow() {
               <p>{approachError}</p>
               <Button
                 variant="outline"
-                size="sm"
                 onClick={registry.reload}
               >
                 Try again
@@ -1058,7 +1057,7 @@ export function NewRulebookFlow() {
               you can hand to this Rulebook once you start it. Your answers are
               saved; come straight back.
             </p>
-            <Button asChild variant="outline" className="mt-3 min-h-[44px] gap-2">
+            <Button asChild variant="outline" className="mt-3">
               <Link href={`${LIBRARIES_PATH}?from=rulebook`}>
                 <Library className="h-4 w-4" />
                 Bring a whole YouTube channel
@@ -1107,12 +1106,11 @@ export function NewRulebookFlow() {
           ) : null}
           <div className="sticky bottom-0 z-20 -mx-4 flex flex-wrap items-center justify-between gap-3 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur supports-[backdrop-filter]:bg-background/80 sm:-mx-6 sm:px-6">
             <Button
-              variant="ghost"
+              icon={<ArrowLeft />}
+              variant="quiet"
               onClick={() => toStep(1)}
               disabled={saving}
-              className="min-h-[44px] gap-2"
             >
-              <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
             <div className="flex min-w-0 items-center gap-3">
@@ -1136,17 +1134,18 @@ export function NewRulebookFlow() {
                 )}
               </p>
               <Button
+                icon={saving || orgState.organizationState === "resolving" ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 onClick={() => {
                   if (!orgState.organizationId) return;
                   void create(orgState.organizationId);
                 }}
                 disabled={saving || Boolean(orgReason) || !effectiveKey}
                 title={orgReason ?? undefined}
-                className="min-h-[44px] shrink-0 gap-2 px-7"
+                className="shrink-0"
               >
-                {saving || orgState.organizationState === "resolving" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : null}
                 {orgState.organizationState === "resolving"
                   ? "Getting ready…"
                   : saving

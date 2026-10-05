@@ -56,12 +56,10 @@ export default function TaskLabels({ labels, onChange, readonly = false }: TaskL
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              icon={<Plus size={10} />}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-5 px-1.5 text-xs text-muted-foreground gap-1 rounded-full border border-dashed border-border hover:border-primary/50"
+              variant="quiet"
             >
-              <Plus size={10} />
               Label
             </Button>
           </DropdownMenuTrigger>

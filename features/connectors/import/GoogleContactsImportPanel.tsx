@@ -672,7 +672,6 @@ export function GoogleContactsImportPanel({
         </ul>
         <div className="flex gap-2">
           <Button
-            size="sm"
             variant="outline"
             onClick={() => {
               setDone(null);
@@ -693,8 +692,7 @@ export function GoogleContactsImportPanel({
       <div className="flex h-full min-h-0 flex-col">
         <div className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-2">
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => setStep("pick")}
             disabled={busy}
           >
@@ -705,12 +703,11 @@ export function GoogleContactsImportPanel({
             {plans.length} contact{plans.length === 1 ? "" : "s"} — check where each
             value lands, then save.
           </span>
-          <Button size="sm" className="ml-auto" onClick={apply} disabled={busy}>
-            {busy ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+          <Button icon={busy ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <UserPlus className="mr-1 h-3.5 w-3.5" />
-            )}
+              <UserPlus />
+            )} variant="primary" className="ml-auto" onClick={apply} disabled={busy}>
             Save {plans.length} to People
           </Button>
         </div>
@@ -952,13 +949,12 @@ export function GoogleContactsImportPanel({
               ABSENT while that notice is up rather than dead beside it. */}
           {readFailure?.kind === "several_accounts" ? null : (
             <Button
-              size="sm"
-              variant="ghost"
-              className="ml-auto h-7 gap-1 px-2 text-xs"
+              icon={<RefreshCw />}
+              variant="quiet"
+              className="ml-auto"
               onClick={retryRead}
               disabled={loading}
             >
-              <RefreshCw className="h-3 w-3" />
               Refresh
             </Button>
           )}
@@ -1106,16 +1102,15 @@ export function GoogleContactsImportPanel({
               </div>
               {contact.already_imported && contact.person_id ? (
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 shrink-0 px-2 text-xs"
+                  variant="quiet"
+                  className="shrink-0"
                   onClick={() => void review([contact.external_id])}
                 >
                   Update from Google
                 </Button>
               ) : null}
               {writeConnection && contact.external_id.startsWith("people/") ? (
-                <Button size="sm" variant="outline" className="shrink-0"
+                <Button variant="outline" className="shrink-0"
                   onClick={() => setEditingGoogleContact((current) => current === contact.external_id ? null : contact.external_id)}>
                   {editingGoogleContact === contact.external_id ? "Close edit" : "Edit in Google"}
                 </Button>
@@ -1144,12 +1139,12 @@ export function GoogleContactsImportPanel({
           {selectionControls.ids.length} selected
         </span>
         <Button
-          size="sm"
+          icon={busy ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           className="ml-auto"
           onClick={() => void review()}
           disabled={busy || selectionControls.ids.length === 0}
         >
-          {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
           Review the field map
         </Button>
       </div>

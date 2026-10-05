@@ -174,18 +174,17 @@ function EditVocabularyButton({
 }) {
   return (
     <Button
+      icon={<Pencil />}
       type="button"
-      size="sm"
       variant="outline"
       onClick={onClick}
-      className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+      className="shrink-0"
       title={
         isTemplate
           ? `Adopt the platform ${noun} and make them yours — rename them, move the thresholds, add your own.`
           : `Rename these ${noun}, move the thresholds, add or remove them.`
       }
     >
-      <Pencil className="h-3 w-3" />
       {isTemplate ? "Adopt & edit" : "Edit"}
     </Button>
   );
@@ -447,14 +446,13 @@ export function MeaningPanel({
                 Bench
               </Link>
               <Button
+                icon={<Plus />}
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => setEditingRule(null)}
-                className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+                className="shrink-0"
                 title="Write a rule — you will see exactly which of your keywords it moves before you save."
               >
-                <Plus className="h-3 w-3" />
                 New
               </Button>
             </span>
@@ -544,14 +542,13 @@ export function MeaningPanel({
                 onClick={() => setEditing("geo_band")}
               />
               <Button
+                icon={<Plus />}
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => setEditingArea(null)}
-                className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+                className="shrink-0"
                 title="Add an area — the real place names that put a search into one of these bands."
               >
-                <Plus className="h-3 w-3" />
                 Area
               </Button>
             </span>

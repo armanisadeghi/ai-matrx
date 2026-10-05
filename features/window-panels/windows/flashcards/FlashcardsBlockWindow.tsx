@@ -168,22 +168,18 @@ export function FlashcardsBlockWindow({
           hasContent && set.flashcards.length > 0 ? (
             <div className="flex items-center gap-1">
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-muted-foreground"
+                icon={<Printer />}
+                variant="quiet"
                 onClick={set.triggerPrint}
               >
-                <Printer className="h-3 w-3" />
                 Print
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs bg-purple-500 dark:bg-purple-600 hover:bg-purple-600 dark:hover:bg-purple-700 text-white"
+                icon={<ArrowUpRight />}
+                variant="quiet"
                 onClick={set.handleOpenInCanvas}
                 disabled={set.openingCanvas}
               >
-                <ArrowUpRight className="h-3 w-3" />
                 Canvas
               </Button>
             </div>

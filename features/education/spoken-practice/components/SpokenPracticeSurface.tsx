@@ -113,7 +113,7 @@ export function SpokenPracticeSurface({
           {practice.error ?? "Something went wrong."}
           <ErrorAlchemyMenu error={practice.error} />
         </p>
-        <Button onClick={practice.reset}>Try again</Button>
+        <Button variant="primary" onClick={practice.reset}>Try again</Button>
       </div>
     );
   } else if (phase === "summary" && selectedMode) {

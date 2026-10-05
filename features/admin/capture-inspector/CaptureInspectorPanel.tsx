@@ -104,15 +104,14 @@ export default function CaptureInspectorPanel({
             Full retention
           </label>
           <Button
+            icon={<Trash2 />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => {
               clearCapturedExchanges();
               setUncontrolledId(null);
             }}
           >
-            <Trash2 className="mr-1.5 h-3.5 w-3.5" />
             Clear
           </Button>
         </div>

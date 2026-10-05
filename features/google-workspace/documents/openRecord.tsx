@@ -50,7 +50,7 @@
 import { useCallback, useState } from "react";
 import { FileText, Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useOpenDetail } from "@ai-matrx/detail/react";

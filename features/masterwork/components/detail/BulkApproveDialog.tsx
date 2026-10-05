@@ -136,10 +136,10 @@ export function BulkApproveDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onConfirm}>Approve {total} rules</Button>
+          <Button variant="primary" onClick={onConfirm}>Approve {total} rules</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

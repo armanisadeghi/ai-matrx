@@ -84,10 +84,8 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
   if (isRecording) {
     return (
       <Button
-        size="sm"
-        variant="destructive"
+        variant="danger"
         onClick={stopCapture}
-        className="gap-1.5"
         title="Stop live capture"
       >
         <span className="relative flex h-2 w-2">
@@ -102,18 +100,16 @@ export function LiveCaptureButton({ noteId }: { noteId: string }) {
 
   return (
     <Button
-      size="sm"
+      icon={isTranscribing || isFinalizing ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <Mic />
+      )}
       variant="outline"
       onClick={start}
       disabled={isTranscribing || isFinalizing}
-      className={cn("gap-1.5")}
       title="Record a lecture and transcribe it live into this note"
     >
-      {isTranscribing || isFinalizing ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Mic className="h-3.5 w-3.5" />
-      )}
       Live capture
     </Button>
   );

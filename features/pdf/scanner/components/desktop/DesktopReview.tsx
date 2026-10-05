@@ -119,14 +119,11 @@ export function DesktopReview({
               </span>
             )}
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground"
+              icon={<Trash2 />}
+              variant="quiet"
               onClick={onDiscard}
               aria-label="Discard scan"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            />
           </div>
         </div>
 
@@ -175,7 +172,7 @@ export function DesktopReview({
               </button>
             </div>
             <Button
-              className="h-11 px-5 shadow-md shadow-primary/20"
+              variant="primary"
               disabled={saveDisabled}
               onClick={onSave}
             >

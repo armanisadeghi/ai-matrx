@@ -58,11 +58,10 @@ export function WhatsWhatDialog({
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          size="sm"
-          variant="ghost"
-          className={cn("h-7 text-muted-foreground", triggerClassName)}
+          icon={<HelpCircle />}
+          variant="quiet"
+          className={triggerClassName}
         >
-          <HelpCircle className="h-3.5 w-3.5" />
           {triggerLabel}
         </Button>
       </DialogTrigger>

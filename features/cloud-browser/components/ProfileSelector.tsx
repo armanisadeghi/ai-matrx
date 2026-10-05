@@ -120,14 +120,13 @@ export function ProfileSelector({
         </Select>
         {onCreate ? (
           <Button
+            icon={<Plus />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-9 shrink-0 gap-1.5"
+            className="shrink-0"
             onClick={() => setCreating(true)}
             title="Start another cloud browser"
           >
-            <Plus className="h-3.5 w-3.5" />
             New browser
           </Button>
         ) : null}

@@ -153,7 +153,7 @@ export function InstantProcessSheet({
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-border px-4 py-3 pb-safe">
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Close
           </Button>
           {(storedResult || showUnrecoverable) && !isRunning && (
@@ -162,8 +162,7 @@ export function InstantProcessSheet({
               Re-analyze
             </Button>
           )}
-          <Button onClick={onNextItem} disabled={isRunning}>
-            <PackagePlus className="mr-1.5 h-4 w-4" />
+          <Button icon={<PackagePlus />} variant="primary" onClick={onNextItem} disabled={isRunning}>
             Next item
           </Button>
         </div>

@@ -455,8 +455,14 @@ function RepairPane({
         </section>
 
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FileCheck2 />
+          )}
+          variant="primary"
           type="button"
-          className="w-full gap-2"
+          className="w-full"
           disabled={
             busy ||
             !agent ||
@@ -467,11 +473,6 @@ function RepairPane({
           }
           onClick={() => void runRepair()}
         >
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <FileCheck2 className="h-4 w-4" />
-          )}
           {busy ? "Reviewing physical pages…" : "Generate correction"}
         </Button>
         {!organizationId ? (
@@ -508,8 +509,7 @@ function RepairPane({
               <Button
                 asChild
                 variant="outline"
-                size="sm"
-                className="w-full gap-1.5"
+                className="w-full"
               >
                 <Link href={`/knowledge/extractions/${jobId}`} target="_blank">
                   Review, edit, and manage output
@@ -550,13 +550,11 @@ export function RagReviewRepairWorkspace({
   const toolbar = (
     <div className="flex shrink-0 items-center gap-2 border-b border-border/70 px-2 py-2">
       <Button
+        icon={<ArrowLeft />}
         type="button"
-        variant="ghost"
-        size="sm"
-        className="h-8 gap-1.5 px-2"
+        variant="quiet"
         onClick={onClose}
       >
-        <ArrowLeft className="h-4 w-4" />
         Results
       </Button>
       <div className="min-w-0 flex-1">
@@ -566,15 +564,13 @@ export function RagReviewRepairWorkspace({
         </p>
       </div>
       <Button
+        icon={<PanelRight />}
         type="button"
         variant="outline"
-        size="sm"
-        className="h-8 gap-1.5 px-2"
         onClick={onOpenSource}
         aria-label="Open the full source document"
         title="Open the full source document"
       >
-        <PanelRight className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Full document</span>
       </Button>
     </div>

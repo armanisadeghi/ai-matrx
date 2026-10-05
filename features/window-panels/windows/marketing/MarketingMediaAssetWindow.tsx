@@ -323,7 +323,7 @@ function MissingAssetState({
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
       <p className="max-w-md text-sm text-muted-foreground">{message}</p>
-      <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+      <Button type="button" variant="outline" onClick={onRetry}>
         Refresh
       </Button>
     </div>
@@ -553,47 +553,41 @@ function AssetInspector({
         <section className="space-y-2 border-t border-border/60 pt-3">
           <div className="flex flex-wrap items-center gap-1.5">
             <Button
-              size="sm"
+              icon={copied ? (
+                <Check className="text-success" />
+              ) : (
+                <Copy />
+              )}
               variant="outline"
-              className="h-7"
               onClick={() => void copySrc()}
             >
-              {copied ? (
-                <Check className="mr-1.5 h-3.5 w-3.5 text-success" />
-              ) : (
-                <Copy className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Copy URL
             </Button>
-            <Button size="sm" variant="outline" className="h-7" asChild>
+            <Button variant="outline" asChild>
               <a href={asset.src} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
                 Open original
               </a>
             </Button>
             <Button
-              size="sm"
+              icon={<ImagePlus />}
               variant="outline"
-              className="h-7"
               onClick={orderReplacement}
               // Generated images are brand assets, so ordering happens on the brand's asset desk.
               title="Opens the brand's asset desk with a replacement brief ready."
             >
-              <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
               Order replacement
             </Button>
             <Button
-              size="sm"
+              icon={importing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Crop />
+              )}
               variant="outline"
-              className="h-7"
               disabled={importing || createAsset.isPending}
               onClick={() => void importAndEdit()}
             >
-              {importing ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Crop className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Import &amp; edit
             </Button>
           </div>
@@ -621,17 +615,15 @@ function AssetInspector({
               </SelectContent>
             </Select>
             <Button
-              size="sm"
+              icon={createAsset.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <FolderPlus />
+              )}
               variant="outline"
-              className="h-7"
               disabled={createAsset.isPending}
               onClick={() => void addToLibrary()}
             >
-              {createAsset.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FolderPlus className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Add to library
             </Button>
           </div>

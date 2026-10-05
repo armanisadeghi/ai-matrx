@@ -60,12 +60,11 @@ export function QuestionsPanel({
       actions={
         canResubmit ? (
           <Button
-            size="sm"
-            className="h-8"
+            icon={<Send />}
+            variant="primary"
             disabled={answered.length === 0}
             onClick={() => void onResubmit()}
           >
-            <Send className="mr-1.5 h-3.5 w-3.5" />
             Resubmit to agents
           </Button>
         ) : undefined
@@ -102,16 +101,14 @@ export function QuestionsPanel({
           className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-base focus:outline-none focus:ring-2 focus:ring-ring"
         />
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="h-9"
           disabled={!newPrompt.trim()}
           onClick={() => {
             void onAdd(newPrompt.trim());
             setNewPrompt("");
           }}
         >
-          <Plus className="mr-1 h-3.5 w-3.5" />
           Add
         </Button>
       </div>
@@ -167,8 +164,6 @@ function QuestionRow({
                 <Button
                   key={o.value}
                   variant="outline"
-                  size="sm"
-                  className="h-8"
                   onClick={() => void onAnswer(question, o.value)}
                 >
                   {o.label}
@@ -179,16 +174,12 @@ function QuestionRow({
             <div className="flex gap-1.5">
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8"
                 onClick={() => void onAnswer(question, "yes")}
               >
                 Yes
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-8"
                 onClick={() => void onAnswer(question, "no")}
               >
                 No
@@ -200,9 +191,8 @@ function QuestionRow({
               onSubmit={(v) => void onAnswer(question, v)}
             />
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 shrink-0 text-muted-foreground"
+              variant="quiet"
+              className="shrink-0"
               onClick={() => void onDefer(question, "Not a quick answer")}
             >
               Not a quick answer
@@ -221,12 +211,11 @@ function QuestionRow({
           </p>
           {question.status !== "resolved" && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 shrink-0 text-muted-foreground"
+              icon={<RotateCcw />}
+              variant="quiet"
+              className="shrink-0"
               onClick={() => void onReopen(question)}
             >
-              <RotateCcw className="mr-1 h-3.5 w-3.5" />
               Reopen
             </Button>
           )}

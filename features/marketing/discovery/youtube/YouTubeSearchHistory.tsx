@@ -103,13 +103,13 @@ function HistoryList({
       {(loading || hasMore) && (
         <div className="border-t border-border pt-3 dark:border-white/10">
           <Button
+            icon={loading && <LoaderCircle className="animate-spin" />}
             type="button"
             variant="outline"
             disabled={loading}
             onClick={onLoadMore}
-            className="w-full rounded-xl"
+            className="w-full"
           >
-            {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
             {loading ? "Loading history" : "Load older searches"}
           </Button>
         </div>

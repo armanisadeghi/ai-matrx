@@ -125,7 +125,12 @@ export function EnrollmentSidebar({
       <div className="shrink-0 space-y-3 border-b border-border p-3">
         <div className="flex gap-1.5">
           <Button
-            size="sm"
+            icon={runReview.isPending ? (
+              <RefreshCw className="animate-spin" />
+            ) : (
+              <Eye />
+            )}
+            variant="primary"
             className="flex-1"
             disabled={runReview.isPending}
             onClick={() =>
@@ -133,11 +138,6 @@ export function EnrollmentSidebar({
             }
             data-testid="hindsight-review-now"
           >
-            {runReview.isPending ? (
-              <RefreshCw className="mr-1 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Eye className="mr-1 h-3.5 w-3.5" />
-            )}
             {runReview.isPending ? "Reviewing…" : "Review now"}
           </Button>
           <IntelligenceIndicator
@@ -147,7 +147,6 @@ export function EnrollmentSidebar({
             className="self-center"
           />
           <Button
-            size="sm"
             variant="outline"
             disabled={toggleStatus.isPending}
             title={paused ? "Resume reviews" : "Pause reviews"}
@@ -160,7 +159,6 @@ export function EnrollmentSidebar({
             )}
           </Button>
           <Button
-            size="sm"
             variant="outline"
             title="Stop reviewing this agent"
             disabled={archive.isPending}
@@ -256,14 +254,14 @@ export function EnrollmentSidebar({
               />
               <div className="flex justify-end gap-1.5">
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setEditingGoal(false)}
                 >
                   <X className="h-3.5 w-3.5" />
                 </Button>
                 <Button
-                  size="sm"
+                  icon={<Check />}
+                  variant="primary"
                   disabled={updateGoal.isPending}
                   onClick={() =>
                     updateGoal.mutate(goalDraft, {
@@ -271,7 +269,6 @@ export function EnrollmentSidebar({
                     })
                   }
                 >
-                  <Check className="mr-1 h-3.5 w-3.5" />
                   Save
                 </Button>
               </div>

@@ -208,9 +208,7 @@ export function LeaveRequestList({ requests, onChanged }: LeaveRequestListProps)
                 {act ? (
                   <Button
                     type="button"
-                    size="sm"
                     variant="outline"
-                    className="h-11 px-3 md:h-8 md:px-3"
                     onClick={() => setPending(req)}
                   >
                     {act.label}

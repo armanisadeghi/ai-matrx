@@ -212,20 +212,17 @@ export function ClassStudyContent({
         </h2>
         <div className="flex items-center gap-1.5">
           <Button
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setSourcesOpen(true)}
           >
-            <Plus className="h-3.5 w-3.5" />
             Add sources
           </Button>
           <Button
-            size="sm"
+            icon={<Plus />}
             variant="outline"
-            className="h-7 gap-1.5 text-xs"
             onClick={() => setPickerOpen(true)}
           >
-            <Plus className="h-3.5 w-3.5" />
             Add content
           </Button>
         </div>
@@ -239,25 +236,22 @@ export function ClassStudyContent({
           onSelect={selectPart}
         />
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 shrink-0 gap-1 px-2 text-xs text-muted-foreground"
+          icon={<Plus />}
+          variant="quiet"
+          className="shrink-0"
           onClick={() => setNamingPart("new")}
         >
-          <Plus className="h-3.5 w-3.5" />
           {parts.nounSingular}
         </Button>
         {selected && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 shrink-0 text-muted-foreground"
+                icon={<MoreHorizontal />}
+                variant="quiet"
+                className="shrink-0"
                 aria-label={`${selected.name} options`}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onSelect={() => setNamingPart(selected)}>
@@ -302,11 +296,10 @@ export function ClassStudyContent({
               : "Nothing in this class yet."}
           </p>
           <Button
-            size="sm"
-            className="gap-1.5"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setSourcesOpen(true)}
           >
-            <Plus className="h-4 w-4" />
             Add sources
           </Button>
         </div>
@@ -550,17 +543,12 @@ function ContentRow({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "h-8 w-8 shrink-0",
-                holding.length > 0 ? "text-primary" : "text-muted-foreground",
-              )}
+              icon={<Layers />}
+              variant="quiet"
+              className="shrink-0"
               aria-label={`${nounPlural} for ${item.title}`}
               title={holdingNames.length ? holdingNames.join(", ") : nounPlural}
-            >
-              <Layers className="h-4 w-4" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{nounPlural}</DropdownMenuLabel>
@@ -582,15 +570,13 @@ function ContentRow({
         </DropdownMenu>
       )}
       <Button
-        size="icon"
-        variant="ghost"
-        className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+        icon={<X />}
+        variant="quiet"
+        className="shrink-0"
         aria-label={removeLabel}
         title={removeLabel}
         onClick={onRemove}
-      >
-        <X className="h-4 w-4" />
-      </Button>
+      />
     </li>
   );
 }

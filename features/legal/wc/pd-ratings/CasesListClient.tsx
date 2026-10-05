@@ -80,7 +80,7 @@ export function CasesListClient() {
           title="Sign in to see your saved cases"
           description="Your saved cases live with your account. Sign in or create an account to start saving."
           actions={
-            <Button asChild>
+            <Button variant="primary" asChild>
               <Link
                 href={`/login?redirectTo=${encodeURIComponent("/legal/ca-wc/cases")}`}
               >
@@ -219,15 +219,13 @@ function CaseRow({
           <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary shrink-0" />
         </Link>
         <Button
+          icon={<Trash2 />}
           type="button"
-          size="icon"
-          variant="ghost"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+          variant="quiet"
+          className="shrink-0"
           onClick={onDelete}
           aria-label="Move case to Trash"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
     </li>
   );
@@ -242,7 +240,7 @@ function EmptyCases() {
         Open the PD Ratings Calculator, fill in a claim, and click "Save case"
         to see it here.
       </p>
-      <Button asChild className="mt-4 gap-1.5">
+      <Button variant="primary" asChild className="mt-4">
         <Link href="/legal/ca-wc/pd-ratings-calculator">
           <Plus className="h-3.5 w-3.5" />
           Start a new rating

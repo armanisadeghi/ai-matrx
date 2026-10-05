@@ -13,7 +13,7 @@
 
 import { LayoutPanelTop, Rows3, Snowflake, Undo2, WrapText } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";

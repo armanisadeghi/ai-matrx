@@ -247,14 +247,13 @@ export default function ScannerHealthPage() {
           <CalendarCheck className="h-5 w-5 text-blue-500" />
         </div>
         <Button
+          icon={<RefreshCw
+            className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")}
+          />}
           variant="outline"
-          size="sm"
           onClick={() => load()}
           disabled={!canLoad || loading}
         >
-          <RefreshCw
-            className={cn("h-3.5 w-3.5 mr-1.5", loading && "animate-spin")}
-          />
           Refresh
         </Button>
       </div>

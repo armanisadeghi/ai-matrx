@@ -352,15 +352,14 @@ export function NewIncidentDialog({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="min-h-11 sm:min-h-9"
           >
             Cancel
           </Button>
           <Button
+            variant="primary"
             type="button"
             onClick={save}
             disabled={!canSave}
-            className="min-h-11 sm:min-h-9"
           >
             Record it
           </Button>

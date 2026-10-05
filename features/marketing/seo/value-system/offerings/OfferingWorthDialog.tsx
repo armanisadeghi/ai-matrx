@@ -179,11 +179,10 @@ export function OfferingWorthDialog({
 
         <DialogFooter className="flex-col-reverse gap-2 pb-safe sm:flex-row sm:justify-between">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             disabled={busy || !hasOwn}
             onClick={onClear}
-            className={cn("text-destructive hover:text-destructive", !hasOwn && "invisible")}
+            className={cn(!hasOwn && "invisible")}
             title={
               inherited
                 ? `Its keywords then take ${formatPoints(inherited.worthPoints)} points from ${inherited.name}.`
@@ -193,18 +192,18 @@ export function OfferingWorthDialog({
             Remove this site&apos;s ruling
           </Button>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+            <Button variant="quiet" onClick={onCancel} disabled={busy}>
               Cancel
             </Button>
             <Button
-              size="sm"
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
+              variant="primary"
               disabled={busy || invalid}
               onClick={() =>
                 parsed !== null &&
                 onSave({ worthPoints: parsed, leadQuality, offeringMatch, notes })
               }
             >
-              {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
               Save
             </Button>
           </div>

@@ -367,16 +367,12 @@ export function PartyCreateForm({
               align="start"
               trigger={
                 <Button
+                  icon={<Building2 aria-hidden />}
                   type="button"
-                  size="sm"
-                  variant="ghost"
-                  className={cn(
-                    "h-7 max-w-full gap-1.5 px-2 text-xs",
-                    orgId ? "text-muted-foreground" : "text-destructive",
-                  )}
+                  variant="quiet"
+                  className="max-w-full"
                   data-crm-filing-into={orgId ? "chosen" : "none"}
                 >
-                  <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   <span className="truncate">
                     {orgId
                       ? `Filing into ${activeOrgName ?? "the selected organization"}`
@@ -493,14 +489,13 @@ export function PartyCreateForm({
 
         <div className="flex shrink-0 justify-end gap-2 border-t border-border/60 bg-muted/20 px-4 py-2">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onCancel}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={submit} disabled={saving || !formValid}>
+          <Button variant="primary" onClick={submit} disabled={saving || !formValid}>
             {saving ? "Creating…" : "Create record"}
           </Button>
         </div>

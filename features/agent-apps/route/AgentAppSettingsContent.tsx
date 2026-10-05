@@ -723,17 +723,15 @@ export function AgentAppSettingsContent({
             <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-md border border-destructive/30 bg-destructive/5">
               <span className="text-sm">Delete this app</span>
               <Button
-                variant="destructive"
-                size="sm"
+                icon={isDeleting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )}
+                variant="danger"
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="gap-1.5"
               >
-                {isDeleting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="w-3.5 h-3.5" />
-                )}
                 Delete
               </Button>
             </div>
@@ -781,18 +779,16 @@ function FieldRow({ label, busy, dirty, onSave, children }: FieldRowProps) {
       <div className="pt-1">
         {dirty && (
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-xs gap-1"
+            variant="quiet"
             onClick={onSave}
             disabled={busy}
           >
-            {busy ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Save className="w-3 h-3" />
-            )}
             Save
           </Button>
         )}

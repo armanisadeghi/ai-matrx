@@ -39,7 +39,7 @@ export function HandsFreeVoiceChat() {
             </div>
             <div><p className="text-lg font-semibold">{PHASE_COPY[chat.phase]}</p><p className="text-sm text-muted-foreground">It sleeps after one quiet minute. Speaking over a reply stops it immediately.</p></div>
           </div>
-          {canStart ? <Button size="lg" onClick={() => void chat.start()}><Mic className="mr-2 h-4 w-4" /> Start listening</Button> : <Button size="lg" variant="outline" onClick={() => void chat.sleep()}><Moon className="mr-2 h-4 w-4" /> Sleep now</Button>}
+          {canStart ? <Button icon={<Mic />} variant="primary" onClick={() => void chat.start()}>Start listening</Button> : <Button icon={<Moon />} variant="outline" onClick={() => void chat.sleep()}>Sleep now</Button>}
         </div>
         {chat.error ? <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{chat.error} <ErrorAlchemyMenu error={chat.error} /></p> : null}
         <p className="mt-4 text-xs text-muted-foreground">On iPhone and iPad, the first tap also unlocks microphone and audio playback. Returning from another tab requires another tap.</p>

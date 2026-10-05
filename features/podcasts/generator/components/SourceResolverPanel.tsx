@@ -157,17 +157,16 @@ function FetchResolver({
             }}
           />
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <UploadCloud />
+            )}
             type="button"
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
             disabled={busy}
-            className="gap-2"
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <UploadCloud className="h-4 w-4" />
-            )}
             {busy ? status || "Working…" : "Choose audio file"}
           </Button>
           <span className="text-[11px] text-muted-foreground">
@@ -195,16 +194,16 @@ function FetchResolver({
               />
             </div>
             <Button
+              icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Search />
+              )}
+              variant="primary"
               type="button"
               onClick={runUrlResolve}
               disabled={busy || !url.trim()}
-              className="gap-1.5"
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="h-4 w-4" />
-              )}
               {busy ? "Working…" : meta.actionLabel}
             </Button>
           </div>
@@ -298,10 +297,11 @@ function NoteResolver({
         onSelectNote={handlePick}
         trigger={
           <Button
+            iconEnd={<ChevronDown className="text-muted-foreground" />}
             type="button"
             variant="outline"
             disabled={isResolving}
-            className="w-full justify-between gap-3"
+            className="w-full justify-between"
           >
             <span className="flex min-w-0 items-center gap-2">
               {isResolving ? (
@@ -315,7 +315,6 @@ function NoteResolver({
                   : (pickedLabel ?? "Choose a note")}
               </span>
             </span>
-            <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
           </Button>
         }
       />

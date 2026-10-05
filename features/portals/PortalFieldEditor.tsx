@@ -116,13 +116,12 @@ export function PortalFieldEditor({
       />
       <div className="mt-2 flex items-center gap-3">
         <Button
+          icon={pending ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-9"
           onClick={onSave}
           disabled={pending || !dirty}
         >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           {pending ? "Saving" : "Save"}
         </Button>
         {justSaved && !dirty ? (
@@ -141,7 +140,7 @@ export function PortalFieldEditor({
           <span className="font-medium text-destructive">
             {refusal.conflict === "changed" ? STALE_MOVE_LABEL : VERSION_UNREAD_LABEL}
           </span>
-          <Button type="button" size="sm" variant="outline" className="h-8" onClick={() => router.refresh()}>
+          <Button type="button" variant="outline" onClick={() => router.refresh()}>
             {RELOAD_LABEL}
           </Button>
         </div>

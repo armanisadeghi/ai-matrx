@@ -228,14 +228,12 @@ export default function AssistsDock() {
             <DrawerHeader className="flex shrink-0 flex-row items-center gap-2 border-b border-border px-3 py-2 text-left">
               <DrawerClose asChild>
                 <Button
+                  icon={<X />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-11 w-11 shrink-0 rounded-full"
+                  variant="quiet"
+                  className="shrink-0"
                   aria-label="Close assists"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
+                />
               </DrawerClose>
               <div className="min-w-0 flex-1">
                 <DrawerTitle className="text-base">
@@ -243,9 +241,10 @@ export default function AssistsDock() {
                 </DrawerTitle>
               </div>
               <Button
+                icon={<BellOff />}
                 type="button"
-                variant="ghost"
-                className="h-11 shrink-0 gap-1 px-2 text-xs text-muted-foreground"
+                variant="quiet"
+                className="shrink-0"
                 onClick={() =>
                   quietFor(
                     DEFAULT_QUIET_KEY,
@@ -255,7 +254,6 @@ export default function AssistsDock() {
                   )
                 }
               >
-                <BellOff className="h-4 w-4" />
                 Quiet 24h
               </Button>
             </DrawerHeader>

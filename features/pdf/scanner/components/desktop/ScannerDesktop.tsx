@@ -331,13 +331,14 @@ export default function ScannerDesktop() {
             </div>
 
             <Button
-              className="mb-1.5 h-11 w-full shadow-md shadow-primary/20"
+              icon={<Plus />}
+              variant="primary"
+              className="mb-1.5 w-full"
               onClick={() => {
                 setView("home");
                 setCapturing(true);
               }}
             >
-              <Plus className="mr-1.5 h-4 w-4" />
               New scan
             </Button>
             <button
@@ -437,12 +438,11 @@ export default function ScannerDesktop() {
                         ? ` — “${session.resumable.label}”`
                         : ""}
                     </p>
-                    <Button size="sm" onClick={session.resume}>
+                    <Button variant="primary" onClick={session.resume}>
                       Resume
                     </Button>
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       onClick={session.dismissResume}
                     >
                       Later

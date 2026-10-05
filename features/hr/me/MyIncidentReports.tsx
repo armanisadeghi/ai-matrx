@@ -122,12 +122,12 @@ export function MyIncidentReports() {
             </p>
           </div>
           <Button
+            icon={<Plus />}
+            variant="primary"
             type="button"
-            size="sm"
-            className="min-h-11 shrink-0 sm:min-h-9"
+            className="shrink-0"
             onClick={() => setFiling(true)}
           >
-            <Plus className="mr-1.5 h-4 w-4" />
             Make a report
           </Button>
         </div>

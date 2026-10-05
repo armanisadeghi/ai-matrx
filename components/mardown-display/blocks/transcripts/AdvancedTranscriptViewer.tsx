@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@ai-matrx/design-system";
 import { Separator } from "@/components/ui/separator";

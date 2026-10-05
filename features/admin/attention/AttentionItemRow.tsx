@@ -26,6 +26,7 @@ import {
   Volume2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -167,7 +168,7 @@ export function AttentionItemRow({
       <div className="flex flex-wrap items-center gap-1.5">
         {!muted &&
           item.actions.map((action) => (
-            <Button
+            <SurfaceButton
               key={action.id}
               size="sm"
               variant={action.variant ?? "outline"}
@@ -177,7 +178,7 @@ export function AttentionItemRow({
             >
               {busy === action.id && <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />}
               {action.label}
-            </Button>
+            </SurfaceButton>
           ))}
 
         {item.mute === null ? null : muted && item.mute.current ? (
@@ -189,18 +190,16 @@ export function AttentionItemRow({
             </span>
             {item.mute.clear && (
               <Button
-                size="sm"
+                icon={busy === "unmute" ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <Volume2 aria-hidden />
+                )}
                 variant="outline"
-                className="h-7 text-xs"
                 disabled={busy !== null}
                 onClick={() => void run("unmute", () => onUnmute(item))}
                 aria-label={`Unmute ${item.title}`}
               >
-                {busy === "unmute" ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-                ) : (
-                  <Volume2 className="mr-1 h-3 w-3" aria-hidden />
-                )}
                 Unmute
               </Button>
             )}
@@ -209,17 +208,15 @@ export function AttentionItemRow({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs text-muted-foreground"
+                icon={busy === "mute" ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <BellOff aria-hidden />
+                )}
+                variant="quiet"
                 disabled={busy !== null}
                 aria-label={`Mute ${item.title} for a while`}
               >
-                {busy === "mute" ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-                ) : (
-                  <BellOff className="mr-1 h-3 w-3" aria-hidden />
-                )}
                 Mute
               </Button>
             </DropdownMenuTrigger>

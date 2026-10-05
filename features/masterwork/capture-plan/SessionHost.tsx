@@ -240,7 +240,7 @@ export function OpenSessionButton({
     );
   }
   return (
-    <Button onClick={go} disabled={disabled || going} size="sm">
+    <Button variant="primary" onClick={go} disabled={disabled || going}>
       {going ? "Opening…" : label}
     </Button>
   );

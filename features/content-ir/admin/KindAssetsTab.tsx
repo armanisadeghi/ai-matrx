@@ -294,16 +294,14 @@ export default function KindAssetsTab({
           <BooleanCell value />
         ) : row.canSwitch ? (
           <Button
+            icon={switchingId === row.id ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-[11px]"
+            variant="quiet"
             disabled={switchingId === row.id}
             onClick={() => void makeDefault(row.id)}
           >
-            {switchingId === row.id ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : null}
             Make default
           </Button>
         ) : (

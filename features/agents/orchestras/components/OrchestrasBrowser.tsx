@@ -117,18 +117,17 @@ export function OrchestrasBrowser() {
               </p>
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
                 <Button
+                  icon={<Workflow />}
+                  variant="primary"
                   onClick={() => setGenerateOpen(true)}
-                  className="gap-1.5"
                 >
-                  <Workflow className="h-4 w-4" />
                   Generate a conductor
                 </Button>
                 <Button
+                  icon={<Plus />}
                   variant="outline"
                   onClick={() => setCreateOpen(true)}
-                  className="gap-1.5"
                 >
-                  <Plus className="h-4 w-4" />
                   Use an existing agent
                 </Button>
               </div>

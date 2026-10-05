@@ -152,8 +152,7 @@ export function DrillFindings({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="ghost" size="xs" className="gap-1" data-drill-explorer-findings>
-          <SearchCheck className="h-3 w-3" /> Findings ({findings.length + (sections ?? []).reduce((n, x) => n + x.count, 0)})
+        <Button icon={<SearchCheck />} type="button" variant="quiet" data-drill-explorer-findings> Findings ({findings.length + (sections ?? []).reduce((n, x) => n + x.count, 0)})
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[min(28rem,calc(100vw-2rem))] p-0">

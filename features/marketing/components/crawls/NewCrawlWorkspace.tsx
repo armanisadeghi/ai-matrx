@@ -423,7 +423,7 @@ export function NewCrawlWorkspace() {
                   {site.domain}
                 </p>
               </div>
-              <Button asChild variant="ghost" size="sm" className="h-7 px-2">
+              <Button asChild variant="quiet">
                 <Link href={marketingRoutes.site(brandId, site.id, "/crawls")}>
                   <ArrowLeft className="mr-1 h-3.5 w-3.5" /> Sessions
                 </Link>
@@ -584,29 +584,27 @@ export function NewCrawlWorkspace() {
 
             <div className="mt-auto flex shrink-0 items-center gap-2 border-t border-border px-3 py-2">
               <Button
-                size="sm"
-                className="h-8 flex-1"
+                icon={status === "failed" || status === "complete" ? (
+                  <RotateCcw />
+                ) : (
+                  <Play />
+                )}
+                variant="primary"
+                className="flex-1"
                 disabled={controlsDisabled || patternProblems.length > 0}
                 onClick={() => void start()}
               >
-                {status === "failed" || status === "complete" ? (
-                  <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                ) : (
-                  <Play className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 {status === "failed" || status === "complete"
                   ? "Run again"
                   : "Start crawl"}
               </Button>
               {active && sessionId ? (
                 <Button
-                  variant="destructive"
-                  size="sm"
-                  className="h-8"
+                  icon={<Ban />}
+                  variant="danger"
                   disabled={status === "canceling"}
                   onClick={() => void cancel()}
-                >
-                  <Ban className="mr-1.5 h-3.5 w-3.5" /> Cancel
+                > Cancel
                 </Button>
               ) : null}
             </div>

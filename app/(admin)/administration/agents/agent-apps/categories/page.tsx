@@ -432,8 +432,7 @@ export default function AgentAppsCategoriesAdminPage() {
                 />
               )}
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => void load()}
                 disabled={loading}
               >
@@ -442,6 +441,8 @@ export default function AgentAppsCategoriesAdminPage() {
                 />
               </Button>
               <Button
+                icon={<Plus />}
+                variant="primary"
                 onClick={() => {
                   setCreateData({
                     id: "",
@@ -452,9 +453,7 @@ export default function AgentAppsCategoriesAdminPage() {
                   });
                   setIsCreateOpen(true);
                 }}
-                size="sm"
               >
-                <Plus className="w-4 h-4 mr-1" />
                 Add
               </Button>
             </div>
@@ -509,9 +508,8 @@ export default function AgentAppsCategoriesAdminPage() {
                 />
                 <div className="flex flex-col gap-0.5">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5 p-0"
+                    variant="quiet"
+                    className="w-5"
                     onClick={(e) => {
                       e.stopPropagation();
                       void moveUp(c);
@@ -521,9 +519,8 @@ export default function AgentAppsCategoriesAdminPage() {
                     <ArrowUp className="w-3 h-3" />
                   </Button>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5 p-0"
+                    variant="quiet"
+                    className="w-5"
                     onClick={(e) => {
                       e.stopPropagation();
                       void moveDown(c);
@@ -579,28 +576,26 @@ export default function AgentAppsCategoriesAdminPage() {
                 <div className="flex items-center gap-2">
                   {hasUnsaved && (
                     <Button
+                      icon={<X />}
                       variant="outline"
-                      size="sm"
                       onClick={handleDiscard}
                     >
-                      <X className="w-4 h-4 mr-1" />
                       Discard
                     </Button>
                   )}
                   <Button
-                    size="sm"
+                    icon={<Save />}
+                    variant="primary"
                     onClick={handleSave}
                     disabled={!hasUnsaved}
                   >
-                    <Save className="w-4 h-4 mr-1" />
                     Save
                   </Button>
                   <Button
-                    variant="destructive"
-                    size="sm"
+                    icon={<Trash2 />}
+                    variant="danger"
                     onClick={() => setDeleteTarget(selected)}
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
                     Delete
                   </Button>
                 </div>
@@ -794,7 +789,7 @@ export default function AgentAppsCategoriesAdminPage() {
               >
                 Cancel
               </Button>
-              <Button onClick={handleCreate}>Create</Button>
+              <Button variant="primary" onClick={handleCreate}>Create</Button>
             </div>
           </div>
         </DialogContent>

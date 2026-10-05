@@ -389,32 +389,29 @@ export function FindingsTable() {
                 groomer={groomerConfig}
               />
               <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5"
-                onClick={() => void findings.refetch()}
-                disabled={findings.isFetching}
-              >
-                <RefreshCw
+                icon={<RefreshCw
                   className={
                     findings.isFetching
                       ? "h-3.5 w-3.5 animate-spin"
                       : "h-3.5 w-3.5"
                   }
-                />
+                />}
+                variant="outline"
+                onClick={() => void findings.refetch()}
+                disabled={findings.isFetching}
+              >
                 Refresh
               </Button>
               <Button
-                size="sm"
-                className="h-8 gap-1.5"
+                icon={isNavigating ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CircleGauge />
+                )}
+                variant="primary"
                 onClick={() => navigate(marketingRoutes.site(brandId, site.id, "/analysis"))}
                 disabled={isNavigating}
               >
-                {isNavigating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CircleGauge className="h-3.5 w-3.5" />
-                )}
                 Priority
               </Button>
             </div>

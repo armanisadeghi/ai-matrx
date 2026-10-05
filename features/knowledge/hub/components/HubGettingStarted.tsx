@@ -12,7 +12,7 @@ import { HUB_LIBRARY_CATALOG_HREF } from "@/features/knowledge/hub/legacyRoutes"
 
 export function HubGettingStarted() {
   return (
-    <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+    <Button asChild variant="outline">
       <Link href={HUB_LIBRARY_CATALOG_HREF}>
         <Library className="h-4 w-4" /> Browse shared libraries
       </Link>

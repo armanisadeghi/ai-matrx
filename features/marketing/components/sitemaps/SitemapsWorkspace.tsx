@@ -322,25 +322,22 @@ export function SitemapsWorkspace() {
               }}
             />
             <Button
-              variant={showDismissed ? "secondary" : "outline"}
-              size="sm"
-              className="h-8 gap-1.5"
+              icon={<EyeOff />}
+              variant={showDismissed ? "outline" : "outline"}
               title="Sitemaps you dismissed. A future sync that re-observes one revives it automatically, flagged as previously dismissed."
               onClick={() => setDismissedScope(!showDismissed)}
             >
-              <EyeOff className="h-3.5 w-3.5" />
               Dismissed
             </Button>
             <Button
-              size="sm"
-              className="h-8 gap-1.5"
+              icon={syncing ? (
+                <Radio />
+              ) : (
+                <RefreshCw />
+              )}
+              variant="primary"
               onClick={() => (syncing ? sync.openWindow() : void runSync())}
             >
-              {syncing ? (
-                <Radio className="h-3.5 w-3.5" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               {syncing ? "Watch progress" : "Sync sitemaps"}
             </Button>
           </div>
@@ -445,8 +442,8 @@ export function SitemapsWorkspace() {
               URL into the canonical page registry.
             </p>
             <Button
-              size="sm"
-              className="mt-1 h-8"
+              variant="primary"
+              className="mt-1"
               onClick={() => (syncing ? sync.openWindow() : void runSync())}
             >
               {syncing ? "Watch progress" : "Sync sitemaps"}

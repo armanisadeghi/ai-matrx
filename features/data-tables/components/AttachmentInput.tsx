@@ -12,7 +12,7 @@
 
 import { Check, Paperclip } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { toast } from "@/components/ui/use-toast";
 import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPickerOpeners";
 import { cn } from "@/lib/utils";

@@ -158,7 +158,6 @@ export default function OrgEditShortcutPage({
                   the shortcut list.
                 </p>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setFormOpen(true)}
                   disabled={formOpen}
@@ -204,8 +203,7 @@ export default function OrgEditShortcutPage({
                     </span>
                   </div>
                 </div>
-                <Button size="sm" variant="outline" onClick={goToList}>
-                  <ArrowLeft className="h-4 w-4 mr-1.5" />
+                <Button icon={<ArrowLeft />} variant="outline" onClick={goToList}>
                   Back to shortcuts
                 </Button>
               </>

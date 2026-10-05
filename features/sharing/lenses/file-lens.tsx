@@ -232,7 +232,7 @@ function CapabilitySection({
               your documents, not just stores them.
             </p>
           </div>
-          <Button asChild className="shrink-0">
+          <Button variant="primary" asChild className="shrink-0">
             <Link href={href} target="_blank" rel="noopener noreferrer">
               Create your free account
               <ExternalLink className="ml-1.5 h-4 w-4" />
@@ -294,7 +294,7 @@ function NoPreviewCard({
           This file type has no online preview — download it to open it on
           your device.
         </p>
-        <Button asChild>
+        <Button variant="primary" asChild>
           <a href={attachmentUrl}>
             <Download className="mr-1.5 h-4 w-4" />
             Download file
@@ -381,9 +381,8 @@ export function SharedFileLens({
           </div>
           <div className="flex shrink-0 items-center gap-1.5">
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8 px-2 text-muted-foreground"
+              iconEnd={<ArrowDown className="hidden" />}
+              variant="quiet"
               onClick={() =>
                 capabilitiesRef.current?.scrollIntoView({ behavior: "smooth" })
               }
@@ -391,23 +390,20 @@ export function SharedFileLens({
             >
               <AGENT_ICON className="h-4 w-4 text-primary" />
               <span className="ml-1.5 hidden lg:inline">What AI can do</span>
-              <ArrowDown className="ml-1 hidden h-3.5 w-3.5 lg:inline" />
             </Button>
             {previewable && fullscreenSupported && (
               <Button
-                size="sm"
+                icon={isFullscreen ? (
+                  <Minimize2 />
+                ) : (
+                  <Maximize2 />
+                )}
                 variant="outline"
-                className="h-8 px-2"
                 onClick={toggleFullscreen}
                 aria-label={
                   isFullscreen ? "Exit full screen" : "View full screen"
                 }
               >
-                {isFullscreen ? (
-                  <Minimize2 className="h-4 w-4" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" />
-                )}
                 <span className="ml-1.5 hidden md:inline">
                   {isFullscreen ? "Exit full screen" : "Full screen"}
                 </span>
@@ -416,9 +412,7 @@ export function SharedFileLens({
             {previewable && (
               <Button
                 asChild
-                size="sm"
                 variant="outline"
-                className="h-8 px-2"
                 aria-label="Open in a new tab"
               >
                 <a href={urls.public} target="_blank" rel="noreferrer">
@@ -427,7 +421,7 @@ export function SharedFileLens({
                 </a>
               </Button>
             )}
-            <Button asChild size="sm" className="h-8 px-2 sm:px-3">
+            <Button variant="primary" asChild>
               <a href={urls.attachment} aria-label={`Download ${name}`}>
                 <Download className="h-4 w-4" />
                 <span className="ml-1.5 hidden sm:inline">Download</span>

@@ -456,7 +456,7 @@ export function IngestTimelineDialog({
             <div className="flex flex-wrap gap-2">
               {summary.role === "teaching" ? (
                 <Button
-                  size="sm"
+                  variant="primary"
                   onClick={() => {
                     reset();
                     onOpenChange(false);
@@ -465,7 +465,7 @@ export function IngestTimelineDialog({
                   Review the drafts
                 </Button>
               ) : (
-                <Button size="sm" asChild>
+                <Button variant="primary" asChild>
                   <Link
                     href={`/masterwork/${rulebook.id}/sources`}
                     onClick={() => {
@@ -607,7 +607,7 @@ export function IngestTimelineDialog({
             >
               Cancel
             </Button>
-            <Button onClick={() => void launch()} disabled={running}>
+            <Button variant="primary" onClick={() => void launch()} disabled={running}>
               {running
                 ? "Reading the case…"
                 : role === "heldout"

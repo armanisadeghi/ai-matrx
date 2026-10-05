@@ -157,9 +157,7 @@ function VersionHistory({
         {pairs.map((entry) => (
           <Button
             key={entry.pinned}
-            size="sm"
-            variant={entry.pinned === pair?.pinned ? "secondary" : "ghost"}
-            className="h-6 gap-1 px-2 text-[11px] tabular-nums"
+            variant={entry.pinned === pair?.pinned ? "outline" : "quiet"}
             title={`Pinned by ${entry.mandateKeys.join(", ")}`}
             onClick={() => setActivePin(entry.pinned)}
           >
@@ -256,9 +254,7 @@ function QuickTest({ mandateKeys }: { mandateKeys: AnyMandateKey[] }) {
         {mandateKeys.map((key) => (
           <Button
             key={key}
-            size="sm"
-            variant={key === activeKey ? "secondary" : "ghost"}
-            className="h-6 px-2 font-mono text-[11px]"
+            variant={key === activeKey ? "outline" : "quiet"}
             onClick={() => setActiveKey(key)}
           >
             {key}

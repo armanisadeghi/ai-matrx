@@ -161,7 +161,7 @@ export function PayGroupCard({
             This employer has no pay groups yet, so there is nothing to put anyone
             into.
           </p>
-          <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+          <Button asChild variant="outline">
             <Link href={hrSettingsHref("pay-groups", { org })}>
               Create a pay group
             </Link>
@@ -198,15 +198,14 @@ export function PayGroupCard({
               </Select>
             </Label>
             <Button
+              icon={saving ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : null}
+              variant="primary"
               type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
               disabled={!isChange || saving}
               onClick={save}
             >
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              ) : null}
               Save pay group
             </Button>
           </div>
@@ -237,7 +236,7 @@ export function PayGroupCard({
             <div className="space-y-2">
               <p className="text-sm text-destructive">{refusal.sentence} <ErrorAlchemyMenu error={refusal.sentence} /></p>
               {refusal.door ? (
-                <Button asChild size="sm" variant="outline" className="min-h-11 sm:min-h-9">
+                <Button asChild variant="outline">
                   <Link href={refusal.door}>Go and fix it</Link>
                 </Button>
               ) : null}

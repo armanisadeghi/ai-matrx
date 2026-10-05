@@ -474,9 +474,7 @@ function StepHeader({
     <div className="flex shrink-0 flex-col gap-3">
       <div className="flex items-center gap-2">
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 px-1.5"
+          variant="quiet"
           onClick={onBack}
           aria-label="Back to types"
         >
@@ -644,9 +642,8 @@ function WriteStep({
           ))}
         </div>
         <Button
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-11 lg:h-8"
           disabled={loading || fields.length === 0}
           onClick={submit}
         >
@@ -802,7 +799,7 @@ function InlineCreate({
             if (e.key === "Escape") setOpen(false);
           }}
         />
-        <Button size="sm" className="h-8" disabled={!title.trim() || busy} onClick={() => void submit()}>
+        <Button variant="primary" disabled={!title.trim() || busy} onClick={() => void submit()}>
           {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}
         </Button>
       </div>

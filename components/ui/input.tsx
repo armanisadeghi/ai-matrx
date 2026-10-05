@@ -13,11 +13,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
-import { Input, type InputProps } from "@ai-matrx/design-system";
+import { Input, type InputProps } from "@ai-matrx/design-system/controls";
+
+// THE ONE CONTROL (2026-10-05, wave 1B): these compose the controls' Input (the field capsule on
+// the <input>); the overlaid buttons sit in the room `adornment` reserves — never a padding class.
 import { Check, Copy, Trash2 } from "lucide-react";
 
 const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, variant = "default", ...props }, ref) => {
+  ({ className, type, ...props }, ref) => {
     const [hasCopied, setHasCopied] = React.useState(false);
 
     const handleCopy = async () => {
@@ -35,13 +38,7 @@ const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className="relative">
-        <Input
-          ref={ref}
-          type={type}
-          variant={variant}
-          className={cn("pr-8", className)}
-          {...props}
-        />
+        <Input ref={ref} type={type} adornment="end" className={className} {...props} />
         <button
           type="button"
           onClick={handleCopy}
@@ -99,7 +96,8 @@ const FancyInput = React.forwardRef<HTMLInputElement, FancyInputProps>(
         )}
         <Input
           ref={ref}
-          className={cn(prefix && "pl-10", "pr-8", className)}
+          adornment={prefix ? "both" : "end"}
+          className={className}
           {...props}
         />
         <button
@@ -143,7 +141,7 @@ const DeleteInput = React.forwardRef<HTMLInputElement, DeleteInputProps>(
 
     return (
       <div className={cn("relative w-full", wrapperClassName)}>
-        <Input ref={ref} className={cn("pr-8 w-full", className)} {...props} />
+        <Input ref={ref} adornment="end" className={className} {...props} />
         <button
           type="button"
           onClick={handleDelete}

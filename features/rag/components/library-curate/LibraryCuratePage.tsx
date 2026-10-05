@@ -245,12 +245,11 @@ export function LibraryCuratePage() {
                         </p>
                       </div>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 shrink-0 px-2 text-xs"
+                        icon={<Plus />}
+                        variant="quiet"
+                        className="shrink-0"
                         onClick={() => setNewFor(ind)}
-                      >
-                        <Plus className="mr-1 size-3.5" /> New
+                      > New
                       </Button>
                     </div>
 
@@ -316,12 +315,11 @@ export function LibraryCuratePage() {
           {packId ? (
             <div className="flex h-full min-h-0 flex-col p-4">
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<ArrowLeft />}
+                variant="quiet"
                 className="mb-2 w-fit lg:hidden"
                 onClick={() => select(null)}
-              >
-                <ArrowLeft className="mr-1 size-3.5" /> All packs
+              > All packs
               </Button>
               <div className="min-h-0 flex-1">
                 <PackDetail packId={packId} onSelectPack={select} />
@@ -425,7 +423,7 @@ function NotACurator() {
             whole role — no other access changes.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
-            <Button asChild size="sm">
+            <Button variant="primary" asChild>
               <a href={LIBRARY_CATALOG_PATH}>
                 <BookOpenText className="mr-1.5 size-3.5" /> Browse the Matrx Library
               </a>

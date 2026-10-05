@@ -236,7 +236,7 @@ export function AddMcpServerDialog({
             </p>
           </div>
           <DialogFooter>
-            <Button onClick={close} disabled={busy || refreshing}>
+            <Button variant="primary" onClick={close} disabled={busy || refreshing}>
               {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Done"}
             </Button>
           </DialogFooter>
@@ -490,45 +490,44 @@ export function AddMcpServerDialog({
         )}
 
         <DialogFooter className="flex items-center justify-between gap-2">
-          <Button variant="ghost" onClick={close} disabled={busy}>
+          <Button variant="quiet" onClick={close} disabled={busy}>
             Cancel
           </Button>
           <div className="flex items-center gap-2">
             {step !== "identity" && (
               <Button
+                icon={<ChevronLeft />}
                 variant="outline"
                 onClick={() =>
                   setStep(step === "transport" ? "identity" : "transport")
                 }
                 disabled={busy}
-                className="gap-1"
               >
-                <ChevronLeft className="h-3.5 w-3.5" />
                 Back
               </Button>
             )}
             {step === "identity" && (
               <Button
+                iconEnd={<ChevronRight />}
+                variant="primary"
                 onClick={() => setStep("transport")}
                 disabled={busy || !identityValid}
-                className="gap-1"
               >
                 Next
-                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             )}
             {step === "transport" && (
               <Button
+                iconEnd={<ChevronRight />}
+                variant="primary"
                 onClick={() => setStep("review")}
                 disabled={busy || !transportValid}
-                className="gap-1"
               >
                 Next
-                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             )}
             {step === "review" && (
-              <Button onClick={() => void onProvision()} disabled={busy}>
+              <Button variant="primary" onClick={() => void onProvision()} disabled={busy}>
                 {busy ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (

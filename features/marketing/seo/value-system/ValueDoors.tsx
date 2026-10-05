@@ -65,23 +65,19 @@ export function ValueDoors({
     <div className="flex flex-wrap items-center gap-1.5">
       {showDiscovery ? (
         <Button
-          size="sm"
+          icon={<ScanSearch />}
           variant="outline"
-          className="h-8 gap-1.5 text-xs"
           title="Let AI read this site cold and propose what it offers and what each offering is worth — in a panel beside this screen."
           onClick={() =>
             openDiscovery({ siteId, brandId, organizationId, siteLabel })
           }
         >
-          <ScanSearch className="h-3.5 w-3.5" />
           Business discovery
         </Button>
       ) : null}
       <Button
         asChild
-        size="sm"
         variant="outline"
-        className="h-8 gap-1.5 text-xs"
       >
         <AppLink
           href={marketingRoutes.site(brandId, siteId, "/value/guidelines")}
@@ -94,9 +90,7 @@ export function ValueDoors({
       {brandValue ? (
         <Button
           asChild
-          size="sm"
           variant="outline"
-          className="h-8 gap-1.5 text-xs"
         >
           <AppLink
             href={dimensionValueHref(
@@ -115,9 +109,7 @@ export function ValueDoors({
       {isSuperAdmin ? (
         <Button
           asChild
-          size="sm"
           variant="outline"
-          className="h-8 gap-1.5 text-xs"
         >
           <AppLink
             href="/administration/knowledge/seo-facets"

@@ -107,9 +107,10 @@ export const SearchBar: React.FC<SearchBarProps> = (
                 )}
             </div>
             <Button
+                variant="primary"
                 type="submit"
                 disabled={loading}
-                className={cn(buttonClassName)}
+                className={buttonClassName}
             >
                 {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin"/>

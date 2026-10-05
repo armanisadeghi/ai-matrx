@@ -197,10 +197,9 @@ function EmployerPicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
           role="combobox"
           aria-expanded={open}
-          className="h-11 min-w-[11rem] flex-1 justify-between gap-1.5 px-2 text-sm font-normal sm:h-7 sm:text-xs"
+          className="min-w-[11rem] flex-1 justify-between"
         >
           <span className="flex min-w-0 items-center gap-1.5">
             <KindIcon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
@@ -495,8 +494,8 @@ export function EmploymentCard(props: Props) {
               Current
             </label>
             <Button
-              size="sm"
-              className="h-11 justify-self-end px-3 text-sm sm:h-7 sm:px-2 sm:text-xs"
+              variant="primary"
+              className="justify-self-end"
               onClick={submit}
               disabled={saving || !employer}
             >

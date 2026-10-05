@@ -552,20 +552,18 @@ export function QuickAnswers({
               : "Nothing answered yet"}
           </p>
           <Button
-            size="sm"
-            variant={allDone ? "default" : "outline"}
-            className="h-7 gap-1.5 text-xs"
+            icon={batch.isFetching ? (
+              <Loader2 className="animate-spin" />
+            ) : allDone ? (
+              <ArrowRight />
+            ) : (
+              <SkipForward />
+            )}
+            variant={allDone ? "primary" : "outline"}
             disabled={batch.isFetching || keywords.length === 0}
             onClick={nextBatch}
             data-surface-value="all_done"
           >
-            {batch.isFetching ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : allDone ? (
-              <ArrowRight className="h-3.5 w-3.5" />
-            ) : (
-              <SkipForward className="h-3.5 w-3.5" />
-            )}
             {allDone ? "Next five" : "Skip these"}
           </Button>
         </div>

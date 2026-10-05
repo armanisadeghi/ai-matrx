@@ -218,26 +218,22 @@ export function CrisisIntakeForm({
               Agreed to be named
             </label>
             <Button
+              icon={<Trash2 />}
               type="button"
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7"
+              variant="quiet"
               aria-label="Remove person"
               onClick={() => set("people_involved", form.people_involved.filter((_, j) => j !== i))}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ))}
         <Button
+          icon={<Plus />}
           type="button"
-          size="sm"
-          variant="ghost"
-          className="h-7 w-fit text-[11px]"
+          variant="quiet"
+          className="w-fit"
           disabled={disabled}
           onClick={() => set("people_involved", [...form.people_involved, { name: "", role: "", consented: false }])}
-        >
-          <Plus className="mr-1 h-3 w-3" /> Add a person
+        > Add a person
         </Button>
       </fieldset>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -344,8 +340,7 @@ export function CrisisHoldingDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8" data-testid="crisis-holding-open">
-          <ShieldAlert className="mr-1.5 h-3.5 w-3.5" /> Crisis: holding statement
+        <Button icon={<ShieldAlert />} variant="outline" data-testid="crisis-holding-open"> Crisis: holding statement
         </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[92dvh] max-w-3xl overflow-y-auto">
@@ -390,7 +385,7 @@ export function CrisisHoldingDialog({
         ) : null}
         <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border pt-3">
           {result && !running ? (
-            <Button variant="ghost" size="sm" onClick={() => {
+            <Button variant="quiet" onClick={() => {
                 setResult(null);
                 rejoin.clear();
               }}>
@@ -402,7 +397,7 @@ export function CrisisHoldingDialog({
               {missing.length ? (
                 <p className="mr-auto text-[11px] text-muted-foreground">Not filled in yet: {missing.join(", ")}. You can still draft; anything missing is marked for you to confirm.</p>
               ) : null}
-              <Button onClick={() => void run(false)} disabled={running || !current} data-testid="crisis-draft">
+              <Button variant="primary" onClick={() => void run(false)} disabled={running || !current} data-testid="crisis-draft">
                 {running ? "Drafting…" : "Draft holding statement"}
               </Button>
             </>

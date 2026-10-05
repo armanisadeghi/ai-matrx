@@ -279,9 +279,7 @@ function FeedbackBlock({
           {(["correct", "partial", "incorrect"] as AttemptResult[]).map((r) => (
             <Button
               key={r}
-              size="sm"
-              variant={graded.result === r ? "default" : "outline"}
-              className="h-7 px-2 text-xs capitalize"
+              variant={graded.result === r ? "primary" : "outline"}
               onClick={() => onOverride(r)}
             >
               {r}

@@ -194,14 +194,13 @@ function BusinessFactEditorDialogBody({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
-          <Button disabled={busy} onClick={() => void save()}>
-            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={busy} onClick={() => void save()}>
             {fact ? "Save fact" : "Add fact"}
           </Button>
         </DialogFooter>

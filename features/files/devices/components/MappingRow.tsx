@@ -25,22 +25,8 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  Badge,
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  Switch,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@ai-matrx/design-system";
+import { Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger, Switch, Tooltip, TooltipContent, TooltipTrigger } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -242,9 +228,12 @@ export function MappingRow({
         </Tooltip>
 
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2"
+          icon={paused ? (
+            <Play aria-hidden="true" />
+          ) : (
+            <Pause aria-hidden="true" />
+          )}
+          variant="quiet"
           disabled={busy || mapping.desired_state === "removed"}
           onClick={() =>
             void run(
@@ -253,20 +242,14 @@ export function MappingRow({
             )
           }
         >
-          {paused ? (
-            <Play className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
-            <Pause className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
           <span className="ml-1">{paused ? "Resume" : "Pause"}</span>
         </Button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0"
+              variant="quiet"
+              className="w-7"
               disabled={busy}
               aria-label="More options for this folder"
             >

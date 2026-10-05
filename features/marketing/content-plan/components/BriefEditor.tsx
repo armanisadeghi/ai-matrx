@@ -187,12 +187,10 @@ export function BriefEditor({
           the brief the user is editing down the page. */}
       <div>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 px-1.5 text-xs text-muted-foreground"
+          icon={<History />}
+          variant="quiet"
           onClick={() => setShowHistory((open) => !open)}
         >
-          <History className="h-3.5 w-3.5" />
           {showHistory ? "Hide" : "Show"} brief run history
           {runs.length > 0 ? ` (${runs.length})` : ""}
         </Button>
@@ -250,13 +248,12 @@ export function BriefEditor({
                   </div>
                   {run.status === "completed" && !run.is_current ? (
                     <Button
+                      icon={<RotateCcw />}
                       variant="outline"
-                      size="sm"
-                      className="h-7 shrink-0 gap-1 text-xs"
+                      className="shrink-0"
                       disabled={restoringRunId !== null}
                       onClick={() => onRestore(run.run_id)}
                     >
-                      <RotateCcw className="h-3 w-3" />
                       {restoringRunId === run.run_id ? "Restoring…" : "Restore"}
                     </Button>
                   ) : null}

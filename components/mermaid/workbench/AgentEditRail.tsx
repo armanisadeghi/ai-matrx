@@ -135,8 +135,7 @@ export function AgentEditRail({
           />
         </div>
 
-        <Button onClick={handleRun} disabled={!canRun} className="w-full gap-1.5">
-          {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />}
+        <Button icon={isBusy ? <Loader2 className="animate-spin" /> : <MessageSquare />} variant="primary" onClick={handleRun} disabled={!canRun} className="w-full">
           {isBusy ? "Working…" : "Generate"}
         </Button>
 
@@ -173,12 +172,10 @@ export function AgentEditRail({
 
       {hasProposal && !isBusy && (
         <div className="flex items-center gap-2 border-t border-border p-3">
-          <Button variant="outline" className="flex-1 gap-1.5" onClick={() => reset()}>
-            <X className="h-3.5 w-3.5" />
+          <Button icon={<X />} variant="outline" className="flex-1" onClick={() => reset()}>
             Discard
           </Button>
-          <Button className="flex-1 gap-1.5" onClick={handleApply}>
-            <Check className="h-3.5 w-3.5" />
+          <Button icon={<Check />} variant="primary" className="flex-1" onClick={handleApply}>
             Apply
           </Button>
         </div>

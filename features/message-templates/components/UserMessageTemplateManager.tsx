@@ -470,8 +470,7 @@ export function UserMessageTemplateManager() {
                     : "No public templates"}
               </p>
               {!searchTerm && activeFilterCount === 0 && activeTab === "my" && (
-                <Button size="sm" className="mt-4" onClick={handleNewTemplate}>
-                  <Plus className="w-4 h-4 mr-1" />
+                <Button icon={<Plus />} variant="primary" className="mt-4" onClick={handleNewTemplate}>
                   New Template
                 </Button>
               )}

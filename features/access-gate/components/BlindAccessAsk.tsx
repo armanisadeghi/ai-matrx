@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 import { KeyRound } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { askForAccessBlind, BLIND_ASK_ANSWER } from "@/features/access-gate/service/accessRequests";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

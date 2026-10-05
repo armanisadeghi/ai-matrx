@@ -105,13 +105,11 @@ export function RangeCompareControl({
         // selected "custom" item, so an applied custom range needs its own
         // edit affordance.
         <Button
+          icon={<CalendarRange />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1 px-2 text-xs"
           aria-label="Edit custom range"
           onClick={openCustomEditor}
         >
-          <CalendarRange className="h-3 w-3" />
           Edit
         </Button>
       ) : null}
@@ -134,8 +132,8 @@ export function RangeCompareControl({
             aria-label="End date"
           />
           <Button
-            size="sm"
-            className="h-6 gap-1 px-1.5 text-xs"
+            icon={<Check />}
+            variant="primary"
             disabled={!draftFrom || !draftTo || draftFrom > draftTo}
             aria-label="Apply custom range"
             onClick={() => {
@@ -148,13 +146,10 @@ export function RangeCompareControl({
               setCustomOpen(false);
             }}
           >
-            <Check className="h-3 w-3" />
             Apply
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-1 text-xs"
+            variant="quiet"
             aria-label="Cancel custom range"
             onClick={() => setCustomOpen(false)}
           >

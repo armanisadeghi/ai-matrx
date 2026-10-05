@@ -74,8 +74,8 @@ export function ArchiveRecordButton({
   const [busy, setBusy] = useState(false);
   return (
     <Button
-      size="sm"
-      variant="ghost"
+      icon={<Archive aria-hidden />}
+      variant="quiet"
       className={className ?? "h-7 px-2 text-xs"}
       disabled={busy}
       onClick={() => {
@@ -83,7 +83,6 @@ export function ArchiveRecordButton({
         void archiveRecordReversibly(record).finally(() => setBusy(false));
       }}
     >
-      <Archive className="mr-1 h-3.5 w-3.5" aria-hidden />
       Archive
     </Button>
   );

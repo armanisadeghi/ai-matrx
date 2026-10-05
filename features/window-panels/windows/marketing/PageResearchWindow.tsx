@@ -492,16 +492,14 @@ function PageResearchWindowInner({
               />
               {index > 0 && phase.status === "form" ? (
                 <Button
+                  icon={<X />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
+                  variant="quiet"
                   aria-label="Remove keyword"
                   onClick={() =>
                     setKeywords((prev) => prev.filter((_, i) => i !== index))
                   }
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                />
               ) : null}
             </div>
           ))}
@@ -515,13 +513,11 @@ function PageResearchWindowInner({
           {phase.status === "form" &&
           keywords.length < PAGE_RESEARCH_MAX_KEYWORDS ? (
             <Button
+              icon={<Plus />}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-xs"
+              variant="quiet"
               onClick={() => setKeywords((prev) => [...prev, ""])}
             >
-              <Plus className="mr-1 h-3.5 w-3.5" />
               Add a second keyword
             </Button>
           ) : null}
@@ -544,11 +540,11 @@ function PageResearchWindowInner({
             <span data-surface-value="is_streaming">Not running</span>
           </p>
           <div className="flex items-center justify-end gap-2">
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="quiet" onClick={onClose}>
               Cancel
             </Button>
             <Button
-              size="sm"
+              variant="primary"
               disabled={!canStart}
               onClick={() => void start()}
               data-surface-value="can_start"

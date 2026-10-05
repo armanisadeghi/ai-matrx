@@ -128,8 +128,6 @@ export function PlacesSelector({
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="h-8 text-xs"
           disabled={loading || visible.length === 0}
           onClick={() =>
             onSetSelection(

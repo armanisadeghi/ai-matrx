@@ -133,7 +133,7 @@ const ColorTester = () => {
         <div className="flex flex-col space-y-4 p-4">
             <h1 className="text-2xl font-semibold">Color Validator Results</h1>
 
-            <Button onClick={testColors} className="w-fit">Re-evaluate Colors</Button>
+            <Button variant="primary" onClick={testColors} className="w-fit">Re-evaluate Colors</Button>
 
             <div className="text-xl font-medium">
                 Score: {score}

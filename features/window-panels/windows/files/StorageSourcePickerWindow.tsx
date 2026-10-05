@@ -445,8 +445,7 @@ export function StorageSourcePickerWindow({
             {(["onedrive", "dropbox", "box"] as const).map((value) => (
               <Button
                 key={value}
-                size="sm"
-                variant={provider === value ? "default" : "outline"}
+                variant={provider === value ? "primary" : "outline"}
                 onClick={() => selectProvider(value)}
               >
                 {PROVIDER_LABEL[value]}
@@ -470,8 +469,7 @@ export function StorageSourcePickerWindow({
                   </option>
                 ))}
               </select>
-              <Button size="sm" variant="ghost" onClick={() => void refreshAccounts()}>
-                <RefreshCw className="h-4 w-4" /> Retry
+              <Button icon={<RefreshCw />} variant="quiet" onClick={() => void refreshAccounts()}> Retry
               </Button>
             </div>
           ) : null}
@@ -495,7 +493,7 @@ export function StorageSourcePickerWindow({
             </div>
             <div className="flex gap-2">
               <SettingDoor target={{ scope: "user", tabId: "integrations", controlId: "storage-connections" }} label="Open Integrations" variant="outline" />
-              <Button size="sm" onClick={() => void refreshAccounts()}>Retry</Button>
+              <Button variant="primary" onClick={() => void refreshAccounts()}>Retry</Button>
             </div>
           </div>
         ) : (
@@ -570,7 +568,7 @@ export function StorageSourcePickerWindow({
                     ) : null}
                   </div>
                 ))}
-                <Button size="sm" className="mt-2" disabled={importBusy} onClick={retryFailures}>Retry failed imports</Button>
+                <Button variant="primary" className="mt-2" disabled={importBusy} onClick={retryFailures}>Retry failed imports</Button>
                 <ErrorAlchemyMenu />
               </div>
             ) : null}
@@ -579,8 +577,8 @@ export function StorageSourcePickerWindow({
               <div className="border-t border-destructive/30 bg-destructive/5 p-3 text-xs">
                 <p>{deliveryError ?? `${retained.size} imported file${retained.size === 1 ? " is" : "s are"} waiting to be attached.`}</p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Button size="sm" onClick={retryDelivery}>Retry attaching</Button>
-                  <Button size="sm" variant="outline" onClick={finishAndClose}>Keep in Files and close</Button>
+                  <Button variant="primary" onClick={retryDelivery}>Retry attaching</Button>
+                  <Button variant="outline" onClick={finishAndClose}>Keep in Files and close</Button>
                 </div>
               </div>
             ) : null}
@@ -588,11 +586,10 @@ export function StorageSourcePickerWindow({
             <div className="flex items-center justify-between gap-2 border-t border-border p-3">
               <span className="text-xs text-muted-foreground">{selected.size} selected · {selectableItems.length} selectable</span>
               <div className="flex gap-2">
-                <Button variant="ghost" onClick={requestClose}>
+                <Button variant="quiet" onClick={requestClose}>
                   {importBusy ? "Cancel after current file" : "Cancel"}
                 </Button>
-                <Button disabled={selected.size === 0 || importBusy} onClick={importSelected}>
-                  {importBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                <Button icon={importBusy ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={selected.size === 0 || importBusy} onClick={importSelected}>
                   Import {selected.size || ""}
                 </Button>
               </div>
@@ -608,7 +605,7 @@ function HonestError({ message, onRetry }: { message: string; onRetry: () => voi
   return (
     <div className="m-3 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm">
       <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-      <div className="min-w-0 flex-1"><p>{message}</p><Button className="mt-2" size="sm" variant="outline" onClick={onRetry}>Retry</Button></div>
+      <div className="min-w-0 flex-1"><p>{message}</p><Button className="mt-2" variant="outline" onClick={onRetry}>Retry</Button></div>
     <ErrorAlchemyMenu /></div>
   );
 }

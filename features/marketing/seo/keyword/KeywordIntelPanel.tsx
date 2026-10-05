@@ -601,9 +601,8 @@ export function KeywordIntelPanel({
                           </p>
                         </div>
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="h-8 shrink-0"
+                          className="shrink-0"
                           onClick={() => {
                             setVisibilityView("serp");
                             onTabChange("visibility");
@@ -711,8 +710,7 @@ function OverviewTab({
           new. Start the full pipeline to discover its keyword set, collect real
           market facts, and classify intent before evaluating it.
         </p>
-        <Button size="sm" className="h-8" onClick={onOpenPipeline}>
-          <SearchCheck className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<SearchCheck />} variant="primary" onClick={onOpenPipeline}>
           Open research pipeline
         </Button>
       </div>
@@ -764,17 +762,15 @@ function OverviewTab({
             In the library, but no provider market data fetched yet.
           </p>
           <Button
-            size="sm"
+            icon={fetching ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            className="h-7"
             disabled={fetching}
             onClick={onFetchMarket}
           >
-            {fetching ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Fetch market data
           </Button>
         </div>
@@ -1325,17 +1321,13 @@ function SearchVisibilityTab({
     <div className="grid gap-3">
       <div className="flex items-center gap-1 border-b border-border pb-2">
         <Button
-          size="sm"
-          variant={view === "positions" ? "secondary" : "ghost"}
-          className="h-7 text-xs"
+          variant={view === "positions" ? "outline" : "quiet"}
           onClick={() => onViewChange("positions")}
         >
           Positions
         </Button>
         <Button
-          size="sm"
-          variant={view === "serp" ? "secondary" : "ghost"}
-          className="h-7 text-xs"
+          variant={view === "serp" ? "outline" : "quiet"}
           onClick={() => onViewChange("serp")}
         >
           Result pages
@@ -1385,7 +1377,7 @@ function ReadFailure({
           </p>
         </div>
       </div>
-      <Button size="sm" variant="outline" className="h-7" onClick={onRetry}>
+      <Button variant="outline" onClick={onRetry}>
         Retry
       </Button>
     <ErrorAlchemyMenu /></div>
@@ -1413,7 +1405,7 @@ function UnavailableUntilResearch({
         </p>
       </div>
       {!hideAction ? (
-        <Button size="sm" className="h-8" onClick={onOpenPipeline}>
+        <Button variant="primary" onClick={onOpenPipeline}>
           Open pipeline
         </Button>
       ) : null}

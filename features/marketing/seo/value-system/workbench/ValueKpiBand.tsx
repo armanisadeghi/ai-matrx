@@ -285,23 +285,21 @@ export function ValueKpiBand({
               <Button
                 type="button"
                 onClick={onQuickAnswers}
-                size="sm"
                 variant="outline"
-                className="h-7 min-w-0 gap-1 border-warning/60 bg-warning/10 px-1.5 text-[10px] font-semibold text-warning hover:bg-warning/20 max-lg:h-11"
+                className="min-w-0"
                 title="Answer one dimension for five keywords in a floating panel"
               >
                 <AGENT_ICON className="h-3 w-3" />
                 Answer 5
               </Button>
               <Button
+                icon={<Gavel />}
                 type="button"
                 onClick={onStartSession}
-                size="sm"
                 variant="outline"
-                className="h-7 min-w-0 gap-1 px-1.5 text-[10px] font-medium text-muted-foreground hover:border-warning hover:text-warning max-lg:h-11"
+                className="min-w-0"
                 title="Open the one-keyword-at-a-time ruling session"
               >
-                <Gavel className="h-3 w-3" />
                 Rule one
               </Button>
             </div>

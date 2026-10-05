@@ -103,7 +103,7 @@ function MeetingPartPicker({ onPick, onCancel }: PickerProps) {
       <div className="flex items-center gap-2 text-sm">
         <Video className="size-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate font-medium">{chosen.title}</span>
-        <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setChosen(null)}>
+        <Button type="button" variant="quiet" onClick={() => setChosen(null)}>
           Another meeting
         </Button>
       </div>
@@ -120,6 +120,8 @@ function MeetingPartPicker({ onPick, onCancel }: PickerProps) {
           </Button>
         ))}
         <Button
+          icon={<ListChecks />}
+          variant="primary"
           type="button"
           className="justify-start"
           onClick={() =>
@@ -132,12 +134,11 @@ function MeetingPartPicker({ onPick, onCancel }: PickerProps) {
             )
           }
         >
-          <ListChecks className="mr-1.5 size-4" />
           All five
         </Button>
       </div>
       <div className="flex justify-end">
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>

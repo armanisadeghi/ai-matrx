@@ -129,8 +129,7 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
             <span>{label}</span>
           </button>
         ) : (
-          <Button size="sm" variant="outline" className={cn("h-7", className)}>
-            <Plus className="w-3.5 h-3.5 mr-1" />
+          <Button icon={<Plus />} type="submit" variant="outline" className={className}>
             {label}
           </Button>
         )}
@@ -221,16 +220,15 @@ export default function QuickCreateTaskButton(props: QuickCreateTaskButtonProps)
             </button>
             <div className="flex-1" />
             <Button
-              size="sm"
+              icon={isBusy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               onClick={submit}
               disabled={!title.trim() || isBusy}
-              className="h-7 text-xs"
             >
-              {isBusy ? (
-                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              ) : (
-                <Plus className="w-3 h-3 mr-1" />
-              )}
               Create
             </Button>
           </div>

@@ -83,15 +83,13 @@ export function WebpagePreviewContent({
 
       <div className="flex items-center gap-1.5 pt-1 border-t border-border">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs gap-1"
+          icon={copied ? <Check className="text-success" /> : <Copy />}
+          variant="quiet"
           onClick={handleCopyUrl}
         >
-          {copied ? <Check className="text-success" /> : <Copy />}
           {copied ? "Copied" : "Copy URL"}
         </Button>
-        <Button asChild size="sm" className="ml-auto h-7 px-2.5 text-xs gap-1">
+        <Button variant="primary" asChild className="ml-auto">
           <a href={url} target="_blank" rel="noopener noreferrer">
             <ExternalLink />
             Open

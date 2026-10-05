@@ -280,14 +280,12 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
         <div className="absolute left-3 right-3 top-3 z-20 flex min-w-0 flex-col gap-2 rounded-xl border border-border/70 bg-card/90 p-2 shadow-lg backdrop-blur-xl sm:right-auto sm:max-w-[calc(100%-12rem)] lg:flex-row lg:items-center">
           <div className="flex min-w-0 w-full items-center gap-2 lg:w-auto lg:flex-1">
             <Button
-              variant="ghost"
-              size="icon"
+              icon={<ArrowLeft />}
+              variant="quiet"
               className="shrink-0"
               onClick={() => router.push("/education/mind-maps")}
               aria-label="Back"
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+            />
             <div className="min-w-0 flex-1 lg:min-w-48">
               {distinctSourceTitle(media.title, media.source_title) && (
                 <span className="block truncate text-xs text-muted-foreground">
@@ -302,8 +300,7 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
           <MindMapNodeSearch envelope={media.ir_envelope} selectedNode={selectedNode} onSelectNode={setSelectedNode} />
           <div className="flex w-full flex-wrap items-center gap-1 lg:w-auto lg:flex-nowrap">
             {canEdit && (
-              <Button variant="outline" size="sm" onClick={() => router.push(`/education/mind-maps/${media.id}/edit`)}>
-                <Pencil className="mr-1 h-4 w-4" /> Edit
+              <Button icon={<Pencil />} variant="outline" onClick={() => router.push(`/education/mind-maps/${media.id}/edit`)}> Edit
               </Button>
             )}
             {isOwner && (
@@ -316,8 +313,8 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
                   size="sm"
                 />
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  icon={<RefreshCw className="text-muted-foreground" />}
+                  variant="quiet"
                   onClick={() =>
                     router.push(
                       media.source_kind === "topic"
@@ -326,25 +323,20 @@ export function MindMapDetail({ mediaId, edit = false }: { mediaId: string; edit
                     )
                   }
                   aria-label="Regenerate"
-                >
-                  <RefreshCw className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                />
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  icon={<Trash2 className="text-muted-foreground" />}
+                  variant="quiet"
                   onClick={handleDelete}
                   aria-label="Move to Trash"
-                >
-                  <Trash2 className="h-4 w-4 text-muted-foreground" />
-                </Button>
+                />
               </div>
             )}
             {trust && (
               <Button
                 variant="outline"
-                size="sm"
                 // Pressed reads at a glance while the sources tab is open.
-                className="shrink-0 gap-2 aria-pressed:border-primary/60 aria-pressed:bg-primary/10 aria-pressed:text-primary"
+                className="shrink-0"
                 // Toggles the sources tab; pressed while it is open.
                 onClick={() => setSourcesOpen((current) => !current)}
                 aria-pressed={sourcesOpen}

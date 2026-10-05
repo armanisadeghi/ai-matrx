@@ -424,7 +424,7 @@ export function EffectiveDatedForm({
       {children}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="submit" disabled={blocked} className="min-h-11 sm:min-h-9">
+        <Button variant="primary" type="submit" disabled={blocked}>
           {dating.verb}
         </Button>
         {cancel}

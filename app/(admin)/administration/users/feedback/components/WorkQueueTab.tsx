@@ -207,8 +207,7 @@ export default function WorkQueueTab() {
                                 />
                             </>
                         )}
-                        <Button variant="outline" size="sm" onClick={loadQueue} className="gap-1.5">
-                            <RefreshCw className="w-3.5 h-3.5" />
+                        <Button icon={<RefreshCw />} variant="outline" onClick={loadQueue}>
                             Refresh
                         </Button>
                     </div>
@@ -254,9 +253,8 @@ export default function WorkQueueTab() {
                                     {/* Priority Number */}
                                     <div className="flex flex-col items-center gap-0.5 flex-shrink-0">
                                         <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
+                                            variant="quiet"
+                                            className="w-5"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleMovePriority(item.id, 'up');
@@ -269,9 +267,8 @@ export default function WorkQueueTab() {
                                             {item.work_priority ?? index + 1}
                                         </span>
                                         <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 w-5 p-0"
+                                            variant="quiet"
+                                            className="w-5"
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleMovePriority(item.id, 'down');
@@ -357,9 +354,8 @@ export default function WorkQueueTab() {
                                         })}
                                     />
                                     <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="flex-shrink-0 h-8 w-8 p-0"
+                                        variant="quiet"
+                                        className="flex-shrink-0 w-8"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleViewDetails(item);

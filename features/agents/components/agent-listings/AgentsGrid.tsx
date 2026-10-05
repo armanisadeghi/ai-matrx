@@ -790,12 +790,12 @@ export function AgentsGrid() {
             {/* Orchestras (Conductors) */}
             <Link href="/agents/orchestras">
               <Button
+                icon={<Network />}
+                type="submit"
                 variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 rounded-full matrx-glass-thin-border hover:shadow-xl shrink-0"
+                className="shrink-0"
                 title="Orchestras — Conductors presiding over teams of agents"
               >
-                <Network className="h-4 w-4" />
                 Orchestras
               </Button>
             </Link>
@@ -803,12 +803,12 @@ export function AgentsGrid() {
             {/* New agent icon (right) */}
             <Link href="/agents/new">
               <Button
-                size="icon"
-                className="h-8 w-8 rounded-full matrx-glass-thin-border hover:shadow-xl bg-primary hover:bg-primary/90 shrink-0"
+                icon={<Plus />} aria-label="Create new agent"
+                type="submit"
+                variant="primary"
+                className="shrink-0"
                 title="Create new agent"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              />
             </Link>
           </div>
         </div>
@@ -885,18 +885,16 @@ export function AgentsGrid() {
                 </div>
                 {searchTerm && !deepSearch && (
                   <Button
+                    icon={<FileSearch />}
                     variant="outline"
                     onClick={() => setDeepSearch(true)}
-                    className="gap-2"
                   >
-                    <FileSearch className="h-4 w-4" />
                     Search inside agent prompts
                   </Button>
                 )}
                 {!hasActiveFilters && (
                   <Link href="/agents/new">
-                    <Button>
-                      <Plus className="h-4 w-4 mr-2" />
+                    <Button icon={<Plus />} type="submit" variant="primary">
                       Create Agent
                     </Button>
                   </Link>
@@ -944,19 +942,17 @@ export function AgentsGrid() {
               </div>
               {!hasActiveFilters && (
                 <Link href="/agents/new">
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button icon={<Plus />} type="submit" variant="primary">
                     Create Agent
                   </Button>
                 </Link>
               )}
               {searchTerm && !deepSearch && (
                 <Button
+                  icon={<FileSearch />}
                   variant="outline"
                   onClick={() => setDeepSearch(true)}
-                  className="gap-2"
                 >
-                  <FileSearch className="h-4 w-4" />
                   Search inside agent prompts
                 </Button>
               )}

@@ -186,16 +186,17 @@ export function GovernedActionDialog({
           context?.status !== "error" &&
           context?.status !== "anonymous" ? (
             <Button
+              icon={busy ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : choice === "delete" ? (
+                <Send aria-hidden />
+              ) : (
+                <KeyRound aria-hidden />
+              )}
+              variant="primary"
               disabled={busy || isLoading}
               onClick={() => void sendRequest()}
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : choice === "delete" ? (
-                <Send className="h-4 w-4" aria-hidden />
-              ) : (
-                <KeyRound className="h-4 w-4" aria-hidden />
-              )}
               Send request
             </Button>
           ) : null}

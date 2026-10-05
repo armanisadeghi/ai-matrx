@@ -360,7 +360,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
           <div className="font-medium">Your notifications didn&apos;t load.</div>
           <div className="truncate text-xs text-muted-foreground">{feed.error.message}</div>
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={feed.refetch}>
+        <Button type="button" variant="outline" onClick={feed.refetch}>
           Retry
         </Button>
         <ErrorAlchemyMenu error={feed.error.message} />
@@ -398,9 +398,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
         {filtered ? (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={() => {
               setSearch("");
               setCategory(null);
@@ -411,7 +409,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             Clear filters
           </Button>
         ) : tab !== "done" && triage && summary && summary.done > 0 ? (
-          <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTab("done")}>
+          <Button type="button" variant="quiet" onClick={() => setTab("done")}>
             See Done · {summary.done}
           </Button>
         ) : null}
@@ -435,7 +433,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
         ))}
         {feed.hasMore ? (
           <div className="flex justify-center py-2">
-            <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={feed.loadMore} disabled={feed.loadingMore}>
+            <Button type="button" variant="quiet" onClick={feed.loadMore} disabled={feed.loadingMore}>
               {feed.loadingMore ? "Loading more notifications…" : "Load more"}
             </Button>
           </div>
@@ -488,18 +486,16 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             />
             <span className="ml-1 mr-auto text-xs font-medium text-foreground">{idsOf(checkedGroups).length} selected</span>
             {triage && tab !== "done" ? (
-              <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs" onClick={() => bulk("done")}>
-                <Check className="h-3.5 w-3.5" /> Done
+              <Button icon={<Check />} type="button" variant="quiet" onClick={() => bulk("done")}> Done
               </Button>
             ) : null}
-            <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => bulk("read")}>
+            <Button type="button" variant="quiet" onClick={() => bulk("read")}>
               Mark read
             </Button>
             {triage && tab !== "done" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="ghost" size="sm" className="h-7 gap-1 px-2 text-xs">
-                    <Clock className="h-3.5 w-3.5" /> Snooze
+                  <Button icon={<Clock />} type="button" variant="quiet"> Snooze
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-44">
@@ -512,7 +508,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null}
-            <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setChecked(new Set())} aria-label="Clear selection">
+            <Button type="button" variant="quiet" className="w-7" onClick={() => setChecked(new Set())} aria-label="Clear selection">
               <X className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -530,7 +526,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button type="button" variant="ghost" size="sm" className={cn("h-8 px-2 text-xs", category ? "text-foreground" : "text-muted-foreground")}>
+                <Button type="button" variant="quiet">
                   {category ? categories.find((c) => c.key === category)?.label ?? "Type" : "Type"}
                 </Button>
               </DropdownMenuTrigger>
@@ -546,10 +542,8 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             </DropdownMenu>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               aria-pressed={unreadOnly}
-              className={cn("h-8 px-2 text-xs", unreadOnly ? "bg-accent text-foreground" : "text-muted-foreground")}
               onClick={() => setUnreadOnly((v) => !v)}
             >
               Unread
@@ -557,7 +551,7 @@ export function InboxWorkspace({ mode, initialTab = "inbox", orgFilter, onOrgFil
             {triage ? (
               <EntityOrgFilter orgId={orgFilter} onChange={onOrgFilterChange} className="max-w-[9.5rem] shrink-0" />
             ) : null}
-            <Button type="button" variant="ghost" size="sm" className="hidden h-8 w-8 p-0 @2xl:inline-flex" onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
+            <Button type="button" variant="quiet" className="hidden w-8 @2xl:inline-flex" onClick={() => setHelpOpen(true)} aria-label="Keyboard shortcuts" title="Keyboard shortcuts (?)">
               <Keyboard className="h-4 w-4" />
             </Button>
           </div>

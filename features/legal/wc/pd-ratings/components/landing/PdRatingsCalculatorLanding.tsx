@@ -136,8 +136,8 @@ export default function PdRatingsCalculatorLanding() {
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8 gap-2"
+              variant="primary"
+              className="w-full sm:w-auto"
               asChild
             >
               <AppLink href="/demos/ca-pd-calculator">
@@ -147,8 +147,7 @@ export default function PdRatingsCalculatorLanding() {
             </Button>
             <Button
               variant="outline"
-              size="lg"
-              className="w-full sm:w-auto min-h-[44px] text-base px-8"
+              className="w-full sm:w-auto"
               asChild
             >
               <AppLink href="/legal/ca-wc">Back to CA WC</AppLink>
@@ -315,8 +314,7 @@ export default function PdRatingsCalculatorLanding() {
             weeks, life expectancy, and AWC.
           </p>
           <Button
-            size="lg"
-            className="min-h-[44px] text-base px-10 gap-2"
+            variant="primary"
             asChild
           >
             <AppLink href="/demos/ca-pd-calculator">

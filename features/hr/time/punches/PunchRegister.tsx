@@ -159,28 +159,26 @@ export function PunchRegister({
       <HrTimeReadState loading={register.loading} error={register.error}>
         <>
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={exportCsv}>
-              <Download className="mr-1.5 h-4 w-4" aria-hidden />
+            <Button icon={<Download aria-hidden />} type="button" variant="outline" onClick={exportCsv}>
               Export this view
             </Button>
             {canEdit && selected.length > 0 ? (
               <>
                 <Button
+                  icon={<PencilLine aria-hidden />}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   onClick={() => setCorrecting({ punches: selected, mode: "correct" })}
                 >
-                  <PencilLine className="mr-1.5 h-4 w-4" aria-hidden />
                   Correct {pluralize(selected.length, "punch", "punches")}
                 </Button>
                 {selected.length === 1 ? (
                   <Button
+                    icon={<Eraser aria-hidden />}
                     type="button"
-                    size="sm"
                     variant="outline"
                     onClick={() => setCorrecting({ punches: selected, mode: "void" })}
                   >
-                    <Eraser className="mr-1.5 h-4 w-4" aria-hidden />
                     Void it
                   </Button>
                 ) : null}

@@ -312,7 +312,7 @@ function ReadFailed({ read }: { read: { why: string; retry: () => void } }) {
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm" role="alert">
       <span className="text-destructive">{read.why}</span>
-      <Button size="sm" variant="outline" onClick={read.retry}>
+      <Button variant="outline" onClick={read.retry}>
         Try again
       </Button>
     </div>
@@ -368,7 +368,7 @@ export function MakeFlowSheet(props: MakeFlowSheetProps) {
   return (
     <>
       <div className="flex shrink-0 items-center gap-2">
-        <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={onBack} aria-label="Back">
+        <Button variant="quiet" className="w-8" onClick={onBack} aria-label="Back">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <KindIcon kind={tile.kind} className="h-4 w-4 text-muted-foreground" />

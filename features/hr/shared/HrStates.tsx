@@ -282,20 +282,17 @@ export function HrError({
         <div className="flex flex-wrap items-center gap-2">
           {onRetry ? (
             <Button
+              icon={<RefreshCw />}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={onRetry}
-              className="min-h-11 sm:min-h-9"
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
               Try again
             </Button>
           ) : null}
           <Button
             asChild
-            size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
           >
             {/* This error state can render before employer context exists. */}
             <Link href={hrHref(null)}>Back to HR</Link>
@@ -768,7 +765,7 @@ export function HrModuleOff({
             : "An owner or admin of this organization turns it on."}
         </p>
         {canEnable ? (
-          <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+          <Button variant="primary" asChild>
             <Link href={hrOrgSettingsPeopleHref(organizationId)}>
               <UserCog className="mr-2 h-4 w-4" />
               Turn on HR
@@ -814,7 +811,7 @@ export function HrEmptyOrg({
             : "Whoever owns this organization finishes setup before anyone can be added."}
         </p>
         {canActivate ? (
-          <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+          <Button variant="primary" asChild>
             <Link href={hrSettingsHref("employer", { org: organizationId })}>
               Set up HR
             </Link>

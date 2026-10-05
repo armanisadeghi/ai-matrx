@@ -282,9 +282,7 @@ export function ResearchMediaView({
                   <div className="flex items-center gap-0.5 pt-0.5">
                     {row.sourceUrl ? (
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5 text-[10px]"
+                        variant="quiet"
                         asChild
                       >
                         <a
@@ -298,9 +296,7 @@ export function ResearchMediaView({
                       </Button>
                     ) : null}
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 px-1.5 text-[10px]"
+                      variant="quiet"
                       title="Use as a creative brief in Generate"
                       onClick={() => onUseAsBrief(row)}
                     >
@@ -308,9 +304,7 @@ export function ResearchMediaView({
                     </Button>
                     {own ? (
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5 text-[10px]"
+                        variant="quiet"
                         disabled={promotingId === row.id}
                         title="Add to the brand library"
                         onClick={() => void promote(row)}

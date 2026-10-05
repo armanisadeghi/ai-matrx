@@ -359,28 +359,29 @@ function FooterActions({ controller }: { controller: CropStudioController }) {
         </span>
       )}
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<Crop />}
+        variant="quiet"
         onClick={controller.applyActiveCropToAll}
         disabled={!canApplyToAll || controller.isSaving}
-        className="text-muted-foreground"
         title="Apply this crop rectangle to every other image, scaled proportionally"
       >
-        <Crop className="h-3.5 w-3.5 mr-1.5" />
         Apply to all
       </Button>
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<Trash2 />}
+        variant="quiet"
         onClick={controller.clearAll}
         disabled={!controller.hasEntries || controller.isSaving}
-        className="text-muted-foreground"
       >
-        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
         Discard
       </Button>
       <Button
-        size="sm"
+        icon={controller.isSaving ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <CloudUpload />
+        )}
+        variant="primary"
         onClick={controller.saveAll}
         disabled={
           !controller.hasEntries ||
@@ -388,11 +389,6 @@ function FooterActions({ controller }: { controller: CropStudioController }) {
           controller.pendingCount === 0
         }
       >
-        {controller.isSaving ? (
-          <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-        ) : (
-          <CloudUpload className="h-3.5 w-3.5 mr-1.5" />
-        )}
         {controller.isSaving
           ? "Saving…"
           : controller.pendingCount > 1

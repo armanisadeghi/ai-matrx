@@ -25,6 +25,7 @@ import {
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
 import { OrganizationTag } from "./OrganizationTag";
@@ -127,7 +128,7 @@ export function TriageQueue() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
         <p className="px-6 text-center text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
-        <Button variant="outline" size="sm" onClick={retryLoad}>
+        <Button variant="outline" onClick={retryLoad}>
           Try again
         </Button>
       </div>
@@ -155,23 +156,19 @@ export function TriageQueue() {
         </span>
         <div className="flex gap-1">
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<ChevronLeft />}
+            variant="quiet"
             aria-label="Previous item"
             disabled={index === 0}
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<ChevronRight />}
+            variant="quiet"
             aria-label="Next item"
             disabled={index >= items.length - 1}
             onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          />
         </div>
       </div>
 
@@ -226,7 +223,7 @@ export function TriageQueue() {
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {VALUE_BUCKETS.map((bucket, i) => (
-          <Button
+          <SurfaceButton
             key={bucket}
             variant={item.aiBucket === bucket ? "default" : "outline"}
             disabled={busy}
@@ -238,7 +235,7 @@ export function TriageQueue() {
               {BUCKET_LABELS[bucket]}
             </span>
             <span className="text-[10px] opacity-70">key {i + 1}</span>
-          </Button>
+          </SurfaceButton>
         ))}
       </div>
       <p className="text-center text-[11px] text-muted-foreground">

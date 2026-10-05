@@ -174,11 +174,12 @@ export function OfferingEditDialog({
         </div>
 
         <DialogFooter className="pb-safe">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+          <Button variant="quiet" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
           <Button
-            size="sm"
+            icon={busy ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
             disabled={busy || !name.trim()}
             onClick={() =>
               onSave({
@@ -190,7 +191,6 @@ export function OfferingEditDialog({
               })
             }
           >
-            {busy ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : null}
             {creating ? "Create and offer it here" : "Save"}
           </Button>
         </DialogFooter>

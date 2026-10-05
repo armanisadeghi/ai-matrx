@@ -269,20 +269,17 @@ export function LabelPicker({
             </label>
             <div className="flex items-center gap-1">
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<X />}
+                variant="quiet"
                 onClick={onCancel}
-                className="h-7 text-xs"
-              >
-                <X className="h-3 w-3 mr-1" /> Cancel
+              > Cancel
               </Button>
               <Button
-                size="sm"
+                icon={<CheckIcon />}
+                variant="primary"
                 disabled={!canConfirm}
                 onClick={handleConfirm}
-                className="h-7 text-xs"
-              >
-                <CheckIcon className="h-3 w-3 mr-1" /> Save
+              > Save
               </Button>
             </div>
           </div>

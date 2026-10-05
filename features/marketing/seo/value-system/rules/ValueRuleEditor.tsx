@@ -613,14 +613,12 @@ export function ValueRuleEditor({
           <div>
             {rule ? (
               <Button
+                icon={<Trash2 aria-hidden />}
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => void askArchive()}
                 disabled={busy}
-                className="h-8 gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
               >
-                <Trash2 className="h-3.5 w-3.5" aria-hidden />
                 Archive
               </Button>
             ) : null}
@@ -629,22 +627,20 @@ export function ValueRuleEditor({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={onClose}
               disabled={busy}
             >
               Cancel
             </Button>
             <Button
+              icon={save.isPending ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : null}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => save.mutate()}
               disabled={!ready || busy}
-              className="gap-1.5"
             >
-              {save.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : null}
               {moved > 0
                 ? `Save — ${moved} keyword${moved === 1 ? "" : "s"} move`
                 : rule

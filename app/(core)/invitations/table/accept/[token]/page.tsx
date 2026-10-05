@@ -185,12 +185,13 @@ export default function AcceptTableSharePage() {
             own organization (lane ACCESS-IS-PERSONAL) — but a link that says whose
             it is stays honest when copied. */}
         <Button
+          iconEnd={<ArrowRight />}
+          variant="primary"
           onClick={() =>
             router.push(`/data/${opened.table_id}?org=${opened.organization_id}`)
           }
         >
           Open {opened.table}
-          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>,
     );
@@ -243,12 +244,11 @@ export default function AcceptTableSharePage() {
         {error ? (
           <p className="mb-4 text-sm text-destructive">{error} <ErrorAlchemyMenu error={error} /></p>
         ) : null}
-        <Button onClick={() => void open()} disabled={working}>
-          {working ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Button icon={working ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Check className="mr-2 h-4 w-4" />
-          )}
+            <Check />
+          )} variant="primary" onClick={() => void open()} disabled={working}>
           Open {peek.table}
         </Button>
       </div>,
@@ -265,8 +265,7 @@ export default function AcceptTableSharePage() {
         <h2 className="mb-2 text-xl font-semibold">{peek.offer}</h2>
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
-        <Button onClick={() => void signIn()}>
-          <LogIn className="mr-2 h-4 w-4" />
+        <Button icon={<LogIn />} variant="primary" onClick={() => void signIn()}>
           Sign in or create an account
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">
@@ -289,8 +288,7 @@ export default function AcceptTableSharePage() {
         </h2>
         <p className="mb-4 text-sm text-muted-foreground">{peek.say}</p>
         {offer(peek)}
-        <Button onClick={() => void signIn()}>
-          <LogIn className="mr-2 h-4 w-4" />
+        <Button icon={<LogIn />} variant="primary" onClick={() => void signIn()}>
           Sign in as {peek.invited_email}
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">{peek.ask}</p>
@@ -308,6 +306,8 @@ export default function AcceptTableSharePage() {
         <h2 className="mb-2 text-xl font-semibold">{peek.table} is already yours to see</h2>
         <p className="mb-6 text-sm text-muted-foreground">{peek.say}</p>
         <Button
+          iconEnd={<ArrowRight />}
+          variant="primary"
           onClick={() =>
             router.push(
               peek.organization_id
@@ -317,7 +317,6 @@ export default function AcceptTableSharePage() {
           }
         >
           Open {peek.table}
-          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>,
     );

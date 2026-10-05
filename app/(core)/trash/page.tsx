@@ -119,13 +119,12 @@ function PendingGroup({
         </span>
       ) : (
         <Button
-          size="sm"
+          icon={<Undo2 aria-hidden />}
           variant="outline"
           className="shrink-0 self-start sm:self-auto"
           disabled={busy}
           onClick={onKeep}
         >
-          <Undo2 className="h-4 w-4" aria-hidden />
           <span className="ml-1.5">{busy ? "Keeping…" : "Keep them all"}</span>
         </Button>
       )}

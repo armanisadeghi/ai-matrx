@@ -157,7 +157,7 @@ export function ApiTestConfigPanel({
                   </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="ghost" onClick={() => { setTempToken(config.authToken); setIsEditingToken(true); }} className="h-6 w-6 p-0">
+                      <Button variant="quiet" onClick={() => { setTempToken(config.authToken); setIsEditingToken(true); }} className="w-6">
                         <Pencil className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
@@ -166,7 +166,7 @@ export function ApiTestConfigPanel({
                   {!config.isSessionToken && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" onClick={handleClearToken} className="h-6 w-6 p-0 text-destructive hover:text-destructive">
+                        <Button variant="quiet" onClick={handleClearToken} className="w-6">
                           <X className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -189,7 +189,7 @@ export function ApiTestConfigPanel({
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="default" onClick={handleSaveToken} disabled={!tempToken.trim()} className="h-6 w-6 p-0">
+                      <Button variant="primary" onClick={handleSaveToken} disabled={!tempToken.trim()} className="w-6">
                         <Check className="h-3 w-3" />
                       </Button>
                     </TooltipTrigger>
@@ -198,7 +198,7 @@ export function ApiTestConfigPanel({
                   {config.hasToken && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="ghost" onClick={handleCancelEdit} className="h-6 w-6 p-0">
+                        <Button variant="quiet" onClick={handleCancelEdit} className="w-6">
                           <X className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>

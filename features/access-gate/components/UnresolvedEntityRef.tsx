@@ -242,7 +242,7 @@ export function UnresolvedEntityRef({
         ) : null}
 
         {context.status === "anonymous" ? (
-          <Button asChild size="sm" className="mt-2 h-7 w-full text-xs">
+          <Button variant="primary" asChild className="mt-2 w-full">
             <Link href={signInHref}>
               <LogIn className="mr-1.5 h-3.5 w-3.5" aria-hidden />
               Sign in
@@ -252,11 +252,11 @@ export function UnresolvedEntityRef({
 
         {(context.status === "ok" || context.status === "error") && onChanged ? (
           <Button
-            size="sm"
-            className="mt-2 h-7 w-full text-xs"
+            icon={<RefreshCw aria-hidden />}
+            variant="primary"
+            className="mt-2 w-full"
             onClick={() => onChanged()}
           >
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden />
             Try again
           </Button>
         ) : null}

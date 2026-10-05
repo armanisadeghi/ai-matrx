@@ -148,9 +148,7 @@ export function ProposedQueue({
           customActions={(row, controls) =>
             row.keyword_id ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[11px]"
+                variant="quiet"
                 onClick={() =>
                   void confirm([row.keyword_id as string], controls.refresh)
                 }
@@ -167,21 +165,19 @@ export function ProposedQueue({
           }) => (
             <div className="flex flex-wrap items-center gap-1.5">
               <Button
-                size="sm"
-                className="h-7 gap-1 text-xs"
+                icon={<Check />}
+                variant="primary"
                 disabled={keywordIds.length === 0}
                 onClick={() => {
                   void confirm(keywordIds, refresh);
                   clear();
                 }}
               >
-                <Check className="h-3.5 w-3.5" />
                 Confirm
               </Button>
               <Button
+                icon={<Network />}
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1 text-xs"
                 disabled={keywordIds.length === 0}
                 onClick={() =>
                   openServiceAssign(
@@ -190,13 +186,10 @@ export function ProposedQueue({
                   )
                 }
               >
-                <Network className="h-3.5 w-3.5" />
                 Move to another offering…
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs text-muted-foreground"
+                variant="quiet"
                 onClick={clear}
               >
                 Clear selection

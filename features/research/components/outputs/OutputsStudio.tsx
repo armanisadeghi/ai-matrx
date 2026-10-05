@@ -700,12 +700,11 @@ function PodcastOutputCard({
         {!isRunning && state.status !== "done" && (
           <div className="flex items-center gap-2">
             <Button
-              size="sm"
-              className="gap-1.5 h-8"
+              icon={<Mic />}
+              variant="primary"
               onClick={handleGenerate}
               disabled={!hasReport}
             >
-              <Mic className="h-3.5 w-3.5" />
               Generate podcast
             </Button>
             {state.status === "error" && state.error && (
@@ -1063,12 +1062,11 @@ function BlogOutputCard({
         {mandateError && <MandateUnavailableNote message={mandateError} />}
         {!blogRun.isRunning && !viewing && (
           <Button
-            size="sm"
-            className="gap-1.5 h-8"
+            icon={<FileText />}
+            variant="primary"
             onClick={handleGenerate}
             disabled={!hasReport || mandateError !== null}
           >
-            <FileText className="h-3.5 w-3.5" />
             Generate blog
           </Button>
         )}
@@ -1331,12 +1329,11 @@ function SlidesOutputCard({
       {mandateError && <MandateUnavailableNote message={mandateError} />}
       {!slidesRun.isRunning && !viewing && (
         <Button
-          size="sm"
-          className="gap-1.5 h-8"
+          icon={<Presentation />}
+          variant="primary"
           onClick={handleGenerate}
           disabled={!hasReport || mandateError !== null}
         >
-          <Presentation className="h-3.5 w-3.5" />
           Generate slides
         </Button>
       )}
@@ -1532,12 +1529,11 @@ function SeoOutputCard({
       {mandateError && <MandateUnavailableNote message={mandateError} />}
       {!seoRun.isRunning && !viewing && (
         <Button
-          size="sm"
-          className="gap-1.5 h-8"
+          icon={<SearchIcon />}
+          variant="primary"
           onClick={handleGenerate}
           disabled={!hasReport || mandateError !== null}
         >
-          <SearchIcon className="h-3.5 w-3.5" />
           Generate SEO package
         </Button>
       )}

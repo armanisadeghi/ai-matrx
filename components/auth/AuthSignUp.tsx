@@ -105,7 +105,7 @@ export default function Component() {
                             </Link>
                         </Label>
                     </div>
-                    <Button type="submit" className="w-full">
+                    <Button variant="primary" type="submit" className="w-full">
                         Sign Up
                     </Button>
                 </form>
@@ -115,12 +115,10 @@ export default function Component() {
                     <Separator className="flex-1" />
                 </div>
                 <div className="flex flex-col gap-2">
-                    <Button variant="outline" className="w-full">
-                        <Icon icon="flat-color-icons:google" width={20} className="mr-2" />
+                    <Button icon={<Icon icon="flat-color-icons:google" width={20} />} type="submit" variant="outline" className="w-full">
                         Continue with Google
                     </Button>
-                    <Button variant="outline" className="w-full">
-                        <Icon className="mr-2" icon="fe:github" width={20} />
+                    <Button icon={<Icon icon="fe:github" width={20} />} type="submit" variant="outline" className="w-full">
                         Continue with Github
                     </Button>
                 </div>

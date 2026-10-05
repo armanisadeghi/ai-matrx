@@ -460,30 +460,29 @@ export function TryItNowPanel({
         <h3 className="text-sm font-semibold">Run once</h3>
         <div className="flex items-center gap-2">
         <Button
-          size="sm"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FlaskConical />
+          )}
+          variant="primary"
           disabled={running || !surface}
           onClick={() => void run()}
         >
-          {running ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          ) : (
-            <FlaskConical className="mr-2 size-4" />
-          )}
           Run test
         </Button>
         <Button
-          size="sm"
+          icon={readingSamples ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FlaskConical />
+          )}
           variant="outline"
           disabled={readingSamples || !surface}
           onClick={() =>
             sampleSource ? setSampleSource(null) : void openSamples()
           }
         >
-          {readingSamples ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <FlaskConical className="size-3.5" />
-          )}
           Agent samples
         </Button>
         </div>
@@ -499,8 +498,7 @@ export function TryItNowPanel({
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold">Agent samples</h4>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => setSampleSource(null)}
             >
               Close
@@ -872,7 +870,7 @@ export function TryItNowPanel({
               label="Workflow run"
               value={
                 runHolder.runId ? (
-                  <Button asChild size="sm" variant="outline">
+                  <Button asChild variant="outline">
                     <Link href={`/workflows/runs/${runHolder.runId}`} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="mr-2 size-4" />
                       Open run
@@ -939,15 +937,15 @@ export function TryItNowPanel({
                 />
               </label>
               <Button
-                size="sm"
+                icon={saving ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Save />
+                )}
+                variant="primary"
                 onClick={() => void saveAsTestCase()}
                 disabled={saving}
               >
-                {saving ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                ) : (
-                  <Save className="mr-2 size-4" />
-                )}
                 Save test case and reference
               </Button>
             </>

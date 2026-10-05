@@ -114,10 +114,10 @@ export function OrganizationList() {
             Create your first organization to start collaborating with your team
           </p>
           <Button
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600"
           >
-            <Plus className="h-4 w-4 mr-2" />
             Create Organization
           </Button>
         </div>
@@ -164,10 +164,10 @@ export function OrganizationList() {
             }}
           />
           <Button
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
           >
-            <Plus className="h-4 w-4 mr-2" />
             New Organization
           </Button>
         </div>

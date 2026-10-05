@@ -40,23 +40,22 @@ const ImagePreviewDemo = ({ size = 'm', showRemoveButton = true, showCount = tru
   return (
     <div className="w-full space-y-4">
       <div className="flex justify-between">
-        <Button 
-          size="sm" 
+        <Button
+          icon={<Search />}
+          variant="primary" 
           onClick={() => setIsManagerOpen(true)}
-          className="flex items-center gap-1"
+          className="flex"
         >
-          <Search className="h-4 w-4" />
           Select Images
         </Button>
         
         {selectedImages.length > 0 && (
-          <Button 
-            size="sm" 
+          <Button
+            icon={<X />} 
             variant="outline" 
             onClick={clearImages}
-            className="flex items-center gap-1"
+            className="flex"
           >
-            <X className="h-4 w-4" />
             Clear All
           </Button>
         )}

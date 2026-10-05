@@ -59,9 +59,7 @@ export function EpisodeTitlePanel({
           <span className="font-medium text-foreground">Title options</span>
         </div>
         <Button
-          size="sm"
-          variant={hasOptions ? "ghost" : "default"}
-          className="gap-1.5"
+          variant={hasOptions ? "quiet" : "primary"}
           disabled={busy || !episode || noScript}
           onClick={() => void generate()}
         >

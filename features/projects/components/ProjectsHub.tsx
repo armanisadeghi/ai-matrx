@@ -791,9 +791,8 @@ export function ProjectsHub({
                   </Badge>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto h-11 px-3 text-xs lg:h-7"
+                  variant="quiet"
+                  className="ml-auto"
                   onClick={clearFilter}
                 >
                   Show all projects
@@ -849,21 +848,18 @@ export function ProjectsHub({
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   {isFiltered && (
                     <Button
-                      size="sm"
+                      icon={<Filter />}
                       variant="outline"
-                      className="h-11 lg:h-8"
                       onClick={clearFilter}
                     >
-                      <Filter className="h-4 w-4 mr-1.5" />
                       Show all projects
                     </Button>
                   )}
                   <Button
-                    size="sm"
-                    className="h-11 lg:h-8"
+                    icon={<Plus />}
+                    variant="primary"
                     onClick={handleCreate}
                   >
-                    <Plus className="h-4 w-4 mr-1.5" />
                     New project
                   </Button>
                 </div>
@@ -1421,9 +1417,7 @@ function ProjectsTable({
             Column filters active
           </span>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-11 px-3 text-xs lg:h-7"
+            variant="quiet"
             onClick={() => setColumnFilters(EMPTY_COLUMN_FILTERS)}
           >
             Clear all
@@ -1721,17 +1715,14 @@ function ProjectsTable({
                           one control most likely to be used for it. */}
                       <Button
                         asChild
-                        size="sm"
-                        variant="ghost"
-                        className="h-11 lg:h-8"
+                        variant="quiet"
                       >
                         <Link href={`/projects/${p.id}`}>Open</Link>
                       </Button>
                       <Button
                         asChild
-                        size="sm"
-                        variant="ghost"
-                        className="h-11 w-11 text-muted-foreground lg:h-8 lg:w-auto"
+                        variant="quiet"
+                        className="w-11 lg:w-auto"
                       >
                         <Link
                           href={`/projects/${p.id}/settings`}
@@ -1919,13 +1910,13 @@ function ProjectHubCard({
           size="icon"
           className="h-11 w-11 shrink-0 lg:h-8 lg:w-8"
         />
-        <Button asChild size="sm" className="h-11 flex-1 lg:h-8">
+        <Button variant="primary" asChild className="flex-1">
           <Link href={href}>
             Open
             <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
           </Link>
         </Button>
-        <Button asChild size="sm" variant="outline" className="h-11 lg:h-8">
+        <Button asChild variant="outline">
           <Link href={`/projects/${project.id}/settings`}>
             <Settings className="h-3.5 w-3.5 mr-1.5" />
             Manage

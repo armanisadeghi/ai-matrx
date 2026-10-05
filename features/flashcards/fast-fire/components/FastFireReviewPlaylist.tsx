@@ -75,22 +75,20 @@ export function FastFireReviewPlaylist() {
     <div className="mb-3 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
       {index === -1 ? (
         <Button
+          icon={<ListMusic />}
           variant="outline"
-          size="sm"
-          className="shrink-0 gap-1.5"
+          className="shrink-0"
           // The tap IS the gesture: the element mounts with the first clip's
           // src and autoPlay, unlocked by this click.
           onClick={() => playIndex(0)}
         >
-          <ListMusic className="h-4 w-4" />
           Play all ({playable.length})
         </Button>
       ) : (
         <>
           <Button
             variant="outline"
-            size="sm"
-            className="shrink-0 gap-1.5"
+            className="shrink-0"
             onClick={() => {
               const el = audioRef.current;
               if (!el) return;
@@ -110,9 +108,8 @@ export function FastFireReviewPlaylist() {
             )}
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="shrink-0 gap-1.5 text-muted-foreground"
+            variant="quiet"
+            className="shrink-0"
             onClick={stop}
           >
             <Square className="h-3.5 w-3.5" />

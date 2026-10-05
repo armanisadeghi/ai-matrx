@@ -101,9 +101,8 @@ export default function AcceptRecordSharePage() {
 
   const openButton = (href: string | null | undefined, title: string | null | undefined) =>
     href ? (
-      <Button onClick={() => router.push(href)}>
+      <Button iconEnd={<ArrowRight />} variant="primary" onClick={() => router.push(href)}>
         Open {title ?? "it"}
-        <ArrowRight className="ml-2 h-4 w-4" />
       </Button>
     ) : null;
 
@@ -152,8 +151,7 @@ export default function AcceptRecordSharePage() {
             {error} <ErrorAlchemyMenu error={error} />
           </p>
         ) : null}
-        <Button onClick={() => void open()} disabled={working}>
-          {working ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+        <Button icon={working ? <Loader2 className="animate-spin" /> : <Check />} variant="primary" onClick={() => void open()} disabled={working}>
           Open {peek.title ?? "it"}
         </Button>
       </>,
@@ -166,8 +164,7 @@ export default function AcceptRecordSharePage() {
         <LogIn className="mx-auto mb-4 h-8 w-8 text-primary" />
         <h2 className="mb-2 text-xl font-semibold">{peek.say}</h2>
         {offer(peek)}
-        <Button onClick={() => router.push(invitationSignUpHref(`/invitations/share/accept/${token}`, token))}>
-          <LogIn className="mr-2 h-4 w-4" />
+        <Button icon={<LogIn />} variant="primary" onClick={() => router.push(invitationSignUpHref(`/invitations/share/accept/${token}`, token))}>
           {peek.state === "wrong_account" ? `Sign in as ${peek.invited_email}` : "Sign in or create an account"}
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">

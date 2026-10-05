@@ -540,12 +540,10 @@ export default function ModelControlsEditor({
           <div className="pt-1">
             {!showAddPicker ? (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs gap-1.5"
+                icon={<Plus />}
+                variant="quiet"
                 onClick={() => setShowAddPicker(true)}
               >
-                <Plus className="h-3.5 w-3.5" />
                 Add setting
               </Button>
             ) : (
@@ -583,9 +581,7 @@ export default function ModelControlsEditor({
                   )}
                 </div>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[10px]"
+                  variant="quiet"
                   onClick={() => {
                     setShowAddPicker(false);
                     setAddKeyFilter("");

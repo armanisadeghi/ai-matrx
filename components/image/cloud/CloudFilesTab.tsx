@@ -286,14 +286,13 @@ export function CloudFilesTab({
             </p>
             {currentFolderId ? (
               <Button
+                icon={<ArrowLeft />}
                 variant="outline"
-                size="sm"
                 className="mt-4"
                 onClick={() =>
                   setCurrentFolderId(currentFolder?.parentId ?? null)
                 }
               >
-                <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
                 Back
               </Button>
             ) : null}

@@ -142,9 +142,8 @@ export function SplitDialog({
             </button>
           ))}
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
-            className="h-9"
             onClick={() =>
               setGroups((prev) => [
                 ...prev,
@@ -152,7 +151,6 @@ export function SplitDialog({
               ])
             }
           >
-            <Plus className="mr-1 h-3.5 w-3.5" />
             Group
           </Button>
           <div className="min-w-40 flex-1">
@@ -217,6 +215,12 @@ export function SplitDialog({
             Cancel
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Split />
+            )}
+            variant="primary"
             disabled={!canConfirm}
             onClick={() => {
               setBusy(true);
@@ -225,11 +229,6 @@ export function SplitDialog({
               ).finally(() => setBusy(false));
             }}
           >
-            {busy ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Split className="mr-1.5 h-4 w-4" />
-            )}
             Split into {Math.max(nonEmpty.length, 2)} items
           </Button>
         </div>

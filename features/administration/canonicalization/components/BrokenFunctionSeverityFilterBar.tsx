@@ -129,9 +129,7 @@ export function BrokenFunctionSeverityFilterBar({
         {isDefault ? null : (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
+            variant="quiet"
             onClick={() => {
               onChange(DEFAULT_SEVERITY_FILTER);
               onToggleUnclassified(false);

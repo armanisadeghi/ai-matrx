@@ -279,11 +279,11 @@ export function AppConfigClient({
               searchPlaceholder: "Search application, version…",
               actions: (
                 <Button
+                  icon={<Plus />}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   onClick={() => setView({ mode: "new" })}
-                >
-                  <Plus className="mr-1.5 h-4 w-4" /> New application
+                > New application
                 </Button>
               ),
             }}

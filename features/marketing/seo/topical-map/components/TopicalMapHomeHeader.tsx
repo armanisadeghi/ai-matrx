@@ -39,7 +39,7 @@ export function TopicalMapHomeHeader() {
       }
       right={
         onPlan ? undefined : (
-          <Button asChild size="sm" variant="ghost" className="gap-1.5">
+          <Button asChild variant="quiet">
             <Link href={startMapHref(brand.seg)}>
               <AGENT_ICON className="h-4 w-4" aria-hidden />
               <span className="hidden sm:inline">Start a map</span>

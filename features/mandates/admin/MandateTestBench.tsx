@@ -341,30 +341,27 @@ function ResultRow({
           />
           <div className="flex flex-wrap gap-1">
             <Button
-              size="sm"
+              icon={savingNote ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
               variant="outline"
-              className="h-7 gap-1 text-[11px]"
               disabled={savingNote}
               onClick={() => void saveNote()}
             >
-              {savingNote ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Save className="h-3 w-3" />
-              )}
               Save verdict
             </Button>
             <Button
-              size="sm"
-              className="h-7 gap-1 text-[11px]"
+              icon={promoting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Star />
+              )}
+              variant="primary"
               disabled={promoting || Boolean(result.error)}
               onClick={() => void promote()}
             >
-              {promoting ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Star className="h-3 w-3" />
-              )}
               Set as reference
             </Button>
             {/* P18: what this run ran becomes the live candidate — it then runs
@@ -583,12 +580,10 @@ function CandidateEditor({
           </span>
         ) : (
         <Button
-          size="sm"
-          variant={overriddenCount > 0 ? "secondary" : "ghost"}
-          className="h-8 gap-1 text-[11px] text-muted-foreground"
+          icon={<SlidersHorizontal />}
+          variant={overriddenCount > 0 ? "outline" : "quiet"}
           onClick={() => void toggleSettings()}
         >
-          <SlidersHorizontal className="h-3 w-3" />
           {overriddenCount > 0
             ? `Comparison overrides (${overriddenCount})`
             : "Comparison overrides"}
@@ -596,14 +591,12 @@ function CandidateEditor({
         )}
 
         <Button
-          size="icon"
-          variant="ghost"
-          className="ml-auto h-8 w-8"
+          icon={<X />}
+          variant="quiet"
+          className="ml-auto"
           aria-label="Remove comparison"
           onClick={onRemove}
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
 
       {draft.settingsOpen &&
@@ -1063,12 +1056,11 @@ export function MandateTestBench({
             </div>
           </div>
           <Button
-            size="sm"
+            icon={<Plus />}
             variant="outline"
-            className="ml-auto h-8 gap-1 text-xs"
+            className="ml-auto"
             onClick={() => setAdding((current) => !current)}
-          >
-            <Plus className="h-3.5 w-3.5" /> Add test case
+          > Add test case
           </Button>
         </div>
 
@@ -1154,8 +1146,8 @@ export function MandateTestBench({
               className="min-h-16 text-xs"
             />
             <Button
-              size="sm"
-              className="h-7 w-fit text-xs"
+              variant="primary"
+              className="w-fit"
               onClick={() => void addExemplar()}
             >
               Save test case
@@ -1187,20 +1179,22 @@ export function MandateTestBench({
             />
           ))}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1 text-xs"
+            icon={<Plus />}
+            variant="quiet"
             onClick={() =>
               setCandidates((current) => [...current, newCandidate()])
             }
-          >
-            <Plus className="h-3.5 w-3.5" /> Add comparison
+          > Add comparison
           </Button>
         </div>
 
         <Button
-          size="sm"
-          className="h-9 gap-1.5"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <FlaskConical />
+          )}
+          variant="primary"
           // A batch is a COMPARISON: the server requires at least one column
           // beside the baseline. Without this the click reached the API and
           // came back as a raw "body.candidates: List should have at least 1
@@ -1217,11 +1211,6 @@ export function MandateTestBench({
           }
           onClick={() => void runAll()}
         >
-          {running ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <FlaskConical className="h-4 w-4" />
-          )}
           {exemplars.length > 1
             ? `Run ${exemplars.length} test cases`
             : "Run test case"}
@@ -1259,14 +1248,12 @@ export function MandateTestBench({
                     Source: {humanizeIdentifier(exemplar.source) || exemplar.source}
                   </span>
                   <Button
-                    size="icon"
-                    variant="ghost"
-                    className="ml-auto h-7 w-7"
+                    icon={<Trash2 className="text-muted-foreground" />}
+                    variant="quiet"
+                    className="ml-auto"
                     aria-label={`Delete ${exemplar.label}`}
                     onClick={() => void removeExemplar(exemplar.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
+                  />
                 </div>
 
                 <ConfigurationValueList

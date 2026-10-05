@@ -5,7 +5,7 @@ import Link from "@/components/navigation/AppLink";
 import { useRouter, usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { Home, Settings, Boxes, TestTube2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { ModulePage } from "./types";

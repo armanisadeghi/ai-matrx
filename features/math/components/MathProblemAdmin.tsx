@@ -263,7 +263,7 @@ export function MathProblemAdmin() {
       <Card className="h-fit">
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle>Quick Math problems</CardTitle>
-          <Button size="sm" onClick={startNew}><FilePlus2 className="mr-1.5 h-4 w-4" />New</Button>
+          <Button icon={<FilePlus2 />} variant="primary" onClick={startNew}>New</Button>
         </CardHeader>
         <CardContent className="space-y-2">
           {read.isLoading ? <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Loading problems…</div> : null}
@@ -277,8 +277,8 @@ export function MathProblemAdmin() {
                   <div className="truncate text-xs text-muted-foreground">{row.course_name} · {row.topic_name} · {row.module_name}</div>
                 </button>
                 <div className="flex shrink-0 gap-1">
-                  <Button size="icon" variant="ghost" aria-label={`Edit ${row.title}`} onClick={() => edit(row)}><Pencil className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" aria-label={`Delete ${row.title}`} onClick={() => void remove(row)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button icon={<Pencil />} variant="quiet" aria-label={`Edit ${row.title}`} onClick={() => edit(row)} />
+                  <Button icon={<Trash2 className="text-destructive" />} variant="quiet" aria-label={`Delete ${row.title}`} onClick={() => void remove(row)} />
                 </div>
               </div>
               <Link href={`/education/subjects/quick-math/${row.id}`} className="mt-2 inline-block text-xs text-primary hover:underline">Open learner view</Link>
@@ -305,7 +305,7 @@ export function MathProblemAdmin() {
           <Field label="Hint"><Textarea value={draft.hint} onChange={(event) => set("hint", event.target.value)} /></Field>
           <Field label="Final statement"><Textarea value={draft.finalStatement} onChange={(event) => set("finalStatement", event.target.value)} /></Field>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.published} onChange={(event) => set("published", event.target.checked)} />Publish in the learner lesson list</label>
-          <Button disabled={saving} onClick={() => void save()}><Save className="mr-1.5 h-4 w-4" />{saving ? "Saving…" : "Save problem"}</Button>
+          <Button icon={<Save />} variant="primary" disabled={saving} onClick={() => void save()}>{saving ? "Saving…" : "Save problem"}</Button>
         </CardContent>
       </Card>
     </div>

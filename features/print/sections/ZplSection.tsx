@@ -65,12 +65,11 @@ export function ZplSection() {
             blurb="Zebra printer language generated from the same geometry brain as the HTML label lane. Roll stock only."
             actions={
                 <Button
-                    size="sm"
+                    icon={<Copy />}
                     variant="outline"
                     disabled={!zpl}
                     onClick={() => void copyText(zpl, "ZPL copied")}
                 >
-                    <Copy className="mr-1 h-3.5 w-3.5" />
                     Copy ZPL
                 </Button>
             }

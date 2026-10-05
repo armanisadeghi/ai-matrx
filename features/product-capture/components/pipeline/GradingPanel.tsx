@@ -79,8 +79,8 @@ export function GradingPanel({
       }
       actions={
         <Button
-          size="sm"
-          className="h-8"
+          icon={<FileOutput />}
+          variant="primary"
           disabled={!ready}
           onClick={() => void onGenerateListing()}
           title={
@@ -89,7 +89,6 @@ export function GradingPanel({
               : "Grade every criterion and confirm Ready first"
           }
         >
-          <FileOutput className="mr-1.5 h-3.5 w-3.5" />
           Generate listing
         </Button>
       }

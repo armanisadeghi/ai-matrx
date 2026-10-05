@@ -433,22 +433,20 @@ export function CategoryForm({
 
   const footerButtons = (
     <>
-      <Button variant="outline" onClick={onClose} disabled={saving} size="sm">
-        <X className="w-4 h-4 mr-1.5" />
+      <Button icon={<X />} variant="outline" onClick={onClose} disabled={saving}>
         Cancel
       </Button>
       {isEditMode && onDuplicate && editingCategory && (
         <Button
+          icon={<Copy />}
           variant="outline"
           onClick={handleDuplicateClick}
           disabled={saving}
-          size="sm"
         >
-          <Copy className="w-4 h-4 mr-1.5" />
           Duplicate
         </Button>
       )}
-      <Button onClick={handleSave} disabled={saving} size="sm">
+      <Button variant="primary" onClick={handleSave} disabled={saving}>
         {saving ? (
           <>
             <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />

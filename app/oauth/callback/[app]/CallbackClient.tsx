@@ -153,16 +153,15 @@ function SuccessState({
                 </p>
             </div>
             <div className="flex flex-col gap-2 pt-2">
-                <Button onClick={handleOpenApp} className="w-full gap-2">
-                    <ArrowUpRight className="h-4 w-4" />
+                <Button icon={<ArrowUpRight />} variant="primary" onClick={handleOpenApp} className="w-full">
                     Open {appName}
                 </Button>
                 <Button
+                    icon={<X />}
                     variant="outline"
                     onClick={handleCloseTab}
-                    className="w-full gap-2"
+                    className="w-full"
                 >
-                    <X className="h-4 w-4" />
                     Close this tab
                 </Button>
             </div>

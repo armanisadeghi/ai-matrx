@@ -19,7 +19,7 @@
 import { useState } from "react";
 import { RefusalNotice } from "@ai-matrx/records-ui";
 import type { RecordsError } from "@ai-matrx/records";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 /** An archived Table, with the one thing a person wants to do to it. */
 export interface ArchivedTable {
@@ -82,7 +82,7 @@ export function ArchivedTablesList({
             error={readRefusal}
             actions={
               onRetry ? (
-                <Button size="sm" variant="outline" onClick={onRetry}>
+                <Button variant="outline" onClick={onRetry}>
                   Try again
                 </Button>
               ) : undefined
@@ -126,7 +126,6 @@ export function ArchivedTablesList({
                 })}
               </span>
               <Button
-                size="sm"
                 variant="outline"
                 className="ml-auto"
                 disabled={restoring === table.id}
@@ -146,7 +145,7 @@ export function ArchivedTablesList({
       {tables && tables.length > 0 && more ? (
         <div className="flex items-center gap-2 border-t border-border pt-2" data-archived-tables-more="">
           <span className="text-xs tabular-nums text-muted-foreground">{tables.length.toLocaleString()} shown</span>
-          <Button size="sm" variant="outline" disabled={more.loading} onClick={more.onShowMore}>
+          <Button variant="outline" disabled={more.loading} onClick={more.onShowMore}>
             {more.loading ? "Loading…" : "Show more"}
           </Button>
         </div>

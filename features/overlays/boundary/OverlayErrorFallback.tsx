@@ -228,34 +228,28 @@ export function OverlayErrorFallback({
           <div className="flex items-center gap-2">
             {onClose && (
               <Button
-                size="sm"
-                variant="ghost"
-                className="gap-1.5 text-muted-foreground"
+                icon={<X />}
+                variant="quiet"
                 onClick={onClose}
                 title="Close this panel and return to the app (no reload)"
               >
-                <X className="h-3.5 w-3.5" />
                 Close
               </Button>
             )}
             <Button
-              size="sm"
-              variant="default"
-              className="gap-1.5"
+              icon={<RefreshCcw />}
+              variant="primary"
               onClick={onReset}
               title="Reload just this panel — keeps your typed request"
             >
-              <RefreshCcw className="h-3.5 w-3.5" />
               Try again
             </Button>
             <Button
-              size="sm"
+              icon={<RotateCw />}
               variant="outline"
-              className="gap-1.5"
               onClick={() => window.location.reload()}
               title="Last resort — reloads the whole page and loses unsaved work"
             >
-              <RotateCw className="h-3.5 w-3.5" />
               Reload page
             </Button>
           </div>

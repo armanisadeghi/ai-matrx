@@ -58,16 +58,14 @@ export function SkillDetailView({
       <div className="shrink-0 border-b border-border px-3 py-2">
         <div className="flex items-start gap-2">
           <Button
+            icon={<ArrowLeft />}
             type="button"
-            variant="ghost"
-            size="icon"
-            className="mt-0.5 h-6 w-6 shrink-0"
+            variant="quiet"
+            className="mt-0.5 shrink-0"
             onClick={onBack}
             aria-label="Back to skill list"
             title="Back to skill list"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+          />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
               <h3 className="truncate text-sm font-semibold text-foreground">

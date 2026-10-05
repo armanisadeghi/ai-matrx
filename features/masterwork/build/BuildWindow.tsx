@@ -282,14 +282,13 @@ function BuildWindowInner({
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
           <p className="text-sm text-muted-foreground">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
           <Button
-            size="sm"
+            icon={<RotateCcw />}
             variant="outline"
             onClick={() => {
               setLoadError(null);
               setLoadAttempt((n) => n + 1);
             }}
           >
-            <RotateCcw className="h-3.5 w-3.5" />
             Try again
           </Button>
         </div>
@@ -539,15 +538,13 @@ function BuildWindowInner({
         {result ? (
           <>
             <Button
-              size="sm"
+              icon={<RotateCcw />}
               variant="outline"
-              className="h-7"
               onClick={() => run.reset()}
             >
-              <RotateCcw className="h-3.5 w-3.5" />
               Build another
             </Button>
-            <Button size="sm" className="h-7" onClick={onClose}>
+            <Button variant="primary" onClick={onClose}>
               Done
             </Button>
           </>

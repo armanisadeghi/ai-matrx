@@ -59,15 +59,13 @@ export function PdfBatchExtractDebugTrigger({
   return (
     <div className={className}>
       <Button
+        icon={<Bug />}
         type="button"
         variant="outline"
-        size="sm"
-        className="h-7 gap-1.5 border-dashed text-[10px] font-mono"
         onClick={() =>
           openDebugWindow({ initialSessionId: activeSession?.id ?? null })
         }
       >
-        <Bug className="h-3 w-3" />
         {isOpen ? "Stream debug (open)" : "Stream debug"}
         {activeSession && (
           // read-gate-exempt: lineCount is the in-memory line buffer of this client's own debug stream session, never fetched

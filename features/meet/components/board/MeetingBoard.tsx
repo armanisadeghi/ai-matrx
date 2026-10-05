@@ -120,7 +120,7 @@ function SavedMeetingBoard({ meeting, ...frame }: FrameProps & { meeting: Meetin
             message={saved.reason}
             operation="Open meeting board"
             calls={["boards"]}
-            actions={<Button onClick={saved.retry}>Try again</Button>}
+            actions={<Button variant="primary" onClick={saved.retry}>Try again</Button>}
           />
         </BoardMessage>
       )}

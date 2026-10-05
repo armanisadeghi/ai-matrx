@@ -3,6 +3,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Radio, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { marketingKeys } from "@/features/marketing/data/hooks";
@@ -82,7 +83,7 @@ export function FetchPageButton({
 
   if (size === "icon") {
     return (
-      <Button
+      <SurfaceButton
         type="button"
         variant="ghost"
         size="icon"
@@ -98,16 +99,19 @@ export function FetchPageButton({
         }
       >
         {glyph}
-      </Button>
+      </SurfaceButton>
     );
   }
 
   return (
     <Button
+      icon={pending ? (
+        <Radio className="text-primary" />
+      ) : (
+        <RefreshCw />
+      )}
       type="button"
       variant="outline"
-      size="sm"
-      className="h-8"
       onClick={() => void run()}
       title={
         pending
@@ -115,11 +119,6 @@ export function FetchPageButton({
           : "Fetch the latest version of this page now"
       }
     >
-      {pending ? (
-        <Radio className="mr-1.5 h-3.5 w-3.5 text-primary" />
-      ) : (
-        <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-      )}
       {pending ? "Watch progress" : "Fetch now"}
     </Button>
   );

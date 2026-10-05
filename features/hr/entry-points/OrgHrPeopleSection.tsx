@@ -76,7 +76,7 @@ export function OrgHrPeopleSection({
           HR is on, but nobody has set this employer up yet. The setup asks for
           the legal entity, the first location, and who runs HR here.
         </p>
-        <Button asChild size="sm" className="min-h-11 sm:min-h-9">
+        <Button variant="primary" asChild>
           <Link href={hrHref(orgSlugOrId)}>
             Set HR up
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -129,7 +129,7 @@ export function OrgHrPeopleSection({
         ))}
       </ul>
 
-      <Button asChild variant="outline" size="sm" className="min-h-11 sm:min-h-9">
+      <Button asChild variant="outline">
         <Link href={hrHref(orgSlugOrId)}>
           <Users className="mr-1.5 h-4 w-4" />
           Open HR
@@ -205,8 +205,7 @@ function EnableHrRow({
         employee record for each person, a directory, time and leave.
       </p>
       <Button
-        size="sm"
-        className="min-h-11 sm:min-h-9"
+        variant="primary"
         onClick={turnOn}
         disabled={enabling}
       >

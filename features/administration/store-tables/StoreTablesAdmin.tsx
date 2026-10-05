@@ -259,9 +259,7 @@ export function StoreTablesAdmin() {
               <span>
                 {refusals.length} {refusals.length === 1 ? "table was" : "tables were"} not archived
               </span>
-              <Button variant="ghost" size="icon" className="h-6 w-6" aria-label="Dismiss" onClick={() => setRefusals([])}>
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              <Button icon={<X />} variant="quiet" aria-label="Dismiss" onClick={() => setRefusals([])} />
             </div>
             <ul className="space-y-0.5" data-store-tables-refusals="">
               {refusals.map((o) => (
@@ -301,13 +299,11 @@ export function StoreTablesAdmin() {
               <EntityOrgFilter orgId={orgId} onChange={changeOrg} extraOrganizations={systemOrgs ?? []} />
               <TestOrgsMenu />
               <Button
+                icon={<ListChecks />}
                 variant="outline"
-                size="sm"
-                className="h-8"
                 disabled={shown.length === 0 || readError !== null}
                 onClick={() => setSelectedIds(shown.map((r) => r.id))}
               >
-                <ListChecks className="mr-1 h-3.5 w-3.5" />
                 Select all{readError === null ? ` ${shown.length}` : ""}
               </Button>
             </>
@@ -318,8 +314,7 @@ export function StoreTablesAdmin() {
           onSelectedIdsChange: setSelectedIds,
           noun: "table",
           actions: () => (
-            <Button variant="destructive" size="sm" className="h-8" disabled={count === 0 || running !== null || readError !== null} onClick={() => setConfirming(true)}>
-              <Archive className="mr-1 h-3.5 w-3.5" />
+            <Button icon={<Archive />} variant="danger" disabled={count === 0 || running !== null || readError !== null} onClick={() => setConfirming(true)}>
               Archive {count}
             </Button>
           ),

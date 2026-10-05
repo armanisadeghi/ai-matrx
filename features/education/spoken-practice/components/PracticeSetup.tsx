@@ -187,9 +187,7 @@ export function PracticeSetup({
   return (
     <div className="matrx-touch-targets mx-auto w-full max-w-md space-y-5 px-4 pb-4 sm:px-6 sm:pb-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={onBack} aria-label="Back">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        <Button icon={<ArrowLeft />} variant="quiet" onClick={onBack} aria-label="Back" />
         <div className="flex items-center gap-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
             <Icon className="h-4.5 w-4.5" />
@@ -287,15 +285,16 @@ export function PracticeSetup({
           <StudyOrganizationHoldNotice what="Starting this practice session" />
         )}
         <Button
-          className="w-full gap-2"
+          icon={busy || guard.isChecking ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Mic />
+          )}
+          variant="primary"
+          className="w-full"
           onClick={() => heldStart.start()}
           disabled={busy || guard.isChecking}
         >
-          {busy || guard.isChecking ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Mic className="h-4 w-4" />
-          )}
           Start {cfg.label.toLowerCase()}
         </Button>
         <div className="flex justify-center">

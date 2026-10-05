@@ -26,7 +26,7 @@ import {
   CheckCircle2,
   Shapes,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { setAgentOutputSchema } from "@ai-matrx/chat/agents/redux/agent-definition/slice";

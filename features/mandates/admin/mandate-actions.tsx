@@ -102,9 +102,12 @@ export function RebindToTwinButton({
   return (
     <>
       <Button
-        size="sm"
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <ShieldCheck />
+        )}
         variant="outline"
-        className="h-6 gap-1 px-1.5 text-[11px]"
         disabled={busy}
         title={`Rebind ${mandate.mandate_key} to the system agent "${twin.name}" (tracks latest)`}
         onClick={(e) => {
@@ -117,11 +120,6 @@ export function RebindToTwinButton({
           });
         }}
       >
-        {busy ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <ShieldCheck className="h-3 w-3" />
-        )}
         Rebind to system twin
       </Button>
       {dialog}
@@ -143,9 +141,8 @@ export function LinkedSyncButton({
   const openConvertSystem = useOpenAgentConvertSystemWindow();
   return (
     <Button
-      size="sm"
+      icon={<Link2 />}
       variant="outline"
-      className="h-6 gap-1 px-1.5 text-[11px]"
       title="Create or inspect this agent's linked system twin"
       onClick={(e) => {
         e.stopPropagation();
@@ -157,7 +154,6 @@ export function LinkedSyncButton({
         });
       }}
     >
-      <Link2 className="h-3 w-3" />
       {label}
     </Button>
   );
@@ -202,9 +198,12 @@ export function CreateSystemTwinButton({
   return (
     <>
       <Button
-        size="sm"
+        icon={working ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Copy />
+        )}
         variant="outline"
-        className="h-6 gap-1 px-1.5 text-[11px]"
         disabled={working}
         title={`Duplicate ${agentName ?? "the pinned agent"} as a system agent and rebind ${mandate.mandate_key} to the new twin (tracks latest)`}
         onClick={async (e) => {
@@ -244,11 +243,6 @@ export function CreateSystemTwinButton({
           }
         }}
       >
-        {working ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <Copy className="h-3 w-3" />
-        )}
         {label}
       </Button>
       {dialog}
@@ -301,10 +295,13 @@ export function PromoteToSystemMandateButton({
     <div className="mt-4 space-y-2 border-t border-border/40 pt-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Building2 />
+          )}
           type="button"
           variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 text-[12px]"
           disabled={busy || alreadySystem}
           onClick={async () => {
             setBusy(true);
@@ -335,11 +332,6 @@ export function PromoteToSystemMandateButton({
             }
           }}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Building2 className="h-3.5 w-3.5" />
-          )}
           {busy ? "Promoting…" : "Promote to system mandate"}
         </Button>
         <span className="text-[11px] leading-snug text-muted-foreground">

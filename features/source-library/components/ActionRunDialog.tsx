@@ -494,7 +494,6 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                 <DialogFooter className="gap-2">
                     <Button
                         variant="outline"
-                        className="h-11"
                         onClick={onCancel}
                         disabled={submitting}
                     >
@@ -502,13 +501,13 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </Button>
                     {notYet ? null : (
                     <Button
-                        className="h-11 gap-2"
+                        icon={submitting ? (
+                            <Loader2 className="animate-spin" aria-hidden />
+                        ) : null}
+                        variant="primary"
                         onClick={onConfirm}
                         disabled={waiting || blocked || submitting}
                     >
-                        {submitting ? (
-                            <Loader2 className="size-4 animate-spin" aria-hidden />
-                        ) : null}
                         {paid
                             ? `Spend up to ${costText(estimate?.cost.paid_cost_high ?? 0)} and start`
                             : // D11 (jobs-bar cold-walk-12): lowercasing the whole label

@@ -93,7 +93,7 @@ export function RemoveOfferingDialog({
                   : "This site does not offer it, so there is nothing here to remove."}
               </p>
               {impact.error ? (
-                <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => void impact.refetch()}>
+                <Button type="button" variant="outline" className="mt-2" onClick={() => void impact.refetch()}>
                   Try again
                 </Button>
               ) : null}
@@ -186,16 +186,16 @@ export function RemoveOfferingDialog({
         </div>
 
         <DialogFooter className="pb-safe">
-          <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
+          <Button type="button" variant="quiet" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
           <Button
+            icon={busy ? <Loader2 className="animate-spin" /> : <Trash2 />}
             type="button"
-            variant="destructive"
+            variant="danger"
             disabled={!canRemove}
             onClick={() => onRemove(hasKeywords && mode === "move" ? replacementId : null)}
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Remove from this brand
           </Button>
         </DialogFooter>

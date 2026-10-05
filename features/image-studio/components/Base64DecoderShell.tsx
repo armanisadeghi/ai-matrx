@@ -116,24 +116,20 @@ export function Base64DecoderShell({ defaultFolder }: Base64DecoderShellProps) {
           </div>
           <div className="flex items-center gap-2">
             <Button
+              icon={<ClipboardPaste />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={pasteFromClipboard}
-              className="gap-1.5"
             >
-              <ClipboardPaste className="h-3.5 w-3.5" />
               Paste
             </Button>
             <Button
+              icon={<Trash2 />}
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={clear}
               disabled={!input && !decoded}
-              className="gap-1.5 text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="h-3.5 w-3.5" />
               Clear
             </Button>
           </div>
@@ -229,10 +225,11 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
 
             <div className="flex items-center gap-2">
               <Button
+                variant="primary"
                 type="button"
                 onClick={handleSave}
                 disabled={isSaving || !!saveResult}
-                className="flex-1 gap-2"
+                className="flex-1"
               >
                 {isSaving ? (
                   <>
@@ -252,13 +249,12 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
                 )}
               </Button>
               <Button
+                icon={<Download />}
                 type="button"
                 variant="outline"
                 onClick={handleDownload}
-                className="gap-2"
                 title="Download the decoded image"
               >
-                <Download className="h-4 w-4" />
                 Download
               </Button>
             </div>
@@ -504,10 +500,9 @@ function SaveResultPanel({
         />
         <Button
           type="button"
-          size="sm"
           variant="outline"
           onClick={handleCopy}
-          className="gap-1.5 shrink-0"
+          className="shrink-0"
         >
           {copied ? (
             <>

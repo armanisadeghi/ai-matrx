@@ -100,31 +100,31 @@ function TemplateActionContent({
             {/* Actions */}
             <div className="flex flex-col p-2">
                 <Button
-                    variant="ghost"
-                    className="justify-start gap-3 h-11 text-sm"
+                    icon={<Eye className="text-muted-foreground" />}
+                    variant="quiet"
+                    className="justify-start"
                     onClick={() => handleAction(() => onView(template))}
                 >
-                    <Eye className="w-4 h-4 text-muted-foreground" />
                     Open
                 </Button>
 
                 {canEdit && (
                     <Button
-                        variant="ghost"
-                        className="justify-start gap-3 h-11 text-sm"
+                        icon={<Pencil className="text-muted-foreground" />}
+                        variant="quiet"
+                        className="justify-start"
                         onClick={() => handleAction(() => onEdit(template))}
                     >
-                        <Pencil className="w-4 h-4 text-muted-foreground" />
                         Edit
                     </Button>
                 )}
 
                 <Button
-                    variant="ghost"
-                    className="justify-start gap-3 h-11 text-sm"
+                    icon={<Copy className="text-muted-foreground" />}
+                    variant="quiet"
+                    className="justify-start"
                     onClick={() => handleAction(() => onDuplicate(template))}
                 >
-                    <Copy className="w-4 h-4 text-muted-foreground" />
                     Duplicate
                 </Button>
 
@@ -132,11 +132,11 @@ function TemplateActionContent({
                     <>
                         <div className="h-px bg-border mx-2 my-1" />
                         <Button
-                            variant="ghost"
-                            className="justify-start gap-3 h-11 text-sm text-destructive hover:text-destructive hover:bg-destructive/10"
+                            icon={<Trash2 />}
+                            variant="quiet"
+                            className="justify-start"
                             onClick={() => handleAction(() => onDelete(template))}
                         >
-                            <Trash2 className="w-4 h-4" />
                             Delete
                         </Button>
                     </>

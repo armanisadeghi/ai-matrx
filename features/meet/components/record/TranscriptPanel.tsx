@@ -176,25 +176,19 @@ export function TranscriptPanel({
                 : `${Math.min(cursor, matches.length - 1) + 1} of ${matches.length}`}
             </span>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              icon={<ChevronUp />}
+              variant="quiet"
               onClick={() => move(-1)}
               disabled={matches.length === 0}
               aria-label="Previous match"
-            >
-              <ChevronUp className="h-4 w-4" />
-            </Button>
+            />
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
+              icon={<ChevronDown />}
+              variant="quiet"
               onClick={() => move(1)}
               disabled={matches.length === 0}
               aria-label="Next match"
-            >
-              <ChevronDown className="h-4 w-4" />
-            </Button>
+            />
           </>
         ) : (
           <span className="shrink-0 text-xs text-muted-foreground">

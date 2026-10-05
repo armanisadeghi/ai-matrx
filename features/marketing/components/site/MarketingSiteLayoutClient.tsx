@@ -63,7 +63,7 @@ function WrongBrandNotice({
           {siteName ? `"${siteName}"` : "This site"} lives under a different
           brand. Everything is fine &mdash; the address just needs updating.
         </p>
-        <Button asChild className="mt-4" size="sm">
+        <Button variant="primary" asChild className="mt-4">
           <Link href={href}>Open {siteName ?? "the site"}</Link>
         </Button>
       </div>

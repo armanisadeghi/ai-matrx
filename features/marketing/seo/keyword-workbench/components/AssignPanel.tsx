@@ -188,9 +188,7 @@ export function AssignPanel({
       <div className="flex flex-wrap items-center justify-end gap-2">
         {onCancel ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={onCancel}
             disabled={write.isPending}
           >
@@ -198,25 +196,22 @@ export function AssignPanel({
           </Button>
         ) : null}
         <Button
+          icon={<Eraser />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1 text-xs"
           disabled={!picked || write.isPending}
           onClick={() => write.mutate({ clear: true })}
           title="Remove this value from these keywords"
         >
-          <Eraser className="h-3.5 w-3.5" />
           Remove
         </Button>
         <Button
-          size="sm"
-          className="h-7 gap-1 text-xs"
+          icon={write.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
+          variant="primary"
           disabled={!picked || write.isPending}
           onClick={() => write.mutate({ clear: false })}
         >
-          {write.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : null}
           Assign to {count.toLocaleString()}
         </Button>
       </div>

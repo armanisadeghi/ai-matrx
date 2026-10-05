@@ -707,8 +707,8 @@ export function CopyPagesOverlay({
 
             {/* Action button */}
             <Button
-              size="sm"
-              className="h-8 shrink-0 text-xs"
+              variant="primary"
+              className="shrink-0"
               onClick={() => handleGenerate()}
               disabled={pagesLoading}
             >
@@ -786,18 +786,16 @@ export function CopyPagesOverlay({
 
                 <div className="flex justify-end py-2 border-b border-border">
                   <Button
+                    icon={downloadingPdf ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Download />
+                    )}
                     type="button"
-                    size="sm"
                     variant="outline"
-                    className="h-7 gap-1.5 text-[11px]"
                     onClick={() => void handleDownloadPdfChunks()}
                     disabled={downloadingPdf}
                   >
-                    {downloadingPdf ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Download className="w-3 h-3" />
-                    )}
                     Download {sections.length} PDF chunk{sections.length === 1 ? "" : "s"}
                   </Button>
                 </div>

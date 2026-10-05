@@ -83,8 +83,8 @@ export default function ColorManipulation({ color, onColorChange }: ColorManipul
                                     }
                                 }}
                             />
-                            <Button onClick={() => handleManipulation(type, 10)}>+10%</Button>
-                            <Button onClick={() => resetManipulation(type)}>Reset</Button>
+                            <Button variant="primary" onClick={() => handleManipulation(type, 10)}>+10%</Button>
+                            <Button variant="primary" onClick={() => resetManipulation(type)}>Reset</Button>
                         </div>
                     </div>
                 ))}

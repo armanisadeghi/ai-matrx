@@ -240,12 +240,11 @@ export function RulebookDetailPanel({
               </Link>
             ) : null}
             {copyError == null && (!copy || behind) ? (
-              <Button size="sm" className="h-8" disabled={busy} onClick={add}>
-                {busy ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Button icon={busy ? (
+                  <Loader2 className="animate-spin" />
                 ) : (
-                  <Plus className="h-3.5 w-3.5" />
-                )}
+                  <Plus />
+                )} variant="primary" disabled={busy} onClick={add}>
                 {copy ? "Take the new rules" : "Add to my Rulebooks"}
               </Button>
             ) : null}

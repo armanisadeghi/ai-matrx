@@ -20,7 +20,7 @@ import nextDynamic from "next/dynamic";
 import { ChevronDown, ChevronRight, FileJson, Shapes, Zap } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { OutputSchema } from "@ai-matrx/chat/agents/types/json-schema";
 import { ApplySchemaDialog } from "./ApplySchemaDialog";
 

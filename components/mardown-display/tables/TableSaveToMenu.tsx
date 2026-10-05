@@ -14,7 +14,7 @@
  */
 import { ChevronDown, Database, FileSpreadsheet, Loader2, Sheet, Table2 } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -250,37 +250,21 @@ export default function TaskListPane() {
         </span>
         <div className="flex items-center rounded-md border border-border p-0.5 shrink-0">
           <Button
+            icon={<List />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             onClick={() => setView("rows")}
-            className={cn(
-              "h-7 w-7 rounded",
-              !isTableView
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
             title="List view"
             aria-label="List view"
-          >
-            <List className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
+            icon={<LayoutGrid />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             onClick={() => setView("table")}
-            className={cn(
-              "h-7 w-7 rounded",
-              isTableView
-                ? "bg-accent text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
             title="Table view"
             aria-label="Table view"
-          >
-            <LayoutGrid className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
         <div className="order-last flex basis-full gap-1 min-w-0">
           <ProInput
@@ -368,7 +352,6 @@ export default function TaskListPane() {
               </p>
               {filterOrgId ? (
                 <Button
-                  size="sm"
                   variant="outline"
                   className="mt-3"
                   onClick={() => dispatch(setFilterOrgId(null))}
@@ -494,23 +477,21 @@ function TaskRow({
       />
 
       <Button
+        icon={task.completed ? (
+          <CheckCircle2 className="text-success" />
+        ) : (
+          <CircleDashed />
+        )}
         type="button"
-        variant="ghost"
-        size="icon"
+        variant="quiet"
         onClick={(e) => {
           e.stopPropagation();
           onToggle();
         }}
-        className="mt-0.5 h-6 w-6 text-muted-foreground/70 hover:text-primary shrink-0"
+        className="mt-0.5 shrink-0"
         title={task.completed ? "Mark incomplete" : "Mark complete"}
         aria-label={task.completed ? "Mark incomplete" : "Mark complete"}
-      >
-        {task.completed ? (
-          <CheckCircle2 className="w-3.5 h-3.5 text-success" />
-        ) : (
-          <CircleDashed className="w-3.5 h-3.5" />
-        )}
-      </Button>
+      />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1.5">

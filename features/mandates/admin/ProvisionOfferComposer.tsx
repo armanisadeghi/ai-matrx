@@ -298,8 +298,7 @@ function ScaffoldForm({
           </span>
         </p>
       )}
-      <Button size="sm" className="h-7 gap-1 text-xs" onClick={apply}>
-        <Zap className="h-3 w-3" /> Use these values
+      <Button icon={<Zap />} variant="primary" onClick={apply}> Use these values
       </Button>
     </div>
   );

@@ -218,9 +218,8 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
               />
               {selectedNeedsRecovery ? (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="w-full text-xs"
+                  className="w-full"
                   disabled={recovering}
                   onClick={() => void handleRecover()}
                 >
@@ -272,13 +271,13 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} size="sm">
+          <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Close
           </Button>
           <Button
+            variant="primary"
             disabled={running || !text.trim() || !sessionId || !key}
             onClick={() => void handleRestore()}
-            size="sm"
           >
             {running ? (
               <>

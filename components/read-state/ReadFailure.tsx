@@ -12,7 +12,7 @@
  * the server read. A failure card with no retry at all is gone.
  */
 import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { ReloadPageButton } from "@/components/read-state/ReloadPageButton";
 

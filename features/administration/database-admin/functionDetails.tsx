@@ -200,23 +200,21 @@ const FunctionDetails = ({
                   )}
                   <div className="absolute top-2 right-2 space-x-2 bg-background/80 backdrop-blur-sm rounded-lg p-1">
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant="quiet"
                       onClick={() => handleCopy(func.definition)}
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
                     <Button
-                      variant={isEditing ? "destructive" : "secondary"}
-                      size="sm"
+                      variant={isEditing ? "danger" : "outline"}
                       onClick={() => setIsEditing(!isEditing)}
                     >
                       {isEditing ? "Cancel" : "Edit"}
                     </Button>
                     {isEditing && (
                       <Button
-                        variant="default"
-                        size="sm"
+                        icon={<Save />}
+                        variant="primary"
                         // Was `console.log("Save changes")` — the edit looked
                         // saved and was not. It keeps the tracked promise now
                         // (and leaves the edited text in place, so nothing a
@@ -227,7 +225,6 @@ const FunctionDetails = ({
                           )
                         }
                       >
-                        <Save className="h-4 w-4 mr-2" />
                         Save
                       </Button>
                     )}
@@ -258,8 +255,7 @@ const FunctionDetails = ({
                       label="Arguments"
                       actions={
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant="quiet"
                           onClick={() => handleCopy(func.arguments)}
                         >
                           <Copy className="h-4 w-4" />
@@ -273,8 +269,7 @@ const FunctionDetails = ({
                       label="Returns"
                       actions={
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant="quiet"
                           onClick={() => handleCopy(func.returns)}
                         >
                           <Copy className="h-4 w-4" />
@@ -317,8 +312,7 @@ const FunctionDetails = ({
                       label="Example Usage"
                       actions={
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant="quiet"
                           onClick={() =>
                             handleCopy(
                               `SELECT * FROM ${func.name}(${func.arguments

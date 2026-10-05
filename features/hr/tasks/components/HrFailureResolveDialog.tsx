@@ -146,8 +146,7 @@ export function HrFailureResolveDialog({
                         {ACTIONS.map((option) => (
                             <Button
                                 key={option.key}
-                                size="sm"
-                                variant={option.key === action ? "default" : "outline"}
+                                variant={option.key === action ? "primary" : "outline"}
                                 disabled={busy}
                                 onClick={() => setAction(option.key)}
                             >

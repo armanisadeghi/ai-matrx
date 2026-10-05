@@ -146,7 +146,7 @@ export function TeamManagement({
     return (
       <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
         <p className="text-sm text-red-800 dark:text-red-200">{teams.error}</p>
-        <Button onClick={teams.refresh} variant="outline" size="sm" className="mt-2">
+        <Button onClick={teams.refresh} variant="outline" className="mt-2">
           Retry
         </Button>
         <ErrorAlchemyMenu error={teams.error} />
@@ -166,16 +166,14 @@ export function TeamManagement({
         </p>
         {canManageTeams && (
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => setShowArchived((v) => !v)}
           >
             {showArchived ? "Hide archived" : "Show archived"}
           </Button>
         )}
         {canManageTeams && (
-          <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus className="h-3.5 w-3.5 mr-1.5" />
+          <Button icon={<Plus />} variant="primary" onClick={() => setCreating(true)}>
             New team
           </Button>
         )}
@@ -329,7 +327,7 @@ function TeamRow({
         {hasMenu && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" disabled={busy} aria-label={`${team.name} actions`}>
+              <Button variant="quiet" disabled={busy} aria-label={`${team.name} actions`}>
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -536,7 +534,7 @@ function TeamDetail({
             {members.error}
             <ErrorAlchemyMenu error={members.error} operation="List this team's members" />
           </p>
-          <Button onClick={members.refresh} variant="outline" size="sm" className="mt-2">
+          <Button onClick={members.refresh} variant="outline" className="mt-2">
             Retry
           </Button>
         </div>
@@ -594,8 +592,7 @@ function TeamDetail({
       {mine?.isListed && (
         <div className="flex justify-end">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             disabled={busy}
             onClick={async () => {
               const ok = await confirm({
@@ -707,7 +704,6 @@ function AddTeamMember({
                     className="flex-1"
                   />
                   <Button
-                    size="sm"
                     variant="outline"
                     disabled={disabled}
                     onClick={() => void add(m.userId, label)}

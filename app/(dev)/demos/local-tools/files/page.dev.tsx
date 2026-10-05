@@ -94,9 +94,14 @@ export default function FilesPage() {
                 placeholder="50"
               />
               <Button
-                size="sm"
+                icon={isLoading("read") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FileText />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("read", "Read", {
                     file_path: readPath,
@@ -104,11 +109,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("read") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <FileText className="w-3 h-3" />
-                )}
                 Read File
               </Button>
             </div>
@@ -141,9 +141,14 @@ export default function FilesPage() {
                 style={{ fontSize: "16px" }}
               />
               <Button
-                size="sm"
+                icon={isLoading("write") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FilePlus />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("write", "Write", {
                     file_path: writePath,
@@ -151,11 +156,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("write") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <FilePlus className="w-3 h-3" />
-                )}
                 Write File
               </Button>
             </div>
@@ -196,9 +196,14 @@ export default function FilesPage() {
                 style={{ fontSize: "16px" }}
               />
               <Button
-                size="sm"
+                icon={isLoading("edit") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Edit3 />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("edit", "Edit", {
                     file_path: editPath,
@@ -207,11 +212,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("edit") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Edit3 className="w-3 h-3" />
-                )}
                 Edit File
               </Button>
             </div>
@@ -245,9 +245,14 @@ export default function FilesPage() {
                 placeholder="."
               />
               <Button
-                size="sm"
+                icon={isLoading("glob") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <FileSearch />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("glob", "Glob", {
                     pattern: globPattern,
@@ -255,11 +260,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("glob") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <FileSearch className="w-3 h-3" />
-                )}
                 Find Files
               </Button>
             </div>
@@ -318,9 +318,14 @@ export default function FilesPage() {
                 </div>
               </div>
               <Button
-                size="sm"
+                icon={isLoading("grep") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Search />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("grep", "Grep", {
                     pattern: grepPattern,
@@ -330,11 +335,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("grep") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Search className="w-3 h-3" />
-                )}
                 Search
               </Button>
             </div>
@@ -366,9 +366,14 @@ export default function FilesPage() {
                 placeholder="/tmp/file.pdf"
               />
               <Button
-                size="sm"
+                icon={isLoading("download") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Download />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("download", "DownloadFile", {
                     url: downloadUrl,
@@ -376,11 +381,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("download") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Download className="w-3 h-3" />
-                )}
                 Download
               </Button>
             </div>
@@ -414,9 +414,14 @@ export default function FilesPage() {
                 placeholder="https://example.com/upload"
               />
               <Button
-                size="sm"
+                icon={isLoading("upload") ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Upload />
+                )}
+                variant="primary"
                 disabled={!!loading}
-                className="w-full h-7 text-xs gap-1"
+                className="w-full"
                 onClick={() =>
                   run("upload", "UploadFile", {
                     file_path: uploadPath,
@@ -424,11 +429,6 @@ export default function FilesPage() {
                   })
                 }
               >
-                {isLoading("upload") ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Upload className="w-3 h-3" />
-                )}
                 Upload
               </Button>
             </div>

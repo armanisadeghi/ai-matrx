@@ -77,7 +77,7 @@ export function SignupConversionModal({
           <Button variant="outline" onClick={onClose}>
             Not now
           </Button>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href={signUpHref} onClick={onClose}>
               <UserPlus className="mr-2 h-4 w-4" aria-hidden="true" />
               Create free account

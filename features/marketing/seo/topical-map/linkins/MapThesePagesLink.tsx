@@ -34,7 +34,7 @@ export function MapThesePagesLink({
   const link = useSiteTopicalMapLink(siteId, brandSeg);
   if (link.status !== "ready") return null;
   return (
-    <Button asChild variant="outline" size="sm" className="h-7 gap-1 text-xs">
+    <Button asChild variant="outline">
       <Link href={link.href("pages")} title="Open this site's pages on the topical map to decide where each one goes">
         <Network className="h-3.5 w-3.5" aria-hidden />
         Map these pages

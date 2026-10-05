@@ -144,7 +144,7 @@ function AudioImportHost() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
         Open
       </Button>
       <AudioImportDialog sessionId="demo-association-buttons" open={open} onOpenChange={setOpen} />
@@ -156,7 +156,7 @@ function StudioSourcePickerHost() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+      <Button type="button" variant="outline" onClick={() => setOpen(true)}>
         Open
       </Button>
       <SourcePickerPanel open={open} onOpenChange={setOpen} isAdmin onPick={noop} />
@@ -246,7 +246,7 @@ export default function AssociationButtonsDemo() {
           <ComposerPlusMenu
             conversationId="demo-association-buttons"
             trigger={
-              <Button type="button" variant="outline" size="sm">
+              <Button type="button" variant="outline">
                 +
               </Button>
             }

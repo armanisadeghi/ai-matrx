@@ -117,12 +117,11 @@ export function RunPipelineBulkAction({
   };
 
   return (
-    <Button size="sm" onClick={handleRun} disabled={busy || selectedIds.length === 0}>
-      {busy ? (
-        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+    <Button icon={busy ? (
+        <Loader2 className="animate-spin" />
       ) : (
-        <Play className="mr-1.5 h-3.5 w-3.5" />
-      )}
+        <Play />
+      )} variant="primary" onClick={handleRun} disabled={busy || selectedIds.length === 0}>
       Run the rest of the pipeline
     </Button>
   );

@@ -262,7 +262,7 @@ export function PanelMetricsSection({
           Measurements are folded while the question list is under review, so
           current results cannot steer which questions are kept.
         </span>
-        <Button size="sm" variant="outline" onClick={() => setShowAnyway(true)}>
+        <Button variant="outline" onClick={() => setShowAnyway(true)}>
           Show measurements anyway
         </Button>
       </div>

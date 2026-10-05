@@ -58,8 +58,8 @@ function WhatGoesOut({ surfaceKey }: { surfaceKey: string }) {
       <summary className="cursor-pointer select-none text-muted-foreground">What this host would send</summary>
       <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap">{payload}</pre>
       <Button
+        icon={resolving ? <Loader2 className="animate-spin" /> : null}
         type="button"
-        size="sm"
         variant="outline"
         className="mt-2"
         disabled={resolving}
@@ -78,7 +78,6 @@ function WhatGoesOut({ surfaceKey }: { surfaceKey: string }) {
           }
         }}
       >
-        {resolving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
         Get the grounded text
       </Button>
       {resolved ? <pre className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap">{resolved}</pre> : null}

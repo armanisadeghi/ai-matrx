@@ -140,15 +140,13 @@ export function DuplicateReviewPage() {
         }
         right={
           <Button
-            size="sm"
+            icon={<RefreshCw
+              className={`h-3.5 w-3.5 ${scanning ? "animate-spin" : ""}`}
+            />}
             variant="outline"
-            className="h-7 gap-1 px-2 text-xs"
             disabled={scanning || !ctx}
             onClick={() => void onScan()}
           >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${scanning ? "animate-spin" : ""}`}
-            />
             {scanning ? "Scanning…" : "Scan now"}
           </Button>
         }
@@ -191,15 +189,14 @@ export function DuplicateReviewPage() {
                 matching names and domains.
               </p>
               <Button
-                size="sm"
+                icon={<RefreshCw
+                  className={`h-3.5 w-3.5 ${scanning ? "animate-spin" : ""}`}
+                />}
                 variant="outline"
-                className="mt-1 h-7 gap-1 px-2 text-xs"
+                className="mt-1"
                 disabled={scanning}
                 onClick={() => void onScan()}
               >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${scanning ? "animate-spin" : ""}`}
-                />
                 Scan now
               </Button>
             </div>
@@ -261,12 +258,11 @@ export function DuplicateReviewPage() {
                       {m.reason ? ` — ${m.reason}` : ""}
                     </span>
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="ml-auto h-7 gap-1 px-2 text-xs"
+                      icon={<Undo2 />}
+                      variant="quiet"
+                      className="ml-auto"
                       onClick={() => void onUnmerge(m)}
                     >
-                      <Undo2 className="h-3.5 w-3.5" />
                       Undo
                     </Button>
                   </div>

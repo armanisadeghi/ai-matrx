@@ -162,13 +162,12 @@ export function RegressionCasesFromFinding({ finding }: { finding: Finding }) {
           {uncovered.map((snapshotId) => (
             <div key={snapshotId} className="flex items-center gap-1.5">
               <Button
-                size="sm"
+                icon={<ShieldCheck />}
                 variant="outline"
                 disabled={create.isPending}
                 onClick={() => create.mutate(snapshotId)}
                 data-testid="hindsight-make-regression-case"
               >
-                <ShieldCheck className="mr-1 h-3.5 w-3.5" />
                 {create.isPending && create.variables === snapshotId
                   ? "Saving…"
                   : "Make this a regression case"}

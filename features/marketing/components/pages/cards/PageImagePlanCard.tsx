@@ -294,12 +294,10 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
           </p>
           <div>
             <Button
-              size="sm"
+              icon={<ImagePlus />}
               variant="outline"
-              className="h-7"
               onClick={() => desired.setDraft([newEntry()])}
             >
-              <ImagePlus className="mr-1.5 h-3.5 w-3.5" />
               Plan an image
             </Button>
           </div>
@@ -421,9 +419,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                     <div className="flex flex-wrap items-center gap-1.5">
                       <div className="inline-flex">
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="h-7 rounded-r-none"
                           disabled={generating}
                           title="Generate: prompt generator → Matrx Image Ultra"
                           onClick={() => void generate(entry, "two-step")}
@@ -438,9 +434,7 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
-                              size="sm"
                               variant="outline"
-                              className="h-7 rounded-l-none border-l-0 px-1.5"
                               disabled={generating}
                               aria-label="More generation options"
                             >
@@ -468,9 +462,8 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                         </DropdownMenu>
                       </div>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7"
+                        icon={<ListTodo />}
+                        variant="quiet"
                         onClick={() =>
                           openTaskWindow({
                             source: {
@@ -485,20 +478,17 @@ export function PageImagePlanCard({ page }: { page: MarketingPage }) {
                           })
                         }
                       >
-                        <ListTodo className="mr-1.5 h-3.5 w-3.5" />
                         Task
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-muted-foreground hover:text-destructive"
+                        icon={<Trash2 />}
+                        variant="quiet"
                         onClick={() =>
                           desired.setDraft(
                             entries.filter((item) => item.id !== entry.id),
                           )
                         }
                       >
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
                         Remove
                       </Button>
                     </div>

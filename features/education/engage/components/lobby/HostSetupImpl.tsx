@@ -157,12 +157,10 @@ export function HostSetupImpl() {
     <div className="scroll-page-end-space mx-auto flex h-full w-full max-w-2xl flex-col gap-4 overflow-y-auto p-4">
       <div className="flex items-center gap-2">
         <Button
-          variant="ghost"
-          size="sm"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => router.push("/education/game")}
-          className="gap-1"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back
+        > Back
         </Button>
         <h1 className="text-lg font-semibold text-foreground">Host a game</h1>
       </div>
@@ -268,7 +266,7 @@ export function HostSetupImpl() {
         {roomSize.tier ? ` · ${roomSize.tier} tier` : ""}
       </div>
 
-      <Button size="lg" disabled={creating} onClick={create} className="gap-2">
+      <Button variant="primary" disabled={creating} onClick={create}>
         {creating ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" /> Creating room…

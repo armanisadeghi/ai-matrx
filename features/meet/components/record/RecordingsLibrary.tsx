@@ -190,7 +190,7 @@ export function RecordingsLibrary({ query }: { query: string }) {
             {failure}
             <ErrorAlchemyMenu error={failure} size="xs" />
           </p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={reload}>
+          <Button variant="outline" className="mt-3" onClick={reload}>
             Try again
           </Button>
         </div>
@@ -274,24 +274,20 @@ export function RecordingsLibrary({ query }: { query: string }) {
                     </p>
                   </div>
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="hidden h-8 gap-1 px-2 text-xs sm:inline-flex"
+                    icon={<FileText aria-hidden="true" />}
+                    variant="quiet"
+                    className="hidden sm:inline-flex"
                     onClick={() => openRecord(r)}
-                  >
-                    <FileText className="h-3.5 w-3.5" aria-hidden="true" />{" "}
+                  >{" "}
                     Record
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
+                        icon={<MoreHorizontal />}
+                        variant="quiet"
                         aria-label={`Actions for ${nameOf(r)}`}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-52">
                       {canPlay ? (
@@ -357,14 +353,12 @@ export function RecordingsLibrary({ query }: { query: string }) {
                 {playing === r.id && fileId !== null ? (
                   <div className="relative border-t border-border bg-muted/20 p-3">
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-4 top-4 z-10 h-7 w-7 bg-background/80"
+                      icon={<X />}
+                      variant="quiet"
+                      className="absolute right-4 top-4 z-10"
                       onClick={() => setPlaying(null)}
                       aria-label="Close the player"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                     <div className="mx-auto max-w-3xl">
                       <RecordingSeekPlayer fileId={fileId} seek={FIRST_PLAY} />
                     </div>

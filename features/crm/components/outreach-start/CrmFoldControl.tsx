@@ -188,17 +188,15 @@ export function CrmFoldControl({
             </SelectContent>
           </Select>
           <Button
-            size="sm"
+            icon={running ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <SearchCheck />
+            )}
             variant="outline"
-            className="h-8 gap-1.5"
             disabled={running || mode === null}
             onClick={() => void run()}
           >
-            {running ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <SearchCheck className="h-3.5 w-3.5" />
-            )}
             {SOURCE_LABEL[source]}
           </Button>
         </div>
@@ -217,12 +215,10 @@ export function CrmFoldControl({
             {loadError}
           </span>
           <Button
-            size="sm"
+            icon={<RefreshCw />}
             variant="outline"
-            className="h-6 gap-1 text-[11px]"
             onClick={() => void load()}
-          >
-            <RefreshCw className="h-3 w-3" /> Retry
+          > Retry
           </Button>
           <ErrorAlchemyMenu error={loadError} />
         </div>

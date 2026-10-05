@@ -105,7 +105,7 @@ export function EducationCollectionNoResults({
       <p className="text-sm text-muted-foreground">
         No {label} match “{query.trim()}”.
       </p>
-      <Button variant="ghost" size="sm" onClick={onClear}>
+      <Button variant="quiet" onClick={onClear}>
         Clear search
       </Button>
     </div>

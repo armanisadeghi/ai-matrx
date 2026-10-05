@@ -17,7 +17,7 @@ import {
 import { useSetting } from "@/features/settings/hooks/useSetting";
 import type { SiteWorkbenchUserBookmark } from "@/lib/redux/preferences/userPreferencesSlice";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { BookMarked, Plus, X } from "lucide-react";
@@ -128,7 +128,7 @@ function BookmarkSection({
               </span>
             </button>
             {removable && onRemove ? (
-              <Button
+              <SurfaceButton
                 type="button"
                 variant="ghost"
                 size="sm"
@@ -137,7 +137,7 @@ function BookmarkSection({
                 aria-label={`Remove ${b.label}`}
               >
                 <X className="h-3 w-3" />
-              </Button>
+              </SurfaceButton>
             ) : null}
           </li>
         ))}
@@ -332,9 +332,7 @@ function BrowserWorkbenchWindowInner({
         </span>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-6 px-1.5"
+          variant="quiet"
           onClick={bookmarkActive}
           title="Save active tab to your bookmarks"
         >
@@ -400,14 +398,12 @@ function BrowserWorkbenchWindowInner({
             aria-label="Active tab URL"
           />
           <div className="flex shrink-0 items-center gap-1">
-            <Button type="button" size="sm" className="h-8" onClick={go}>
+            <Button variant="primary" type="button" onClick={go}>
               Go
             </Button>
             <Button
               type="button"
-              variant="secondary"
-              size="sm"
-              className="h-8"
+              variant="outline"
               onClick={newTab}
             >
               New tab
@@ -440,9 +436,8 @@ function BrowserWorkbenchWindowInner({
               </button>
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 shrink-0 p-0"
+                variant="quiet"
+                className="w-7 shrink-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   closeTab(t.id);

@@ -40,10 +40,24 @@ import * as React from "react";
 import {
   Tabs,
   TabsContent,
+  TabsList as TabsListLegacy,
+  TabsTrigger as TabsTriggerLegacyPrimitive,
+  TabsTriggerCore as TabsTriggerCoreLegacyPrimitive,
+} from "@ai-matrx/design-system";
+import {
   TabsList,
   TabsTrigger as TabsTriggerPrimitive,
-  TabsTriggerCore as TabsTriggerCorePrimitive,
-} from "@ai-matrx/design-system";
+} from "@ai-matrx/design-system/controls";
+
+/*
+ * THE ONE CONTROL (2026-10-05, wave 1B): `TabsList` / `TabsTrigger` are the controls' tabs on the
+ * Radix compound API — `variant="capsule"` (default; filters, view switches) or `"underline"`
+ * (page sections), `fill` for equal widths, `rule`. The trigger follows its list; NO size, a
+ * call site's className is placement only. `TabsTriggerCore` is now the same trigger.
+ * The `*Legacy` exports are FROZEN — the pre-rollout look, for areas the rollout may not touch and
+ * the census sites it could not convert (vertical rails). Never in new code.
+ * Codemod + census: `scripts/ui-rollout/doors-codemod.mjs`.
+ */
 
 type TriggerProps = React.ComponentPropsWithoutRef<
   typeof TabsTriggerPrimitive
@@ -74,16 +88,32 @@ const TabsTrigger = React.forwardRef<
 ));
 TabsTrigger.displayName = "TabsTrigger";
 
-const TabsTriggerCore = React.forwardRef<
-  React.ElementRef<typeof TabsTriggerCorePrimitive>,
-  React.ComponentPropsWithoutRef<typeof TabsTriggerCorePrimitive>
->(({ onClick, ...props }, ref) => (
-  <TabsTriggerCorePrimitive
-    {...props}
-    ref={ref}
-    onClick={focusOnClick(onClick as TriggerProps["onClick"])}
-  />
-));
-TabsTriggerCore.displayName = "TabsTriggerCore";
+/** The same trigger — the controls drop the resting-treatment split. */
+const TabsTriggerCore = TabsTrigger;
 
-export { Tabs, TabsContent, TabsList, TabsTrigger, TabsTriggerCore };
+const TabsTriggerLegacy = React.forwardRef<
+  React.ElementRef<typeof TabsTriggerLegacyPrimitive>,
+  React.ComponentPropsWithoutRef<typeof TabsTriggerLegacyPrimitive>
+>(({ onClick, ...props }, ref) => (
+  <TabsTriggerLegacyPrimitive {...props} ref={ref} onClick={focusOnClick(onClick)} />
+));
+TabsTriggerLegacy.displayName = "TabsTriggerLegacy";
+
+const TabsTriggerCoreLegacy = React.forwardRef<
+  React.ElementRef<typeof TabsTriggerCoreLegacyPrimitive>,
+  React.ComponentPropsWithoutRef<typeof TabsTriggerCoreLegacyPrimitive>
+>(({ onClick, ...props }, ref) => (
+  <TabsTriggerCoreLegacyPrimitive {...props} ref={ref} onClick={focusOnClick(onClick)} />
+));
+TabsTriggerCoreLegacy.displayName = "TabsTriggerCoreLegacy";
+
+export {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  TabsTriggerCore,
+  TabsListLegacy,
+  TabsTriggerLegacy,
+  TabsTriggerCoreLegacy,
+};

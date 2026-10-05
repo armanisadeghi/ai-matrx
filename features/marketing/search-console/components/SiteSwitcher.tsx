@@ -67,8 +67,7 @@ export function SiteSwitcher({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          size="sm"
-          className="h-7 max-w-56 justify-between gap-1.5 border-border bg-card px-2 text-xs"
+          className="max-w-56 justify-between"
           aria-label="Select site"
         >
           <span className="flex min-w-0 items-center gap-1.5">

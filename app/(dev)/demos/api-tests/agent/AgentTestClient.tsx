@@ -210,9 +210,8 @@ function RunLogCard({
                   Text Output
                 </span>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-5 w-5 p-0"
+                  variant="quiet"
+                  className="w-5"
                   onClick={() => onCopy(log.textOutput)}
                 >
                   <Copy className="w-3 h-3" />
@@ -229,9 +228,8 @@ function RunLogCard({
                 Stream Events ({log.events.length})
               </span>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-5 w-5 p-0"
+                variant="quiet"
+                className="w-5"
                 onClick={() => onCopy(JSON.stringify(log.events, null, 2))}
               >
                 <Copy className="w-3 h-3" />
@@ -570,17 +568,16 @@ export default function AgentTestClient() {
                 />
               </div>
               <Button
+                icon={isRunning && runLogs[0]?.mode === "warm" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Zap />
+                )}
                 onClick={handleWarmUp}
                 disabled={!promptId.trim() || isRunning}
-                size="sm"
                 variant="outline"
-                className="w-full h-7 text-xs"
+                className="w-full"
               >
-                {isRunning && runLogs[0]?.mode === "warm" ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <Zap className="w-3 h-3 mr-1" />
-                )}
                 Warm Up
               </Button>
             </div>
@@ -608,16 +605,16 @@ export default function AgentTestClient() {
                 />
               </div>
               <Button
+                icon={isRunning && runLogs[0]?.mode === "new" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Send />
+                )}
+                variant="primary"
                 onClick={handleNewConversation}
                 disabled={!promptId.trim() || !userInput.trim() || isRunning}
-                size="sm"
-                className="w-full h-7 text-xs"
+                className="w-full"
               >
-                {isRunning && runLogs[0]?.mode === "new" ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <Send className="w-3 h-3 mr-1" />
-                )}
                 Start Conversation
               </Button>
             </div>
@@ -662,21 +659,20 @@ export default function AgentTestClient() {
                 />
               </div>
               <Button
+                icon={isRunning && runLogs[0]?.mode === "continue" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
                 onClick={handleContinue}
                 disabled={
                   !activeConversationId.trim() ||
                   !continueInput.trim() ||
                   isRunning
                 }
-                size="sm"
-                variant="secondary"
-                className="w-full h-7 text-xs"
+                variant="outline"
+                className="w-full"
               >
-                {isRunning && runLogs[0]?.mode === "continue" ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <RefreshCw className="w-3 h-3 mr-1" />
-                )}
                 Continue
               </Button>
             </div>
@@ -690,13 +686,12 @@ export default function AgentTestClient() {
               sub="Abort the currently running request"
             />
             <Button
+              icon={<Square />}
               onClick={handleCancel}
               disabled={!isRunning}
-              size="sm"
-              variant="destructive"
-              className="w-full h-7 text-xs"
+              variant="danger"
+              className="w-full"
             >
-              <Square className="w-3 h-3 mr-1" />
               Cancel Stream
             </Button>
             <p className="text-[10px] text-muted-foreground mt-1.5">
@@ -717,9 +712,8 @@ export default function AgentTestClient() {
                   <Loader2 className="w-3 h-3 animate-spin text-blue-500" />
                 )}
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-5 w-5 p-0"
+                  variant="quiet"
+                  className="w-5"
                   onClick={() => {
                     setLiveText("");
                     setLiveEvents([]);
@@ -729,9 +723,8 @@ export default function AgentTestClient() {
                   <Trash2 className="w-3 h-3 text-muted-foreground" />
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-5 w-5 p-0"
+                  variant="quiet"
+                  className="w-5"
                   onClick={() => copyToClipboard(liveText)}
                   disabled={!liveText}
                 >
@@ -769,9 +762,7 @@ export default function AgentTestClient() {
             <div className="flex items-center justify-between px-4 py-1.5 border-b border-border flex-shrink-0 bg-card">
               <span className="text-xs font-semibold">Run History</span>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-5 text-[10px] px-2"
+                variant="quiet"
                 onClick={() => setRunLogs([])}
                 disabled={runLogs.length === 0}
               >

@@ -249,9 +249,7 @@ export function NewPagesTab({
           </span>
         ) : (
           <Button
-            size="sm"
             variant="outline"
-            className="h-6 text-[11px]"
             disabled={
               markRequested.isPending && markRequested.variables?.id === row.id
             }
@@ -328,9 +326,8 @@ export function NewPagesTab({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0"
+              variant="quiet"
+              className="w-6"
               aria-label={`Actions for ${row.url}`}
               onClick={(e) => e.stopPropagation()}
             >
@@ -420,11 +417,10 @@ export function NewPagesTab({
           can&apos;t bury them.
         </p>
         <Button
-          size="sm"
-          className="h-7 gap-1 text-xs"
+          icon={<Plus />}
+          variant="primary"
           onClick={() => setAddOpen(true)}
         >
-          <Plus className="h-3 w-3" />
           Add page
         </Button>
       </div>

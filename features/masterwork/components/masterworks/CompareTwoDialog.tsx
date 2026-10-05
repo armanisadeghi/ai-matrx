@@ -252,15 +252,13 @@ export function CompareTwoDialog({
             ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
-                size="sm"
-                variant={mode === "preference" ? "default" : "outline"}
+                variant={mode === "preference" ? "primary" : "outline"}
                 onClick={() => setMode("preference")}
               >
                 Which is better?
               </Button>
               <Button
-                size="sm"
-                variant={mode === "faithfulness" ? "default" : "outline"}
+                variant={mode === "faithfulness" ? "primary" : "outline"}
                 onClick={() => setMode("faithfulness")}
               >
                 Is each true to its own book?

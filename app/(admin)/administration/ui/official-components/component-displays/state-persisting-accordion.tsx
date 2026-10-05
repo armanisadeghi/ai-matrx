@@ -46,7 +46,7 @@ import { Info } from 'lucide-react';
           value="info-section"
           defaultOpen={true}
           rightElement={
-            <Button size="sm" variant="ghost">
+            <Button type="submit" variant="quiet">
               <Info className="h-4 w-4" />
             </Button>
           }

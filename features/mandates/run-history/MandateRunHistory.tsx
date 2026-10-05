@@ -252,7 +252,7 @@ export function MandateRunHistory({
           <span className="min-w-0 truncate" title={error.message}>
             Could not read the runs: {error.message}
           </span>
-          <Button variant="outline" size="sm" className="ml-auto shrink-0" onClick={() => setReload((n) => n + 1)}>
+          <Button variant="outline" className="ml-auto shrink-0" onClick={() => setReload((n) => n + 1)}>
             Try again
           </Button>
           <ErrorAlchemyMenu error={error.message} />
@@ -336,25 +336,19 @@ export function MandateRunHistory({
             {offset + 1}–{Math.min(offset + limit, total)} of {formatCount(total)}
           </span>
           <Button
+            icon={<ChevronLeft />}
             variant="outline"
-            size="icon"
-            className="h-7 w-7"
             disabled={url.page <= 1}
             aria-label="Newer runs"
             onClick={() => setUrl({ page: String(url.page - 1) })}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+          />
           <Button
+            icon={<ChevronRight />}
             variant="outline"
-            size="icon"
-            className="h-7 w-7"
             disabled={url.page >= lastPage}
             aria-label="Older runs"
             onClick={() => setUrl({ page: String(url.page + 1) })}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          />
         </div>
       ) : null}
     </div>

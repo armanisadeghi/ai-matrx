@@ -159,15 +159,12 @@ const FlashcardControls: React.FC<{
           <div className="inline-flex items-center gap-2 bg-card/50 rounded-lg p-2">
             {iconButtonConfigs.map(({ id, icon: Icon, onClick, title }) => (
               <Button
+                icon={<Icon />} aria-label={title}
                 key={id}
                 onClick={onClick}
                 variant="outline"
-                size="icon"
-                className="w-10 h-10 hover:scale-105 transition-transform bg-card"
                 title={title}
-              >
-                <Icon className="h-6 w-6" />
-              </Button>
+              />
             ))}
           </div>
         </div>
@@ -199,7 +196,7 @@ const FlashcardControls: React.FC<{
             key={button.id}
             onClick={button.onClick}
             variant="outline"
-            className="w-full hover:scale-105 transition-transform bg-card"
+            className="w-full"
           >
             {button.label}
           </Button>

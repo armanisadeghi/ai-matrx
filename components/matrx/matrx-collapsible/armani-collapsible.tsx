@@ -57,9 +57,9 @@ export function ArmaniCollapsible(
     if (isChip) {
         return (
             <Button
-                variant="secondary"
-                size="sm"
-                className={cn("mr-2 mb-2 inline-flex items-center gap-2 select-text", className)}
+                icon={<Maximize2 className="text-primary pointer-events-none"/>}
+                variant="outline"
+                className={cn("mr-2 mb-2 inline-flex", className)}
                 onClick={(e) => {
                     if (!isSelecting && !window.getSelection()?.toString()) {
                         setIsChip(false);
@@ -71,7 +71,6 @@ export function ArmaniCollapsible(
                 onMouseMove={handleMouseMove}
                 key={`chip-${id}`}
             >
-                <Maximize2 className="h-4 w-4 text-primary pointer-events-none"/>
                 <span className={cn(titleFontSize, "select-text")}>{title}</span>
             </Button>
         );

@@ -147,16 +147,15 @@ export function AgentAppWidgetShell({
             />
             <div className="flex justify-end pt-2">
               <Button
-                size="sm"
+                icon={ctx.isExecuting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Play />
+                )}
+                variant="primary"
                 onClick={handleSubmit}
                 disabled={ctx.isExecuting}
-                className="gap-1.5"
               >
-                {ctx.isExecuting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Play className="w-3.5 h-3.5" />
-                )}
                 Run
               </Button>
             </div>

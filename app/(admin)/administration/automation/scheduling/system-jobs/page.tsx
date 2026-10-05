@@ -1300,8 +1300,7 @@ function SystemJobEditDialog({
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={submit} disabled={saving}>
             Save
           </Button>
         </DialogFooter>
@@ -1423,8 +1422,7 @@ function DbJobEditDialog({
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={saving}>
-            {saving && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={submit} disabled={saving}>
             Save
           </Button>
         </DialogFooter>

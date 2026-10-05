@@ -35,15 +35,13 @@ export default function TopicError({
         </p>
         <div className="flex items-center justify-center gap-3 pt-2">
           <Button
+            icon={<RotateCcw />}
             variant="outline"
-            size="sm"
             onClick={reset}
-            className="gap-1.5"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
             Try Again
           </Button>
-          <Button variant="ghost" size="sm" asChild className="gap-1.5">
+          <Button variant="quiet" asChild>
             <Link href="/research/topics">
               <ArrowLeft className="h-3.5 w-3.5" />
               All Topics

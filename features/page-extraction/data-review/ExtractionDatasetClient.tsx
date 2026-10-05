@@ -1099,15 +1099,13 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                 noun: "row",
                 actions: (_rows, ids) => (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-destructive"
+                    icon={<Trash2 />}
+                    variant="quiet"
                     onClick={() => {
                       setSelected(new Set(ids));
                       setConfirmKind("bulk");
                     }}
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Move to Trash
+                  > Move to Trash
                   </Button>
                 ),
               }}
@@ -1123,12 +1121,11 @@ export function ExtractionDatasetClient({ jobId }: { jobId: string }) {
                     id: "merge-duplicates",
                     render: () => (
                       <Button
-                        variant={merge ? "default" : "outline"}
-                        size="sm"
+                        icon={<Layers />}
+                        variant={merge ? "primary" : "outline"}
                         onClick={() => setMerge((value) => !value)}
                         title="Merge duplicate rows flagged by a validation pass"
                       >
-                        <Layers className="h-4 w-4 sm:mr-2" />
                         <span className="hidden sm:inline">Merge dupes</span>
                       </Button>
                     ),

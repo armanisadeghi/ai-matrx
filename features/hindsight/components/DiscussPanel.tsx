@@ -213,12 +213,12 @@ export function DiscussPanel({
               : "Takes about a minute. You can leave this page — the answer lands on the review."}
           </span>
           <Button
-            size="sm"
+            icon={<Send />}
+            variant="primary"
             disabled={!draft.trim() || send.isPending || Boolean(unavailable)}
             onClick={() => send.mutate(draft.trim())}
             data-testid="hindsight-discuss-send"
           >
-            <Send className="mr-1 h-3.5 w-3.5" />
             {send.isPending ? "Sending…" : "Send guidance"}
           </Button>
         </div>

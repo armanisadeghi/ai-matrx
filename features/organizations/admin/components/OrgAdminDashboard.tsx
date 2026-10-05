@@ -119,12 +119,10 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowAudit((s) => !s)}>
-            <ScrollText className="mr-2 h-4 w-4" />
+          <Button icon={<ScrollText />} variant="outline" onClick={() => setShowAudit((s) => !s)}>
             Audit log
           </Button>
-          <Button size="sm" onClick={() => setShowInvite((s) => !s)}>
-            <UserPlus className="mr-2 h-4 w-4" />
+          <Button icon={<UserPlus />} variant="primary" onClick={() => setShowInvite((s) => !s)}>
             Invite people
           </Button>
         </div>

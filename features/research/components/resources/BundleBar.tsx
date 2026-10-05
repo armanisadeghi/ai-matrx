@@ -76,15 +76,13 @@ export function BundleBar({
     <div className="flex flex-wrap items-center gap-1.5">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-            <Bookmark className="h-3.5 w-3.5" />
+          <Button icon={<Bookmark />} iconEnd={<ChevronDown className="opacity-60" />} variant="outline">
             {loaded ? loaded.name : "Saved selections"}
             {loaded && dirty && (
               <span className="text-[10px] text-amber-600 dark:text-amber-400">
                 edited
               </span>
             )}
-            <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start" className="w-72">
@@ -157,17 +155,15 @@ export function BundleBar({
 
       {canOverwrite && (
         <Button
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 text-xs"
           disabled={!dirty || saving}
           onClick={onSave}
         >
-          {saving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="h-3.5 w-3.5" />
-          )}
           Save
         </Button>
       )}
@@ -175,14 +171,11 @@ export function BundleBar({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
+            icon={<Copy />} iconEnd={<ChevronDown className="opacity-60" />}
             variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
             disabled={selectionCount === 0 || saving}
           >
-            <Copy className="h-3.5 w-3.5" />
             Save as
-            <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">

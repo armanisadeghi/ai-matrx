@@ -84,8 +84,7 @@ export function CertificateSection() {
             entry="@ai-matrx/print/certificate"
             blurb="The certificate page — and its HR acknowledgment twin — plus the workbook composer that ends on one."
             actions={
-                <Button size="sm" onClick={() => void handlePrintCertificate()} disabled={busy}>
-                    <Award className="mr-1 h-3.5 w-3.5" />
+                <Button icon={<Award />} variant="primary" onClick={() => void handlePrintCertificate()} disabled={busy}>
                     Print certificate
                 </Button>
             }
@@ -225,12 +224,10 @@ export function CertificateSection() {
                     </StatusChip>
 
                     <div className="flex flex-wrap gap-2">
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => handlePrintWorkbook(false)}>
-                            <Printer className="mr-1 h-3.5 w-3.5" />
+                        <Button icon={<Printer />} variant="outline" disabled={busy} onClick={() => handlePrintWorkbook(false)}>
                             Print sequential
                         </Button>
-                        <Button size="sm" variant="outline" disabled={busy} onClick={() => handlePrintWorkbook(true)}>
-                            <BookCopy className="mr-1 h-3.5 w-3.5" />
+                        <Button icon={<BookCopy />} variant="outline" disabled={busy} onClick={() => handlePrintWorkbook(true)}>
                             Print as booklet
                         </Button>
                     </div>

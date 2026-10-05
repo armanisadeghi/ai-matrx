@@ -546,13 +546,11 @@ export function HrNewEmployee({
           <>
             <div className="flex items-center gap-2">
               <Button
+                icon={<ArrowLeft aria-hidden />}
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="min-h-11 lg:min-h-9"
+                variant="quiet"
                 onClick={() => setMode(null)}
               >
-                <ArrowLeft className="mr-2 h-4 w-4" aria-hidden />
                 Change how
               </Button>
               <h1 className="text-sm font-semibold text-foreground">
@@ -746,8 +744,6 @@ export function HrNewEmployee({
                       asChild
                       type="button"
                       variant="outline"
-                      size="sm"
-                      className="min-h-11 lg:min-h-9"
                     >
                       <Link href={hrSettingsHref("pay-groups", { org: orgRef })}>
                         Create a pay group
@@ -997,9 +993,7 @@ export function HrNewEmployee({
                   </p>
                   <Button
                     asChild
-                    size="sm"
                     variant="outline"
-                    className="min-h-11 lg:min-h-9"
                   >
                     <Link
                       href={hrSettingsHref("structure", {
@@ -1140,10 +1134,10 @@ export function HrNewEmployee({
 
             <div className="flex flex-wrap items-center gap-2 border-t border-border pt-4">
               <Button
+                variant="primary"
                 type="button"
                 onClick={() => void submit()}
                 disabled={!canSubmit}
-                className="min-h-11 lg:min-h-9"
               >
                 {saving
                   ? "Saving…"
@@ -1151,7 +1145,7 @@ export function HrNewEmployee({
                     ? "Check for duplicates and create"
                     : "Create"}
               </Button>
-              <Button asChild variant="ghost" className="min-h-11 lg:min-h-9">
+              <Button asChild variant="quiet">
                 <Link href={hrPeopleHref({ org: orgRef })}>Cancel</Link>
               </Button>
               {problems.length > 0 ? (
@@ -1448,16 +1442,14 @@ function Created({
           : "Everything else in HR keys off this record from here."}
       </p>
       <div className="flex flex-wrap gap-2">
-        <Button asChild size="sm" className="min-h-11 lg:min-h-9">
+        <Button variant="primary" asChild>
           <Link href={hrEmployeeHref(employeeId, "job", { org })}>
             Open their record
           </Link>
         </Button>
         <Button
           asChild
-          size="sm"
           variant="outline"
-          className="min-h-11 lg:min-h-9"
         >
           <Link href={hrPeopleHref({ org })}>Back to the directory</Link>
         </Button>
@@ -1507,9 +1499,7 @@ function ArchivedRecordPanel({
       {canRestore ? (
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 lg:min-h-9"
           disabled={restoring}
           onClick={onRestore}
         >
@@ -1547,9 +1537,7 @@ function RefusalNotice({
       {door ? (
         <Button
           asChild
-          size="sm"
           variant="outline"
-          className="min-h-11 lg:min-h-9"
         >
           <Link href={door}>Go fix that</Link>
         </Button>

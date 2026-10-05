@@ -214,6 +214,7 @@ export function AppendMessagePanel({
         )}
 
         <Button
+          variant="primary"
           type="button"
           onClick={handleSend}
           disabled={busy}

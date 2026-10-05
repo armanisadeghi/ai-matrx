@@ -246,26 +246,22 @@ export function CaptureTestSurface() {
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-2">
           {!capturing ? (
-            <Button onClick={onStart} disabled={busy}>
-              <Radio className="mr-2 h-4 w-4" />
+            <Button icon={<Radio />} variant="primary" onClick={onStart} disabled={busy}>
               {mode === "auto" ? "Start auto-cut run" : "Start capture"}
             </Button>
           ) : (
             <>
               {mode === "manual" &&
                 (!recordingCard ? (
-                  <Button onClick={onStartCard} disabled={pendingCard}>
-                    <Mic className="mr-2 h-4 w-4" />
+                  <Button icon={<Mic />} variant="primary" onClick={onStartCard} disabled={pendingCard}>
                     Start card
                   </Button>
                 ) : (
-                  <Button onClick={onStopCard} variant="secondary">
-                    <Square className="mr-2 h-4 w-4" />
+                  <Button icon={<Square />} onClick={onStopCard} variant="outline">
                     Stop card
                   </Button>
                 ))}
-              <Button onClick={endSession} variant="destructive" disabled={busy}>
-                <CircleStop className="mr-2 h-4 w-4" />
+              <Button icon={<CircleStop />} onClick={endSession} variant="danger" disabled={busy}>
                 End session
               </Button>
             </>

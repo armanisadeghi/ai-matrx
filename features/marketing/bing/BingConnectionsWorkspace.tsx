@@ -280,17 +280,15 @@ export function BingConnectionsWorkspace() {
                 </div>
               </div>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1.5 text-xs"
+                icon={inventory.isFetching ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
+                variant="quiet"
                 disabled={inventory.isFetching}
                 onClick={() => inventory.refetch()}
               >
-                {inventory.isFetching ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
                 Refresh
               </Button>
             </div>
@@ -302,7 +300,6 @@ export function BingConnectionsWorkspace() {
                   <ErrorAlchemyMenu />
                 </p>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => inventory.refetch()}
                 >
@@ -330,41 +327,36 @@ export function BingConnectionsWorkspace() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {organizations.activeOrgId ? (
                       <Button
-                        size="sm"
-                        className="h-8 gap-1.5"
+                        icon={connectingOwner === "organization" ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Building2 />
+                        )}
+                        variant="primary"
                         disabled={connectingOwner !== null}
                         onClick={() => void startOAuth("organization")}
                       >
-                        {connectingOwner === "organization" ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <Building2 className="h-3.5 w-3.5" />
-                        )}
                         Connect for{" "}
                         {organizations.activeOrgName ?? "organization"}
                       </Button>
                     ) : null}
                     <Button
-                      size="sm"
+                      icon={connectingOwner === "user" ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <LogIn />
+                      )}
                       variant={
-                        organizations.activeOrgId ? "outline" : "default"
+                        organizations.activeOrgId ? "outline" : "primary"
                       }
-                      className="h-8 gap-1.5"
                       disabled={connectingOwner !== null}
                       onClick={() => void startOAuth("user")}
                     >
-                      {connectingOwner === "user" ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <LogIn className="h-3.5 w-3.5" />
-                      )}
                       Only for me
                     </Button>
                     {usableConnections.length ? (
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-8"
+                        variant="quiet"
                         onClick={() => {
                           setShowApiKeyFallback(false);
                           setShowAddConnection(false);
@@ -384,12 +376,10 @@ export function BingConnectionsWorkspace() {
                 </div>
 
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1.5 text-xs"
+                  icon={<KeyRound />}
+                  variant="quiet"
                   onClick={() => setShowApiKeyFallback((value) => !value)}
                 >
-                  <KeyRound className="h-3.5 w-3.5" />
                   {showApiKeyFallback
                     ? "Hide API key option"
                     : "Use an API key instead"}
@@ -422,9 +412,8 @@ export function BingConnectionsWorkspace() {
                       </ol>
                       <Button
                         asChild
-                        size="sm"
                         variant="outline"
-                        className="mt-3 gap-1.5"
+                        className="mt-3"
                       >
                         <a
                           href={BING_WEBMASTER_URL}
@@ -462,8 +451,12 @@ export function BingConnectionsWorkspace() {
                       <div className="mt-2 flex flex-wrap gap-2">
                         {organizations.activeOrgId ? (
                           <Button
-                            size="sm"
-                            className="h-8 gap-1.5"
+                            icon={connectingOwner === "organization" ? (
+                              <Loader2 className="animate-spin" />
+                            ) : (
+                              <Building2 />
+                            )}
+                            variant="primary"
                             disabled={
                               connectingOwner !== null || !apiKey.trim()
                             }
@@ -471,36 +464,27 @@ export function BingConnectionsWorkspace() {
                               void startApiKeyConnect("organization")
                             }
                           >
-                            {connectingOwner === "organization" ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Building2 className="h-3.5 w-3.5" />
-                            )}
                             Connect for{" "}
                             {organizations.activeOrgName ?? "organization"}
                           </Button>
                         ) : null}
                         <Button
-                          size="sm"
+                          icon={connectingOwner === "user" ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <UserRound />
+                          )}
                           variant={
-                            organizations.activeOrgId ? "outline" : "default"
+                            organizations.activeOrgId ? "outline" : "primary"
                           }
-                          className="h-8 gap-1.5"
                           disabled={connectingOwner !== null || !apiKey.trim()}
                           onClick={() => void startApiKeyConnect("user")}
                         >
-                          {connectingOwner === "user" ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <UserRound className="h-3.5 w-3.5" />
-                          )}
                           Only for me
                         </Button>
                         {usableConnections.length ? (
                           <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-8"
+                            variant="quiet"
                             onClick={() => {
                               setApiKey("");
                               setShowAddConnection(false);
@@ -559,9 +543,7 @@ export function BingConnectionsWorkspace() {
                 {!showAddConnection ? (
                   <div className="border-t border-border px-3 py-2">
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs"
+                      variant="quiet"
                       onClick={() => setShowAddConnection(true)}
                     >
                       Add another Bing connection
@@ -696,20 +678,19 @@ export function BingConnectionsWorkspace() {
                         </div>
                       )}
                       <Button
-                        size="sm"
-                        className="h-8 gap-1.5"
+                        icon={bind.isPending ? (
+                          <Loader2 className="animate-spin" />
+                        ) : alreadyBound ? (
+                          <CheckCircle2 />
+                        ) : (
+                          <Link2 />
+                        )}
+                        variant="primary"
                         disabled={
                           !selectedResourceRef || bind.isPending || alreadyBound
                         }
                         onClick={() => void runBind()}
                       >
-                        {bind.isPending ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : alreadyBound ? (
-                          <CheckCircle2 className="h-3.5 w-3.5" />
-                        ) : (
-                          <Link2 className="h-3.5 w-3.5" />
-                        )}
                         {alreadyBound
                           ? "Connected"
                           : `Connect ${selectedSite.domain}`}
@@ -731,9 +712,8 @@ export function BingConnectionsWorkspace() {
                       </p>
                       <Button
                         asChild
-                        size="sm"
                         variant="outline"
-                        className="mt-2 gap-1.5"
+                        className="mt-2"
                       >
                         <a
                           href={BING_WEBMASTER_URL}
@@ -754,7 +734,6 @@ export function BingConnectionsWorkspace() {
                       This site needs a connection for its organization.
                     </p>
                     <Button
-                      size="sm"
                       variant="outline"
                       className="mt-2"
                       onClick={() => setShowAddConnection(true)}
@@ -810,17 +789,15 @@ function ConnectionRow({
         </p>
       </div>
       <Button
-        size="sm"
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Unplug />
+        )}
         variant="outline"
-        className="h-7 gap-1.5 text-xs text-destructive"
         disabled={busy}
         onClick={onDisconnect}
       >
-        {busy ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Unplug className="h-3.5 w-3.5" />
-        )}
         Disconnect
       </Button>
     </div>

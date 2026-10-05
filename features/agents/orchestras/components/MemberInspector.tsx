@@ -207,13 +207,11 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
 
         <div className="flex flex-wrap gap-1.5">
           <Link href={`/agents/go/${member.agentId}/build`} target="_blank">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <ExternalLink className="h-3.5 w-3.5" /> Open
+            <Button icon={<ExternalLink />} type="submit" variant="outline"> Open
             </Button>
           </Link>
           <Link href={`/agents/go/${member.agentId}/run`} target="_blank">
-            <Button variant="outline" size="sm" className="gap-1.5">
-              <Play className="h-3.5 w-3.5" /> Run
+            <Button icon={<Play />} type="submit" variant="outline"> Run
             </Button>
           </Link>
         </div>
@@ -221,18 +219,15 @@ export function MemberInspector({ conductorId, member, accent, onClose }: Member
 
       <div className="flex shrink-0 items-center justify-between gap-2 border-t border-border p-3">
         <Button
-          variant="ghost"
-          size="sm"
-          className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+          icon={<Trash2 />}
+          variant="quiet"
           onClick={() => {
             dispatch(removeAgentFromOrchestra({ conductorId, agentId: member.agentId }));
             onClose();
           }}
-        >
-          <Trash2 className="h-3.5 w-3.5" /> Remove
+        > Remove
         </Button>
-        <Button size="sm" onClick={handleSave} disabled={!dirty || saving}>
-          {saving ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+        <Button icon={saving ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={handleSave} disabled={!dirty || saving}>
           Save
         </Button>
       </div>

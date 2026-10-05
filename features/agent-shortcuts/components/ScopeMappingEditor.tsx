@@ -236,8 +236,7 @@ export function ScopeMappingEditor({
           />
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => confirmCustomKey(row)}
             disabled={!customKeyDraft.trim()}
             className={iconBtnClass}
@@ -246,8 +245,7 @@ export function ScopeMappingEditor({
           </Button>
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={cancelCustomKey}
             className={iconBtnClass}
           >
@@ -349,8 +347,7 @@ export function ScopeMappingEditor({
               <div className="flex-1 min-w-0">{renderScopeControl(row)}</div>
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => removeRow(row)}
                 className={iconBtnClass}
                 aria-label="Remove mapping"
@@ -363,14 +360,12 @@ export function ScopeMappingEditor({
       )}
 
       <Button
+        icon={<Plus />}
         type="button"
         variant="outline"
-        size="sm"
         onClick={addRow}
         disabled={!hasVariables}
-        className={compact ? "h-8" : "h-9"}
       >
-        <Plus className="h-4 w-4 mr-1" />
         Add mapping
       </Button>
 

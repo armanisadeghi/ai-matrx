@@ -226,9 +226,7 @@ export function OrganizationCard({
           {canManageSettings && (
             <Button
               asChild
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-blue-900/30"
+              variant="quiet"
             >
               <Link
                 href={settingsPath}
@@ -246,9 +244,7 @@ export function OrganizationCard({
           {!canManageSettings && (
             <Button
               asChild
-              variant="ghost"
-              size="sm"
-              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800"
+              variant="quiet"
             >
               <Link
                 href={settingsPath}

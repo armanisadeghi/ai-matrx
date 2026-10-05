@@ -95,14 +95,12 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
           </span>
         </div>
         <Button
-          size="sm"
+          icon={<BarChart3 aria-hidden />}
           variant="outline"
-          className="h-6 gap-1 px-2 text-[11px]"
           onClick={() =>
             openPanel({ siteId: site.id, siteLabel: site.name || site.domain })
           }
         >
-          <BarChart3 className="h-3 w-3" aria-hidden />
           Open Analytics
         </Button>
       </div>
@@ -161,7 +159,7 @@ function SiteHeadline({ site }: { site: MarketingSite }) {
               <p className="min-w-0 flex-1 text-[11px] leading-4 text-warning">
                 {`No Google Analytics property is bound to this site right now, so these numbers cannot refresh — they are the last data we synced, through ${history}.`}
               </p>
-              <Button asChild size="sm" variant="outline" className="h-6 gap-1 px-2 text-[11px]">
+              <Button asChild variant="outline">
                 <Link href={integrationsHref}>
                   <RefreshCw className="h-3 w-3" aria-hidden />
                   Reconnect to refresh

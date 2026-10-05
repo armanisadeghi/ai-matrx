@@ -25,7 +25,7 @@
 
 import { useCallback, useState } from "react";
 import { Loader2, Play } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import { useKindActionRunner } from "./useKindActionRunner";

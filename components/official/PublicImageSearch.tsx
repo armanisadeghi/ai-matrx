@@ -752,7 +752,7 @@ function SearchDialog({
                   {selectedPhotos.length !== 1 ? "s" : ""} selected
                 </span>
                 {selectedPhotos.length > 0 && (
-                  <Button variant="ghost" size="sm" onClick={resetSelection}>
+                  <Button variant="quiet" onClick={resetSelection}>
                     Clear
                   </Button>
                 )}
@@ -765,6 +765,7 @@ function SearchDialog({
                   Cancel
                 </Button>
                 <Button
+                  variant="primary"
                   onClick={applySelection}
                   disabled={selectedPhotos.length === 0}
                 >
@@ -807,7 +808,7 @@ function ImagePreviewDialog({
           />
         </div>
         <div className="mt-4 flex justify-end">
-          <Button onClick={() => setIsOpen(false)}>Close</Button>
+          <Button variant="primary" onClick={() => setIsOpen(false)}>Close</Button>
         </div>
       </DialogContent>
     </Dialog>

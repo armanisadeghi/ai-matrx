@@ -515,9 +515,7 @@ export function ProjectRecordWorkspace({
                 {role && (
                   <Button
                     asChild
-                    variant="ghost"
-                    size="sm"
-                    className="text-muted-foreground"
+                    variant="quiet"
                   >
                     <Link href={`/projects/${project.id}/settings#scopes`}>
                       <Pencil className="h-3.5 w-3.5 mr-1.5" />
@@ -527,9 +525,7 @@ export function ProjectRecordWorkspace({
                 )}
                 <Button
                   asChild
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground"
+                  variant="quiet"
                 >
                   <Link href={kgHref}>
                     Knowledge graph

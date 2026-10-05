@@ -124,7 +124,7 @@ export function LeaveLedgerSurface({
         variant="table"
       >
         <div className="space-y-4 p-4 sm:p-6">
-          <Button asChild variant="ghost" size="sm" className="-ml-2 h-8">
+          <Button asChild variant="quiet" className="-ml-2">
             <Link href={leaveBalancesHref(orgRef)}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               All balances

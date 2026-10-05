@@ -150,21 +150,20 @@ export function BattleHeader({
           {hasSubmit && <BlindControls compact />}
           {hasSubmit && (
             <Button
-              size="sm"
+              icon={submitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Play />
+              )}
               onClick={onSubmit}
               // Never dead: when the battle is not ready the button stays
               // clickable and the mode's handler says what is missing.
-              variant={canSubmit ? "default" : "outline"}
+              variant={canSubmit ? "primary" : "outline"}
               disabled={submitting}
               aria-label={submitTitle}
               title={submitTitle}
-              className="h-7 px-3 gap-1.5 shrink-0"
+              className="shrink-0"
             >
-              {submitting ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Play className="w-3.5 h-3.5" />
-              )}
               Run
             </Button>
           )}

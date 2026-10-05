@@ -234,12 +234,10 @@ export default function AdminTasksPage() {
               <ErrorAlchemyMenu />
             </span>
             <Button
+              icon={<RefreshCw />}
               variant="outline"
-              size="sm"
               onClick={() => refetchDuplicates()}
-              className="gap-1.5"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            > Retry
             </Button>
           </AlertDescription>
         </Alert>
@@ -274,7 +272,6 @@ export default function AdminTasksPage() {
             searchPlaceholder: "Search title, description or owner…",
             actions: (
               <Button
-                size="sm"
                 variant="outline"
                 onClick={reload}
                 disabled={fetching}

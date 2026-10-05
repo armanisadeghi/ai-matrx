@@ -312,16 +312,14 @@ export function TopicSettingsForm({
             </Select>
             {selectedProjectId && (
               <Button
+                icon={<X />}
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0 text-muted-foreground"
+                variant="quiet"
+                className="shrink-0"
                 aria-label="Clear project"
                 onClick={() => setSelectedProjectId(null)}
                 disabled={saving}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
+              />
             )}
           </div>
         )}
@@ -506,15 +504,15 @@ export function TopicSettingsForm({
           </Button>
         )}
         <Button
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           onClick={handleSave}
           disabled={saving || !name.trim()}
-          className="gap-2 min-h-[44px]"
         >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
           Save Changes
         </Button>
       </div>

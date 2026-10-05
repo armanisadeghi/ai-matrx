@@ -251,24 +251,21 @@ export function ModelSettingsReviewDialog({
         <DialogFooter className="shrink-0 gap-2 border-t border-border px-5 py-3 sm:justify-end">
           <Button
             variant="outline"
-            size="sm"
-            className="h-8 text-xs"
             onClick={onCancel}
             disabled={applying}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
-            className="h-8 text-xs gap-1"
+            icon={applying ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ArrowRightLeft />
+            )}
+            variant="primary"
             onClick={() => onApply(tickedSwaps)}
             disabled={applying}
           >
-            {applying ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ArrowRightLeft className="h-3.5 w-3.5" />
-            )}
             Apply Replacement
           </Button>
         </DialogFooter>

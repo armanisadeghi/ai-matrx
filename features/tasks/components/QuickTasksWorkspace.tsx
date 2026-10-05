@@ -449,8 +449,6 @@ export function QuickTasksMain({ surfaceDraftRef }: QuickTasksMainProps = {}) {
       <div className="absolute top-2 right-2 z-10 opacity-0 hover:opacity-100 transition-opacity">
         <Button
           variant="outline"
-          size="sm"
-          className="h-7 text-xs bg-background/50 backdrop-blur"
           onClick={() => dispatch(setQuickTasksSelectedTaskId(null))}
         >
           Close Details

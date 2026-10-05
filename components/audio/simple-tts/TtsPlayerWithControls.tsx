@@ -38,45 +38,46 @@ export default function TtsPlayerWithControls() {
                 />
                 <div className="w-full flex gap-2 mt-2">
                     {/* Play/Resume button */}
-                    <Button 
+                    <Button
+                        icon={<Play size={16} />}
+                        variant="primary" 
                         disabled={connectionState !== "ready" || playerState === "playing"} 
                         onClick={() => playerState === "paused" ? resume() : speak()}
-                        className="flex items-center gap-1"
+                        className="flex"
                     >
-                        <Play size={16} />
                         {playerState === "paused" ? "Resume" : "Speak"}
                     </Button>
                     
                     {/* Pause button */}
-                    <Button 
+                    <Button
+                        icon={<Pause size={16} />} 
                         disabled={playerState !== "playing"} 
                         onClick={pause}
                         variant="outline"
-                        className="flex items-center gap-1"
+                        className="flex"
                     >
-                        <Pause size={16} />
                         Pause
                     </Button>
                     
                     {/* Stop button */}
-                    <Button 
+                    <Button
+                        icon={<StopCircle size={16} />} 
                         disabled={playerState === "idle"} 
                         onClick={stop}
                         variant="outline"
-                        className="flex items-center gap-1"
+                        className="flex"
                     >
-                        <StopCircle size={16} />
                         Stop
                     </Button>
                     
                     {/* Reset/Reload button to handle disconnections */}
                     {connectionState === "disconnected" && (
-                        <Button 
+                        <Button
+                            icon={<RotateCcw size={16} />} 
                             onClick={() => window.location.reload()}
-                            variant="destructive"
-                            className="flex items-center gap-1"
+                            variant="danger"
+                            className="flex"
                         >
-                            <RotateCcw size={16} />
                             Reconnect
                         </Button>
                     )}

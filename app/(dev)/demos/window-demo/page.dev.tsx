@@ -68,20 +68,19 @@ export default function WindowDemoPage() {
         <div className="flex items-center gap-1.5 flex-wrap">
           {/* Notes (real window) */}
           <Button
+            iconEnd={notesOpen ? (
+              <Trash2 className="opacity-60" />
+            ) : (
+              <Plus className="opacity-60" />
+            )}
             type="button"
-            size="xs"
-            variant={notesOpen ? "default" : "outline"}
+            variant={notesOpen ? "primary" : "outline"}
             onClick={toggleNotes}
           >
             <span className="text-amber-500">
               <FileText className="h-4 w-4" />
             </span>
             Notes
-            {notesOpen ? (
-              <Trash2 className="h-3 w-3 ml-0.5 opacity-60" />
-            ) : (
-              <Plus className="h-3 w-3 ml-0.5 opacity-60" />
-            )}
           </Button>
 
           {/* Demo windows */}
@@ -91,21 +90,20 @@ export default function WindowDemoPage() {
             const Icon = def.Icon;
             return (
               <Button
+                iconEnd={isOpen ? (
+                  <Trash2 className="opacity-60" />
+                ) : (
+                  <Plus className="opacity-60" />
+                )}
                 key={id}
                 type="button"
-                size="xs"
-                variant={isOpen ? "default" : "outline"}
+                variant={isOpen ? "primary" : "outline"}
                 onClick={() => (isOpen ? closeWindow(id) : openWindow(id))}
               >
                 <span className={def.iconColor}>
                   <Icon className="h-4 w-4" />
                 </span>
                 {def.title}
-                {isOpen ? (
-                  <Trash2 className="h-3 w-3 ml-0.5 opacity-60" />
-                ) : (
-                  <Plus className="h-3 w-3 ml-0.5 opacity-60" />
-                )}
               </Button>
             );
           })}

@@ -304,8 +304,7 @@ export default function ContextBuilder() {
           <p className="mt-1 text-xs">{builder.error}</p>
           <Button
             variant="outline"
-            size="sm"
-            className="mt-3 h-7 text-xs"
+            className="mt-3"
             onClick={builder.reload}
           >
             Try again
@@ -345,9 +344,8 @@ export default function ContextBuilder() {
           <div className="ml-auto flex items-center gap-1.5">
             {selectionCount > 0 && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs text-muted-foreground"
+                icon={<X />}
+                variant="quiet"
                 onClick={() => {
                   builder.clear();
                   builder.setDeliveries({});
@@ -356,17 +354,14 @@ export default function ContextBuilder() {
                   setPickedAgentId(null);
                 }}
               >
-                <X className="h-3.5 w-3.5" />
                 Clear
               </Button>
             )}
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-xs text-muted-foreground"
+              icon={<RefreshCw />}
+              variant="quiet"
               onClick={builder.reload}
             >
-              <RefreshCw className="h-3.5 w-3.5" />
               Refresh
             </Button>
           </div>
@@ -677,14 +672,14 @@ function AgentRunnerBody({
           className="flex-1 min-w-0"
           triggerSlot={
             <Button
+              iconEnd={<ChevronDown className="opacity-60" />}
+              type="submit"
               variant="outline"
-              size="sm"
-              className="h-7 w-full justify-between gap-1.5 text-xs"
+              className="w-full justify-between"
             >
               <span className="truncate">
                 {selectedAgentName ?? "Choose an agent…"}
               </span>
-              <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
             </Button>
           }
         />
@@ -694,16 +689,16 @@ function AgentRunnerBody({
           <MandateAgentPicker mandateKey={mandate.key} className="shrink-0" />
         )}
         <Button
-          size="sm"
-          className="h-7 gap-1.5 text-xs shrink-0"
+          icon={launching ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Play />
+          )}
+          variant="primary"
+          className="shrink-0"
           disabled={disabled || !agentId || launching || mandateBlocked}
           onClick={doRun}
         >
-          {launching ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Play className="h-3.5 w-3.5" />
-          )}
           Run
         </Button>
       </div>

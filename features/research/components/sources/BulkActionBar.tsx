@@ -12,6 +12,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -57,36 +58,29 @@ export function BulkActionBar({
       )}
       <div className="h-4 w-px bg-border" />
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<Eye />}
+        variant="quiet"
         onClick={onInclude}
         disabled={busy}
-        className="gap-1.5 text-xs"
       >
-        <Eye className="h-3.5 w-3.5" />
         Include
       </Button>
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<EyeOff />}
+        variant="quiet"
         onClick={onExclude}
         disabled={busy}
-        className="gap-1.5 text-xs"
       >
-        <EyeOff className="h-3.5 w-3.5" />
         Exclude
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Tags className="text-primary" />} iconEnd={<ChevronDown className="opacity-60" />}
+            variant="quiet"
             disabled={busy}
-            className="gap-1.5 text-xs"
           >
-            <Tags className="h-3.5 w-3.5 text-primary" />
             Add to tag
-            <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -107,26 +101,22 @@ export function BulkActionBar({
         </DropdownMenuContent>
       </DropdownMenu>
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<CheckCircle2 />}
+        variant="quiet"
         onClick={onMarkComplete}
         disabled={busy}
-        className="gap-1.5 text-xs"
       >
-        <CheckCircle2 className="h-3.5 w-3.5" />
         Complete
       </Button>
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<AlertTriangle />}
+        variant="quiet"
         onClick={onMarkStale}
         disabled={busy}
-        className="gap-1.5 text-xs"
       >
-        <AlertTriangle className="h-3.5 w-3.5" />
         Stale
       </Button>
-      <Button
+      <SurfaceButton
         variant="ghost"
         size="icon"
         onClick={onClear}
@@ -134,7 +124,7 @@ export function BulkActionBar({
         className="h-6 w-6 rounded-full ml-1"
       >
         <X className="h-3 w-3" />
-      </Button>
+      </SurfaceButton>
     </div>
   );
 }

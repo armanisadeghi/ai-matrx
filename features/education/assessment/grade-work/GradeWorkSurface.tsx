@@ -236,9 +236,9 @@ export function GradeWorkSurface() {
             <StudyOrganizationHoldNotice what="Grading your work" />
           )}
           <Button
+            variant="primary"
             onClick={() => heldGrade.start()}
             disabled={!canGrade}
-            className="h-11"
           >
             {busy ? (
               <>
@@ -262,8 +262,7 @@ export function GradeWorkSurface() {
             <StepBreakdown steps={graded.steps} />
           )}
 
-          <Button variant="outline" onClick={onReset} className="h-11 w-fit">
-            <ScanText className="mr-1.5 h-4 w-4" />
+          <Button icon={<ScanText />} variant="outline" onClick={onReset} className="w-fit">
             Grade another
           </Button>
         </div>

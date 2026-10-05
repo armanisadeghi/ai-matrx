@@ -255,7 +255,7 @@ export function TriageDraftsDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => requestOpenChange(false)}
             disabled={run.running}
           >

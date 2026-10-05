@@ -113,14 +113,13 @@ export function MediaResearchPreviewCard({
           Nothing is spent until you press Run it. Up to {maxCost}.
         </p>
         <Button
+          icon={running ? <Loader2 className="animate-spin" /> : <Play />}
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-8 gap-1 text-xs"
           disabled={running}
           onClick={onRun}
           data-testid="media-research-run"
         >
-          {running ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
           {preview.prior_run ? "Show that answer" : preview.over_cap ? `Run it at ${preview.research_target} anyway` : "Run it"}
         </Button>
       </div>

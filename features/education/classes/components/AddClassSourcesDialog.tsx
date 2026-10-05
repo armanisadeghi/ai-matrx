@@ -157,24 +157,23 @@ function AddClassSourcesBody({
             ) : null}
             <Button
               type="button"
-              variant="ghost"
-              className="h-11 sm:h-9"
+              variant="quiet"
               onClick={() => onOpenChange(false)}
               disabled={busy}
             >
               Cancel
             </Button>
             <Button
+              icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Plus />
+              )}
+              variant="primary"
               type="button"
-              className="h-11 gap-1.5 sm:h-9"
               disabled={busy || !!blocked}
               onClick={() => void fileAll()}
             >
-              {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )}
               {ready.length > 0 ? `Add ${ready.length}` : "Add"}
             </Button>
           </div>

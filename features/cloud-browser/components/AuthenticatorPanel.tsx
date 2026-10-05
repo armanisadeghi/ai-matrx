@@ -65,8 +65,8 @@ export function AuthenticatorPanel({
       {choices.length > 0 ? (
         choices.map((choice) => (
           <Button
+            variant="primary"
             key={choice.itemId}
-            size="sm"
             disabled={working}
             onClick={() => void enterCode(choice)}
           >

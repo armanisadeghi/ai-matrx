@@ -106,8 +106,7 @@ export function NewDiagramButton({ className }: { className?: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button size="sm" variant="outline" className={className}>
-          <Plus className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<Plus />} variant="outline" className={className}>
           New diagram
         </Button>
       </DropdownMenuTrigger>

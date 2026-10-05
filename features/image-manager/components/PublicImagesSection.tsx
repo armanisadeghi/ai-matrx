@@ -115,13 +115,12 @@ export function PublicImagesSection({
             </h3>
           </div>
           <Button
+            icon={<SlidersHorizontal />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => setFilterOpen(true)}
-            className="ml-auto h-8 md:hidden"
+            className="ml-auto md:hidden"
           >
-            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
             {THEME_OPTIONS.find((opt) => opt.id === theme)?.label ?? "Theme"}
           </Button>
           <div className="ml-auto hidden flex-wrap gap-1 rounded-md border border-border/70 bg-card/45 p-0.5 md:flex">

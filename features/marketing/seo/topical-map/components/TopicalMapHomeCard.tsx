@@ -102,17 +102,16 @@ export function TopicalMapHomeCard({
             variant="outline"
             size="sm"
           />
-          <Button asChild size="sm">
+          <Button variant="primary" asChild>
             <Link href={outline}>Open</Link>
           </Button>
           <Button
+            icon={<Archive aria-hidden />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => setRetireOpen(true)}
             title="Retire this map: remove it from the brand so a fresh one can take its place"
           >
-            <Archive className="h-4 w-4" aria-hidden />
             Retire
           </Button>
         </div>
@@ -248,8 +247,8 @@ export function TopicalMapHomeCard({
               </SelectContent>
             </Select>
             <Button
+              icon={<Link2 aria-hidden />}
               type="button"
-              size="sm"
               variant="outline"
               disabled={pendingSite === PICK_SITE || bind.isPending}
               onClick={() =>
@@ -265,7 +264,6 @@ export function TopicalMapHomeCard({
                 )
               }
             >
-              <Link2 className="h-4 w-4" aria-hidden />
               Site uses this map
             </Button>
             <span className="text-xs text-muted-foreground">
@@ -398,7 +396,7 @@ function SiteRow({
               : `${onNoTopic} ${onNoTopic === 1 ? "page" : "pages"} on no topic`}
           </Link>
         )}
-        <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs">
+        <Button asChild variant="quiet">
           <Link href={extendHref} title="Run the map author on this map from the site's crawl, keywords and plan; new topics land as proposals">
             <AGENT_ICON className="h-3.5 w-3.5" aria-hidden />
             Extend from the site

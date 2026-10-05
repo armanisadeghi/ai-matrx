@@ -147,12 +147,11 @@ export function SetVersionHistoryDialog({
                       </div>
                       {i !== 0 && (
                         <Button
-                          size="sm"
+                          icon={<RotateCcw />}
                           variant="outline"
-                          className="h-7 shrink-0 gap-1 px-2 text-xs"
+                          className="shrink-0"
                           onClick={() => setRestoreTarget(v)}
                         >
-                          <RotateCcw className="h-3.5 w-3.5" />
                           Restore
                         </Button>
                       )}

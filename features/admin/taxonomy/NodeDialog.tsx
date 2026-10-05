@@ -214,7 +214,7 @@ export default function NodeDialog({ state, rows, onClose, onSaved }: NodeDialog
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
-          <Button onClick={save} disabled={saving}>
+          <Button variant="primary" onClick={save} disabled={saving}>
             {saving ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>

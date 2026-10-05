@@ -188,8 +188,8 @@ export function LeaveCalendarPhoneDays({
         </p>
         <Button
           type="button"
-          variant="ghost"
-          className="mt-2 h-11"
+          variant="quiet"
+          className="mt-2"
           onClick={onClearSearch}
         >
           Clear search
@@ -400,9 +400,8 @@ export function LeaveCalendarSurface() {
             <div className="flex flex-wrap items-center gap-1">
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
+                variant="quiet"
+                className="w-11 sm:w-8"
                 aria-label={
                   view === "month" ? "Previous month" : "Previous week"
                 }
@@ -421,9 +420,8 @@ export function LeaveCalendarSurface() {
               </span>
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-11 w-11 p-0 sm:h-8 sm:w-8"
+                variant="quiet"
+                className="w-11 sm:w-8"
                 aria-label={view === "month" ? "Next month" : "Next week"}
                 onClick={() =>
                   goTo(
@@ -437,9 +435,8 @@ export function LeaveCalendarSurface() {
               </Button>
               <Button
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="ml-1 h-11 sm:h-8"
+                variant="quiet"
+                className="ml-1"
                 onClick={() => goTo(todayIso())}
               >
                 Today
@@ -460,18 +457,14 @@ export function LeaveCalendarSurface() {
               <div className="flex items-center gap-1">
                 <Button
                   type="button"
-                  size="sm"
-                  variant={view === "month" ? "secondary" : "ghost"}
-                  className="h-11 sm:h-8"
+                  variant={view === "month" ? "outline" : "quiet"}
                   onClick={() => goTo(anchor, "month")}
                 >
                   Month
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
-                  variant={view === "week" ? "secondary" : "ghost"}
-                  className="h-11 sm:h-8"
+                  variant={view === "week" ? "outline" : "quiet"}
                   onClick={() => goTo(startOfWeek(anchor), "week")}
                 >
                   Week

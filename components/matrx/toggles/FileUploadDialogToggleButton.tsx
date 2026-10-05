@@ -100,7 +100,7 @@ const FileUploadDialogToggleButton: React.FC<FileUploadDialogToggleButtonProps> 
                             {cancelLabel}
                         </Button>
 
-                        <Button onClick={handleConfirm} disabled={uploadedFiles.length === 0 || isUploading}>
+                        <Button variant="primary" onClick={handleConfirm} disabled={uploadedFiles.length === 0 || isUploading}>
                             {successButtonLabel}
                         </Button>
                     </DialogFooter>

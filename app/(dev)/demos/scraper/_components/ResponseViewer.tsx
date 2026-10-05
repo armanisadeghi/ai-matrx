@@ -207,16 +207,14 @@ function JsonExplorer({ data }: { data: unknown }) {
       <div className="flex items-center justify-between p-2 border-b border-border bg-muted shrink-0">
         <span className="text-xs text-muted-foreground">JSON Explorer</span>
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          className="h-7 px-2"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
+          icon={copied ? (
+            <Check className="text-green-500" />
           ) : (
-            <Copy className="w-3.5 h-3.5" />
+            <Copy />
           )}
+          variant="quiet"
+          onClick={handleCopy}
+        >
           <span className="ml-1.5 text-xs">{copied ? "Copied!" : "Copy"}</span>
         </Button>
       </div>
@@ -252,16 +250,14 @@ function RawJsonView({ data }: { data: unknown }) {
           Raw JSON ({formatCount(jsonString.length)} chars)
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCopy}
-          className="h-7 px-2"
-        >
-          {copied ? (
-            <Check className="w-3.5 h-3.5 text-green-500" />
+          icon={copied ? (
+            <Check className="text-green-500" />
           ) : (
-            <Copy className="w-3.5 h-3.5" />
+            <Copy />
           )}
+          variant="quiet"
+          onClick={handleCopy}
+        >
           <span className="ml-1.5 text-xs">{copied ? "Copied!" : "Copy"}</span>
         </Button>
       </div>
@@ -381,17 +377,16 @@ export function ResponseViewer({
                 step.
               </p>
               <Button
+                icon={diagnosticsCopied ? (
+                  <Check className="text-green-600" />
+                ) : (
+                  <Copy />
+                )}
                 type="button"
                 variant="outline"
-                size="sm"
-                className="h-8 shrink-0 gap-1.5"
+                className="shrink-0"
                 onClick={copyDiagnostics}
               >
-                {diagnosticsCopied ? (
-                  <Check className="w-3.5 h-3.5 text-green-600" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
                 {diagnosticsCopied ? "Copied" : "Copy JSON"}
               </Button>
             </div>

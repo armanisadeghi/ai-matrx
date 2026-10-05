@@ -587,14 +587,14 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
           <p>{activeAttempt.action.preview.recovery_notice}</p>
           {activeEventHref ? <a className="inline-flex items-center gap-1 text-primary hover:underline" href={activeEventHref} target="_blank" rel="noreferrer">Open event in Google Calendar <ExternalLink className="h-3.5 w-3.5" /></a> : null}
           {activeAttempt.phase === "reviewed_unattempted" ? <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" onClick={() => void send(activeAttempt)} disabled={busy !== null}>Confirm {activeAttempt.action.kind === "reschedule" ? "move" : activeAttempt.action.kind === "cancel" ? "cancellation" : "RSVP"}</Button>
-            <Button type="button" size="sm" variant="outline" onClick={() => { if (invalidateUnattemptedReview()) setActiveAttemptId(null); }} disabled={busy !== null}>Edit action</Button>
+            <Button variant="primary" type="button" onClick={() => void send(activeAttempt)} disabled={busy !== null}>Confirm {activeAttempt.action.kind === "reschedule" ? "move" : activeAttempt.action.kind === "cancel" ? "cancellation" : "RSVP"}</Button>
+            <Button type="button" variant="outline" onClick={() => { if (invalidateUnattemptedReview()) setActiveAttemptId(null); }} disabled={busy !== null}>Edit action</Button>
           </div> : null}
           {["uncertain", "reconciliation_required", "source_divergent"].includes(activeAttempt.phase) && activeAttempt.action.kind !== "cancel" ?
-            <Button type="button" size="sm" variant="outline" onClick={() => void reconcile(activeAttempt)} disabled={busy !== null}>{busy === "reconcile" ? "Checking…" : "Check current source"}</Button> : null}
+            <Button type="button" variant="outline" onClick={() => void reconcile(activeAttempt)} disabled={busy !== null}>{busy === "reconcile" ? "Checking…" : "Check current source"}</Button> : null}
           {activeAttempt.action.kind === "cancel" && ["uncertain", "reconciliation_required"].includes(activeAttempt.phase) ? <p>Cancellation cannot be settled from a missing event. Keep this action held.</p> : null}
-          {activeAttempt.phase === "source_unchanged" || activeAttempt.phase === "source_divergent" ? <Button type="button" size="sm" variant="outline" onClick={() => reviewCurrentSource(activeAttempt)}>Review current source</Button> : null}
-          {["succeeded", "source_requested"].includes(activeAttempt.phase) && activeAttempt.action.kind !== "cancel" ? <Button type="button" size="sm" variant="outline" onClick={() => void prepareRestore(activeAttempt)} disabled={busy !== null}>{activeAttempt.action.kind === "reschedule" ? "Prepare prior time" : "Prepare prior response"}</Button> : null}
+          {activeAttempt.phase === "source_unchanged" || activeAttempt.phase === "source_divergent" ? <Button type="button" variant="outline" onClick={() => reviewCurrentSource(activeAttempt)}>Review current source</Button> : null}
+          {["succeeded", "source_requested"].includes(activeAttempt.phase) && activeAttempt.action.kind !== "cancel" ? <Button type="button" variant="outline" onClick={() => void prepareRestore(activeAttempt)} disabled={busy !== null}>{activeAttempt.action.kind === "reschedule" ? "Prepare prior time" : "Prepare prior response"}</Button> : null}
         </div>
       ) : (
         <div className="space-y-3">
@@ -610,7 +610,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
               <option value="single">Single event</option><option value="instance">This instance</option><option value="series">Entire series</option>
             </select>
           </label>
-          <Button type="button" size="sm" variant="outline" onClick={() => void readSource()} disabled={!selectedEventId.trim() || busy !== null}>{busy === "source" ? "Reading…" : "Read event source"}</Button>
+          <Button type="button" variant="outline" onClick={() => void readSource()} disabled={!selectedEventId.trim() || busy !== null}>{busy === "source" ? "Reading…" : "Read event source"}</Button>
           {source ? <div className="space-y-1 rounded-md border border-border bg-muted/20 p-2 text-xs" data-calendar-change-source>
             <p className="font-medium text-foreground">{source.event_summary || "Google event"}</p>
             <p>{sourceTime(source.starts_at)} – {sourceTime(source.ends_at)}</p>
@@ -631,7 +631,7 @@ export function CalendarEventChangeReview(props: CalendarEventChangeReviewProps)
             <label className="grid gap-1 text-xs font-medium text-muted-foreground">Guest notifications
               <select className="min-h-11 rounded-md border border-input bg-background px-3 text-sm" value={sendUpdates} onChange={(event) => setSendUpdates(event.target.value as typeof sendUpdates)}><option value="">Choose notification behavior</option><option value="all">Notify all guests</option><option value="externalOnly">Notify external guests</option><option value="none">Send no updates</option></select>
             </label>
-            <Button type="button" size="sm" onClick={() => void review()} disabled={Boolean(sourceActionProblem) || busy !== null}>{busy === "preview" ? "Reviewing…" : actionKind === "reschedule" ? "Review move" : actionKind === "cancel" ? "Review cancellation" : "Review RSVP"}</Button>
+            <Button variant="primary" type="button" onClick={() => void review()} disabled={Boolean(sourceActionProblem) || busy !== null}>{busy === "preview" ? "Reviewing…" : actionKind === "reschedule" ? "Review move" : actionKind === "cancel" ? "Review cancellation" : "Review RSVP"}</Button>
           </> : null}
         </div>
       )}

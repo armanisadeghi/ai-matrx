@@ -34,6 +34,7 @@ import {
 import { InfoHint } from "@/components/official/InfoHint";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
@@ -339,7 +340,6 @@ export function FastFireSetup() {
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={retrySetsLoad}
                 >
                   Retry
@@ -349,7 +349,7 @@ export function FastFireSetup() {
             ) : sets.length === 0 ? (
               <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-background px-3 py-6 text-center">
                 <p className="text-sm text-muted-foreground">No decks yet</p>
-                <Button asChild size="sm">
+                <Button variant="primary" asChild>
                   <Link href="/education/flashcards/new">
                     <Plus className="h-4 w-4" />
                     New deck
@@ -441,7 +441,7 @@ export function FastFireSetup() {
               <coppa.Gate />
               <EntitlementMeter capability="education.live_grade" />
             </div>
-            <Button
+            <SurfaceButton
               size="lg"
               className="mt-3 h-12 w-full gap-2 text-base font-semibold"
               disabled={!selectedSet || starting || liveGrade.isChecking}
@@ -458,19 +458,19 @@ export function FastFireSetup() {
                   Start
                 </>
               )}
-            </Button>
+            </SurfaceButton>
             {/* Respectful paywall — opens only on a real cap. */}
             <liveGrade.Paywall />
             <enrichGuard.Paywall />
 
             <div className="mt-2 grid grid-cols-2 gap-1">
-              <Button asChild variant="ghost" className="min-h-11 text-muted-foreground">
+              <Button asChild variant="quiet">
                 <Link href={progressHref}>
                   <TrendingUp className="h-4 w-4" />
                   Progress
                 </Link>
               </Button>
-              <Button asChild variant="ghost" className="min-h-11 text-muted-foreground">
+              <Button asChild variant="quiet">
                 <Link href="/education/flashcards/new">
                   <Plus className="h-4 w-4" />
                   New deck
@@ -795,13 +795,11 @@ function PrepareRow({
             </span>
           ) : (
             <Button
+              icon={busy ? <Loader2 className="animate-spin" /> : null}
               variant="outline"
-              size="sm"
-              className="min-h-11 gap-1.5 sm:min-h-9"
               onClick={onPrepare}
               disabled={busy}
             >
-              {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {busy
                 ? "Preparing…"
                 : missing && progress && progress.done > 0
@@ -865,7 +863,8 @@ function MissingDeckNotice({
           &ldquo;{deck.name}&rdquo; is archived. Restore it to drill it.
         </span>
         <Button
-          size="sm"
+          icon={restoring ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           disabled={restoring}
           onClick={async () => {
             setRestoring(true);
@@ -882,7 +881,6 @@ function MissingDeckNotice({
             }
           }}
         >
-          {restoring ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
           Restore
         </Button>
       </AlertDescription>

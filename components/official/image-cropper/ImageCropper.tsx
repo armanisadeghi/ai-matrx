@@ -261,10 +261,8 @@ const ImageCropper = ({
                   {availableAspectRatios.map((ratio) => (
                     <Button
                       key={ratio.label}
-                      size="sm"
-                      variant={aspect === ratio.value ? "default" : "outline"}
+                      variant={aspect === ratio.value ? "primary" : "outline"}
                       onClick={() => setAspect(ratio.value)}
-                      className="h-8 px-2 text-xs"
                     >
                       {ratio.label}
                     </Button>
@@ -281,7 +279,8 @@ const ImageCropper = ({
             >
               Cancel
             </Button>
-            <Button 
+            <Button
+              variant="primary" 
               onClick={handleCropImage}
               disabled={isProcessing || isLoading || !croppedAreaPixels}
             >

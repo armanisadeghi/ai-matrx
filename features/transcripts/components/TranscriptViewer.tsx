@@ -9,6 +9,7 @@ import AdvancedTranscriptViewer, {
 } from "@/components/mardown-display/blocks/transcripts/AdvancedTranscriptViewer";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Download,
   Edit2,
@@ -589,15 +590,13 @@ export function TranscriptViewer() {
                 style={{ fontSize: "16px" }}
               />
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleUpdateMetadata}>
-                  <Save className="h-4 w-4 mr-1" /> Save
+                <Button icon={<Save />} variant="primary" onClick={handleUpdateMetadata}> Save
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={<X />}
+                  variant="quiet"
                   onClick={() => setIsEditingMetadata(false)}
-                >
-                  <X className="h-4 w-4 mr-1" /> Cancel
+                > Cancel
                 </Button>
               </div>
             </div>
@@ -641,18 +640,15 @@ export function TranscriptViewer() {
                 />
                 {plainTranscriptText.trim().length > 0 && (
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
+                    icon={copiedAll ? (
+                      <CheckCheck className="text-green-500" />
+                    ) : (
+                      <Copy />
+                    )} aria-label="Copy transcript text"
+                    variant="quiet"
                     title="Copy transcript text"
                     onClick={() => void handleCopyAllText()}
-                  >
-                    {copiedAll ? (
-                      <CheckCheck className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
+                  />
                 )}
                 {/*
                  * The transcript RECORD pair. A transcript is the "massive"
@@ -859,14 +855,11 @@ export function TranscriptViewer() {
                 />
                 {plainTranscriptText.trim().length > 0 && !isEditingContent && (
                   <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
+                    icon={<FileText />} aria-label="Edit transcript text"
+                    variant="quiet"
                     title="Edit transcript text"
                     onClick={startContentEdit}
-                  >
-                    <FileText className="h-4 w-4" />
-                  </Button>
+                  />
                 )}
                 {transcriptContent.trim().length > 0 && (
                   <RichDocumentActions
@@ -890,14 +883,11 @@ export function TranscriptViewer() {
                 )}
                 <PromoteToStudioButton transcript={activeTranscript} />
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
+                  icon={<Edit2 />} aria-label="Edit title & description"
+                  variant="quiet"
                   title="Edit title & description"
                   onClick={() => setIsEditingMetadata(true)}
-                >
-                  <Edit2 className="h-4 w-4" />
-                </Button>
+                />
               </div>
             </div>
           )}
@@ -919,7 +909,7 @@ export function TranscriptViewer() {
               )}
 
               <div className="flex items-center gap-2 md:gap-4">
-                <Button
+                <SurfaceButton
                   size="icon"
                   variant="outline"
                   className="h-9 w-9 md:h-10 md:w-10 rounded-full shrink-0"
@@ -933,19 +923,18 @@ export function TranscriptViewer() {
                   ) : (
                     <Play className="h-4 w-4 ml-0.5" />
                   )}
-                </Button>
+                </SurfaceButton>
 
                 {/* Playback Speed Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      size="sm"
+                      icon={<Gauge />}
                       variant="outline"
-                      className="h-9 px-2 md:px-3 shrink-0 font-mono text-xs md:text-sm min-w-[52px] md:min-w-[60px]"
+                      className="shrink-0 min-w-[52px] md:min-w-[60px]"
                       disabled={!audioUrl}
                       title="Playback speed"
                     >
-                      <Gauge className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1 md:mr-1.5" />
                       {formatSpeed(playbackSpeed)}
                     </Button>
                   </DropdownMenuTrigger>
@@ -1051,27 +1040,26 @@ export function TranscriptViewer() {
               </EditableContextMenu>
               <div className="flex gap-2">
                 <Button
-                  size="sm"
+                  icon={contentSaveBusy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Save />
+                  )}
+                  variant="primary"
                   onClick={() => void handleSaveContent()}
                   disabled={contentSaveBusy}
                 >
-                  {contentSaveBusy ? (
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-1" />
-                  )}
                   Save
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={<X />}
+                  variant="quiet"
                   disabled={contentSaveBusy}
                   onClick={() => {
                     setIsEditingContent(false);
                     setEditContent("");
                   }}
-                >
-                  <X className="h-4 w-4 mr-1" /> Cancel
+                > Cancel
                 </Button>
               </div>
             </div>

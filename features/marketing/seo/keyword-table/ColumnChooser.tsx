@@ -126,11 +126,9 @@ export function ColumnChooser({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          icon={<Columns3 />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1 px-2 text-xs text-muted-foreground"
         >
-          <Columns3 className="h-3.5 w-3.5" />
           Columns
           <span className="ml-0.5 rounded-full bg-muted px-1 text-[10px] text-foreground">
             {(coreVisible?.length ?? 0) + selected.length}

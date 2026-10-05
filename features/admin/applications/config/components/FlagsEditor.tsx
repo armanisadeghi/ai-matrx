@@ -86,15 +86,12 @@ export function FlagsEditor({
               }
             />
             <Button
+              icon={<Trash2 />}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+              variant="quiet"
               onClick={() => removeFlag(key)}
               aria-label={`Remove flag ${key}`}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         </div>
       ))}
@@ -112,15 +109,13 @@ export function FlagsEditor({
             </span>
           </div>
           <Button
+            icon={<Trash2 />}
             type="button"
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+            variant="quiet"
+            className="shrink-0"
             onClick={() => onRemoveMalformed(key)}
             aria-label={`Remove malformed flag ${key}`}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       ))}
 
@@ -144,13 +139,12 @@ export function FlagsEditor({
           autoComplete="off"
         />
         <Button
+          icon={<Plus />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={addFlag}
           disabled={newKey.trim().length === 0}
-        >
-          <Plus className="mr-1 h-3.5 w-3.5" /> Add flag
+        > Add flag
         </Button>
       </div>
       {addError ? <p className="text-xs text-destructive">{addError} <ErrorAlchemyMenu error={addError} /></p> : null}

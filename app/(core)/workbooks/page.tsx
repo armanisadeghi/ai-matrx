@@ -613,14 +613,12 @@ export default function WorkbooksLandingPage() {
                           name={wb.workbook_name}
                         />
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-100 transition-opacity h-7 w-7 sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover/entity-ref:opacity-100 focus-visible:opacity-100"
+                          icon={<Trash className="text-destructive" />} aria-label="Delete workbook"
+                          variant="quiet"
+                          className="opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover/entity-ref:opacity-100 focus-visible:opacity-100"
                           onClick={() => handleDelete(wb)}
                           title="Delete workbook"
-                        >
-                          <Trash className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                        />
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">

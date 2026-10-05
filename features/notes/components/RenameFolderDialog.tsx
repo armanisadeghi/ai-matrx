@@ -118,7 +118,7 @@ export function RenameFolderDialog({
                         >
                             Cancel
                         </Button>
-                        <Button type="submit">
+                        <Button variant="primary" type="submit">
                             Rename
                         </Button>
                     </DialogFooter>

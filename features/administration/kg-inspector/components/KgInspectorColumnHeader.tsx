@@ -170,9 +170,7 @@ function ColumnFilterPopover({
 
         <div className="flex justify-between pt-1">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={() => onChange(undefined)}
             disabled={!active}
           >

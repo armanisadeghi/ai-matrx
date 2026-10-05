@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, SlidersHorizontal, Plus, X, Mic, Loader2 } from "lucide-react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { TranscriptionResult } from "@/features/audio/types";
 import { toast } from "@/lib/toast";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

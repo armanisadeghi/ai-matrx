@@ -214,10 +214,9 @@ export function QuickMessageTemplateSaveCore({
         openInNewTab
       />
       <Button
+        variant="primary"
         type="button"
-        size="sm"
         onClick={onCancel}
-        className="h-7 px-2 text-xs"
       >
         Done
       </Button>
@@ -226,24 +225,21 @@ export function QuickMessageTemplateSaveCore({
     <>
       {onCancel ? (
         <Button
+          icon={<X />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={onCancel}
           disabled={isSaving}
-          className="h-7 px-2 text-xs gap-1.5"
-        >
-          <X className="h-3.5 w-3.5" /> Cancel
+        > Cancel
         </Button>
       ) : null}
       <Button
+        icon={<Save />}
+        variant="primary"
         type="button"
-        size="sm"
         onClick={save}
         disabled={!canSave}
-        className="h-7 px-2 text-xs gap-1.5"
-      >
-        <Save className="h-3.5 w-3.5" />{" "}
+      >{" "}
         {isSaving
           ? "Saving…"
           : mode === "create"
@@ -430,13 +426,11 @@ export function QuickMessageTemplateSaveCore({
               </RadioGroup>
               {updateMethod === "overwrite" ? (
                 <Button
+                  icon={<GitCompareArrows />}
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={previewOverwrite}
-                  className="h-7 gap-1.5 text-xs"
                 >
-                  <GitCompareArrows className="h-3.5 w-3.5" />
                   Preview changes
                 </Button>
               ) : null}

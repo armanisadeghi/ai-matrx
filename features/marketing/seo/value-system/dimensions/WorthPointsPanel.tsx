@@ -165,9 +165,8 @@ export function WorthPointsPanel({ siteId }: { siteId: string }) {
                 </span>
                 {convertible ? (
                   <Button
-                    size="sm"
-                    variant={row.relative_qualifier ? "ghost" : "outline"}
-                    className="h-6 shrink-0 px-2 text-[10px]"
+                    variant={row.relative_qualifier ? "quiet" : "outline"}
+                    className="shrink-0"
                     onClick={() => setConverting(row)}
                   >
                     {row.relative_qualifier

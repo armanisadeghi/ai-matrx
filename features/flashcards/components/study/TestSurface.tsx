@@ -260,9 +260,8 @@ function QuestionPanel({
       )}
 
       {answered && (
-        <Button className="mt-4 h-11 w-full" onClick={advance}>
+        <Button iconEnd={<ArrowRight />} variant="primary" className="mt-4 w-full" onClick={advance}>
           {isLast ? "See results" : "Next"}
-          <ArrowRight className="ml-1.5 h-4 w-4" />
         </Button>
       )}
     </>

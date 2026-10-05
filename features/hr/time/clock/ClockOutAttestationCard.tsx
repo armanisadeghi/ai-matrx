@@ -30,6 +30,7 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { formatElapsedMinutes } from "./liveElapsed";
 import {
   attestationShownMinutes,
@@ -68,22 +69,22 @@ function ChoiceRow({
     <fieldset className="flex flex-col gap-2">
       <legend className="text-base text-foreground">{question}</legend>
       <div className="grid grid-cols-2 gap-3">
-        <Button
+        <SurfaceButton
           type="button"
           variant={value === "yes" ? "default" : "outline"}
           onClick={() => onChange("yes")}
           className="min-h-[52px] text-base"
         >
           {yesLabel}
-        </Button>
-        <Button
+        </SurfaceButton>
+        <SurfaceButton
           type="button"
           variant={value === "no" ? "default" : "outline"}
           onClick={() => onChange("no")}
           className="min-h-[52px] text-base"
         >
           {noLabel}
-        </Button>
+        </SurfaceButton>
       </div>
     </fieldset>
   );
@@ -204,7 +205,7 @@ export function ClockOutAttestationCard({
           */}
           {waiverOffered && (
             <div className="flex flex-col gap-2">
-              <Button
+              <SurfaceButton
                 type="button"
                 variant={mealWaived ? "default" : "outline"}
                 onClick={() => {
@@ -216,7 +217,7 @@ export function ClockOutAttestationCard({
                 className="min-h-[52px] text-base"
               >
                 I chose to waive my meal break
-              </Button>
+              </SurfaceButton>
               <p className="text-xs text-muted-foreground">
                 A waiver is your choice. You can take your meal break instead at any time.
               </p>
@@ -233,28 +234,22 @@ export function ClockOutAttestationCard({
           </legend>
           <div className="flex items-center gap-4">
             <Button
+              icon={<Minus />}
               type="button"
               variant="outline"
-              size="icon"
               aria-label="One fewer rest break"
               onClick={() => setRestTaken((n) => Math.max(0, n - 1))}
-              className="size-[52px]"
-            >
-              <Minus className="size-5" />
-            </Button>
+            />
             <span className="min-w-12 text-center text-2xl font-semibold tabular-nums text-foreground">
               {restTaken}
             </span>
             <Button
+              icon={<Plus />}
               type="button"
               variant="outline"
-              size="icon"
               aria-label="One more rest break"
               onClick={() => setRestTaken((n) => Math.min(restOwed, n + 1))}
-              className="size-[52px]"
-            >
-              <Plus className="size-5" />
-            </Button>
+            />
           </div>
         </fieldset>
       )}
@@ -292,7 +287,7 @@ export function ClockOutAttestationCard({
           Rule 3: this button submits on any answer set. There is no branch that refuses, and there
           is deliberately no "you must say yes to continue".
         */}
-        <Button
+        <SurfaceButton
           type="button"
           size="lg"
           disabled={busy || !answered}
@@ -300,8 +295,8 @@ export function ClockOutAttestationCard({
           className="min-h-[64px] text-lg font-semibold"
         >
           Submit and clock out
-        </Button>
-        <Button type="button" variant="ghost" disabled={busy} onClick={onCancel} className="min-h-[48px]">
+        </SurfaceButton>
+        <Button type="button" variant="quiet" disabled={busy} onClick={onCancel}>
           Not yet — go back
         </Button>
       </div>

@@ -304,21 +304,17 @@ export function AddRulePanel({
       {/* Mode switcher — two mutually-exclusive entry methods. */}
       <div className="flex shrink-0 items-center gap-1 border-b border-border px-4 py-2">
         <Button
-          size="sm"
-          variant={mode === "ai" ? "secondary" : "ghost"}
-          className="h-7"
+          variant={mode === "ai" ? "outline" : "quiet"}
           onClick={() => setMode("ai")}
         >
           <AGENT_ICON className="h-3.5 w-3.5" />
           With AI
         </Button>
         <Button
-          size="sm"
-          variant={mode === "manual" ? "secondary" : "ghost"}
-          className="h-7"
+          icon={<Keyboard />}
+          variant={mode === "manual" ? "outline" : "quiet"}
           onClick={() => setMode("manual")}
         >
-          <Keyboard className="h-3.5 w-3.5" />
           Manually
         </Button>
         <span className="ml-auto truncate text-xs text-muted-foreground">
@@ -375,10 +371,11 @@ export function AddRulePanel({
                 ) : null}
                 <div className="flex justify-end">
                   <Button
+                    icon={<Zap />}
+                    variant="primary"
                     onClick={() => void draftWithAi()}
                     disabled={draftRun.isRunning || !describe.trim()}
                   >
-                    <Zap className="h-4 w-4" />
                     {draftRun.isRunning ? "Drafting…" : "Draft the rule"}
                   </Button>
                 </div>
@@ -442,7 +439,7 @@ export function AddRulePanel({
                     />
                     <div className="flex justify-end gap-2">
                       <Button
-                        variant="ghost"
+                        variant="quiet"
                         disabled={draftRun.isRunning}
                         onClick={() => {
                           setRefining(false);
@@ -452,10 +449,11 @@ export function AddRulePanel({
                         Cancel
                       </Button>
                       <Button
+                        icon={<Zap />}
+                        variant="primary"
                         onClick={() => void improveDraft()}
                         disabled={draftRun.isRunning || !refineInput.trim()}
                       >
-                        <Zap className="h-4 w-4" />
                         {draftRun.isRunning ? "Rewriting…" : "Rewrite it"}
                       </Button>
                     </div>

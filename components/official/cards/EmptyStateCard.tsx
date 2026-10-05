@@ -2,7 +2,7 @@
 
 import React, { ReactNode } from "react";
 import { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 
 interface EmptyStateCardProps {
   title: string;

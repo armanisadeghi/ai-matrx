@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Star } from "lucide-react";
 import Link from "next/link";

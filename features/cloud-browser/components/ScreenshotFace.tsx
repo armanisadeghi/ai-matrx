@@ -72,8 +72,8 @@ export function ScreenshotFace({
               <Countdown autoOffAt={autoOffAt} />
               {onToggleRapid && (
                 <Button
-                  size="sm"
-                  variant={rapid ? "secondary" : "ghost"}
+                  icon={<Zap />}
+                  variant={rapid ? "outline" : "quiet"}
                   onClick={onToggleRapid}
                   disabled={disabled}
                   title={
@@ -82,22 +82,18 @@ export function ScreenshotFace({
                       : "Capture rapidly (for pages that change on their own)"
                   }
                 >
-                  <Zap className="mr-1 h-3.5 w-3.5" />
                   Rapid
                 </Button>
               )}
-              <Button size="sm" variant="ghost" onClick={onRearm} disabled={disabled}>
-                <RefreshCw className="mr-1 h-3.5 w-3.5" />
+              <Button icon={<RefreshCw />} variant="quiet" onClick={onRearm} disabled={disabled}>
                 Keep watching
               </Button>
-              <Button size="sm" variant="outline" onClick={onStop}>
-                <CameraOff className="mr-1 h-3.5 w-3.5" />
+              <Button icon={<CameraOff />} variant="outline" onClick={onStop}>
                 Stop
               </Button>
             </>
           ) : (
-            <Button size="sm" onClick={onStart} disabled={disabled}>
-              <Camera className="mr-1 h-3.5 w-3.5" />
+            <Button icon={<Camera />} variant="primary" onClick={onStart} disabled={disabled}>
               Show me what's happening
             </Button>
           )}

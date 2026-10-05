@@ -699,18 +699,16 @@ export function CrmListPage({
   const bulkActions = () => (
     <div className="flex flex-wrap items-center gap-1.5">
       <Button
-        size="sm"
-        className="h-7 gap-1 px-2 text-xs"
+        icon={<Megaphone />}
+        variant="primary"
         disabled={bulkBusy}
         onClick={() => setAddToOutreachListOpen(true)}
       >
-        <Megaphone className="h-3.5 w-3.5" />
         Add to outreach list
       </Button>
       <Button
-        size="sm"
+        icon={<BellOff />}
         variant="outline"
-        className="h-7 gap-1 px-2 text-xs"
         disabled={bulkBusy}
         onClick={async () => {
           const ok = await confirm({
@@ -725,13 +723,11 @@ export function CrmListPage({
           );
         }}
       >
-        <BellOff className="h-3.5 w-3.5" />
         Do not contact
       </Button>
       <Button
-        size="sm"
+        icon={<BellRing />}
         variant="outline"
-        className="h-7 gap-1 px-2 text-xs"
         disabled={bulkBusy}
         onClick={async () => {
           const ok = await confirm({
@@ -746,13 +742,11 @@ export function CrmListPage({
           );
         }}
       >
-        <BellRing className="h-3.5 w-3.5" />
         Allow contact
       </Button>
       <Button
-        size="sm"
+        icon={<Trash2 />}
         variant="outline"
-        className="h-7 gap-1 px-2 text-xs text-destructive hover:text-destructive"
         disabled={bulkBusy}
         onClick={async () => {
           const ok = await confirm({
@@ -766,7 +760,6 @@ export function CrmListPage({
           await runBulk("Moved to Trash", (ids) => deleteParties(ids));
         }}
       >
-        <Trash2 className="h-3.5 w-3.5" />
         Move to Trash
       </Button>
     </div>
@@ -778,8 +771,8 @@ export function CrmListPage({
   const trashBulkActions = () => (
     <div className="flex flex-wrap items-center gap-1.5">
       <Button
-        size="sm"
-        className="h-7 gap-1 px-2 text-xs"
+        icon={<RotateCcw />}
+        variant="primary"
         disabled={bulkBusy}
         onClick={() =>
           runBulk("Restored", async (ids) => {
@@ -787,7 +780,6 @@ export function CrmListPage({
           })
         }
       >
-        <RotateCcw className="h-3.5 w-3.5" />
         Restore
       </Button>
     </div>
@@ -1008,9 +1000,7 @@ export function CrmListPage({
   const newButtons = (
     <div className="flex items-center gap-1.5">
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        variant="quiet"
         asChild
       >
         {/* Window mounts keep their state: outreach lists open in a new tab. */}
@@ -1026,9 +1016,7 @@ export function CrmListPage({
           Both are views over crm.interaction, so they belong beside the CRM
           rather than behind a separate console. */}
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        variant="quiet"
         asChild
       >
         <Link
@@ -1040,9 +1028,7 @@ export function CrmListPage({
         </Link>
       </Button>
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        variant="quiet"
         asChild
       >
         <Link
@@ -1054,9 +1040,7 @@ export function CrmListPage({
         </Link>
       </Button>
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        variant="quiet"
         asChild
       >
         {/* Window mounts keep their state: the wizard opens in a new tab. */}
@@ -1072,22 +1056,19 @@ export function CrmListPage({
           window — a route would lose the list behind it, and the panel is the
           window presentation of the same body on every surface. */}
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        icon={<Contact />}
+        variant="quiet"
         onClick={() =>
           openGoogleContactsImport({
             organizationId: activeOrgId,
           })
         }
       >
-        <Contact className="h-3.5 w-3.5" />
         <span className="max-sm:sr-only">Import from Google Contacts</span>
       </Button>
       <Button
-        size="sm"
+        icon={<Building2 />}
         variant="outline"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
         onClick={() => {
           openCreateParty({
             initialKind: "organization",
@@ -1095,12 +1076,11 @@ export function CrmListPage({
           });
         }}
       >
-        <Building2 className="h-3.5 w-3.5" />
         <span className="max-sm:sr-only">New company</span>
       </Button>
       <Button
-        size="sm"
-        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        icon={<UserPlus />}
+        variant="primary"
         onClick={() => {
           openCreateParty({
             initialKind: "person",
@@ -1108,7 +1088,6 @@ export function CrmListPage({
           });
         }}
       >
-        <UserPlus className="h-3.5 w-3.5" />
         <span className="max-sm:sr-only">New person</span>
       </Button>
     </div>
@@ -1154,9 +1133,7 @@ export function CrmListPage({
             />
             <div className="ml-auto flex max-w-full items-center gap-1.5 max-sm:w-full max-sm:justify-between">
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-11 gap-1 px-2 text-xs lg:h-7"
+                variant="quiet"
                 asChild
               >
                 <Link href="/crm/duplicates">
@@ -1174,18 +1151,16 @@ export function CrmListPage({
                 </Link>
               </Button>
               <Button
-                size="sm"
-                variant={inTrash ? "secondary" : "ghost"}
-                className="h-11 gap-1 px-2 text-xs lg:h-7"
+                icon={inTrash ? (
+                  <ArchiveRestore />
+                ) : (
+                  <Trash2 />
+                )}
+                variant={inTrash ? "outline" : "quiet"}
                 onClick={() =>
                   list.setQuery({ view: inTrash ? "active" : "trash" })
                 }
               >
-                {inTrash ? (
-                  <ArchiveRestore className="h-3.5 w-3.5" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
                 <span className="max-sm:sr-only">
                   {inTrash ? "Back to records" : "Trash"}
                 </span>

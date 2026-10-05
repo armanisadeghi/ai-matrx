@@ -842,8 +842,7 @@ export function CatalogEntryEditor({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> Back
+          <Button icon={<ArrowLeft />} type="button" variant="quiet" onClick={onBack}> Back
           </Button>
           <h2 className="truncate font-mono text-base font-semibold">
             {isNew ? `New ${kindLabel(kind)} entry` : `${row.kind}/${row.key}`}
@@ -863,26 +862,24 @@ export function CatalogEntryEditor({
         <div className="flex items-center gap-2">
           {row ? (
             <Button
+              icon={<Trash2 />}
               type="button"
               variant="outline"
-              size="sm"
               disabled={saving || deleting}
               onClick={() => setDeleteOpen(true)}
-              className="text-destructive hover:text-destructive"
-            >
-              <Trash2 className="mr-1.5 h-4 w-4" /> Archive
+            > Archive
             </Button>
           ) : null}
           <Button
+            icon={<Save />}
+            variant="primary"
             type="button"
-            size="sm"
             disabled={saving || deleting}
             onClick={() => {
               const pending = validate();
               if (pending) setPendingSave(pending);
             }}
-          >
-            <Save className="mr-1.5 h-4 w-4" /> Save
+          > Save
           </Button>
         </div>
       </div>

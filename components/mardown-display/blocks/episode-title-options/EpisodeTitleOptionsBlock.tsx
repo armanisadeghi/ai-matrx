@@ -34,7 +34,7 @@
 
 import { useCallback, useState } from "react";
 import { Check, Copy, Loader2, Type } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
 import { useCurrentSurfaceUiState } from "@ai-matrx/chat/surfaces/runtime/surface-ui-state";
 import {

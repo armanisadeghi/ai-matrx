@@ -119,12 +119,11 @@ export function MandateCoverageNotice({
         {meta.description}
       </span>
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-6 shrink-0 px-2 text-[11px]"
+        icon={<X />}
+        variant="quiet"
+        className="shrink-0"
         onClick={() => view.onToggleFilter(active)}
       >
-        <X className="mr-1 h-3 w-3" />
         Clear
       </Button>
     </div>

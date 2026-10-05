@@ -110,8 +110,7 @@ export function OwnerDefinitionEditor({
       title="Name and output"
       actions={
         editing ? null : (
-          <Button variant="ghost" size="sm" className="h-7 gap-1 text-[12px]" onClick={open}>
-            <Pencil className="h-3.5 w-3.5" />
+          <Button icon={<Pencil />} variant="quiet" onClick={open}>
             Edit
           </Button>
         )
@@ -157,12 +156,10 @@ export function OwnerDefinitionEditor({
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <Button size="sm" className="h-7 gap-1 text-[12px]" disabled={saving || !label.trim()} onClick={() => void save()}>
-              <Check className="h-3.5 w-3.5" />
+            <Button icon={<Check />} variant="primary" disabled={saving || !label.trim()} onClick={() => void save()}>
               {saving ? "Saving…" : "Save"}
             </Button>
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-[12px]" onClick={() => setEditing(false)}>
-              <X className="h-3.5 w-3.5" />
+            <Button icon={<X />} variant="quiet" onClick={() => setEditing(false)}>
               Cancel
             </Button>
           </div>

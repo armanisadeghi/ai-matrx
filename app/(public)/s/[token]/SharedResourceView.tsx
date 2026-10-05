@@ -73,9 +73,7 @@ export function SharedResourceView({
             destination is per share type: features/sharing/lenses/source-surface.ts */}
         <Button
           asChild
-          size="sm"
           variant="outline"
-          className="h-7 px-2 sm:px-3"
         >
           <Link href={source.href} aria-label={source.label}>
             <span className="hidden sm:inline">{source.label}</span>

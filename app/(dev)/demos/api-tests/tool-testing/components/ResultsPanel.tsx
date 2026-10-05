@@ -73,17 +73,15 @@ function CopyButton({
   };
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className="h-7 text-xs px-2 gap-1"
+      icon={copied ? (
+        <Check className="text-success" />
+      ) : (
+        <Copy />
+      )}
+      variant="quiet"
       onClick={handleCopy}
       disabled={!content}
     >
-      {copied ? (
-        <Check className="h-3 w-3 text-success" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
       {copied ? "Copied" : label}
     </Button>
   );
@@ -138,9 +136,8 @@ function SaveSamplePopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          size="sm"
           variant="outline"
-          className="h-6 w-6 p-0"
+          className="w-6"
           disabled={disabled}
           title="Save sample"
         >
@@ -158,34 +155,31 @@ function SaveSamplePopover({
             </Label>
             <div className="flex gap-1.5">
               <Button
-                size="sm"
-                variant={successVote === "yes" ? "default" : "outline"}
-                className="h-7 text-xs px-2.5 gap-1 flex-1"
+                icon={<ThumbsUp />}
+                variant={successVote === "yes" ? "primary" : "outline"}
+                className="flex-1"
                 onClick={() =>
                   setSuccessVote(successVote === "yes" ? null : "yes")
                 }
               >
-                <ThumbsUp className="h-3 w-3" />
                 Yes
               </Button>
               <Button
-                size="sm"
-                variant={successVote === null ? "secondary" : "outline"}
-                className="h-7 text-xs px-2.5 gap-1 flex-1"
+                icon={<Minus />}
+                variant={successVote === null ? "outline" : "outline"}
+                className="flex-1"
                 onClick={() => setSuccessVote(null)}
               >
-                <Minus className="h-3 w-3" />
                 Unset
               </Button>
               <Button
-                size="sm"
-                variant={successVote === "no" ? "destructive" : "outline"}
-                className="h-7 text-xs px-2.5 gap-1 flex-1"
+                icon={<ThumbsDown />}
+                variant={successVote === "no" ? "danger" : "outline"}
+                className="flex-1"
                 onClick={() =>
                   setSuccessVote(successVote === "no" ? null : "no")
                 }
               >
-                <ThumbsDown className="h-3 w-3" />
                 No
               </Button>
             </div>
@@ -223,17 +217,14 @@ function SaveSamplePopover({
           {/* Action buttons */}
           <div className="flex justify-end gap-2 pt-1">
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs px-2"
+              variant="quiet"
               onClick={() => setOpen(false)}
               disabled={isSaving}
             >
               Cancel
             </Button>
             <Button
-              size="sm"
-              className="h-7 text-xs px-3 gap-1"
+              variant="primary"
               onClick={handleSave}
               disabled={isSaving}
             >
@@ -419,10 +410,8 @@ export function ResultsPanel({
             savedId={savedId}
           />
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={onClear}
-            className="h-6 text-xs px-1.5"
             disabled={isRunning}
           >
             <X className="h-3 w-3" />

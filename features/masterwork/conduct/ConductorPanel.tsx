@@ -260,7 +260,7 @@ function ResumedConductorSession({
           in full on its own page.
         </p>
         <div className="flex gap-2">
-          <Button asChild size="sm">
+          <Button variant="primary" asChild>
             <Link
               href={`/chat/${conversationId}`}
               target="_blank"
@@ -270,7 +270,7 @@ function ResumedConductorSession({
               Open the conversation
             </Link>
           </Button>
-          <Button size="sm" variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack}>
             Back
           </Button>
         </div>
@@ -476,34 +476,30 @@ function SessionChooser({
               </p>
             </div>
             <Button
-              size="sm"
-              className="h-7 shrink-0"
+              variant="primary"
+              className="shrink-0"
               onClick={() => onContinue(s.conversationId)}
             >
               Continue
             </Button>
             {/* THE DOOR LAW — every session opens in full, too. */}
             <Button
+              icon={<ExternalLink />} aria-label="Open the full conversation in a new tab"
               asChild
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 shrink-0"
+              variant="quiet"
+              className="shrink-0"
               title="Open the full conversation in a new tab"
             >
               <Link
                 href={`/chat/${s.conversationId}`}
                 target="_blank"
                 rel="noopener noreferrer"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span className="sr-only">Open in a new tab</span>
-              </Link>
+              />
             </Button>
           </li>
         ))}
       </ul>
-      <Button size="sm" variant="outline" className="h-9" onClick={onStartNew}>
-        <Plus className="mr-1 h-4 w-4" />
+      <Button icon={<Plus />} variant="outline" onClick={onStartNew}>
         Start a new one
       </Button>
     </div>
@@ -656,7 +652,7 @@ export function ConductorContent({
           Starting without your rules would mean building a system from
           guesswork, so we stopped instead.
         </p>
-        <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
+        <Button variant="outline" onClick={rulebookDoc.reload}>
           Try again
         </Button>
       </div>

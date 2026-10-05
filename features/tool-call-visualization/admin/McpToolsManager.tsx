@@ -1132,12 +1132,10 @@ export function McpToolsManager() {
             <div className="flex items-center gap-2 ml-auto">
               {activeFilterCount > 0 && (
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<X />}
+                  variant="quiet"
                   onClick={clearFilters}
-                  className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
                 >
-                  <X className="h-3.5 w-3.5" />
                   Clear ({activeFilterCount})
                 </Button>
               )}
@@ -1243,33 +1241,29 @@ export function McpToolsManager() {
                 </>
               )}
               <Button
+                icon={<Settings />}
                 variant="outline"
-                size="sm"
                 onClick={refetch}
                 disabled={isLoading}
-                className="h-8 gap-1.5"
               >
-                <Settings className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Refresh</span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
+                    icon={bulkBusy ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <ListChecks />
+                    )} iconEnd={<ChevronDown className="opacity-60" />}
                     variant="outline"
-                    size="sm"
                     disabled={bulkBusy || filteredTools.length === 0}
-                    className="h-8 gap-1.5"
                     title={
                       bulkScope === "selected" && selectedToolIds.size > 0
                         ? `Acts on ${targetIds.length} selected tool${targetIds.length === 1 ? "" : "s"}`
                         : `Acts on all ${filteredTools.length} visible tool${filteredTools.length === 1 ? "" : "s"}`
                     }
                   >
-                    {bulkBusy ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <ListChecks className="h-3.5 w-3.5" />
-                    )}
                     <span className="hidden sm:inline">Bulk</span>
                     <Badge
                       variant="secondary"
@@ -1277,7 +1271,6 @@ export function McpToolsManager() {
                     >
                       {targetIds.length}
                     </Badge>
-                    <ChevronDown className="h-3 w-3 opacity-60" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-[260px]">
@@ -1353,14 +1346,13 @@ export function McpToolsManager() {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button
-                size="sm"
+                icon={<Plus />}
+                variant="primary"
                 onClick={() =>
                   navigateTo("/administration/agents/mcp-tools/new")
                 }
                 disabled={isPending}
-                className="h-8 gap-1.5"
               >
-                <Plus className="h-3.5 w-3.5" />
                 Add Tool
               </Button>
             </div>
@@ -1697,51 +1689,46 @@ export function McpToolsManager() {
                               className="scale-75"
                             />
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              variant="quiet"
                               onClick={() => navigateTo(toolHref(tool.id))}
                               title="View Samples"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              className="w-7"
                             >
                               <FlaskConical className="h-3.5 w-3.5" />
                             </Button>
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              variant="quiet"
                               onClick={() => navigateTo(toolUiHref(tool.id))}
                               title="UI Component"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                              className="w-7"
                             >
                               <Zap className="h-3.5 w-3.5" />
                             </Button>
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              variant="quiet"
                               onClick={() =>
                                 navigateTo(toolIncidentsHref(tool.id))
                               }
                               title="Incidents"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-warning"
+                              className="w-7"
                             >
                               <Bug className="h-3.5 w-3.5" />
                             </Button>
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              variant="quiet"
                               onClick={() => navigateTo(toolEditHref(tool.id))}
                               title="Edit Tool"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              className="w-7"
                             >
                               <Edit className="h-3.5 w-3.5" />
                             </Button>
                             <Button
-                              variant="ghost"
-                              size="sm"
+                              variant="quiet"
                               onClick={() =>
                                 handleDeleteTool(tool.id, tool.name)
                               }
                               title="Move to Trash"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              className="w-7"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -1876,9 +1863,7 @@ function ColumnFilterControl({
             {enumOptions.length > 0 && (
               <div className="flex items-center justify-between gap-2 pb-1 border-b border-border/60">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[11px]"
+                  variant="quiet"
                   onClick={() =>
                     onChange({
                       ...(value ?? {}),
@@ -1893,9 +1878,7 @@ function ColumnFilterControl({
                   Select all
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2 text-[11px]"
+                  variant="quiet"
                   onClick={() =>
                     onChange({
                       ...(value ?? {}),
@@ -2028,9 +2011,7 @@ function ColumnFilterControl({
         )}
         <div className="flex justify-between pt-1">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={() => onChange(undefined)}
             disabled={!active}
           >

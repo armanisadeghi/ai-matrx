@@ -87,6 +87,7 @@ export const DirectoryStructureForm = ({ onSubmit, loading }: DirectoryStructure
             </div>
 
             <Button
+                variant="primary"
                 onClick={handleSubmit}
                 disabled={loading || !rootDir || !projectRoot}
             >

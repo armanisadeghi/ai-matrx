@@ -129,7 +129,7 @@ export function SecureDeliveryRecipient({ token }: { token: string }) {
     return (
       <Shell>
         <p className="text-sm text-muted-foreground">{phase.message}</p>
-        <Button className="mt-6 w-full" variant="outline" onClick={() => window.location.reload()}>
+        <Button type="submit" className="mt-6 w-full" variant="outline" onClick={() => window.location.reload()}>
           Try again
         </Button>
       </Shell>
@@ -181,8 +181,7 @@ export function SecureDeliveryRecipient({ token }: { token: string }) {
             We will send a six-digit code by {channelWord(page.code_channel)} to{" "}
             <span className="font-medium text-foreground">{page.masked_target}</span>.
           </p>
-          <Button className="mt-4 w-full" onClick={sendCode} disabled={busy !== null}>
-            {busy === "code" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button icon={busy === "code" ? <Loader2 className="animate-spin" /> : null} type="submit" variant="primary" className="mt-4 w-full" onClick={sendCode} disabled={busy !== null}>
             Send me the code
           </Button>
         </div>
@@ -207,13 +206,12 @@ export function SecureDeliveryRecipient({ token }: { token: string }) {
             className="mt-2 text-center text-lg tracking-[0.4em]"
             autoFocus
           />
-          <Button className="mt-4 w-full" type="submit" disabled={code.length !== 6 || busy !== null}>
-            {busy === "view" ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button icon={busy === "view" ? <Loader2 className="animate-spin" /> : null} variant="primary" className="mt-4 w-full" type="submit" disabled={code.length !== 6 || busy !== null}>
             Open
           </Button>
           <Button
             type="button"
-            variant="ghost"
+            variant="quiet"
             className="mt-2 w-full"
             onClick={sendCode}
             disabled={busy !== null}
@@ -278,8 +276,8 @@ function FieldRow({ label, value, secret }: { label: string; value: string; secr
         <div className="flex items-center gap-1">
           {secret ? (
             <Button
-              size="sm"
-              variant="ghost"
+              type="submit"
+              variant="quiet"
               onClick={() => setShown((s) => !s)}
               aria-label={shown ? `Hide ${label}` : `Show ${label}`}
             >
@@ -287,8 +285,8 @@ function FieldRow({ label, value, secret }: { label: string; value: string; secr
             </Button>
           ) : null}
           <Button
-            size="sm"
-            variant="ghost"
+            type="submit"
+            variant="quiet"
             aria-label={`Copy ${label}`}
             onClick={async () => {
               await navigator.clipboard.writeText(value);

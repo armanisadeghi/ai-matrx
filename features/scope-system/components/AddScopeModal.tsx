@@ -364,26 +364,23 @@ export function AddScopeModal({
                   style={{ fontSize: "16px" }}
                 />
                 <Button
+                  icon={<X />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
+                  variant="quiet"
                   onClick={() => removeItemRow(row.id)}
                   disabled={busy || items.length === 1}
                   aria-label={`Remove context item ${idx + 1}`}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                />
               </div>
             ))}
           </div>
           <Button
+            icon={<Plus />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={appendItemRow}
             disabled={busy}
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
             Add context item
           </Button>
         </fieldset>
@@ -495,7 +492,6 @@ export function AddScopeModal({
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={addVariableKey}
                   disabled={busy || !variableKeyInput.trim()}
                 >
@@ -541,8 +537,7 @@ export function AddScopeModal({
           >
             Cancel
           </Button>
-          <Button type="submit" className="flex-1" disabled={!canSave || busy}>
-            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          <Button icon={busy && <Loader2 className="animate-spin" />} variant="primary" type="submit" className="flex-1" disabled={!canSave || busy}>
             Create scope type
           </Button>
         </div>

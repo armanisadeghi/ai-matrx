@@ -87,6 +87,7 @@ export function SourceControlPanel({ className }: { className?: string }) {
       <div className={cn("p-4 text-sm", className)}>
         <p>Connect a sandbox to work with Git repositories.</p>
         <Button
+          variant="primary"
           className="mt-3"
           onClick={() => dispatch(revealView("sandboxes"))}
         >
@@ -627,21 +628,19 @@ function RepositoryPanel({
           </select>
           <div className="flex flex-wrap gap-1.5">
             <Button
-              size="sm"
+              icon={<FolderOpen />}
               variant="outline"
               disabled={disabled}
               onClick={() => setShowOpen(!showOpen)}
             >
-              <FolderOpen className="mr-1 h-3.5 w-3.5" />
               Open folder
             </Button>
             <Button
-              size="sm"
+              icon={<GitBranch />}
               variant="outline"
               disabled={disabled}
               onClick={() => setShowClone(true)}
             >
-              <GitBranch className="mr-1 h-3.5 w-3.5" />
               Clone
             </Button>
           </div>
@@ -666,14 +665,13 @@ function RepositoryPanel({
               />
               <div className="flex flex-wrap gap-1.5">
                 <Button
-                  size="sm"
+                  variant="primary"
                   disabled={disabled || !path.trim()}
                   onClick={() => void chooseRepository(path.trim())}
                 >
                   Open
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={disabled || !path.trim()}
                   onClick={() =>
@@ -730,7 +728,6 @@ function RepositoryPanel({
                   />
                   <div className="flex flex-wrap gap-1">
                     <Button
-                      size="sm"
                       variant="outline"
                       disabled={disabled || !newBranch.trim()}
                       onClick={() =>
@@ -752,7 +749,6 @@ function RepositoryPanel({
                       Create branch
                     </Button>
                     <Button
-                      size="sm"
                       variant="outline"
                       disabled={disabled || !newBranch.trim()}
                       onClick={() =>
@@ -814,7 +810,6 @@ function RepositoryPanel({
                   placeholder="https://github.com/owner/repository.git"
                 />
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={disabled || !remoteName.trim() || !remoteUrl.trim()}
                   onClick={() =>
@@ -868,7 +863,6 @@ function RepositoryPanel({
                   placeholder="you@example.com"
                 />
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={
                     disabled || !authorName.trim() || !authorEmail.trim()
@@ -927,17 +921,16 @@ function RepositoryPanel({
             <div className="space-y-2 border-b p-2">
               <div className="flex flex-wrap gap-1">
                 <Button
+                  icon={<Sparkles />}
                   variant="outline"
-                  size="sm"
                   disabled={disabled}
                   onClick={() => void attachRepositoryToChat()}
                 >
-                  <Sparkles className="mr-1 h-3.5 w-3.5" />
                   Attach to chat
                 </Button>
                 <Button
+                  icon={<ArrowDownToLine />}
                   variant="outline"
-                  size="sm"
                   disabled={disabled || repo.remotes.length === 0}
                   onClick={() =>
                     void run(async () => {
@@ -952,12 +945,11 @@ function RepositoryPanel({
                     }, "Pulled remote changes.")
                   }
                 >
-                  <ArrowDownToLine className="mr-1 h-3.5 w-3.5" />
                   Pull
                 </Button>
                 <Button
+                  icon={<ArrowUpFromLine />}
                   variant="outline"
-                  size="sm"
                   disabled={disabled || repo.remotes.length === 0}
                   onClick={() =>
                     void run(async () => {
@@ -975,12 +967,10 @@ function RepositoryPanel({
                     }, "Pushed commits.")
                   }
                 >
-                  <ArrowUpFromLine className="mr-1 h-3.5 w-3.5" />
                   Push
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   disabled={
                     disabled ||
                     (!status.unstaged.length && !status.untracked.length)
@@ -1007,7 +997,8 @@ function RepositoryPanel({
               />
               <div className="flex gap-1">
                 <Button
-                  size="sm"
+                  icon={<Check />}
+                  variant="primary"
                   className="flex-1"
                   disabled={
                     disabled ||
@@ -1017,12 +1008,10 @@ function RepositoryPanel({
                   }
                   onClick={() => void commit()}
                 >
-                  <Check className="mr-1 h-3.5 w-3.5" />
                   Commit
                   {status.staged.length ? ` (${status.staged.length})` : ""}
                 </Button>
                 <Button
-                  size="sm"
                   variant="outline"
                   aria-label="Commit and push"
                   title="Commit and push"
@@ -1170,7 +1159,6 @@ function RepositoryPanel({
                     </button>
                     <div className="flex gap-2">
                       <Button
-                        size="sm"
                         variant="outline"
                         disabled={disabled}
                         onClick={() =>
@@ -1183,8 +1171,7 @@ function RepositoryPanel({
                         Restore files
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
+                        variant="quiet"
                         disabled={disabled}
                         onClick={() =>
                           setSavedAction({

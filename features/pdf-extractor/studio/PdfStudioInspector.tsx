@@ -559,8 +559,8 @@ function AiActionsPanel({
               disabled={asking}
             />
             <Button
-              size="sm"
-              className="h-8 px-2.5 shrink-0"
+              variant="primary"
+              className="shrink-0"
               disabled={!question.trim() || asking}
               onClick={() => void ask(question)}
               aria-label="Ask"

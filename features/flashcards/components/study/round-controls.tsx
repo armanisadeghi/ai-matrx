@@ -53,14 +53,11 @@ export function RoundSizeMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-9 gap-1 px-2.5 tabular-nums text-muted-foreground hover:text-foreground"
+          icon={<Layers />} iconEnd={<ChevronDown className="opacity-60" />}
+          variant="quiet"
           aria-label={`${noun} per round`}
         >
-          <Layers className="h-4 w-4" />
           {dealt}
-          <ChevronDown className="h-3.5 w-3.5 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-44">
@@ -200,20 +197,19 @@ export function RoundComplete({
 
       <div className="flex w-full flex-col gap-2">
         {missed > 0 && (
-          <Button className="h-11 w-full" onClick={onRetakeMissed}>
-            <RotateCcw className="mr-1.5 h-4 w-4" />
+          <Button icon={<RotateCcw />} variant="primary" className="w-full" onClick={onRetakeMissed}>
             Retake {missed} missed
           </Button>
         )}
         <Button
-          variant={missed > 0 ? "outline" : "default"}
-          className="h-11 w-full"
+          icon={<RotateCcw />}
+          variant={missed > 0 ? "outline" : "primary"}
+          className="w-full"
           onClick={onRetake}
         >
-          <RotateCcw className="mr-1.5 h-4 w-4" />
           New round
         </Button>
-        <Button variant="ghost" className="h-11 w-full" onClick={onBack}>
+        <Button variant="quiet" className="w-full" onClick={onBack}>
           Back to deck
         </Button>
       </div>

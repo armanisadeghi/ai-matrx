@@ -100,13 +100,12 @@ export function HrDirectoryCard({
           }
         >
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-11 w-11 shrink-0 lg:h-7 lg:w-7"
+            icon={<MoreHorizontal aria-hidden />}
+            type="submit"
+            variant="quiet"
+            className="shrink-0"
             aria-label={`Actions for ${row.display_name}`}
-          >
-            <MoreHorizontal className="h-4 w-4" aria-hidden />
-          </Button>
+          />
         </ItemMenu>
       </div>
 

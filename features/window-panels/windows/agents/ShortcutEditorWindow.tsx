@@ -79,7 +79,6 @@ export default function ShortcutEditorWindow({
             <ErrorAlchemyMenu error={loadError} />
           </span>
           <Button
-            size="sm"
             variant="outline"
             onClick={() => setAttempt((n) => n + 1)}
           >

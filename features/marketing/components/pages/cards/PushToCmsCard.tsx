@@ -311,7 +311,7 @@ export function PushToCmsCard({
               </span>
             </div>
             <div>
-              <Button asChild size="sm" variant="outline" className="h-7">
+              <Button asChild variant="outline">
                 <Link href={marketingRoutes.contentPlanSite(site.id, "setup")}>
                   Link it in Site Setup
                   <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
@@ -442,16 +442,15 @@ export function PushToCmsCard({
 
             <div className="flex items-center justify-end">
               <Button
-                size="sm"
-                className="h-8"
+                icon={pushing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <UploadCloud />
+                )}
+                variant="primary"
                 disabled={!canPush}
                 onClick={() => setConfirmOpen(true)}
               >
-                {pushing ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <UploadCloud className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 Push draft to CMS
               </Button>
             </div>

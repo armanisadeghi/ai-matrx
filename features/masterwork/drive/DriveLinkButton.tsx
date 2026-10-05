@@ -20,9 +20,12 @@ export function DriveLinkButton({ rulebookId }: { rulebookId: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
+      icon={copied ? (
+        <Check />
+      ) : (
+        <Link2 />
+      )}
       variant="outline"
-      size="sm"
-      className="h-9"
       onClick={() => {
         const url = `${window.location.origin}/drive?r=${rulebookId}`;
         void navigator.clipboard
@@ -39,11 +42,6 @@ export function DriveLinkButton({ rulebookId }: { rulebookId: string }) {
           });
       }}
     >
-      {copied ? (
-        <Check className="mr-1 h-3.5 w-3.5" />
-      ) : (
-        <Link2 className="mr-1 h-3.5 w-3.5" />
-      )}
       Text myself the link
     </Button>
   );

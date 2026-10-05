@@ -343,7 +343,6 @@ export function CloudBrowserBody({
           <span>{cb.error.message}</span>
           {cb.error.retryable ? (
             <Button
-              size="sm"
               variant="outline"
               onClick={() => void cb.retry()}
               disabled={cb.loading}
@@ -392,19 +391,17 @@ export function CloudBrowserBody({
             {face !== "takeover" && cb.run ? (
               <div className="flex items-center gap-1.5 text-xs">
                 <Button
-                  size="sm"
-                  variant={face === "written" ? "default" : "outline"}
+                  icon={<FileText />}
+                  variant={face === "written" ? "primary" : "outline"}
                   onClick={() => shots.stop()}
-                >
-                  <FileText className="mr-1 h-3.5 w-3.5" /> Written progress
+                > Written progress
                 </Button>
                 <Button
-                  size="sm"
-                  variant={face === "screenshots" ? "default" : "outline"}
+                  icon={<Camera />}
+                  variant={face === "screenshots" ? "primary" : "outline"}
                   onClick={() => (shots.active ? shots.stop() : shots.start())}
                   disabled={!cb.run}
-                >
-                  <Camera className="mr-1 h-3.5 w-3.5" /> Screenshots
+                > Screenshots
                 </Button>
               </div>
             ) : null}
@@ -462,16 +459,14 @@ export function CloudBrowserBody({
                   <p className="text-foreground">{cb.handoff.message}</p>
                   <div className="mt-1.5 flex items-center gap-2">
                     <Button
-                      size="sm"
+                      variant="primary"
                       onClick={takeover.begin}
                       disabled={busy || takeover.phase === "claiming"}
                     >
                       Step in and help
                     </Button>
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-muted-foreground"
+                      variant="quiet"
                       disabled={busy}
                       onClick={() => {
                         if (!cb.run) return;

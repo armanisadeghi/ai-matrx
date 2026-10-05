@@ -174,7 +174,7 @@ export function IngestionHealthBanner({
           json={() => row}
         />
         {connectionBroken ? (
-          <Button asChild size="sm" className="h-6 gap-1 text-[11px]">
+          <Button variant="primary" asChild>
             <Link href={fixConnectionHref}>
               <Wrench className="h-3 w-3" />
               Fix the connection
@@ -183,17 +183,15 @@ export function IngestionHealthBanner({
         ) : null}
         {canSync ? (
           <Button
-            size="sm"
+            icon={syncing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            className="h-6 gap-1 text-[11px]"
             disabled={syncing}
             onClick={onSync}
           >
-            {syncing ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3" />
-            )}
             Sync now
           </Button>
         ) : null}

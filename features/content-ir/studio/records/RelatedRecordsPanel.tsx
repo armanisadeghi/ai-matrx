@@ -356,12 +356,11 @@ function RelatedChildList({
           <span className="min-w-0">
             <strong>These records could not be read. <ErrorAlchemyMenu /></strong> {state.message}
             <Button
-              size="sm"
+              icon={<RotateCw />}
               variant="outline"
-              className="ml-2 h-6 px-2 text-xs"
+              className="ml-2"
               onClick={reload}
             >
-              <RotateCw className="mr-1 h-3 w-3" />
               Try again
             </Button>
           </span>
@@ -418,8 +417,7 @@ function EmptyRelatedList({
           Nothing live here — all {archivedHidden} {edge.childLabel} record
           {archivedHidden === 1 ? " is" : "s are"} archived.
         </p>
-        <Button size="sm" className="mt-2 h-7 px-2 text-xs" onClick={onShowArchived}>
-          <Archive className="mr-1 h-3.5 w-3.5" />
+        <Button icon={<Archive />} variant="primary" className="mt-2" onClick={onShowArchived}>
           Show archived
         </Button>
       </div>
@@ -435,9 +433,8 @@ function EmptyRelatedList({
           {confirmationHidden === 1 ? "is" : "are"} {confirmation}.
         </p>
         <Button
-          size="sm"
           variant="outline"
-          className="mt-2 h-7 px-2 text-xs"
+          className="mt-2"
           onClick={onClearConfirmation}
         >
           Show all standings

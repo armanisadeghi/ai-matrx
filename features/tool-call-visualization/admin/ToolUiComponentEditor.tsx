@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -379,8 +379,7 @@ export function ToolUiComponentEditor({
         </div>
         <Button
           variant="outline"
-          size="sm"
-          className="text-xs h-7 flex-shrink-0"
+          className="flex-shrink-0"
           onClick={handleMarkAsV2}
         >
           Mark as v2
@@ -474,12 +473,10 @@ export function ToolUiComponentEditor({
               <Label>Overlay Component Code (Optional)</Label>
               {!formData.overlay_code && (
                 <Button
+                  icon={<Plus />}
                   variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
                   onClick={() => handleUseTemplate("overlay_code")}
                 >
-                  <Plus className="w-3 h-3 mr-1" />
                   Template
                 </Button>
               )}
@@ -515,12 +512,10 @@ export function ToolUiComponentEditor({
               <Label>Header Subtitle Function (Optional)</Label>
               {!formData.header_subtitle_code && (
                 <Button
+                  icon={<Plus />}
                   variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
                   onClick={() => handleUseTemplate("header_subtitle_code")}
                 >
-                  <Plus className="w-3 h-3 mr-1" />
                   Template
                 </Button>
               )}
@@ -543,12 +538,10 @@ export function ToolUiComponentEditor({
               <Label>Header Extras Function (Optional)</Label>
               {!formData.header_extras_code && (
                 <Button
+                  icon={<Plus />}
                   variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
                   onClick={() => handleUseTemplate("header_extras_code")}
                 >
-                  <Plus className="w-3 h-3 mr-1" />
                   Template
                 </Button>
               )}
@@ -814,7 +807,7 @@ export function ToolUiComponentEditor({
 
         {/* Save button */}
         <div className="flex flex-col gap-3 pt-4 border-t border-border pb-safe">
-          <Button onClick={handleSave} disabled={isSaving} className="w-full">
+          <SurfaceButton onClick={handleSave} disabled={isSaving} className="w-full">
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
             ) : (
@@ -825,7 +818,7 @@ export function ToolUiComponentEditor({
               : existingComponent
                 ? "Update Component"
                 : "Create Component"}
-          </Button>
+          </SurfaceButton>
         </div>
       </div>
     );
@@ -902,12 +895,10 @@ export function ToolUiComponentEditor({
               <Label>Overlay Component Code (Optional)</Label>
               {!formData.overlay_code && (
                 <Button
+                  icon={<Plus />}
                   variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
                   onClick={() => handleUseTemplate("overlay_code")}
                 >
-                  <Plus className="w-3 h-3 mr-1" />
                   Use Template
                 </Button>
               )}
@@ -937,12 +928,10 @@ export function ToolUiComponentEditor({
               <Label>Header Subtitle Function (Optional)</Label>
               {!formData.header_subtitle_code && (
                 <Button
+                  icon={<Plus />}
                   variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
                   onClick={() => handleUseTemplate("header_subtitle_code")}
                 >
-                  <Plus className="w-3 h-3 mr-1" />
                   Use Template
                 </Button>
               )}
@@ -964,12 +953,10 @@ export function ToolUiComponentEditor({
               <Label>Header Extras Function (Optional)</Label>
               {!formData.header_extras_code && (
                 <Button
+                  icon={<Plus />}
                   variant="outline"
-                  size="sm"
-                  className="text-xs h-7"
                   onClick={() => handleUseTemplate("header_extras_code")}
                 >
-                  <Plus className="w-3 h-3 mr-1" />
                   Use Template
                 </Button>
               )}
@@ -1164,7 +1151,7 @@ export function ToolUiComponentEditor({
 
       {/* Save / Cancel */}
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <Button onClick={handleSave} disabled={isSaving}>
+        <SurfaceButton onClick={handleSave} disabled={isSaving}>
           {isSaving ? (
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
           ) : (
@@ -1175,7 +1162,7 @@ export function ToolUiComponentEditor({
             : existingComponent
               ? "Update Component"
               : "Create Component"}
-        </Button>
+        </SurfaceButton>
       </div>
 
       {/* Import rules info box */}

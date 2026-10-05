@@ -195,7 +195,6 @@ export function ConfirmGeometryHarness() {
           <Button
             key={c.id}
             variant="outline"
-            size="sm"
             onClick={() => setOpenId(c.id)}
           >
             {c.id} consequence

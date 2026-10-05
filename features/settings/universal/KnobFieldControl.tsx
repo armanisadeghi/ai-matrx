@@ -44,7 +44,7 @@ import {
   SegmentedControl,
   selectTriggerVariants,
   Slider,
-  Switch,
+  Switch, Button as SurfaceButton,
 } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -227,7 +227,6 @@ function JsonField({
   if (!editing) {
     return (
       <Button
-        size="sm"
         variant="outline"
         aria-label={
           labelId ? undefined : `Edit structured value for ${knob.label}`
@@ -261,7 +260,7 @@ function JsonField({
       )}
       <div className="flex gap-2">
         <Button
-          size="sm"
+          variant="primary"
           disabled={disabled}
           onClick={() => {
             try {
@@ -281,7 +280,7 @@ function JsonField({
         >
           Save structured value
         </Button>
-        <Button size="sm" variant="ghost" disabled={disabled} onClick={reset}>
+        <Button variant="quiet" disabled={disabled} onClick={reset}>
           Cancel
         </Button>
       </div>
@@ -585,7 +584,7 @@ function VoiceField({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
+        <SurfaceButton
           id={inputId}
           type="button"
           variant="outline"
@@ -603,7 +602,7 @@ function VoiceField({
             {selectedLabel}
           </div>
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </Button>
+        </SurfaceButton>
       </PopoverTrigger>
       {open && (
         <PopoverContent
@@ -663,7 +662,7 @@ function VoiceChooser({
       )}
       <div className="min-h-0 flex-auto overflow-y-auto">
         <div className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent">
-          <Button
+          <SurfaceButton
             type="button"
             variant="ghost"
             className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
@@ -674,7 +673,7 @@ function VoiceChooser({
               Default — {voiceSetDefaultLabel(set)}
             </span>
             {current === "" && <Check className="h-4 w-4 shrink-0" />}
-          </Button>
+          </SurfaceButton>
         </div>
         {matchingVoices.length === 0 ? (
           <p className="px-3 py-4 text-sm text-muted-foreground">
@@ -689,7 +688,7 @@ function VoiceChooser({
                 key={voice.id}
                 className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent"
               >
-                <Button
+                <SurfaceButton
                   type="button"
                   variant="ghost"
                   className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
@@ -702,12 +701,18 @@ function VoiceChooser({
                   {voice.id === current && (
                     <Check className="h-4 w-4 shrink-0" />
                   )}
-                </Button>
+                </SurfaceButton>
                 <Button
+                  icon={playing && sample.starting ? (
+                    <Loader2 className="animate-spin" />
+                  ) : playing ? (
+                    <Square />
+                  ) : (
+                    <Play />
+                  )}
                   type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8 shrink-0"
+                  variant="quiet"
+                  className="shrink-0"
                   aria-label={
                     playing
                       ? "Stop voice sample"
@@ -715,15 +720,7 @@ function VoiceChooser({
                   }
                   disabled={disabled}
                   onClick={() => sample.play(set, voice.id, voice.name)}
-                >
-                  {playing && sample.starting ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : playing ? (
-                    <Square className="h-3.5 w-3.5" />
-                  ) : (
-                    <Play className="h-3.5 w-3.5" />
-                  )}
-                </Button>
+                />
               </div>
             );
           })
@@ -773,7 +770,7 @@ function SecretField({
           )}
           {isSet ? "Set" : isUnknown ? "State unavailable" : "Not set"}
         </Badge>
-        <Button size="sm" variant="outline" asChild>
+        <Button variant="outline" asChild>
           <Link href="/vault">
             {isSet ? "Rotate in the vault" : "Check in the vault"}
           </Link>

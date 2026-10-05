@@ -194,10 +194,10 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={sending}>
+          <Button variant="quiet" onClick={onClose} disabled={sending}>
             Cancel
           </Button>
-          <Button onClick={handleSend} disabled={sending || recipients.length === 0} className="gap-1.5">
+          <Button variant="primary" onClick={handleSend} disabled={sending || recipients.length === 0}>
             {sending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />

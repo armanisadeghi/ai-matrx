@@ -192,31 +192,27 @@ export default function Page() {
                 setError(null);
               }}
               variant="outline"
-              size="sm"
             >
               New
             </Button>
             <Button
+              icon={<Zap />}
               onClick={handleQuickScrape}
-              variant="secondary"
-              size="sm"
+              variant="outline"
               disabled={isFullScraping || !url.trim()}
-              className="gap-1.5"
             >
-              <Zap className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Quick</span>
             </Button>
             <Button
-              onClick={handleFullScrape}
-              size="sm"
-              disabled={isFullScraping || !url.trim()}
-              className="gap-1.5"
-            >
-              {isFullScraping ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              icon={isFullScraping ? (
+                <Loader2 className="animate-spin" />
               ) : (
-                <Search className="w-3.5 h-3.5" />
+                <Search />
               )}
+              variant="primary"
+              onClick={handleFullScrape}
+              disabled={isFullScraping || !url.trim()}
+            >
               <span className="hidden sm:inline">Full Scrape</span>
             </Button>
           </div>
@@ -284,23 +280,24 @@ export default function Page() {
         {/* Quick / Full Scrape buttons */}
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto sm:justify-center">
           <Button
+            icon={<Zap />}
             onClick={handleQuickScrape}
-            variant="secondary"
-            className="w-full sm:w-auto px-6 h-11 sm:h-10 rounded-full gap-2"
+            variant="outline"
+            className="w-full sm:w-auto"
           >
-            <Zap className="w-4 h-4" />
             Quick Scrape
           </Button>
           <Button
+            icon={isFullScraping ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Search />
+            )}
+            variant="primary"
             onClick={handleFullScrape}
             disabled={isFullScraping}
-            className="w-full sm:w-auto px-6 h-11 sm:h-10 rounded-full gap-2"
+            className="w-full sm:w-auto"
           >
-            {isFullScraping ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
             Full Scrape
           </Button>
         </div>

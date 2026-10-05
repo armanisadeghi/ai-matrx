@@ -121,15 +121,15 @@ export function SendToMenu({
             />
           ) : (
             <Button
+              icon={pushing ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Send />
+              )}
+              type="submit"
               variant="outline"
-              size="sm"
               disabled={disabled || empty || !!pushing}
             >
-              {pushing ? (
-                <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
-              ) : (
-                <Send className="h-4 w-4 sm:mr-2" />
-              )}
               <span className="hidden sm:inline">Send to</span>
             </Button>
           )}

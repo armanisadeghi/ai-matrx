@@ -34,7 +34,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@ai-matrx/design-system";
 import { Textarea } from "@ai-matrx/design-system";
 import { ScrollArea } from "@ai-matrx/design-system";
@@ -171,12 +171,11 @@ export function DirectTestMode({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={handleExecute} disabled={isStreaming}>
-          {isStreaming ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+        <Button icon={isStreaming ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Play className="w-3.5 h-3.5 mr-1.5" />
-          )}
+            <Play />
+          )} variant="primary" onClick={handleExecute} disabled={isStreaming}>
           {isStreaming ? "Streaming..." : "Execute"}
         </Button>
         {status && (
@@ -204,12 +203,11 @@ export function DirectTestMode({
 
       {responseText && (
         <div className="flex justify-end">
-          <Button variant="outline" size="sm" onClick={handleCopy}>
-            {copied ? (
-              <Check className="w-3.5 h-3.5 mr-1.5" />
+          <Button icon={copied ? (
+              <Check />
             ) : (
-              <Copy className="w-3.5 h-3.5 mr-1.5" />
-            )}
+              <Copy />
+            )} variant="outline" onClick={handleCopy}>
             {copied ? "Copied" : "Copy"}
           </Button>
         </div>
@@ -348,12 +346,11 @@ export function InlineTestMode({
       />
 
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={handleExecute} disabled={isStreaming}>
-          {isStreaming ? (
-            <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+        <Button icon={isStreaming ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
-          )}
+            <ArrowRight />
+          )} variant="primary" onClick={handleExecute} disabled={isStreaming}>
           {isStreaming ? "Processing..." : "Run Inline"}
         </Button>
         {status && (
@@ -375,20 +372,16 @@ export function InlineTestMode({
               <AnswerValueView text={responseText} />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="default" size="sm" onClick={handleReplace}>
-                <Replace className="w-3.5 h-3.5 mr-1.5" />
+              <Button icon={<Replace />} variant="primary" onClick={handleReplace}>
                 Replace
               </Button>
-              <Button variant="outline" size="sm" onClick={handleInsertBefore}>
-                <ArrowUpFromLine className="w-3.5 h-3.5 mr-1.5" />
+              <Button icon={<ArrowUpFromLine />} variant="outline" onClick={handleInsertBefore}>
                 Insert Before
               </Button>
-              <Button variant="outline" size="sm" onClick={handleInsertAfter}>
-                <ArrowDownFromLine className="w-3.5 h-3.5 mr-1.5" />
+              <Button icon={<ArrowDownFromLine />} variant="outline" onClick={handleInsertAfter}>
                 Insert After
               </Button>
-              <Button variant="ghost" size="sm" onClick={handleCancel}>
-                <X className="w-3.5 h-3.5 mr-1.5" />
+              <Button icon={<X />} variant="quiet" onClick={handleCancel}>
                 Cancel
               </Button>
             </div>
@@ -495,8 +488,7 @@ function BackgroundTestMode({
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Button size="sm" onClick={handleExecute}>
-          <Play className="w-3.5 h-3.5 mr-1.5" />
+        <Button icon={<Play />} variant="primary" onClick={handleExecute}>
           Run Background Task
         </Button>
         <span className="text-xs text-muted-foreground">

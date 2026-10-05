@@ -401,12 +401,11 @@ function BattleSetup({ onStarted }: { onStarted: (row: ComparisonRow) => void })
       )}
 
       <div>
-        <Button onClick={() => void start()} disabled={!canStart} className="gap-1.5">
-          {starting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+        <Button icon={starting ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <Swords className="h-4 w-4" />
-          )}
+            <Swords />
+          )} variant="primary" onClick={() => void start()} disabled={!canStart}>
           Run the comparison
         </Button>
       </div>
@@ -587,8 +586,6 @@ function ComparisonView({
           {judgeable && !judged && (
             <Button
               variant="outline"
-              size="sm"
-              className="gap-1.5"
               onClick={() =>
                 setBlindOrder((prev) =>
                   prev ? null : shuffleIds(arms.map(armKey)),
@@ -606,7 +603,7 @@ function ComparisonView({
               )}
             </Button>
           )}
-          <Button variant="outline" size="sm" onClick={onNew}>
+          <Button variant="outline" onClick={onNew}>
             New comparison
           </Button>
         </div>
@@ -696,20 +693,17 @@ function ArmColumn({
           )}
         </div>
         {!blind && arm.status === "running" && arm.run_id && (
-          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={onCancel}>
+          <Button variant="quiet" onClick={onCancel}>
             Cancel
           </Button>
         )}
         {!blind && (arm.status === "failed" || arm.status === "completed") && (
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7"
+            icon={<RotateCcw />}
+            variant="quiet"
             onClick={onRerun}
             aria-label={`Re-run ${arm.label}`}
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-          </Button>
+          />
         )}
       </div>
 
@@ -733,12 +727,12 @@ function ArmColumn({
       {judgeable && arm.status === "completed" && (
         <div className="border-t border-border p-2">
           <Button
-            className="w-full gap-1.5"
-            size="sm"
+            icon={<Trophy />}
+            variant="primary"
+            className="w-full"
             disabled={savingVerdict}
             onClick={onPickWinner}
-          >
-            <Trophy className="h-3.5 w-3.5" /> This one wins
+          > This one wins
           </Button>
         </div>
       )}

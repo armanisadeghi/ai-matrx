@@ -866,7 +866,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
         <p className="max-w-md text-xs text-muted-foreground">
           {error} <ErrorAlchemyMenu error={error} />
         </p>
-        <Button size="sm" variant="outline" onClick={() => void load()}>
+        <Button variant="outline" onClick={() => void load()}>
           Try again
         </Button>
       </div>
@@ -878,9 +878,8 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
       <div className="flex flex-col gap-4">
         {plan && forceForm && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="self-start text-xs text-muted-foreground"
+            variant="quiet"
+            className="self-start"
             onClick={() => setForceForm(false)}
           >
             ← Back to current plan
@@ -908,17 +907,14 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
                 {plan.plan.title}
               </h2>
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground"
+                icon={<Pencil />} aria-label="Edit plan title"
+                variant="quiet"
                 title="Edit plan title"
                 onClick={() => {
                   setTitleDraft(plan.plan.title);
                   setTitleEditorOpen(true);
                 }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
+              />
               {plan.plan.generated_by === "ai" ? (
                 <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
                   <AGENT_ICON className="h-3 w-3" />
@@ -946,38 +942,31 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
                 job, so it hides while that banner is up. */}
             {!(!absence && stale) && (
               <Button
-                size="sm"
+                icon={generating ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
                 variant="outline"
-                className="gap-1.5"
                 disabled={generating}
                 onClick={handleReplan}
               >
-                {generating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-3.5 w-3.5" />
-                )}
                 Re-plan
               </Button>
             )}
             <Button
-              size="sm"
-              variant="ghost"
-              className="gap-1.5 text-muted-foreground"
+              variant="quiet"
               onClick={() => setForceForm(true)}
             >
               <AGENT_ICON className="h-3.5 w-3.5" />
               New
             </Button>
             <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 text-muted-foreground"
+              icon={<Archive />} aria-label="Archive plan"
+              variant="quiet"
               title="Archive plan"
               onClick={() => setConfirmNew(true)}
-            >
-              <Archive className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         </div>
         {plan.plan.rationale && (
@@ -1004,22 +993,19 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button
-                  size="sm"
-                  className="gap-1.5"
+                  icon={generating ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <HeartHandshake />
+                  )}
+                  variant="primary"
                   disabled={generating}
                   onClick={handleRecovery}
                 >
-                  {generating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <HeartHandshake className="h-3.5 w-3.5" />
-                  )}
                   Build my recovery plan
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs text-muted-foreground"
+                  variant="quiet"
                   disabled={generating}
                   onClick={() => setAbsence(null)}
                 >
@@ -1046,22 +1032,19 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               </p>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button
-                  size="sm"
-                  className="gap-1.5"
+                  icon={generating ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
+                  variant="primary"
                   disabled={generating}
                   onClick={handleReplan}
                 >
-                  {generating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
                   Re-plan now
                 </Button>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="text-xs text-muted-foreground"
+                  variant="quiet"
                   disabled={generating}
                   onClick={() => setStale(null)}
                 >
@@ -1109,6 +1092,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               Cancel
             </Button>
             <Button
+              variant="primary"
               disabled={savingEdit}
               onClick={() => void handleSaveTitle()}
             >
@@ -1193,6 +1177,7 @@ export function StudyPlanView({ seedTitle }: { seedTitle?: string }) {
               Cancel
             </Button>
             <Button
+              variant="primary"
               disabled={savingEdit}
               onClick={() => void handleSaveBlock()}
             >

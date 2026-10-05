@@ -68,7 +68,7 @@ export function CategoryColorPicker({
             type="button"
             variant="outline"
             disabled={disabled}
-            className="w-10 h-10 p-0 border-2 hover:scale-105 transition-transform"
+            className="w-10"
             style={{ backgroundColor: fallbackColor }}
             aria-label="Pick color"
           >

@@ -323,10 +323,10 @@ export default function TableDataSource({
               </div>
 
               <Button
+                variant="primary"
                 onClick={handleLoadData}
                 disabled={!zipCodeColumn || !countColumn || loadingData}
                 className="w-full"
-                size="sm"
               >
                 {loadingData ? (
                   <>

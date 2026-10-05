@@ -141,22 +141,18 @@ export function ExpertStatusCard({ party, onChanged }: Props) {
           {EXPERT_STATUSES.map((tier) => (
             <Button
               key={tier}
-              variant={tier === status ? "default" : "outline"}
-              size="sm"
+              variant={tier === status ? "primary" : "outline"}
               disabled={saving || tier === status}
               onClick={() => void apply(tier)}
-              className="h-11 px-2 text-xs sm:h-7"
             >
               {EXPERT_STATUS_LABEL[tier]}
             </Button>
           ))}
           {status && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               disabled={saving}
               onClick={() => void apply(null)}
-              className="h-11 px-2 text-xs text-muted-foreground sm:h-7"
             >
               Clear
             </Button>

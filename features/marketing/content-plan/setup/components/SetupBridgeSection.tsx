@@ -826,16 +826,15 @@ export function SetupBridgeSection({
                 </SelectContent>
               </Select>
               <Button
-                size="sm"
-                className="h-7 gap-1.5 px-2.5 text-xs"
+                icon={busy === "link" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Link2 />
+                )}
+                variant="primary"
                 disabled={busy !== null}
                 onClick={() => void handleLink()}
               >
-                {busy === "link" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Link2 className="h-3.5 w-3.5" />
-                )}
                 {linkChoice === "__create__" ? "Create & link" : "Link"}
               </Button>
             </RunRow>
@@ -865,17 +864,15 @@ export function SetupBridgeSection({
         >
           <RunRow stage={stageFor(["kit"])} elapsed={elapsed}>
             <Button
-              size="sm"
+              icon={busy === "kit" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Hammer />
+              )}
               variant="outline"
-              className="h-7 gap-1.5 px-2.5 text-xs"
               disabled={!linked || busy !== null}
               onClick={() => void runKit(false)}
             >
-              {busy === "kit" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Hammer className="h-3.5 w-3.5" />
-              )}
               {activeHeaderFooter ? "Re-run starter kit" : "Run starter kit"}
             </Button>
             {activeHeaderFooter ? (
@@ -895,17 +892,15 @@ export function SetupBridgeSection({
               and can honestly come back empty. The kit is what PLACES it. */}
           <RunRow stage={stageFor(["logo"])} elapsed={elapsed}>
             <Button
-              size="sm"
+              icon={busy === "logo" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ImageIcon />
+              )}
               variant="outline"
-              className="h-7 gap-1.5 px-2.5 text-xs"
               disabled={!linked || busy !== null}
               onClick={() => void handleFindLogo()}
             >
-              {busy === "logo" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ImageIcon className="h-3.5 w-3.5" />
-              )}
               Find the company logo
             </Button>
             <span className="text-[11px] text-muted-foreground">
@@ -941,9 +936,7 @@ export function SetupBridgeSection({
             </p>
             <div className="flex items-center gap-1.5">
               <Button
-                size="sm"
                 variant="outline"
-                className="h-6 gap-1 px-2 text-[11px]"
                 onClick={() =>
                   void announceComingSoon("content-plan.design-vision-agent")
                 }
@@ -986,17 +979,15 @@ export function SetupBridgeSection({
             elapsed={elapsed}
           >
             <Button
-              size="sm"
+              icon={busy === "check" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
-              className="h-7 gap-1.5 px-2.5 text-xs"
               disabled={!linked || busy !== null}
               onClick={() => void handleCheck()}
             >
-              {busy === "check" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               {report ? "Compare again" : "Compare plan to CMS"}
             </Button>
             <span className="text-[11px] text-muted-foreground">
@@ -1006,28 +997,25 @@ export function SetupBridgeSection({
             {ghostCount !== null && ghostCount > 0 ? (
               <>
                 <Button
-                  size="sm"
+                  icon={busy === "preview" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : null}
                   variant="outline"
-                  className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={busy !== null}
                   onClick={() => void handleRealize(true)}
                 >
-                  {busy === "preview" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : null}
                   Preview {ghostCount}
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-7 gap-1.5 px-2.5 text-xs"
+                  icon={busy === "apply" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <ArrowRight />
+                  )}
+                  variant="primary"
                   disabled={busy !== null || alignResult === null || !alignResult.dryRun}
                   onClick={() => void handleRealize(false)}
                 >
-                  {busy === "apply" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  )}
                   Create {ghostCount} draft{ghostCount === 1 ? "" : "s"}
                 </Button>
                 {alignResult === null || !alignResult.dryRun ? (
@@ -1091,34 +1079,30 @@ export function SetupBridgeSection({
                   />
                 </span>
                 <Button
-                  size="sm"
+                  icon={busy === "fillCancel" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Square />
+                  )}
                   variant="outline"
-                  className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={busy !== null}
                   onClick={() => void handleFillCancel()}
                 >
-                  {busy === "fillCancel" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Square className="h-3.5 w-3.5" />
-                  )}
                   Stop
                 </Button>
               </>
             ) : (
               <>
                 <Button
-                  size="sm"
+                  icon={busy === "fillPreview" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
                   variant="outline"
-                  className="h-7 gap-1.5 px-2.5 text-xs"
                   disabled={!linked || busy !== null}
                   onClick={() => void handleFillPreview()}
                 >
-                  {busy === "fillPreview" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3.5 w-3.5" />
-                  )}
                   Preview one page
                 </Button>
                 <select
@@ -1143,19 +1127,18 @@ export function SetupBridgeSection({
                   ))}
                 </select>
                 <Button
-                  size="sm"
-                  className="h-7 gap-1.5 px-2.5 text-xs"
+                  icon={busy === "fillStart" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <PenLine />
+                  )}
+                  variant="primary"
                   disabled={!linked || busy !== null || !hasPreviewed}
                   title={
                     "The live service does not currently provide a cost estimate."
                   }
                   onClick={() => void handleFillStart()}
                 >
-                  {busy === "fillStart" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <PenLine className="h-3.5 w-3.5" />
-                  )}
                   Build {report?.matched ?? "all"} pages
                 </Button>
                 <span className="text-[11px] text-muted-foreground">
@@ -1209,22 +1192,24 @@ export function SetupBridgeSection({
             elapsed={elapsed}
           >
             <Button
-              size="sm"
+              icon={busy === "publishPreview" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               variant="outline"
-              className="h-7 gap-1.5 px-2.5 text-xs"
               disabled={!linked || busy !== null}
               onClick={() => void handlePublish(true)}
             >
-              {busy === "publishPreview" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
               See what would go live
             </Button>
             <Button
-              size="sm"
-              className="h-7 gap-1.5 px-2.5 text-xs"
+              icon={busy === "publishApply" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Globe />
+              )}
+              variant="primary"
               disabled={
                 !linked ||
                 busy !== null ||
@@ -1236,28 +1221,21 @@ export function SetupBridgeSection({
               }
               onClick={() => void handlePublish(false)}
             >
-              {busy === "publishApply" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Globe className="h-3.5 w-3.5" />
-              )}
               {publishPending !== null && publishPending > 0
                 ? `Publish ${publishPending} page${publishPending === 1 ? "" : "s"}`
                 : "Publish"}
             </Button>
             <Button
-              size="sm"
+              icon={shellBusy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ScanSearch />
+              )}
               variant="outline"
-              className="h-7 gap-1.5 px-2.5 text-xs"
               disabled={!linked || shellBusy}
               title="Fetch the rendered pages and check the site shell — header, menu, footer, brand, styling — plus title/meta/h1 basics. Runs automatically on every publish; this runs it now."
               onClick={() => void handleShellCheck()}
             >
-              {shellBusy ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ScanSearch className="h-3.5 w-3.5" />
-              )}
               Inspect rendered pages
             </Button>
             {publishPending === null ? (

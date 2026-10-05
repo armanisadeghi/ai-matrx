@@ -20,7 +20,7 @@
 import type { ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { HrFixtureCase } from "@/features/hr/mock/transport";
 import { geoCaptureBeforeNotice } from "@/features/hr/time/clock/geoCapture";
 import { formatStampedTime } from "@/features/hr/time/clock/stampedTime";

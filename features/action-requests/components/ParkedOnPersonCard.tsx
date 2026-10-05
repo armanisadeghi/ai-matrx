@@ -106,7 +106,7 @@ export function ParkedOnPersonCard({
           lost — try again.
           <ErrorAlchemyMenu />
         </p>
-        <Button size="sm" variant="outline" onClick={lookup.retry}>
+        <Button variant="outline" onClick={lookup.retry}>
           Try again
         </Button>
       </div>

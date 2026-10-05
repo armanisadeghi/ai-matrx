@@ -255,9 +255,8 @@ export function DigStampPanel({
             </span>
             <AsOfLabel value={row.as_of ?? row.last_evaluated_at} />
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0 text-muted-foreground hover:text-foreground"
+              variant="quiet"
+              className="w-5"
               aria-label={`Re-evaluate ${row.value_label}`}
               title="Re-evaluate now"
               disabled={mutations.evaluate.isPending}
@@ -272,9 +271,8 @@ export function DigStampPanel({
               />
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0 text-muted-foreground hover:text-destructive"
+              variant="quiet"
+              className="w-5"
               aria-label={`Stop filling ${row.value_label}`}
               onClick={() => void detach(row.matcher_id, row.value_label)}
             >
@@ -284,12 +282,10 @@ export function DigStampPanel({
         ))}
         {!adding && canStamp ? (
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
-            className="h-6 gap-1 px-2 text-[11px]"
             onClick={() => setAdding(true)}
           >
-            <Plus className="h-3 w-3" />
             Save matches as a stamp
           </Button>
         ) : null}
@@ -416,22 +412,19 @@ export function DigStampPanel({
             </span>
             <span className="flex items-center gap-1.5">
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs"
+                icon={<X />}
+                variant="quiet"
                 onClick={reset}
                 disabled={saving}
               >
-                <X className="h-3 w-3" />
                 Cancel
               </Button>
               <Button
-                size="sm"
-                className="h-7 gap-1 text-xs"
+                icon={<Check />}
+                variant="primary"
                 onClick={() => void save()}
                 disabled={saving || !dimensionId}
               >
-                <Check className="h-3 w-3" />
                 {saving ? "Saving…" : "Save and evaluate"}
               </Button>
             </span>

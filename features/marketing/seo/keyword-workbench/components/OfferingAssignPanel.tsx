@@ -138,9 +138,7 @@ export function OfferingAssignPanel({
       <div className="flex flex-wrap items-center justify-end gap-2">
         {onCancel ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs"
+            variant="quiet"
             onClick={onCancel}
             disabled={write.isPending}
           >
@@ -148,23 +146,20 @@ export function OfferingAssignPanel({
           </Button>
         ) : null}
         <Button
+          icon={<Eraser />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1 text-xs"
           disabled={write.isPending}
           onClick={() => write.mutate({ clear: true })}
           title="Take these keywords off every offering"
         >
-          <Eraser className="h-3.5 w-3.5" />
           Take off every offering
         </Button>
         <Button
-          size="sm"
-          className="h-7 gap-1 text-xs"
+          icon={write.isPending ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           disabled={!offeringId || write.isPending}
           onClick={() => write.mutate({ clear: false })}
         >
-          {write.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           Place {count.toLocaleString()}
         </Button>
       </div>

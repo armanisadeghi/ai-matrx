@@ -61,18 +61,17 @@ export function LookupError({
           ) : null}
           {onRetry && (
             <Button
+              icon={retrying ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <RefreshCw />
+              )}
               type="button"
-              size="sm"
               variant="outline"
               onClick={onRetry}
               disabled={retrying}
-              className="mt-2.5 h-7 px-2.5 text-xs gap-1.5"
+              className="mt-2.5"
             >
-              {retrying ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3 w-3" />
-              )}
               {retrying ? "Retrying…" : "Retry"}
             </Button>
           )}

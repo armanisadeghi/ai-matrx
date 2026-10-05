@@ -447,16 +447,14 @@ export function ExposureAuditClient() {
           </h1>
         </div>
         <Button
+          icon={<RefreshCw
+            className={cn("mr-1.5 h-3.5 w-3.5", isFetching && "animate-spin")}
+          />}
           type="button"
           variant="outline"
-          size="sm"
-          className="min-h-11 sm:min-h-8"
           disabled={isFetching}
           onClick={() => setRefreshNonce((value) => value + 1)}
         >
-          <RefreshCw
-            className={cn("mr-1.5 h-3.5 w-3.5", isFetching && "animate-spin")}
-          />
           Refresh
         </Button>
       </div>
@@ -583,7 +581,7 @@ export function ExposureAuditClient() {
 
       {policy.notice ? <div role="status" className="flex items-center gap-2 text-xs text-muted-foreground">
         <span>{policy.notice}</span>
-        {policy.organizationId ? <Button size="sm" variant="ghost" onClick={policy.refresh}>Retry preferences</Button> : null}
+        {policy.organizationId ? <Button variant="quiet" onClick={policy.refresh}>Retry preferences</Button> : null}
       </div> : null}
       <div className="h-96 min-h-96 shrink-0 overflow-hidden sm:h-auto sm:min-h-0 sm:flex-1">
         <NonEditableContextMenu

@@ -302,8 +302,7 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
       return (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
           <p className="max-w-md text-sm text-muted-foreground">{run.error} <ErrorAlchemyMenu error={run.error} /></p>
-          <Button variant="outline" onClick={() => void run.start()}>
-            <RotateCcw className="h-4 w-4" />
+          <Button icon={<RotateCcw />} variant="outline" onClick={() => void run.start()}>
             Try again
           </Button>
         </div>
@@ -354,13 +353,11 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
             ) : null}
             {undoAvailable ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-6"
+                icon={<Undo2 />}
+                variant="quiet"
                 disabled={applying}
                 onClick={() => void undoApply()}
               >
-                <Undo2 className="h-3 w-3" />
                 Undo
               </Button>
             ) : null}
@@ -443,9 +440,7 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
       <div className="ml-auto flex items-center gap-2">
         {aiEligibleCount > 0 ? (
           <Button
-            size="sm"
             variant="outline"
-            className="h-7"
             onClick={approveWithAi}
           >
             <AGENT_ICON className="h-3.5 w-3.5" />
@@ -453,16 +448,15 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
           </Button>
         ) : null}
         <Button
-          size="sm"
-          className="h-7"
+          icon={applying ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <CheckCircle2 />
+          )}
+          variant="primary"
           disabled={decidedCount === 0 || applying}
           onClick={() => void apply()}
         >
-          {applying ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <CheckCircle2 className="h-3.5 w-3.5" />
-          )}
           Apply {approvedCount > 0 ? `${approvedCount} ` : ""}
           {approvedCount === 1 ? "change" : "changes"}
         </Button>
@@ -500,9 +494,12 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
                 cleaned per contribution and SAVED, so the NEXT checkup reads
                 prose instead of a transcript. */}
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 text-[11px]"
+              icon={cleanCorpus.running ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Eraser />
+              )}
+              variant="quiet"
               disabled={cleanCorpus.running || run.running}
               title={
                 run.running
@@ -511,21 +508,14 @@ export function CheckupWindow({ isOpen, onClose, rulebookId }: CheckupWindowProp
               }
               onClick={() => void runCleanCorpus()}
             >
-              {cleanCorpus.running ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Eraser className="h-3 w-3" />
-              )}
               {cleanCorpus.running ? "Tidying…" : "Clean up my words"}
             </Button>
             {!run.running && (totalFindings > 0 || run.status === "done") ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 text-[11px]"
+                icon={<RotateCcw />}
+                variant="quiet"
                 onClick={() => void run.start()}
               >
-                <RotateCcw className="h-3 w-3" />
                 Run again
               </Button>
             ) : null}

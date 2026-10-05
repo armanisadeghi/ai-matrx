@@ -490,8 +490,7 @@ export function TeachBack({
           start one. */}
       {!started && !run.restoring ? (
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <Button onClick={() => void send({ agreed: false })} disabled={running}>
-            {running ? <Loader2 className="animate-spin" /> : null}
+          <Button icon={running ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => void send({ agreed: false })} disabled={running}>
             Tell me what you think I do
           </Button>
           {/* THE COST, NAMED BEFORE THE CLICK. A round is one or two paid calls
@@ -548,13 +547,12 @@ export function TeachBack({
           <span>{run.stage || run.waitMessage || "Working…"}</span>
           {run.cancel ? (
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<Square />}
+              variant="quiet"
               className="ml-auto"
               disabled={run.cancelling}
               onClick={() => void run.cancel?.("The expert stopped the teach-back.")}
             >
-              <Square className="size-3.5" />
               Stop
             </Button>
           ) : null}
@@ -570,7 +568,6 @@ export function TeachBack({
           {run.retry ? (
             <Button
               variant="outline"
-              size="sm"
               className="mt-2"
               onClick={() => void run.retry?.()}
             >
@@ -634,22 +631,19 @@ export function TeachBack({
             {(current.explanation ?? "").trim() ? (
               <div className="mt-3 flex items-center gap-2">
                 {playing ? (
-                  <Button variant="outline" size="sm" onClick={() => pause()}>
-                    <Pause className="size-3.5" />
+                  <Button icon={<Pause />} variant="outline" onClick={() => pause()}>
                     Pause
                   </Button>
                 ) : paused ? (
-                  <Button variant="outline" size="sm" onClick={() => resume()}>
-                    <Play className="size-3.5" />
+                  <Button icon={<Play />} variant="outline" onClick={() => resume()}>
                     Carry on
                   </Button>
                 ) : (
                   <Button
+                    icon={<Volume2 />}
                     variant="outline"
-                    size="sm"
                     onClick={() => speakExplanation(current.explanation ?? "")}
                   >
-                    <Volume2 className="size-3.5" />
                     {speechStatus === "loading" ? "Starting…" : "Read it to me"}
                   </Button>
                 )}
@@ -700,22 +694,23 @@ export function TeachBack({
             />
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <Button
+                icon={running ? <Loader2 className="animate-spin" /> : null}
+                variant="primary"
                 onClick={() => void send({ agreed: false, withCorrection: true })}
                 disabled={running || signing || !correction.trim()}
               >
-                {running ? <Loader2 className="size-3.5 animate-spin" /> : null}
                 Send this and try again
               </Button>
               <Button
+                icon={signing ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ThumbsUp />
+                )}
                 variant="outline"
                 onClick={() => void signAndFinish()}
                 disabled={running || signing}
               >
-                {signing ? (
-                  <Loader2 className="size-3.5 animate-spin" />
-                ) : (
-                  <ThumbsUp className="size-3.5" />
-                )}
                 Yes, that&apos;s it
               </Button>
             </div>
@@ -794,7 +789,7 @@ export function TeachBack({
             </p>
           ) : null}
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <Button asChild>
+            <Button variant="primary" asChild>
               <Link href={`/masterwork/${rulebook.id}`}>
                 Go and approve what came out of it
               </Link>

@@ -127,7 +127,7 @@ export function SnapshotDetail({
               showStatus={false}
             />
             <CopyButtons size="icon" {...snapshotCopy} />
-            <Button asChild variant="outline" size="sm" className="h-8">
+            <Button asChild variant="outline">
               <Link
                 href={marketingRoutes.site(
                   brandId,
@@ -140,15 +140,13 @@ export function SnapshotDetail({
               </Link>
             </Button>
             {row.final_url ? (
-              <Button asChild variant="outline" size="icon" className="h-8 w-8">
+              <Button icon={<ExternalLink />} aria-label="Open observed URL" asChild variant="outline">
                 <a
                   href={row.final_url}
                   target="_blank"
                   rel="noreferrer"
                   title="Open observed URL"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </a>
+                />
               </Button>
             ) : null}
           </div>

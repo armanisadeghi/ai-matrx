@@ -45,8 +45,7 @@ export function DurableRunAgain({
   disabled?: boolean;
 }) {
   return (
-    <Button size="sm" variant="outline" onClick={onAgain} disabled={disabled}>
-      <RotateCcw className="size-3.5" />
+    <Button icon={<RotateCcw />} variant="outline" onClick={onAgain} disabled={disabled}>
       {label}
     </Button>
   );

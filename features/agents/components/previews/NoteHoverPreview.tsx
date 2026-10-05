@@ -98,29 +98,25 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
 
       <div className="flex items-center gap-1.5">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs gap-1"
+          icon={copied ? <Check className="text-success" /> : <Copy />}
+          variant="quiet"
           onClick={handleCopy}
           disabled={!content}
         >
-          {copied ? <Check className="text-success" /> : <Copy />}
           {copied ? "Copied" : "Copy text"}
         </Button>
         <div className="ml-auto">
           {onOpen ? (
             <Button
-              size="sm"
-              className="h-7 px-2.5 text-xs gap-1"
+              icon={<ArrowUpRight />}
+              variant="primary"
               onClick={onOpen}
             >
-              <ArrowUpRight />
               Open
             </Button>
           ) : (
             <Link href={openHref} target="_blank" rel="noopener noreferrer">
-              <Button size="sm" className="h-7 px-2.5 text-xs gap-1">
-                <ExternalLink />
+              <Button icon={<ExternalLink />} type="submit" variant="primary">
                 Open
               </Button>
             </Link>

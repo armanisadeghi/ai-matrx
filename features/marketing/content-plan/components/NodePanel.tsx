@@ -812,9 +812,12 @@ export function NodePanel({
             ]}
           />
           <Button
+            icon={briefWriter.busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <PenLine />
+            )}
             variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
             disabled={briefWriter.busy || deepening || keywordGap}
             title={
               keywordGap
@@ -825,17 +828,15 @@ export function NodePanel({
             }
             onClick={() => void briefWriter.start()}
           >
-            {briefWriter.busy ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <PenLine className="h-3.5 w-3.5" />
-            )}
             Draft brief
           </Button>
           <Button
+            icon={deepeningThisNode ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <BookOpenCheck />
+            )}
             variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 px-2 text-xs"
             disabled={deepening}
             title={
               deepeningThisNode
@@ -846,25 +847,18 @@ export function NodePanel({
             }
             onClick={() => void deepen.start(node.id)}
           >
-            {deepeningThisNode ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <BookOpenCheck className="h-3.5 w-3.5" />
-            )}
             {deepeningThisNode ? "Deepening…" : "Deepen"}
           </Button>
           <Button
-            size="sm"
-            className="h-7"
+            variant="primary"
             disabled={!dirty || update.isPending}
             onClick={save}
           >
             {update.isPending ? "Saving…" : "Save"}
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+            variant="quiet"
+            className="w-7"
             aria-label="Delete node"
             onClick={() => setConfirmDelete(true)}
           >
@@ -872,9 +866,8 @@ export function NodePanel({
           </Button>
           {onClose ? (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 text-muted-foreground"
+              variant="quiet"
+              className="w-7"
               aria-label="Close page detail"
               onClick={onClose}
             >
@@ -921,8 +914,7 @@ export function NodePanel({
                 leading={
                   <Button
                     type="button"
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={() => setActiveTab("page")}
                     className={stepSegmentClass(activeTab === "page")}
                   >
@@ -1029,9 +1021,7 @@ export function NodePanel({
                   arrow fires — one seam. */}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 gap-1.5 px-2 text-xs"
                     disabled={
                       stepRun.isRunning ||
                       (node.brief?.length ?? 0) === 0 ||
@@ -1456,9 +1446,7 @@ export function NodePanel({
                   seam, never a second producer. */}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 gap-1.5 px-2 text-xs"
                     disabled={deepening}
                     title={
                       deepeningThisNode
@@ -1505,15 +1493,14 @@ export function NodePanel({
                           No SEO plan yet.
                         </p>
                         <Button
-                          size="sm"
+                          icon={nodeSeoPlan.creating ? (
+                            <Loader2 className="animate-spin" />
+                          ) : null}
                           variant="outline"
-                          className="mt-2 h-7 text-xs"
+                          className="mt-2"
                           disabled={nodeSeoPlan.creating}
                           onClick={() => void nodeSeoPlan.create()}
                         >
-                          {nodeSeoPlan.creating ? (
-                            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                          ) : null}
                           Create the plan record
                         </Button>
                       </>
@@ -1581,8 +1568,7 @@ export function NodePanel({
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
-                      className="h-7 shrink-0 px-2 text-xs"
+                      className="shrink-0"
                       onClick={() =>
                         openPageResearch({
                           nodeId: node.id,

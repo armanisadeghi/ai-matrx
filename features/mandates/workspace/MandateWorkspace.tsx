@@ -520,11 +520,11 @@ function OneMandateWorkspace({
           <ErrorAlchemyMenu error={verdict.message} />
         </p>
         {verdict.retryable ? (
-          <Button variant="outline" size="sm" onClick={refresh}>
+          <Button variant="outline" onClick={refresh}>
             Retry
           </Button>
         ) : (
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" asChild>
             <Link
               href={host === "admin-route" ? ADMIN_MANDATES_HOME : "/mandates"}
             >
@@ -1230,10 +1230,9 @@ export function FulfillmentSection({ resolution }: { resolution: FulfillmentView
         {agent ? (
           <div className="flex items-center gap-2 py-2">
             <Button
+              icon={<Copy />}
               variant="outline"
-              size="sm"
               disabled={copying}
-              className="gap-1.5"
               onClick={() =>
                 void copyAndOpen({
                   defaultAgentId: agentId,
@@ -1241,7 +1240,6 @@ export function FulfillmentSection({ resolution }: { resolution: FulfillmentView
                 })
               }
             >
-              <Copy className="h-3.5 w-3.5" />
               {copying ? "Duplicating…" : "Duplicate & customize"}
             </Button>
             <FieldHelp label="Duplicate & customize">
@@ -1252,13 +1250,11 @@ export function FulfillmentSection({ resolution }: { resolution: FulfillmentView
         ) : workflowId ? (
           <div className="flex items-center gap-2 py-2">
             <Button
+              icon={<Copy />}
               variant="outline"
-              size="sm"
               disabled={copyingWorkflow}
-              className="gap-1.5"
               onClick={() => void copyWorkflowAndOpen(workflowId)}
             >
-              <Copy className="h-3.5 w-3.5" />
               {copyingWorkflow ? "Duplicating…" : "Duplicate & customize"}
             </Button>
             <FieldHelp label="Duplicate & customize">
@@ -1459,8 +1455,8 @@ function LadderRow({
             row.holder_type !== "workflow" &&
             (row.holder_id || row.holder_version_id) ? (
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<Copy />}
+                variant="quiet"
                 aria-label={`Duplicate ${words.title} Mandate Holder`}
                 disabled={copying}
                 onClick={() =>
@@ -1469,19 +1465,15 @@ function LadderRow({
                     defaultAgentVersionId: row.holder_version_id,
                   })
                 }
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
+              />
             ) : allowCopy && !broken && isWorkflowRow && row.holder_id ? (
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<Copy />}
+                variant="quiet"
                 aria-label={`Duplicate ${words.title} workflow`}
                 disabled={copyingWorkflow}
                 onClick={() => void copyWorkflowAndOpen(row.holder_id as string)}
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
+              />
             ) : null}
           </span>
         ),

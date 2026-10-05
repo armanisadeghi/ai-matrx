@@ -414,8 +414,7 @@ export function ScraperFloatingWorkspace({
       {showWebMain && selectedHit?.url && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={() => void handleScrapeFromWebHit()}
           disabled={isAnyLoading}
           title="Scrape selected result"
@@ -431,8 +430,7 @@ export function ScraperFloatingWorkspace({
       {showWebMain && selectedHit?.url && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={() =>
             window.open(selectedHit.url, "_blank", "noopener,noreferrer")
           }
@@ -445,8 +443,7 @@ export function ScraperFloatingWorkspace({
       {showScrapeMain && selectedScraped && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={() =>
             window.open(selectedScraped.url, "_blank", "noopener,noreferrer")
           }
@@ -467,8 +464,7 @@ export function ScraperFloatingWorkspace({
       {showScrapeMain && selectedScraped && hasImages && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={openImages}
           title="View images"
           className={iconBtn}
@@ -479,8 +475,7 @@ export function ScraperFloatingWorkspace({
       {showScrapeMain && selectedScraped && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={handleCopy}
           title={copied ? "Copied" : "Copy text"}
           className={iconBtn}
@@ -515,8 +510,7 @@ export function ScraperFloatingWorkspace({
       {(scrapedResults.length > 0 || keywordForm.flatResults.length > 0) && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={handleReset}
           title="Reset"
           className={iconBtn}
@@ -642,16 +636,16 @@ export function ScraperFloatingWorkspace({
                 className="h-7 text-xs bg-muted/50 border-border"
               />
               <Button
-                size="sm"
+                icon={quickApi.isLoading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Zap className="text-amber-400" />
+                )}
+                variant="primary"
                 onClick={() => void handleQuickScrape()}
                 disabled={!url.trim() || isAnyLoading}
-                className="w-full h-7 text-xs gap-1.5"
+                className="w-full"
               >
-                {quickApi.isLoading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Zap className="w-3 h-3 text-amber-400" />
-                )}
                 {quickApi.isLoading ? "Scraping…" : "Scrape"}
               </Button>
             </div>
@@ -700,16 +694,16 @@ export function ScraperFloatingWorkspace({
                 placeholder="Pages"
               />
               <Button
-                size="sm"
+                icon={batchApi.isLoading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Search />
+                )}
+                variant="primary"
                 onClick={() => void handleSearchAndScrape()}
                 disabled={!keyword.trim() || isAnyLoading}
-                className="w-full h-7 text-xs gap-1.5"
+                className="w-full"
               >
-                {batchApi.isLoading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Search className="w-3 h-3" />
-                )}
                 {batchApi.isLoading ? "Working…" : "Search + scrape"}
               </Button>
             </div>
@@ -783,16 +777,16 @@ export function ScraperFloatingWorkspace({
                     className="h-7 text-xs bg-muted/50 border-border"
                   />
                   <Button
-                    size="sm"
+                    icon={quickApi.isLoading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Zap className="text-amber-400" />
+                    )}
+                    variant="primary"
                     onClick={() => void handleQuickScrape()}
                     disabled={!url.trim() || isAnyLoading}
-                    className="h-7 shrink-0 gap-1.5 text-xs"
+                    className="shrink-0"
                   >
-                    {quickApi.isLoading ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Zap className="w-3 h-3 text-amber-400" />
-                    )}
                     {quickApi.isLoading ? "Scraping…" : "Scrape"}
                   </Button>
                 </>
@@ -810,16 +804,16 @@ export function ScraperFloatingWorkspace({
                     className="h-7 text-xs bg-muted/50 border-border"
                   />
                   <Button
-                    size="sm"
+                    icon={batchApi.isLoading ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Search />
+                    )}
+                    variant="primary"
                     onClick={() => void handleSearchAndScrape()}
                     disabled={!keyword.trim() || isAnyLoading}
-                    className="h-7 shrink-0 gap-1.5 text-xs"
+                    className="shrink-0"
                   >
-                    {batchApi.isLoading ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Search className="w-3 h-3" />
-                    )}
                     {batchApi.isLoading ? "Working…" : "Search + scrape"}
                   </Button>
                 </>
@@ -966,9 +960,8 @@ function ScrapedSidebarList({
               {!hasContent && (
                 <div className="px-2 pb-1.5">
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="w-full h-5 text-[9px]"
+                    className="w-full"
                     disabled={sState?.loading}
                     onClick={(e) => {
                       e.stopPropagation();

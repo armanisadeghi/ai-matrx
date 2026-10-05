@@ -70,9 +70,8 @@ function ConvIdCopyButton({ text }: { text: string }) {
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          size="sm"
           variant="outline"
-          className="h-7 w-7 p-0 flex-shrink-0"
+          className="w-7 flex-shrink-0"
           disabled={!text}
           onClick={async () => {
             await navigator.clipboard.writeText(text).catch(() => null);
@@ -98,9 +97,12 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className="h-7 text-xs px-2 gap-1"
+      icon={copied ? (
+        <Check className="text-green-500" />
+      ) : (
+        <Copy />
+      )}
+      variant="quiet"
       disabled={!text}
       onClick={async () => {
         await navigator.clipboard.writeText(text).catch(() => null);
@@ -108,11 +110,6 @@ function CopyButton({ text }: { text: string }) {
         setTimeout(() => setCopied(false), 1800);
       }}
     >
-      {copied ? (
-        <Check className="h-3 w-3 text-green-500" />
-      ) : (
-        <Copy className="h-3 w-3" />
-      )}
       {copied ? "Copied" : "Copy"}
     </Button>
   );
@@ -454,13 +451,11 @@ export default function ConversationDemoClient() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
+                    icon={<Zap />}
                     variant="outline"
                     onClick={handleWarm}
                     disabled={!conversationId.trim() || isRunning}
-                    className="h-7 text-xs px-2.5 gap-1.5"
-                  >
-                    <Zap className="h-3 w-3" /> Warm
+                  > Warm
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent className="text-xs">
@@ -493,10 +488,9 @@ export default function ConversationDemoClient() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
                           variant="outline"
                           onClick={() => setConversationId(generateUUID())}
-                          className="h-7 w-7 p-0 flex-shrink-0"
+                          className="w-7 flex-shrink-0"
                         >
                           <Shuffle className="h-3 w-3" />
                         </Button>
@@ -573,11 +567,12 @@ export default function ConversationDemoClient() {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
+                          icon={<Play />}
+                          variant="primary"
                           onClick={handleContinue}
                           disabled={!canContinue}
-                          className="flex-1 h-8 gap-2 text-sm"
-                        >
-                          <Play className="h-3.5 w-3.5" /> Continue
+                          className="flex-1"
+                        > Continue
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent className="text-xs">
@@ -586,21 +581,20 @@ export default function ConversationDemoClient() {
                     </Tooltip>
                   ) : (
                     <Button
+                      icon={<Square />}
                       onClick={handleCancel}
-                      variant="destructive"
-                      className="flex-1 h-8 gap-2 text-sm"
-                    >
-                      <Square className="h-3.5 w-3.5" /> Cancel
+                      variant="danger"
+                      className="flex-1"
+                    > Cancel
                     </Button>
                   )}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        size="sm"
                         variant="outline"
                         onClick={() => clearAll()}
                         disabled={isRunning}
-                        className="h-8 w-8 p-0"
+                        className="w-8"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                       </Button>
@@ -640,11 +634,10 @@ export default function ConversationDemoClient() {
                     </>
                   )}
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => clearAll()}
                     disabled={isRunning}
-                    className="h-6 w-6 p-0"
+                    className="w-6"
                   >
                     <X className="h-3 w-3" />
                   </Button>

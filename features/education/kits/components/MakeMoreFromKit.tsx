@@ -20,7 +20,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertCircle, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { usePdfClient } from "@/features/pdf/api/client";
 import { ConvertContentDialog } from "@/features/education/convert/ConvertContentDialog";
 import { reopenAnchor } from "@/features/education/convert/reopenAnchor";

@@ -299,9 +299,9 @@ export function DigTab({
       <div className="flex min-h-0 flex-1 flex-col gap-2 lg:flex-row">
       <div className="w-full shrink-0 space-y-2 overflow-y-auto lg:w-72">
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="h-11 w-full gap-1 text-xs lg:h-7"
+          className="w-full"
           onClick={() => {
             setDraft(NEW_DRAFT);
             setEditingRuleId(null);
@@ -309,7 +309,6 @@ export function DigTab({
             setPreviewContent(null);
           }}
         >
-          <Plus className="h-3 w-3" />
           New rule
         </Button>
         <DigRuleList

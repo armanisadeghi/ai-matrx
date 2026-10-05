@@ -96,14 +96,12 @@ export function KnobHistoryPopover(props: {
     <Popover onOpenChange={(open) => open && void load()}>
       <PopoverTrigger asChild>
         <Button
-          size="icon"
-          variant="ghost"
+          icon={<History />}
+          variant="quiet"
           aria-label={`History of ${label}`}
           title="History"
-          className="h-9 w-9 shrink-0"
-        >
-          <History className="h-4 w-4" />
-        </Button>
+          className="shrink-0"
+        />
       </PopoverTrigger>
       <PopoverContent sizing="content" align="end" className="p-0 text-xs">
         <div className="border-b border-border px-3 py-2 font-medium">History — {label}</div>
@@ -153,23 +151,21 @@ export function KnobHistoryPopover(props: {
                       </p>
                       {newestHere && (
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 shrink-0 gap-1 px-2 text-xs"
+                          icon={<Undo2 />}
+                          variant="quiet"
+                          className="shrink-0"
                           onClick={() => void revert(entry, true)}
                         >
-                          <Undo2 className="h-3 w-3" />
                           Undo
                         </Button>
                       )}
                       {revertable && !newestHere && (
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 shrink-0 gap-1 px-2 text-xs"
+                          icon={<RotateCcw />}
+                          variant="quiet"
+                          className="shrink-0"
                           onClick={() => void revert(entry)}
                         >
-                          <RotateCcw className="h-3 w-3" />
                           Revert to this
                         </Button>
                       )}

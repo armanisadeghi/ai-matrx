@@ -13,6 +13,7 @@
 import React, { useCallback } from "react";
 import { Volume2, VolumeX, Loader2, Pause } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useSpeech } from "@/features/audio/service/useSpeech";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -122,7 +123,7 @@ export function AudioPlayerButton({
 
   return (
     <div className="inline-flex items-center gap-1">
-      <Button
+      <SurfaceButton
         type="button"
         size={size}
         variant={variant}
@@ -145,15 +146,14 @@ export function AudioPlayerButton({
                   : "Play"}
           </span>
         )}
-      </Button>
+      </SurfaceButton>
 
       {(isPlaying || isPaused) && (
         <Button
           type="button"
-          size={size}
-          variant="ghost"
+          variant="quiet"
           onClick={handleStop}
-          className={cn("h-7 w-7 p-0", className)}
+          className={cn("w-7", className)}
           title="Stop"
         >
           <VolumeX className="h-3.5 w-3.5" />

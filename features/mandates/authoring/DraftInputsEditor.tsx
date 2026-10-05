@@ -69,24 +69,20 @@ export function DraftInputsEditor({
             aria-label={`Input ${index + 1} kind (optional)`}
           />
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0 text-muted-foreground"
+            icon={<X />}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => remove(index)}
             aria-label={`Remove input ${index + 1}`}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       ))}
       <div className="flex items-center gap-2">
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1 text-[12px]"
           onClick={add}
         >
-          <Plus className="h-3.5 w-3.5" />
           Add input
         </Button>
         {items.length > 0 ? (

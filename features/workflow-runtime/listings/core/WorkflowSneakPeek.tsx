@@ -248,7 +248,7 @@ export function WorkflowSneakPeekCopyMenu({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          size="sm"
+          icon={<Copy />}
           variant="outline"
           disabled={!ready}
           title={
@@ -257,7 +257,6 @@ export function WorkflowSneakPeekCopyMenu({
               : "Readable once the workflow has loaded"
           }
         >
-          <Copy />
           Copy
         </Button>
       </DropdownMenuTrigger>

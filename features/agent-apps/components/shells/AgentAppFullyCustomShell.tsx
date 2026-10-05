@@ -413,8 +413,7 @@ export function AgentAppFullyCustomShell({
 
 function StartOverButton({ onStartOver }: { onStartOver: () => void }) {
   return (
-    <Button variant="ghost" size="sm" onClick={onStartOver} className="gap-1.5">
-      <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
+    <Button icon={<RotateCcw aria-hidden="true" />} variant="quiet" onClick={onStartOver}>
       Start over
     </Button>
   );

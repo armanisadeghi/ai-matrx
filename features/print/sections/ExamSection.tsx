@@ -105,12 +105,11 @@ export function ExamSection() {
                                                 ) : null}
                                             </div>
                                             <Button
-                                                size="sm"
+                                                icon={<Icon />}
                                                 variant="outline"
                                                 disabled={busy !== null}
                                                 onClick={() => void handlePrint(id, variant.label)}
                                             >
-                                                <Icon className="mr-1 h-3.5 w-3.5" />
                                                 Print
                                             </Button>
                                         </div>

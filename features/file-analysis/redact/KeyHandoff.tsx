@@ -102,24 +102,21 @@ export function KeyHandoff({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={() => void copyKey()}>
-              {copied ? (
-                <Check className="h-3 w-3 mr-1" />
+            <Button icon={copied ? (
+                <Check />
               ) : (
-                <Copy className="h-3 w-3 mr-1" />
-              )}
+                <Copy />
+              )} variant="outline" onClick={() => void copyKey()}>
               {copied ? "Copied" : "Copy key"}
             </Button>
             <Button
-              size="sm"
+              icon={<Download />}
               variant="outline"
               onClick={() => record && void downloadSessionKey(record)}
-            >
-              <Download className="h-3 w-3 mr-1" /> Download .key.json
+            > Download .key.json
             </Button>
             {onDownloadMasked ? (
-              <Button size="sm" variant="outline" onClick={onDownloadMasked}>
-                <Shield className="h-3 w-3 mr-1" /> Download masked PDF
+              <Button icon={<Shield />} variant="outline" onClick={onDownloadMasked}> Download masked PDF
               </Button>
             ) : null}
           </div>
@@ -157,12 +154,12 @@ export function KeyHandoff({
 
         <DialogFooter>
           <Button
+            variant="primary"
             disabled={!acknowledged}
             onClick={() => {
               setAcknowledged(false);
               onClose();
             }}
-            size="sm"
           >
             I've saved it
           </Button>

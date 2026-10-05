@@ -181,7 +181,7 @@ export function DecisionPlayground() {
               Share this result
             </a>
           )}
-          <Button asChild size="sm" variant="outline" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href={`${ALL_DECISIONS_REVIEW_HREF}?source=model`}>
               <ListChecks className="size-4" />
               Review answers
@@ -240,7 +240,6 @@ export function DecisionPlayground() {
               </div>
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => setQuestions([...questions, newQuestion()])}
               >
@@ -269,8 +268,13 @@ export function DecisionPlayground() {
             </section>
           )}
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             type="button"
-            size="lg"
             onClick={run}
             disabled={
               busy ||
@@ -279,11 +283,6 @@ export function DecisionPlayground() {
             }
             className="w-full sm:w-auto"
           >
-            {busy ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Play className="size-4" />
-            )}
             {busy ? "Running decision…" : "Run decision"}
           </Button>
         </main>

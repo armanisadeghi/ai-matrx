@@ -40,10 +40,11 @@ export default function ContextCollectorDemo() {
         <CardContent className="space-y-4">
           <div className="flex gap-4 items-center">
             <Button
+              icon={isCollecting && <Loader2 className="animate-spin" />}
+              variant="primary"
               onClick={handleCollect}
               disabled={isCollecting}
             >
-              {isCollecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Collect Page Context
             </Button>
           </div>

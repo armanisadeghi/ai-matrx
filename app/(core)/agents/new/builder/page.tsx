@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, Wrench } from "lucide-react";
 import { AgentBuilderPicker } from "@/features/agents/agent-creators/interactive-builder/AgentBuilderPicker";

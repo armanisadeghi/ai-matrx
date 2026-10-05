@@ -104,9 +104,8 @@ export function KeywordPicker({
         {clearable && value ? (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-9 w-9 shrink-0 p-0"
+            variant="quiet"
+            className="w-9 shrink-0"
             aria-label="Clear keyword"
             onClick={() => {
               setDraftPhrase("");

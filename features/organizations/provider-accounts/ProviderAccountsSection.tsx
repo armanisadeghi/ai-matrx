@@ -188,8 +188,7 @@ export function ProviderAccountsSection({
     return (
       <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
         <p className="text-sm text-destructive">{error}</p>
-        <Button variant="outline" size="sm" onClick={refresh}>
-          <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
+        <Button icon={<RefreshCw />} variant="outline" onClick={refresh}> Retry
         </Button>
         <ErrorAlchemyMenu error={error} />
       </div>

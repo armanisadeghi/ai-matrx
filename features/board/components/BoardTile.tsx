@@ -556,7 +556,7 @@ export function BoardTile({
                         error={error}
                         operation={`Show ${title}`}
                         actions={
-                          <Button type="button" size="sm" variant="outline" onClick={reset}>
+                          <Button type="button" variant="outline" onClick={reset}>
                             Try again
                           </Button>
                         }

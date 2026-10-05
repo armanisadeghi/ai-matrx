@@ -1,7 +1,7 @@
 import React from 'react';
 import { Label } from '@ai-matrx/design-system';
 import { Input } from '@ai-matrx/design-system';
-import { Button } from '@ai-matrx/design-system';
+import { Button } from "@/components/ui/button";
 import { Minus, Plus } from 'lucide-react';
 
 interface NumberInputProps {
@@ -75,10 +75,9 @@ export function NumberInput({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           onClick={handleDecrement}
           disabled={!canDecrement}
-          className={compact ? "h-7 w-7 p-0" : "h-10 w-10 p-0"}
+          className={compact ? "w-7" : "w-10"}
         >
           <Minus className={compact ? "w-3 h-3" : "w-4 h-4"} />
         </Button>
@@ -94,10 +93,9 @@ export function NumberInput({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           onClick={handleIncrement}
           disabled={!canIncrement}
-          className={compact ? "h-7 w-7 p-0" : "h-10 w-10 p-0"}
+          className={compact ? "w-7" : "w-10"}
         >
           <Plus className={compact ? "w-3 h-3" : "w-4 h-4"} />
         </Button>

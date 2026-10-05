@@ -98,8 +98,7 @@ export function InitiativeDetail({ id }: { id: string }) {
               size="sm"
               showStatus={false}
             />
-            <Button size="sm" onClick={() => setEditing(true)} aria-label="Edit">
-              <Pencil className="h-4 w-4" />
+            <Button icon={<Pencil />} variant="primary" onClick={() => setEditing(true)} aria-label="Edit">
               Edit
             </Button>
           </>

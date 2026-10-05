@@ -52,35 +52,26 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
         <div className="flex items-center gap-1">
           <div className="flex items-center rounded-md border border-border p-0.5">
             <Button
+              icon={<TableProperties />}
               type="button"
-              size="icon"
-              variant={view === "table" ? "secondary" : "ghost"}
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              variant={view === "table" ? "outline" : "quiet"}
               aria-label="Show recent study items as a table"
               onClick={() => setView("table")}
-            >
-              <TableProperties className="h-4 w-4" />
-            </Button>
+            />
             <Button
+              icon={<LayoutGrid />}
               type="button"
-              size="icon"
-              variant={view === "cards" ? "secondary" : "ghost"}
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              variant={view === "cards" ? "outline" : "quiet"}
               aria-label="Show recent study items as cards"
               onClick={() => setView("cards")}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </Button>
+            />
             <Button
+              icon={<Rows3 />}
               type="button"
-              size="icon"
-              variant={view === "rows" ? "secondary" : "ghost"}
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              variant={view === "rows" ? "outline" : "quiet"}
               aria-label="Show recent study items as rows"
               onClick={() => setView("rows")}
-            >
-              <Rows3 className="h-4 w-4" />
-            </Button>
+            />
           </div>
           <Link
             href={EDU_START_HREF}
@@ -104,14 +95,11 @@ export function RecentBlock({ snapshot }: { snapshot: EducationSnapshot }) {
           columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <ItemMenu config={educationLibraryMenuFor(row)} align="end">
               <Button
+                icon={<MoreHorizontal />}
                 type="button"
-                size="icon"
-                variant="ghost"
-                className="h-10 w-10"
+                variant="quiet"
                 aria-label={`Actions for ${row.title}`}
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+              />
             </ItemMenu>
           ) }]}
           getRowId={(row) => row.id}

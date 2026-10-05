@@ -51,8 +51,7 @@ export function CoachReviewPanel({
               Your review hasn&apos;t been written yet.
             </p>
             {onGenerate && (
-              <Button size="sm" className="h-7 px-2.5 text-xs" onClick={onGenerate}>
-                <PenLine className="mr-1 h-3.5 w-3.5" />
+              <Button icon={<PenLine />} variant="primary" onClick={onGenerate}>
                 Write my review
               </Button>
             )}

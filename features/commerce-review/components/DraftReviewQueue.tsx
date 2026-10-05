@@ -135,7 +135,7 @@ export function DraftReviewQueue() {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">
         <p className="px-6 text-center text-sm text-destructive">{loadError} <ErrorAlchemyMenu error={loadError} /></p>
-        <Button variant="outline" size="sm" onClick={retryLoad}>
+        <Button variant="outline" onClick={retryLoad}>
           Try again
         </Button>
       </div>
@@ -167,23 +167,19 @@ export function DraftReviewQueue() {
           <OrganizationTag organizationId={item.organizationId} />
           <ConfidenceChip confidence={item.confidence} />
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<ChevronLeft />}
+            variant="quiet"
             aria-label="Previous draft"
             disabled={index === 0}
             onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<ChevronRight />}
+            variant="quiet"
             aria-label="Next draft"
             disabled={index >= items.length - 1}
             onClick={() => setIndex((i) => Math.min(items.length - 1, i + 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          />
         </div>
       </div>
 
@@ -271,24 +267,21 @@ export function DraftReviewQueue() {
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <Button disabled={busy} className="gap-1" onClick={() => void submit("approve")}>
-          <Check className="h-4 w-4" /> Approve <kbd className="text-[10px] opacity-70">Enter</kbd>
+        <Button icon={<Check />} variant="primary" disabled={busy} onClick={() => void submit("approve")}> Approve <kbd className="text-[10px] opacity-70">Enter</kbd>
         </Button>
         <Button
+          icon={<RotateCcw />}
           variant="outline"
           disabled={busy}
-          className="gap-1"
           onClick={() => void submit("revise")}
-        >
-          <RotateCcw className="h-4 w-4" /> Revise <kbd className="text-[10px] opacity-70">R</kbd>
+        > Revise <kbd className="text-[10px] opacity-70">R</kbd>
         </Button>
         <Button
-          variant="destructive"
+          icon={<X />}
+          variant="danger"
           disabled={busy}
-          className="gap-1"
           onClick={() => void submit("reject")}
-        >
-          <X className="h-4 w-4" /> Reject <kbd className="text-[10px] opacity-70">X</kbd>
+        > Reject <kbd className="text-[10px] opacity-70">X</kbd>
         </Button>
       </div>
       <p className="text-center text-[11px] text-muted-foreground">

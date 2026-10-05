@@ -688,7 +688,6 @@ function OverridesBody({
         <div className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm">
           <span className="text-destructive">{load.message} <ErrorAlchemyMenu error={load.message} /></span>
           <Button
-            size="sm"
             variant="outline"
             onClick={() => setRetry((n) => n + 1)}
           >
@@ -811,15 +810,14 @@ function OverridesBody({
           {dirty ? (
             <>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={cancel}
                 disabled={busy}
               >
                 Cancel
               </Button>
               <Button
-                size="sm"
+                variant="primary"
                 onClick={save}
                 disabled={busy || refusal !== null}
               >
@@ -929,22 +927,18 @@ function SettingRow({
       <div className="flex justify-end">
         {open ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 px-2 text-xs text-muted-foreground"
+            icon={<RotateCcw />}
+            variant="quiet"
             onClick={onReset}
             disabled={disabled}
             aria-label={`Reset ${label} to the agent's value`}
             title="Back to the agent's value"
           >
-            <RotateCcw className="size-3.5" />
             Reset
           </Button>
         ) : (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs"
+            variant="quiet"
             onClick={onOverride}
             disabled={disabled}
           >

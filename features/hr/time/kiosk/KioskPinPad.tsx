@@ -38,7 +38,7 @@
 import { useEffect, useState } from "react";
 import { ArrowRight } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 
 import { KioskNumericKeypad, KioskPinDots } from "./KioskNumericKeypad";

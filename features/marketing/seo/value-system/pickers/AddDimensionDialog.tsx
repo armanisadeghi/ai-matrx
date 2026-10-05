@@ -131,13 +131,12 @@ export function AddDimensionDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>
+          <Button variant="quiet" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button size="sm" disabled={!ready} onClick={() => void save()}>
-            {busy ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
+          <Button icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : null} variant="primary" disabled={!ready} onClick={() => void save()}>
             Create dimension
           </Button>
         </DialogFooter>

@@ -1069,29 +1069,25 @@ function ServerCard({
           {isConnected ? (
             <>
               <Button
+                icon={isChecking ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                 variant="outline"
-                size="sm"
-                className="h-10 flex-1 text-sm"
+                className="flex-1"
                 onClick={onTest}
                 disabled={isConnecting || isChecking}
               >
-                {isChecking ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
                 {isChecking ? "Checking tools…" : "Check tools"}
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-10 gap-1.5 px-3 text-sm"
+                icon={<Settings2 />}
+                variant="quiet"
                 onClick={onToggleExpand}
                 aria-label={isExpanded ? `Hide ${entry.name} connection management` : `Manage ${entry.name} connection`}
               >
-                <Settings2 className="h-4 w-4" />
                 <span className="hidden sm:inline">Manage</span>
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-10 shrink-0 px-3 text-sm text-destructive"
+                className="shrink-0"
                 onClick={onDisconnect}
                 disabled={isChecking || isConnecting}
                 aria-label={`Disconnect ${entry.name}`}
@@ -1102,23 +1098,22 @@ function ServerCard({
           ) : canConnect && needsOAuth && !isSupabase ? (
             <div className="flex min-w-0 flex-1 gap-2">
               <Button
-                size="sm"
-                className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
+                icon={isConnecting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Lock />
+                )}
+                variant="primary"
+                className="min-w-0 flex-1"
                 onClick={() => onOAuthConnect()}
                 disabled={isConnecting}
                 aria-label={`Connect to ${entry.name}`}
               >
-                {isConnecting ? (
-                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                ) : (
-                  <Lock className="h-3 w-3 mr-1" />
-                )}
                 {needsRecovery ? "Reconnect" : "Connect"}
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-11 shrink-0 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
+                className="shrink-0"
                 onClick={() => setShowManualForm((visible) => !visible)}
                 disabled={isConnecting}
               >
@@ -1127,8 +1122,7 @@ function ServerCard({
               {needsRecovery && (
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-11 shrink-0 px-2 text-sm text-destructive sm:h-7 sm:px-3 sm:text-xs"
+                  className="shrink-0"
                   onClick={onDisconnect}
                   disabled={isConnecting}
                   aria-label={`Disconnect ${entry.name}`}
@@ -1139,64 +1133,63 @@ function ServerCard({
             </div>
           ) : canConnect && needsOAuth && isSupabase ? (
             <Button
-              size="sm"
-              className="h-11 min-w-0 flex-1 px-2 text-sm sm:h-7 sm:px-3 sm:text-xs"
+              icon={isConnecting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Lock />
+              )}
+              variant="primary"
+              className="min-w-0 flex-1"
               onClick={handleSupabaseOAuth}
               disabled={isConnecting}
               aria-label={needsRecovery ? "Reconnect Supabase" : "Connect Supabase"}
             >
-              {isConnecting ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <Lock className="h-3 w-3 mr-1" />
-              )}
               <span className="sm:hidden">{needsRecovery ? "Reconnect" : "Connect"}</span>
               <span className="hidden sm:inline">{needsRecovery ? "Reconnect" : "Connect read-only"}</span>
             </Button>
           ) : canConnect && needsToken ? (
             <Button
-              size="sm"
-              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+              icon={<Key />}
+              variant="primary"
+              className="flex-1"
               onClick={() => setShowTokenForm(!showTokenForm)}
               disabled={isConnecting}
             >
-              <Key className="h-3 w-3 mr-1" />
               {showTokenForm ? "Cancel" : needsRecovery ? "Reconnect" : "Enter Token"}
             </Button>
           ) : canConnect && noAuth ? (
             <Button
-              size="sm"
-              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+              icon={isConnecting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Zap />
+              )}
+              variant="primary"
+              className="flex-1"
               onClick={onNoAuthConnect}
               disabled={isConnecting}
             >
-              {isConnecting ? (
-                <Loader2 className="h-3 w-3 animate-spin mr-1" />
-              ) : (
-                <Zap className="h-3 w-3 mr-1" />
-              )}
               {needsRecovery ? "Reconnect" : "Connect"}
             </Button>
           ) : isComingSoon ? (
             <Button
+              icon={<Clock />}
+              type="submit"
               variant="outline"
-              size="sm"
-              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+              className="flex-1"
               disabled
             >
-              <Clock className="h-3 w-3 mr-1" />
               Not Available Yet
             </Button>
           ) : isStdioOnly ? (
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<Terminal />}
                   variant="outline"
-                  size="sm"
-                  className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
+                  className="flex-1"
                   disabled
                 >
-                  <Terminal className="h-3 w-3 mr-1" />
                   Local Only
                 </Button>
               </TooltipTrigger>
@@ -1210,8 +1203,7 @@ function ServerCard({
           {needsRecovery && canConnect && !needsOAuth && (
             <Button
               variant="outline"
-              size="sm"
-              className="h-10 shrink-0 px-3 text-sm text-destructive sm:h-7 sm:text-xs"
+              className="shrink-0"
               onClick={onDisconnect}
               disabled={isConnecting}
               aria-label={`Disconnect ${entry.name}`}
@@ -1223,8 +1215,7 @@ function ServerCard({
           {needsRecovery && !canConnect && (
             <Button
               variant="outline"
-              size="sm"
-              className="h-10 flex-1 text-sm text-destructive sm:h-7 sm:text-xs"
+              className="flex-1"
               onClick={onDisconnect}
               aria-label={`Disconnect ${entry.name}`}
             >
@@ -1234,9 +1225,8 @@ function ServerCard({
 
           {!isConnected && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 w-10 shrink-0 p-0"
+              variant="quiet"
+              className="w-10 shrink-0"
               onClick={onToggleExpand}
               aria-label={isExpanded ? `Hide ${entry.name} settings` : `Open ${entry.name} settings`}
             >
@@ -1287,8 +1277,7 @@ function ServerCard({
         {needsRecovery && canConnect && isSupabase && (
           <Button
             variant="outline"
-            size="sm"
-            className="mt-3 h-10 w-full text-sm text-destructive sm:h-7 sm:text-xs"
+            className="mt-3 w-full"
             onClick={onDisconnect}
             disabled={isConnecting}
             aria-label={`Disconnect ${entry.name}`}
@@ -1315,9 +1304,8 @@ function ServerCard({
               />
               <div className="absolute right-1 top-1/2 -translate-y-1/2 flex gap-1">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-11 w-11 p-0 sm:h-6 sm:w-6"
+                  variant="quiet"
+                  className="w-11 sm:w-6"
                   onClick={() => setShowToken(!showToken)}
                   aria-label={showToken ? "Hide token" : "Show token"}
                 >
@@ -1328,8 +1316,7 @@ function ServerCard({
                   )}
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-11 px-3 text-sm sm:h-6 sm:px-2 sm:text-[10px]"
+                  variant="primary"
                   onClick={handleTokenSubmit}
                   disabled={!token.trim() || isConnecting}
                 >
@@ -1533,10 +1520,9 @@ function ManualCredentialsForm({
               spellCheck={false}
             />
             <Button
+              icon={<Trash2 />}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 sm:h-8 sm:w-8"
+              variant="quiet"
               onClick={() =>
                 setHeaders((current) =>
                   current.length === 1
@@ -1545,46 +1531,40 @@ function ManualCredentialsForm({
                 )
               }
               aria-label={`Remove header ${index + 1}`}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ))}
       </div>
       <div className="flex flex-wrap gap-2">
         <Button
+          icon={<Plus />}
           type="button"
           variant="outline"
-          size="sm"
-          className="h-11 text-sm sm:h-8 sm:text-xs"
           onClick={() =>
             setHeaders((current) => [...current, { name: "", value: "" }])
           }
-        >
-          <Plus className="mr-1 h-3.5 w-3.5" /> Add header
+        > Add header
         </Button>
         <Button
+          icon={showValues ? (
+            <EyeOff />
+          ) : (
+            <Eye />
+          )}
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-11 text-sm sm:h-8 sm:text-xs"
+          variant="quiet"
           onClick={() => setShowValues((visible) => !visible)}
         >
-          {showValues ? (
-            <EyeOff className="mr-1 h-3.5 w-3.5" />
-          ) : (
-            <Eye className="mr-1 h-3.5 w-3.5" />
-          )}
           {showValues ? "Hide values" : "Show values"}
         </Button>
         <Button
+          icon={isSaving && <Loader2 className="animate-spin" />}
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-11 flex-1 text-sm sm:h-8 sm:text-xs"
+          className="flex-1"
           onClick={() => void save()}
           disabled={isSaving}
         >
-          {isSaving && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
           Save securely
         </Button>
       </div>

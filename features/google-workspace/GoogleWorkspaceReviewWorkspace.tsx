@@ -547,16 +547,16 @@ export function GoogleWorkspaceReviewWorkspace({
             <CardDescription>Select an account to manage it.</CardDescription>
           </div>
           <Button
-            type="button"
-            size="sm"
-            onClick={() => void connectFiles()}
-            disabled={!google.isGoogleLoaded || busy !== null}
-          >
-            {busy === "connect-files" ? (
+            icon={busy === "connect-files" ? (
               <Loader2 className="animate-spin" />
             ) : (
               <Plus />
             )}
+            variant="primary"
+            type="button"
+            onClick={() => void connectFiles()}
+            disabled={!google.isGoogleLoaded || busy !== null}
+          >
             Add account
           </Button>
         </CardHeader>
@@ -663,8 +663,7 @@ export function GoogleWorkspaceReviewWorkspace({
                         <td className="px-4 py-2 text-right">
                           <Button
                             type="button"
-                            size="sm"
-                            variant={selected ? "secondary" : "ghost"}
+                            variant={selected ? "outline" : "quiet"}
                             onClick={() =>
                               selectWorkspaceConnection(connection.id)
                             }
@@ -691,43 +690,40 @@ export function GoogleWorkspaceReviewWorkspace({
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2 p-4 pt-0">
             <Button
+              icon={busy === "connect-files" && <Loader2 className="animate-spin" />}
               type="button"
-              size="sm"
               variant="outline"
               onClick={() => void connectFiles()}
               disabled={!google.isGoogleLoaded || busy !== null}
             >
-              {busy === "connect-files" && <Loader2 className="animate-spin" />}
               {filesEnabled
                 ? "Refresh Docs & Sheets access"
                 : "Add Docs & Sheets access"}
             </Button>
             {!gmailEnabled && (
               <Button
+                icon={busy === "enable-gmail" && (
+                  <Loader2 className="animate-spin" />
+                )}
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={enableGmail}
                 disabled={!google.isGoogleLoaded || busy !== null}
               >
-                {busy === "enable-gmail" && (
-                  <Loader2 className="animate-spin" />
-                )}
                 Add Gmail sending
               </Button>
             )}
             <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={disconnect}
-              disabled={busy !== null}
-            >
-              {busy === "disconnect" ? (
+              icon={busy === "disconnect" ? (
                 <Loader2 className="animate-spin" />
               ) : (
                 <Unplug />
               )}
+              type="button"
+              variant="outline"
+              onClick={disconnect}
+              disabled={busy !== null}
+            >
               Disconnect
             </Button>
           </CardContent>
@@ -777,15 +773,14 @@ export function GoogleWorkspaceReviewWorkspace({
                     {googleWorkspacePickScopeSentence()}
                   </p>
                   <Button
+                    icon={busy === "pick-file" && (
+                      <Loader2 className="animate-spin" />
+                    )}
                     type="button"
-                    size="sm"
                     variant="outline"
                     onClick={chooseFile}
                     disabled={busy !== null}
                   >
-                    {busy === "pick-file" && (
-                      <Loader2 className="animate-spin" />
-                    )}
                     {googleWorkspacePickLabel()}
                   </Button>
                 </div>
@@ -954,17 +949,21 @@ export function GoogleWorkspaceReviewWorkspace({
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Button
+                            icon={busy === "read-file" && (
+                              <Loader2 className="animate-spin" />
+                            )}
                             type="button"
                             variant="outline"
                             onClick={readSelectedRange}
                             disabled={!sheetRange.trim() || busy !== null}
                           >
-                            {busy === "read-file" && (
-                              <Loader2 className="animate-spin" />
-                            )}
                             Read this range
                           </Button>
                           <Button
+                            icon={busy === "write-file" && (
+                              <Loader2 className="animate-spin" />
+                            )}
+                            variant="primary"
                             type="button"
                             onClick={writeSelectedRange}
                             disabled={
@@ -973,9 +972,6 @@ export function GoogleWorkspaceReviewWorkspace({
                               busy !== null
                             }
                           >
-                            {busy === "write-file" && (
-                              <Loader2 className="animate-spin" />
-                            )}
                             Update this range
                           </Button>
                         </div>
@@ -1025,13 +1021,14 @@ export function GoogleWorkspaceReviewWorkspace({
 
                 {!gmailEnabled ? (
                   <Button
+                    icon={busy === "enable-gmail" && (
+                      <Loader2 className="animate-spin" />
+                    )}
+                    variant="primary"
                     type="button"
                     onClick={enableGmail}
                     disabled={!google.isGoogleLoaded || busy !== null}
                   >
-                    {busy === "enable-gmail" && (
-                      <Loader2 className="animate-spin" />
-                    )}
                     Add Gmail sending
                   </Button>
                 ) : (
@@ -1101,6 +1098,10 @@ export function GoogleWorkspaceReviewWorkspace({
                       </span>
                     </label>
                     <Button
+                      icon={busy === "send-email" && (
+                        <Loader2 className="animate-spin" />
+                      )}
+                      variant="primary"
                       type="button"
                       onClick={sendEmail}
                       disabled={
@@ -1111,9 +1112,6 @@ export function GoogleWorkspaceReviewWorkspace({
                         busy !== null
                       }
                     >
-                      {busy === "send-email" && (
-                        <Loader2 className="animate-spin" />
-                      )}
                       Send this reviewed email
                     </Button>
                   </div>
@@ -1184,7 +1182,7 @@ function ReadOnlyFileDetail({
             </p>
           </div>
         </div>
-        <Button asChild type="button" variant="outline" size="sm">
+        <Button asChild type="button" variant="outline">
           <a
             href={resourceDoor(resource)}
             target="_blank"

@@ -295,7 +295,7 @@ export default function SitesListPage() {
             <AlertCircle className="h-8 w-8" />
             <p className="text-sm font-medium">Failed to load sites</p>
             <p className="text-xs text-muted-foreground">{error}</p>
-            <Button variant="outline" size="sm" onClick={fetchSites}>
+            <Button variant="outline" onClick={fetchSites}>
               Retry
             </Button>
             <ErrorAlchemyMenu />
@@ -389,13 +389,13 @@ export default function SitesListPage() {
                     Cancel
                   </Button>
                   <Button
+                    icon={isCreating && <Loader2 className="animate-spin" />}
+                    variant="primary"
                     onClick={handleCreate}
                     // Never gated on the organization: with none selected the
                     // press IS how the person selects one.
                     disabled={isCreating || !newName || !newSlug}
-                    className="gap-1.5"
                   >
-                    {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}
                     Create Site
                   </Button>
                 </DialogFooter>
@@ -454,10 +454,10 @@ export default function SitesListPage() {
                       components, and content.
                     </p>
                     <Button
+                      icon={<Plus />}
+                      variant="primary"
                       onClick={() => setDialogOpen(true)}
-                      className="gap-2"
                     >
-                      <Plus className="h-4 w-4" />
                       Create Your First Site
                     </Button>
                   </div>

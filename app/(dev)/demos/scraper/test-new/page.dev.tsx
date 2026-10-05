@@ -90,6 +90,7 @@ export default function TestNewScraperPage() {
               </Button>
             ) : (
               <Button
+                variant="primary"
                 onClick={handleScrape}
                 disabled={isLoading || !url.trim()}
               >

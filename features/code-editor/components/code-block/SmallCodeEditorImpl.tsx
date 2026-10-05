@@ -5,7 +5,7 @@ import { useMonaco } from "@monaco-editor/react";
 import Editor from "@monaco-editor/react";
 import { useEffectsAttached } from "@/hooks/use-is-mounted";
 import { useMeasure } from "@ai-matrx/kit/hooks";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Zap,
   Copy,

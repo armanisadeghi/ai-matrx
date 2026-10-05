@@ -38,7 +38,7 @@ import {
   useOrganizationRequired,
   type OrganizationState,
 } from "@/features/organizations/useOrganizationRequired";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { OrganizationPickerButton } from "@/features/organizations/components/OrganizationPickerPopover";
 

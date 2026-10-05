@@ -95,9 +95,9 @@ export function TasksHeaderControls() {
               the list stays where it was. Read-only toward Google. The one
               action: below its width it goes icon-only. */}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
+            icon={<CalendarCheck />}
+            variant="quiet"
+            className="shrink-0"
             aria-label="Import from Google Tasks"
             disabled={importGate.disabled}
             title={importGate.title}
@@ -110,7 +110,6 @@ export function TasksHeaderControls() {
               openGoogleTasksImport({ organizationId }),
             )}
           >
-            <CalendarCheck className="h-3.5 w-3.5" />
             <span className="max-sm:sr-only" data-header-compact-label>Import</span>
           </Button>
         </>

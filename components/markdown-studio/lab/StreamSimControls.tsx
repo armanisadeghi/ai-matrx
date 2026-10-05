@@ -106,23 +106,19 @@ export function StreamSimControls({
 
         {progress.isRunning ? (
           <Button
-            size="sm"
-            variant="destructive"
+            icon={<Square />}
+            variant="danger"
             onClick={onStop}
-            className="h-7 px-2.5 text-xs"
           >
-            <Square className="mr-1 h-3 w-3" />
             Stop
           </Button>
         ) : (
           <Button
-            size="sm"
-            variant="secondary"
+            icon={<Waves />}
+            variant="outline"
             onClick={onRun}
-            className="h-7 px-2.5 text-xs"
             disabled={disabled}
           >
-            <Waves className="mr-1 h-3 w-3" />
             {runLabel}
           </Button>
         )}

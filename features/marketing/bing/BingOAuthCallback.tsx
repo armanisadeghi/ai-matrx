@@ -75,7 +75,7 @@ export function BingOAuthCallback() {
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         {status === "error" ? (
-          <Button asChild className="mt-4" size="sm">
+          <Button variant="primary" asChild className="mt-4">
             <Link href={marketingRoutes.connectionsBing()}>
               Return to Bing connections
             </Link>

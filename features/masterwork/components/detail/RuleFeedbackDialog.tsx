@@ -168,7 +168,7 @@ export function RuleFeedbackDialog({
             Cancel
           </Button>
           <Button
-            variant={isReject ? "destructive" : "default"}
+            variant={isReject ? "danger" : "primary"}
             onClick={() => void submit()}
             disabled={busy || (!feedback.trim() && !mayBeEmpty)}
           >

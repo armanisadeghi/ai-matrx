@@ -192,6 +192,7 @@ export function MoveNoteDialog({
         Cancel
       </Button>
       <Button
+        variant="primary"
         type="submit"
         disabled={!selectedFolder || (selectedFolder.id === currentFolder?.id && selectedFolder.organizationId === currentFolder.organizationId) || busy}
       >

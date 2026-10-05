@@ -34,7 +34,7 @@ import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Brain, Loader2, Plus, RotateCw } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@host/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import type { ChatRootState } from "../../../store/root-state";
@@ -564,11 +564,11 @@ function AgentRunBody({
             {initError}
           </p>
           <Button
-            size="sm"
-            className="self-start gap-1.5"
+            icon={<RotateCw />}
+            variant="primary"
+            className="self-start"
             onClick={() => setInitAttempt((n) => n + 1)}
           >
-            <RotateCw className="w-3.5 h-3.5" />
             Retry
           </Button>
           <ErrorAlchemyMenu error={initError} />

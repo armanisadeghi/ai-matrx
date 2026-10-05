@@ -350,10 +350,9 @@ export function NewSiteForm() {
               <Building2 className="h-3.5 w-3.5" />
               You can share this site with teammates after it’s added.
             </div>
-            <Button type="submit" size="sm" disabled={!canSubmit}>
-              {busy ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
+            <Button icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : null} variant="primary" type="submit" disabled={!canSubmit}>
               {create.isPending ? "Creating site…" : "Create site"}
             </Button>
           </div>

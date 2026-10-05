@@ -310,9 +310,7 @@ export function MindMapNew() {
     >
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => router.push("/education/mind-maps")} aria-label="Back">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        <Button icon={<ArrowLeft />} variant="quiet" onClick={() => router.push("/education/mind-maps")} aria-label="Back" />
         <div>
           <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
             Generate a mind map
@@ -376,11 +374,12 @@ export function MindMapNew() {
       />
 
       <Button
+        icon={isGenerating ? <Loader2 className="animate-spin" /> : <Network />}
+        variant="primary"
         onClick={handleGenerate}
         disabled={isGenerating || gen.isChecking}
-        className="w-full gap-2"
+        className="w-full"
       >
-        {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Network className="h-4 w-4" />}
         {isGenerating ? "Mapping your material…" : "Generate mind map"}
       </Button>
       <gen.Paywall />

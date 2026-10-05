@@ -115,8 +115,8 @@ export function ArchivedOrganizationBanner({
       </div>
       {state.mayRestore && (
         <Button
+          type="submit"
           variant="outline"
-          size="sm"
           className="shrink-0"
           onClick={() => setIsDialogOpen(true)}
         >

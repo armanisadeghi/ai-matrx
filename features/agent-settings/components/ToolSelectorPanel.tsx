@@ -82,9 +82,8 @@ export function ToolSelectorPanel({
         <Popover>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0"
+              variant="quiet"
+              className="w-5"
               disabled={!modelSupportsTools}
               title={
                 modelSupportsTools

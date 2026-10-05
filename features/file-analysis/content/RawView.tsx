@@ -72,10 +72,8 @@ export function RawView({
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       <div className="flex shrink-0 items-center gap-1.5 border-b border-border bg-card/40 px-2 py-1">
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={() => setRaw((v) => !v)}
-          className="h-6 gap-1 text-[10px] uppercase tracking-wider"
         >
           {raw ? (
             <>
@@ -92,19 +90,17 @@ export function RawView({
           {formatCount(jsonText.length)} chars
         </span>
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={() => void handleCopy()}
-          className="h-6 w-6 p-0"
+          className="w-6"
           title="Copy as JSON"
         >
           {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           onClick={handleDownload}
-          className="h-6 w-6 p-0"
+          className="w-6"
           title="Download JSON"
         >
           <Download className="h-3 w-3" />

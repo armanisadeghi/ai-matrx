@@ -391,9 +391,7 @@ export function AICodeEditor({
                       Raw AI Response
                     </span>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-1.5"
+                      variant="quiet"
                       onClick={handleCopyResponse}
                       disabled={!rawAIResponse}
                     >
@@ -492,8 +490,7 @@ export function AICodeEditor({
           {state === "review" ? (
             <div className="flex items-center justify-between w-full">
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => setState("input")}
               >
                 Retry
@@ -501,24 +498,22 @@ export function AICodeEditor({
               <div className="flex gap-1.5">
                 <Button
                   variant="outline"
-                  size="sm"
                   onClick={() => setState("input")}
                 >
                   Discard
                 </Button>
                 <Button
-                  size="sm"
+                  icon={<CheckCircle2 />}
+                  variant="primary"
                   onClick={handleApplyChanges}
-                  className="bg-green-600 hover:bg-green-700 text-white"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" />
                   Apply
                 </Button>
               </div>
             </div>
           ) : state === "error" ? (
             <div className="flex justify-end w-full">
-              <Button size="sm" onClick={() => setState("input")}>
+              <Button variant="primary" onClick={() => setState("input")}>
                 Continue Conversation
               </Button>
             </div>

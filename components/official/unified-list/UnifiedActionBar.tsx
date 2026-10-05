@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, SlidersHorizontal, Plus, X, Mic } from "lucide-react";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { TranscriptionResult } from "@/features/audio/types";
 import { toast } from "@/lib/toast";
 import { RecordingOverlay } from "@/features/audio/components/RecordingOverlay";

@@ -98,7 +98,7 @@ function NeedsYouAction({
   if (extension === "no") {
     return (
       <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/60 p-3 sm:flex-row sm:items-center sm:gap-3">
-        <Button asChild size="sm" className="gap-1.5 self-start sm:self-auto">
+        <Button variant="primary" asChild className="self-start sm:self-auto">
           <a href={EXTENSION_SETUP_ROUTE}>
             <Puzzle className="h-3.5 w-3.5" />
             Add the extension
@@ -118,16 +118,16 @@ function NeedsYouAction({
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/60 p-3 sm:flex-row sm:items-center sm:gap-3">
       <Button
-        size="sm"
+        icon={busy ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <MonitorSmartphone />
+        )}
+        variant="primary"
         onClick={() => void run()}
         disabled={busy || extension === "checking" || !organizationId}
-        className="gap-1.5 self-start sm:self-auto"
+        className="self-start sm:self-auto"
       >
-        {busy ? (
-          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <MonitorSmartphone className="h-3.5 w-3.5" />
-        )}
         Open in my browser
       </Button>
       <p className="text-xs text-muted-foreground">

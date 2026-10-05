@@ -158,10 +158,11 @@ export function PlaceDetectionStrip({ siteId }: { siteId: string }) {
         {isSuperAdmin ? (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <Button
+              icon={pass.isPending ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : null}
               type="button"
-              size="sm"
-              variant={complete ? "outline" : "default"}
-              className="h-6 gap-1 text-[11px]"
+              variant={complete ? "outline" : "primary"}
               disabled={pass.isPending || complete || !knobs.isSuccess}
               title={
                 complete
@@ -170,9 +171,6 @@ export function PlaceDetectionStrip({ siteId }: { siteId: string }) {
               }
               onClick={() => pass.mutate()}
             >
-              {pass.isPending ? (
-                <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-              ) : null}
               Read {formatCount(batchKeywords)} more
             </Button>
           </div>

@@ -242,7 +242,7 @@ export function OverlayInstancesDemo() {
               <Button
                 onClick={openSingleton}
                 className="w-full"
-                variant="default"
+                variant="primary"
                 disabled={isSingletonOpen}
               >
                 {isSingletonOpen ? "Already Open" : "Open Singleton Editor"}
@@ -276,12 +276,12 @@ export function OverlayInstancesDemo() {
                 const alreadyTracked = !!instanceId;
                 return (
                   <Button
+                    icon={<Plus />}
                     key={sample.id}
                     onClick={() => openInstance(sample)}
                     variant="outline"
-                    className="w-full justify-start gap-2"
+                    className="w-full justify-start"
                   >
-                    <Plus className="h-4 w-4" />
                     {alreadyTracked
                       ? `Reopen: ${sample.label}`
                       : `Open: ${sample.label}`}

@@ -672,9 +672,7 @@ export function BacklinkObservationTable({
                   return (
                     <Button
                       type="button"
-                      size="sm"
                       variant="outline"
-                      className="h-7 gap-1 px-2 text-[11px]"
                       disabled={action.disabled}
                       title={action.title}
                       onClick={() => {

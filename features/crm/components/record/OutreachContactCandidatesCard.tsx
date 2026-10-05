@@ -149,17 +149,14 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
       count={data && error == null ? candidates.length : undefined}
       action={
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6"
+          icon={<RefreshCw
+            className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
+          />}
+          variant="quiet"
           disabled={loading}
           onClick={() => void load()}
           aria-label="Refresh discovered people"
-        >
-          <RefreshCw
-            className={loading ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
-          />
-        </Button>
+        />
       }
     >
       {loading && !data && (
@@ -174,7 +171,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
         ) : (
           <div className="flex items-center justify-between gap-2 py-2 text-xs text-destructive">
             <span>{extractErrorMessage(error)}</span>
-            <Button variant="outline" size="sm" onClick={() => void load()}>
+            <Button variant="outline" onClick={() => void load()}>
               Retry
             </Button>
             <ErrorAlchemyMenu />
@@ -310,8 +307,7 @@ export function OutreachContactCandidatesCard({ outletPartyId }: Props) {
               )}
 
               <Button
-                size="sm"
-                variant={fullyConfirmed ? "outline" : "default"}
+                variant={fullyConfirmed ? "outline" : "primary"}
                 disabled={savingKey === candidate.key}
                 onClick={() => void apply(candidate)}
               >

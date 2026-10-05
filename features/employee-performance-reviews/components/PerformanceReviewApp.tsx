@@ -351,8 +351,7 @@ export default function PerformanceReviewApp({
           </div>
 
           <div className="space-y-2 p-3">
-            <Button className="w-full" onClick={store.createReview}>
-              <Plus className="h-4 w-4" />
+            <Button icon={<Plus />} variant="primary" className="w-full" onClick={store.createReview}>
               New Review
             </Button>
             <div className="relative">
@@ -390,18 +389,16 @@ export default function PerformanceReviewApp({
                         {rev.employeeName || "Untitled review"}
                       </span>
                       <Button
+                        icon={<Trash2 />}
                         type="button"
-                        variant="ghost"
-                        size="icon"
+                        variant="quiet"
                         onClick={(e) => {
                           e.stopPropagation();
                           store.deleteReview(rev.id);
                         }}
-                        className="h-7 w-7 flex-none text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                        className="flex-none opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                         aria-label="Delete review"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate text-[11px] text-muted-foreground">
@@ -427,12 +424,10 @@ export default function PerformanceReviewApp({
               {store.reviews.length} saved
             </span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
+              icon={<Upload />}
+              variant="quiet"
               onClick={handleImportClick}
             >
-              <Upload className="h-3.5 w-3.5" />
               Import
             </Button>
             <input
@@ -464,12 +459,11 @@ export default function PerformanceReviewApp({
               </SelectContent>
             </Select>
             <Button
-              size="icon"
+              icon={<Plus />}
+              variant="primary"
               onClick={store.createReview}
               aria-label="New review"
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            />
           </div>
 
           {/* Top bar */}
@@ -499,30 +493,25 @@ export default function PerformanceReviewApp({
             </div>
             <Separator orientation="vertical" className="hidden h-6 sm:block" />
             <Button
-              variant={viewMode === "edit" ? "secondary" : "ghost"}
-              size="sm"
-              className="max-sm:h-11"
+              icon={<PenLine />}
+              variant={viewMode === "edit" ? "outline" : "quiet"}
               onClick={() => setViewMode("edit")}
             >
-              <PenLine className="h-3.5 w-3.5" />
               Edit
             </Button>
             <Button
-              variant={viewMode === "report" ? "secondary" : "ghost"}
-              size="sm"
-              className="max-sm:h-11"
+              icon={<FileText />}
+              variant={viewMode === "report" ? "outline" : "quiet"}
               onClick={() => setViewMode("report")}
             >
-              <FileText className="h-3.5 w-3.5" />
               Preview
             </Button>
             <Button
+              icon={<Copy />}
               className="hidden lg:inline-flex"
               variant="outline"
-              size="sm"
               onClick={store.duplicateReview}
             >
-              <Copy className="h-3.5 w-3.5" />
               Duplicate
             </Button>
             <CopyButtons
@@ -557,25 +546,22 @@ export default function PerformanceReviewApp({
               }}
             />
             <Button
+              icon={<Printer />}
               variant="outline"
-              size="sm"
-              className="max-sm:h-11"
               onClick={() => openReviewPrintView(r, store.stats)}
             >
-              <Printer className="h-3.5 w-3.5" />
               Print
             </Button>
             <Button
-              size="sm"
-              className="max-sm:h-11"
+              icon={isExportingPdf ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <FileDown />
+              )}
+              variant="primary"
               onClick={handlePdfExport}
               disabled={isExportingPdf}
             >
-              {isExportingPdf ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <FileDown className="h-3.5 w-3.5" />
-              )}
               {isExportingPdf ? "Building PDF…" : "Download PDF"}
             </Button>
           </div>

@@ -8,7 +8,7 @@ import {
   Filter,
   Info,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
@@ -144,23 +144,20 @@ export function SerpToolOverlay({
       <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Button
-          variant={filterStatus === "all" ? "default" : "outline"}
-          size="sm"
+          variant={filterStatus === "all" ? "primary" : "outline"}
           onClick={() => setFilterStatus("all")}
         >
           All ({entries.length})
         </Button>
         <Button
-          variant={filterStatus === "passed" ? "default" : "outline"}
-          size="sm"
+          variant={filterStatus === "passed" ? "primary" : "outline"}
           onClick={() => setFilterStatus("passed")}
         >
           Passed ({passedCount})
         </Button>
         {failedCount > 0 ? (
           <Button
-            variant={filterStatus === "failed" ? "default" : "outline"}
-            size="sm"
+            variant={filterStatus === "failed" ? "primary" : "outline"}
             onClick={() => setFilterStatus("failed")}
           >
             Needs attention ({failedCount})

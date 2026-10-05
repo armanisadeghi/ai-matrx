@@ -353,11 +353,12 @@ function FeedbackFooterRight({ form }: { form: FeedbackFormState }) {
         Cancel
       </Button>
       <Button
+        icon={isSubmitting ? <Loader2 className="animate-spin" /> : <Send />}
+        variant="primary"
         type="button"
         onClick={handleSubmit}
         disabled={!description.trim() || isSubmitting}
       >
-        {isSubmitting ? <Loader2 className="animate-spin" /> : <Send />}
         {isSubmitting ? "Submitting…" : "Submit"}
       </Button>
     </div>
@@ -1200,12 +1201,12 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             admin seat on a user page is an ordinary person). */}
         {submittedItem && isAdmin && (
           <Button
+            icon={copied ? <CheckCheck /> : <Component />}
             type="button"
             variant="outline"
             onClick={handleCopyForAgent}
             className="w-full max-w-[340px]"
           >
-            {copied ? <CheckCheck /> : <Component />}
             {copied
               ? "Copied — paste into your agent chat"
               : "Copy for Coding Agent"}
@@ -1213,8 +1214,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         )}
 
         <div className="grid grid-cols-3 gap-2 w-full max-w-[340px]">
-          <Button type="button" variant="outline" onClick={handleReset}>
-            <Plus />
+          <Button icon={<Plus />} type="button" variant="outline" onClick={handleReset}>
             New report
           </Button>
           <Button asChild variant="outline">
@@ -1223,8 +1223,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               View all
             </FeedbackListLink>
           </Button>
-          <Button type="button" variant="outline" onClick={onClose}>
-            <X />
+          <Button icon={<X />} type="button" variant="outline" onClick={onClose}>
             Close
           </Button>
         </div>
@@ -1320,8 +1319,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
             Your unsent report was restored.
             <Button
               type="button"
-              variant="ghost"
-              size="xs"
+              variant="quiet"
               onClick={acknowledgeRestore}
             >
               OK
@@ -1348,21 +1346,19 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         >
           <CollapsibleTrigger asChild>
             <Button
+              icon={<Settings2 />} iconEnd={<ChevronDown
+                className={`ml-auto transition-transform ${adminOptionsOpen ? "rotate-180" : ""}`}
+              />}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start gap-1.5 text-muted-foreground"
+              variant="quiet"
+              className="w-full justify-start"
             >
-              <Settings2 />
               Admin options
               {(categoryId !== "none" || assigneeId !== "none") && (
                 <span className="ml-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
                   {(categoryId !== "none" ? 1 : 0) + (assigneeId !== "none" ? 1 : 0)} set
                 </span>
               )}
-              <ChevronDown
-                className={`ml-auto transition-transform ${adminOptionsOpen ? "rotate-180" : ""}`}
-              />
             </Button>
           </CollapsibleTrigger>
           <CollapsibleContent className="space-y-2 border-t border-border/60 px-2.5 pb-2.5 pt-2">
@@ -1370,7 +1366,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               <p className="flex items-center gap-2 text-xs text-destructive">
                 {asClause(adminOptionsError)}.
                 <ErrorAlchemyMenu error={adminOptionsError} size="xs" />
-                <Button type="button" variant="outline" size="xs" onClick={retryAdminOptions}>
+                <Button type="button" variant="outline" onClick={retryAdminOptions}>
                   Retry
                 </Button>
               </p>
@@ -1462,46 +1458,42 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
         {/* One row of four on desktop, two even rows on a phone. */}
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 [&>button]:min-w-0">
           <Button
+            icon={<Upload />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSubmitting}
           >
-            <Upload />
             Upload
           </Button>
           <Button
+            icon={<Clipboard />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={handlePasteButton}
             disabled={isSubmitting}
           >
-            <Clipboard />
             Paste
           </Button>
           <Button
+            icon={<Camera />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleTabCapture}
             disabled={isSubmitting || isCapturing}
             title="Capture this tab — the page behind this window"
           >
-            <Camera />
             This tab
           </Button>
           {canCaptureScreen ? (
             <Button
+              icon={<Monitor />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={handleScreenCapture}
               disabled={isSubmitting || isCapturing}
               title="Capture another window or screen (your browser asks which)"
             >
-              <Monitor />
               Screen
             </Button>
           ) : null}

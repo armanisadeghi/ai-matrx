@@ -187,18 +187,18 @@ export function TableImpactPanel() {
           disabled={loading}
         />
         <Button
-          size="sm"
+          icon={loading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Search />
+          )}
+          variant="primary"
           onClick={() => {
             if (hasRun) void runImpact();
             else setHasRun(true);
           }}
           disabled={loading}
         >
-          {loading ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Search className="mr-1.5 h-3.5 w-3.5" />
-          )}
           Run preflight
         </Button>
       </div>

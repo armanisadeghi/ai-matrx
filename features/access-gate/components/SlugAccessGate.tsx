@@ -156,7 +156,7 @@ function Notice({
           </div>
         </div>
         <div className="mt-5">
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={fallbackHref}>
               <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
               {fallbackLabel}

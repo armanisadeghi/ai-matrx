@@ -95,8 +95,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
     }
   };
   return (
-    <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={onCopy}>
-      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+    <Button icon={copied ? <Check className="text-emerald-500" /> : <Copy />} type="button" variant="outline" onClick={onCopy}>
       Copy
     </Button>
   );
@@ -410,8 +409,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
           </div>
 
           <div className="mt-5 flex justify-end">
-            <Button onClick={saveBasics} disabled={savingBasics} className="gap-2">
-              {savingBasics ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            <Button icon={savingBasics ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" onClick={saveBasics} disabled={savingBasics}>
               Save details
             </Button>
           </div>
@@ -501,8 +499,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
           </div>
 
           <div className="mt-5 flex justify-end">
-            <Button onClick={saveRss} disabled={savingRss || emailInvalid} className="gap-2">
-              {savingRss ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            <Button icon={savingRss ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" onClick={saveRss} disabled={savingRss || emailInvalid}>
               Save distribution
             </Button>
           </div>
@@ -518,7 +515,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
               </code>
               <div className="flex shrink-0 gap-2">
                 <CopyButton value={feedUrl} label="Feed URL" />
-                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                <Button asChild variant="outline">
                   <Link href={feedUrl} target="_blank">
                     <ExternalLink className="h-3.5 w-3.5" />
                     Open
@@ -530,7 +527,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
             <div className="mt-4 space-y-2">
               <p className="text-xs font-medium text-foreground">Submit to directories</p>
               <div className="flex flex-wrap gap-2">
-                <Button asChild variant="secondary" size="sm" className="gap-1.5">
+                <Button asChild variant="outline">
                   <Link
                     href="https://podcastsconnect.apple.com/my-podcasts/new-feed"
                     target="_blank"
@@ -539,7 +536,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
                     Apple Podcasts Connect
                   </Link>
                 </Button>
-                <Button asChild variant="secondary" size="sm" className="gap-1.5">
+                <Button asChild variant="outline">
                   <Link href="https://podcasters.spotify.com/" target="_blank">
                     <ExternalLink className="h-3.5 w-3.5" />
                     Spotify for Podcasters
@@ -547,8 +544,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
                 </Button>
               </div>
               <div className="flex items-start gap-2 pt-1">
-                <Button variant="outline" size="sm" disabled className="gap-1.5">
-                  <CheckCircle2 className="h-3.5 w-3.5" />
+                <Button icon={<CheckCircle2 />} type="submit" variant="outline" disabled>
                   Verify &amp; submit
                 </Button>
                 <ComingSoonBadge className="mt-1.5" />
@@ -575,8 +571,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
                 ? "No episodes yet."
                 : `${episodes.length} episode${episodes.length === 1 ? "" : "s"}`}
             </p>
-            <Button size="sm" className="gap-1.5" onClick={() => setUploadOpen(true)}>
-              <Plus className="h-3.5 w-3.5" />
+            <Button icon={<Plus />} variant="primary" onClick={() => setUploadOpen(true)}>
               Upload an episode
             </Button>
           </div>
@@ -587,8 +582,7 @@ export function ShowManageClient({ showId }: { showId: string }) {
               <p className="text-sm text-muted-foreground">
                 Upload audio or video you already have, or generate one in the studio.
               </p>
-              <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setUploadOpen(true)}>
-                <Plus className="h-3.5 w-3.5" />
+              <Button icon={<Plus />} variant="outline" onClick={() => setUploadOpen(true)}>
                 Upload your first episode
               </Button>
             </div>

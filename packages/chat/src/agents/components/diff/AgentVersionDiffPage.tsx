@@ -17,7 +17,7 @@ import SearchableSelect from "@host/components/matrx/SearchableSelect";
 import type { Option } from "@host/components/matrx/SearchableSelect";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
 import { Badge } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import {
   AlertDialog,
@@ -649,17 +649,15 @@ export function AgentVersionDiffPage({
                 leftVersion != null &&
                 leftVersion !== liveAgent.version && (
                   <Button
-                    variant="default"
-                    size="sm"
-                    className="gap-1.5 h-8"
+                    icon={promoting ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <ArrowUpCircle />
+                    )}
+                    variant="primary"
                     onClick={() => setShowPromoteDialog(true)}
                     disabled={promoting}
                   >
-                    {promoting ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <ArrowUpCircle className="w-3.5 h-3.5" />
-                    )}
                     Promote v{leftVersion}
                   </Button>
                 )}

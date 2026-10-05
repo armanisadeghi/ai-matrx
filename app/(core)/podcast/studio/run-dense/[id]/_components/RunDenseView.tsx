@@ -402,16 +402,14 @@ export function RunDenseView({ runId }: { runId: string }) {
         </h1>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={refresh}
-            className="h-7 gap-1.5 px-2 text-muted-foreground"
             title="Re-sync this run from the server"
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button asChild size="sm" className="h-7 gap-1.5 px-2.5">
+          <Button variant="primary" asChild>
             <Link href="/podcast/studio/create-dense">
               <Plus className="h-3.5 w-3.5" />
               New

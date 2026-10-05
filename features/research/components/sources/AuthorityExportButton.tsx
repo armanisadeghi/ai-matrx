@@ -197,19 +197,16 @@ export function AuthorityExportButton({
     >
       <DropdownMenuTrigger asChild>
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Award className="text-primary" />
+          )} iconEnd={<ChevronDown className="opacity-60" />}
           variant="outline"
-          size="sm"
           disabled={busy}
-          className="gap-1.5 text-xs"
           title="Export sources for AI authoritativeness ranking"
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Award className="h-3.5 w-3.5 text-primary" />
-          )}
           Authority export
-          <ChevronDown className="h-3 w-3 opacity-60" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">

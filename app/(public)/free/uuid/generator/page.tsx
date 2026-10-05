@@ -5,7 +5,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { motion } from 'motion/react'
 import { Copy, RefreshCw, Check, AlertCircle, CircleDot } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label'
 import {
     Select,
@@ -118,7 +118,7 @@ export default function UUIDGenerator() {
                         className="font-mono text-lg min-w-[500px] cursor-pointer hover:bg-accent/50 transition-colors"
                     />
                     <motion.div whileTap="pressed" variants={buttonVariants}>
-                        <Button
+                        <SurfaceButton
                             variant="outline"
                             size="icon"
                             onClick={() => copyToClipboard(currentUUID)}
@@ -129,17 +129,17 @@ export default function UUIDGenerator() {
                             ) : (
                                  <Copy className="h-4 w-4 group-hover:text-primary transition-colors" />
                              )}
-                        </Button>
+                        </SurfaceButton>
                     </motion.div>
                     <motion.div whileTap="pressed" variants={buttonVariants}>
-                        <Button
+                        <SurfaceButton
                             variant="outline"
                             size="icon"
                             onClick={generateNewUUID}
                             className="hover:text-primary hover:border-primary transition-colors"
                         >
                             <RefreshCw className="h-4 w-4" />
-                        </Button>
+                        </SurfaceButton>
                     </motion.div>
                 </div>
             </motion.div>
@@ -220,8 +220,8 @@ export default function UUIDGenerator() {
 
                     <motion.div whileTap="pressed" variants={buttonVariants}>
                         <Button
+                            variant="primary"
                             onClick={generateMultipleUUIDs}
-                            className="bg-primary hover:bg-primary/90"
                         >
                             Generate
                         </Button>
@@ -239,9 +239,7 @@ export default function UUIDGenerator() {
                             <motion.div whileTap="pressed" variants={buttonVariants}>
                                 <Button
                                     variant="outline"
-                                    size="sm"
                                     onClick={copyAllToClipboard}
-                                    className="hover:text-primary hover:border-primary transition-colors"
                                 >
                                     Copy All
                                 </Button>

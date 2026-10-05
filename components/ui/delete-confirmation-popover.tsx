@@ -3,7 +3,7 @@
 import { useId, useRef } from "react";
 import { CheckCircle2, Loader2, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Popover,
   PopoverAnchor,

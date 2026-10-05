@@ -70,11 +70,10 @@ export function FieldDetails({ table, fieldName }: FieldDetailsProps) {
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">{column.column_name}</h2>
             <Button
+              icon={<Settings2 />}
               variant="outline"
-              size="sm"
               onClick={() => setShowAdvanced(!showAdvanced)}
             >
-              <Settings2 className="mr-2 h-4 w-4" />
               Advanced
             </Button>
           </div>

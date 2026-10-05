@@ -376,18 +376,16 @@ export function GmailReviewCard({ ask, organizationId, preflight, plan }: GmailR
         Nothing sends until you press Send.
       </span>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={decline} disabled={sending}>
+        <Button variant="quiet" onClick={decline} disabled={sending}>
           Don&apos;t send
         </Button>
-        <Button variant="outline" size="sm" onClick={saveDraft} disabled={!canSave || sending || resolved || currentSave?.state === "busy" || currentSave?.state === "applying" || currentSave?.state === "saved" || currentSave?.state === "uncertain"}>
-          <Save className="mr-1.5 h-4 w-4" />
+        <Button icon={<Save />} variant="outline" onClick={saveDraft} disabled={!canSave || sending || resolved || currentSave?.state === "busy" || currentSave?.state === "applying" || currentSave?.state === "saved" || currentSave?.state === "uncertain"}>
           {currentSave?.state === "busy" || currentSave?.state === "applying" ? "Saving…" : currentSave?.state === "saved" ? "Saved" : "Save to Gmail"}
         </Button>
         {(currentSave?.state === "applying" || currentSave?.state === "uncertain") && currentSave.approvalId ? (
-          <Button variant="ghost" size="sm" onClick={checkDraftStatus} disabled={sending || resolved}>Check status</Button>
+          <Button variant="quiet" onClick={checkDraftStatus} disabled={sending || resolved}>Check status</Button>
         ) : null}
-        <Button size="sm" onClick={send} disabled={sending || !canSend}>
-          <Send className="mr-1.5 h-4 w-4" />
+        <Button icon={<Send />} variant="primary" onClick={send} disabled={sending || !canSend}>
           {sending ? "Sending…" : "Send"}
         </Button>
       </div>

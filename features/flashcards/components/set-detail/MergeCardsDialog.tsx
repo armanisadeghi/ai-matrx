@@ -185,14 +185,15 @@ export function MergeCardsDialog({
             Cancel
           </Button>
           <Button
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Merge />
+            )}
+            variant="primary"
             onClick={() => void merge()}
             disabled={saving || !primaryId || front.trim().length === 0}
           >
-            {saving ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Merge className="mr-1.5 h-4 w-4" />
-            )}
             Merge into one card
           </Button>
         </DialogFooter>

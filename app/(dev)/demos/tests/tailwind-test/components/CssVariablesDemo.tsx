@@ -67,14 +67,14 @@ const TailwindDemo = () => {
                 <h2 className="text-2xl font-semibold mb-4 font-heading">Buttons and Hover Effects</h2>
                 <div className="space-y-4">
                     <div>
-                        <Button className="mr-4">Default Button</Button>
-                        <Button variant="secondary" className="mr-4">Secondary Button</Button>
-                        <Button variant="destructive" className="mr-4">Destructive Button</Button>
+                        <Button type="submit" variant="primary" className="mr-4">Default Button</Button>
+                        <Button type="submit" variant="outline" className="mr-4">Secondary Button</Button>
+                        <Button type="submit" variant="danger" className="mr-4">Destructive Button</Button>
                     </div>
                     <div>
-                        <Button variant="outline" className="mr-4">Outline Button</Button>
-                        <Button variant="ghost" className="mr-4">Ghost Button</Button>
-                        <Button variant="link" className="mr-4">Link Button</Button>
+                        <Button type="submit" variant="outline" className="mr-4">Outline Button</Button>
+                        <Button type="submit" variant="quiet" className="mr-4">Ghost Button</Button>
+                        <Button type="submit" variant="link" className="mr-4">Link Button</Button>
                     </div>
                 </div>
             </div>

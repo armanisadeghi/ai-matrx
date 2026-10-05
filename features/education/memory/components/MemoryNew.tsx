@@ -315,13 +315,11 @@ export function MemoryNew() {
     <div className="mx-auto w-full max-w-2xl space-y-6 p-4">
       <div className="flex items-center gap-3">
         <Button
-          variant="ghost"
-          size="icon"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => router.push("/education/memory")}
           aria-label="Back"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
+        />
         <div>
           <h1 className="flex items-center gap-2 text-lg font-semibold text-foreground">
             Generate memory aids
@@ -386,15 +384,16 @@ export function MemoryNew() {
       />
 
       <Button
+        icon={isGenerating ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Brain />
+        )}
+        variant="primary"
         onClick={handleGenerate}
         disabled={isGenerating || gen.isChecking}
-        className="w-full gap-2"
+        className="w-full"
       >
-        {isGenerating ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Brain className="h-4 w-4" />
-        )}
         {isGenerating ? "Building your memory aids…" : "Generate memory aids"}
       </Button>
       <gen.Paywall />

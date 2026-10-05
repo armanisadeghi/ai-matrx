@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { LogIn, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -52,11 +53,11 @@ export function AuthAwareButton() {
     return (
       <Link href={loginHref} className="w-full sm:w-auto">
         <Button
-          variant="ghost"
-          size="lg"
+          icon={<LogIn />}
+          type="submit"
+          variant="quiet"
           className={`${BUTTON_CLASS} hover:bg-zinc-100 dark:hover:bg-zinc-800`}
         >
-          <LogIn className="mr-2 h-4 w-4" />
           Sign In
         </Button>
       </Link>
@@ -71,7 +72,7 @@ export function AuthAwareButton() {
   const initials = getInitials(displayName);
 
   return (
-    <Button
+    <SurfaceButton
       variant="ghost"
       size="lg"
       disabled={isPending}
@@ -89,6 +90,6 @@ export function AuthAwareButton() {
       </Avatar>
       <span className="truncate max-w-[100px]">{displayName}</span>
       <LayoutDashboard className="ml-1 h-4 w-4 text-muted-foreground" />
-    </Button>
+    </SurfaceButton>
   );
 }

@@ -277,7 +277,7 @@ export function RecipeReview({ id }: { id: string }) {
           </p>
         ) : null}
         {refusal ? <p className="text-destructive">{refusal} <ErrorAlchemyMenu error={refusal} /></p> : null}
-        <Button disabled={!canActivate} onClick={() => setIsConfirming(true)}>
+        <Button variant="primary" disabled={!canActivate} onClick={() => setIsConfirming(true)}>
           {isActivating ? "Activating…" : "Activate shared recipe"}
         </Button>
       </CardContent>

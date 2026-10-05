@@ -209,10 +209,9 @@ export function SurfaceDetailPanel({
           </div>
         </div>
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onClose}
-          className="h-7 w-7 p-0 shrink-0"
+          className="w-7 shrink-0"
           aria-label="Close detail panel"
         >
           <X className="h-4 w-4" />
@@ -268,13 +267,12 @@ export function SurfaceDetailPanel({
                   )}
                 </p>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => {
                     setDesc(surface.description ?? "");
                     setEditingDesc(true);
                   }}
-                  className="h-6 w-6 p-0 shrink-0"
+                  className="w-6 shrink-0"
                   aria-label="Edit description"
                 >
                   <Edit2 className="h-3 w-3" />
@@ -292,10 +290,10 @@ export function SurfaceDetailPanel({
                 />
                 <div className="flex flex-col gap-1">
                   <Button
-                    size="sm"
+                    variant="primary"
                     onClick={() => void onSaveDesc()}
                     disabled={busy}
-                    className="h-6 w-6 p-0"
+                    className="w-6"
                   >
                     {busy ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
@@ -304,11 +302,10 @@ export function SurfaceDetailPanel({
                     )}
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={() => setEditingDesc(false)}
                     disabled={busy}
-                    className="h-6 w-6 p-0"
+                    className="w-6"
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -398,13 +395,11 @@ export function SurfaceDetailPanel({
 
           <div className="pt-3 border-t border-border">
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<Trash2 />}
+              variant="quiet"
               onClick={() => void onDelete()}
               disabled={busy}
-              className="text-xs gap-1.5 text-muted-foreground hover:text-destructive"
             >
-              <Trash2 className="h-3.5 w-3.5" />
               Move to Trash
             </Button>
           </div>

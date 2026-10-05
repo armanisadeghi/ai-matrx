@@ -197,9 +197,7 @@ export default function ProviderSyncPolicyDialog({
               />
               {cutoff && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 text-xs"
+                  variant="quiet"
                   onClick={() => setCutoff("")}
                 >
                   Clear
@@ -237,13 +235,11 @@ export default function ProviderSyncPolicyDialog({
                 ))}
               </datalist>
               <Button
+                icon={<Plus />}
                 variant="outline"
-                size="sm"
-                className="h-8 gap-1 text-xs"
                 onClick={addExclusion}
                 disabled={newId.trim() === ""}
               >
-                <Plus className="h-3.5 w-3.5" />
                 Add
               </Button>
             </div>
@@ -325,21 +321,20 @@ export default function ProviderSyncPolicyDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={onClose} disabled={saving}>
+          <Button variant="quiet" onClick={onClose} disabled={saving}>
             Cancel
           </Button>
           <Button
-            size="sm"
-            className="gap-1.5"
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             onClick={handleSave}
             disabled={saving || !dirty}
             title={dirty ? undefined : "Nothing to save — the policy is unchanged."}
           >
-            {saving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
             Save policy
           </Button>
         </DialogFooter>

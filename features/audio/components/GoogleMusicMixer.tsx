@@ -206,17 +206,16 @@ export function GoogleMusicMixer() {
               </p>
             </div>
             <Button
+              icon={<Plus />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() =>
                 setChannels((current) => [
                   ...current,
                   { id: crypto.randomUUID(), text: "", weight: 0.5 },
                 ])
               }
-            >
-              <Plus /> Add channel
+            > Add channel
             </Button>
           </div>
 
@@ -267,9 +266,9 @@ export function GoogleMusicMixer() {
                   />
                 </label>
                 <Button
+                  icon={<Trash2 />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
+                  variant="quiet"
                   disabled={channels.length === 1}
                   aria-label={`Remove channel ${index + 1}`}
                   onClick={() =>
@@ -277,9 +276,7 @@ export function GoogleMusicMixer() {
                       current.filter((item) => item.id !== channel.id),
                     )
                   }
-                >
-                  <Trash2 />
-                </Button>
+                />
               </div>
             ))}
           </div>
@@ -287,22 +284,23 @@ export function GoogleMusicMixer() {
 
         <section className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-border/60 bg-card p-5">
           {!active ? (
-            <Button type="button" onClick={start}>
-              <CirclePlay /> Start generating
+            <Button icon={<CirclePlay />} variant="primary" type="button" onClick={start}> Start generating
             </Button>
           ) : (
             <>
               <Button
+                icon={<CirclePlay />}
+                variant="primary"
                 type="button"
                 onClick={() => {
                   client.send({ type: "control", action: "play" });
                   player.play();
                   sessionRef.current?.update({ status: "active" });
                 }}
-              >
-                <CirclePlay /> Play
+              > Play
               </Button>
               <Button
+                icon={<CirclePause />}
                 type="button"
                 variant="outline"
                 onClick={() => {
@@ -310,21 +308,19 @@ export function GoogleMusicMixer() {
                   player.pause();
                   sessionRef.current?.update({ status: "paused" });
                 }}
-              >
-                <CirclePause /> Pause
+              > Pause
               </Button>
               <Button
+                icon={<RotateCcw />}
                 type="button"
                 variant="outline"
                 onClick={() => {
                   client.send({ type: "control", action: "reset_context" });
                   sendPrompts();
                 }}
-              >
-                <RotateCcw /> Reset context
+              > Reset context
               </Button>
-              <Button type="button" variant="destructive" onClick={stop}>
-                <Square /> End session
+              <Button icon={<Square />} type="button" variant="danger" onClick={stop}> End session
               </Button>
             </>
           )}

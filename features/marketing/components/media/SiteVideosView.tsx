@@ -356,12 +356,10 @@ export function SiteVideosView({
         </p>
         <div className="ml-auto">
           <Button
-            size="sm"
+            icon={<Clapperboard />}
             variant="outline"
-            className="h-7"
             onClick={() => void announceComingSoon("marketing.generate-video")}
           >
-            <Clapperboard className="mr-1.5 h-3.5 w-3.5" />
             Generate promo clip
           </Button>
         </div>
@@ -482,27 +480,25 @@ export function SiteVideosView({
                         {meta?.schemaOrg ? " · schema.org" : ""}
                       </span>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="ml-auto h-6 shrink-0 px-1.5 text-[10px]"
+                        icon={<Maximize2 />}
+                        variant="quiet"
+                        className="ml-auto shrink-0"
                         onClick={() => setDetailAssetId(asset.id)}
                       >
-                        <Maximize2 className="mr-1 h-3 w-3" />
                         Details
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 shrink-0 px-1.5 text-[10px]"
+                        icon={busy ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Tags />
+                        )}
+                        variant="quiet"
+                        className="shrink-0"
                         disabled={busy || updateAsset.isPending}
                         onClick={() => void writeAssetMetadata(asset)}
                         title="Run the metadata agent: title, description, keywords, schema.org VideoObject"
                       >
-                        {busy ? (
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        ) : (
-                          <Tags className="mr-1 h-3 w-3" />
-                        )}
                         {meta ? "Rewrite" : "Write metadata"}
                       </Button>
                     </div>
@@ -613,9 +609,12 @@ export function SiteVideosView({
                     </div>
                     <div className="flex items-center gap-1">
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5 text-[10px]"
+                        icon={adding ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <FolderPlus />
+                        )}
+                        variant="quiet"
                         disabled={inLibrary || adding || createAsset.isPending}
                         onClick={() => void addCrawled(video)}
                         title={
@@ -624,26 +623,19 @@ export function SiteVideosView({
                             : "Save this video as a brand library asset"
                         }
                       >
-                        {adding ? (
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        ) : (
-                          <FolderPlus className="mr-1 h-3 w-3" />
-                        )}
                         {inLibrary ? "In library" : "Add to library"}
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 px-1.5 text-[10px]"
+                        icon={busy ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Tags />
+                        )}
+                        variant="quiet"
                         disabled={busy}
                         onClick={() => void writeCrawledMetadata(video)}
                         title="Run the metadata agent (adds the video to the library first when needed)"
                       >
-                        {busy ? (
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                        ) : (
-                          <Tags className="mr-1 h-3 w-3" />
-                        )}
                         Write metadata
                       </Button>
                     </div>

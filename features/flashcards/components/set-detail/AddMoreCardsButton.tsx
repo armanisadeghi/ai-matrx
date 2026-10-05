@@ -28,6 +28,7 @@ import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -181,7 +182,7 @@ export function AddMoreCardsButton({
   }, [stoppedCount, stoppedWhileSaving, open, toastId]);
   return (
     <>
-      <Button
+      <SurfaceButton
         type="button"
         variant={variant}
         size="sm"
@@ -199,7 +200,7 @@ export function AddMoreCardsButton({
       >
         <Plus className="h-3.5 w-3.5" />
         {label}
-      </Button>
+      </SurfaceButton>
       {open ? (
         <AddMoreCardsDialog
           setId={setId}
@@ -470,12 +471,12 @@ function AddMoreCardsDialog({
         ) : blocked ? (
           <span className="mr-auto text-xs text-muted-foreground">{blocked}</span>
         ) : null}
-        <Button type="button" variant="ghost" className="h-11 sm:h-9" onClick={onClose} disabled={busy}>
+        <Button type="button" variant="quiet" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
         <Button
+          variant="primary"
           type="button"
-          className="h-11 sm:h-9"
           disabled={busy || !!blocked || cardGen.isChecking}
           onClick={() => void start()}
         >

@@ -154,8 +154,7 @@ function SubmitWithAdvisories({
         surfaceName="marketing-press-room"
       />
       <Button
-        size="sm"
-        className="h-7 text-[11px]"
+        variant="primary"
         onClick={() => {
           void advisories
             .recordGoAhead({ entityType: "seo_source_request", entityId: request.id })
@@ -302,9 +301,8 @@ function RequestRow({
             />
             <Button
               asChild
-              size="sm"
               variant="outline"
-              className="ml-auto h-6 shrink-0 text-[10px]"
+              className="ml-auto shrink-0"
             >
               <a href={MEDIA_LISTS_HREF} target="_blank" rel="noreferrer">
                 Media lists
@@ -402,9 +400,8 @@ function RequestRow({
               </p>
               {onScore ? (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 shrink-0 text-[11px]"
+                  className="shrink-0"
                   disabled={scoring}
                   onClick={onScore}
                 >
@@ -422,8 +419,8 @@ function RequestRow({
               />
             ) : answerable && !closed ? (
               <Button
-                size="sm"
-                className="h-7 text-[11px]"
+                type="submit"
+                variant="primary"
                 disabled
                 title="Nothing to submit yet — there is no draft."
               >
@@ -432,9 +429,7 @@ function RequestRow({
             ) : null}
             {request.status === "submitted" ? (
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7 text-[11px]"
                 onClick={() => onRule("won")}
               >
                 They used it
@@ -442,9 +437,7 @@ function RequestRow({
             ) : null}
             {answerable ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-[11px] text-muted-foreground"
+                variant="quiet"
                 onClick={() => onRule(closed ? "expired" : "passed")}
               >
                 {closed ? "Mark expired" : "Pass on it"}

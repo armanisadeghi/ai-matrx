@@ -162,16 +162,15 @@ export function MoveOccurrenceDialog({
         </div>
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={busy}
           >
             Cancel
           </Button>
-          <Button onClick={() => void move()} disabled={busy}>
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : null}
+          <Button icon={busy ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : null} variant="primary" onClick={() => void move()} disabled={busy}>
             Move
           </Button>
         </DialogFooter>

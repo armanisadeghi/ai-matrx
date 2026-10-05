@@ -309,8 +309,7 @@ function StageActionPanel({
           </div>
         </div>
         {action.running && (
-          <Button size="sm" variant="ghost" onClick={action.cancel}>
-            <XIcon className="h-3.5 w-3.5 mr-1" />
+          <Button icon={<XIcon />} variant="quiet" onClick={action.cancel}>
             Stop
           </Button>
         )}
@@ -339,12 +338,12 @@ function StageActionPanel({
       {/* Action button + progress */}
       {!action.running && !action.error && !action.result && (
         <Button
-          size="sm"
+          icon={<Play />}
+          variant="primary"
           className="w-full"
           onClick={action.start}
           disabled={!processedDocumentId}
         >
-          <Play className="h-3.5 w-3.5 mr-1" />
           Run {def.actionLabel}
         </Button>
       )}
@@ -377,7 +376,6 @@ function StageActionPanel({
           <div className="font-medium">Action failed</div>
           <div className="break-words">{action.error}</div>
           <Button
-            size="sm"
             variant="outline"
             className="mt-2"
             onClick={() => {
@@ -401,7 +399,6 @@ function StageActionPanel({
             {summarizeResult(def, action.result)}
           </div>
           <Button
-            size="sm"
             variant="outline"
             className="mt-2"
             onClick={() => action.reset()}

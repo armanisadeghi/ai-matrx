@@ -16,16 +16,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, LineChart, ListChecks, X } from "lucide-react";
-import {
-  Button,
-  SegmentedControl,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
-} from "@ai-matrx/design-system";
+import { SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DecisionAnswers } from "@ai-matrx/chat/agents/decision-answers/DecisionAnswers";
 import { METHOD_LABELS, type DecisionMethod } from "@ai-matrx/agents/presentation/decision-answers";
@@ -346,7 +338,7 @@ export function ReviewQueue({
         {/* Calibration is computed per agent: the combined queue offers the
             selected answer's agent, and nothing when an API model answered. */}
         {(agentId ?? selected?.agentId) && (
-          <Button asChild size="sm" variant="outline" className="h-7 gap-1.5 text-xs">
+          <Button asChild variant="outline">
             <Link href={calibrationHref((agentId ?? selected?.agentId) as string)}>
               <LineChart className="h-3.5 w-3.5" />
               {combined ? "Agent calibration" : "Calibration"}
@@ -354,7 +346,7 @@ export function ReviewQueue({
           </Button>
         )}
         {!combined && (
-          <Button asChild size="sm" variant="ghost" className="h-7 gap-1.5 text-xs">
+          <Button asChild variant="quiet">
             <Link href={ALL_DECISIONS_REVIEW_HREF}>
               <ListChecks className="h-3.5 w-3.5" />
               All answers
@@ -513,11 +505,9 @@ export function ReviewQueue({
                     return (
                       <Button
                         key={option.key}
-                        size="sm"
-                        variant={isLabel ? "default" : "outline"}
+                        variant={isLabel ? "primary" : "outline"}
                         disabled={saving != null}
                         onClick={() => void applyLabel(selected, option.key)}
-                        className="h-8 gap-2 text-xs"
                         title={isModel ? "The model's answer" : undefined}
                       >
                         {index < 9 && <Kbd>{index + 1}</Kbd>}
@@ -529,9 +519,8 @@ export function ReviewQueue({
                       </Button>
                     );
                   })}
-                  <Button size="sm" variant="ghost" className="h-8 gap-1 text-xs" onClick={() => move(1)}>
+                  <Button iconEnd={<ChevronRight />} variant="quiet" onClick={() => move(1)}>
                     Skip
-                    <ChevronRight className="h-3.5 w-3.5" />
                   </Button>
                 </div>
                 {selected.options.length === 0 && (

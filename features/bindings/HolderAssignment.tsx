@@ -319,15 +319,14 @@ export function HolderAssignment({
             `data-holder-control` count stays three. */}
         {!isWorkflow && onCreateAgent ? (
           <Button
+            icon={<Plus aria-hidden />}
             type="button"
             variant="outline"
-            size="sm"
             data-testid="holder-create-agent"
             disabled={disabled}
             onClick={onCreateAgent}
-            className={cn(CONFIGURATION_CHOICE_SIZE, "gap-1 px-2.5")}
+            className={CONFIGURATION_CHOICE_SIZE}
           >
-            <Plus className="h-3.5 w-3.5" aria-hidden />
             Agent
           </Button>
         ) : null}

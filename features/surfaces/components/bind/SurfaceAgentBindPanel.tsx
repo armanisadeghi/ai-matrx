@@ -426,8 +426,7 @@ export function SurfaceAgentBindPanel({
           <div className="shrink-0 border-t border-border px-4 py-2.5 flex justify-end">
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onCancel}
               disabled={busy}
             >
@@ -617,8 +616,7 @@ export function SurfaceAgentBindPanel({
         {onCancel && (
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onCancel}
             disabled={busy}
           >
@@ -626,8 +624,8 @@ export function SurfaceAgentBindPanel({
           </Button>
         )}
         <Button
+          variant="primary"
           type="button"
-          size="sm"
           onClick={() => void handleSave()}
           disabled={busy || !agentReady || saveRefusals.length > 0}
         >

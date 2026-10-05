@@ -9,7 +9,7 @@
 "use client";
 
 import { Lightbulb } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/utils/cn";
 import { useKgSuggestions } from "@/features/kg-suggestions/hooks/useKgSuggestions";
 import { useOpenKgSuggestions } from "@/features/kg-suggestions/canvas/kgSuggestionsKind";

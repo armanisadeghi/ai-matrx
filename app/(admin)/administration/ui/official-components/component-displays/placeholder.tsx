@@ -38,16 +38,14 @@ export default function PlaceholderDisplay({ component }: ComponentDisplayProps)
             To create a new component display, use the existing displays as a template 
             and follow the structure defined in the documentation.
           </p>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="gap-2"
+          <Button
+            icon={<FileCode />} 
+            variant="outline"
             onClick={() => {
               // This is just a placeholder, in a real app you'd navigate to documentation
               toast.info('Navigate to documentation');
             }}
           >
-            <FileCode className="h-4 w-4" />
             View Documentation
           </Button>
         </div>

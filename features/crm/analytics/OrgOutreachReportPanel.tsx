@@ -163,8 +163,7 @@ export function OrgOutreachReportPanel({ ctx }: { ctx: CrmQueryContext }) {
         anchor="report_campaign_table"
         headerExtra={
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => void load()}
             disabled={isLoading}
           >

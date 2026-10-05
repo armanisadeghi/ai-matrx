@@ -1702,15 +1702,14 @@ function LivePatchSection() {
           Live ctx_patch — instant render + animated fill (press Play)
         </h2>
         <Button
-          size="sm"
-          onClick={() => setPlayKey((k) => k + 1)}
-          className="gap-1.5"
-        >
-          {hasPlayed ? (
-            <RotateCcw className="size-3.5" />
+          icon={hasPlayed ? (
+            <RotateCcw />
           ) : (
-            <Play className="size-3.5" />
+            <Play />
           )}
+          variant="primary"
+          onClick={() => setPlayKey((k) => k + 1)}
+        >
           {hasPlayed ? "Replay" : "Play"}
         </Button>
         <Badge variant={statusVariant}>{statusLabel}</Badge>
@@ -1770,15 +1769,14 @@ function LiveSearchSection() {
           Live search (press Play)
         </h2>
         <Button
-          size="sm"
-          onClick={() => setPlayKey((k) => k + 1)}
-          className="gap-1.5"
-        >
-          {hasPlayed ? (
-            <RotateCcw className="size-3.5" />
+          icon={hasPlayed ? (
+            <RotateCcw />
           ) : (
-            <Play className="size-3.5" />
+            <Play />
           )}
+          variant="primary"
+          onClick={() => setPlayKey((k) => k + 1)}
+        >
           {hasPlayed ? "Replay" : "Play"}
         </Button>
         <Badge variant={statusVariant}>{statusLabel}</Badge>
@@ -1839,15 +1837,14 @@ function ResearchStreamSection() {
           Research stream simulation (press Play)
         </h2>
         <Button
-          size="sm"
-          onClick={() => setPlayKey((k) => k + 1)}
-          className="gap-1.5"
-        >
-          {hasPlayed ? (
-            <RotateCcw className="size-3.5" />
+          icon={hasPlayed ? (
+            <RotateCcw />
           ) : (
-            <Play className="size-3.5" />
+            <Play />
           )}
+          variant="primary"
+          onClick={() => setPlayKey((k) => k + 1)}
+        >
           {hasPlayed ? "Replay" : "Play"}
         </Button>
         <Badge variant={statusVariant}>{statusLabel}</Badge>
@@ -1888,15 +1885,14 @@ function LiveScrapeSection() {
           Live scrape / page-read (press Play)
         </h2>
         <Button
-          size="sm"
-          onClick={() => setPlayKey((k) => k + 1)}
-          className="gap-1.5"
-        >
-          {hasPlayed ? (
-            <RotateCcw className="size-3.5" />
+          icon={hasPlayed ? (
+            <RotateCcw />
           ) : (
-            <Play className="size-3.5" />
+            <Play />
           )}
+          variant="primary"
+          onClick={() => setPlayKey((k) => k + 1)}
+        >
           {hasPlayed ? "Replay" : "Play"}
         </Button>
         <Badge variant={statusVariant}>{statusLabel}</Badge>
@@ -1958,15 +1954,14 @@ function LiveResearchSection() {
           Live research + streaming report (press Play)
         </h2>
         <Button
-          size="sm"
-          onClick={() => setPlayKey((k) => k + 1)}
-          className="gap-1.5"
-        >
-          {hasPlayed ? (
-            <RotateCcw className="size-3.5" />
+          icon={hasPlayed ? (
+            <RotateCcw />
           ) : (
-            <Play className="size-3.5" />
+            <Play />
           )}
+          variant="primary"
+          onClick={() => setPlayKey((k) => k + 1)}
+        >
           {hasPlayed ? "Replay" : "Play"}
         </Button>
         <Badge variant={statusVariant}>{statusLabel}</Badge>

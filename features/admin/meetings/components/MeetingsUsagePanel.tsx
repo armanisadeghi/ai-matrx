@@ -95,7 +95,7 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
           ))}
         </div>
         <span className="text-xs text-muted-foreground">Started in the last {period} days · all organizations</span>
-        <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={() => setNonce((n) => n + 1)}>Refresh</Button>
+        <Button variant="quiet" className="ml-auto" onClick={() => setNonce((n) => n + 1)}>Refresh</Button>
       </div>
 
       {state.error ? (
@@ -121,7 +121,7 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
           tableId="admin-meetings-usage-by-org"
           data={state.report?.byOrg ?? []}
           columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-            <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => onOpenOrganization(row.organization_id)}>
+            <Button variant="quiet" onClick={() => onOpenOrganization(row.organization_id)}>
               Meetings
             </Button>
           ) }]}

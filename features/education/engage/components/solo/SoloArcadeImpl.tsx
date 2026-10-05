@@ -122,10 +122,9 @@ function SoloRound({
           <ErrorAlchemyMenu />
         </p>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={back}>
-            <ArrowLeft className="mr-1 h-4 w-4" /> Back
+          <Button icon={<ArrowLeft />} variant="outline" onClick={back}> Back
           </Button>
-          <Button onClick={() => router.push("/education/flashcards")}>
+          <Button variant="primary" onClick={() => router.push("/education/flashcards")}>
             Create a deck
           </Button>
         </div>
@@ -156,8 +155,7 @@ function SoloRound({
     body = (
       <div className="flex h-full flex-col p-4">
         <div className="mb-3 flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={back} className="gap-1">
-            <ArrowLeft className="h-4 w-4" /> Exit
+          <Button icon={<ArrowLeft />} variant="quiet" onClick={back}> Exit
           </Button>
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
             <Gamepad2 className="h-4 w-4" /> Solo Arcade

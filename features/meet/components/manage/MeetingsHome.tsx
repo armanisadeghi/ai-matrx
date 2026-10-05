@@ -432,7 +432,6 @@ export function MeetingsHome() {
               </p>
               <Button
                 variant="outline"
-                size="sm"
                 className="mt-3"
                 onClick={directory.reload}
               >
@@ -453,7 +452,6 @@ export function MeetingsHome() {
               </p>
               <Button
                 variant="outline"
-                size="sm"
                 className="mt-3"
                 onClick={planning.retry}
               >
@@ -474,7 +472,6 @@ export function MeetingsHome() {
               </p>
               <Button
                 variant="outline"
-                size="sm"
                 className="mt-3"
                 onClick={external.retry}
               >
@@ -607,8 +604,7 @@ function UpcomingList({
               Schedule one and invite people, or start one now and send the
               link.
             </p>
-            <Button className="mt-4 gap-1.5" onClick={onCreate}>
-              <CalendarPlus className="h-4 w-4" aria-hidden="true" /> New
+            <Button icon={<CalendarPlus aria-hidden="true" />} variant="primary" className="mt-4" onClick={onCreate}> New
               meeting
             </Button>
           </>
@@ -941,15 +937,12 @@ function ExternalEventRow({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
+              icon={<MoreHorizontal aria-hidden="true" />}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              variant="quiet"
               aria-label={`More actions for ${event.title}`}
               onClick={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
             {limit ? (
@@ -1041,9 +1034,8 @@ function Row({
       {primary ? (
         <Button
           type="button"
-          size="sm"
-          variant={live ? "default" : "outline"}
-          className="h-8 shrink-0"
+          variant={live ? "primary" : "outline"}
+          className="shrink-0"
           onClick={(e) => {
             e.stopPropagation();
             primary.onClick();

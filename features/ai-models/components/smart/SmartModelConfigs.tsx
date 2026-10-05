@@ -249,19 +249,15 @@ export function SmartModelConfigs({
         <div className="flex items-center gap-1">
           {hasPendingConflict && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700 dark:hover:text-amber-300 gap-1"
+              icon={<AlertTriangle />}
+              variant="quiet"
               onClick={onOpenSettingsConflictModal}
             >
-              <AlertTriangle className="w-3.5 h-3.5" />
               Review Conflicts
             </Button>
           )}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+            variant="quiet"
             onClick={onSettingsClick}
           >
             <Settings2 className="w-3.5 h-3.5 mr-1" />

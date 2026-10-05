@@ -251,15 +251,14 @@ export function RuleEditorForm({
           ] as const
         ).map(([side, text]) => (
           <Button
+            icon={side === "source" ? (
+              <TriangleAlert />
+            ) : null}
             key={side}
-            variant={editor.containerSide === side ? "default" : "outline"}
-            size="sm"
+            variant={editor.containerSide === side ? "primary" : "outline"}
             className={`h-auto min-h-8 justify-start whitespace-normal py-1.5 text-left ${side === "source" && editor.containerSide !== "source" ? "border-amber-500/50 text-amber-700 dark:text-amber-500" : ""}`}
             onClick={() => onChange({ ...editor, containerSide: side })}
           >
-            {side === "source" ? (
-              <TriangleAlert className="mr-1.5 h-3.5 w-3.5" />
-            ) : null}
             {text}
           </Button>
         ))}
@@ -324,12 +323,11 @@ export function RuleEditorForm({
       <div className="mt-auto flex items-center justify-between gap-2 pb-2">
         {editor.mode === "edit" && onDelete ? (
           <Button
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
+            icon={<Trash2 />}
+            variant="quiet"
             disabled={saving}
             onClick={onDelete}
           >
-            <Trash2 className="mr-1.5 h-4 w-4" />
             Delete
           </Button>
         ) : (
@@ -339,7 +337,7 @@ export function RuleEditorForm({
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button disabled={saving || !valid} onClick={onSave}>
+          <Button variant="primary" disabled={saving || !valid} onClick={onSave}>
             {editor.mode === "create" ? "Create rule" : "Save rule"}
           </Button>
         </div>

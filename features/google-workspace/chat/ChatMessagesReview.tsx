@@ -122,10 +122,10 @@ export function ChatMessagesReview({ connection, actorId, organizationId }: Prop
             </label>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Button size="sm" disabled={busy || !base || !space || !start || !end} onClick={() => { if (base) void read(base); }}>Read one page</Button>
-            {page?.continuation ? <Button size="sm" variant="outline" disabled={busy || !base}
+            <Button variant="primary" disabled={busy || !base || !space || !start || !end} onClick={() => { if (base) void read(base); }}>Read one page</Button>
+            {page?.continuation ? <Button variant="outline" disabled={busy || !base}
               onClick={() => { if (base && page.continuation) void read({ ...base, continuation: page.continuation }); }}>Next page</Button> : null}
-            {failed ? <Button size="sm" variant="outline" disabled={busy} onClick={() => void read(failed)}>Retry</Button> : null}
+            {failed ? <Button variant="outline" disabled={busy} onClick={() => void read(failed)}>Retry</Button> : null}
           </div>
           {busy ? <p role="status" className="mt-3 text-sm">Reading messages…</p> : null}
           {error ? <ErrorNotice error={error} /> : null}

@@ -116,13 +116,12 @@ export function SettingsFixReportCard({
         <span className="font-medium">Settings fixes</span>
         {reports.length > 0 ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-6 gap-1 px-1.5 text-[11px]"
+            icon={<X />}
+            variant="quiet"
+            className="ml-auto"
             onClick={onDismiss}
             title="Hide these reports (the versions they created stay)."
-          >
-            <X className="h-3 w-3" /> Dismiss
+          > Dismiss
           </Button>
         ) : null}
       </div>

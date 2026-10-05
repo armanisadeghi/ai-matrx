@@ -667,21 +667,19 @@ export function PredictionLedgerDialog({
                           />
                           <div className="mt-2 flex flex-wrap gap-2">
                             <Button
-                              size="sm"
+                              icon={<CheckCircle2 />}
                               variant="outline"
                               disabled={resolving === entry.id}
                               onClick={() => void settle(entry, true)}
                             >
-                              <CheckCircle2 className="mr-1 h-3.5 w-3.5" />
                               It happened
                             </Button>
                             <Button
-                              size="sm"
+                              icon={<XCircle />}
                               variant="outline"
                               disabled={resolving === entry.id}
                               onClick={() => void settle(entry, false)}
                             >
-                              <XCircle className="mr-1 h-3.5 w-3.5" />
                               It didn&apos;t
                             </Button>
                           </div>

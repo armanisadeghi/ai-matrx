@@ -163,11 +163,10 @@ export function NoteItemBody({ tileId, source, title, onSource }: ItemBodyProps)
           message={failure.reason}
           operation="Start a note on the board"
           actions={
-            <Button size="sm" variant="outline" onClick={() => {
+            <Button icon={<RotateCcw />} variant="outline" onClick={() => {
                 setFailure(null);
                 setAttempt((n) => n + 1);
               }}>
-              <RotateCcw className="mr-1.5 size-3.5" />
               Try again
             </Button>
           }

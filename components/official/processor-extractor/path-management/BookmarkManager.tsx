@@ -209,11 +209,12 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                             <div>
                                 <h3 className="font-medium text-sm mb-2">Export Bookmarks</h3>
                                 <div className="flex space-x-2">
-                                    <Button 
+                                    <Button
+                                        icon={<FileUp />}
+                                        variant="primary" 
                                         onClick={handleExport} 
-                                        className="flex items-center space-x-1"
+                                        className="flex"
                                     >
-                                        <FileUp className="w-4 h-4 mr-1" />
                                         Copy to Clipboard
                                     </Button>
                                 </div>
@@ -232,12 +233,13 @@ const BookmarkManager: React.FC<BookmarkManagerProps> = ({ open, onOpenChange })
                                         placeholder={`Paste JSON bookmarks here...`}
                                     />
                                     <div className="flex justify-end">
-                                        <Button 
+                                        <Button
+                                            icon={<ImportIcon />}
+                                            variant="primary" 
                                             onClick={handleImport} 
-                                            className="flex items-center space-x-1"
+                                            className="flex"
                                             disabled={!importJson.trim()}
                                         >
-                                            <ImportIcon className="w-4 h-4 mr-1" />
                                             Import
                                         </Button>
                                     </div>

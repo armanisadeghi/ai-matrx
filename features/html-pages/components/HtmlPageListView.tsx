@@ -295,7 +295,7 @@ export default function HtmlPageListView({
           <AlertCircle className="h-8 w-8" />
           <p className="text-sm font-medium">Failed to load pages</p>
           <p className="text-xs text-muted-foreground">{error}</p>
-          <Button variant="outline" size="sm" onClick={onRefresh}>
+          <Button variant="outline" onClick={onRefresh}>
             Retry
           </Button>
           <ErrorAlchemyMenu />
@@ -329,21 +329,17 @@ export default function HtmlPageListView({
             )}
           </div>
           <Button
-            variant={indexableOnly ? "default" : "outline"}
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
+            icon={<Globe />}
+            variant={indexableOnly ? "primary" : "outline"}
             onClick={() => replaceListState({ indexableOnly: !indexableOnly })}
           >
-            <Globe className="h-3.5 w-3.5" />
             Indexable only
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1.5 text-xs"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={onRefresh}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </Button>
           <div className="sm:ml-auto flex items-center rounded-md border border-border overflow-hidden">
@@ -730,9 +726,8 @@ function HtmlPageActions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
+          variant="quiet"
+          className="w-7"
           aria-label={`Actions for ${page.meta_title || "Untitled"}`}
         >
           <MoreHorizontal className="h-4 w-4" />

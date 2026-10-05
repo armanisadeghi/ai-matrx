@@ -113,14 +113,11 @@ export function MediaPager({
       {/* Top bar */}
       <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between bg-gradient-to-b from-black/70 to-transparent p-3 pt-safe">
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-10 w-10 rounded-full text-white hover:bg-white/10 hover:text-white"
+          icon={<X />}
+          variant="quiet"
           onClick={onClose}
           aria-label="Close viewer"
-        >
-          <X className="h-5 w-5" />
-        </Button>
+        />
         <span className="rounded-full bg-black/50 px-3 py-1 text-sm tabular-nums text-white/90">
           {index + 1} / {count}
         </span>
@@ -129,25 +126,19 @@ export function MediaPager({
               hide it rather than dead-ending. */}
           {onEdit && current.kind === "photo" && current.previewUrl ? (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full text-white hover:bg-white/10 hover:text-white"
+              icon={<Pencil />}
+              variant="quiet"
               onClick={() => onEdit(current)}
               aria-label="Edit this photo"
-            >
-              <Pencil className="h-5 w-5" />
-            </Button>
+            />
           ) : null}
           {onDelete ? (
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full text-white hover:bg-white/10 hover:text-white"
+              icon={<Trash2 />}
+              variant="quiet"
               onClick={() => onDelete(current)}
               aria-label="Delete this file"
-            >
-              <Trash2 className="h-5 w-5" />
-            </Button>
+            />
           ) : (
             <span className="h-10 w-10" aria-hidden />
           )}
@@ -224,25 +215,21 @@ export function MediaPager({
         {/* Desktop chevrons (hidden on touch-first small screens) */}
         {index > 0 && (
           <Button
-            variant="ghost"
-            size="icon"
-            className="absolute left-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/60 hover:text-white sm:flex"
+            icon={<ChevronLeft />}
+            variant="quiet"
+            className="absolute left-2 top-1/2 z-20 hidden -translate-y-1/2 sm:flex"
             onClick={() => go(-1)}
             aria-label="Previous file"
-          >
-            <ChevronLeft className="h-6 w-6" />
-          </Button>
+          />
         )}
         {index < count - 1 && (
           <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-2 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 rounded-full bg-black/40 text-white hover:bg-black/60 hover:text-white sm:flex"
+            icon={<ChevronRight />}
+            variant="quiet"
+            className="absolute right-2 top-1/2 z-20 hidden -translate-y-1/2 sm:flex"
             onClick={() => go(1)}
             aria-label="Next file"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </Button>
+          />
         )}
       </div>
 

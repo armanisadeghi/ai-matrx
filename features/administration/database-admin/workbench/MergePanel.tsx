@@ -456,12 +456,11 @@ export function MergePanel({
                 )}
               </div>
               <Button
+                icon={<GitMerge />}
+                variant="primary"
                 onClick={onMerge}
                 disabled={!canMerge}
-                size="sm"
-                className="h-7 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800"
               >
-                <GitMerge className="h-3.5 w-3.5 mr-1" />
                 Merge
               </Button>
             </div>
@@ -481,10 +480,8 @@ export function MergePanel({
                 </span>
               </div>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => onResult(null)}
-                className="h-6 px-2 text-[10px] text-slate-500 dark:text-slate-400"
               >
                 Clear
               </Button>

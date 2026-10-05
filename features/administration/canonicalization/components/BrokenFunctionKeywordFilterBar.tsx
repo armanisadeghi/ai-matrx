@@ -159,9 +159,7 @@ export function BrokenFunctionKeywordFilterBar({
               Showing {filteredCount} of {totalCount}
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs"
+                variant="quiet"
                 onClick={onClear}
               >
                 Clear keywords

@@ -188,9 +188,7 @@ export function ProposePayChange({
       <div className={className}>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="min-h-11 sm:min-h-9"
           onClick={() => setOpen(true)}
         >
           Propose a pay change
@@ -296,8 +294,8 @@ export function ProposePayChange({
 
       <div className="flex flex-wrap gap-2">
         <Button
+          variant="primary"
           type="button"
-          size="sm"
           disabled={
             busy ||
             !form.amount.trim() ||
@@ -317,7 +315,6 @@ export function ProposePayChange({
         </Button>
         <Button
           type="button"
-          size="sm"
           variant="outline"
           disabled={busy}
           onClick={() => {

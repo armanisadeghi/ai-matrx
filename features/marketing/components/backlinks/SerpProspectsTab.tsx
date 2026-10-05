@@ -286,9 +286,12 @@ function CheckThisPageButton({
   const otherRunBusy = brokenLinkRun.status === "running" && !busy;
   return (
     <Button
-      size="sm"
-      variant="ghost"
-      className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+      icon={busy ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <Unlink />
+      )}
+      variant="quiet"
       disabled={busy || otherRunBusy}
       onClick={(event) => {
         event.stopPropagation();
@@ -300,11 +303,6 @@ function CheckThisPageButton({
           : "Open this page now and check every link on it."
       }
     >
-      {busy ? (
-        <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-      ) : (
-        <Unlink className="mr-1 h-3 w-3" />
-      )}
       {busy
         ? "Checking this page…"
         : checkedBefore
@@ -507,22 +505,24 @@ function ImportListDialog({
         ) : null}
 
         <DialogFooter>
-          <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+          <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Close
           </Button>
           <Button
-            size="sm"
+            icon={state.status === "previewing" ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
             variant="outline"
             disabled={entries.length === 0 || busy}
             onClick={() => void prospects.previewImport(entries, label)}
           >
-            {state.status === "previewing" ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
             Check this list
           </Button>
           <Button
-            size="sm"
+            icon={state.status === "running" ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+            variant="primary"
             disabled={!previewed || busy || state.preview?.new_domains === 0}
             title={
               previewed
@@ -531,9 +531,6 @@ function ImportListDialog({
             }
             onClick={() => void prospects.runImport(entries, label)}
           >
-            {state.status === "running" ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
             Add {state.preview?.new_domains ?? 0} to my prospects
           </Button>
         </DialogFooter>
@@ -788,9 +785,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
             <Button
               type="button"
               variant="outline"
-              size="sm"
               disabled
-              className="h-6 gap-1 px-2 text-[11px]"
               title="An AI keyword assistant hasn't been assigned yet — enter keywords manually."
             >
               <AGENT_ICON className="h-3 w-3" />
@@ -798,19 +793,17 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
             </Button>
           )}
           <Button
+            icon={prospects.volumesLoading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Search />
+            )}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-6 gap-1 px-2 text-[11px]"
+            variant="quiet"
             disabled={!prospects.keywords.length || prospects.volumesLoading}
             title="Look up how many people search each keyword every month"
             onClick={() => void prospects.checkVolumes()}
           >
-            {prospects.volumesLoading ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Search className="h-3 w-3" />
-            )}
             Check search volume
           </Button>
         </div>
@@ -909,9 +902,12 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
       </div>
       <div className="flex flex-col items-stretch gap-1.5">
         <Button
-          size="sm"
+          icon={prospects.previewLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Search />
+          )}
           variant="outline"
-          className="gap-1.5"
           disabled={
             !prospects.keywords.length ||
             overLimit ||
@@ -921,16 +917,15 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
           title="See every search that would run, and what it would cost, before spending anything"
           onClick={() => void prospects.loadPreview()}
         >
-          {prospects.previewLoading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Search className="h-3.5 w-3.5" />
-          )}
           Preview searches
         </Button>
         <Button
-          size="sm"
-          className="gap-1.5"
+          icon={run.status === "running" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Search />
+          )}
+          variant="primary"
           disabled={
             !prospects.preview ||
             prospects.runDisabled ||
@@ -943,11 +938,6 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
           }
           onClick={() => void prospects.startRun()}
         >
-          {run.status === "running" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Search className="h-3.5 w-3.5" />
-          )}
           Find prospects
         </Button>
       </div>
@@ -1137,9 +1127,13 @@ export function SerpProspectsTab({
           {pendingCount} waiting on you · {approvedCount} approved
         </span>
         <Button
-          size="sm"
+          icon={prospects.folding ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Users />
+          )}
           variant="outline"
-          className="ml-auto gap-1.5"
+          className="ml-auto"
           disabled={approvedCount === 0 || prospects.folding}
           title={
             approvedCount === 0
@@ -1148,17 +1142,11 @@ export function SerpProspectsTab({
           }
           onClick={() => void prospects.foldApproved()}
         >
-          {prospects.folding ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Users className="h-3.5 w-3.5" />
-          )}
           Create CRM records ({approvedCount})
         </Button>
         <Button
-          size="sm"
+          icon={<Megaphone />}
           variant="outline"
-          className="gap-1.5"
           disabled={selectedPartyIds.length === 0}
           title={
             selectedPartyIds.length
@@ -1167,35 +1155,30 @@ export function SerpProspectsTab({
           }
           onClick={() => setEnrolling(true)}
         >
-          <Megaphone className="h-3.5 w-3.5" />
           Add to outreach ({selectedPartyIds.length})
         </Button>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
+          icon={prospects.brokenLinkRun.status === "running" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Unlink />
+          )}
           variant="outline"
-          className="gap-1.5"
           disabled={prospects.brokenLinkRun.status === "running"}
           title="Open the resource pages and best-of lists we found, and check every link on them. A link pointing at something that no longer exists is your opening — you are telling them about a real problem."
           onClick={() => void prospects.checkBrokenLinks()}
         >
-          {prospects.brokenLinkRun.status === "running" ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Unlink className="h-3.5 w-3.5" />
-          )}
           Find broken links
         </Button>
         <Button
-          size="sm"
+          icon={<ListPlus />}
           variant="outline"
-          className="gap-1.5"
           title="Paste a list of sites you already have. They join this list, deduplicated and scored the same way."
           onClick={() => setImporting(true)}
         >
-          <ListPlus className="h-3.5 w-3.5" />
           Import a list
         </Button>
         {prospects.brokenLinkRun.status === "running" &&
@@ -1297,8 +1280,7 @@ export function SerpProspectsTab({
               <>
                 {row.review_status === "approved" ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     disabled={prospects.reviewing}
                     onClick={() => void prospects.review([row.id], "pending")}
                   >
@@ -1306,19 +1288,16 @@ export function SerpProspectsTab({
                   </Button>
                 ) : (
                   <Button
-                    size="sm"
+                    icon={<CheckCircle2 />}
                     variant="outline"
-                    className="gap-1"
                     disabled={prospects.reviewing}
                     onClick={() => void prospects.review([row.id], "approved")}
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Approve
                   </Button>
                 )}
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   disabled={prospects.reviewing}
                   onClick={() => void prospects.review([row.id], "rejected")}
                 >
@@ -1343,38 +1322,33 @@ export function SerpProspectsTab({
               actions: (_selected, selectedIds) => (
                 <div className="flex items-center gap-1">
                   <Button
-                    size="sm"
-                    className="gap-1"
+                    icon={<CheckCircle2 />}
+                    variant="primary"
                     disabled={prospects.reviewing}
                     onClick={() =>
                       void prospects.review(selectedIds, "approved")
                     }
                   >
-                    <CheckCircle2 className="h-3.5 w-3.5" />
                     Approve
                   </Button>
                   <Button
-                    size="sm"
+                    icon={<Clock />}
                     variant="outline"
-                    className="gap-1"
                     disabled={prospects.reviewing}
                     onClick={() =>
                       void prospects.review(selectedIds, "snoozed")
                     }
                   >
-                    <Clock className="h-3.5 w-3.5" />
                     Later
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="gap-1"
+                    icon={<Ban />}
+                    variant="quiet"
                     disabled={prospects.reviewing}
                     onClick={() =>
                       void prospects.review(selectedIds, "rejected")
                     }
                   >
-                    <Ban className="h-3.5 w-3.5" />
                     Not for us
                   </Button>
                 </div>

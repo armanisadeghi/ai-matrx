@@ -135,7 +135,7 @@ export function MemoryHome() {
             <p className="text-sm text-muted-foreground">
               Sign in to view and create your memory aids.
             </p>
-            <Button asChild className="mt-4" size="sm">
+            <Button variant="primary" asChild className="mt-4">
               <Link href={loginHref}>Sign in</Link>
             </Button>
           </div>
@@ -155,15 +155,13 @@ export function MemoryHome() {
           label="memory aids"
         />
         <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={() => router.push("/education/memory/new/manual")}>
-          <Plus className="mr-1 h-4 w-4" /> Write my own
+        <Button icon={<Plus />} variant="outline" onClick={() => router.push("/education/memory/new/manual")}> Write my own
         </Button>
         <Button
-          size="sm"
-          className="gap-1.5"
+          icon={<Plus />}
+          variant="primary"
           onClick={() => router.push("/education/memory/new")}
         >
-          <Plus className="h-4 w-4" />
           New memory aid
         </Button>
         </div>
@@ -184,11 +182,10 @@ export function MemoryHome() {
             and a memory palace.
           </p>
           <Button
-            size="sm"
-            className="gap-1.5"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => router.push("/education/memory/new")}
           >
-            <Plus className="h-4 w-4" />
             New memory aid
           </Button>
         </div>
@@ -235,7 +232,7 @@ function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
     <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 p-10 text-center">
       <AlertCircle className="h-8 w-8 text-destructive" />
       <p className="text-sm text-muted-foreground">Could not load memory aids right now.</p>
-      <Button size="sm" onClick={onRetry}>Try again</Button>
+      <Button variant="primary" onClick={onRetry}>Try again</Button>
       <ErrorAlchemyMenu />
     </div>
   );

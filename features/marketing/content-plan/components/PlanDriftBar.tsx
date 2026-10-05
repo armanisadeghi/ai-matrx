@@ -199,19 +199,17 @@ export function PlanDriftBar({
         })}
       />
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 shrink-0 px-1.5 text-[11px] text-muted-foreground"
+        icon={<RefreshCw />}
+        variant="quiet"
+        className="shrink-0"
         title="Re-check now and save the links between planned pages and the live pages that realize them"
         onClick={onSyncAlignment}
       >
-        <RefreshCw className="mr-1 h-3 w-3" />
         Sync
       </Button>
       <Button
-        variant={inSync ? "ghost" : "secondary"}
-        size="sm"
-        className="h-6 shrink-0 px-2 text-[11px]"
+        variant={inSync ? "quiet" : "outline"}
+        className="shrink-0"
         onClick={() => onOpen("all")}
       >
         {inSync ? "Details" : "Review & fix"}

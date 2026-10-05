@@ -759,8 +759,7 @@ function CropOverlay({
 
         {!result && hasSelection && (
           <Button
-            size="sm"
-            className="h-7 text-[11px] px-2.5"
+            variant="primary"
             disabled={running}
             onClick={() => void applyCrop()}
           >
@@ -775,9 +774,7 @@ function CropOverlay({
           </Button>
         )}
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-[11px]"
+          variant="quiet"
           onClick={onCancel}
         >
           {result ? "Done" : "Cancel"}
@@ -788,9 +785,8 @@ function CropOverlay({
       {result && (
         <div className="absolute bottom-0 left-0 right-0 pointer-events-auto bg-background/95 backdrop-blur-sm border-t border-border px-3 py-2 flex flex-wrap items-center gap-2">
           <Button
-            size="sm"
+            icon={<Download />}
             variant="outline"
-            className="h-7 text-[11px] px-2"
             onClick={() => {
               const url = URL.createObjectURL(result.blob);
               const a = document.createElement("a");
@@ -802,7 +798,6 @@ function CropOverlay({
               URL.revokeObjectURL(url);
             }}
           >
-            <Download className="w-3 h-3 mr-1" />
             Download
           </Button>
           {savedId ? (
@@ -811,16 +806,15 @@ function CropOverlay({
             </span>
           ) : (
             <Button
-              size="sm"
-              className="h-7 text-[11px] px-2"
+              icon={saving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               disabled={saving}
               onClick={() => void handleSave()}
             >
-              {saving ? (
-                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-              ) : (
-                <Save className="w-3 h-3 mr-1" />
-              )}
               Save as document
             </Button>
           )}
@@ -947,8 +941,7 @@ function PageReorderView({
 
         {!result && (
           <Button
-            size="sm"
-            className="h-7 text-[11px] px-2.5"
+            variant="primary"
             disabled={running || isDefaultOrder}
             onClick={() => void applyOrder()}
             title={isDefaultOrder ? "Rearrange pages first" : undefined}
@@ -967,9 +960,8 @@ function PageReorderView({
         {result && (
           <>
             <Button
-              size="sm"
+              icon={<Download />}
               variant="outline"
-              className="h-7 text-[11px] px-2"
               onClick={() => {
                 const url = URL.createObjectURL(result.blob);
                 const a = document.createElement("a");
@@ -981,7 +973,6 @@ function PageReorderView({
                 URL.revokeObjectURL(url);
               }}
             >
-              <Download className="w-3 h-3 mr-1" />
               Download
             </Button>
             {savedId ? (
@@ -990,16 +981,15 @@ function PageReorderView({
               </span>
             ) : (
               <Button
-                size="sm"
-                className="h-7 text-[11px] px-2"
+                icon={saving ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Save />
+                )}
+                variant="primary"
                 disabled={saving}
                 onClick={() => void handleSave()}
               >
-                {saving ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                ) : (
-                  <Save className="w-3 h-3 mr-1" />
-                )}
                 Save
               </Button>
             )}
@@ -1007,9 +997,7 @@ function PageReorderView({
         )}
 
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-[11px]"
+          variant="quiet"
           onClick={onCancel}
         >
           {result ? "Done" : "Cancel"}
@@ -1100,11 +1088,10 @@ function PdfPaneEmptyState({
         </div>
         <div className="flex flex-col gap-2 items-center">
           <Button
-            size="sm"
-            className="h-8 text-xs gap-1.5"
+            icon={<Upload />}
+            variant="primary"
             onClick={onOpenUpload}
           >
-            <Upload className="w-3.5 h-3.5" />
             Re-upload to relink
           </Button>
           <p className="text-[10px] text-muted-foreground/70 font-mono">
@@ -1579,8 +1566,7 @@ function BlankPagesBanner({
           <div className="mt-1.5">
             {isCleanPane ? (
               <Button
-                size="sm"
-                className="h-7 text-[11px] gap-1"
+                variant="primary"
                 onClick={() => void onRunAiClean()}
                 disabled={aiCleanRunning}
               >
@@ -1598,8 +1584,7 @@ function BlankPagesBanner({
               </Button>
             ) : (
               <Button
-                size="sm"
-                className="h-7 text-[11px] gap-1"
+                variant="primary"
                 onClick={() => void onRunPipeline()}
                 disabled={pipelineRunning}
               >

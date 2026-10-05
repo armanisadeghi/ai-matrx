@@ -218,14 +218,12 @@ export function SitemapDetail({ sitemapId }: { sitemapId: string }) {
     <main className="flex h-full flex-col gap-2 overflow-hidden bg-textured p-3 sm:p-4">
       <header className="flex shrink-0 flex-wrap items-center gap-2">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 gap-1"
+          icon={<ChevronLeft />}
+          variant="quiet"
           onClick={() =>
             router.push(marketingRoutes.site(brandId, site.id, "/sitemaps"))
           }
         >
-          <ChevronLeft className="h-3.5 w-3.5" />
           All sitemaps
         </Button>
         <div className="min-w-0 flex-1">

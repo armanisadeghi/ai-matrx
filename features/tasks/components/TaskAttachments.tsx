@@ -101,18 +101,16 @@ export default function TaskAttachments({ taskId }: TaskAttachmentsProps) {
             disabled={isUploading}
           />
           <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploading}
-          >
-            {isUploading ? (
+            icon={isUploading ? (
               <Loader2 size={12} className="animate-spin" />
             ) : (
               <Upload size={12} />
             )}
+            type="button"
+            variant="quiet"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+          >
             {isUploading ? "Uploading…" : "Upload"}
           </Button>
         </div>

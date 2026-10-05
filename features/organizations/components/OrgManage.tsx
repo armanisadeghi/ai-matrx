@@ -292,14 +292,14 @@ export function OrgManage({
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {canManageMembers && (
-                  <Button asChild variant="default" size="sm">
+                  <Button asChild variant="primary">
                     <Link href={`/organizations/${slug}/admin`}>
                       <UserCog className="h-3.5 w-3.5 mr-1.5" />
                       Manage users
                     </Link>
                   </Button>
                 )}
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline">
                   <Link
                     href={`/organizations/${slug}`}
                     target="_blank"
@@ -500,7 +500,6 @@ export function OrgManage({
                   <Button
                     asChild
                     variant="outline"
-                    size="sm"
                     className="shrink-0"
                   >
                     <Link href={`/organizations/${slug}/scopes`}>
@@ -530,7 +529,7 @@ export function OrgManage({
               title="Mandates"
               description="Choose which agent or workflow runs each AI job for this organization. Your choice replaces the system default for every member."
             >
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline">
                 <Link href={`/organizations/${slug}/settings/mandates`}>
                   Manage mandates
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -585,7 +584,7 @@ export function OrgManage({
                   Overrides take effect within a minute, with no deploy. HR
                   settings keep their own page under HR.
                 </p>
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline">
                   <Link href={`/organizations/${slug}/settings/configuration`}>
                     Open configuration
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -608,7 +607,7 @@ export function OrgManage({
                   Create a key for CI, integrations, or partner systems; the
                   secret is shown once and revocation is immediate.
                 </p>
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline">
                   <Link href={`/organizations/${slug}/settings/api-keys`}>
                     Open API keys
                     <ChevronRight className="h-4 w-4 ml-1" />
@@ -631,7 +630,7 @@ export function OrgManage({
                 across the full change-type catalogue. Members can request
                 changes; owners and admins decide.
               </p>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline">
                 <Link href={`/organizations/${slug}/settings/change-policy`}>
                   Open change policy
                   <ChevronRight className="h-4 w-4 ml-1" />
@@ -649,7 +648,7 @@ export function OrgManage({
               description="How keywords are valued for every brand and site here."
             >
               <div className="flex justify-end">
-                <Button asChild variant="outline" size="sm">
+                <Button asChild variant="outline">
                   <Link href={`/organizations/${slug}/settings/keyword-value`}>
                     Open keyword value
                     <ChevronRight className="h-4 w-4 ml-1" />

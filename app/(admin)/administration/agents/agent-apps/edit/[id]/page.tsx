@@ -404,17 +404,16 @@ export default function AdminEditAgentAppPage({
     <div className="h-[calc(100dvh-2.5rem)] flex flex-col overflow-hidden bg-textured">
       <div className="flex-shrink-0 px-4 h-12 border-b border-border bg-card flex items-center gap-2">
         <Button
-          variant="ghost"
-          size="sm"
+          icon={isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ArrowLeft />
+          )}
+          variant="quiet"
           onClick={goToList}
           disabled={isPending}
           className="-ml-2"
         >
-          {isPending ? (
-            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-          ) : (
-            <ArrowLeft className="h-4 w-4 mr-1.5" />
-          )}
           Back
         </Button>
         <div className="text-sm text-muted-foreground truncate flex items-center gap-2">
@@ -481,11 +480,10 @@ export default function AdminEditAgentAppPage({
                   <CardHeader className="flex flex-row items-center justify-between space-y-0">
                     <CardTitle className="text-base">Metadata</CardTitle>
                     <Button
+                      icon={<Pencil />}
                       variant="outline"
-                      size="sm"
                       onClick={() => setMetadataOpen(true)}
                     >
-                      <Pencil className="h-3.5 w-3.5 mr-1" />
                       Edit name / tagline
                     </Button>
                   </CardHeader>

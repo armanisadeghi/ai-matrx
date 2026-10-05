@@ -205,13 +205,11 @@ export function MoveSiteOrganizationCard({ site }: { site: MarketingSite }) {
             </Select>
           </div>
           <Button
-            size="sm"
+            icon={<ArrowRightLeft />}
             variant="outline"
-            className="h-8 gap-1.5"
             disabled={!targetOrgId || move.isPending}
             onClick={() => setConfirming(true)}
           >
-            <ArrowRightLeft className="h-3.5 w-3.5" />
             Move site
           </Button>
         </div>

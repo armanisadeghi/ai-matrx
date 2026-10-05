@@ -309,12 +309,10 @@ export const EnhancedSQLEditor = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<FolderOpen />}
                     onClick={() => setTemplatesModalOpen(true)}
                     variant="outline"
-                    size="sm"
-                    className="text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <FolderOpen className="h-4 w-4" /> Templates
+                  > Templates
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -329,12 +327,10 @@ export const EnhancedSQLEditor = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<RefreshCw />}
                     onClick={() => onClearCache?.()}
                     variant="outline"
-                    size="sm"
-                    className="text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
-                  >
-                    <RefreshCw className="h-4 w-4" /> Clear Cache
+                  > Clear Cache
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -385,20 +381,17 @@ export const EnhancedSQLEditor = ({
             <Button
               onClick={() => copyToClipboard(sqlQuery)}
               variant="outline"
-              size="sm"
-              className="text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
               title="Copy query"
             >
               <Copy className="h-4 w-4" />
             </Button>
             <Button
+              iconEnd={<Play />}
+              variant="primary"
               onClick={handleExecuteQuery}
-              className="bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800"
-              size="sm"
               disabled={loading || !sqlQuery.trim()}
             >
               {loading ? "Running..." : "Execute"}
-              <Play className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -419,18 +412,14 @@ export const EnhancedSQLEditor = ({
                   <Button
                     onClick={clearReplacements}
                     variant="outline"
-                    size="sm"
-                    className="text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
                     Clear All
                   </Button>
                   <Button
+                    icon={<Plus />}
                     onClick={addReplacementPair}
                     variant="outline"
-                    size="sm"
-                    className="text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800"
                   >
-                    <Plus className="h-4 w-4" />
                     Add
                   </Button>
                 </div>
@@ -467,10 +456,9 @@ export const EnhancedSQLEditor = ({
                     </div>
                     <Button
                       onClick={() => removeReplacementPair(pair.id)}
-                      variant="ghost"
-                      size="sm"
+                      variant="quiet"
                       disabled={replacementPairs.length === 1}
-                      className="text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 w-9 p-0"
+                      className="w-9"
                       title="Remove"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -481,11 +469,12 @@ export const EnhancedSQLEditor = ({
 
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
                 <Button
+                  icon={<Zap />}
+                  variant="primary"
                   onClick={applyReplacements}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-700 dark:hover:bg-purple-800"
+                  className="w-full"
                   disabled={!replacementPairs.some((p) => p.find && p.replace)}
                 >
-                  <Zap className="h-4 w-4 mr-2" />
                   Apply Replacements to Query
                 </Button>
               </div>
@@ -523,9 +512,8 @@ export const EnhancedSQLEditor = ({
                               </Badge>
                             )}
                             <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                              variant="quiet"
+                              className="w-6 opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 copyToClipboard(item.query);

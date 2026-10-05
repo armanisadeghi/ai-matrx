@@ -345,13 +345,12 @@ function JobItem({
                 </div>
                 {onOpenVideo && (
                     <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 shrink-0 px-2"
+                        icon={<ArrowUpRight aria-hidden />}
+                        variant="quiet"
+                        className="shrink-0"
                         onClick={() => onOpenVideo(item.video_id)}
                         aria-label={`Open ${item.title ?? `this ${vocabulary.item.one}`}`}
                     >
-                        <ArrowUpRight className="h-4 w-4" aria-hidden />
                         <span className="sr-only sm:not-sr-only sm:ml-1.5 sm:text-xs">Open</span>
                     </Button>
                 )}
@@ -479,9 +478,8 @@ export function JobPanel({
                 </div>
                 {onDismiss && (
                     <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-9 w-9 shrink-0 p-0"
+                        variant="quiet"
+                        className="w-9 shrink-0"
                         onClick={onDismiss}
                         aria-label="Close this job panel"
                     >
@@ -518,8 +516,7 @@ export function JobPanel({
                         />
                         <ErrorAlchemyMenu error={error} operation="Read this job" />
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => void reload()}>
-                        <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
+                    <Button icon={<RotateCw aria-hidden />} variant="outline" onClick={() => void reload()}>
                         Read it again
                     </Button>
                 </div>
@@ -648,8 +645,7 @@ export function JobPanel({
                         <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2">
                             <ServerSentence text={error} tone="muted" className="flex-1" />
                             <ErrorAlchemyMenu error={error} operation="Read this job" />
-                            <Button variant="outline" size="sm" onClick={() => void reload()}>
-                                <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
+                            <Button icon={<RotateCw aria-hidden />} variant="outline" onClick={() => void reload()}>
                                 Read it again
                             </Button>
                         </div>
@@ -666,57 +662,53 @@ export function JobPanel({
                     <div className="flex flex-wrap gap-2">
                         {canResume && (
                             <Button
-                                size="sm"
-                                variant="default"
+                                icon={busy === "resume" ? (
+                                    <Loader2 className="animate-spin" aria-hidden />
+                                ) : (
+                                    <Play aria-hidden />
+                                )}
+                                variant="primary"
                                 disabled={busy !== null}
                                 onClick={() => void run("resume", resume)}
                             >
-                                {busy === "resume" ? (
-                                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-                                ) : (
-                                    <Play className="mr-1.5 h-4 w-4" aria-hidden />
-                                )}
                                 Resume — {formatCount(totals.queued)} items still waiting
                             </Button>
                         )}
                         {canRetry && (
                             <Button
-                                size="sm"
+                                icon={busy === "retry" ? (
+                                    <Loader2 className="animate-spin" aria-hidden />
+                                ) : (
+                                    <RotateCw aria-hidden />
+                                )}
                                 variant="outline"
                                 disabled={busy !== null}
                                 onClick={() => setConfirming("retry")}
                             >
-                                {busy === "retry" ? (
-                                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-                                ) : (
-                                    <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
-                                )}
                                 Retry failed items
                             </Button>
                         )}
                         {canCancel && (
                             <Button
-                                size="sm"
-                                variant="destructive"
+                                icon={busy === "cancel" ? (
+                                    <Loader2 className="animate-spin" aria-hidden />
+                                ) : (
+                                    <Ban aria-hidden />
+                                )}
+                                variant="danger"
                                 disabled={busy !== null}
                                 onClick={() => setConfirming("cancel")}
                             >
-                                {busy === "cancel" ? (
-                                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" aria-hidden />
-                                ) : (
-                                    <Ban className="mr-1.5 h-4 w-4" aria-hidden />
-                                )}
                                 Cancel this job
                             </Button>
                         )}
                         {!isLive && (
                             <Button
-                                size="sm"
-                                variant="ghost"
+                                icon={<RotateCw aria-hidden />}
+                                variant="quiet"
                                 disabled={busy !== null}
                                 onClick={() => void reload()}
                             >
-                                <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
                                 Re-read from the server
                             </Button>
                         )}

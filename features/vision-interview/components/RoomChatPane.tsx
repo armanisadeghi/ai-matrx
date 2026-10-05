@@ -484,6 +484,8 @@ function PhoneRoomBar({
           {advance && (
             <div className="border-t border-glass-edge px-5 py-3 pb-safe">
               <Button
+                iconEnd={<ArrowRight aria-hidden />}
+                variant="primary"
                 className="w-full"
                 onClick={() => {
                   advance.run();
@@ -491,7 +493,6 @@ function PhoneRoomBar({
                 }}
               >
                 {advance.label}
-                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
               </Button>
             </div>
           )}
@@ -704,7 +705,6 @@ export function RoomChatPane({
             on {currentStage ? STAGES[currentStage].label : "another step"}.
           </span>
           <Button
-            size="sm"
             variant="outline"
             onClick={() => onGotoStage(stage)}
           >

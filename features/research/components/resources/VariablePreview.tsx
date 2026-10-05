@@ -43,13 +43,12 @@ export function VariablePreview({
   return (
     <div className="space-y-1">
       <Button
+        icon={<Eye />}
         variant="outline"
-        size="sm"
-        className="h-7 w-full justify-start gap-1.5 text-xs"
+        className="w-full justify-start"
         disabled={disabled || bundle.selectors.length === 0}
         onClick={() => openPreview({ topicId, bundle, title })}
       >
-        <Eye className="h-3.5 w-3.5" />
         Preview the full context
         {estimatedTokens > 0 && (
           <span className="ml-auto flex items-center gap-1 text-[10px] text-muted-foreground">

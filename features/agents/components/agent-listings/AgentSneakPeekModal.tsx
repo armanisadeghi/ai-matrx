@@ -785,10 +785,8 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" disabled={!definition}>
-          {copied ? <Check className="text-success" /> : <Copy />}
+        <Button icon={copied ? <Check className="text-success" /> : <Copy />} iconEnd={<ChevronDown className="opacity-70" />} variant="outline" disabled={!definition}>
           {copied ? "Copied" : "Copy"}
-          <ChevronDown className="opacity-70" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-56">
@@ -931,9 +929,8 @@ export function AgentSneakPeekModal({
           {hasNav && (
             <div className="flex items-center gap-0.5 shrink-0">
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
+                variant="quiet"
+                className="w-7"
                 onClick={goPrev}
                 disabled={!hasPrev}
                 title="Previous (←)"
@@ -941,9 +938,8 @@ export function AgentSneakPeekModal({
                 <ChevronLeft />
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
+                variant="quiet"
+                className="w-7"
                 onClick={goNext}
                 disabled={!hasNext}
                 title="Next (→)"
@@ -970,8 +966,7 @@ export function AgentSneakPeekModal({
           <div className="flex items-center gap-2 border-t border-border pt-3">
             <AgentSneakPeekCopyMenu agentId={currentId} />
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onClose}
               className="ml-auto"
             >
@@ -982,20 +977,17 @@ export function AgentSneakPeekModal({
               onDuplicated={onClose}
             />
             <Link href={`/agents/go/${currentId}/build`} onClick={onClose}>
-              <Button variant={onSelect ? "ghost" : "outline"} size="sm">
-                <Pencil />
+              <Button icon={<Pencil />} type="submit" variant={onSelect ? "quiet" : "outline"}>
                 Edit
               </Button>
             </Link>
             <Link href={`/agents/go/${currentId}/run`} onClick={onClose}>
-              <Button variant={onSelect ? "outline" : "default"} size="sm">
-                <Play />
+              <Button icon={<Play />} type="submit" variant={onSelect ? "outline" : "primary"}>
                 Run
               </Button>
             </Link>
             {onSelect && (
-              <Button size="sm" onClick={handleSelect}>
-                <CircleCheck />
+              <Button icon={<CircleCheck />} variant="primary" onClick={handleSelect}>
                 {selectLabel}
               </Button>
             )}

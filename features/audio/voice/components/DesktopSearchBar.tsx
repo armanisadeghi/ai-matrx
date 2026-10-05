@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 
 interface DesktopSearchBarProps {
     searchValue: string;

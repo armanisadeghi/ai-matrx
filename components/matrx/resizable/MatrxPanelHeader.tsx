@@ -55,13 +55,9 @@ const MatrxPanelHeader: React.FC<MatrxPanelHeaderProps> = (
             {/* Back button with fixed positioning */}
             {onBack && (
                 <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={onBack}
-                    className={cn(
-                        "h-6 w-6 p-0 flex-shrink-0",
-                        buttonStyles
-                    )}
+                    className={cn("w-6 flex-shrink-0", buttonStyles)}
                 >
                     <ArrowLeft className="h-4 w-4"/>
                 </Button>

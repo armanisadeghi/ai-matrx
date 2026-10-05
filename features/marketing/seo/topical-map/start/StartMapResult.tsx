@@ -76,7 +76,6 @@ export function StartMapResult({
             {onBuildFromResearch ? (
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => onBuildFromResearch(result.research_topic_id as string)}
               >
@@ -136,7 +135,7 @@ export function StartMapResult({
         </p>
         {mapHref ? (
           <div className="mt-3">
-            <Button asChild size="sm">
+            <Button variant="primary" asChild>
               <Link href={mapHref} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" aria-hidden />
                 Open the map

@@ -16,14 +16,12 @@ export const NavigationButton: React.FC<SmartButtonProps & { type: 'previous' | 
 
     return (
         <Button
+            icon={<Icon/>} aria-label={config.title}
             onClick={config.action}
             variant="outline"
-            size="icon"
             className={`w-10 h-10 hover:scale-105 transition-transform bg-card ${className || ''}`}
             title={config.title}
-        >
-            <Icon className="h-6 w-6"/>
-        </Button>
+        />
     );
 };
 

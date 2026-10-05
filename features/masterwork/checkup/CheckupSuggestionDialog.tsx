@@ -297,12 +297,12 @@ export function CheckupSuggestionDialog({
         </div>
 
         <DialogFooter className="border-t border-border px-5 py-3">
-          <Button variant="ghost" onClick={onClose} disabled={improve.isRunning}>
+          <Button variant="quiet" onClick={onClose} disabled={improve.isRunning}>
             Cancel
           </Button>
           {mode === "reject" ? (
             <Button
-              variant="destructive"
+              variant="danger"
               onClick={() => {
                 onReject(finding.id, guidance.trim());
                 onClose();

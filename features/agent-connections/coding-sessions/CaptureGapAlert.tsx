@@ -95,13 +95,12 @@ export function CaptureGapAlert({
         </div>
 
         <Button
-          size="sm"
+          icon={<RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />}
           variant="outline"
           onClick={onRefresh}
           disabled={refreshing}
-          className="h-7 shrink-0 gap-1.5"
+          className="shrink-0"
         >
-          <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
           {refreshing ? "Checking…" : "Check again"}
         </Button>
       </div>

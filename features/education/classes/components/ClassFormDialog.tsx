@@ -293,13 +293,11 @@ export function ClassFormDialog({
                 Exam dates
               </Label>
               <Button
+                icon={<Plus />}
                 type="button"
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1 text-xs"
+                variant="quiet"
                 onClick={addExam}
               >
-                <Plus className="h-3.5 w-3.5" />
                 Add
               </Button>
             </div>
@@ -329,15 +327,13 @@ export function ClassFormDialog({
                       className="w-40"
                     />
                     <Button
+                      icon={<Trash2 />}
                       type="button"
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                      variant="quiet"
+                      className="shrink-0"
                       onClick={() => removeExam(exam.id)}
                       aria-label="Remove exam date"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 ))}
               </div>
@@ -370,7 +366,7 @@ export function ClassFormDialog({
             >
               Cancel
             </Button>
-            <Button className="flex-1" onClick={handleSubmit} disabled={busy}>
+            <Button variant="primary" className="flex-1" onClick={handleSubmit} disabled={busy}>
               {busy ? "Saving…" : isEdit ? "Save changes" : "Create class"}
             </Button>
           </DrawerFooter>
@@ -406,7 +402,7 @@ export function ClassFormDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={busy}>
+          <Button variant="primary" onClick={handleSubmit} disabled={busy}>
             {busy ? "Saving…" : isEdit ? "Save changes" : "Create class"}
           </Button>
         </DialogFooter>

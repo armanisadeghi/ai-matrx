@@ -41,6 +41,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import {
   Tooltip,
@@ -1116,7 +1117,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                 <span className="text-xs text-muted-foreground tabular-nums">
                   {currentIndex + 1}/{sourceIds.length}
                 </span>
-                <Button
+                <SurfaceButton
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 rounded-full"
@@ -1124,8 +1125,8 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   onClick={() => prevSourceId && navigateToSource(prevSourceId)}
                 >
                   <ChevronLeft className="h-3.5 w-3.5" />
-                </Button>
-                <Button
+                </SurfaceButton>
+                <SurfaceButton
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 rounded-full"
@@ -1133,7 +1134,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   onClick={() => nextSourceId && navigateToSource(nextSourceId)}
                 >
                   <ChevronRight className="h-3.5 w-3.5" />
-                </Button>
+                </SurfaceButton>
               </div>
             )}
           </div>
@@ -1463,8 +1464,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   {contentVersions.length > 1 ? (
                     <div className="flex items-center justify-between gap-2">
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         disabled={selectedVersion >= contentVersions.length - 1}
                         onClick={() => setSelectedVersion((v) => v + 1)}
                       >
@@ -1477,8 +1477,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                         of {contentVersions.length}
                       </span>
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         disabled={selectedVersion <= 0}
                         onClick={() => setSelectedVersion((v) => v - 1)}
                       >
@@ -1620,18 +1619,17 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         {typedSource && (
           <div className="flex items-center gap-2 flex-wrap">
             <Button
-              size="sm"
-              className="gap-1.5 h-8"
+              icon={isScraping ? (
+                <Loader2 className="animate-spin" />
+              ) : hasBeenScraped ? (
+                <RefreshCw />
+              ) : (
+                <Download />
+              )}
+              variant="primary"
               onClick={handleScrape}
               disabled={isScraping || analyzeStream.isStreaming}
             >
-              {isScraping ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : hasBeenScraped ? (
-                <RefreshCw className="h-3.5 w-3.5" />
-              ) : (
-                <Download className="h-3.5 w-3.5" />
-              )}
               {isScraping
                 ? "Reading…"
                 : hasBeenScraped
@@ -1639,19 +1637,16 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                   : "Read"}
             </Button>
             <Button
+              icon={<ClipboardPaste />}
               variant="outline"
-              size="sm"
-              className="gap-1.5 h-8"
               onClick={() => setPasteOpen(true)}
             >
-              <ClipboardPaste className="h-3.5 w-3.5" />
               Paste Content
             </Button>
             {canRestoreOriginal && (
               <Button
+                icon={<RotateCcw />}
                 variant="outline"
-                size="sm"
-                className="gap-1.5 h-8"
                 onClick={handleRestoreOriginal}
                 title={
                   contentSourceId
@@ -1659,26 +1654,21 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
                     : "Replace the curated content with the original page content"
                 }
               >
-                <RotateCcw className="h-3.5 w-3.5" />
                 Restore original
               </Button>
             )}
             <Button
+              icon={<CheckCircle2 />}
               variant="outline"
-              size="sm"
-              className="gap-1.5 h-8"
               onClick={handleMarkComplete}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
               Mark Complete
             </Button>
             <Button
+              icon={<AlertTriangle />}
               variant="outline"
-              size="sm"
-              className="gap-1.5 h-8"
               onClick={handleMarkStale}
             >
-              <AlertTriangle className="h-3.5 w-3.5" />
               Mark Stale
             </Button>
             {/* Index this research source into Knowledge (kg_chunks + NER). Reuses

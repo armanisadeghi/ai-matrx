@@ -465,8 +465,7 @@ export function RelationshipRulesClient({ rules, initialEditKey }: Props) {
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-sm font-semibold">Association rules</h2>
         <Badge variant="outline">{rules.length}</Badge>
-        <Button size="sm" className="ml-auto" onClick={openCreate}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Plus />} variant="primary" className="ml-auto" onClick={openCreate}>
           New rule
         </Button>
       </div>

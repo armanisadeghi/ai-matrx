@@ -199,8 +199,7 @@ export function CaptureView({
               The in-page camera isn&apos;t available here. Use your device
               camera instead — each photo is added the moment you take it.
             </p>
-            <Button size="sm" onClick={() => fallbackInputRef.current?.click()}>
-              <CameraIcon className="mr-1.5 h-4 w-4" />
+            <Button icon={<CameraIcon />} variant="primary" onClick={() => fallbackInputRef.current?.click()}>
               Open system camera
             </Button>
           </div>
@@ -246,14 +245,11 @@ export function CaptureView({
           <div className="w-16">
             {numberOfCameras > 1 && !cameraBlocked && (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-11 w-11 rounded-full text-white hover:bg-white/10 hover:text-white"
+                icon={<SwitchCamera />}
+                variant="quiet"
                 onClick={switchCamera}
                 aria-label="Switch camera"
-              >
-                <SwitchCamera className="h-5 w-5" />
-              </Button>
+              />
             )}
           </div>
           <button
@@ -270,8 +266,7 @@ export function CaptureView({
           </button>
           <div className="flex w-16 justify-end">
             <Button
-              size="sm"
-              className="h-11 whitespace-nowrap rounded-full px-5"
+              variant="primary"
               onClick={onDone}
             >
               Done
@@ -299,22 +294,20 @@ export function CaptureView({
           </div>
           <div className="flex shrink-0 items-center justify-center gap-3 bg-black px-4 py-3 pb-safe">
             <Button
-              variant="destructive"
-              className="h-11 px-5"
+              icon={<Trash2 />}
+              variant="danger"
               onClick={() => {
                 onRemoveShot(previewShot.itemId);
                 setPreviewShot(null);
               }}
             >
-              <Trash2 className="mr-1.5 h-4 w-4" />
               Delete & retake
             </Button>
             <Button
-              variant="secondary"
-              className="h-11 px-5"
+              icon={<X />}
+              variant="outline"
               onClick={() => setPreviewShot(null)}
             >
-              <X className="mr-1.5 h-4 w-4" />
               Close
             </Button>
           </div>

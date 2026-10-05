@@ -922,11 +922,9 @@ export function PlanNodesTable({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                icon={<Columns3 />}
                 variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 px-2 text-xs"
               >
-                <Columns3 className="h-3.5 w-3.5" />
                 Columns
               </Button>
             </DropdownMenuTrigger>

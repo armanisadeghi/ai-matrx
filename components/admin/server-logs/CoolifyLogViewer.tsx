@@ -588,12 +588,11 @@ function FilterPanel({
         </span>
         {isFiltered && (
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<X />}
+            variant="quiet"
             onClick={() => onChange(defaultFilters())}
-            className="h-7 px-2 shrink-0"
+            className="shrink-0"
           >
-            <X className="h-3.5 w-3.5 mr-1" />
             Reset all
           </Button>
         )}
@@ -1215,10 +1214,9 @@ export default function CoolifyLogViewer({
           </Select>
 
           <Button
+            variant="primary"
             onClick={fetchLogs}
             disabled={loading}
-            size="sm"
-            className="h-8 text-xs"
           >
             {loading ? (
               <>
@@ -1265,19 +1263,15 @@ export default function CoolifyLogViewer({
           </span>
 
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={scrollToTop}
-            className="h-8 px-2 text-muted-foreground hover:text-foreground"
             title="Scroll to top"
           >
             <ChevronUp className="h-3.5 w-3.5" />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={scrollToBottom}
-            className="h-8 px-2 text-muted-foreground hover:text-foreground"
             title="Scroll to bottom"
           >
             <ChevronDown className="h-3.5 w-3.5" />
@@ -1285,24 +1279,22 @@ export default function CoolifyLogViewer({
 
           {/* Range toggle */}
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<FileText />}
+            variant="quiet"
             onClick={() => setShowRange((p) => !p)}
             className={`h-8 px-2 text-xs ${showRange ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
             title="Set view range"
           >
-            <FileText className="h-3.5 w-3.5 mr-1" />
             Range
           </Button>
 
           {/* Filter toggle */}
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Filter />}
+            variant="quiet"
             onClick={() => setShowFilters((p) => !p)}
             className={`h-8 px-2 text-xs ${showFilters ? "text-foreground bg-accent" : "text-muted-foreground hover:text-foreground"}`}
           >
-            <Filter className="h-3.5 w-3.5 mr-1" />
             Filter
           </Button>
 
@@ -1334,8 +1326,7 @@ export default function CoolifyLogViewer({
             ).map(({ mode, icon, title }) => (
               <Button
                 key={mode}
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 title={title}
                 onClick={() => setViewMode(mode)}
                 className={`h-7 px-2 text-xs rounded-sm ${viewMode === mode ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}

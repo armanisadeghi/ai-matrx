@@ -45,12 +45,11 @@ export function AwaitingCredentialsCard({
             {detail}
           </p>
           <Button
-            size="sm"
+            icon={<RefreshCcw />}
             variant="outline"
             onClick={onRetry}
             disabled={retrying}
           >
-            <RefreshCcw className="size-3.5" />
             {retrying ? "Checking…" : "Check again"}
           </Button>
         </div>
@@ -87,12 +86,11 @@ export function UpstreamErrorCard({
             </details>
           ) : null}
           <Button
-            size="sm"
+            icon={<RefreshCcw />}
             variant="outline"
             onClick={onRetry}
             disabled={retrying}
           >
-            <RefreshCcw className="size-3.5" />
             {retrying ? "Retrying…" : "Retry"}
           </Button>
         </div>

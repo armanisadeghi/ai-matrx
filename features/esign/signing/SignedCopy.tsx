@@ -78,14 +78,13 @@ export function SignedCopy({ door }: { door: SigningDoor }) {
   const retry = state === "not_ready" || state === "waiting" || state === "failed";
   return (
     <div className="flex flex-col gap-2">
-      <Button disabled={state === "busy"} onClick={() => void download()}>
-        {state === "busy" ? (
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      <Button icon={state === "busy" ? (
+          <Loader2 className="animate-spin" />
         ) : retry ? (
-          <RotateCw className="mr-2 h-4 w-4" />
+          <RotateCw />
         ) : (
-          <Download className="mr-2 h-4 w-4" />
-        )}
+          <Download />
+        )} variant="primary" disabled={state === "busy"} onClick={() => void download()}>
         {retry ? "Try again" : "Download signed copy"}
       </Button>
       {state === "not_ready" && (

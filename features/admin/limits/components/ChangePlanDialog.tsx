@@ -210,11 +210,10 @@ export function ChangePlanDialog({
           </label>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => void save()} disabled={saving || !choice || !!monthsError || (givesFreeTime && cap === null)}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="primary" onClick={() => void save()} disabled={saving || !choice || !!monthsError || (givesFreeTime && cap === null)}>
             Save plan
           </Button>
         </DialogFooter>

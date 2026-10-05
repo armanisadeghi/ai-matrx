@@ -77,11 +77,10 @@ export default function IconDropdownMenu<T extends string = string>({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          icon={<SelectedIcon size={compact ? 14 : 16} />}
           variant="outline"
-          size={compact ? 'sm' : 'default'}
-          className={cn('gap-1 px-1', className)}
+          className={className}
         >
-          <SelectedIcon size={compact ? 14 : 16} />
           <ChevronDown size={compact ? 12 : 14} className="opacity-50" />
         </Button>
       </DropdownMenuTrigger>

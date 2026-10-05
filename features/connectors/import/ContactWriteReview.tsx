@@ -135,7 +135,7 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
   };
 
   if (admission.isLoading) return <p className="text-xs text-muted-foreground">Checking edit access…</p>;
-  if (admission.isError) return <Button size="sm" variant="outline" onClick={() => void admission.refetch()}>Check edit access again</Button>;
+  if (admission.isError) return <Button variant="outline" onClick={() => void admission.refetch()}>Check edit access again</Button>;
   if (!admission.data?.eligible) return <p className="text-xs text-muted-foreground">{admission.data?.message ?? "Review access unavailable."}</p>;
 
   const before = preview ? sourceName(preview.before) : null;
@@ -154,17 +154,17 @@ export function ContactWriteReview({ organizationId, connectionId, resourceName,
       <label className="text-xs">Given name<Input value={givenName} maxLength={256} disabled={busy} onChange={(event) => { invalidate(); setGivenName(event.target.value); }} /></label>
       <label className="text-xs">Family name<Input value={familyName} maxLength={256} disabled={busy} onChange={(event) => { invalidate(); setFamilyName(event.target.value); }} /></label>
     </div>
-    <Button size="sm" variant="outline" disabled={busy || (!givenName.trim() && !familyName.trim())}
+    <Button variant="outline" disabled={busy || (!givenName.trim() && !familyName.trim())}
       onClick={() => void review({ ...(givenName.trim() ? { given_name: givenName.trim() } : {}), ...(familyName.trim() ? { family_name: familyName.trim() } : {}) })}>
       {busy ? "Working…" : "Preview name edit"}
     </Button>
     {preview && before && after ? <div className="space-y-2 text-sm">
       <p>Google now: {nameText(before)}</p><p>After edit: {nameText(after)}</p>
-      <Button size="sm" disabled={busy} onClick={() => void apply()}>{reverseReview ? "Restore reviewed name" : "Apply reviewed edit"}</Button>
+      <Button variant="primary" disabled={busy} onClick={() => void apply()}>{reverseReview ? "Restore reviewed name" : "Apply reviewed edit"}</Button>
     </div> : null}
     {result && confirmed && !preview ? <div className="space-y-2 text-sm">
       <p>Google confirmed: {nameText(confirmed)}</p>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void review(reverse, true)}>Preview reverse edit</Button>
+      <Button variant="outline" disabled={busy} onClick={() => void review(reverse, true)}>Preview reverse edit</Button>
     </div> : null}
     {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
   </section>;

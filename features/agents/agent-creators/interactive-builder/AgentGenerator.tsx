@@ -617,9 +617,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             >
               <span className="flex-1">Choose a workspace to generate.</span>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-7"
                 onClick={() => {
                   void ensureOrganizationContext().catch((err: unknown) => {
                     if (isOrganizationSelectionCancelled(err)) return;
@@ -648,9 +646,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="flex-1 font-medium">Mandate binding needed</span>
               <Button
-                size="sm"
-                variant="destructive"
-                className="h-7"
+                variant="danger"
                 onClick={() =>
                   openMandateWindow({
                     initialMandateKey: HOLDER_DRAFT_MANDATE_KEY,
@@ -781,24 +777,20 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               <div className="flex gap-1">
                 {hasExtractedJson && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    icon={<Copy />}
+                    variant="quiet"
                     onClick={handleCopyGenerated}
-                    className="h-7 px-2 text-xs"
                     title="Copy extracted JSON"
                   >
-                    <Copy className="h-3 w-3 sm:mr-1" />
                     <span className="hidden sm:inline">Copy JSON</span>
                   </Button>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<Copy />}
+                  variant="quiet"
                   onClick={handleCopyRaw}
-                  className="h-7 px-2 text-xs"
                   title="Copy raw response"
                 >
-                  <Copy className="h-3 w-3 sm:mr-1" />
                   <span className="hidden sm:inline">Copy Raw</span>
                 </Button>
               </div>
@@ -906,18 +898,19 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           {showResult ? (
             <>
               <Button
+                icon={<Hammer />}
                 variant="outline"
                 onClick={handleRegenerate}
                 disabled={isSaving}
                 className="flex-1 sm:flex-initial"
               >
-                <Hammer className="h-4 w-4 mr-2" />
                 Regenerate
               </Button>
               <Button
+                variant="primary"
                 onClick={handleCreateAgent}
                 disabled={!agentName.trim() || isSaving}
-                className="flex-1 sm:flex-initial bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                className="flex-1 sm:flex-initial"
               >
                 {isSaving ? (
                   <>
@@ -934,9 +927,10 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             </>
           ) : (
             <Button
+              variant="primary"
               onClick={handleGenerate}
               disabled={!canGenerate || isActive || isStreaming}
-              className="flex-1 sm:flex-initial bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+              className="flex-1 sm:flex-initial"
             >
               {isActive || isStreaming ? (
                 <>

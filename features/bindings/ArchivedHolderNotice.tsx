@@ -111,17 +111,16 @@ export function ArchivedHolderNotice({
       <span>{offer.sentence}</span>
       {offer.kind === "restore" ? (
         <Button
+          icon={restoring ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <ArchiveRestore aria-hidden />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-7 gap-1 px-2 text-xs"
           disabled={disabled || restoring}
           onClick={() => void restore()}
         >
-          {restoring ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <ArchiveRestore className="h-3.5 w-3.5" aria-hidden />
-          )}
           {offer.label}
         </Button>
       ) : (

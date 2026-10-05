@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Share2, Loader2, Copy, Check, Globe2, Lock, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -270,14 +270,14 @@ export default function SaveHeatmapModal({
                 Cancel
               </Button>
               {isSignedIn === false ? (
-                <Button asChild>
+                <Button variant="primary" asChild>
                   <Link href={loginHref}>
                     <LogIn className="w-4 h-4 mr-2" />
                     Sign in to save
                   </Link>
                 </Button>
               ) : (
-                <Button onClick={handleSave} disabled={isSaving || isSignedIn === null || !title.trim()}>
+                <Button variant="primary" onClick={handleSave} disabled={isSaving || isSignedIn === null || !title.trim()}>
                   {isSaving ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -307,14 +307,14 @@ export default function SaveHeatmapModal({
                 <Label>Share Link</Label>
                 <div className="flex gap-2">
                   <Input value={shareUrl} readOnly className="font-mono text-sm" />
-                  <Button
+                  <SurfaceButton
                     variant="outline"
                     size="icon"
                     onClick={handleCopyUrl}
                     className="flex-shrink-0"
                   >
                     {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </Button>
+                  </SurfaceButton>
                 </div>
               </div>
 
@@ -337,7 +337,7 @@ export default function SaveHeatmapModal({
             </div>
 
             <DialogFooter>
-              <Button onClick={onClose} className="w-full">
+              <Button variant="primary" onClick={onClose} className="w-full">
                 Done
               </Button>
             </DialogFooter>

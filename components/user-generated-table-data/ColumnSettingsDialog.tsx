@@ -20,7 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ChoiceRehome, ChoicesRehomed, ChoiceUsage } from "@ai-matrx/records";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,

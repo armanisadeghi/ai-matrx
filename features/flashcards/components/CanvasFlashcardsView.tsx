@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { flashcardSetHref } from "../routes";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useCanvasFit } from "@/components/mardown-display/blocks/canvas-fit";

@@ -326,11 +326,11 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
                 Views
               </h4>
               <Button
-                variant={selectorValue === "view:all" ? "secondary" : "ghost"}
-                className="w-full justify-start text-[11px] h-7 px-2"
+                icon={<Layers />}
+                variant={selectorValue === "view:all" ? "outline" : "quiet"}
+                className="w-full justify-start"
                 onClick={() => handleSelectorChange("view:all")}
-              >
-                <Layers className="mr-2 h-3.5 w-3.5" /> All Tasks
+              > All Tasks
               </Button>
             </div>
 
@@ -340,21 +340,21 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
               </h4>
               <Button
                 variant={
-                  selectorValue === "filter:incomplete" ? "secondary" : "ghost"
+                  selectorValue === "filter:incomplete" ? "outline" : "quiet"
                 }
-                className="w-full justify-start text-[11px] h-7 px-2"
+                className="w-full justify-start"
                 onClick={() => handleSelectorChange("filter:incomplete")}
               >
                 <Circle size={12} className="mr-2" /> Incomplete
               </Button>
               <Button
+                icon={<AlertCircle />}
                 variant={
-                  selectorValue === "filter:overdue" ? "secondary" : "ghost"
+                  selectorValue === "filter:overdue" ? "outline" : "quiet"
                 }
-                className="w-full justify-start text-[11px] h-7 px-2"
+                className="w-full justify-start"
                 onClick={() => handleSelectorChange("filter:overdue")}
-              >
-                <AlertCircle className="mr-2 h-3.5 w-3.5" /> Overdue
+              > Overdue
               </Button>
             </div>
 
@@ -365,16 +365,14 @@ function QuickTasksSheetContent({ className, prePopulate, onPrePopulated }: Quic
                 </h4>
                 {projects.map((p) => (
                   <Button
+                    icon={<Folder />}
                     key={p.id}
                     variant={
-                      selectorValue === `project:${p.id}`
-                        ? "secondary"
-                        : "ghost"
+                      selectorValue === `project:${p.id}` ? "outline" : "quiet"
                     }
-                    className="w-full justify-start text-[11px] h-7 px-2"
+                    className="w-full justify-start"
                     onClick={() => handleSelectorChange(`project:${p.id}`)}
                   >
-                    <Folder className="mr-2 h-3.5 w-3.5" />
                     <span className="truncate flex-1 text-left">{p.name}</span>
                     <span className="ml-2 text-[9px] text-muted-foreground">
                       {p.tasks.length}

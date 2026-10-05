@@ -91,9 +91,8 @@ export function MandateMemberPeek({
       >
         <div className="flex items-center gap-1.5 pr-6">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
+            variant="quiet"
+            className="w-7"
             onClick={() => hasPrev && setCurrentId(rows[index - 1].id)}
             disabled={!hasPrev}
             aria-label="Previous (←)"
@@ -101,9 +100,8 @@ export function MandateMemberPeek({
             <ChevronLeft />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
+            variant="quiet"
+            className="w-7"
             onClick={() => hasNext && setCurrentId(rows[index + 1].id)}
             disabled={!hasNext}
             aria-label="Next (→)"
@@ -185,10 +183,10 @@ export function MandateMemberPeek({
           <span className="text-[10px] tabular-nums text-muted-foreground">
             {index + 1} / {rows.length}
           </span>
-          <Button variant="ghost" size="sm" onClick={onClose} className="ml-auto">
+          <Button variant="quiet" onClick={onClose} className="ml-auto">
             Close
           </Button>
-          <Button asChild size="sm">
+          <Button variant="primary" asChild>
             <Link href={href} onClick={onClose}>
               Open
             </Link>

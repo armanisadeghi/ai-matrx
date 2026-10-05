@@ -43,12 +43,13 @@ export const SQLEditor = ({ loading, error, onExecuteQuery }: SQLEditorProps) =>
               placeholder="Enter your SQL query here..."
             />
             <Button
+              iconEnd={<Play />}
+              variant="primary"
               onClick={handleExecuteQuery}
               className="absolute bottom-4 right-4"
               disabled={loading || !sqlQuery.trim()}
             >
               {loading ? "Running..." : "Execute"}
-              <Play className="ml-2 h-4 w-4" />
             </Button>
           </div>
 

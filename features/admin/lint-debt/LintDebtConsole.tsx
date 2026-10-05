@@ -324,9 +324,7 @@ export function LintDebtConsole({
         const key = `${f.file}:${f.line}:${f.column}:${f.rule}`;
         return (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[10px]"
+            variant="quiet"
             title="Copy a paste-ready repair brief for an agent"
             aria-label={`Copy a repair brief for ${f.file}:${f.line}`}
             onClick={(e) => {
@@ -482,9 +480,7 @@ export function LintDebtConsole({
           </code>
           <Badge variant="secondary">{findings.length}</Badge>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-2 text-xs"
+            variant="quiet"
             onClick={() => setBucket({ kind: "none" })}
           >
             Clear
@@ -769,9 +765,7 @@ function Alert({
       <span className="min-w-0">{text}</span>
       {action && (
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-2 text-xs"
+          variant="quiet"
           onClick={action.onClick}
         >
           {action.label}
@@ -850,9 +844,8 @@ function ClassCard({
               </button>
               {count > 0 && (
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-5 shrink-0 px-1"
+                  variant="quiet"
+                  className="shrink-0"
                   title={`Copy a sweep brief for every ${CLASS_TITLES[klass].toLowerCase()} finding`}
                   aria-label={`Copy a sweep brief for ${CLASS_TITLES[klass]}`}
                   onClick={() => onCopy(klass)}
@@ -929,9 +922,8 @@ function BucketCard({
               <ExternalLink className="h-3 w-3" />
             </AppLink>
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-5 shrink-0 px-1"
+              variant="quiet"
+              className="shrink-0"
               title="Copy a sweep brief for this bucket"
               aria-label={`Copy a sweep brief for ${b.key}`}
               onClick={() => onCopy(b.key)}
@@ -981,9 +973,7 @@ function RuleLegend({
             </span>
           </button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-4 px-0.5"
+            variant="quiet"
             title={`Copy a sweep brief for every ${b.rule} finding`}
             aria-label={`Copy a sweep brief for ${b.rule}`}
             onClick={() => onCopy(b.rule)}
@@ -1062,12 +1052,11 @@ function FindingDetail({
       </dl>
 
       <Button
-        size="sm"
+        icon={<Copy />}
         variant="outline"
         className="w-full"
         onClick={onCopyFix}
       >
-        <Copy className="mr-1.5 h-3 w-3" />
         Copy repair brief
       </Button>
     </div>

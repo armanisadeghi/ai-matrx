@@ -64,8 +64,7 @@ const [isOpen, setIsOpen] = useState(false);
             content space.
           </p>
 
-          <Button onClick={() => setIsOpen(true)} className="w-full">
-            <Database className="h-4 w-4 mr-2" />
+          <Button icon={<Database />} variant="primary" onClick={() => setIsOpen(true)} className="w-full">
             Open SQL Templates
           </Button>
 

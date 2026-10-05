@@ -49,15 +49,13 @@ export function PrintCaseButton({
 
   const button = (
     <Button
+      icon={<Printer />}
       type="button"
-      size="sm"
-      variant="ghost"
+      variant="quiet"
       onClick={() => setOpen(true)}
       disabled={disabled}
-      className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
       aria-label="Print PD report"
     >
-      <Printer className="h-3.5 w-3.5" />
       <span className="hidden sm:inline">Print</span>
     </Button>
   );

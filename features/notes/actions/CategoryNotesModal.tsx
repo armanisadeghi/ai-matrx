@@ -273,20 +273,17 @@ export function CategoryNotesModal({
                         </DialogTitle>
                         <div className="flex items-center gap-2">
                             {viewMode !== 'list' && (
-                                <Button onClick={() => setViewMode('list')} variant="ghost" size="sm">
-                                    <ChevronLeft className="h-4 w-4" />
+                                <Button icon={<ChevronLeft />} onClick={() => setViewMode('list')} variant="quiet">
                                     Back
                                 </Button>
                             )}
                             {allowCreate && viewMode === 'list' && (
-                                <Button onClick={() => {setViewMode('create'); setSelectedNoteId(null);}} size="sm">
-                                    <Plus className="h-4 w-4" />
+                                <Button icon={<Plus />} variant="primary" onClick={() => {setViewMode('create'); setSelectedNoteId(null);}}>
                                     New
                                 </Button>
                             )}
                             {allowImport && viewMode === 'list' && (
-                                <Button onClick={() => {setViewMode('import'); setSelectedNoteId(null);}} variant="outline" size="sm">
-                                    <FileText className="h-4 w-4" />
+                                <Button icon={<FileText />} onClick={() => {setViewMode('import'); setSelectedNoteId(null);}} variant="outline">
                                     Import
                                 </Button>
                             )}
@@ -301,8 +298,7 @@ export function CategoryNotesModal({
                         <>
                             {/* Mobile toggle */}
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
                                 className="lg:hidden absolute top-3 left-3 z-10"
                             >
@@ -405,17 +401,17 @@ export function CategoryNotesModal({
                                                 </div>
                                                 <div className="flex gap-1">
                                                     {onSelectNote && (
-                                                        <Button size="sm" onClick={() => handleSelect(selectedNote)}>
+                                                        <Button variant="primary" onClick={() => handleSelect(selectedNote)}>
                                                             {selectButtonLabel}
                                                         </Button>
                                                     )}
                                                     {allowEdit && (
-                                                        <Button size="sm" variant="ghost" onClick={() => handleStartEdit(selectedNote)} title="Edit">
+                                                        <Button variant="quiet" onClick={() => handleStartEdit(selectedNote)} title="Edit">
                                                             <Pencil className="h-4 w-4" />
                                                         </Button>
                                                     )}
                                                     {allowDelete && (
-                                                        <Button size="sm" variant="ghost" onClick={() => handleDelete(selectedNote.id)} className="text-destructive" title="Move to Trash">
+                                                        <Button variant="quiet" onClick={() => handleDelete(selectedNote.id)} title="Move to Trash">
                                                             <Trash2 className="h-4 w-4" />
                                                         </Button>
                                                     )}
@@ -468,8 +464,7 @@ export function CategoryNotesModal({
                                 className="flex-1 resize-none font-mono text-sm min-h-[300px] md:min-h-[400px]"
                             />
                             <div className="flex justify-end gap-2 mt-3 flex-shrink-0">
-                                <Button onClick={handleCreate} disabled={actionLoading}>
-                                    {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                                <Button icon={actionLoading ? <Loader2 className="animate-spin" /> : <Check />} variant="primary" onClick={handleCreate} disabled={actionLoading}>
                                     Create
                                 </Button>
                             </div>
@@ -495,8 +490,7 @@ export function CategoryNotesModal({
                                 className="flex-1 resize-none font-mono text-sm min-h-[300px] md:min-h-[400px]"
                             />
                             <div className="flex justify-end gap-2 mt-3 flex-shrink-0">
-                                <Button onClick={handleSaveEdit} disabled={actionLoading}>
-                                    {actionLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Check className="h-4 w-4 mr-2" />}
+                                <Button icon={actionLoading ? <Loader2 className="animate-spin" /> : <Check />} variant="primary" onClick={handleSaveEdit} disabled={actionLoading}>
                                     Save
                                 </Button>
                             </div>
@@ -553,7 +547,7 @@ export function CategoryNotesModal({
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <Button size="sm" onClick={() => handleImport(note)} disabled={actionLoading}>
+                                                    <Button variant="primary" onClick={() => handleImport(note)} disabled={actionLoading}>
                                                         Import
                                                     </Button>
                                                 </div>

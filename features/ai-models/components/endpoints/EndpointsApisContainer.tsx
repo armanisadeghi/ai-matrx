@@ -577,9 +577,8 @@ function DetailPanel({
           <TooltipTrigger asChild>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0 shrink-0"
+              variant="quiet"
+              className="w-7 shrink-0"
               aria-label="Close details"
               onClick={onClose}
             >
@@ -600,21 +599,18 @@ function DetailPanel({
         )}
         <div className="px-3 py-2 flex items-center justify-end gap-2">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 px-3 text-xs gap-1.5"
+            icon={<X />}
+            variant="quiet"
             onClick={onClose}
           >
-            <X className="h-3.5 w-3.5" />
             Close
           </Button>
           <Button
-            size="sm"
-            className="h-8 px-3 text-xs gap-1.5"
+            icon={<Save />}
+            variant="primary"
             onClick={onSave}
             disabled={saving || !canSave}
           >
-            <Save className="h-3.5 w-3.5" />
             {saving ? "Saving…" : "Save"}
           </Button>
         </div>

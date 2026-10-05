@@ -179,9 +179,9 @@ export function MapPagesRunControl({
 
           {working ? null : parametersUsable ? (
             <Button
+              variant="primary"
               type="button"
-              size="sm"
-              className="h-7 w-full text-xs"
+              className="w-full"
               onClick={() =>
                 void run.run({
                   refresh,

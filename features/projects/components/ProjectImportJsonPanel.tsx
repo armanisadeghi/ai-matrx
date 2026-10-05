@@ -294,20 +294,21 @@ export function ProjectImportJsonPanel({
         )}
       >
         <Button
+          icon={<FileCheck2 />}
           type="button"
           variant="outline"
           onClick={handleValidate}
           disabled={isCreating || !raw.trim()}
-          className={isMobile ? "min-h-[44px]" : undefined}
+          className={isMobile ? "" : undefined}
         >
-          <FileCheck2 className="mr-2 h-4 w-4" />
           Validate
         </Button>
         <Button
+          variant="primary"
           type="button"
           onClick={handleCreate}
           disabled={!canCreate}
-          className={isMobile ? "min-h-[44px]" : undefined}
+          className={isMobile ? "" : undefined}
         >
           {isCreating ? (
             <>

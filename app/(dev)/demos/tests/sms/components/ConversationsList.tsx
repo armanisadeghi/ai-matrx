@@ -128,7 +128,6 @@ export default function ConversationsList() {
             <Button
               onClick={fetchConversations}
               variant="outline"
-              size="sm"
               disabled={loading}
             >
               {loading ? (

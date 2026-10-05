@@ -219,12 +219,11 @@ export function FastFireLiveCard({
             )}
           </span>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 gap-1 px-2 text-xs text-muted-foreground"
+            icon={<X />}
+            type="submit"
+            variant="quiet"
             onClick={onAbort}
           >
-            <X className="h-4 w-4" />
             End
           </Button>
         </div>
@@ -300,17 +299,16 @@ export function FastFireLiveCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1">
             <Button
+              icon={helpLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <HelpCircle />
+              )}
+              type="submit"
               variant="outline"
-              size="sm"
-              className="gap-1.5"
               onClick={() => void askForHelp()}
               disabled={helpLoading || betweenCards}
             >
-              {helpLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <HelpCircle className="h-4 w-4" />
-              )}
               I&apos;m confused
             </Button>
             {/* Spec 26e — "See source": open the exact cited passage in the
@@ -324,13 +322,12 @@ export function FastFireLiveCard({
               fully audio-safe with the Web-Audio core. Prominent because "move
               ahead when you're done" is a primary action, not a rare escape. */}
           <Button
-            variant="secondary"
-            size="sm"
-            className="gap-1.5 font-medium"
+            icon={<SkipForward />}
+            type="submit"
+            variant="outline"
             onClick={onSkip}
             disabled={betweenCards}
           >
-            <SkipForward className="h-4 w-4" />
             Next card
           </Button>
         </div>

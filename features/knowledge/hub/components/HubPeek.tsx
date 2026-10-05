@@ -146,7 +146,7 @@ export function HubPeek({
       <aside className="flex h-full flex-col gap-3 p-4" aria-label="Peek">
         <div className="flex items-center justify-between">
           <span className="text-sm text-muted-foreground">This item is not in the current results.</span>
-          <Button size="sm" variant="ghost" onClick={onClose} aria-label="Close peek (Esc)">
+          <Button variant="quiet" onClick={onClose} aria-label="Close peek (Esc)">
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -235,7 +235,7 @@ export function HubPeek({
                     </p>
                     {s.reason ? <p className="text-xs text-muted-foreground">{s.reason}</p> : null}
                   </div>
-                  <Button size="sm" variant="outline" className="h-7 shrink-0 gap-1" onClick={() => onAcceptSuggestion(hit, s.target)}>
+                  <Button variant="outline" className="shrink-0" onClick={() => onAcceptSuggestion(hit, s.target)}>
                     Accept
                     {i === 0 ? <kbd className="rounded border border-border px-1 text-[10px]">A</kbd> : null}
                   </Button>
@@ -274,15 +274,13 @@ export function HubPeek({
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           {href ? (
-            <Button size="sm" variant="default" className="h-7 gap-1.5 px-2.5" title="Open (⌘↵)" onClick={() => onOpenFull(hit)}>
-              <ExternalLink className="h-3.5 w-3.5" /> Open
+            <Button icon={<ExternalLink />} variant="primary" title="Open (⌘↵)" onClick={() => onOpenFull(hit)}> Open
             </Button>
           ) : null}
           {onToggleFavorite ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 w-7 p-0"
+              variant="quiet"
+              className="w-7"
               aria-pressed={isFavorite}
               aria-label={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
               title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}
@@ -292,7 +290,7 @@ export function HubPeek({
             </Button>
           ) : null}
           {extraActions}
-          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
+          <Button variant="quiet" className="w-7" onClick={onClose} aria-label="Close peek (Esc)" title="Close (Esc)">
             <X className="h-4 w-4" />
           </Button>
         </div>

@@ -201,38 +201,34 @@ function AudioTestModalContent({
         <div className="flex items-center gap-2">
           {playerState === 'idle' && (
             <Button
+              icon={<Play />}
+              variant="primary"
               onClick={handlePlay}
               disabled={connectionState !== 'ready' || !speechText.trim()}
-              size="sm"
-              className="gap-2"
             >
-              <Play className="h-4 w-4" />
               Play Audio
             </Button>
           )}
 
           {playerState === 'playing' && (
-            <Button onClick={handlePause} size="sm" variant="secondary" className="gap-2">
-              <Pause className="h-4 w-4" />
+            <Button icon={<Pause />} onClick={handlePause} variant="outline">
               Pause
             </Button>
           )}
 
           {playerState === 'paused' && (
-            <Button onClick={handleResume} size="sm" className="gap-2">
-              <Play className="h-4 w-4" />
+            <Button icon={<Play />} variant="primary" onClick={handleResume}>
               Resume
             </Button>
           )}
 
           {(playerState === 'playing' || playerState === 'paused') && (
-            <Button onClick={handleStop} size="sm" variant="destructive" className="gap-2">
-              <Square className="h-4 w-4" />
+            <Button icon={<Square />} onClick={handleStop} variant="danger">
               Stop
             </Button>
           )}
 
-          <Button onClick={handleCopy} size="sm" variant="outline" className="gap-2 ml-auto">
+          <Button onClick={handleCopy} variant="outline" className="ml-auto">
             {copied ? (
               <>
                 <CheckCircle2 className="h-4 w-4" />

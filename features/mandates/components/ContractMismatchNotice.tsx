@@ -83,9 +83,7 @@ export function ContractMismatchNotice({
         ) : null}
         <div className="flex flex-wrap items-center gap-2 pt-0.5">
           <Button
-            size="sm"
             variant="outline"
-            className={cn("h-7 gap-1.5 text-[11.5px]", runsAnyway ? "border-amber-500/40" : "border-destructive/40")}
             onClick={() => void announceComingSoon("mandates.holder-auto-heal")}
           >
             <INTELLIGENCE_ICON className="h-3.5 w-3.5" />

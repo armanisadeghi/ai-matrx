@@ -84,28 +84,25 @@ export function ScraperKeywordSearchPageBody({
           </div>
           {flatResults.length > 0 && (
             <Button
+              icon={<X />}
               type="button"
               onClick={handleClear}
               variant="outline"
-              size="sm"
-              className="h-8"
             >
-              <X className="w-3.5 h-3.5 mr-1" />
               Clear
             </Button>
           )}
           <Button
+            icon={isLoading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Search />
+            )}
+            variant="primary"
             type="button"
             onClick={() => void handleSearch()}
             disabled={!keywords.trim() || isLoading}
-            size="sm"
-            className="h-8 gap-1.5"
           >
-            {isLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Search className="w-3.5 h-3.5" />
-            )}
             {isLoading ? (statusMessage ?? "Searching...") : "Search"}
           </Button>
         </div>
@@ -214,25 +211,23 @@ export function ScraperKeywordSearchCompactControls({
       </div>
       <div className="flex gap-1">
         <Button
+          icon={isLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Search />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
-          className="h-7 flex-1 text-xs gap-1"
+          className="flex-1"
           onClick={() => void handleSearch()}
           disabled={!keywords.trim() || isLoading}
         >
-          {isLoading ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <Search className="w-3 h-3" />
-          )}
           {isLoading ? "…" : "Search"}
         </Button>
         {flatResults.length > 0 && (
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="h-7 px-2"
             onClick={handleClear}
             title="Clear"
           >

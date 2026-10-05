@@ -65,13 +65,12 @@ export function ShowPicker({
           </SelectContent>
         </Select>
         <Button
+          icon={<Plus />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={() => setDialogOpen(true)}
-          className="shrink-0 gap-1.5"
+          className="shrink-0"
         >
-          <Plus className="h-4 w-4" />
           New
         </Button>
       </div>

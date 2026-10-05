@@ -80,14 +80,12 @@ export function ProvenanceStrip({
       </p>
       {changed ? (
         <Button
+          icon={<RotateCcw aria-hidden />}
           type="button"
-          size="sm"
           variant="outline"
-          className="h-6 gap-1 px-2 text-[11px]"
           onClick={() => void revert()}
           disabled={busy}
         >
-          <RotateCcw className="h-3 w-3" aria-hidden />
           {busy ? "Reverting…" : "Revert to pack"}
         </Button>
       ) : null}

@@ -2,6 +2,7 @@ import React from 'react';
 import {ArrowLeftToLine, ArrowRightToLine, MoveLeft, MoveRight} from 'lucide-react';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
 import {Button} from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 
 interface MatrixPaginationProps {
     totalCount: number;
@@ -42,7 +43,7 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
 
         for (let i = startPage; i <= endPage; i++) {
             pageNumbers.push(
-                <Button
+                <SurfaceButton
                     key={i}
                     variant={currentPage === i ? "default" : "outline"}
                     size="icon"
@@ -50,7 +51,7 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
                     className="w-8 h-8 mx-1"
                 >
                     {i}
-                </Button>
+                </SurfaceButton>
             );
         }
 
@@ -60,7 +61,7 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
 
         if (endPage < totalPages) {
             pageNumbers.push(
-                <Button
+                <SurfaceButton
                     key={totalPages}
                     variant={currentPage === totalPages ? "default" : "outline"}
                     size="icon"
@@ -68,7 +69,7 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
                     className="w-8 h-8 mx-1"
                 >
                     {totalPages}
-                </Button>
+                </SurfaceButton>
             );
         }
 
@@ -104,42 +105,34 @@ export const MatrixPagination: React.FC<MatrixPaginationProps> = (
 
             <div className="flex items-center space-x-2">
                 <Button
+                    icon={<ArrowLeftToLine/>} aria-label="First Page"
                     variant="outline"
-                    size="icon"
                     onClick={() => goToPage(1)}
                     disabled={currentPage === 1}
                     title="First Page"
-                >
-                    <ArrowLeftToLine className="h-4 w-4"/>
-                </Button>
+                />
                 <Button
+                    icon={<MoveLeft/>} aria-label="Previous Page"
                     variant="outline"
-                    size="icon"
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
                     title="Previous Page"
-                >
-                    <MoveLeft className="h-4 w-4"/>
-                </Button>
+                />
                 {renderPageNumbers()}
                 <Button
+                    icon={<MoveRight/>} aria-label="Next Page"
                     variant="outline"
-                    size="icon"
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
                     title="Next Page"
-                >
-                    <MoveRight className="h-4 w-4"/>
-                </Button>
+                />
                 <Button
+                    icon={<ArrowRightToLine/>} aria-label="Last Page"
                     variant="outline"
-                    size="icon"
                     onClick={() => goToPage(totalPages)}
                     disabled={currentPage === totalPages}
                     title="Last Page"
-                >
-                    <ArrowRightToLine className="h-4 w-4"/>
-                </Button>
+                />
             </div>
         </div>
     );

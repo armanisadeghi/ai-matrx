@@ -272,9 +272,10 @@ export function InstantAssistantBuilder({
 
       <div className="flex-shrink-0 p-3 border-t bg-muted/30">
         <Button
+          variant="primary"
           onClick={handleCreate}
           disabled={isSaving}
-          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+          className="w-full"
         >
           {isSaving ? (
             <>

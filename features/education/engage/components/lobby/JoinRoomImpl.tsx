@@ -57,12 +57,10 @@ export function JoinRoomImpl() {
     <div className="mx-auto flex h-full w-full max-w-md flex-col items-center justify-center gap-5 p-4">
       <div className="flex items-center gap-2 self-start">
         <Button
-          variant="ghost"
-          size="sm"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => router.push("/education/game")}
-          className="gap-1"
-        >
-          <ArrowLeft className="h-4 w-4" /> Back
+        > Back
         </Button>
       </div>
 
@@ -86,7 +84,8 @@ export function JoinRoomImpl() {
         />
         {error && <p className="mt-2 text-sm text-destructive">{error} <ErrorAlchemyMenu /></p>}
         <Button
-          className="mt-4 w-full gap-2"
+          variant="primary"
+          className="mt-4 w-full"
           disabled={joining}
           onClick={join}
         >

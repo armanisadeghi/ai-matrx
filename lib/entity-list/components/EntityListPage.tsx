@@ -24,7 +24,7 @@ import {
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 import { AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { CONTROLS_CONTAINER_NAME, ControlScope } from "@ai-matrx/design-system/controls";
 import { ItemContextMenu } from "@/components/official/item/ItemMenu";
 import {

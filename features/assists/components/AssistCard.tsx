@@ -355,19 +355,19 @@ export function AssistCard({
             unchanged. */}
         <div className="grid grid-cols-3 items-center gap-1 md:flex md:flex-wrap md:gap-x-2 md:gap-y-1">
           <Button
-            size="sm"
+            icon={busy === "run" && (
+              <Loader2 className="animate-spin" />
+            )}
+            variant="primary"
             onClick={run}
             disabled={!descriptor || busy !== null || Boolean(actionValidation)}
-            className="col-span-3 min-h-11 min-w-0 gap-1 px-2 text-xs md:col-span-1 md:h-7 md:min-h-0 md:px-3"
+            className="col-span-3 min-w-0 md:col-span-1"
             title={
               actionEditor && !actionReviewed
                 ? "Edit or review the guidelines before approving"
                 : descriptor?.verb
             }
           >
-            {busy === "run" && (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            )}
             <span className="truncate">
               {actionEditor && !actionReviewed
                 ? "Edit"
@@ -375,11 +375,10 @@ export function AssistCard({
             </span>
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={onClose}
             disabled={busy !== null}
-            className="min-h-11 min-w-0 px-1 text-[11px] text-muted-foreground md:h-7 md:min-h-0 md:px-2 md:text-xs"
+            className="min-w-0"
           >
             Not now
           </Button>
@@ -387,16 +386,15 @@ export function AssistCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy !== null}
-                  className="min-h-11 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground md:h-7 md:min-h-0 md:px-2 md:text-xs"
-                >
-                  {busy === "snooze" ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                  icon={busy === "snooze" ? (
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <Clock className="h-3 w-3" />
+                    <Clock />
                   )}
+                  variant="quiet"
+                  disabled={busy !== null}
+                  className="min-w-0"
+                >
                   Later
                 </Button>
               </DropdownMenuTrigger>
@@ -417,17 +415,16 @@ export function AssistCard({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  size="sm"
-                  variant="ghost"
+                  icon={busy === "dismiss" || busy === "silence" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <VolumeX />
+                  )}
+                  variant="quiet"
                   disabled={busy !== null}
-                  className="min-h-11 min-w-0 gap-1 px-1 text-[11px] text-muted-foreground hover:text-destructive md:ml-auto md:h-7 md:min-h-0 md:shrink-0 md:px-2 md:text-xs"
+                  className="min-w-0 md:ml-auto md:shrink-0"
                   aria-label="Stop showing"
                 >
-                  {busy === "dismiss" || busy === "silence" ? (
-                    <Loader2 className="h-3 w-3 animate-spin md:mr-1" />
-                  ) : (
-                    <VolumeX className="h-3 w-3 md:mr-1" />
-                  )}
                   <span className="md:hidden">Hide</span>
                   <span className="hidden md:inline">Stop showing</span>
                 </Button>
@@ -489,18 +486,14 @@ export function AssistCard({
             />
             <div className="mt-1 flex items-center gap-2">
               <Button
-                size="sm"
-                variant="destructive"
-                className="h-7 px-2 text-xs"
+                variant="danger"
                 disabled={busy !== null}
                 onClick={() => void dismiss()}
               >
                 Dismiss for good
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs text-muted-foreground"
+                variant="quiet"
                 disabled={busy !== null}
                 onClick={() => {
                   setNoteOpen(false);
@@ -529,21 +522,17 @@ export function AssistCard({
             />
             <div className="mt-1 flex items-center gap-2">
               <Button
-                size="sm"
-                variant="destructive"
-                className="h-7 px-2 text-xs"
+                icon={busy === "silence" && (
+                  <Loader2 className="animate-spin" />
+                )}
+                variant="danger"
                 disabled={busy !== null || !silenceReason.trim()}
                 onClick={() => void silenceForever()}
               >
-                {busy === "silence" && (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                )}
                 Silence this kind
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs text-muted-foreground"
+                variant="quiet"
                 disabled={busy !== null}
                 onClick={() => {
                   setSilenceOpen(false);

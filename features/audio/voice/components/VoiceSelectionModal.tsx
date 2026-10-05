@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { motion } from 'motion/react';
 import { Play, Square, Loader2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Badge } from '@/components/ui/badge';
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -187,14 +187,14 @@ export function VoiceSelectionModal({
                                 Browse and test available voices
                             </p>
                         </div>
-                        <Button
+                        <SurfaceButton
                             variant="ghost"
                             size="icon"
                             onClick={handleClose}
                             className="h-9 w-9"
                         >
                             <X className="h-5 w-5" />
-                        </Button>
+                        </SurfaceButton>
                     </div>
 
                     {/* Content */}
@@ -243,7 +243,6 @@ function VoiceCard({ voice, isPlaying, isSelected, onPlay, onSelect, isConnected
                     <div className="flex gap-2">
                         <Button
                             variant="outline"
-                            size="sm"
                             onClick={onPlay}
                             disabled={!isConnected}
                             className="flex-1"
@@ -266,8 +265,7 @@ function VoiceCard({ voice, isPlaying, isSelected, onPlay, onSelect, isConnected
                             )}
                         </Button>
                         <Button
-                            variant={isSelected ? "default" : "outline"}
-                            size="sm"
+                            variant={isSelected ? "primary" : "outline"}
                             onClick={onSelect}
                             className="flex-1"
                         >

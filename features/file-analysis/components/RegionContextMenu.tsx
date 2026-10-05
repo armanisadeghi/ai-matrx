@@ -266,12 +266,11 @@ export function PdfRegionContextMenu({
           <div className="absolute bottom-3 right-3 z-30 md:hidden">
             <ItemMenu config={() => regionMenuConfig(selectedRegion)}>
               <Button
+                icon={<MoreHorizontal />}
                 type="button"
-                variant="secondary"
-                className="min-h-11 gap-2 rounded-full border border-border bg-card/95 px-4 shadow-lg backdrop-blur-sm"
+                variant="outline"
                 aria-label="Region actions"
               >
-                <MoreHorizontal className="h-4 w-4" />
                 Region actions
               </Button>
             </ItemMenu>

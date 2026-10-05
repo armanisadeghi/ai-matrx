@@ -208,44 +208,40 @@ export function PackDetail({
         <div className="flex shrink-0 items-center gap-1.5">
           {pack.status === "draft" && canAuthor ? (
             <Button
-              size="sm"
+              icon={busy ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Send />
+              )}
               variant="outline"
               disabled={busy}
               onClick={() => status.mutate({ to: "proposed" })}
             >
-              {busy ? (
-                <Loader2 className="mr-1 size-3.5 animate-spin" />
-              ) : (
-                <Send className="mr-1 size-3.5" />
-              )}
               Submit for ratification
             </Button>
           ) : null}
           {pack.status === "proposed" && isAdmin ? (
             <Button
-              size="sm"
+              icon={<BadgeCheck />}
+              variant="primary"
               disabled={busy}
               onClick={() => setRatifyOpen(true)}
-            >
-              <BadgeCheck className="mr-1 size-3.5" /> Ratify
+            > Ratify
             </Button>
           ) : null}
           {isAdmin && directory && pack.status !== "draft" ? (
             <Button
-              size="sm"
-              variant={pack.status === "ratified" ? "default" : "outline"}
+              icon={<Send />}
+              variant={pack.status === "ratified" ? "primary" : "outline"}
               onClick={() => setPublishOpen(true)}
-            >
-              <Send className="mr-1 size-3.5" /> Publish
+            > Publish
             </Button>
           ) : null}
           {isAdmin || canAuthor ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="px-2"
+                  variant="quiet"
                   aria-label="More actions"
                 >
                   <ChevronDown className="size-4" />

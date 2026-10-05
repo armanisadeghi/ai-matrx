@@ -83,16 +83,15 @@ export function ExportArtifactDownload({
   return (
     <div className="space-y-3 rounded-lg border border-border bg-card p-4">
       <div className="flex flex-wrap items-center gap-2">
-        <Button size="sm" onClick={() => void save()} disabled={busy}>
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+        <Button icon={busy ? (
+            <Loader2 className="animate-spin" aria-hidden />
           ) : (
-            <Download className="mr-2 h-4 w-4" aria-hidden />
-          )}
+            <Download aria-hidden />
+          )} variant="primary" onClick={() => void save()} disabled={busy}>
           {busy ? "Preparing…" : "Save the file"}
         </Button>
         {url ? (
-          <Button size="sm" variant="outline" asChild>
+          <Button variant="outline" asChild>
             <a href={url} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" aria-hidden />
               Open in a new tab

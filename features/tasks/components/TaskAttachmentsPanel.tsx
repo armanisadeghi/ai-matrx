@@ -214,33 +214,29 @@ export default function TaskAttachmentsPanel({
         )}
         <div className="ml-auto flex items-center gap-1">
           <Button
+            icon={isAttaching ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <FolderOpen />
+            )}
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={handlePickExisting}
             disabled={isAttaching || isUploading}
-            className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
           >
-            {isAttaching ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <FolderOpen className="w-3 h-3" />
-            )}
             Pick
           </Button>
           <Button
+            icon={isUploading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Upload />
+            )}
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={handleUploadClick}
             disabled={isAttaching || isUploading}
-            className="h-6 px-2 text-[11px] gap-1 text-muted-foreground hover:text-foreground"
           >
-            {isUploading ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Upload className="w-3 h-3" />
-            )}
             Upload
           </Button>
         </div>

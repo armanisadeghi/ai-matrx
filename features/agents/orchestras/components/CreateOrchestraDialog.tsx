@@ -219,14 +219,13 @@ export function CreateOrchestraDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => handleOpenChange(false)}
             disabled={busy}
           >
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={!conductorId || busy}>
-            {busy ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={handleCreate} disabled={!conductorId || busy}>
             Create Orchestra
           </Button>
         </DialogFooter>

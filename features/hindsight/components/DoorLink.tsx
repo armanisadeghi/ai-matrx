@@ -42,15 +42,12 @@ export function DoorLink({
         {door.label}
       </Link>
       <Button
+        icon={<ExternalLink />} aria-label="Open in a new tab"
         asChild
-        variant="ghost"
-        size="icon"
-        className="h-6 w-6 text-muted-foreground"
+        variant="quiet"
         title="Open in a new tab"
       >
-        <a href={door.href} target="_blank" rel="noopener noreferrer">
-          <ExternalLink className="h-3 w-3" />
-        </a>
+        <a href={door.href} target="_blank" rel="noopener noreferrer" />
       </Button>
     </span>
   );

@@ -24,7 +24,7 @@
 
 import { useState, type ReactNode } from "react";
 import { Loader2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { bulkCountLabel, type EntityBulkAction } from "../selection";

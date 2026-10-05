@@ -394,18 +394,18 @@ export function UploadEpisodeDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving || audioState === "uploading"}
           >
             Cancel
           </Button>
           <Button
+            icon={saving && <Loader2 className="animate-spin" />}
+            variant="primary"
             onClick={handleSubmit}
             disabled={!canSubmit || saving}
-            className="gap-2"
           >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Publish episode
           </Button>
         </DialogFooter>

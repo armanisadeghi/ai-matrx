@@ -13,7 +13,7 @@ import { fetchTranscriptById } from "../service/transcriptsService";
 import { useToastManager } from "@/hooks/useToastManager";
 import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 interface TranscriptsLayoutProps {

@@ -64,13 +64,12 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-4">
           {!isMainPage && (
-            <Button 
-              variant="ghost" 
-              size="sm"
+            <Button
+              icon={<ChevronLeft />} 
+              variant="quiet"
               onClick={() => pushAppHref(router, '/administration/ui/official-components')}
               className="mr-2"
             >
-              <ChevronLeft className="h-4 w-4" />
               Back
             </Button>
           )}
@@ -89,8 +88,7 @@ export default function ComponentHeader({ title }: ComponentHeaderProps) {
         </div>
         
         <AppLink href="/administration/ui/official-components/documentation">
-          <Button variant="outline" size="sm" className="gap-2">
-            <FolderOpen className="h-4 w-4" />
+          <Button icon={<FolderOpen />} type="submit" variant="outline">
             Documentation
           </Button>
         </AppLink>

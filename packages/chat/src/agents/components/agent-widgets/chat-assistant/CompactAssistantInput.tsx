@@ -32,7 +32,7 @@ import {
   cancelExecution,
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
 import { InboxQueueStrip } from "../../inputs/smart-input/InboxQueueStrip";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { ArrowUp, Mic, Braces, CircleStop, CornerDownLeft } from "lucide-react";
 
 // Voice input
@@ -263,19 +263,25 @@ export function CompactAssistantInput({
           {/* Stop button — only while a run streams */}
           {isExecuting && (
             <Button
-              size="icon"
-              className="w-6 h-6 rounded-full bg-muted text-foreground shrink-0 ml-0.5 hover:bg-destructive/15 hover:text-destructive"
+              icon={<CircleStop />} aria-label="Stop the run (everything streamed so far is kept)"
+              variant="primary"
+              className="shrink-0 ml-0.5"
               onClick={() => dispatch(cancelExecution(conversationId))}
               title="Stop the run (everything streamed so far is kept)"
-            >
-              <CircleStop className="w-3 h-3" />
-            </Button>
+            />
           )}
 
           {/* Send button — queues via the inbox while a run streams */}
           <Button
-            size="icon"
-            className="w-6 h-6 rounded-full bg-primary text-primary-foreground shrink-0 disabled:opacity-40 ml-0.5"
+            icon={<ArrowUp />} aria-label={isExecuting
+                ? "Queue message — sends when the agent finishes"
+                : voiceBusy
+                  ? "Finish recording to send"
+                  : !allResourcesResolved
+                    ? "Wait for attachments to finish uploading"
+                  : "Send"}
+            variant="primary"
+            className="shrink-0 ml-0.5"
             disabled={isSendDisabled}
             onClick={handleSend}
             title={
@@ -287,9 +293,7 @@ export function CompactAssistantInput({
                     ? "Wait for attachments to finish uploading"
                   : "Send"
             }
-          >
-            <ArrowUp className="w-3 h-3" />
-          </Button>
+          />
         </div>
       </div>
     </SmartInputFileDropTarget>

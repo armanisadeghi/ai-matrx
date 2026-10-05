@@ -96,7 +96,7 @@ export function RunHistoryCard({ taskId, task = null }: Props) {
           <Alert variant="destructive">
             <AlertDescription className="space-y-3">
               <p>{error ?? "Couldn't load runs"}</p>
-              <Button type="button" variant="outline" size="sm" onClick={retry}>
+              <Button type="button" variant="outline" onClick={retry}>
                 Retry
               </Button>
             </AlertDescription>

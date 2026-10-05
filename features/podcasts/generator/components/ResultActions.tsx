@@ -115,7 +115,7 @@ export function ResultActions({
       {/* Primary actions — kept to a single compact row on desktop. */}
       <div className="flex flex-wrap items-center gap-1.5">
         {href && (
-          <Button asChild size="sm" className="gap-1.5">
+          <Button variant="primary" asChild>
             <Link href={href} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-4 w-4" />
               Podcast
@@ -123,42 +123,37 @@ export function ResultActions({
           </Button>
         )}
         <Button
-          variant={published ? "secondary" : "outline"}
-          size="sm"
+          icon={publishing ? (
+            <Loader2 className="animate-spin" />
+          ) : published ? (
+            <Globe className="text-emerald-500" />
+          ) : (
+            <Globe />
+          )}
+          variant={published ? "outline" : "outline"}
           onClick={togglePublish}
           disabled={publishing}
-          className="gap-1.5"
         >
-          {publishing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : published ? (
-            <Globe className="h-4 w-4 text-emerald-500" />
-          ) : (
-            <Globe className="h-4 w-4" />
-          )}
           {published ? "Published" : "Publish"}
         </Button>
         {audioUrl && (
-          <Button asChild size="sm" variant="outline" className="gap-1.5">
+          <Button asChild variant="outline">
             <a href={audioUrl} download={`${title || "episode"}.wav`}>
               <Download className="h-4 w-4" />
               Audio
             </a>
           </Button>
         )}
-        <Button size="sm" variant="outline" onClick={copyLink} className="gap-1.5">
-          <Link2 className="h-4 w-4" />
+        <Button icon={<Link2 />} variant="outline" onClick={copyLink}>
           Link
         </Button>
         <Button
+          icon={<Share2 />}
           variant="outline"
-          size="sm"
           onClick={() =>
             share({ title, url: absoluteUrl ?? undefined })
           }
-          className="gap-1.5"
         >
-          <Share2 className="h-4 w-4" />
           Share
         </Button>
         {/* Blog post + show notes live in the EpisodeContentStudio panel below

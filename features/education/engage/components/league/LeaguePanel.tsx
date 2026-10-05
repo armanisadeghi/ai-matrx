@@ -27,8 +27,7 @@ export function LeaguePanel() {
           <Trophy className="h-4 w-4 text-amber-500" /> Weekly League
         </p>
         <Button
-          size="sm"
-          variant={optedIn ? "outline" : "default"}
+          variant={optedIn ? "outline" : "primary"}
           onClick={() => void setOptIn(!optedIn, displayName)}
         >
           {optedIn ? "Leave" : "Join"}

@@ -197,21 +197,18 @@ export function MyVerificationConsents() {
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
+                  variant="primary"
                   type="button"
-                  size="sm"
                   disabled={busy}
                   onClick={() => void decide(row, true)}
-                  className="min-h-11 sm:min-h-9"
                 >
                   Share my pay with {asker}
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
                   disabled={busy}
                   onClick={() => void decide(row, false)}
-                  className="min-h-11 sm:min-h-9"
                 >
                   Do not share it
                 </Button>

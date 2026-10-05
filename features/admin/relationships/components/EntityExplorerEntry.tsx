@@ -62,7 +62,11 @@ export function EntityExplorerEntry({ rules, value }: Props) {
         {involvedCount} in rules
       </Badge>
       <Button
-        size="sm"
+        icon={isPending ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <ArrowRight />
+        )}
         variant="outline"
         disabled={!selected || isPending}
         onClick={() =>
@@ -73,20 +77,14 @@ export function EntityExplorerEntry({ rules, value }: Props) {
           )
         }
       >
-        {isPending ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <ArrowRight className="mr-1.5 h-3.5 w-3.5" />
-        )}
         Open page
       </Button>
       <Button
-        size="sm"
+        icon={<AppWindow />}
         variant="outline"
         disabled={!selected}
         onClick={() => setWindowOpen(true)}
       >
-        <AppWindow className="mr-1.5 h-3.5 w-3.5" />
         Open in window
       </Button>
       {windowOpen && selected ? (

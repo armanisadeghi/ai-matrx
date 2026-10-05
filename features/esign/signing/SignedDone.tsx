@@ -58,10 +58,10 @@ export function SignedDone({
             Keep your signed documents
           </div>
           <p className="text-sm text-muted-foreground">Free AI Matrx account. Send your own for signature too.</p>
-          <Button asChild>
+          <Button variant="primary" asChild>
             <Link href={signUpHref("/esign")}>Create free account</Link>
           </Button>
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="quiet" asChild>
             <Link href={loginHref("/esign")}>I have an account</Link>
           </Button>
         </div>

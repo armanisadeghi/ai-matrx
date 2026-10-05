@@ -85,12 +85,10 @@ export function RequestAccess({
           <span>{request.sent ? "Request sent." : why}</span>
           {request.sent ? null : (
             <Button
+              icon={<KeyRound aria-hidden="true" />}
               variant="outline"
-              size="sm"
-              className="h-7 gap-1 text-xs"
               onClick={() => setOpen(true)}
             >
-              <KeyRound className="h-3.5 w-3.5" aria-hidden="true" />
               Ask for access
             </Button>
           )}
@@ -165,12 +163,11 @@ function RequestAccessDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button disabled={request.sending} onClick={() => void send()}>
-            {request.sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          <Button icon={request.sending ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
             ) : (
-              <Send className="h-4 w-4" aria-hidden="true" />
-            )}
+              <Send aria-hidden="true" />
+            )} variant="primary" disabled={request.sending} onClick={() => void send()}>
             Send request
           </Button>
         </DialogFooter>

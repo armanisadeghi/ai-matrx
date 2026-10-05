@@ -157,9 +157,9 @@ export default function SearchDemoPage() {
         />
       </div>
       <Button
+        variant="primary"
         onClick={handleSearch}
         disabled={!keywords.trim() || isLoading}
-        className="px-6"
       >
         {isLoading ? (
           <>

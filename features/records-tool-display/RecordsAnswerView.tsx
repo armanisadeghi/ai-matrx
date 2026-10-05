@@ -169,8 +169,7 @@ function RowsCard({
       open={{ href: tableHref(answer.tableId), label: "Open the table" }}
       headerActions={
         save ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1 px-2" onClick={save}>
-            <TableProperties className="h-3.5 w-3.5" />
+          <Button icon={<TableProperties />} type="button" variant="quiet" onClick={save}>
             Save to a table
           </Button>
         ) : null

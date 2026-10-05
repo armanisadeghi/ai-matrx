@@ -186,8 +186,7 @@ export function DuplicateUploadDialog({
           <Button variant="outline" onClick={onCancel}>
             Cancel all
           </Button>
-          <Button onClick={handleConfirm}>
-            <Check className="h-4 w-4 mr-1.5" />
+          <Button icon={<Check />} variant="primary" onClick={handleConfirm}>
             Continue with selections
           </Button>
         </DialogFooter>

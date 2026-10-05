@@ -137,9 +137,8 @@ export function VariableDefaultsEditor({
           Variables
         </Label>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 w-5 p-0"
+          variant="quiet"
+          className="w-5"
           onClick={openAdd}
           title="Add variable"
         >
@@ -271,18 +270,15 @@ export function VariableDefaultsEditor({
 
           <DialogFooter className="gap-2">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => setIsModalOpen(false)}
-              className="text-xs"
             >
               Cancel
             </Button>
             <Button
-              size="sm"
+              variant="primary"
               onClick={handleSave}
               disabled={!form.name.trim()}
-              className="text-xs"
             >
               {modalMode === "add" ? "Add" : "Save"}
             </Button>

@@ -88,12 +88,10 @@ export function WorkbenchClient() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                icon={<RefreshCw />}
                 variant="outline"
-                size="sm"
                 onClick={wb.clearResults}
-                className="h-7 text-xs"
               >
-                <RefreshCw className="h-3.5 w-3.5 mr-1" />
                 Clear results
               </Button>
             </TooltipTrigger>
@@ -106,22 +104,19 @@ export function WorkbenchClient() {
         </TooltipProvider>
 
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
           onClick={wb.addBlock}
-          className="h-7 text-xs"
         >
-          <Plus className="h-3.5 w-3.5 mr-1" />
           Add query
         </Button>
 
         <Button
+          icon={<Play />}
+          variant="primary"
           onClick={wb.runAll}
           disabled={anyRunning}
-          size="sm"
-          className="h-7 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800"
         >
-          <Play className="h-3.5 w-3.5 mr-1" />
           Run all
         </Button>
       </div>
@@ -157,11 +152,11 @@ export function WorkbenchClient() {
           ))}
 
           <Button
+            icon={<Plus />}
             variant="outline"
             onClick={wb.addBlock}
-            className="w-full h-9 text-xs border-dashed border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="w-full"
           >
-            <Plus className="h-3.5 w-3.5 mr-1" />
             Add query
           </Button>
 

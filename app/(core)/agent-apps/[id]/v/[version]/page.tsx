@@ -55,7 +55,7 @@ export default async function AgentAppVersionPage({
       >
         <div className="px-4 sm:px-6 pb-6 pt-4 space-y-4">
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" className="gap-1.5 -ml-2">
+            <Button asChild variant="quiet" className="-ml-2">
               <Link href={`/agent-apps/${app.id}/versions`}>
                 <ArrowLeft className="w-3.5 h-3.5" /> All versions
               </Link>

@@ -24,15 +24,9 @@ export function PublicHeaderThemeToggle() {
 
     return (
         <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-            className={cn(
-                PUBLIC_HEADER_ICON_BUTTON,
-                "p-0 rounded-full",
-                "hover:bg-zinc-100 dark:hover:bg-zinc-800",
-                "transition-all duration-200"
-            )}
+            className={PUBLIC_HEADER_ICON_BUTTON}
             aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
         >
             {theme === 'dark' ? (

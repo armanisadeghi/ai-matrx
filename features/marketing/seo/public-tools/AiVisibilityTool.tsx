@@ -347,8 +347,12 @@ export function AiVisibilityTool() {
             spelling.
           </p>
           <Button
-            size="lg"
-            className="gap-2"
+            icon={running ? (
+              <PanelRightOpen />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             disabled={
               !running &&
               (!brandName.trim() ||
@@ -370,11 +374,6 @@ export function AiVisibilityTool() {
               void run();
             }}
           >
-            {running ? (
-              <PanelRightOpen className="h-4 w-4" />
-            ) : (
-              <Play className="h-4 w-4" />
-            )}
             {running ? "View live progress" : "Analyze AI visibility"}
           </Button>
         </div>

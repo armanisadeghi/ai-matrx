@@ -322,26 +322,23 @@ export default function TopicExperts() {
             )}
             <div className="ml-auto flex items-center gap-1.5">
               <Button
+                icon={scanning ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
                 variant="outline"
-                size="sm"
                 onClick={() => void scan()}
                 disabled={scanning}
-                className="h-7 px-2 text-xs"
               >
-                {scanning ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-1 h-3 w-3" />
-                )}
                 {extraction ? "Rescan" : "Scan for experts"}
               </Button>
               <Button
-                size="sm"
+                icon={promoting && <Loader2 className="animate-spin" />}
+                variant="primary"
                 onClick={() => void promote()}
                 disabled={promoting || selected.size === 0}
-                className="h-7 px-2 text-xs"
               >
-                {promoting && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
                 Add {selected.size > 0 ? selected.size : ""} to CRM
               </Button>
             </div>

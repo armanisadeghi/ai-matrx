@@ -142,11 +142,10 @@ export function OshaDeterminationPanel({
           </label>
 
           <Button
+            variant="primary"
             type="button"
-            size="sm"
             onClick={save}
             disabled={saving}
-            className="min-h-11 sm:min-h-9"
           >
             Record the determination
           </Button>

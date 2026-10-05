@@ -212,16 +212,15 @@ export function KeywordRankingsTab({
             />
           </div>
           <Button
-            size="sm"
-            className="h-8"
+            icon={adding ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
+            variant="primary"
             disabled={adding || !selectedMode}
             onClick={() => void trackKeyword()}
           >
-            {adding ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Add target
           </Button>
         </div>
@@ -265,17 +264,15 @@ export function KeywordRankingsTab({
                   </Badge>
                 ) : null}
                 <Button
-                  size="sm"
+                  icon={state?.status === "running" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Play />
+                  )}
                   variant="outline"
-                  className="h-7"
                   disabled={state?.status === "running"}
                   onClick={() => void rankCheck.run(item.target_id)}
                 >
-                  {state?.status === "running" ? (
-                    <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                  ) : (
-                    <Play className="mr-1.5 h-3 w-3" />
-                  )}
                   Check now
                 </Button>
               </div>
@@ -472,8 +469,7 @@ export function KeywordSerpTab({
           </p>
         </div>
         <Button
-          size="sm"
-          className="h-8"
+          variant="primary"
           disabled={
             !keywordId ||
             !evidencePair ||

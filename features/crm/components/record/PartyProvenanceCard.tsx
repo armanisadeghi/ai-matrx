@@ -277,17 +277,15 @@ export function PartyProvenanceCard({
         // spans the whole column.
         discovered ? (
           <Button
-            size="sm"
+            icon={promoting ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <UserPlus />
+            )}
             variant="outline"
-            className="h-7 gap-1 px-2 text-xs"
             disabled={promoting}
             onClick={() => void promote()}
           >
-            {promoting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <UserPlus className="h-3.5 w-3.5" />
-            )}
             {/* One wording at every width (page-pass 2026-09-28). */}
             Add to contacts
           </Button>
@@ -346,12 +344,10 @@ export function PartyProvenanceCard({
           <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-xs">
             <span className="text-destructive">{error}</span>
             <Button
-              size="sm"
+              icon={<RefreshCw />}
               variant="outline"
-              className="h-6 gap-1 text-xs"
               onClick={() => setAttempt((n) => n + 1)}
-            >
-              <RefreshCw className="h-3 w-3" /> Retry
+            > Retry
             </Button>
             <ErrorAlchemyMenu error={error} />
           </div>

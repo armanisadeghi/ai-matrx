@@ -53,20 +53,17 @@ export function DiffViewer({
         
         <div className="flex items-center gap-1">
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<X />}
+            variant="quiet"
             onClick={() => onReject(diff.id)}
-            className="h-7 px-2 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
           >
-            <X className="h-3.5 w-3.5 mr-1" />
             Reject
           </Button>
           <Button
-            size="sm"
+            icon={<Check />}
+            variant="primary"
             onClick={() => onAccept(diff.id)}
-            className="h-7 px-2 bg-green-600 hover:bg-green-700 text-white"
           >
-            <Check className="h-3.5 w-3.5 mr-1" />
             Accept
           </Button>
         </div>

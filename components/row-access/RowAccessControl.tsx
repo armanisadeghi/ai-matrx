@@ -102,13 +102,11 @@ export function RowAccessControl({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
+          icon={<TriggerIcon />}
           variant="outline"
-          size={size}
           disabled={saving}
-          className="gap-1.5"
           title={value.publishedToWeb ? undefined : SHOWN_TO_LABEL}
         >
-          <TriggerIcon className="h-3.5 w-3.5" />
           {value.publishedToWeb ? PUBLISHED_TO_WEB_LABEL : shownToLabel(value.shownTo)}
         </Button>
       </DropdownMenuTrigger>

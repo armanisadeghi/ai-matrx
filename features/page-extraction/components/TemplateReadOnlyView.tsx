@@ -106,27 +106,26 @@ export function TemplateReadOnlyView({
           </p>
         </div>
         <Button
-          size="sm"
+          icon={<Edit3 />}
           variant="outline"
-          className="h-7 px-2 text-[10px] shrink-0"
+          className="shrink-0"
           onClick={onEdit}
           title="Edit this template's settings"
         >
-          <Edit3 className="w-3 h-3 mr-1" />
           Edit
         </Button>
         <Button
-          size="sm"
-          className="h-7 px-2 text-[10px] shrink-0"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Play />
+          )}
+          variant="primary"
+          className="shrink-0"
           onClick={() => void onRun()}
           disabled={running}
           title="Run a new extraction with this template"
         >
-          {running ? (
-            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-          ) : (
-            <Play className="w-3 h-3 mr-1" />
-          )}
           Run
         </Button>
       </div>
@@ -263,18 +262,17 @@ export function TemplateReadOnlyView({
             The template stays so you can run it again.
           </span>
           <Button
-            size="sm"
+            icon={deletingRunData ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
             variant="outline"
-            className="h-7 px-2 text-[10px] shrink-0 text-destructive hover:text-destructive border-destructive/40 hover:border-destructive/70"
+            className="shrink-0"
             onClick={() => void onDeleteRunData()}
             disabled={deletingRunData}
             title="Move all run data (chunk runs + result rows) for this template to Trash"
           >
-            {deletingRunData ? (
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-            ) : (
-              <Trash2 className="w-3 h-3 mr-1" />
-            )}
             Move run data to Trash
           </Button>
         </div>

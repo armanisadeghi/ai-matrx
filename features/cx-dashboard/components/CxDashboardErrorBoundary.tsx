@@ -34,11 +34,10 @@ export class CxDashboardErrorBoundary extends React.Component<Props, State> {
             {this.state.error?.message}
           </pre>
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
             onClick={() => this.setState({ hasError: false, error: null })}
           >
-            <RefreshCw className="w-3 h-3 mr-1" />
             Retry
           </Button>
           <ErrorAlchemyMenu />

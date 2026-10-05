@@ -15,7 +15,7 @@ export default function TopicNotFound() {
           your topics list.
         </p>
         <div className="pt-2">
-          <Button variant="outline" size="sm" asChild className="gap-1.5">
+          <Button variant="outline" asChild>
             <Link href="/research/topics">
               <ArrowLeft className="h-3.5 w-3.5" />
               Back to Topics

@@ -140,12 +140,11 @@ export function RemoveMemberDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={busy} variant="destructive">
-            {busy ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          <Button icon={busy ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <Trash2 className="mr-2 h-4 w-4" />
-            )}
+              <Trash2 />
+            )} onClick={submit} disabled={busy} variant="danger">
             Remove member
           </Button>
         </AlertDialogFooter>

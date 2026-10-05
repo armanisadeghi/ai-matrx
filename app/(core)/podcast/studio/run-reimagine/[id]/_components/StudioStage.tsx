@@ -125,16 +125,14 @@ export function StudioStage({ runId }: { runId: string }) {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={refresh}
-            className="gap-1.5 text-muted-foreground"
             title="Re-sync this run from the server"
           >
-            <RefreshCw className="h-4 w-4" />
             <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button asChild variant="outline" className="gap-2">
+          <Button asChild variant="outline">
             <Link href="/podcast/studio/create-reimagine">
               <Plus className="h-4 w-4" />
               New episode

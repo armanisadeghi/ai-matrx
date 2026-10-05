@@ -25,7 +25,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

@@ -120,10 +120,10 @@ export function UnsubscribeForm({
       </div>
 
       <Button
+        variant="primary"
         onClick={handleUnsubscribe}
         disabled={pending}
         className="w-full"
-        size="lg"
       >
         {pending ? (
           <>

@@ -136,15 +136,14 @@ export function DesignPanelForm({
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" size="sm" disabled={start.isPending}>
-          {start.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Button icon={start.isPending ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <ClipboardList className="h-3.5 w-3.5" />
-          )}
+            <ClipboardList />
+          )} variant="primary" type="submit" disabled={start.isPending}>
           Start the design
         </Button>
-        <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
       </div>

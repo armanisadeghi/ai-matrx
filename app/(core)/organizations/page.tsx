@@ -303,11 +303,10 @@ function OrgCard({
 
       {/* Footer actions */}
       <div className="flex items-center gap-2 px-5 py-3 border-t border-border bg-card">
-        <Button size="sm" onClick={open} className="flex-1">
+        <Button iconEnd={<ArrowRight />} variant="primary" onClick={open} className="flex-1">
           Open workspace
-          <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
         </Button>
-        <Button asChild size="sm" variant="outline">
+        <Button asChild variant="outline">
           <Link href={`/organizations/${org.slug}/settings`}>
             <Settings className="h-3.5 w-3.5 mr-1.5" />
             Manage
@@ -573,7 +572,7 @@ export default function OrganizationsPage() {
                     {error}
                     <ErrorAlchemyMenu error={error} />
                   </p>
-                  <Button size="sm" variant="outline" onClick={refresh}>
+                  <Button variant="outline" onClick={refresh}>
                     Try again
                   </Button>
                 </div>
@@ -589,8 +588,7 @@ export default function OrganizationsPage() {
                     Create a team to collaborate, share agents, and build shared
                     knowledge.
                   </p>
-                  <Button size="sm" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1.5" />
+                  <Button icon={<Plus />} variant="primary" onClick={() => setCreateOpen(true)}>
                     Create organization
                   </Button>
                 </div>

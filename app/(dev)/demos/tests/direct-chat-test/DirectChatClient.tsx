@@ -214,18 +214,14 @@ export default function DirectChatClient() {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5">
                 <Button
-                  size="sm"
-                  variant={serverType === "local" ? "default" : "outline"}
+                  variant={serverType === "local" ? "primary" : "outline"}
                   onClick={() => setServerType("local")}
-                  className="h-7 text-xs px-2"
                 >
                   Localhost
                 </Button>
                 <Button
-                  size="sm"
-                  variant={serverType === "production" ? "default" : "outline"}
+                  variant={serverType === "production" ? "primary" : "outline"}
                   onClick={() => setServerType("production")}
-                  className="h-7 text-xs px-2"
                 >
                   Production
                 </Button>
@@ -267,10 +263,9 @@ export default function DirectChatClient() {
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold">Request JSON</span>
                 <Button
-                  size="sm"
+                  variant="primary"
                   onClick={handleSendRequest}
                   disabled={isStreaming || !requestJson.trim()}
-                  className="h-7 text-xs px-2"
                 >
                   {isStreaming ? (
                     <>
@@ -283,10 +278,8 @@ export default function DirectChatClient() {
                 </Button>
                 {isStreaming && (
                   <Button
-                    size="sm"
-                    variant="destructive"
+                    variant="danger"
                     onClick={handleStop}
-                    className="h-7 text-xs px-2"
                   >
                     Stop
                   </Button>

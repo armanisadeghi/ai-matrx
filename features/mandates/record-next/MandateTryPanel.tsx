@@ -431,15 +431,15 @@ export function MandateTryPanel({
         ) : null}
         <div className="flex flex-wrap items-center gap-3 pt-1">
           <Button
-            size="sm"
+            icon={running ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <FlaskConical />
+            )}
+            variant="primary"
             onClick={() => void run()}
             disabled={running || !candidate || surfaceState.status !== "ready"}
           >
-            {running ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <FlaskConical className="mr-1.5 h-3.5 w-3.5" />
-            )}
             {running ? "Running…" : "Run it"}
           </Button>
           <p className="text-xs text-muted-foreground">

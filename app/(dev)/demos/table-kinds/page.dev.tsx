@@ -274,8 +274,7 @@ export default function TableKindsDemoPage() {
             inputMode="numeric"
           />
         </label>
-        <Button type="submit" disabled={phase === "running"}>
-          <Play className="mr-1.5 h-4 w-4" />
+        <Button icon={<Play />} variant="primary" type="submit" disabled={phase === "running"}>
           Read
         </Button>
       </form>
@@ -288,9 +287,7 @@ export default function TableKindsDemoPage() {
         </span>
         <Button
           type="button"
-          size="sm"
           variant="outline"
-          className="h-6 px-2 text-xs"
           disabled={phase === "running"}
           onClick={showTruncated}
         >

@@ -150,7 +150,6 @@ export function ImportShortcutsBrowserModal({
         </div>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => void loadRows()}
           disabled={loading || !isAdmin}
           title="Refresh"
@@ -161,9 +160,7 @@ export function ImportShortcutsBrowserModal({
 
       <div className="flex flex-wrap items-center gap-1.5">
         <Button
-          variant={scopeFilter === "all" ? "default" : "outline"}
-          size="sm"
-          className="h-7"
+          variant={scopeFilter === "all" ? "primary" : "outline"}
           onClick={() => setScopeFilter("all")}
         >
           All
@@ -176,13 +173,11 @@ export function ImportShortcutsBrowserModal({
           const Icon = meta.Icon;
           return (
             <Button
+              icon={<Icon />}
               key={key}
-              variant={scopeFilter === key ? "default" : "outline"}
-              size="sm"
-              className="h-7"
+              variant={scopeFilter === key ? "primary" : "outline"}
               onClick={() => setScopeFilter(key)}
             >
-              <Icon className="h-3 w-3 mr-1" />
               {meta.label}
               <Badge variant="secondary" className="ml-1.5 text-xs">
                 <UntrustedCount value={stats[key] ?? 0} trustworthy={!error || rows.length > 0} label={meta.label} />
@@ -265,7 +260,7 @@ export function ImportShortcutsBrowserModal({
                         {row.owner_display ?? row.owner_email ?? row.user_id}
                       </div>
                     </div>
-                    <Button size="sm" variant="secondary" tabIndex={-1}>
+                    <Button type="submit" variant="outline" tabIndex={-1}>
                       Import
                     </Button>
                   </button>
@@ -291,7 +286,7 @@ export function ImportShortcutsBrowserModal({
           </DrawerHeader>
           <div className="px-4 pb-3 flex-1 min-h-0 overflow-hidden">{body}</div>
           <DrawerFooter className="flex-row gap-2 justify-end">
-            <Button variant="outline" size="sm" onClick={onClose}>
+            <Button variant="outline" onClick={onClose}>
               Close
             </Button>
           </DrawerFooter>
@@ -312,7 +307,7 @@ export function ImportShortcutsBrowserModal({
         </DialogHeader>
         <div className="flex-1 min-h-0">{body}</div>
         <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>
+          <Button variant="outline" onClick={onClose}>
             Close
           </Button>
         </DialogFooter>

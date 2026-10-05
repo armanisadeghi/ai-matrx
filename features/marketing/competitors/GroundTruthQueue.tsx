@@ -242,16 +242,15 @@ function AgreeAction({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          size="sm"
-          className="gap-1.5"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check />
+          )}
+          variant="primary"
           disabled={busy}
           onClick={(event) => event.stopPropagation()}
         >
-          {busy ? (
-            <Loader2 className="size-3.5 animate-spin" />
-          ) : (
-            <Check className="size-3.5" />
-          )}
           Confirm
         </Button>
       </PopoverTrigger>
@@ -275,16 +274,15 @@ function AgreeAction({
         />
         <div className="flex justify-end">
           <Button
-            size="sm"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Check />
+            )}
+            variant="primary"
             disabled={busy}
             onClick={() => void agree()}
-            className="gap-1.5"
           >
-            {busy ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <Check className="size-3.5" />
-            )}
             Confirm classification
           </Button>
         </div>
@@ -531,15 +529,13 @@ export function GroundTruthQueue({
                 onConfirmed={controls.discardPendingEdits}
               />
               <Button
-                size="sm"
+                icon={<Pencil />}
                 variant="outline"
-                className="gap-1.5"
                 onClick={() => {
                   controls.openWindow();
                   controls.discardPendingEdits();
                 }}
               >
-                <Pencil className="size-3.5" />
                 Edit details
               </Button>
             </>

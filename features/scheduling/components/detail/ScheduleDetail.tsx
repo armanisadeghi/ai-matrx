@@ -230,7 +230,7 @@ function ScheduleDetailBody({ taskId, seat = "owner" }: Props) {
         <AlertTitle>Couldn&apos;t load schedule</AlertTitle>
         <AlertDescription className="space-y-3">
           <p>{error}</p>
-          <Button type="button" variant="outline" size="sm" onClick={retry}>
+          <Button type="button" variant="outline" onClick={retry}>
             Retry
           </Button>
         </AlertDescription>

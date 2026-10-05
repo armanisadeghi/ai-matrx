@@ -117,7 +117,7 @@ export function QuickSearchDialog({
               if (e.key === "Enter") run();
             }}
           />
-          <Button onClick={run} disabled={!query.trim() || loading}>
+          <Button variant="primary" onClick={run} disabled={!query.trim() || loading}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Search"}
           </Button>
         </div>

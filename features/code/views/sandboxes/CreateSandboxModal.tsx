@@ -173,15 +173,16 @@ export const CreateSandboxModal: React.FC<CreateSandboxModalProps> = ({
             Cancel
           </Button>
           <Button
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Plus />
+            )}
+            variant="primary"
             type="button"
             onClick={() => void submit()}
             disabled={busy || form.loadingTemplates}
           >
-            {busy ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
             Create
           </Button>
         </DialogFooter>

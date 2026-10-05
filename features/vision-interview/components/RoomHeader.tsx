@@ -137,23 +137,17 @@ export function RoomHeader({
                   aria-label="Session title"
                 />
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
+                  icon={<Check />}
+                  variant="quiet"
                   aria-label="Save title"
                   onClick={() => void commitRename()}
-                >
-                  <Check className="h-3.5 w-3.5" />
-                </Button>
+                />
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7"
+                  icon={<X />}
+                  variant="quiet"
                   aria-label="Cancel rename"
                   onClick={() => setEditing(false)}
-                >
-                  <X className="h-3.5 w-3.5" />
-                </Button>
+                />
               </span>
             ) : (
               <button
@@ -199,9 +193,8 @@ export function RoomHeader({
                   names the step you are on. */}
               {stage.next && !isMobile && (
                 <Button
+                  iconEnd={<ArrowRight aria-hidden />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 px-2 text-xs"
                   disabled={!canAdvance || advancing}
                   title={
                     canAdvance
@@ -223,35 +216,29 @@ export function RoomHeader({
                   }
                 >
                   <span className="hidden sm:inline">Advance</span>
-                  <ArrowRight className="h-3 w-3 sm:ml-1" aria-hidden />
                 </Button>
               )}
               {!isMobile && (
                 <Button
-                  variant={inspector.isVisible ? "secondary" : "ghost"}
-                  size="icon"
-                  className="h-7 w-7"
+                  icon={<Users aria-hidden />}
+                  variant={inspector.isVisible ? "outline" : "quiet"}
                   title="Group chat: who sees what"
                   aria-label="Group chat inspector"
                   aria-pressed={inspector.isVisible}
                   onClick={inspector.toggle}
-                >
-                  <Users className="h-3.5 w-3.5" aria-hidden />
-                </Button>
+                />
               )}
               {/* FINISH ALWAYS CARRIES ITS WORD. It is the one door to the
                   Vision and Requirements documents, and below `sm` it used to
                   be a bare 12px flag — an unlabelled icon for the single most
                   consequential control in the room. */}
               <Button
-                variant={finishReady ? "default" : "outline"}
-                size="sm"
-                className="h-8 px-2.5 text-xs"
+                icon={<Flag aria-hidden />}
+                variant={finishReady ? "primary" : "outline"}
                 title={finishTitle}
                 onClick={() => setFinishOpen(true)}
                 aria-label="Finish the interview and write the documents"
               >
-                <Flag className="mr-1 h-3.5 w-3.5" aria-hidden />
                 Finish
               </Button>
               <IntelligenceIndicator

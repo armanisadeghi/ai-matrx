@@ -161,12 +161,10 @@ function ResultDoor({
   return (
     <>
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-5 gap-1 px-1.5 text-[10px] font-normal"
+        icon={<FileSearch />}
+        variant="quiet"
         onClick={() => setOpen(true)}
       >
-        <FileSearch className="h-3 w-3" />
         {label}: {result.status}
         {result.score === null ? "" : ` · ${result.score}`}
       </Button>
@@ -455,17 +453,15 @@ export function FindingDetail({ findingId }: { findingId: string }) {
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2"
+                icon={isNavigating ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ArrowLeft />
+                )}
+                variant="quiet"
                 onClick={() => navigate(marketingRoutes.site(brandId, site.id, "/findings"))}
                 disabled={isNavigating}
               >
-                {isNavigating ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                )}
                 Findings
               </Button>
               <FindingStatusBadge value={finding.status} />
@@ -493,9 +489,9 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               // passing re-analysis resolves one), but the register stops
               // reading as untouched.
               <Button
+                icon={<CheckCheck />}
                 variant="outline"
-                size="sm"
-                className="h-8 shrink-0 gap-1.5"
+                className="shrink-0"
                 onClick={() => {
                   void acknowledgeFinding(site.id, finding.id)
                     .then(afterFindingWrite)
@@ -507,7 +503,6 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                     );
                 }}
               >
-                <CheckCheck className="h-3.5 w-3.5" />
                 I&rsquo;m on it
               </Button>
             ) : null}
@@ -518,9 +513,9 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               // detail route offered no way to do it — a write the user can
               // see land and cannot reverse where they are standing.
               <Button
+                icon={<Undo2 />}
                 variant="outline"
-                size="sm"
-                className="h-8 shrink-0 gap-1.5"
+                className="shrink-0"
                 onClick={() => {
                   void unacknowledgeFinding(site.id, finding.id)
                     .then(afterFindingWrite)
@@ -532,7 +527,6 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                     );
                 }}
               >
-                <Undo2 className="h-3.5 w-3.5" />
                 Not on it after all
               </Button>
             ) : null}
@@ -540,8 +534,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               <>
                 <Button
                   variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0"
+                  className="shrink-0"
                   onClick={() =>
                     navigate(
                       marketingRoutes.sitePage(
@@ -557,8 +550,7 @@ export function FindingDetail({ findingId }: { findingId: string }) {
                 <Button
                   asChild
                   variant="outline"
-                  size="sm"
-                  className="h-8 shrink-0"
+                  className="shrink-0"
                 >
                   <a href={data.page.url} target="_blank" rel="noreferrer">
                     <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
@@ -722,19 +714,17 @@ export function FindingDetail({ findingId }: { findingId: string }) {
               ),
               actions: (
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={() => void results.refetch()}
-                  disabled={results.isFetching}
-                >
-                  <RefreshCw
+                  icon={<RefreshCw
                     className={
                       results.isFetching
                         ? "h-3.5 w-3.5 animate-spin"
                         : "h-3.5 w-3.5"
                     }
-                  />
+                  />}
+                  variant="outline"
+                  onClick={() => void results.refetch()}
+                  disabled={results.isFetching}
+                >
                   Refresh
                 </Button>
               ),

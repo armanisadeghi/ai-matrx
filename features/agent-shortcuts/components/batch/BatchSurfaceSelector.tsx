@@ -171,8 +171,6 @@ export function BatchSurfaceSelector({
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="h-8 text-xs"
           onClick={allVisibleSelected ? clearVisible : selectAllVisible}
           disabled={loading || visibleKeys.length === 0}
         >

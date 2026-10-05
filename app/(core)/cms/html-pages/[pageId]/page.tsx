@@ -143,14 +143,12 @@ function HtmlPageEditBody() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => void fetchPage()}
               >
                 Retry
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={() => router.push(backHref)}
               >
                 Back to list

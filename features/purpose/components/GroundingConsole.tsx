@@ -116,14 +116,14 @@ function UnitRow({
       {Icon ? <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : null}
       <span className="min-w-0 flex-1 truncate">{name || "Untitled"}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{info?.label ?? unitType}</span>
-      <Button size="sm" variant="ghost" className="h-6 px-2 text-xs"
+      <Button variant="quiet"
               onClick={() => onPeek(unitType, unitId)}>
         Peek
       </Button>
       {/* No `hrefFor` means the registry knows this kind has no detail route.
           Rendering no button is the honest state; a button that 404s is worse. */}
       {href ? (
-        <Button asChild size="sm" variant="ghost" className="h-6 px-2 text-xs">
+        <Button asChild variant="quiet">
           <a href={href} target="_blank" rel="noreferrer">Open</a>
         </Button>
       ) : null}
@@ -204,9 +204,8 @@ export function GroundingConsole() {
           Every unit of work declares what job it does. Units without one cannot be
           measured against their own purpose.
         </p>
-        <Button size="sm" variant="ghost" className="h-7 gap-1.5 px-2 text-xs"
+        <Button icon={<RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />} variant="quiet"
                 onClick={() => void load()} disabled={loading}>
-          <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
           Refresh
         </Button>
       </div>
@@ -229,13 +228,12 @@ export function GroundingConsole() {
                 </div>
                 {/* A COUNT IS A DOOR — this opens the units behind the number. */}
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="mt-1 h-7 gap-1.5 px-2 text-xs text-amber-700 dark:text-amber-400"
+                  icon={<AlertTriangle />}
+                  variant="quiet"
+                  className="mt-1"
                   onClick={() => void openMissing(r.unitType as PurposeUnitType)}
                   disabled={r.missingPurpose === 0}
                 >
-                  <AlertTriangle className="h-3.5 w-3.5" />
                   {r.missingPurpose} without a purpose
                 </Button>
                 <div className="mt-2 flex flex-wrap gap-1">

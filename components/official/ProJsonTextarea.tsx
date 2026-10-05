@@ -671,14 +671,12 @@ export const ProJsonTextarea = React.forwardRef<
 
         {showFormatButton && (
           <Button
+            icon={<RotateCcw />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={handleFormat}
             disabled={!validationState.isJson}
-            className="h-7 px-2 text-xs"
           >
-            <RotateCcw className="h-3.5 w-3.5" />
             Format
           </Button>
         )}

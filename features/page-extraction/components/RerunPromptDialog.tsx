@@ -82,19 +82,17 @@ export function RerunPromptDialog({
         </div>
 
         <AlertDialogFooter className="gap-2 sm:gap-2">
-          <Button variant="ghost" onClick={onCancel} disabled={busy}>
+          <Button variant="quiet" onClick={onCancel} disabled={busy}>
             Cancel
           </Button>
-          <Button variant="outline" onClick={onAddNew} disabled={busy}>
-            {busyAction === "addNew" ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : null}
+          <Button icon={busyAction === "addNew" ? (
+              <Loader2 className="animate-spin" />
+            ) : null} variant="outline" onClick={onAddNew} disabled={busy}>
             Run as new
           </Button>
-          <Button variant="destructive" onClick={onReplace} disabled={busy}>
-            {busyAction === "replace" ? (
-              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
-            ) : null}
+          <Button icon={busyAction === "replace" ? (
+              <Loader2 className="animate-spin" />
+            ) : null} variant="danger" onClick={onReplace} disabled={busy}>
             Replace
           </Button>
         </AlertDialogFooter>

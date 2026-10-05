@@ -8,7 +8,7 @@ import {
   Tag as TagIcon,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import {
   Select,

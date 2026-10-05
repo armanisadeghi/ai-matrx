@@ -170,12 +170,11 @@ export default function SharedHeatmapPage() {
         <div className="px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<ArrowLeft />}
+              variant="quiet"
               onClick={handleBackToEditor}
               className="flex-shrink-0"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
               Back
             </Button>
             <div className="min-w-0">

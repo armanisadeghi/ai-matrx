@@ -280,12 +280,11 @@ export function MentionComposer({
       <div className="flex items-center justify-end gap-1">
         {leading ? <div className="mr-auto flex min-w-0 items-center">{leading}</div> : null}
         {onCancel && (
-          <Button size="sm" variant="ghost" onClick={onCancel} disabled={posting}>
+          <Button variant="quiet" onClick={onCancel} disabled={posting}>
             Cancel
           </Button>
         )}
-        <Button size="sm" onClick={() => void submit()} disabled={posting || !value.trim()}>
-          {posting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+        <Button icon={posting ? <Loader2 className="animate-spin" aria-hidden /> : null} variant="primary" onClick={() => void submit()} disabled={posting || !value.trim()}>
           {error && !posting ? "Retry" : submitLabel}
         </Button>
       </div>

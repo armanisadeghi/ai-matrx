@@ -208,17 +208,15 @@ export function AddLevelDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onCancel}
             disabled={save.isPending}
           >
             Cancel
           </Button>
-          <Button size="sm" disabled={!ready} onClick={() => save.mutate()}>
-            {save.isPending ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
+          <Button icon={save.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : null} variant="primary" disabled={!ready} onClick={() => save.mutate()}>
             Add {copy.noun}
           </Button>
         </DialogFooter>

@@ -22,8 +22,7 @@ export function FlashcardsSection() {
             entry="@ai-matrx/print/flashcards · @ai-matrx/print/react → PrintOptionsDialog"
             blurb="A bundled sample deck through the real options dialog — every variant and every setting the printer declares."
             actions={
-                <Button size="sm" onClick={triggerPrint}>
-                    <Printer className="mr-1 h-3.5 w-3.5" />
+                <Button icon={<Printer />} variant="primary" onClick={triggerPrint}>
                     Print deck
                 </Button>
             }

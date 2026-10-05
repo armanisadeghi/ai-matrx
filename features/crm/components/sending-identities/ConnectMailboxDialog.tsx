@@ -236,16 +236,16 @@ function ConnectMailboxDialogBody({
 
   const addAccountButton = (
     <Button
-      variant={empty ? "default" : "outline"}
+      icon={addingAccount ? (
+        <Loader2 className="animate-spin" />
+      ) : (
+        <Plus />
+      )}
+      variant={empty ? "primary" : "outline"}
       className="w-full"
       disabled={addingAccount || connecting !== null}
       onClick={() => void addGoogleAccount()}
     >
-      {addingAccount ? (
-        <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <Plus className="mr-1.5 h-3.5 w-3.5" />
-      )}
       Connect a different Google account
     </Button>
   );

@@ -595,9 +595,8 @@ function FeedbackItem({
 
           {canEdit && !isEditing && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 flex-shrink-0"
+              variant="quiet"
+              className="w-6 flex-shrink-0"
               onClick={handleStartEdit}
               title="Edit this submission"
             >
@@ -667,26 +666,23 @@ function FeedbackItem({
                 />
                 <div className="flex items-center gap-2">
                   <Button
-                    size="sm"
+                    icon={isSaving ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Save />
+                    )}
+                    variant="primary"
                     onClick={handleSaveEdit}
                     disabled={isSaving}
-                    className="gap-1.5"
                   >
-                    {isSaving ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Save className="h-3.5 w-3.5" />
-                    )}
                     Save
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
+                    icon={<X />}
+                    variant="quiet"
                     onClick={handleCancelEdit}
                     disabled={isSaving}
-                    className="gap-1.5"
                   >
-                    <X className="h-3.5 w-3.5" />
                     Cancel
                   </Button>
                 </div>
@@ -807,16 +803,15 @@ function FeedbackItem({
                       The team will be notified when you respond
                     </p>
                     <Button
-                      size="sm"
+                      icon={isSendingReply ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Send />
+                      )}
+                      variant="primary"
                       onClick={handleSendReply}
                       disabled={!replyText.trim() || isSendingReply}
-                      className="gap-1.5"
                     >
-                      {isSendingReply ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Send className="h-3.5 w-3.5" />
-                      )}
                       Send Response
                     </Button>
                   </div>
@@ -854,16 +849,15 @@ function FeedbackItem({
           {canConfirm && (
             <div className="pt-1">
               <Button
-                size="sm"
+                icon={isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <CheckCircle2 />
+                )}
+                variant="primary"
                 onClick={handleConfirm}
                 disabled={isPending}
-                className="gap-1.5"
               >
-                {isPending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                )}
                 Confirm Fix Works
               </Button>
             </div>

@@ -98,11 +98,11 @@ function EnrolledWorkspace({
                 <ErrorAlchemyMenu />
               </p>
               <Button
+                icon={<RefreshCw />}
+                variant="primary"
                 className="mt-4"
-                size="sm"
                 onClick={() => void detail.refetch()}
               >
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                 Try again
               </Button>
             </div>
@@ -242,11 +242,11 @@ export function ImprovementWorkspace({
                 <ErrorAlchemyMenu />
               </p>
               <Button
+                icon={<RefreshCw />}
+                variant="primary"
                 className="mt-4"
-                size="sm"
                 onClick={() => void enrollments.refetch()}
               >
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                 Try again
               </Button>
             </div>

@@ -204,19 +204,18 @@ export function CredentialCaptureCard({
 
       <div className="flex items-center justify-end gap-2">
         <Button
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           disabled={busy}
           onClick={() => void onCancel()}
         >
           {expired ? "Dismiss" : "Cancel"}
         </Button>
         <Button
-          size="sm"
+          icon={busy ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           disabled={busy || expired || !allFilled}
           onClick={() => void onSave()}
         >
-          {busy ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : null}
           Save and continue
         </Button>
       </div>

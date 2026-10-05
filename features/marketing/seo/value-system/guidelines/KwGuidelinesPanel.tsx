@@ -306,9 +306,7 @@ export function KwGuidelinesPanel({
           {!savedText && !value ? (
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs"
+              variant="quiet"
               onClick={() => setDraft(STARTER_OUTLINE)}
             >
               Start an outline
@@ -319,29 +317,25 @@ export function KwGuidelinesPanel({
           ) : null}
           {dirty ? (
             <Button
+              icon={<RotateCcw />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1 px-2 text-xs"
+              variant="quiet"
               disabled={save.isPending}
               onClick={() => setDraft(null)}
-            >
-              <RotateCcw className="h-3.5 w-3.5" /> Discard
+            > Discard
             </Button>
           ) : null}
           <Button
+            icon={save.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Check />
+            )}
             type="button"
-            size="sm"
             variant="outline"
-            className="h-7 gap-1 px-2 text-xs"
             disabled={!dirty || save.isPending}
             onClick={() => void submit()}
           >
-            {save.isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Check className="h-3.5 w-3.5" />
-            )}
             Save
           </Button>
         </span>

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "../../../host/navigation";
 import { AudioLines, Keyboard, Mic, MicOff, Square, X } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
 
@@ -72,13 +73,13 @@ function AmbientTextMode({
         />
       </div>
       <Button
+        icon={<AudioLines />}
         type="button"
-        variant="ghost"
-        className="pointer-events-auto h-9 shrink-0 gap-1.5 rounded-full border border-primary/25 bg-glass px-3 text-xs font-medium text-primary shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,transform] hover:scale-[1.03] hover:border-primary/60 hover:bg-glass-hover"
+        variant="quiet"
+        className="pointer-events-auto shrink-0"
         onClick={onVoice}
         aria-label="Switch to voice"
       >
-        <AudioLines className="h-3.5 w-3.5" />
         Voice
       </Button>
     </div>
@@ -92,16 +93,14 @@ interface DismissButtonProps {
 function DismissButton({ onDismiss }: DismissButtonProps) {
   return (
     <Button
+      icon={<X />}
       type="button"
-      variant="ghost"
-      size="icon"
-      className="pointer-events-auto absolute -right-2 -top-2 z-20 h-7 w-7 rounded-full border border-glass-edge bg-card/95 text-muted-foreground opacity-80 shadow-glass backdrop-blur-glass transition-[color,opacity,transform] hover:scale-105 hover:bg-card hover:text-foreground hover:opacity-100"
+      variant="quiet"
+      className="pointer-events-auto absolute -right-2 -top-2 z-20"
       onClick={onDismiss}
       aria-label="Dismiss assistant until refresh"
       title="Dismiss until refresh"
-    >
-      <X className="h-3.5 w-3.5" />
-    </Button>
+    />
   );
 }
 
@@ -119,20 +118,20 @@ function GuestAmbientVoiceAssistant({
       <div className="flex items-center gap-2 opacity-75 transition-opacity hover:opacity-100 focus-within:opacity-100">
         <Button
           type="button"
-          variant="ghost"
-          className="pointer-events-auto h-9 min-w-0 flex-1 justify-start rounded-full border border-border bg-glass px-4 text-sm text-muted-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover hover:text-foreground"
+          variant="quiet"
+          className="pointer-events-auto min-w-0 flex-1 justify-start"
           onClick={requestSignIn}
         >
           Ask AI Matrx
         </Button>
         <Button
+          icon={<AudioLines />}
           type="button"
-          variant="ghost"
-          className="pointer-events-auto h-9 shrink-0 gap-1.5 rounded-full border border-primary/25 bg-glass px-3 text-xs font-medium text-primary shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,transform] hover:scale-[1.03] hover:border-primary/60 hover:bg-glass-hover"
+          variant="quiet"
+          className="pointer-events-auto shrink-0"
           onClick={requestSignIn}
           aria-label="Sign in to use voice"
         >
-          <AudioLines className="h-3.5 w-3.5" />
           Voice
         </Button>
       </div>
@@ -342,20 +341,19 @@ function AmbientVoiceSession({
           )}
         >
           <Button
+            icon={<Keyboard />}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="relative z-10 h-9 shrink-0 gap-1.5 rounded-full px-2.5 text-xs text-muted-foreground hover:bg-glass-hover hover:text-foreground"
+            variant="quiet"
+            className="relative z-10 shrink-0"
             onClick={switchToText}
             aria-label="Switch to text"
           >
-            <Keyboard className="h-3.5 w-3.5" />
             Text
           </Button>
 
           <div className="h-5 w-px shrink-0 bg-border/60" />
 
-          <Button
+          <SurfaceButton
             type="button"
             variant="ghost"
             size="icon"
@@ -379,7 +377,7 @@ function AmbientVoiceSession({
             ) : (
               <Mic className="relative z-10 h-4 w-4" />
             )}
-          </Button>
+          </SurfaceButton>
 
           <div className="relative z-10 min-w-0 flex-1">
             <p
@@ -398,22 +396,20 @@ function AmbientVoiceSession({
 
           {voiceLive ? (
             <Button
+              icon={relay.micMuted ? (
+                <MicOff />
+              ) : (
+                <Mic />
+              )}
               type="button"
-              variant="ghost"
-              size="icon"
-              className="relative z-10 h-8 w-8 shrink-0 rounded-full text-muted-foreground hover:bg-glass-hover hover:text-foreground"
+              variant="quiet"
+              className="relative z-10 shrink-0"
               onClick={relay.toggleMute}
               aria-label={
                 relay.micMuted ? "Unmute microphone" : "Mute microphone"
               }
               title={relay.micMuted ? "Unmute microphone" : "Mute microphone"}
-            >
-              {relay.micMuted ? (
-                <MicOff className="h-3.5 w-3.5" />
-              ) : (
-                <Mic className="h-3.5 w-3.5" />
-              )}
-            </Button>
+            />
           ) : null}
         </div>
       <DismissButton onDismiss={dismiss} />
@@ -504,8 +500,7 @@ function AuthenticatedAmbientVoiceAssistant({
           <Button
             type="button"
             variant="outline"
-            size="sm"
-            className="h-8 shrink-0 rounded-full"
+            className="shrink-0"
             onClick={onRetry}
           >
             Try again

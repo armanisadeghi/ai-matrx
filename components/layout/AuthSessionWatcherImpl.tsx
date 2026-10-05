@@ -81,11 +81,11 @@ export default function AuthSessionWatcherImpl({
           </div>
 
           <Button
+            icon={<RefreshCw />}
+            variant="primary"
             onClick={() => window.location.reload()}
-            className="w-full gap-2"
-            size="lg"
+            className="w-full"
           >
-            <RefreshCw className="w-4 h-4" />
             Reload This Tab
           </Button>
         </div>
@@ -113,11 +113,11 @@ export default function AuthSessionWatcherImpl({
         </div>
 
         <Button
+          icon={<LogIn />}
+          variant="primary"
           onClick={() => router.push(loginHref)}
-          className="w-full gap-2"
-          size="lg"
+          className="w-full"
         >
-          <LogIn className="w-4 h-4" />
           Sign In Again
         </Button>
       </div>

@@ -544,15 +544,15 @@ function AdminsManagementPageContent() {
                   }}
                 />
                 <Button
-                  variant="secondary"
+                  icon={lookupBusy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Search />
+                  )}
+                  variant="outline"
                   onClick={handleLookup}
                   disabled={!emailQuery.trim() || lookupBusy}
                 >
-                  {lookupBusy ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
                   <span className="ml-1.5">Find</span>
                 </Button>
               </div>
@@ -580,12 +580,11 @@ function AdminsManagementPageContent() {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={handlePromote} disabled={promoteBusy}>
-                  {promoteBusy ? (
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                <Button icon={promoteBusy ? (
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <UserPlus className="mr-1.5 h-4 w-4" />
-                  )}
+                    <UserPlus />
+                  )} variant="primary" onClick={handlePromote} disabled={promoteBusy}>
                   Promote {lookupResult.email}
                 </Button>
               </>
@@ -690,17 +689,15 @@ function AdminsManagementPageContent() {
                       </SelectContent>
                     </Select>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      icon={busy ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Trash2 />
+                      )}
+                      variant="quiet"
                       onClick={() => void handleRevoke(row)}
                       disabled={busy}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
-                      {busy ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-4 w-4" />
-                      )}
                       <span className="ml-1.5">Revoke</span>
                     </Button>
                   </>

@@ -120,14 +120,13 @@ export function ToolUiPage({ tool }: Props) {
       {/* Header */}
       <div className="flex-shrink-0 flex items-center gap-2 border-b border-border px-4 py-2 sm:gap-3 sm:px-6 sm:py-3">
         <Button
-          variant="ghost"
-          size="sm"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => navigateTo(`/administration/agents/mcp-tools/${tool.id}`)}
           disabled={isPending}
           aria-label={`Back to ${tool.name}`}
-          className="h-11 w-11 shrink-0 gap-1.5 p-0 sm:h-8 sm:w-auto sm:px-2"
+          className="w-11 shrink-0 sm:w-auto"
         >
-          <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">{humanizeIdentifier(tool.name)}</span>
         </Button>
         <span className="hidden text-sm font-medium text-muted-foreground sm:inline">/</span>

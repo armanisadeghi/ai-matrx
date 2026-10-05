@@ -265,7 +265,8 @@ export default function HealthTestClient() {
                                     </>
                                 )}
                             </Button>
-                            <Button 
+                            <Button
+                                variant="primary" 
                                 onClick={checkDetailedHealth} 
                                 disabled={isLoadingDetailed}
                                 className="flex-1"

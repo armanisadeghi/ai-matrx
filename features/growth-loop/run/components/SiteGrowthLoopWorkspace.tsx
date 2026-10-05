@@ -170,6 +170,12 @@ export function SiteGrowthLoopWorkspace() {
               hand it to an agent.
             </p>
             <Button
+              icon={busy || actions.start.isPending ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Rocket aria-hidden />
+              )}
+              variant="primary"
               className="w-fit"
               disabled={busy || actions.start.isPending}
               onClick={() =>
@@ -183,11 +189,6 @@ export function SiteGrowthLoopWorkspace() {
                 })
               }
             >
-              {busy || actions.start.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Rocket className="h-4 w-4" aria-hidden />
-              )}
               Start the growth loop
             </Button>
           </div>
@@ -214,7 +215,7 @@ export function SiteGrowthLoopWorkspace() {
                 />
                 {live.status === "paused" ? (
                   <Button
-                    size="sm"
+                    icon={<Play aria-hidden />}
                     variant="outline"
                     disabled={busy}
                     onClick={() =>
@@ -226,12 +227,11 @@ export function SiteGrowthLoopWorkspace() {
                       )
                     }
                   >
-                    <Play className="h-3.5 w-3.5" aria-hidden />
                     Resume
                   </Button>
                 ) : (
                   <Button
-                    size="sm"
+                    icon={<Pause aria-hidden />}
                     variant="outline"
                     disabled={busy}
                     onClick={() =>
@@ -243,12 +243,11 @@ export function SiteGrowthLoopWorkspace() {
                       )
                     }
                   >
-                    <Pause className="h-3.5 w-3.5" aria-hidden />
                     Pause
                   </Button>
                 )}
                 <Button
-                  size="sm"
+                  icon={<RefreshCw aria-hidden />}
                   variant="outline"
                   disabled={busy}
                   onClick={() =>
@@ -257,7 +256,6 @@ export function SiteGrowthLoopWorkspace() {
                     )
                   }
                 >
-                  <RefreshCw className="h-3.5 w-3.5" aria-hidden />
                   Re-check
                 </Button>
               </div>
@@ -301,7 +299,8 @@ export function SiteGrowthLoopWorkspace() {
                     yet.
                   </span>
                   <Button
-                    size="sm"
+                    icon={<Play aria-hidden />}
+                    variant="primary"
                     disabled={busy}
                     onClick={() =>
                       void run("Opening the step", () =>
@@ -312,7 +311,6 @@ export function SiteGrowthLoopWorkspace() {
                       )
                     }
                   >
-                    <Play className="h-3.5 w-3.5" aria-hidden />
                     I'll do this step
                   </Button>
                 </div>
@@ -328,7 +326,8 @@ export function SiteGrowthLoopWorkspace() {
                     .
                   </span>
                   <Button
-                    size="sm"
+                    icon={<CheckCheck aria-hidden />}
+                    variant="primary"
                     disabled={busy}
                     onClick={() =>
                       void run("Finishing the step", async () => {
@@ -342,7 +341,6 @@ export function SiteGrowthLoopWorkspace() {
                       })
                     }
                   >
-                    <CheckCheck className="h-3.5 w-3.5" aria-hidden />
                     This step is done
                   </Button>
                 </div>

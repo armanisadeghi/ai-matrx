@@ -176,7 +176,7 @@ function TopicEditor({
         <div className="flex items-center justify-between gap-2 text-sm">
           <span className="font-medium text-foreground">{d.topic.name}</span>
           {!d.id ? (
-            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setD({ ...d, topic: null })}>
+            <Button variant="quiet" onClick={() => setD({ ...d, topic: null })}>
               change
             </Button>
           ) : null}
@@ -224,11 +224,10 @@ function TopicEditor({
       </div>
       <ProTextarea value={d.notes} onChange={(e) => setD({ ...d, notes: e.target.value })} placeholder="Why this topic is worth this much to the industry" className="min-h-14 text-sm" />
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
+        <Button variant="quiet" onClick={() => onDone(false)}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
-          {save.isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
+        <Button icon={save.isPending ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
           Save topic worth
         </Button>
       </div>
@@ -262,8 +261,7 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
           {detail.topics.length} topics valued
         </p>
         {canAuthor ? (
-          <Button size="sm" variant="outline" className="h-7" onClick={() => setAdding(true)} disabled={adding}>
-            <Plus className="mr-1 size-3.5" /> Add topic
+          <Button icon={<Plus />} variant="outline" onClick={() => setAdding(true)} disabled={adding}> Add topic
           </Button>
         ) : null}
       </div>
@@ -326,10 +324,10 @@ export function PackTopicsSection({ detail, onChanged }: { detail: AdminPackDeta
                     <span className="text-sm font-semibold tabular-nums text-foreground">{t.weight ?? "—"}</span>
                     {canAuthor ? (
                       <>
-                        <Button size="sm" variant="ghost" className="h-7 px-1.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setEditingId(t.item_id)} aria-label={`Edit ${t.name}`}>
+                        <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setEditingId(t.item_id)} aria-label={`Edit ${t.name}`}>
                           <Pencil className="size-3.5" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-1.5 text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setDeleteTarget(t)} aria-label={`Remove ${t.name}`}>
+                        <Button variant="quiet" className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setDeleteTarget(t)} aria-label={`Remove ${t.name}`}>
                           <Trash2 className="size-3.5" />
                         </Button>
                       </>

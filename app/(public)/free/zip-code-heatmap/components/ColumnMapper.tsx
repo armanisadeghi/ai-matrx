@@ -165,8 +165,7 @@ export default function ColumnMapper({ columns, previewData, onConfirm, onCancel
           <Button variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button onClick={handleConfirm} disabled={!canConfirm}>
-            <Check className="w-4 h-4 mr-2" />
+          <Button icon={<Check />} variant="primary" onClick={handleConfirm} disabled={!canConfirm}>
             Confirm Mapping
           </Button>
         </div>

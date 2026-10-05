@@ -40,7 +40,7 @@ export default function MarketingBrandSeoPage() {
               links, and the programs that run them.
             </p>
           </div>
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href={marketingRoutes.newSite(brand.id)}>
               <Plus className="h-3.5 w-3.5" />
               Add website
@@ -65,7 +65,7 @@ export default function MarketingBrandSeoPage() {
               SEO work starts from a property. Add one and its keyword, rank,
               and link workspaces open with it.
             </p>
-            <Button asChild size="sm" className="mt-3">
+            <Button variant="primary" asChild className="mt-3">
               <Link href={marketingRoutes.newSite(brand.id)}>Add website</Link>
             </Button>
           </div>

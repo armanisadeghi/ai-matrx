@@ -12,15 +12,8 @@
  */
 
 import { useState } from "react";
-import {
-  Button,
-  Sheet,
-  SheetContent,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-  Textarea,
-} from "@ai-matrx/design-system";
+import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle, Textarea } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Archive, Check } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
@@ -390,14 +383,12 @@ export default function TranslationCellEditor({
         <SheetFooter className="flex-row items-center justify-between gap-2 border-t border-border px-4 py-3">
           {cell ? (
             <Button
+              icon={<Archive />}
               type="button"
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-muted-foreground"
+              variant="quiet"
               disabled={busy}
               onClick={() => setConfirmArchive(true)}
             >
-              <Archive className="h-4 w-4" />
               Archive
             </Button>
           ) : (
@@ -405,13 +396,12 @@ export default function TranslationCellEditor({
           )}
           {blank || (alreadyApproved && !edited) ? null : (
             <Button
+              icon={<Check />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="gap-1.5"
               disabled={busy || blocking.length > 0}
               onClick={requestApprove}
             >
-              <Check className="h-4 w-4" />
               {approveLabel}
             </Button>
           )}

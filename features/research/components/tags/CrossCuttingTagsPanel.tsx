@@ -288,10 +288,8 @@ export function CrossCuttingTagsPanel({
         <div className="flex items-center justify-between gap-2">
           <Button
             variant="outline"
-            size="sm"
             disabled={busy}
             onClick={generate}
-            className="gap-1.5 text-xs"
           >
             {generating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -363,16 +361,15 @@ export function CrossCuttingTagsPanel({
 
           <div className="flex justify-end pt-0.5">
             <Button
-              size="sm"
+              icon={applying ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Check />
+              )}
+              variant="primary"
               disabled={busy || selectedCount === 0}
               onClick={createSelected}
-              className="gap-1.5 text-xs"
             >
-              {applying ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Check className="h-3.5 w-3.5" />
-              )}
               Create selected{selectedCount > 0 ? ` (${selectedCount})` : ""}
             </Button>
           </div>

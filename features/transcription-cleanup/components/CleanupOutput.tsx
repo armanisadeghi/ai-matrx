@@ -35,8 +35,7 @@ export function CleanupOutput({
     <section aria-label={label} className="flex min-h-0 flex-1 flex-col">
       <div className="flex justify-end border-b px-3 py-1">
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           aria-label={`${editing ? "Preview" : "Edit"} ${label.toLowerCase()}`}
           onClick={() => setEditing(!editing)}
         >

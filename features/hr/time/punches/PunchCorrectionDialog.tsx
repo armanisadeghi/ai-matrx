@@ -293,15 +293,15 @@ export function PunchCorrectionDialog({
 
         <DialogFooter>
           {result ? (
-            <Button type="button" onClick={close}>
+            <Button variant="primary" type="button" onClick={close}>
               Done
             </Button>
           ) : (
             <>
-              <Button type="button" variant="ghost" onClick={close}>
+              <Button type="button" variant="quiet" onClick={close}>
                 Cancel
               </Button>
-              <Button type="button" disabled={busy || !reasonOk || !categoryOk} onClick={() => void commit()}>
+              <Button variant="primary" type="button" disabled={busy || !reasonOk || !categoryOk} onClick={() => void commit()}>
                 {mode === "void" ? "Void it" : "Record the correction"}
               </Button>
             </>

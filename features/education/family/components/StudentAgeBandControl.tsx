@@ -69,16 +69,14 @@ export function StudentAgeBandControl({
       <div className="flex shrink-0 gap-1.5">
         {BANDS.map((b) => (
           <Button
+            icon={saving === b.value ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
             key={b.value}
-            size="sm"
-            variant={done === b.value ? "default" : "outline"}
-            className="h-8 px-2 text-xs"
+            variant={done === b.value ? "primary" : "outline"}
             disabled={saving !== null}
             onClick={() => setBand(b.value)}
           >
-            {saving === b.value ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-            ) : null}
             {b.label}
           </Button>
         ))}

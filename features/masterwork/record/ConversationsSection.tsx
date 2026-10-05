@@ -193,13 +193,11 @@ export function ConversationsSection({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
+                          iconEnd={<ArrowRight />}
                           variant="outline"
-                          className="h-7 rounded-r-none"
                           onClick={() => onContinue(interview.conversationId)}
                         >
                           Continue
-                          <ArrowRight className="ml-1 h-3.5 w-3.5" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -209,13 +207,10 @@ export function ConversationsSection({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
-                          size="icon"
+                          icon={<ChevronDown />}
                           variant="outline"
-                          className="h-7 w-6 rounded-l-none border-l-0"
                           aria-label="Other ways to continue"
-                        >
-                          <ChevronDown className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
@@ -245,19 +240,15 @@ export function ConversationsSection({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
+                        icon={<ExternalLink />} aria-label="Read it in a new tab"
                         asChild
-                        size="icon"
-                        variant="ghost"
-                        className="h-7 w-7"
+                        variant="quiet"
                       >
                         <Link
                           href={`/chat/${interview.conversationId}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                          <span className="sr-only">Read it in a new tab</span>
-                        </Link>
+                        />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>

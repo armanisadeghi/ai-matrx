@@ -37,7 +37,8 @@ import {
 import type { MeetDiagnostic } from "@ai-matrx/meet/react";
 import { supabase } from "@/utils/supabase/client";
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { Button, Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -97,8 +98,7 @@ function BackToMeeting() {
   const embedded = useContext(EmbeddedContext);
   if (!embedded) return null;
   return (
-    <Button type="button" size="sm" variant="outline" onClick={embedded.onLeave} className="gap-1.5">
-      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+    <Button icon={<ArrowLeft aria-hidden="true" />} type="button" variant="outline" onClick={embedded.onLeave}>
       Details
     </Button>
   );
@@ -446,7 +446,7 @@ function GuestRoom({
               className="text-base"
             />
           </div>
-          <Button type="submit" disabled={typedName.trim().length === 0}>
+          <Button variant="primary" type="submit" disabled={typedName.trim().length === 0}>
             Continue
           </Button>
         </form>

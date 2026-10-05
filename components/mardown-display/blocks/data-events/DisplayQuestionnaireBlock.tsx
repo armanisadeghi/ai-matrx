@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { ClipboardList, ChevronDown, ChevronUp } from "lucide-react";
 import { Input } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { stageRemark } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 

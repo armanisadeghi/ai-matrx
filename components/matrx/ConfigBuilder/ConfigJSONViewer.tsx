@@ -53,10 +53,9 @@ const ConfigJSONViewer = ({
         }}
       >
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onCopy}
-          className="absolute top-0 right-0 h-6 w-6 p-0"
+          className="absolute top-0 right-0 w-6"
           title="Copy to clipboard"
         >
           {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}

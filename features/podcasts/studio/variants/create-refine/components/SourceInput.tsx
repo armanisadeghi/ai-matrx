@@ -89,25 +89,21 @@ export function SourceInput({
               />
               {urls.length > 1 && (
                 <Button
+                  icon={<X />}
                   type="button"
-                  variant="ghost"
-                  size="icon"
+                  variant="quiet"
                   onClick={() => onUrlsChange(urls.filter((_, idx) => idx !== i))}
                   aria-label="Remove URL"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                />
               )}
             </div>
           ))}
           <Button
+            icon={<Plus />}
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onUrlsChange([...urls, ""])}
-            className="gap-1.5 text-muted-foreground"
           >
-            <Plus className="h-4 w-4" />
             Add another file URL
           </Button>
         </div>

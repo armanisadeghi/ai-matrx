@@ -184,12 +184,10 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
         return (
             <div className={cn(`fixed ${styles.button} z-50`, expandButtonProps.className)}>
                 <Button
+                    icon={<ChevronIcon/>}
                     variant="outline"
-                    size="sm"
                     onClick={handleToggle}
-                    className="bg-background border shadow-md h-6 px-2 py-1 text-xs"
                 >
-                    <ChevronIcon className="h-3 w-3 mr-1"/>
                     {expandButtonProps.label}
                 </Button>
             </div>
@@ -246,10 +244,8 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
                     </div>
                     <div className="flex gap-2 flex-shrink-0">
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={handleFullScreenToggle}
-                            className="h-6 px-2"
                         >
                             {isFullScreen ?
                              <Minimize2 className="h-3 w-3"/> :
@@ -257,10 +253,8 @@ const MatrxPanel: React.FC<MatrxPanelProps> = (
                             }
                         </Button>
                         <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={handleToggle}
-                            className="h-6 px-2"
                         >
                             <ChevronIcon className="h-3 w-3"/>
                         </Button>

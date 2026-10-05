@@ -425,34 +425,29 @@ function DriftPanel({
       <div className="flex flex-wrap items-center gap-1.5">
         {remedy.pinUpdateHelps ? (
           <Button
-            size="sm"
-            className="h-7 gap-1 text-xs"
+            icon={busy === "pin" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Pin />
+            )}
+            variant="primary"
             disabled={busy !== null || !latestSaved}
             onClick={() => void updateToLatest("pin")}
           >
-            {busy === "pin" ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Pin className="h-3 w-3" />
-            )}
             Update to v{latestSaved?.versionNumber}
           </Button>
         ) : null}
         {remedy.pinUpdateHelps ? (
           <>
             <Button
-              size="sm"
+              icon={<GitCompareArrows />}
               variant="outline"
-              className="h-7 gap-1 text-xs"
               onClick={() => setDiffOpen((v) => !v)}
             >
-              <GitCompareArrows className="h-3 w-3" />
               {diffOpen ? "Hide changes" : "See what changed"}
             </Button>
             <Button
-              size="sm"
               variant="outline"
-              className="h-7 gap-1 text-xs"
               onClick={onTest}
             >
               Test old vs new first
@@ -460,16 +455,14 @@ function DriftPanel({
           </>
         ) : null}
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 text-xs text-muted-foreground"
+          icon={busy === "latest" && (
+            <Loader2 className="animate-spin" />
+          )}
+          variant="quiet"
           disabled={busy !== null}
           onClick={() => void updateToLatest("latest")}
           title="Stop pinning: the mandate follows every new version automatically"
         >
-          {busy === "latest" && (
-            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-          )}
           Track latest automatically
         </Button>
       </div>
@@ -861,7 +854,7 @@ function CodeAgentDriftPanel({
           size="sm"
         />
         {agentEditHref ? (
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <a href={agentEditHref} target="_blank" rel="noopener noreferrer">
               Open agent builder <ExternalLink className="ml-1 size-3" />
             </a>
@@ -874,7 +867,7 @@ function CodeAgentDriftPanel({
           label="Copy full code-fix brief"
           size="sm"
         />
-        <Button size="sm" variant="outline" onClick={onOpenRebind}>
+        <Button variant="outline" onClick={onOpenRebind}>
           Open Mandate Holder mapping
         </Button>
         <FieldHelp label="Code repair actions">
@@ -1040,13 +1033,13 @@ function StatusBanner({
             </div>
           </div>
           {row.agentId ? (
-            <Button size="sm" variant="outline" asChild>
+            <Button variant="outline" asChild>
               <a href={agentHref(row.agentId, row.agentType, "/build")}>
                 Open {row.agentName}
               </a>
             </Button>
           ) : null}
-          <Button size="sm" variant="outline" onClick={onOpenRebind}>
+          <Button variant="outline" onClick={onOpenRebind}>
             Assign a different Mandate Holder
           </Button>
         </div>
@@ -1094,9 +1087,7 @@ function StatusBanner({
             </div>
           </div>
           <Button
-            size="sm"
             variant="outline"
-            className="h-7 text-xs"
             onClick={onOpenRebind}
           >
             Choose a replacement
@@ -1118,9 +1109,7 @@ function StatusBanner({
             </div>
           </div>
           <Button
-            size="sm"
             variant="outline"
-            className="h-7 text-xs"
             onClick={onOpenRebind}
           >
             Choose a replacement
@@ -1141,9 +1130,7 @@ function StatusBanner({
             {HEALTH_HINT["no Mandate Holder yet"]}
           </span>
           <Button
-            size="sm"
             variant="outline"
-            className="h-7 text-xs"
             onClick={onOpenRebind}
           >
             Choose a Mandate Holder

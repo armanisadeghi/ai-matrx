@@ -113,11 +113,12 @@ export default function ApiTestSetupPage() {
           {/* Actions */}
           <div className="flex gap-3">
             <Button
+              icon={<Check />}
+              variant="primary"
               onClick={handleSave}
               disabled={!token.trim()}
               className="flex-1"
             >
-              <Check className="h-4 w-4 mr-2" />
               Save Token
             </Button>
             {hasToken && (

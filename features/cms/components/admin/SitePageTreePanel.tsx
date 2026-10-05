@@ -86,8 +86,7 @@ export default function SitePageTreePanel({ sites }: { sites: ClientSiteSummary[
                     </a>
                 )}
                 <div className="flex-1" />
-                <Button variant="ghost" size="sm" onClick={fetchPages} className="h-7 gap-1.5 text-xs">
-                    {isLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                <Button icon={isLoading ? <Loader2 className="animate-spin" /> : <RefreshCw />} variant="quiet" onClick={fetchPages}>
                     Refresh
                 </Button>
             </div>

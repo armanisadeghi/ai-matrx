@@ -5,6 +5,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/lib/redux/hooks';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUp } from 'lucide-react';
@@ -124,7 +125,6 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                             <Button
                                 onClick={() => setActiveTab('current')}
                                 variant="outline"
-                                size="sm"
                                 className={`${activeTab === 'current' ? 'bg-primary text-primary-foreground' : ''}`}
                             >
                                 Current Card
@@ -132,7 +132,6 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                             <Button
                                 onClick={() => setActiveTab('all')}
                                 variant="outline"
-                                size="sm"
                                 className={`${activeTab === 'all' ? 'bg-primary text-primary-foreground' : ''}`}
                             >
                                 All History
@@ -184,14 +183,14 @@ const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => {
                             className="w-full pr-12 resize-none"
                             rows={3}
                         />
-                        <Button
+                        <SurfaceButton
                             onClick={() => handleSubmit()}
                             disabled={isLoading || !message.trim()}
                             className="absolute right-2 bottom-2 rounded-full p-2"
                             size="icon"
                         >
                             <ArrowUp className="h-4 w-4" />
-                        </Button>
+                        </SurfaceButton>
                     </div>
                 </div>
             </DialogContent>

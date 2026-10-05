@@ -151,12 +151,8 @@ export function ClassCell({
     <DropdownMenu>
       <DropdownMenuTrigger asChild disabled={disabled}>
         <Button
-          variant="ghost"
-          size="sm"
-          className={cn(
-            "h-6 max-w-full justify-start gap-1 px-1 text-[11px] font-normal",
-            triggerClassName,
-          )}
+          variant="quiet"
+          className={cn("max-w-full justify-start", triggerClassName)}
         >
           <span className="truncate">
             {active?.label ??

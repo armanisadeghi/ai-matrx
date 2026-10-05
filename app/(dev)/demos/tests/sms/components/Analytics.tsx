@@ -76,7 +76,7 @@ export default function Analytics() {
             Overview of your SMS activity and performance
           </p>
         </div>
-        <Button onClick={fetchAnalytics} variant="outline" size="sm" disabled={loading}>
+        <Button onClick={fetchAnalytics} variant="outline" disabled={loading}>
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (

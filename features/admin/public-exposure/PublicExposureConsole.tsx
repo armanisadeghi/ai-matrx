@@ -92,8 +92,7 @@ export function PublicExposureConsole() {
           operation="Load the public exposure report (admin_public_exposure_report)"
           actions={
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={() => void load()}>
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Try again
+              <Button icon={<RefreshCw />} variant="outline" onClick={() => void load()}> Try again
               </Button>
               <Link href="/administration/reporting" className={buttonVariants({ size: "sm", variant: "ghost" })}>
                 All reports
@@ -127,15 +126,14 @@ export function PublicExposureConsole() {
           <Stat label="undeclared" value={undeclared.length} tone="bad" />
           <Stat label="writable" value={writeOpen} tone={writeOpen ? "warn" : "ok"} />
           <Button
-            size="sm"
+            icon={<RefreshCw
+              className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              aria-hidden
+            />}
             variant="outline"
             onClick={() => void load()}
             disabled={loading}
           >
-            <RefreshCw
-              className={`mr-1.5 h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-              aria-hidden
-            />
             {loading ? "Checking…" : "Re-check"}
           </Button>
         </div>

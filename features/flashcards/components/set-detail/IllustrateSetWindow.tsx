@@ -190,24 +190,25 @@ function ReviewRow({
           ) : (
             <>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 text-xs"
+                icon={busy === "keep" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Check />
+                )}
+                variant="quiet"
                 disabled={busy !== null}
                 onClick={() => void act("keep", onKeep)}
                 title="Keep this image on the card"
               >
-                {busy === "keep" ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Check className="mr-1 h-3.5 w-3.5" />
-                )}
                 Keep
               </Button>
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                icon={busy === "reject" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )}
+                variant="quiet"
                 disabled={busy !== null}
                 onClick={async () => {
                   // A tooltip is not a gate: rejecting takes the picture off
@@ -223,13 +224,7 @@ function ReviewRow({
                 }}
                 title="Reject this image (removed, and the agent's miss is recorded)"
                 aria-label={`Reject the image on ${card.label}`}
-              >
-                {busy === "reject" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-              </Button>
+              />
             </>
           )}
         </div>
@@ -288,26 +283,23 @@ export function IllustrateSetWindow({
           <span className="text-sm font-medium text-foreground">{status}</span>
           {live ? (
             <Button
-              size="sm"
+              icon={run.phase === "stopping" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Square />
+              )}
               variant="outline"
-              className="h-7 text-xs"
               disabled={run.phase === "stopping"}
               onClick={onStop}
               title="Stop now — no more cards are searched"
             >
-              {run.phase === "stopping" ? (
-                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Square className="mr-1 h-3.5 w-3.5" />
-              )}
               Stop
             </Button>
           ) : (
             remainingCount > 0 &&
             run.phase !== "refused" && (
               <Button
-                size="sm"
-                className="h-7 text-xs"
+                variant="primary"
                 onClick={onContinue}
               >
                 Illustrate {remainingCount} more

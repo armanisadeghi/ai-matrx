@@ -116,7 +116,6 @@ export default function ExtractionCellEditorWindow({
           <Button
             type="button"
             variant="outline"
-            size="sm"
             onClick={handleClose}
             disabled={busy}
           >
@@ -130,8 +129,8 @@ export default function ExtractionCellEditorWindow({
             />
           ) : !readOnly ? (
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => void handleSave()}
               disabled={busy}
             >

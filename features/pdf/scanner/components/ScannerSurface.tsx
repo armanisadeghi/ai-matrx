@@ -114,14 +114,11 @@ export default function ScannerSurface() {
             <HeaderActionsSlot className="ml-auto flex shrink-0 items-center gap-1">
               {!empty && (
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground"
+                  icon={<Trash2 />}
+                  variant="quiet"
                   onClick={() => setConfirmDiscard(true)}
                   aria-label="Discard scan"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                />
               )}
             </HeaderActionsSlot>
           </div>
@@ -136,13 +133,11 @@ export default function ScannerSurface() {
               {session.resumable.items.length === 1 ? "" : "s"}
               {session.resumable.label ? ` — “${session.resumable.label}”` : ""}
             </p>
-            <Button size="sm" className="h-8" onClick={session.resume}>
+            <Button variant="primary" onClick={session.resume}>
               Resume
             </Button>
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8"
+              variant="quiet"
               onClick={session.dismissResume}
             >
               Later
@@ -189,32 +184,33 @@ export default function ScannerSurface() {
           )}
           <div className="flex items-center gap-2 pb-2">
             <Button
+              icon={<CameraIcon />}
               variant="outline"
-              className="h-11 flex-1"
+              className="flex-1"
               onClick={() => setCapturing(true)}
             >
-              <CameraIcon className="mr-1.5 h-4 w-4" />
               Camera
             </Button>
             <Button
+              icon={<ImagePlus />}
               variant="outline"
-              className="h-11 flex-1"
+              className="flex-1"
               onClick={() => libraryInputRef.current?.click()}
             >
-              <ImagePlus className="mr-1.5 h-4 w-4" />
               Photos
             </Button>
             <Button
+              icon={<FilePlus2 />}
               variant="outline"
-              className="h-11 flex-1"
+              className="flex-1"
               onClick={() => fileInputRef.current?.click()}
             >
-              <FilePlus2 className="mr-1.5 h-4 w-4" />
               Files
             </Button>
           </div>
           <Button
-            className="mb-2 h-11 w-full"
+            variant="primary"
+            className="mb-2 w-full"
             disabled={
               !session.allUploaded ||
               Boolean(flow.processing) ||

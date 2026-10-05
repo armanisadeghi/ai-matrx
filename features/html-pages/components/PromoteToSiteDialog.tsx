@@ -173,12 +173,12 @@ export function PromoteToSiteDialog({
             <DialogFooter className="gap-2 sm:gap-2">
               {resultPreviewUrl && (
                 <Button
+                  icon={<ExternalLink />}
                   variant="outline"
                   onClick={() =>
                     window.open(resultPreviewUrl, "_blank", "noopener,noreferrer")
                   }
                 >
-                  <ExternalLink className="h-4 w-4 mr-1.5" />
                   Preview draft
                 </Button>
               )}
@@ -189,7 +189,7 @@ export function PromoteToSiteDialog({
                   user did not ask to leave it. Closing unconditionally in
                   onClick would dismiss it on cmd-click too — same guard
                   `SessionsBrowser` uses. */}
-              <Button asChild>
+              <Button variant="primary" asChild>
                 <Link
                   href={`/cms/${result.page.client_id}/pages/${result.page.id}`}
                   onClick={(e) => {
@@ -275,10 +275,11 @@ export function PromoteToSiteDialog({
                 Cancel
               </Button>
               <Button
+                icon={busy && <Loader2 className="animate-spin" />}
+                variant="primary"
                 disabled={!siteId || slugInvalid || busy || !sites?.length}
                 onClick={() => void handlePromote()}
               >
-                {busy && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
                 Promote
               </Button>
             </DialogFooter>

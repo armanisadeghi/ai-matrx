@@ -12,18 +12,8 @@
 import { useState } from "react";
 import { Check, ChevronRight, Crosshair, X } from "lucide-react";
 
-import {
-  Button,
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { TopicalMapFailed } from "../../../components/TopicalMapStates";
 import { useMapTopicSearch } from "../../../hooks";
@@ -45,8 +35,7 @@ export function TextFocusPicker({ mapId, focus, onChange }: TextFocusPickerProps
     <div className="flex items-center gap-1">
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <Button type="button" size="sm" variant="outline" className="h-8 max-w-[16rem] text-xs">
-            <Crosshair className="mr-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+          <Button icon={<Crosshair className="text-muted-foreground" aria-hidden />} type="button" variant="outline" className="max-w-[16rem]">
             <span className="truncate">{focus ? `Focus: ${focus.name}` : "Focus: whole map"}</span>
           </Button>
         </PopoverTrigger>
@@ -113,15 +102,13 @@ export function TextFocusPicker({ mapId, focus, onChange }: TextFocusPickerProps
       </Popover>
       {focus ? (
         <Button
+          icon={<X aria-hidden />}
           type="button"
-          size="icon-sm"
-          variant="ghost"
+          variant="quiet"
           aria-label="Clear focus"
           title="Back to the whole map"
           onClick={() => onChange(null)}
-        >
-          <X className="h-3.5 w-3.5" aria-hidden />
-        </Button>
+        />
       ) : null}
     </div>
   );

@@ -375,19 +375,20 @@ export function WriteSurface({ setId }: { setId: string }) {
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="ghost"
-                      className="h-11 flex-1 text-muted-foreground sm:flex-none"
+                      variant="quiet"
+                      className="flex-1 sm:flex-none"
                       onClick={() => submitAnswer("")}
                     >
                       Don&apos;t know
                     </Button>
                     <Button
+                      iconEnd={<ArrowRight />}
+                      variant="primary"
                       type="submit"
-                      className="h-11 flex-1"
+                      className="flex-1"
                       disabled={typed.trim().length === 0}
                     >
                       Check
-                      <ArrowRight className="ml-1.5 h-4 w-4" />
                     </Button>
                   </div>
                 </form>
@@ -433,18 +434,15 @@ export function WriteSurface({ setId }: { setId: string }) {
                       const isSuggested = suggested === r;
                       return (
                         <Button
+                          icon={<Icon />}
                           key={r}
                           type="button"
                           variant="outline"
                           disabled={study.grading}
                           onClick={() => void confirmGrade(r)}
                           aria-keyshortcuts={String(i + 1)}
-                          className={cn(
-                            "h-11 min-w-0 gap-1.5 rounded-xl px-2",
-                            isSuggested && ui.chosen,
-                          )}
+                          className={cn("min-w-0", isSuggested && ui.chosen)}
                         >
-                          <Icon className="h-4 w-4 shrink-0" />
                           <span className="truncate">{ui.button}</span>
                         </Button>
                       );

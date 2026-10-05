@@ -581,27 +581,24 @@ export function PagesTable() {
                   organizationId={site.organization_id}
                 />
                 <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5"
-                  onClick={() => void pages.refetch()}
-                  disabled={pages.isFetching}
-                >
-                  <RefreshCw
+                  icon={<RefreshCw
                     className={
                       pages.isFetching
                         ? "h-3.5 w-3.5 animate-spin"
                         : "h-3.5 w-3.5"
                     }
-                  />
+                  />}
+                  variant="outline"
+                  onClick={() => void pages.refetch()}
+                  disabled={pages.isFetching}
+                >
                   Refresh
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-8 gap-1.5"
+                  icon={<Plus />}
+                  variant="primary"
                   onClick={() => setAdding(true)}
                 >
-                  <Plus className="h-3.5 w-3.5" />
                   Add page
                 </Button>
               </div>

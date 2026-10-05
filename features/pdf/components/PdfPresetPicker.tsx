@@ -128,9 +128,8 @@ export function PdfPresetPicker({ fileId, className }: PdfPresetPickerProps) {
                       </span>
                     </span>
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0"
+                      variant="quiet"
+                      className="w-6"
                       aria-label={`Run preset: ${preset.name}`}
                       disabled={runningId !== null}
                       onClick={() => void runPreset(preset.id)}

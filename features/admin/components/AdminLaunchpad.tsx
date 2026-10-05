@@ -171,8 +171,6 @@ export default function AdminLaunchpad() {
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="h-9 gap-1.5 border-slate-300 bg-white px-2.5 dark:border-slate-700 dark:bg-slate-900"
               onClick={() => window.location.reload()}
             >
               <IconRefresh className="h-4 w-4" />

@@ -312,21 +312,18 @@ export function QuickSaveCodeCore({
                     disabled={folderCreateBusy}
                   />
                   <Button
+                    variant="primary"
                     type="button"
-                    size="sm"
                     onClick={handleConfirmNewFolder}
                     disabled={folderCreateBusy || !newFolderName.trim()}
-                    className="h-8 text-xs rounded-md px-2"
                   >
                     <Check className="h-3.5 w-3.5" />
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={handleCancelNewFolder}
                     disabled={folderCreateBusy}
-                    className="h-8 text-xs rounded-md px-2"
                   >
                     <X className="h-3.5 w-3.5" />
                   </Button>
@@ -490,39 +487,32 @@ export function QuickSaveCodeCore({
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => handlePostSaveAction("newTab")}
-              className="h-8 text-xs gap-1.5 rounded-md"
             >
               {/* new-tab-icon: handler calls window.open(..., "_blank", ...) defined elsewhere in this file */}
               <ExternalLink className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">New tab</span>
             </Button>
             <Button
+              icon={<LayoutPanelLeft />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => handlePostSaveAction("openWindow")}
-              className="h-8 text-xs gap-1.5 rounded-md"
             >
-              <LayoutPanelLeft className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Window</span>
             </Button>
             <Button
+              icon={<ArrowRight />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() => handlePostSaveAction("navigate")}
-              className="h-8 text-xs gap-1.5 rounded-md"
             >
-              <ArrowRight className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Open</span>
             </Button>
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => handlePostSaveAction("none")}
-              className="h-8 text-xs rounded-md"
             >
               Done
             </Button>
@@ -531,25 +521,22 @@ export function QuickSaveCodeCore({
           <>
             {onCancel && (
               <Button
+                icon={<X />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={onCancel}
                 disabled={isSaving}
-                className="h-8 text-xs gap-1.5 rounded-md"
               >
-                <X className="h-3.5 w-3.5" />
                 Cancel
               </Button>
             )}
             <Button
+              icon={<Save />}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={handleSave}
               disabled={isSaveDisabled}
-              className="h-8 text-xs gap-1.5 rounded-md"
             >
-              <Save className="h-3.5 w-3.5" />
               {isSaving
                 ? "Saving…"
                 : mode === "create"
@@ -577,11 +564,10 @@ export function QuickSaveCodeCore({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <Button
+              icon={<GitCompareArrows />}
               variant="outline"
               onClick={handlePreviewOverwrite}
-              className="gap-1.5"
             >
-              <GitCompareArrows className="h-4 w-4" />
               Preview changes
             </Button>
             <AlertDialogAction

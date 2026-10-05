@@ -40,12 +40,10 @@ const ExpandButton: React.FC<ExpandButtonProps> = (
             className
         )}>
             <Button
+                icon={<ChevronIcon/>}
                 variant="outline"
-                size="sm"
                 onClick={onClick}
-                className="bg-background border shadow-md h-6 px-2 py-1 text-xs"
             >
-                <ChevronIcon className="h-3 w-3 mr-1"/>
                 {label}
             </Button>
         </div>

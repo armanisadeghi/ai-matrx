@@ -170,9 +170,8 @@ function TimelineEntry({
           <CollapsibleContent>
             <div className="ml-7 mr-2 mb-1 rounded border border-border bg-muted/30 p-2 relative">
               <Button
-                size="sm"
-                variant="ghost"
-                className="absolute top-1 right-1 h-6 w-6 p-0"
+                variant="quiet"
+                className="absolute top-1 right-1 w-6"
                 onClick={handleCopy}
               >
                 {copied ? (

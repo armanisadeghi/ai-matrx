@@ -74,19 +74,19 @@ function GenericTableHeader({
         </div>
         {onRefresh && (
           <Button
+            icon={<RefreshCcw />}
+            variant="primary"
             onClick={onRefresh}
             className={`bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800 h-8 text-xs py-0 ${buttonClassName}`}
-            size={buttonSize}
           >
-            <RefreshCcw className="h-3.5 w-3.5 mr-1.5" />
             Refresh
           </Button>
         )}
         {showCreateButton && onCreateItem && (
           <Button
+            variant="primary"
             onClick={onCreateItem}
             className={`bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800 h-8 text-xs py-0 ${buttonClassName}`}
-            size={buttonSize}
           >
             {createButtonIcon}
             {createButtonText || `New`}

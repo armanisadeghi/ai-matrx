@@ -86,12 +86,11 @@ export function DataStoreBindPanel({
           · binding for <span className="font-medium">{documentName}</span>
         </span>
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-6 text-[10px] px-2 ml-auto"
+          className="ml-auto"
           onClick={() => setCreating((c) => !c)}
         >
-          <Plus className="w-2.5 h-2.5 mr-0.5" />
           New store
         </Button>
       </div>
@@ -111,17 +110,14 @@ export function DataStoreBindPanel({
             }}
           />
           <Button
-            size="sm"
-            className="h-7 text-[10px]"
+            variant="primary"
             onClick={() => void handleCreate()}
             disabled={!newName.trim()}
           >
             Create + bind
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-[10px]"
+            variant="quiet"
             onClick={() => setCreating(false)}
           >
             <X className="w-3 h-3" />

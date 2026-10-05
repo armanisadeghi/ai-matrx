@@ -113,10 +113,10 @@ export function InvitationCodeModal({ open, onOpenChange }: InvitationCodeModalP
 
           <div className="flex flex-col gap-3">
             <Button
+              variant="primary"
               type="submit"
-              size="lg"
               disabled={isValidating || isPending || !code}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full"
             >
               {isValidating || isPending ? (
                 <>
@@ -133,7 +133,7 @@ export function InvitationCodeModal({ open, onOpenChange }: InvitationCodeModalP
 
             <Button
               type="button"
-              variant="ghost"
+              variant="quiet"
               onClick={() => onOpenChange(false)}
               disabled={isValidating || isPending}
               className="w-full"

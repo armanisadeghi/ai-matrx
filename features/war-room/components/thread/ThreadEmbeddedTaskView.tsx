@@ -71,8 +71,7 @@ export function ThreadEmbeddedTaskView({
             footerAppend={
               <Button
                 type="button"
-                size="sm"
-                variant={showRail ? "secondary" : "ghost"}
+                variant={showRail ? "outline" : "quiet"}
                 onClick={() => {
                   if (showRail) {
                     setRailOpen(false);
@@ -82,7 +81,7 @@ export function ThreadEmbeddedTaskView({
                     setRailAutoFocus(true);
                   }
                 }}
-                className="h-6 w-6 shrink-0 p-0"
+                className="w-6 shrink-0"
                 aria-pressed={showRail}
                 title={showRail ? "Hide subtasks" : "Add / open subtasks"}
                 aria-label={showRail ? "Hide subtasks" : "Add / open subtasks"}

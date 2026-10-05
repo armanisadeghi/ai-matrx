@@ -247,13 +247,11 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
 
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              size="sm"
+              icon={<ClipboardCopy aria-hidden />}
               variant="outline"
-              className="h-7 gap-1 px-2 text-xs"
               disabled={nothingTyped}
               onClick={() => void copyForStudio()}
             >
-              <ClipboardCopy className="h-3 w-3" aria-hidden />
               Copy to YouTube Studio
             </Button>
             {nothingTyped ? (

@@ -218,16 +218,15 @@ export function ConnectionPanels({
             </p>
           )}
           <Button
+            icon={<RefreshCw
+              className={`mr-1.5 h-3.5 w-3.5 ${detecting ? "animate-spin" : ""}`}
+            />}
             type="button"
-            size="sm"
             variant="outline"
             onClick={runDetect}
             disabled={detecting || !chromeAvailable}
             className="w-full"
           >
-            <RefreshCw
-              className={`mr-1.5 h-3.5 w-3.5 ${detecting ? "animate-spin" : ""}`}
-            />
             {detecting ? "Detecting…" : "Re-detect"}
           </Button>
         </CardContent>
@@ -316,7 +315,6 @@ export function ConnectionPanels({
           </div>
           <Button
             type="button"
-            size="sm"
             variant="outline"
             onClick={runHealthCheck}
             disabled={healthChecking}

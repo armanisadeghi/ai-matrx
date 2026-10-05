@@ -80,16 +80,10 @@ function IconButton({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onClick}
             disabled={disabled}
-            className={cn(
-              "h-7 w-7 p-0 shrink-0",
-              destructive
-                ? "text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200",
-            )}
+            className="w-7 shrink-0"
           >
             <Icon className="h-3.5 w-3.5" />
           </Button>
@@ -191,16 +185,16 @@ export function QueryBlock({
             destructive
           />
           <Button
+            icon={isRunning ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             onClick={() => onRun(block.id)}
             disabled={isRunning || !block.query.trim()}
-            size="sm"
-            className="h-7 ml-1 bg-blue-600 hover:bg-blue-700 text-white dark:bg-blue-700 dark:hover:bg-blue-800 shrink-0"
+            className="ml-1 shrink-0"
           >
-            {isRunning ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5" />
-            )}
             <span className="ml-1 text-xs">Run</span>
           </Button>
         </div>
@@ -225,12 +219,10 @@ export function QueryBlock({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
+                    icon={<Eye />}
                     variant="outline"
-                    size="sm"
                     onClick={() => setShowResolved((s) => !s)}
-                    className="h-6 px-2 text-[10px] bg-white/90 dark:bg-slate-900/90 border-slate-200 dark:border-slate-700 backdrop-blur"
                   >
-                    <Eye className="h-3 w-3 mr-1" />
                     {showResolved ? "Edit" : "Preview"}
                   </Button>
                 </TooltipTrigger>
@@ -246,9 +238,8 @@ export function QueryBlock({
             {showResolved && (
               <Button
                 variant="outline"
-                size="sm"
                 onClick={copyResolved}
-                className="h-6 w-6 p-0 bg-white/90 dark:bg-slate-900/90 border-slate-200 dark:border-slate-700 backdrop-blur"
+                className="w-6"
                 title="Copy resolved"
               >
                 <Copy className="h-3 w-3" />

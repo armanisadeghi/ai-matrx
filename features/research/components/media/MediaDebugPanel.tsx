@@ -74,24 +74,22 @@ export default function MediaDebugPanel({
           </p>
         </div>
         <Button
+          icon={copied ? (
+            <Check />
+          ) : (
+            <Copy />
+          )}
           type="button"
           variant="outline"
-          size="sm"
-          className="h-7 text-[11px] gap-1.5 shrink-0"
+          className="shrink-0"
           onClick={handleCopyAll}
         >
-          {copied ? (
-            <Check className="h-3 w-3" />
-          ) : (
-            <Copy className="h-3 w-3" />
-          )}
           Copy all
         </Button>
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="h-7 text-[11px] gap-1.5 shrink-0"
+          className="shrink-0"
           asChild
         >
           <a href={debugHref} target="_blank" rel="noopener noreferrer">

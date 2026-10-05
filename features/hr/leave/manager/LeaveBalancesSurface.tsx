@@ -432,13 +432,11 @@ export function LeaveBalancesSurface() {
             </div>
 
             <Button
+              icon={<RefreshCw />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-8"
+              variant="quiet"
               onClick={() => setReloadToken((n) => n + 1)}
             >
-              <RefreshCw className="mr-2 h-3.5 w-3.5" />
               Refresh
             </Button>
           </div>
@@ -545,7 +543,6 @@ export function LeaveBalancesSurface() {
                     action: (
                       <Button
                         type="button"
-                        size="sm"
                         variant="outline"
                         onClick={() => navigate({ policy: null, negative: false })}
                       >

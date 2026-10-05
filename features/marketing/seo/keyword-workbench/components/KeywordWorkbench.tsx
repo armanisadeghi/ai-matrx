@@ -366,27 +366,23 @@ export function KeywordWorkbench() {
           live.total > live.rows.length ? (
             <div className="flex flex-wrap items-center gap-1.5">
               <Button
+                icon={selectingAll ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Tag />
+                )}
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1 whitespace-nowrap text-xs"
                 onClick={() => void selectAllMatching(live, "stamp")}
                 disabled={selectingAll}
               >
-                {selectingAll ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Tag className="h-3.5 w-3.5" />
-                )}
                 Assign all {formatCount(live.total)} matching
               </Button>
               <Button
+                icon={<Network />}
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1 whitespace-nowrap text-xs"
                 onClick={() => void selectAllMatching(live, "service")}
                 disabled={selectingAll}
               >
-                <Network className="h-3.5 w-3.5" />
                 Offering for all {formatCount(live.total)}
               </Button>
             </div>
@@ -402,8 +398,8 @@ export function KeywordWorkbench() {
         }) => (
           <div className="flex flex-wrap items-center gap-1.5">
             <Button
-              size="sm"
-              className="h-7 gap-1 text-xs"
+              icon={<Tag />}
+              variant="primary"
               disabled={keywordIds.length === 0}
               onClick={() =>
                 openAssign(
@@ -412,13 +408,11 @@ export function KeywordWorkbench() {
                 )
               }
             >
-              <Tag className="h-3.5 w-3.5" />
               Assign…
             </Button>
             <Button
+              icon={<Network />}
               variant="outline"
-              size="sm"
-              className="h-7 gap-1 text-xs"
               disabled={keywordIds.length === 0}
               onClick={() =>
                 openServiceAssign(
@@ -427,14 +421,11 @@ export function KeywordWorkbench() {
                 )
               }
             >
-              <Network className="h-3.5 w-3.5" />
               Offering…
             </Button>
             {lastUsed ? (
               <Button
                 variant="outline"
-                size="sm"
-                className="h-7 gap-1 text-xs"
                 disabled={keywordIds.length === 0}
                 onClick={() => quickAssign(keywordIds, lastUsed)}
               >
@@ -442,9 +433,7 @@ export function KeywordWorkbench() {
               </Button>
             ) : null}
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs text-muted-foreground"
+              variant="quiet"
               onClick={clear}
             >
               Clear selection

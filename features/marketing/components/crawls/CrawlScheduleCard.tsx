@@ -273,14 +273,14 @@ export function CrawlScheduleCard({
 
       {dirty ? (
         <Button
-          size="sm"
-          className="h-8 w-full"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : null}
+          variant="primary"
+          className="w-full"
           disabled={busy}
           onClick={() => void applyCadence(true)}
         >
-          {busy ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : null}
           {enabled ? "Update schedule" : "Turn on and save"}
         </Button>
       ) : null}

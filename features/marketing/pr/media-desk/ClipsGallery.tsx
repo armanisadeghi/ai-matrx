@@ -38,7 +38,7 @@ export function ClipsGallery({
               siteId={activeSiteId}
               defaultClientName={clientName}
               trigger={
-                <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]">
+                <Button type="submit" variant="outline">
                   Make clip from a link
                 </Button>
               }

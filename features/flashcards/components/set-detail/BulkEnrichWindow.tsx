@@ -102,9 +102,7 @@ export function BulkEnrichWindow({
           </span>
           {live && (
             <Button
-              size="sm"
               variant="outline"
-              className="h-7 px-2 text-xs"
               onClick={onCancel}
             >
               Cancel

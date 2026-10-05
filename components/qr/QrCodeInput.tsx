@@ -209,8 +209,7 @@ export function QrCodeInput({
             <ScanLine className="h-3.5 w-3.5" />
             Point at the QR code
           </span>
-          <Button size="sm" variant="secondary" onClick={stopScan}>
-            <X className="mr-1 h-3.5 w-3.5" />
+          <Button icon={<X />} variant="outline" onClick={stopScan}>
             Stop
           </Button>
         </div>
@@ -258,23 +257,21 @@ export function QrCodeInput({
           ) : null}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
             <Button
+              icon={<Camera />}
               type="button"
-              size="sm"
-              variant={isMobile ? "default" : "outline"}
+              variant={isMobile ? "primary" : "outline"}
               disabled={disabled}
               onClick={() => void startScan()}
             >
-              <Camera className="mr-1.5 h-4 w-4" />
               Scan with camera
             </Button>
             <Button
+              icon={<ImageUp />}
               type="button"
-              size="sm"
               variant="outline"
               disabled={disabled}
               onClick={() => fileRef.current?.click()}
             >
-              <ImageUp className="mr-1.5 h-4 w-4" />
               Choose an image
             </Button>
           </div>

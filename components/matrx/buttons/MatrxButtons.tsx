@@ -1,7 +1,7 @@
 // File Location: components/matrx/buttons/MatrxButtons.tsx
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from "@ai-matrx/design-system";
 import { IconType } from 'react-icons';
 import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 

@@ -205,13 +205,12 @@ export function UnderstudyCard({
           </p>
           {refreshState.retryIsPointless ? null : (
             <Button
-              size="sm"
+              icon={<RotateCw />}
               variant="outline"
               className="mt-2"
               onClick={heal}
               disabled={healing}
             >
-              <RotateCw className="mr-1 h-3.5 w-3.5" />
               Try again
             </Button>
           )}
@@ -292,17 +291,16 @@ export function UnderstudyCard({
                 behind is still stated above — that fact does not go away. */}
             {refreshState.retryIsPointless ? null : (
               <Button
-                size="sm"
+                icon={retrying || refreshState.pending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RotateCw />
+                )}
                 variant="outline"
                 className="mt-2"
                 onClick={retry}
                 disabled={retrying || refreshState.pending}
               >
-                {retrying || refreshState.pending ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <RotateCw className="mr-1 h-3.5 w-3.5" />
-                )}
                 Bring it up to date
               </Button>
             )}

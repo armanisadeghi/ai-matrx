@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRightLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { fetchAccessDeniedContext } from "@/features/access-gate/service/accessDeniedContext";

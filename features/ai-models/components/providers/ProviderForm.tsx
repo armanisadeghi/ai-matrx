@@ -217,9 +217,8 @@ export default function ProviderForm({
                 }}
               />
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+                variant="quiet"
+                className="w-7 shrink-0"
                 onClick={() =>
                   onChange({
                     ...data,
@@ -232,9 +231,8 @@ export default function ProviderForm({
             </div>
           ))}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs gap-1.5"
+            icon={<Plus />}
+            variant="quiet"
             onClick={() =>
               onChange({
                 ...data,
@@ -245,7 +243,6 @@ export default function ProviderForm({
               })
             }
           >
-            <Plus className="h-3.5 w-3.5" />
             Add doc source
           </Button>
         </div>

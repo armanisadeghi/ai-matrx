@@ -174,9 +174,7 @@ export function ValueListFilterPopover({
           </span>
           <div className="flex gap-1.5">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
+              variant="quiet"
               onClick={() => {
                 setStaged(new Set());
               }}
@@ -184,7 +182,7 @@ export function ValueListFilterPopover({
             >
               Clear
             </Button>
-            <Button size="sm" className="h-7 text-xs" onClick={commit}>
+            <Button variant="primary" onClick={commit}>
               Filter
             </Button>
           </div>

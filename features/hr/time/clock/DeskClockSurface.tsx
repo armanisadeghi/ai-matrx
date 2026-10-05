@@ -92,12 +92,11 @@ export function DeskClockSurface({
                   left on the previous person is how the next punch lands on the wrong timesheet.
                 */}
                 <Button
+                  icon={<UserRoundX />}
                   type="button"
                   variant="outline"
                   onClick={() => setSubject(null)}
-                  className="min-h-[48px] gap-2"
                 >
-                  <UserRoundX className="size-4" />
                   Choose someone else
                 </Button>
               </div>

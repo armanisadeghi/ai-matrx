@@ -15,7 +15,7 @@ import {
   Smartphone,
   Volume2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { siteConfig } from "@/config/extras/site";
 import {

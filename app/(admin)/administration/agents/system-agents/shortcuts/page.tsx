@@ -98,18 +98,17 @@ export default function AdminShortcutsPage() {
         onDuplicate={handleDuplicate}
         toolbarSlot={
           <>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" asChild>
               <AppLink href="/administration/agents/system-agents/shortcuts/all">
                 <List className="h-4 w-4 mr-2" />
                 Browse all shortcuts
               </AppLink>
             </Button>
             <Button
+              icon={<DownloadCloud />}
               variant="outline"
-              size="sm"
               onClick={() => setImporterOpen(true)}
             >
-              <DownloadCloud className="h-4 w-4 mr-2" />
               Import from Shortcut
             </Button>
           </>

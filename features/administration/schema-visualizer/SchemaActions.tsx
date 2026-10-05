@@ -56,20 +56,16 @@ export function SchemaActions() {
             <div>
               <h3 className="text-sm font-medium mb-2">Quick Actions</h3>
               <div className="grid grid-cols-2 gap-2">
-                <Button variant="outline" size="sm" className="justify-start">
-                  <FileJson className="mr-2 h-4 w-4" />
+                <Button icon={<FileJson />} type="submit" variant="outline" className="justify-start">
                   Export Schema
                 </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                <Button icon={<RefreshCw />} type="submit" variant="outline" className="justify-start">
                   Refresh
                 </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <Maximize2 className="mr-2 h-4 w-4" />
+                <Button icon={<Maximize2 />} type="submit" variant="outline" className="justify-start">
                   Expand All
                 </Button>
-                <Button variant="outline" size="sm" className="justify-start">
-                  <Minimize2 className="mr-2 h-4 w-4" />
+                <Button icon={<Minimize2 />} type="submit" variant="outline" className="justify-start">
                   Collapse All
                 </Button>
               </div>

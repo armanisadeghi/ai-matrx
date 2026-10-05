@@ -407,14 +407,13 @@ export function OrgWorkspace() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" asChild>
+                  <Button variant="outline" asChild>
                     <Link href={`/organizations/${slug}/performance-reviews`}>
                       <ClipboardCheck className="h-4 w-4 mr-1.5" />
                       Performance reviews
                     </Link>
                   </Button>
-                  <Button size="sm" onClick={() => openContribute()}>
-                    <Share2 className="h-4 w-4 mr-1.5" />
+                  <Button icon={<Share2 />} variant="primary" onClick={() => openContribute()}>
                     Contribute
                   </Button>
                 </div>
@@ -518,9 +517,8 @@ export function OrgWorkspace() {
                   only for a viewer the `#members` section actually exists for. */}
               {isAdmin && (
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto text-muted-foreground h-7"
+                  variant="quiet"
+                  className="ml-auto"
                   asChild
                 >
                   <Link href={`/organizations/${slug}/settings#members`}>
@@ -565,9 +563,7 @@ export function OrgWorkspace() {
               <div className="flex items-center gap-1 flex-wrap justify-end">
                 <Button
                   asChild
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground"
+                  variant="quiet"
                 >
                   <Link href={`/organizations/${slug}/scopes`}>
                     <FolderTree className="h-4 w-4 mr-1.5" />
@@ -576,9 +572,7 @@ export function OrgWorkspace() {
                 </Button>
                 <Button
                   asChild
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground"
+                  variant="quiet"
                 >
                   <Link href={`/organizations/${slug}/context-items`}>
                     <ListChecks className="h-4 w-4 mr-1.5" />
@@ -586,15 +580,13 @@ export function OrgWorkspace() {
                   </Link>
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<Plus />}
+                  variant="quiet"
                   onClick={() => setAddScopeOpen(true)}
-                  className="text-muted-foreground"
                 >
-                  <Plus className="h-4 w-4 mr-1.5" />
                   Add Scope Type
                 </Button>
-                <Button asChild variant="ghost" size="sm" className="text-muted-foreground">
+                <Button asChild variant="quiet">
                   <Link href={TEMPLATE_GALLERY_HREF} data-templates-entry="">
                     <LayoutTemplate className="h-4 w-4 mr-1.5" />
                     Templates

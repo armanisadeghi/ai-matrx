@@ -30,8 +30,22 @@ export {
   SelectScrollDownButton,
   SelectScrollUpButton,
   SelectSeparator,
-  SelectTrigger,
   SelectValue,
   selectTriggerVariants,
 } from "@ai-matrx/design-system";
-export type { SelectTriggerProps } from "@ai-matrx/design-system";
+
+/**
+ * THE ONE CONTROL (2026-10-05, wave 1B): the trigger is the controls' select capsule — 28px,
+ * 13px value, 16px glyphs, geometry + colour locked, NO size (`size=` is gone; a call site's
+ * className is placement only). Options: `variant="bare"` (the surrounding surface draws the
+ * frame), `hideArrow`. Codemod + census: `scripts/ui-rollout/doors-codemod.mjs`.
+ */
+export { SelectTrigger } from "@ai-matrx/design-system/controls";
+export type { SelectTriggerProps } from "@ai-matrx/design-system/controls";
+
+/**
+ * FROZEN — the pre-rollout trigger, for the areas the rollout may not touch (the agent
+ * builder, other lanes' files) and the census sites it could not convert safely. Never import
+ * it in new code; each importer is listed in `scripts/ui-rollout/doors-census.json`.
+ */
+export { SelectTrigger as SelectTriggerLegacy } from "@ai-matrx/design-system";

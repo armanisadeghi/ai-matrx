@@ -262,15 +262,15 @@ export function ProposePackDialog({
 
         <div className="flex justify-end gap-2">
           {busy ? (
-            <Button variant="ghost" size="sm" onClick={cancel}>
+            <Button variant="quiet" onClick={cancel}>
               Cancel run
             </Button>
           ) : (
-            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
+            <Button variant="quiet" onClick={() => onOpenChange(false)}>
               Close
             </Button>
           )}
-          <Button size="sm" onClick={onRun} disabled={!valid || busy || creatingIndustry}>
+          <Button variant="primary" onClick={onRun} disabled={!valid || busy || creatingIndustry}>
             {busy ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <AGENT_ICON className="mr-1 size-3.5" />}
             Propose pack
           </Button>

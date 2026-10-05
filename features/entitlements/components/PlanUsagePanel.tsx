@@ -224,7 +224,7 @@ export function PlanUsagePanel({
           A plan belongs to an account, so we need to know which one you&apos;re
           looking at.
         </p>
-        <Button size="sm" variant="outline" className="mt-2" asChild>
+        <Button variant="outline" className="mt-2" asChild>
           <a href="/user-settings/organizations">Choose an organization</a>
         </Button>
       </div>
@@ -256,7 +256,6 @@ export function PlanUsagePanel({
           <ErrorAlchemyMenu />
         </p>
         <Button
-          size="sm"
           variant="outline"
           className="mt-2"
           onClick={() => void load()}
@@ -295,7 +294,7 @@ export function PlanUsagePanel({
           </p>
         </div>
         {nextPlan ? (
-          <Button size="sm" asChild>
+          <Button variant="primary" asChild>
             <a href="/pricing">
               Upgrade to {nextPlan.name}
               <ArrowUpRight className="h-3.5 w-3.5" aria-hidden />

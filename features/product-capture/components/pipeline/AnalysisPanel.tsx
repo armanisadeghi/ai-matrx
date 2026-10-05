@@ -70,8 +70,7 @@ export function AnalysisPanel({
       }
       actions={
         composition === "mixed" ? (
-          <Button size="sm" className="h-8" onClick={() => setSplitOpen(true)}>
-            <Split className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<Split />} variant="primary" onClick={() => setSplitOpen(true)}>
             Split into items
           </Button>
         ) : undefined

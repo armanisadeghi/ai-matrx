@@ -239,12 +239,11 @@ export function LeavePolicyListSurface() {
           {/* ABSENT, not disabled, for a viewer who may not author (§4.2). */}
           {canWrite ? (
             <Button
+              icon={<Plus />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="min-h-11 sm:min-h-9"
               onClick={() => router.push(leavePolicyHref(LEAVE_POLICY_NEW, orgRef))}
             >
-              <Plus className="mr-2 h-4 w-4" />
               New policy
             </Button>
           ) : null}
@@ -266,7 +265,7 @@ export function LeavePolicyListSurface() {
           <MatrxDataTable<LeavePolicy>
             data={list?.policies ?? []}
             columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-              <Button asChild size="sm" variant="ghost">
+              <Button asChild variant="quiet">
                 <Link href={leavePolicyHref(row.id, orgRef)}>Open</Link>
               </Button>
             ) }]}
@@ -280,11 +279,11 @@ export function LeavePolicyListSurface() {
                 : "Leave policies are configured by whoever runs HR for this employer.",
               action: canWrite ? (
                 <Button
+                  icon={<Plus />}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   onClick={() => router.push(leavePolicyHref(LEAVE_POLICY_NEW, orgRef))}
                 >
-                  <Plus className="mr-2 h-4 w-4" />
                   Create the first policy
                 </Button>
               ) : undefined,

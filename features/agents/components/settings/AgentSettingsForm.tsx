@@ -297,27 +297,21 @@ export function AgentSettingsForm({
         </span>
         <div className="flex gap-2">
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<Undo />} aria-label="Discard Changes"
+            variant="quiet"
             disabled={!isDirty}
             onClick={handleCancel}
             title="Discard Changes"
-            className="h-7 w-7"
-          >
-            <Undo className="w-3.5 h-3.5" />
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
+            icon={<Save
+              className={isDirty ? "w-3.5 h-3.5 text-primary" : "w-3.5 h-3.5"}
+            />} aria-label="Save Changes"
+            variant="quiet"
             disabled={!isDirty}
             onClick={handleSave}
             title="Save Changes"
-            className="h-7 w-7"
-          >
-            <Save
-              className={isDirty ? "w-3.5 h-3.5 text-primary" : "w-3.5 h-3.5"}
-            />
-          </Button>
+          />
         </div>
       </div>
 
@@ -446,14 +440,12 @@ export function AgentSettingsForm({
                         {agent.id}
                       </span>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 rounded hover:bg-primary/20 hover:text-primary text-muted-foreground transition-all ml-1"
+                        icon={<Copy />} aria-label="Copy ID"
+                        variant="quiet"
+                        className="ml-1"
                         onClick={() => navigator.clipboard.writeText(agent.id)}
                         title="Copy ID"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </div>
 

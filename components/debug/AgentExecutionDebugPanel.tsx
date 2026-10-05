@@ -173,9 +173,7 @@ function CodeBlock({
           {label}
         </span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2"
+          variant="quiet"
           onClick={() => onCopy(content, label)}
         >
           {copiedSection === label ? (

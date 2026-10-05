@@ -655,16 +655,15 @@ export function ApprovalQueue({
               Nothing here changes until you decide.
             </span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-7 gap-1 text-xs max-md:h-10"
+              icon={expanded ? (
+                <ChevronDown />
+              ) : (
+                <ChevronRight />
+              )}
+              variant="quiet"
+              className="ml-auto"
               onClick={() => setExpanded((value) => !value)}
             >
-              {expanded ? (
-                <ChevronDown className="size-3.5" />
-              ) : (
-                <ChevronRight className="size-3.5" />
-              )}
               {expanded ? "Hide the list" : `Review ${count.toLocaleString()}`}
             </Button>
           </div>
@@ -711,22 +710,19 @@ export function ApprovalQueue({
                         </span>
                       ) : null}
                       <Button
-                        size="sm"
-                        className="h-7 gap-1 text-xs max-md:h-10"
+                        icon={<Check />}
+                        variant="primary"
                         disabled={busy}
                         onClick={() => begin("accept", selectedItems)}
                       >
-                        <Check className="size-3.5" />
                         Approve {selectedItems.length}
                       </Button>
                       <Button
-                        size="sm"
+                        icon={<X />}
                         variant="outline"
-                        className="h-7 gap-1 text-xs max-md:h-10"
                         disabled={busy || batchRejectNeedsOneKind}
                         onClick={() => begin("reject", selectedItems)}
                       >
-                        <X className="size-3.5" />
                         Reject {selectedItems.length}
                       </Button>
                     </div>
@@ -904,9 +900,7 @@ export function ApprovalQueue({
                                     item.blocked ||
                                     item.expired ? null : (
                                       <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        className="h-6 px-2 text-xs max-md:h-10 max-md:px-3"
+                                        variant="quiet"
                                         disabled={busy}
                                         onClick={() => begin("accept", [item])}
                                       >
@@ -920,9 +914,7 @@ export function ApprovalQueue({
                                       </Button>
                                     )}
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 px-2 text-xs text-muted-foreground max-md:h-10 max-md:px-3"
+                                      variant="quiet"
                                       disabled={busy}
                                       onClick={() => begin("reject", [item])}
                                     >

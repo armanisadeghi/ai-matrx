@@ -2,7 +2,7 @@
 
 import React from "react";
 import { X } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { MessageList } from "./MessageList";
 import { ConversationInput } from "./ConversationInput";
 import type { ConversationInputProps } from "./ConversationInput";
@@ -73,10 +73,9 @@ export function ConversationShell({
           </div>
           {onClose && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onClose}
-              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground flex-shrink-0"
+              className="w-7 flex-shrink-0"
               aria-label="Close"
             >
               <X className="h-4 w-4" />

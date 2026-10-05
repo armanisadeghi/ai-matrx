@@ -330,12 +330,10 @@ function ErrorState({
         </p>
       )}
       <Button
-        size="sm"
+        icon={<RefreshCw />}
         variant="outline"
         onClick={onRetry}
-        className="h-7 text-[10px]"
       >
-        <RefreshCw className="w-3 h-3 mr-1" />
         Retry
       </Button>
     </div>
@@ -367,9 +365,8 @@ function EmptyState({
       </div>
       {hasCldFile && (
         <Button
-          size="sm"
+          variant="primary"
           onClick={onOpenChunkedRuns}
-          className="h-7 text-[10px]"
         >
           Create a chunking run
         </Button>

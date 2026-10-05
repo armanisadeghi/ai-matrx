@@ -69,12 +69,11 @@ function FailedNotice({
       </p>
       {file && (
         <Button
+          icon={<RotateCcw />}
           variant="outline"
-          size="sm"
           className="mt-3"
           onClick={() => onRetry(file)}
         >
-          <RotateCcw className="h-4 w-4" />
           Try {file.name} again
         </Button>
       )}
@@ -214,10 +213,11 @@ export function ExportDropZone({ className }: { className?: string }) {
               size limit to worry about.
             </p>
             <Button
-              className="mt-4 h-11 lg:h-9"
+              icon={<Upload />}
+              variant="primary"
+              className="mt-4"
               onClick={() => inputRef.current?.click()}
             >
-              <Upload className="h-4 w-4" />
               Choose a file
             </Button>
           </>
@@ -231,13 +231,11 @@ export function ExportDropZone({ className }: { className?: string }) {
                 {stage.file.name}
               </span>
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<X />}
+                variant="quiet"
                 aria-label="Cancel the upload"
                 onClick={() => abortRef.current?.abort()}
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              />
             </div>
             <Progress
               className="mt-3"

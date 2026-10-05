@@ -131,8 +131,7 @@ function EditableList({
           placeholder={placeholder}
           className="h-7 text-xs"
         />
-        <Button type="button" size="sm" variant="outline" className="h-7" onClick={add}>
-          <Plus className="h-3.5 w-3.5" /> Add
+        <Button icon={<Plus />} type="button" variant="outline" onClick={add}> Add
         </Button>
       </div>
     </div>
@@ -149,9 +148,8 @@ function LeaveOutToggle({
   return (
     <Button
       type="button"
-      size="sm"
-      variant={left ? "secondary" : "ghost"}
-      className="h-6 shrink-0 text-[11px]"
+      variant={left ? "outline" : "quiet"}
+      className="shrink-0"
       onClick={onToggle}
     >
       {left ? "Left out — undo" : "Leave out"}
@@ -422,9 +420,7 @@ function Gate3Body({
                           />
                           <Button
                             type="button"
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 text-[11px]"
+                            variant="quiet"
                             onClick={() => {
                               const next = { ...keep };
                               delete next[question.candidate_id];
@@ -437,9 +433,8 @@ function Gate3Body({
                       ) : (
                         <Button
                           type="button"
-                          size="sm"
                           variant="outline"
-                          className="mt-1 h-6 text-[11px]"
+                          className="mt-1"
                           onClick={() => setKeep({ ...keep, [question.candidate_id]: "" })}
                         >
                           Keep this set-aside question
@@ -662,44 +657,42 @@ export function GateReviewCard({
         <div className="flex flex-wrap items-center gap-2">
           {hasEdits ? (
             <Button
-              size="sm"
+              icon={<CheckCircle2 />}
+              variant="primary"
               onClick={() => mutation.mutate("edit")}
               disabled={mutation.isPending}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
               {card.gate === 3 && keptCount > 0
                 ? `Approve, keeping ${keptCount} set-aside question(s)`
                 : "Approve with my edits"}
             </Button>
           ) : (
             <Button
-              size="sm"
+              icon={<CheckCircle2 />}
+              variant="primary"
               onClick={() => mutation.mutate("approve")}
               disabled={mutation.isPending}
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" /> Approve
+            > Approve
             </Button>
           )}
           {card.gate !== 3 ? (
             <Button
-              size="sm"
+              icon={<Pencil />}
               variant="outline"
               onClick={() => {
                 if (editing) setEdits(initialEdits(card));
                 setEditing(!editing);
               }}
               disabled={mutation.isPending}
-            >
-              <Pencil className="h-3.5 w-3.5" /> {editing ? "Discard edits" : "Edit"}
+            > {editing ? "Discard edits" : "Edit"}
             </Button>
           ) : null}
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<Forward />}
+            variant="quiet"
             onClick={() => mutation.mutate("continue")}
             disabled={mutation.isPending}
-          >
-            <Forward className="h-3.5 w-3.5" /> Continue without approving
+          > Continue without approving
           </Button>
         </div>
         <p className="text-[11px] text-muted-foreground">

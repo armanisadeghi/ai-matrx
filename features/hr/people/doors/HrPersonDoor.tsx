@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverTrigger, Button as SurfaceButton,
 } from "@ai-matrx/design-system";
 import { DataRowWindow } from "@/components/official/MatrxDataTableHost";
 import { cn } from "@/lib/utils";
@@ -153,10 +153,10 @@ export function HrPersonSummary({
       </div>
 
       <div className="flex flex-wrap gap-2 pt-1">
-        <Button asChild size="sm" variant="secondary" className="h-8">
+        <Button asChild variant="outline">
           <Link href={personHref(person, org)}>Open profile</Link>
         </Button>
-        <Button asChild size="sm" variant="ghost" className="h-8">
+        <Button asChild variant="quiet">
           <Link href={personHref(person, org, "job")}>Job &amp; reporting</Link>
         </Button>
       </div>
@@ -201,16 +201,13 @@ export function HrPersonDoor({
           <Popover>
             <PopoverTrigger asChild>
               <Button
+                icon={<Eye aria-hidden />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 aria-label={`Quick look at ${person.displayName}`}
                 title={`Quick look at ${person.displayName}`}
-                className="h-11 w-11 lg:h-5 lg:w-5"
                 onClick={(event) => event.stopPropagation()}
-              >
-                <Eye className="h-3.5 w-3.5" aria-hidden />
-              </Button>
+              />
             </PopoverTrigger>
             <PopoverContent
               sizing="content"
@@ -222,7 +219,7 @@ export function HrPersonDoor({
           </Popover>
 
           {openInNewTab ? null : (
-            <Button
+            <SurfaceButton
               asChild
               variant="ghost"
               size="icon"
@@ -238,23 +235,20 @@ export function HrPersonDoor({
               >
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden />
               </Link>
-            </Button>
+            </SurfaceButton>
           )}
 
           <Button
+            icon={<PanelRight aria-hidden />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             aria-label={`Open ${person.displayName} in a window`}
             title={`Open ${person.displayName} in a window`}
-            className="h-11 w-11 lg:h-5 lg:w-5"
             onClick={(event) => {
               event.stopPropagation();
               setWindowOpen(true);
             }}
-          >
-            <PanelRight className="h-3.5 w-3.5" aria-hidden />
-          </Button>
+          />
         </span>
       ) : null}
 

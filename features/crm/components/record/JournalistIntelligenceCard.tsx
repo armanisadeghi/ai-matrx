@@ -163,17 +163,16 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
       action={
         <div className="flex w-full items-center gap-1 sm:w-auto">
           <Button
+            icon={checking ? (
+              <RefreshCw className="animate-spin" />
+            ) : (
+              <Radar />
+            )}
             variant="outline"
-            size="sm"
-            className="h-11 w-full px-3 text-xs sm:h-6 sm:w-auto sm:px-2"
+            className="w-full sm:w-auto"
             disabled={checking}
             onClick={() => void check()}
           >
-            {checking ? (
-              <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-            ) : (
-              <Radar className="mr-1 h-3 w-3" />
-            )}
             Check activity
           </Button>
         </div>
@@ -224,15 +223,13 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
               What they cover
             </span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-xs"
+              icon={deriving ? (
+                <RefreshCw className="animate-spin" />
+              ) : null}
+              variant="quiet"
               disabled={deriving}
               onClick={() => void derive()}
             >
-              {deriving ? (
-                <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-              ) : null}
               {beat ? "Refresh beat" : "Find beat"}
             </Button>
           </div>

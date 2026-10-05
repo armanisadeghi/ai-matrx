@@ -142,9 +142,7 @@ export function RulebookInputsSection({
                     pressing this does nothing. */}
                 <Button
                   asChild
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 px-2 text-xs text-muted-foreground"
+                  variant="quiet"
                 >
                   <Link
                     href="/masterwork/approaches"
@@ -196,14 +194,12 @@ export function RulebookInputsSection({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  size="icon"
-                  variant="ghost"
-                  className="ml-auto h-7 w-7"
+                  icon={<Plus />}
+                  variant="quiet"
+                  className="ml-auto"
                   onClick={onStartInterview}
                   aria-label="New interview"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>
                 New interview — talk about how you work, rules get drafted as

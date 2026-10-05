@@ -71,27 +71,24 @@ export function NoticeDetail({
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-11 shrink-0 items-center gap-1 border-b border-border px-2">
         {onBack ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 @2xl:hidden" onClick={onBack} aria-label="Back to list">
+          <Button type="button" variant="quiet" className="w-8 @2xl:hidden" onClick={onBack} aria-label="Back to list">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         ) : null}
         {triage && !done ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => handlers.onDone(group)} title="Done (E)">
-            <Check className="h-4 w-4" />
+          <Button icon={<Check />} type="button" variant="quiet" onClick={() => handlers.onDone(group)} title="Done (E)">
             Done
           </Button>
         ) : null}
         {triage && done && handlers.onUndone ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => handlers.onUndone?.(group)}>
-            <Undo2 className="h-4 w-4" />
+          <Button icon={<Undo2 />} type="button" variant="quiet" onClick={() => handlers.onUndone?.(group)}>
             Move to Inbox
           </Button>
         ) : null}
         {triage && !done ? (
           <DropdownMenu open={snoozeOpen} onOpenChange={onSnoozeOpenChange}>
             <DropdownMenuTrigger asChild>
-              <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" title="Snooze (H)">
-                <Clock className="h-4 w-4" />
+              <Button icon={<Clock />} type="button" variant="quiet" title="Snooze (H)">
                 {snoozed ? "Snoozed" : "Snooze"}
               </Button>
             </DropdownMenuTrigger>
@@ -109,17 +106,16 @@ export function NoticeDetail({
           </DropdownMenu>
         ) : null}
         {unread || triage ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 gap-1.5 px-2 text-xs" onClick={() => handlers.onToggleRead(group)} title="Toggle read (U)">
-            {unread ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          <Button icon={unread ? <Eye /> : <EyeOff />} type="button" variant="quiet" onClick={() => handlers.onToggleRead(group)} title="Toggle read (U)">
             {unread ? "Mark read" : "Mark unread"}
           </Button>
         ) : null}
         <span className="flex-1" />
-        <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handlers.onMuteType(group)} title="Turn off this type" aria-label="Turn off this type">
+        <Button type="button" variant="quiet" className="w-8" onClick={() => handlers.onMuteType(group)} title="Turn off this type" aria-label="Turn off this type">
           <BellOff className="h-4 w-4" />
         </Button>
         {row.deep_link ? (
-          <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => handlers.onOpenInNewTab(group)} title="Open in new tab" aria-label="Open in new tab">
+          <Button type="button" variant="quiet" className="w-8" onClick={() => handlers.onOpenInNewTab(group)} title="Open in new tab" aria-label="Open in new tab">
             <ExternalLink className="h-4 w-4" />
           </Button>
         ) : null}
@@ -140,8 +136,7 @@ export function NoticeDetail({
         </div>
 
         {row.deep_link ? (
-          <Button type="button" size="sm" className="mt-4 gap-1.5" onClick={() => handlers.onOpen(group)}>
-            <PanelTopOpen className="h-4 w-4" />
+          <Button icon={<PanelTopOpen />} variant="primary" type="button" className="mt-4" onClick={() => handlers.onOpen(group)}>
             Open
           </Button>
         ) : null}

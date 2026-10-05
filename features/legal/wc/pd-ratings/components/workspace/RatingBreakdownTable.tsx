@@ -275,13 +275,11 @@ export function RatingBreakdownTable({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                icon={<ClipboardCopy />}
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={handleCopyAll}
-                className="gap-1.5 h-8"
               >
-                <ClipboardCopy className="h-3.5 w-3.5" />
                 Copy
               </Button>
             </TooltipTrigger>

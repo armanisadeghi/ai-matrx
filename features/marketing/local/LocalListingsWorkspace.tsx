@@ -161,9 +161,7 @@ export default function LocalListingsWorkspace({
           {brandId ? (
             <Button
               asChild
-              variant="ghost"
-              size="sm"
-              className="h-8 gap-1 px-2 text-xs"
+              variant="quiet"
             >
               <Link href={`/marketing/brands/${brandId}`}>
                 Open brand
@@ -299,12 +297,12 @@ function BrandLocations({
             className="h-8 text-sm"
           />
           <Button
-            size="sm"
-            className="h-8 shrink-0 gap-1 px-2"
+            icon={<Plus aria-hidden />}
+            variant="primary"
+            className="shrink-0"
             onClick={() => void handleCreate()}
             disabled={createLocation.isPending || newName.trim() === ""}
           >
-            <Plus className="size-3.5" aria-hidden />
             Add
           </Button>
         </div>
@@ -624,8 +622,7 @@ function ProfileEditor({
       anchor="local-profile"
       headerExtra={
         <Button
-          size="sm"
-          className="h-7 px-3 text-xs"
+          variant="primary"
           onClick={() => void handleSave()}
           disabled={!dirty || updateLocation.isPending}
         >
@@ -654,8 +651,6 @@ function ProfileEditor({
             ))}
             <Button
               variant="outline"
-              size="sm"
-              className="h-6 px-2 text-[11px]"
               onClick={() => applySuggestions(applicable)}
             >
               Apply all
@@ -891,8 +886,7 @@ function ListingsMatrix({
             {publisher.slug === GOOGLE_PUBLISHER_SLUG ? (
               <Button
                 variant="outline"
-                size="sm"
-                className="h-6 shrink-0 px-2 text-[11px]"
+                className="shrink-0"
                 onClick={() => void handleGoogleCheck()}
                 disabled={checkingGoogle}
               >
@@ -1366,16 +1360,14 @@ function JsonLdCard({ location }: { location: BusinessLocation }) {
       anchor="local-jsonld"
       headerExtra={
         <Button
+          icon={copied ? (
+            <Check aria-hidden />
+          ) : (
+            <Copy aria-hidden />
+          )}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1 px-2 text-xs"
           onClick={() => void handleCopy()}
         >
-          {copied ? (
-            <Check className="size-3.5" aria-hidden />
-          ) : (
-            <Copy className="size-3.5" aria-hidden />
-          )}
           {copied ? "Copied" : "Copy"}
         </Button>
       }

@@ -220,18 +220,16 @@ export function CollectionStatusPanel({
           ) : null}
         </div>
         <Button
-          size="sm"
+          icon={status.isFetching ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
-          className="h-7 gap-1.5 text-xs"
           disabled={status.isFetching}
           onClick={() => void status.refetch()}
           aria-label="Refresh collection status"
         >
-          {status.isFetching ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
           Refresh
         </Button>
       </div>
@@ -244,9 +242,12 @@ export function CollectionStatusPanel({
             <>
               {row.runnable ? (
                 <Button
-                  size="sm"
+                  icon={running === row.key ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
                   variant="outline"
-                  className="h-6 gap-1 px-1.5 text-[11px]"
                   disabled={
                     running !== null ||
                     (row.key === "ga4" && !analyticsCampaignActive)
@@ -262,11 +263,6 @@ export function CollectionStatusPanel({
                     void runNow(row);
                   }}
                 >
-                  {running === row.key ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-3 w-3" />
-                  )}
                   {row.key === "ga4" && !analyticsCampaignActive
                     ? "Paused"
                     : "Run now"}
@@ -276,9 +272,7 @@ export function CollectionStatusPanel({
               row.fix ? (
                 <Button
                   asChild
-                  size="sm"
-                  variant={row.health === "failing" ? "outline" : "default"}
-                  className="h-6 px-1.5 text-[11px]"
+                  variant={row.health === "failing" ? "outline" : "primary"}
                 >
                   <Link
                     href={row.fix.href}
@@ -291,9 +285,7 @@ export function CollectionStatusPanel({
               {row.data ? (
                 <Button
                   asChild
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-1.5 text-[11px]"
+                  variant="quiet"
                 >
                   <Link
                     href={row.data.href}
@@ -402,12 +394,12 @@ function ProviderDetail({ row }: { row: CollectionStatusRow }) {
       </dl>
       <div className="flex flex-wrap gap-2">
         {row.fix ? (
-          <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+          <Button asChild variant="outline">
             <Link href={row.fix.href}>{row.fix.label}</Link>
           </Button>
         ) : null}
         {row.data ? (
-          <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+          <Button asChild variant="outline">
             <Link href={row.data.href}>{row.data.label}</Link>
           </Button>
         ) : null}

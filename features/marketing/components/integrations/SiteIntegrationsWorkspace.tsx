@@ -1109,8 +1109,12 @@ function SiteIntegrationsEditor({
             </div>
             <div className="flex shrink-0 flex-wrap gap-2">
               <Button
-                size="sm"
-                className="h-8 gap-1.5"
+                icon={googleConnectionOwner === "organization" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <KeyRound />
+                )}
+                variant="primary"
                 disabled={
                   googleConnectionOwner !== null ||
                   google.isInitializing ||
@@ -1118,17 +1122,13 @@ function SiteIntegrationsEditor({
                 }
                 onClick={() => void startGoogleConnection("organization")}
               >
-                {googleConnectionOwner === "organization" ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <KeyRound className="h-3.5 w-3.5" />
-                )}
                 Connect Search Console
               </Button>
               <Button
-                size="sm"
+                icon={googleConnectionOwner === "user" ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
                 variant="outline"
-                className="h-8"
                 disabled={
                   googleConnectionOwner !== null ||
                   google.isInitializing ||
@@ -1136,9 +1136,6 @@ function SiteIntegrationsEditor({
                 }
                 onClick={() => void startGoogleConnection("user")}
               >
-                {googleConnectionOwner === "user" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 Connect personally
               </Button>
             </div>
@@ -1262,12 +1259,10 @@ function SiteIntegrationsEditor({
                 </p>
               </div>
               <Button
-                size="sm"
+                icon={<Plus />}
                 variant="outline"
-                className="h-7 gap-1.5"
                 onClick={addCustomProvider}
-              >
-                <Plus className="h-3.5 w-3.5" /> Add provider
+              > Add provider
               </Button>
             </div>
             {draft.customProviders.length ? (
@@ -1339,16 +1334,15 @@ function SiteIntegrationsEditor({
               {dirty ? "Unsaved changes" : "All integration changes saved"}
             </p>
             <Button
-              size="sm"
-              className="gap-1.5"
+              icon={update.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               disabled={!dirty || visibleIssues.length > 0 || update.isPending}
               onClick={() => void saveWithGscPropertyGuard()}
             >
-              {update.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Save className="h-3.5 w-3.5" />
-              )}
               {update.isPending ? "Saving…" : "Save integrations"}
             </Button>
           </div>
@@ -1395,7 +1389,7 @@ function Ga4CampaignPanel({
           {GOOGLE_ANALYTICS_CAMPAIGN_PAUSE_REASON} Existing Search Console
           access and property bindings are unchanged.
         </p>
-        <Button size="sm" variant="outline" className="h-7 w-full" disabled>
+        <Button type="submit" variant="outline" className="w-full" disabled>
           Waiting for Workspace verification
         </Button>
       </div>
@@ -1427,15 +1421,14 @@ function Ga4CampaignPanel({
               </span>
             </label>
             <Button
-              size="sm"
+              icon={authorizingOwner === "user" ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
               variant="outline"
-              className="h-7 w-full"
+              className="w-full"
               disabled={!disclosureAccepted || authorizingOwner !== null}
               onClick={() => onAuthorize("user")}
             >
-              {authorizingOwner === "user" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : null}
               Show Analytics consent and rediscover properties
             </Button>
           </>
@@ -1471,42 +1464,40 @@ function Ga4CampaignPanel({
       ) : null}
       {diagnosis?.blocking ? (
         <Button
-          size="sm"
+          icon={recovering ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
-          className="h-7 w-full gap-1.5"
+          className="w-full"
           disabled={recovering || (needsAuthorization && !disclosureAccepted)}
           onClick={onRecover}
         >
-          {recovering ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
           {canRebind ? "Use discovered property" : "Restore Analytics access"}
         </Button>
       ) : (
         <div className="grid gap-1.5">
           <Button
-            size="sm"
-            className="h-7 w-full"
+            icon={authorizingOwner === "organization" ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
+            variant="primary"
+            className="w-full"
             disabled={!disclosureAccepted || authorizingOwner !== null}
             onClick={() => onAuthorize("organization")}
           >
-            {authorizingOwner === "organization" ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
             Authorize for this organization
           </Button>
           <Button
-            size="sm"
+            icon={authorizingOwner === "user" ? (
+              <Loader2 className="animate-spin" />
+            ) : null}
             variant="outline"
-            className="h-7 w-full"
+            className="w-full"
             disabled={!disclosureAccepted || authorizingOwner !== null}
             onClick={() => onAuthorize("user")}
           >
-            {authorizingOwner === "user" ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : null}
             Authorize personally
           </Button>
         </div>
@@ -1597,17 +1588,16 @@ function GscSyncRow({
               : "Connect a property to enable sync"}
         </p>
         <Button
-          size="sm"
+          icon={syncing ? (
+            <Radio className="text-primary" />
+          ) : (
+            <RefreshCw />
+          )}
           variant="outline"
-          className="h-7 shrink-0 gap-1.5"
+          className="shrink-0"
           disabled={!syncing && (!connected || blocked)}
           onClick={() => (syncing ? sync.openWindow() : void runSync())}
         >
-          {syncing ? (
-            <Radio className="h-3.5 w-3.5 text-primary" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5" />
-          )}
           {syncing ? "Watch progress" : "Sync now"}
         </Button>
       </div>
@@ -1759,8 +1749,15 @@ function BuiltInProviderCard({
               </ul>
             ) : null}
             <Button
-              size="sm"
-              className="h-8 w-full gap-1.5"
+              icon={saving ? (
+                <Loader2 className="animate-spin" />
+              ) : dirty ? (
+                <Save />
+              ) : (
+                <CheckCircle2 />
+              )}
+              variant="primary"
+              className="w-full"
               disabled={providerActionDisabled({
                 enabled: value.enabled,
                 dirty,
@@ -1769,13 +1766,6 @@ function BuiltInProviderCard({
               })}
               onClick={value.enabled ? onSave : onEnable}
             >
-              {saving ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : dirty ? (
-                <Save className="h-3.5 w-3.5" />
-              ) : (
-                <CheckCircle2 className="h-3.5 w-3.5" />
-              )}
               {value.enabled ? actionLabel : "Enable PageSpeed Insights"}
             </Button>
           </div>
@@ -1926,17 +1916,15 @@ function UrlChangeIntakeCard({
             </>
           ) : null}
           <Button
-            size="sm"
-            variant={configured ? "outline" : "default"}
-            className="h-8 gap-1.5"
+            icon={configuring ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <KeyRound />
+            )}
+            variant={configured ? "outline" : "primary"}
             disabled={configuring}
             onClick={onConfigure}
           >
-            {configuring ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <KeyRound className="h-3.5 w-3.5" />
-            )}
             {configured ? "Rotate webhook token" : "Generate webhook token"}
           </Button>
         </div>
@@ -1955,17 +1943,15 @@ function UrlChangeIntakeCard({
             </p>
           </div>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 gap-1.5 text-[10px]"
+            icon={evidenceQuery.isFetching ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
+            variant="quiet"
             disabled={evidenceQuery.isFetching}
             onClick={() => void evidenceQuery.refetch()}
           >
-            {evidenceQuery.isFetching ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3 w-3" />
-            )}
             Refresh
           </Button>
         </div>
@@ -2208,9 +2194,7 @@ function ProviderReferenceFields({
               </p>
               {preflightFix ? (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-6 px-2 text-[10px]"
                   onClick={() =>
                     onChange({ ...value, resourceRef: preflightFix.resource_ref })
                   }
@@ -2228,9 +2212,8 @@ function ProviderReferenceFields({
                 version and is the one you want.
               </p>
               <Button
-                size="sm"
                 variant="outline"
-                className="h-6 shrink-0 px-2 text-[10px]"
+                className="shrink-0"
                 onClick={() =>
                   onChange({
                     ...value,
@@ -2272,14 +2255,11 @@ function CustomProviderRow({
           <StatusBadge status={providerReferenceStatus(value)} />
         </div>
         <Button
-          size="icon"
-          variant="ghost"
-          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+          icon={<Trash2 />}
+          variant="quiet"
           onClick={onRemove}
           aria-label={`Remove ${value.label || `custom provider ${index + 1}`}`}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
         <div className="space-y-1.5 xl:col-span-1">

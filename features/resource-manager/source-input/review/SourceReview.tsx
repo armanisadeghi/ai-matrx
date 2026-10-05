@@ -15,7 +15,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 import { createSourceRef, type SourceManifest, type SourceRef, type SourceSet } from "@ai-matrx/agents/sources";
-import { Button, ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
+import { ErrorBox, Skeleton, cn } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectModelLabelById } from "@/features/ai-models/redux/modelRegistrySlice";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
@@ -199,8 +200,7 @@ export function SourceReview({
                 Your Sources could not be measured, so nothing here can be trusted yet.
                 {error instanceof Error && error.message ? ` ${error.message}` : ""}
               </p>
-              <Button type="button" size="sm" variant="outline" onClick={() => setReloadKey((k) => k + 1)}>
-                <RefreshCw className="mr-1.5 h-4 w-4" />
+              <Button icon={<RefreshCw />} type="button" variant="outline" onClick={() => setReloadKey((k) => k + 1)}>
                 Try again
               </Button>
             </div>
@@ -244,20 +244,20 @@ export function SourceReview({
       <div className="flex shrink-0 items-center justify-end gap-2 border-t border-border px-4 py-3 pb-safe">
         {onAddMore && options.addMoreLabel && (
           <Button
+            icon={<Plus />}
             type="button"
             variant="outline"
             className="mr-auto min-w-0"
             disabled={!plan}
             onClick={() => plan && onAddMore(plan.sourceSet)}
           >
-            <Plus className="mr-1.5 h-4 w-4 shrink-0" />
             <span className="truncate">{options.addMoreLabel}</span>
           </Button>
         )}
-        <Button type="button" variant="ghost" onClick={onCancel}>
+        <Button type="button" variant="quiet" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="button" disabled={!plan || loading} onClick={() => plan && onApply(plan.sourceSet)}>
+        <Button variant="primary" type="button" disabled={!plan || loading} onClick={() => plan && onApply(plan.sourceSet)}>
           Use these
         </Button>
       </div>
@@ -328,7 +328,7 @@ function BudgetSummary({
             Won&apos;t go in: {plan.leftOut.map((e) => e.entry.label).join(", ")}.
           </span>
           {onLookUpLeftOut ? (
-            <Button type="button" size="sm" variant="outline" onClick={onLookUpLeftOut}>
+            <Button type="button" variant="outline" onClick={onLookUpLeftOut}>
               Let the AI look {plan.leftOut.length === 1 ? "it" : "them"} up instead
             </Button>
           ) : (

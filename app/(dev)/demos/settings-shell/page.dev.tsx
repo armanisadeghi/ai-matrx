@@ -33,17 +33,14 @@ export default function SettingsShellDemoPage() {
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Button onClick={() => setOpen(true)} size="lg" className="h-10">
-            <SettingsIcon className="h-4 w-4" />
+          <Button icon={<SettingsIcon />} variant="primary" onClick={() => setOpen(true)}>
             Open settings
           </Button>
           <Button
+            icon={<ShieldCheck />}
             variant="outline"
-            size="lg"
             onClick={() => setAsAdmin((a) => !a)}
-            className="h-10 gap-1.5"
           >
-            <ShieldCheck className="h-4 w-4" />
             {asAdmin ? "Admin view: ON" : "Admin view: OFF"}
           </Button>
         </div>

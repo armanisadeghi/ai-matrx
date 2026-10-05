@@ -166,24 +166,21 @@ function OutcomeDetail({
         <div className="flex items-center gap-2 pt-1">
           {row.status !== "confirmed" && (
             <Button
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs"
+              icon={<Check />}
+              variant="primary"
               disabled={deciding}
               onClick={() => onDecide("confirmed")}
             >
-              <Check className="h-3.5 w-3.5" />
               Confirm the win
             </Button>
           )}
           {row.status !== "rejected" && (
             <Button
-              size="sm"
+              icon={<X />}
               variant="outline"
-              className="h-7 gap-1 px-2 text-xs"
               disabled={deciding}
               onClick={() => onDecide("rejected")}
             >
-              <X className="h-3.5 w-3.5" />
               Not ours
             </Button>
           )}

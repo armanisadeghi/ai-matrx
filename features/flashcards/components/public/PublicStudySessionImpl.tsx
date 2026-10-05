@@ -70,26 +70,22 @@ export default function PublicStudySessionImpl({
           actions={
             <div className="flex items-center gap-1">
               <Button
+                icon={<Shuffle />}
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
+                variant="quiet"
                 onClick={study.reshuffle}
                 disabled={study.cards.length < 2}
                 title="Shuffle the cards (your grades are kept)"
               >
-                <Shuffle className="h-4 w-4" />
                 <span className="hidden sm:inline">Shuffle</span>
               </Button>
               <Button
+                icon={<RotateCcw />}
                 type="button"
-                variant="ghost"
-                size="sm"
-                className="gap-1.5"
+                variant="quiet"
                 onClick={startOver}
                 title="Clear this pass and start from the first card"
               >
-                <RotateCcw className="h-4 w-4" />
                 <span className="hidden sm:inline">Start over</span>
               </Button>
             </div>

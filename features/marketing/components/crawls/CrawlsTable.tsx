@@ -457,38 +457,33 @@ export function CrawlsTable() {
           actions: (
             <div className="flex items-center gap-2">
               <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5"
-                onClick={() => void crawls.refetch()}
-                disabled={crawls.isFetching}
-              >
-                <RefreshCw
+                icon={<RefreshCw
                   className={
                     crawls.isFetching
                       ? "h-3.5 w-3.5 animate-spin"
                       : "h-3.5 w-3.5"
                   }
-                />
+                />}
+                variant="outline"
+                onClick={() => void crawls.refetch()}
+                disabled={crawls.isFetching}
+              >
                 Refresh
               </Button>
               {activeCrawl ? (
                 <Button
-                  size="sm"
+                  icon={<Radio className="animate-pulse" />}
                   variant="outline"
-                  className="h-8 gap-1.5 border-primary/40 text-primary"
                   onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
-                >
-                  <Radio className="h-3.5 w-3.5 animate-pulse" /> Open live
+                > Open live
                   crawl
                 </Button>
               ) : (
                 <Button
-                  size="sm"
-                  className="h-8 gap-1.5"
+                  icon={<Play />}
+                  variant="primary"
                   onClick={() => router.push(marketingRoutes.site(brandId, site.id, "/crawls/new"))}
-                >
-                  <Play className="h-3.5 w-3.5" /> Start crawl
+                > Start crawl
                 </Button>
               )}
             </div>

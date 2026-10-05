@@ -241,7 +241,7 @@ export function HrTaskTable({
         <MatrxDataTable<HrInboxRow>
             data={rows}
             columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-                <Button asChild size="sm" variant="ghost">
+                <Button asChild variant="quiet">
                     <Link href={row.deep_link}>Open</Link>
                 </Button>
             ) }]}

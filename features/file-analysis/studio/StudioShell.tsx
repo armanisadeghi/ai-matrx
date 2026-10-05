@@ -310,7 +310,7 @@ export function StudioShell({ fileId, organizationId }: StudioShellProps) {
               surface's state — exactly the case where "open in a new tab" has
               to work. As a <Button onClick> it offered one door and stole the
               other three. */}
-          <Button variant="ghost" size="sm" asChild className="h-7 text-xs">
+          <Button variant="quiet" asChild>
             <Link href={`/files/f/${fileId}`}>
               <ArrowLeft className="h-3 w-3 mr-1" /> Back to file
             </Link>

@@ -173,8 +173,6 @@ export function SearchWorkspace({ query }: { query: string }) {
                 key={example}
                 asChild
                 variant="outline"
-                size="sm"
-                className="rounded-full text-xs"
               >
                 <Link href={buildSearchHref(example)}>{example}</Link>
               </Button>
@@ -216,12 +214,11 @@ export function SearchWorkspace({ query }: { query: string }) {
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{error}</p>
             <Button
-              size="sm"
+              icon={<RotateCcw />}
               variant="outline"
               className="mt-3"
               onClick={retry}
             >
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
               Try again
             </Button>
             <ErrorAlchemyMenu error={error} />

@@ -145,26 +145,23 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
 
         <div className="flex flex-wrap gap-2">
           {!isOwner && (
-            <Button variant="outline" size="sm" onClick={toggleStatus} disabled={statusBusy}>
-              {statusBusy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <Button icon={statusBusy ? (
+                <Loader2 className="animate-spin" />
               ) : member.status === "suspended" ? (
-                <CircleCheck className="mr-2 h-4 w-4" />
+                <CircleCheck />
               ) : (
-                <Ban className="mr-2 h-4 w-4" />
-              )}
+                <Ban />
+              )} variant="outline" onClick={toggleStatus} disabled={statusBusy}>
               {member.status === "suspended" ? "Reactivate" : "Suspend"}
             </Button>
           )}
           {!isOwner && (
-            <Button variant="outline" size="sm" onClick={() => setTakeOverOpen(true)}>
-              <KeyRound className="mr-2 h-4 w-4" />
+            <Button icon={<KeyRound />} variant="outline" onClick={() => setTakeOverOpen(true)}>
               Take over account
             </Button>
           )}
           {!isOwner && (
-            <Button variant="destructive" size="sm" onClick={() => setRemoveOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" />
+            <Button icon={<Trash2 />} variant="danger" onClick={() => setRemoveOpen(true)}>
               Remove
             </Button>
           )}
@@ -198,8 +195,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-foreground">Org-scoped resources</h2>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() =>
               startTransition(() =>
                 router.push(`/organizations/${organization.slug}/admin/users/${userId}/resources`),

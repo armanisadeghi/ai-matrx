@@ -38,7 +38,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -169,8 +169,7 @@ const STATUS_OPTIONS = [
 export function OneToday() {
   return (
     <MeasuredBare className="flex flex-wrap items-center gap-2">
-        <LegacyButton size="sm">
-          <Plus aria-hidden /> New
+        <LegacyButton icon={<Plus aria-hidden />} type="submit" variant="primary"> New
         </LegacyButton>
         <Input placeholder="Search" className="w-44" />
         <LegacySelect defaultValue="open">
@@ -274,8 +273,7 @@ export function DensityToday() {
           <h3 className="text-2xl font-bold">Documents</h3>
           <div className="ml-auto flex items-center gap-2">
             <Input placeholder="Search" className="w-48" />
-            <LegacyButton>
-              <Plus aria-hidden /> New document
+            <LegacyButton icon={<Plus aria-hidden />} type="submit" variant="primary"> New document
             </LegacyButton>
           </div>
         </div>
@@ -291,9 +289,9 @@ export function DensityToday() {
                   <div className="text-sm text-muted-foreground">{r.meta}</div>
                 </div>
                 <LegacyBadge variant="outline">{r.status}</LegacyBadge>
-                <LegacyButton variant="ghost" size="icon" aria-label="More">
+                <SurfaceButton variant="ghost" size="icon" aria-label="More">
                   <MoreGlyph />
-                </LegacyButton>
+                </SurfaceButton>
               </div>
             ))}
           </CardContent>

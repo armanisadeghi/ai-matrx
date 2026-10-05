@@ -383,20 +383,16 @@ export function ImportWizard() {
                 </span>
                 <div className="flex gap-1">
                   <Button
-                    size="sm"
-                    variant={kind === "person" ? "default" : "outline"}
-                    className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
+                    icon={<Users />}
+                    variant={kind === "person" ? "primary" : "outline"}
                     onClick={() => setKind("person")}
-                  >
-                    <Users className="h-3.5 w-3.5" /> People
+                  > People
                   </Button>
                   <Button
-                    size="sm"
-                    variant={kind === "organization" ? "default" : "outline"}
-                    className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
+                    icon={<Building2 />}
+                    variant={kind === "organization" ? "primary" : "outline"}
                     onClick={() => setKind("organization")}
-                  >
-                    <Building2 className="h-3.5 w-3.5" /> Companies
+                  > Companies
                   </Button>
                 </div>
               </div>
@@ -439,12 +435,10 @@ export function ImportWizard() {
                 )}
               </div>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
+                icon={<Download />}
+                variant="quiet"
                 onClick={downloadTemplate}
-              >
-                <Download className="h-3.5 w-3.5" /> Template
+              > Template
               </Button>
             </div>
 
@@ -507,9 +501,8 @@ export function ImportWizard() {
               />
               <div>
                 <Button
-                  size="sm"
+                  icon={<ArrowRight />}
                   variant="outline"
-                  className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
                   disabled={!pastedText.trim() || !resolvedOrgId}
                   onClick={() =>
                     // "pasted text" IS the provenance — a NULL here landed
@@ -519,8 +512,7 @@ export function ImportWizard() {
                       "pasted text",
                     )
                   }
-                >
-                  <ArrowRight className="h-3.5 w-3.5" /> Use pasted text
+                > Use pasted text
                 </Button>
               </div>
             </div>
@@ -541,24 +533,21 @@ export function ImportWizard() {
               </p>
               <div className="flex gap-1.5">
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 gap-1 text-xs"
+                  icon={<ArrowLeft />}
+                  variant="quiet"
                   onClick={backToSource}
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back
+                > Back
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-7 gap-1 text-xs"
+                  icon={planning ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <ArrowRight />
+                  )}
+                  variant="primary"
                   onClick={() => void runDryRun()}
                   disabled={planning || !assigned.size}
                 >
-                  {planning ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  )}
                   Preview import
                 </Button>
               </div>
@@ -688,16 +677,13 @@ export function ImportWizard() {
               )}
               <div className="ml-auto flex gap-1.5">
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
+                  icon={<ArrowLeft />}
+                  variant="quiet"
                   onClick={() => setStep("map")}
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" /> Back
+                > Back
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-11 gap-1 text-sm sm:h-7 sm:text-xs"
+                  variant="primary"
                   onClick={() => void runImport()}
                   // Matched rows commit too (D220) — a file of pure updates
                   // is a real import, not a disabled button.
@@ -962,8 +948,7 @@ export function ImportWizard() {
             )}
             <div className="flex gap-1.5">
               <Button
-                size="sm"
-                className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
+                variant="primary"
                 asChild
               >
                 <Link href="/crm">
@@ -971,12 +956,10 @@ export function ImportWizard() {
                 </Link>
               </Button>
               <Button
-                size="sm"
+                icon={<FileUp />}
                 variant="outline"
-                className="h-11 gap-1.5 text-sm sm:h-8 sm:text-xs"
                 onClick={reset}
-              >
-                <FileUp className="h-3.5 w-3.5" /> Import another file
+              > Import another file
               </Button>
             </div>
           </div>

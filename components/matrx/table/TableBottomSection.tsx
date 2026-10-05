@@ -28,12 +28,11 @@ const TableBottomSection: React.FC<TableBottomSectionProps> = (
         <div className="flex justify-between items-center mt-4">
             <MatrxTooltip content="Go to previous page">
                 <Button
+                    icon={<ChevronLeft/>}
                     onClick={() => previousPage()}
                     disabled={!canPreviousPage}
                     variant="outline"
-                    className="bg-primary text-primary-foreground hover:bg-primary/80 transition-all duration-300 hover:scale-105"
-                >
-                    <ChevronLeft className="mr-2 h-4 w-4"/> Previous
+                > Previous
                 </Button>
             </MatrxTooltip>
 
@@ -58,12 +57,12 @@ const TableBottomSection: React.FC<TableBottomSectionProps> = (
 
             <MatrxTooltip content="Go to next page" placement="left">
                 <Button
+                    iconEnd={<ChevronRight/>}
                     onClick={() => nextPage()}
                     disabled={!canNextPage}
                     variant="outline"
-                    className="bg-primary text-primary-foreground hover:bg-primary/80 transition-all duration-300 hover:scale-105"
                 >
-                    Next <ChevronRight className="ml-2 h-4 w-4"/>
+                    Next
                 </Button>
             </MatrxTooltip>
         </div>

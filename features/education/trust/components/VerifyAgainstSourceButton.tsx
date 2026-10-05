@@ -87,10 +87,13 @@ export function VerifyAgainstSourceButton({
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <Button
+        icon={<RefreshCw
+          className={cn("h-3 w-3", verify.isVerifying && "animate-spin")}
+          aria-hidden
+        />}
         type="button"
-        size="sm"
-        variant="ghost"
-        className="h-6 w-fit gap-1 px-1.5 text-xs"
+        variant="quiet"
+        className="w-fit"
         disabled={verify.isVerifying}
         onClick={() =>
           void verify.verify({
@@ -101,10 +104,6 @@ export function VerifyAgainstSourceButton({
           })
         }
       >
-        <RefreshCw
-          className={cn("h-3 w-3", verify.isVerifying && "animate-spin")}
-          aria-hidden
-        />
         {verify.isVerifying ? "Verifying…" : shown ? "Check again" : label}
       </Button>
 
@@ -169,18 +168,17 @@ export function VerifyVerdict({
           thrown away twice. One click writes it onto the item. */}
       {drifted && result.suggestedFix && onApplyFix && (
         <Button
+          icon={applying ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <PencilLine aria-hidden />
+          )}
           type="button"
-          size="sm"
           variant="outline"
-          className="mt-1 h-6 w-fit gap-1 px-2 text-xs"
+          className="mt-1 w-fit"
           disabled={applying}
           onClick={onApplyFix}
         >
-          {applying ? (
-            <Loader2 className="h-3 w-3 animate-spin" aria-hidden />
-          ) : (
-            <PencilLine className="h-3 w-3" aria-hidden />
-          )}
           Use this correction
         </Button>
       )}

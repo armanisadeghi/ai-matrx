@@ -104,8 +104,8 @@ const VoiceActions = () => {
 
             <div className="flex justify-center">
                 <Button
+                    variant="primary"
                     onClick={handleCloneVoice}
-                    className="bg-primary text-primary-foreground hover:bg-primary/90"
                     disabled={!customVoiceFile || !customVoiceName || loading}
                 >
                     {loading ? "Cloning..." : "Clone Voice"}

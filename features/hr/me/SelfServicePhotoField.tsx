@@ -113,26 +113,22 @@ export function SelfServicePhotoField({
             }}
           />
           <Button
+            icon={uploading ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <Upload aria-hidden />
+            )}
             type="button"
-            size="sm"
             variant="outline"
-            className="min-h-11 sm:min-h-9"
             disabled={busy}
             onClick={() => inputRef.current?.click()}
           >
-            {uploading ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-            ) : (
-              <Upload className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-            )}
             {photoFileId ? "Replace photo" : "Add a photo"}
           </Button>
           {photoFileId ? (
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
-              className="min-h-11 sm:min-h-9"
+              variant="quiet"
               disabled={busy}
               onClick={() => {
                 void onSave("photo_file_id", "");

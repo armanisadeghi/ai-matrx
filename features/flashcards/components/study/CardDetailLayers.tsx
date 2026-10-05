@@ -157,9 +157,13 @@ export function CardDetailLayers({
     return (
       <div className="contents">
         <Button
+          icon={working && count === 0 ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Lightbulb />
+          )}
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           className={cn(STUDY_TOOL_BUTTON, showBody && STUDY_TOOL_BUTTON_ACTIVE)}
           disabled={count === 0 && working}
           aria-expanded={count > 0 ? open : undefined}
@@ -169,11 +173,6 @@ export function CardDetailLayers({
             count > 0 ? setOpen((o) => !o) : void enrich()
           }
         >
-          {working && count === 0 ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Lightbulb className="h-3.5 w-3.5" />
-          )}
           Explain
           {count > 0 && (
             <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary">
@@ -205,14 +204,12 @@ export function CardDetailLayers({
             {open && count > 0 && canEnrich && !busy && (
               <div className="flex justify-end border-t border-border p-1">
                 <Button
+                  icon={<Lightbulb />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1.5 px-2 text-xs"
+                  variant="quiet"
                   disabled={working}
                   onClick={() => void enrich()}
                 >
-                  <Lightbulb className="h-3.5 w-3.5" />
                   Add more
                 </Button>
               </div>
@@ -261,19 +258,18 @@ export function CardDetailLayers({
         ) : null}
         {canEnrich && (
           <Button
+            icon={working ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Lightbulb />
+            )}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="h-8 shrink-0 gap-1.5 px-2 text-xs"
+            variant="quiet"
+            className="shrink-0"
             disabled={working}
             onClick={() => void enrich()}
             title="Explain this card further"
           >
-            {working ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Lightbulb className="h-3.5 w-3.5" />
-            )}
             {count === 0 ? "Explain more" : "Add more"}
           </Button>
         )}

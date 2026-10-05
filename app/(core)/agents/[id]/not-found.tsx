@@ -18,7 +18,7 @@ export default function AgentNotFound() {
             </p>
           </div>
           <Link href="/agents/all">
-            <Button>Back to Agents</Button>
+            <Button type="submit" variant="primary">Back to Agents</Button>
           </Link>
         </div>
       </Card>

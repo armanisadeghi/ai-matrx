@@ -12,7 +12,7 @@
  */
 
 import { FlaskConical } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useOpenAgentTestCasesWindow } from "@/features/overlays/openers/agentTestCasesWindow";
 

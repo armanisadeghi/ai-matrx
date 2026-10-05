@@ -139,13 +139,12 @@ export function CapabilityGate({
     return (
       <>
         <Button
+          icon={<Lock aria-hidden />}
           type="button"
-          size="sm"
           variant="outline"
           className={className}
           onClick={() => setUpgradeOpen(true)}
         >
-          <Lock className="h-3.5 w-3.5" aria-hidden />
           {capReached
             ? `${entitlement.definition.label} — none left`
             : `${entitlement.definition.label} needs ${requiredLabel}`}
@@ -194,13 +193,12 @@ export function CapabilityGate({
               </p>
             )}
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button type="button" size="sm" onClick={() => setUpgradeOpen(true)}>
+              <Button iconEnd={<ArrowRight aria-hidden />} variant="primary" type="button" onClick={() => setUpgradeOpen(true)}>
                 {capReached ? "Get more now" : "See plans"}
-                <ArrowRight className="h-3.5 w-3.5" aria-hidden />
               </Button>
               {/* A cap always has a second door: see exactly where you stand. */}
               {capReached ? (
-                <Button type="button" size="sm" variant="ghost" asChild>
+                <Button type="button" variant="quiet" asChild>
                   {/* Built with the settings router's own helper — a hand-typed
                       settings URL is how a "see my usage" link quietly 404s. */}
                   <a href={tabIdToHref(SETTINGS_BASE, "plan")}>See my usage</a>

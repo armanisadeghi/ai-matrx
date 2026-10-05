@@ -400,7 +400,6 @@ function BasicUsageDemo() {
       
       <Button
         variant="outline"
-        size="sm"
         onClick={clearImages}
       >
         Clear All Selections
@@ -422,8 +421,7 @@ function SizesDemo() {
         {sizes.map(size => (
           <Button 
             key={size}
-            size="sm"
-            variant={selectedSize === size ? 'default' : 'outline'}
+            variant={selectedSize === size ? "primary" : "outline"}
             onClick={() => setSelectedSize(size)}
           >
             {size}
@@ -447,7 +445,6 @@ function SizesDemo() {
       
       <Button 
         variant="outline" 
-        size="sm" 
         onClick={clearImages}
       >
         Clear Selection
@@ -614,8 +611,7 @@ function AdvancedDemo() {
                   {allTabs.map(tab => (
                     <Button
                       key={tab.id}
-                      size="sm"
-                      variant={visibleTabs.includes(tab.id) ? "default" : "outline"}
+                      variant={visibleTabs.includes(tab.id) ? "primary" : "outline"}
                       onClick={() => toggleTab(tab.id)}
                     >
                       {tab.label}
@@ -672,7 +668,6 @@ function AdvancedDemo() {
       
       <Button 
         variant="outline" 
-        size="sm" 
         onClick={clearImages}
       >
         Clear Selection

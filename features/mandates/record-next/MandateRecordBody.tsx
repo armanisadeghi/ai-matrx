@@ -291,12 +291,12 @@ function OneMandateRecordBody({
         <div className="mx-auto flex max-w-md flex-col items-center gap-3 px-6 py-16 text-center">
           <p className="text-sm text-muted-foreground">{failed.message} <ErrorAlchemyMenu error={failed.message} /></p>
           <div className="flex items-center gap-2">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <Link href={adminMandateSupportRecordHref(String(failed.mandateId))}>
                 Open in Mandate support lookup
               </Link>
             </Button>
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="quiet">
               <Link href={listHref}>System mandates</Link>
             </Button>
           </div>
@@ -331,11 +331,11 @@ function OneMandateRecordBody({
           <ErrorAlchemyMenu error={failed.message} />
         </p>
         {failed.retryable ? (
-          <Button variant="outline" size="sm" onClick={refresh}>
+          <Button variant="outline" onClick={refresh}>
             Retry
           </Button>
         ) : (
-          <Button variant="outline" size="sm" asChild>
+          <Button variant="outline" asChild>
             <Link href={listHref}>
               <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
               All mandates
@@ -1002,8 +1002,8 @@ function LadderRow({
             row.holder_type !== "workflow" &&
             (row.holder_id || row.holder_version_id) ? (
               <Button
-                variant="ghost"
-                size="icon"
+                icon={<Copy />}
+                variant="quiet"
                 aria-label={`Duplicate ${words.title} Mandate Holder`}
                 disabled={copying}
                 onClick={() =>
@@ -1012,9 +1012,7 @@ function LadderRow({
                     defaultAgentVersionId: row.holder_version_id,
                   })
                 }
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
+              />
             ) : null}
           </span>
         ),

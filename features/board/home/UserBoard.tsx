@@ -723,14 +723,12 @@ export function UserBoard({
                   const Icon = entry.icon ?? Plus;
                   return (
                     <Button
+                      icon={<Icon />}
                       key={`${type.key}:${i}`}
                       type="button"
-                      size="sm"
-                      variant={i === 0 ? "default" : "outline"}
-                      className="h-8 gap-1.5"
+                      variant={i === 0 ? "primary" : "outline"}
                       onClick={() => startNew(type, entry)}
                     >
-                      <Icon className="size-3.5" />
                       {newLabel(type, entry)}
                     </Button>
                   );

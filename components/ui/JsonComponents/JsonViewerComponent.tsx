@@ -2,7 +2,7 @@
 
 import React, {useState, useCallback, useMemo} from 'react';
 import {Card} from '@/components/ui/card';
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {cn} from '@/lib/utils';
 import {Copy, ChevronDown, ChevronUp, Minimize2, Expand} from 'lucide-react';
 import JsonViewerItem from './JsonViewerItem';

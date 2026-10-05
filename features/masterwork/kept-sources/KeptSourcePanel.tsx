@@ -72,7 +72,7 @@ export function KeptSourcePanel({
     : null;
 
   const back = (
-    <Button variant="ghost" size="sm" asChild className="mb-3">
+    <Button variant="quiet" asChild className="mb-3">
       <Link href={`/masterwork/${rulebookId}/sources/kept`}>
         <ArrowLeft className="mr-1.5 h-4 w-4" />
         All kept material

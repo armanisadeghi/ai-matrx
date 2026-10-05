@@ -198,13 +198,12 @@ export function DeckFileImport() {
           }}
         />
         <Button
+          icon={creating ? <Loader2 className="animate-spin" /> : null}
           type="button"
           variant="outline"
-          className="h-11 sm:h-9"
           disabled={busy}
           onClick={() => fileInputRef.current?.click()}
         >
-          {creating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null}
           Choose a file
         </Button>
         <p className="text-xs text-muted-foreground">
@@ -328,12 +327,11 @@ export function DeckFileImport() {
 
       {raw.trim() ? (
         <div className="flex justify-end">
-          <Button type="submit" className="h-11 sm:h-9" disabled={!canSubmit}>
-            {busy ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          <Button icon={busy ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <FileSpreadsheet className="mr-1.5 h-4 w-4" />
-            )}
+              <FileSpreadsheet />
+            )} variant="primary" type="submit" disabled={!canSubmit}>
             {isNavigating
               ? "Opening…"
               : `Import ${rows.length} ${rows.length === 1 ? "card" : "cards"}`}

@@ -546,7 +546,7 @@ export function SigningSurface({
           <h1 className="truncate text-base font-semibold text-foreground">{title}</h1>
         </div>
         {step !== "done" && (
-          <Button variant="ghost" size="sm" onClick={() => setDeclineOpen(true)}>
+          <Button variant="quiet" onClick={() => setDeclineOpen(true)}>
             Decline
           </Button>
         )}
@@ -558,12 +558,11 @@ export function SigningSurface({
             <div className="flex gap-1 overflow-x-auto border-b border-border px-3 py-2">
               {docs.map((d, i) => (
                 <Button
+                  icon={d.rendered ? <Check /> : <FileText />}
                   key={d.id}
-                  variant={i === activeDoc ? "secondary" : "ghost"}
-                  size="sm"
+                  variant={i === activeDoc ? "outline" : "quiet"}
                   onClick={() => setActiveDoc(i)}
                 >
-                  {d.rendered ? <Check className="mr-1 h-3.5 w-3.5" /> : <FileText className="mr-1 h-3.5 w-3.5" />}
                   {d.name}
                 </Button>
               ))}
@@ -604,7 +603,7 @@ export function SigningSurface({
           {step === "review" && (
             <>
               <StepTitle icon={FileText} label="Review the document" />
-              <Button disabled={!allSeen} onClick={() => void continueToConsent()}>
+              <Button variant="primary" disabled={!allSeen} onClick={() => void continueToConsent()}>
                 {allSeen ? "Continue" : docs.length > 1 ? "Open every document" : "Opening the document"}
               </Button>
             </>
@@ -616,8 +615,7 @@ export function SigningSurface({
               <div className="max-h-72 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-card p-3 text-sm text-foreground">
                 {text(consent, "text") ?? ""}
               </div>
-              <Button disabled={!disclosureId || busy !== null} onClick={() => disclosureId && void agree(disclosureId)}>
-                {busy === "consent" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}I agree
+              <Button icon={busy === "consent" && <Loader2 className="animate-spin" />} variant="primary" disabled={!disclosureId || busy !== null} onClick={() => disclosureId && void agree(disclosureId)}>I agree
               </Button>
             </>
           )}
@@ -637,10 +635,11 @@ export function SigningSurface({
                 disabled={busy !== null}
               />
               <Button
+                icon={busy === "sign" && <Loader2 className="animate-spin" />}
+                variant="primary"
                 disabled={busy !== null || !typedName.trim() || (mark === "drawn" && !drawing)}
                 onClick={() => void sign()}
-              >
-                {busy === "sign" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Sign
+              >Sign
               </Button>
             </>
           )}
@@ -666,28 +665,26 @@ export function SigningSurface({
                       </span>
                     )}
                   </div>
-                  <Button variant="ghost" size="sm" disabled={busy !== null} onClick={openAdopt}>
+                  <Button variant="quiet" disabled={busy !== null} onClick={openAdopt}>
                     Change
                   </Button>
                 </div>
               ) : (
-                <Button onClick={openAdopt}>
-                  <PenLine className="mr-2 h-4 w-4" />
+                <Button icon={<PenLine />} variant="primary" onClick={openAdopt}>
                   Adopt your signature
                 </Button>
               )}
               {adopted && guide && (
-                <Button onClick={() => complete(guide.field.id)}>
+                <Button iconEnd={<ArrowRight />} variant="primary" onClick={() => complete(guide.field.id)}>
                   Next field
-                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               )}
               <Button
-                variant={adopted && !guide ? "default" : "outline"}
+                icon={busy === "sign" && <Loader2 className="animate-spin" />}
+                variant={adopted && !guide ? "primary" : "outline"}
                 disabled={busy !== null || !adopted}
                 onClick={() => void sign()}
-              >
-                {busy === "sign" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Sign
+              >Sign
               </Button>
             </>
           )}
@@ -724,10 +721,10 @@ export function SigningSurface({
           />
           {notice && adoptOpen && <p className="text-sm text-destructive">{notice}</p>}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAdoptOpen(false)}>
+            <Button variant="quiet" onClick={() => setAdoptOpen(false)}>
               Cancel
             </Button>
-            <Button disabled={!typedName.trim() || (mark === "drawn" && !drawing)} onClick={confirmAdopt}>
+            <Button variant="primary" disabled={!typedName.trim() || (mark === "drawn" && !drawing)} onClick={confirmAdopt}>
               Adopt
             </Button>
           </DialogFooter>
@@ -747,11 +744,10 @@ export function SigningSurface({
             onChange={(e) => setDeclineReason(e.target.value)}
           />
           <DialogFooter>
-            <Button variant="ghost" disabled={busy === "decline"} onClick={() => setDeclineOpen(false)}>
+            <Button variant="quiet" disabled={busy === "decline"} onClick={() => setDeclineOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" disabled={!declineReason.trim() || busy === "decline"} onClick={() => void decline()}>
-              {busy === "decline" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Decline
+            <Button icon={busy === "decline" && <Loader2 className="animate-spin" />} variant="danger" disabled={!declineReason.trim() || busy === "decline"} onClick={() => void decline()}>Decline
             </Button>
           </DialogFooter>
         </DialogContent>

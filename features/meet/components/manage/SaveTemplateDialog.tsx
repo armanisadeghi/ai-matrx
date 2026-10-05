@@ -142,10 +142,10 @@ export function SaveTemplateDialog({
                       </span>
                       {removable ? (
                         <Button
+                          icon={<X aria-hidden="true" />}
                           type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="ml-auto h-7 w-7 shrink-0"
+                          variant="quiet"
+                          className="ml-auto shrink-0"
                           aria-label={`Delete template ${t.name}`}
                           onClick={() =>
                             void templates
@@ -155,9 +155,7 @@ export function SaveTemplateDialog({
                                 toast.error(errorSentence(thrown)),
                               )
                           }
-                        >
-                          <X className="h-3.5 w-3.5" aria-hidden="true" />
-                        </Button>
+                        />
                       ) : null}
                     </li>
                   );
@@ -168,19 +166,20 @@ export function SaveTemplateDialog({
         </div>
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
           <Button
+            icon={saving ? (
+              <Loader2 className="animate-spin" aria-hidden="true" />
+            ) : null}
+            variant="primary"
             onClick={() => void save()}
             disabled={name.trim() === "" || saving}
           >
-            {saving ? (
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            ) : null}
             Save
           </Button>
         </DialogFooter>

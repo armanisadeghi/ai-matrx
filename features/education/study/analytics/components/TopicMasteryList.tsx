@@ -152,12 +152,11 @@ export function TopicMasteryList({
         </ToggleGroup>
           {weakDrillHref && needWork > 0 && (
             <Button
-              size="sm"
+              icon={<Flame className="text-red-500" />}
               variant="outline"
-              className="ml-auto h-7 gap-1.5 px-2 text-xs"
+              className="ml-auto"
               onClick={() => router.push(weakDrillHref)}
             >
-              <Flame className="h-3.5 w-3.5 text-red-500" />
               Drill weak flashcards
             </Button>
           )}
@@ -225,9 +224,8 @@ export function TopicMasteryList({
 
       {!needle && filtered.length > COLLAPSED_ROWS && (
         <Button
-          size="sm"
-          variant="ghost"
-          className="mt-1 h-8 w-full text-xs text-muted-foreground"
+          variant="quiet"
+          className="mt-1 w-full"
           onClick={() => setExpanded((e) => !e)}
         >
           {expanded ? "Show fewer" : `Show all ${filtered.length} topics`}

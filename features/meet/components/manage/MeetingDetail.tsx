@@ -420,13 +420,10 @@ export function MeetingDetail({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full"
+            icon={<MoreHorizontal aria-hidden="true" />}
+            variant="quiet"
             aria-label="More actions"
-          >
-            <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
-          </Button>
+          />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           {moreActions.map((a) => (
@@ -632,9 +629,7 @@ function EmbeddedMeetingBar({
           <Button
             key={s.key}
             type="button"
-            size="sm"
-            variant={s.key === section ? "secondary" : "ghost"}
-            className="h-7 gap-1 px-2 text-xs"
+            variant={s.key === section ? "outline" : "quiet"}
             aria-pressed={s.key === section}
             onClick={() => onSection(s.key)}
           >
@@ -647,9 +642,7 @@ function EmbeddedMeetingBar({
           <Button
             key={a.label}
             type="button"
-            size="sm"
-            variant={a.primary ? "default" : "outline"}
-            className="h-7 gap-1 px-2 text-xs"
+            variant={a.primary ? "primary" : "outline"}
             onClick={() => a.onPress?.()}
           >
             <a.icon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -701,9 +694,8 @@ function BriefBlock({
         ) : null}
         {canManage ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="ml-auto h-7 px-2 text-xs"
+            variant="quiet"
+            className="ml-auto"
             onClick={onPrepare}
             disabled={running}
           >
@@ -831,12 +823,10 @@ function DetailsSection({
             {link.replace(/^https?:\/\//, "")}
           </a>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 px-2"
+            icon={<Copy aria-hidden="true" />}
+            variant="quiet"
             onClick={onCopy}
-          >
-            <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copy
+          > Copy
           </Button>
         </div>
         <div className="text-xs text-muted-foreground">
@@ -950,17 +940,13 @@ function OccurrencesSection({
                 o.state === "scheduled" ? (
                   <div className="flex shrink-0 gap-1">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8"
+                      variant="quiet"
                       onClick={() => onMove(ref)}
                     >
                       Move
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 text-destructive hover:text-destructive"
+                      variant="quiet"
                       onClick={() => onCancel(ref)}
                     >
                       Cancel
@@ -968,12 +954,10 @@ function OccurrencesSection({
                   </div>
                 ) : (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 gap-1"
+                    icon={<RotateCcw aria-hidden="true" />}
+                    variant="quiet"
                     onClick={() => onRestore(ref)}
                   >
-                    <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" />
                     {o.state === "moved" ? "Undo move" : "Restore"}
                   </Button>
                 )

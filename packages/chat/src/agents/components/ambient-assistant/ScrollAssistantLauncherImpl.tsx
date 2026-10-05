@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "../../../host/navigation";
 import { X } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import type { ComposerPresentation } from "../inputs/smart-input/composer/composer-types";
 
@@ -56,22 +56,20 @@ function GuestAmbientAssistant({
     <div className="ambient-assistant-dock fixed left-1/2 z-[35] w-[min(380px,calc(100vw-2rem))] -translate-x-1/2 animate-in fade-in slide-in-from-bottom-2 duration-200">
       <Button
         type="button"
-        variant="ghost"
-        className="pointer-events-auto h-9 w-full justify-start rounded-xl border border-border bg-glass px-4 text-sm text-muted-foreground shadow-glass backdrop-blur-glass backdrop-saturate-glass hover:bg-glass-hover hover:text-foreground"
+        variant="quiet"
+        className="pointer-events-auto w-full justify-start"
         onClick={requestSignIn}
       >
         Ask AI Matrx
       </Button>
       <Button
+        icon={<X />}
         type="button"
-        variant="ghost"
-        size="icon"
-        className="pointer-events-auto absolute -right-2 -top-2 h-7 w-7 rounded-full border border-glass-edge bg-card shadow-glass"
+        variant="quiet"
+        className="pointer-events-auto absolute -right-2 -top-2"
         onClick={onDismiss}
         aria-label="Dismiss assistant until refresh"
-      >
-        <X className="h-3.5 w-3.5" />
-      </Button>
+      />
     </div>
   );
 }
@@ -211,8 +209,7 @@ function AuthenticatedAmbientAssistant({
             <Button
               type="button"
               variant="outline"
-              size="sm"
-              className="h-7 shrink-0"
+              className="shrink-0"
               onClick={onRetry}
             >
               Try again
@@ -244,16 +241,14 @@ function AuthenticatedAmbientAssistant({
         />
       )}
       <Button
+        icon={<X />}
         type="button"
-        variant="ghost"
-        size="icon"
-        className="pointer-events-auto absolute -right-2 -top-2 z-10 h-7 w-7 rounded-full border border-glass-edge bg-card/95 text-muted-foreground opacity-80 shadow-glass backdrop-blur-glass transition-[color,opacity,transform] hover:scale-105 hover:bg-card hover:text-foreground hover:opacity-100"
+        variant="quiet"
+        className="pointer-events-auto absolute -right-2 -top-2 z-10"
         onClick={dismiss}
         aria-label="Dismiss assistant until refresh"
         title="Dismiss until refresh"
-      >
-        <X className="h-3.5 w-3.5" />
-      </Button>
+      />
     </div>
   );
 }

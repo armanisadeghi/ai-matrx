@@ -167,20 +167,20 @@ function ConvertToShapeWindowContent({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       footerRight={
         <div className="flex items-center gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+          <Button type="button" variant="quiet" onClick={onClose}>
             Cancel
           </Button>
           <Button
+            icon={mandateLoading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Shapes />
+            )}
+            variant="primary"
             type="button"
-            size="sm"
             onClick={continueWithCreator}
             disabled={!canContinue || mandateLoading}
           >
-            {mandateLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Shapes className="h-4 w-4" />
-            )}
             Continue with Shape Creator
           </Button>
         </div>

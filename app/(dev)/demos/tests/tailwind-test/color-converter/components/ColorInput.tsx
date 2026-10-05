@@ -152,14 +152,14 @@ export default function ColorInput(
                         <Label htmlFor="auto-fix" className="whitespace-nowrap">Auto Fix</Label>
                     </div>
 
-                    <Button onClick={handleUpdateClick} variant="ghost" className="w-[200px] p-2 flex items-center">
-                        <CheckCircle className="mr-2 h-4 w-4"/>
+                    <Button icon={<CheckCircle/>} onClick={handleUpdateClick} variant="quiet" className="w-[200px] flex">
                         <span>Validate Color</span>
                     </Button>
 
                     <Button
+                        variant="primary"
                         onClick={toggleTheme}
-                        className="w-[200px] bg-secondary hover:bg-secondary/70 text-secondary-foreground whitespace-nowrap"
+                        className="w-[200px]"
                     >
                         {theme === 'dark' ? (
                             <>

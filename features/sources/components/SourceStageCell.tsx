@@ -52,7 +52,7 @@ export function SourceStageCell({
         <span title="This Source's status could not be read from the server. Other rows are unaffected.">
           {STAGE_CELL_LABEL.read_failed}
         </span>
-        <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={(e) => stop(e, onRetryRead)}>
+        <Button variant="outline" onClick={(e) => stop(e, onRetryRead)}>
           Retry
         </Button>
       </span>
@@ -78,7 +78,7 @@ export function SourceStageCell({
       <span title="Searches still answer with this Source's previous text; its current version is not indexed yet.">
         Index stale
       </span>
-      <Button variant="outline" size="sm" className="h-6 px-2 text-xs" disabled={busy} onClick={(e) => stop(e, onReindex)}>
+      <Button variant="outline" disabled={busy} onClick={(e) => stop(e, onReindex)}>
         Re-index
       </Button>
     </span>

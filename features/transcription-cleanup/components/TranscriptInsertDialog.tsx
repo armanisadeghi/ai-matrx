@@ -107,7 +107,7 @@ export function TranscriptInsertDialog({
       >
         Cancel
       </Button>
-      <Button type="button" onClick={submit} disabled={!value.trim()}>
+      <Button variant="primary" type="button" onClick={submit} disabled={!value.trim()}>
         Queue text
       </Button>
     </>

@@ -58,22 +58,23 @@ export function AuthGateDialog({
 
       <div className="flex flex-col gap-2.5 w-full max-w-[260px]">
         <Button
-          className="w-full gap-2"
+          icon={<LogIn />}
+          variant="primary"
+          className="w-full"
           onClick={() => {
             window.location.href = signInUrl;
           }}
         >
-          <LogIn className="w-4 h-4" />
           Sign In
         </Button>
         <Button
+          icon={<Gem />}
           variant="outline"
-          className="w-full gap-2"
+          className="w-full"
           onClick={() => {
             window.location.href = signUpUrl;
           }}
         >
-          <Gem className="w-4 h-4" />
           Create Free Account
         </Button>
       </div>

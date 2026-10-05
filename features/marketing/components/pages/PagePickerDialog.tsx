@@ -213,8 +213,7 @@ export function PagePickerDialog({
           <Button variant="outline" onClick={() => close(false)}>
             Cancel
           </Button>
-          <Button disabled={!selected || busy} onClick={confirm}>
-            {busy ? <Loader2 className="mr-1.5 size-4 animate-spin" /> : null}
+          <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={!selected || busy} onClick={confirm}>
             {confirmLabel}
           </Button>
         </div>

@@ -402,8 +402,7 @@ export function ReviewTriage({
                       ) : null}
                       {undoRowId === row.id ? (
                         <Button
-                          variant="ghost"
-                          size="xs"
+                          variant="quiet"
                           onClick={(event) => {
                             event.stopPropagation();
                             onUndo();
@@ -417,7 +416,6 @@ export function ReviewTriage({
                     <>
                       <Button
                         variant="outline"
-                        size="xs"
                         aria-busy={busy}
                         disabled={busy}
                         onClick={(event) => {
@@ -431,10 +429,8 @@ export function ReviewTriage({
                       </Button>
                       <Button
                         variant="outline"
-                        size="xs"
                         aria-busy={busy}
                         disabled={busy}
-                        className="hover:border-destructive hover:text-destructive"
                         onClick={(event) => {
                           event.stopPropagation();
                           startOverturn(row);
@@ -516,11 +512,11 @@ export function ReviewTriage({
                     />
                   </RecordingOriginProvider>
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                    <Button variant="destructive" size="xs" disabled={busy} onClick={sendBack}>
+                    <Button variant="danger" disabled={busy} onClick={sendBack}>
                       Send it back
                       <kbd className="ml-1.5 font-mono text-[10px] opacity-65">⌘↵</kbd>
                     </Button>
-                    <Button variant="ghost" size="xs" onClick={() => setOverturning(null)}>
+                    <Button variant="quiet" onClick={() => setOverturning(null)}>
                       Cancel
                       <kbd className="ml-1.5 font-mono text-[10px] opacity-65">Esc</kbd>
                     </Button>
@@ -544,7 +540,6 @@ export function ReviewTriage({
           {remainingOpen > 0 ? (
             <Button
               variant="primary"
-              size="sm"
               onClick={() => {
                 openNextBatch();
               }}
@@ -555,7 +550,7 @@ export function ReviewTriage({
           ) : (
             <span className="font-mono text-[11px] text-success">all reviewed</span>
           )}
-          <Button variant="ghost" size="sm" asChild>
+          <Button variant="quiet" asChild>
             <Link href={stopHref}>Stop for now</Link>
           </Button>
         </div>

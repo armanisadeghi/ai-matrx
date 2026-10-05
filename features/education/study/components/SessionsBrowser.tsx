@@ -305,14 +305,13 @@ export function SessionsBrowser({
           {!embedded && (
             <>
               <Button
-                variant="ghost"
-                size="sm"
-                className="mb-4 h-8 px-2 text-xs text-muted-foreground"
+                icon={<ArrowLeft />}
+                variant="quiet"
+                className="mb-4"
                 onClick={() =>
                   backHref ? router.push(backHref) : router.back()
                 }
               >
-                <ArrowLeft className="mr-1 h-4 w-4" />
                 Back
               </Button>
 

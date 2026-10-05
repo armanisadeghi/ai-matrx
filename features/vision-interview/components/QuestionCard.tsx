@@ -185,20 +185,16 @@ export function QuestionCard({
         <div className="flex flex-wrap items-center gap-1">
           {status === "dismissed" ? (
             <Button
+              icon={<Undo2 aria-hidden />}
               variant="outline"
-              size="sm"
-              className="h-11 gap-1 px-2.5 text-xs sm:h-7"
               disabled={busy}
               onClick={() => onReopen(question)}
             >
-              <Undo2 className="h-3.5 w-3.5" aria-hidden />
               Restore
             </Button>
           ) : (
             <Button
-              variant={pendingAnswer !== null ? "outline" : "default"}
-              size="sm"
-              className="h-11 gap-1 px-2.5 text-xs sm:h-7"
+              variant={pendingAnswer !== null ? "outline" : "primary"}
               onClick={() => onAnswer(question)}
             >
               {pendingAnswer !== null ? (
@@ -217,21 +213,18 @@ export function QuestionCard({
 
           {pendingAnswer !== null && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-11 gap-1 px-2 text-xs text-muted-foreground sm:h-7"
+              icon={<Trash2 aria-hidden />}
+              variant="quiet"
               onClick={() => onDiscardAnswer(question)}
             >
-              <Trash2 className="h-3.5 w-3.5" aria-hidden />
               Discard
             </Button>
           )}
 
           {status !== "dismissed" && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="ml-auto h-11 px-2 text-xs text-muted-foreground sm:h-7"
+              variant="quiet"
+              className="ml-auto"
               disabled={busy}
               onClick={() => onDismiss(question)}
               title="Set this question aside — the room stops pressing it"

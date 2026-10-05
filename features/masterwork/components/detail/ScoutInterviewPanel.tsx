@@ -359,7 +359,7 @@ function ResumedInterviewConversation({
           opens in full on its own page.
         </p>
         <div className="flex gap-2">
-          <Button asChild size="sm">
+          <Button variant="primary" asChild>
             <Link
               href={`/chat/${conversationId}`}
               target="_blank"
@@ -369,7 +369,7 @@ function ResumedInterviewConversation({
               Open the conversation
             </Link>
           </Button>
-          <Button size="sm" variant="outline" onClick={onBack}>
+          <Button variant="outline" onClick={onBack}>
             Back
           </Button>
         </div>
@@ -755,7 +755,6 @@ export function ScoutInterviewContent({
           <ErrorAlchemyMenu error={historyError} />
         </p>
         <Button
-          size="sm"
           variant="outline"
           onClick={() => {
             setHistoryError(null);
@@ -785,7 +784,7 @@ export function ScoutInterviewContent({
     return (
       <div className="space-y-3 px-4 py-6 text-sm">
         <p className="text-foreground">{rulebookDoc.error} <ErrorAlchemyMenu error={rulebookDoc.error} /></p>
-        <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
+        <Button variant="outline" onClick={rulebookDoc.reload}>
           Try again
         </Button>
       </div>
@@ -869,12 +868,11 @@ export function ScoutInterviewContent({
           starting a session that would quietly be something else.
         </p>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
+          <Button variant="outline" onClick={rulebookDoc.reload}>
             Try again
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={() => setChoice({ mode: "configure", key: choice.key })}
           >
             Choose a different interviewer

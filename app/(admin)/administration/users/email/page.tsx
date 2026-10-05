@@ -296,8 +296,7 @@ export default function AdminEmailPage() {
                     <Button
                       key={mode}
                       onClick={() => setRecipientMode(mode)}
-                      variant={recipientMode === mode ? "default" : "outline"}
-                      size="sm"
+                      variant={recipientMode === mode ? "primary" : "outline"}
                     >
                       {label}
                     </Button>
@@ -537,6 +536,7 @@ export default function AdminEmailPage() {
 
                 {/* Send Button */}
                 <Button
+                  variant="primary"
                   data-surface-value="is_sending"
                   onClick={handleSend}
                   disabled={loading || !subject.trim() || !message.trim()}

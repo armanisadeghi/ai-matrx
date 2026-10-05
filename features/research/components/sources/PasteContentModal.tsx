@@ -93,7 +93,7 @@ export function PasteContentModal({
         <Button variant="outline" onClick={() => onOpenChange(false)}>
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={!content.trim() || saving}>
+        <Button variant="primary" onClick={handleSave} disabled={!content.trim() || saving}>
           Save Content
         </Button>
       </div>

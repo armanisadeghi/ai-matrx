@@ -743,7 +743,6 @@ export function CreateDeckPage({
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-11 sm:h-9"
                         onClick={() => {
                           setHolding(false);
                           void start();
@@ -753,8 +752,7 @@ export function CreateDeckPage({
                       </Button>
                       <Button
                         type="button"
-                        variant="ghost"
-                        className="h-11 sm:h-9"
+                        variant="quiet"
                         onClick={() => setHolding(false)}
                       >
                         Stop waiting
@@ -802,8 +800,7 @@ export function CreateDeckPage({
                       {embedded ? null : (
                         <Button
                           type="button"
-                          variant="ghost"
-                          className="h-11 sm:h-9"
+                          variant="quiet"
                           onClick={() => startLeaving(() => router.push(EDU_BASE))}
                           disabled={busy || isLeaving}
                         >
@@ -816,8 +813,8 @@ export function CreateDeckPage({
                         label="The AI jobs behind Make the deck"
                       />
                       <Button
+                        variant="primary"
                         type="button"
-                        className="h-11 sm:h-9"
                         disabled={!canGenerate}
                         onClick={handleGenerate}
                       >

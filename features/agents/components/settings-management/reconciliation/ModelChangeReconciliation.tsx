@@ -15,7 +15,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

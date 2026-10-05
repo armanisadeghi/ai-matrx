@@ -424,21 +424,20 @@ export function SystemContextConsole() {
           <div className="flex shrink-0 items-center gap-2">
             <PageCaptureButton />
             <Button
+              icon={<Eye />}
               type="button"
-              size="sm"
               variant="outline"
               onClick={preview.toggle}
               aria-pressed={preview.isVisible}
-              className={preview.isVisible ? "bg-accent text-accent-foreground" : undefined}
-            >
-              <Eye className="mr-1.5 h-4 w-4" /> Preview agent context
+              className={preview.isVisible ? "" : undefined}
+            > Preview agent context
             </Button>
             <Button
+              icon={<Plus />}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={() => setAddItemOpen(true)}
-            >
-              <Plus className="mr-1.5 h-4 w-4" /> Add item
+            > Add item
             </Button>
           </div>
         </header>
@@ -539,30 +538,25 @@ export function SystemContextConsole() {
               ) : (
                 <>
                   <Button
+                    icon={<Pencil />}
                     type="button"
-                    size="sm"
                     variant="outline"
-                    className="h-7 px-2"
                     onClick={(event) => {
                       event.stopPropagation();
                       setEditing(row);
                     }}
-                  >
-                    <Pencil className="mr-1 h-3 w-3" /> Edit
+                  > Edit
                   </Button>
                   <Button
+                    icon={<Trash2 />} aria-label={`Delete ${row.key}`}
                     type="button"
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    variant="quiet"
                     title={`Delete ${row.key}`}
                     onClick={(event) => {
                       event.stopPropagation();
                       void handleDeleteItem(row);
                     }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  />
                 </>
               ) }]}
             getRowId={(row) => row.id}
@@ -601,7 +595,6 @@ export function SystemContextConsole() {
               ],
               actions: (
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => void fetchData()}
                   disabled={fetching}
@@ -633,13 +626,11 @@ export function SystemContextConsole() {
               headerActions: (row) =>
                 row.is_computed ? undefined : (
                   <Button
+                    icon={<Pencil />}
                     type="button"
-                    size="sm"
                     variant="outline"
-                    className="h-7 px-2"
                     onClick={() => setEditing(row)}
-                  >
-                    <Pencil className="mr-1 h-3 w-3" /> Edit
+                  > Edit
                   </Button>
                 ),
             }}

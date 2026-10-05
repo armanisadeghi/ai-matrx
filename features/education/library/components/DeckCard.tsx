@@ -95,7 +95,7 @@ export function DeckCard({
       </div>
 
       <div className="mt-4 flex flex-wrap items-center gap-2 pt-4 border-t border-border">
-        <Button variant="outline" size="sm" asChild className="gap-1.5">
+        <Button variant="outline" asChild>
           <a href={viewHref} target="_blank" rel="noreferrer" data-tap-target>
             <ExternalLink className="h-3.5 w-3.5" /> View
           </a>
@@ -113,20 +113,19 @@ export function DeckCard({
         ) : null}
         {isSuperAdmin ? (
           <Button
-            variant="ghost"
-            size="sm"
+            icon={isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : certified ? (
+              <ShieldOff />
+            ) : (
+              <BadgeCheck />
+            )}
+            variant="quiet"
             onClick={toggleCertify}
             disabled={isPending}
-            className="ml-auto gap-1.5"
+            className="ml-auto"
             title={certified ? "Remove certification" : "Certify this deck"}
           >
-            {isPending ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : certified ? (
-              <ShieldOff className="h-3.5 w-3.5" />
-            ) : (
-              <BadgeCheck className="h-3.5 w-3.5" />
-            )}
             {certified ? "Uncertify" : "Certify"}
           </Button>
         ) : null}

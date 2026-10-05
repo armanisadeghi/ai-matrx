@@ -99,12 +99,11 @@ function ScheduleListBody() {
         <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
           <span className="min-w-0 break-words">{error ?? "Unknown error"}</span>
           <Button
+            icon={<RefreshCw />}
             variant="outline"
-            size="sm"
             onClick={() => refetch()}
-            className="shrink-0 gap-1.5"
-          >
-            <RefreshCw className="h-3.5 w-3.5" /> Retry
+            className="shrink-0"
+          > Retry
           </Button>
         </AlertDescription>
       </Alert>
@@ -125,7 +124,7 @@ function ScheduleListBody() {
           Create one to have an agent run on a schedule, when a page matches, or
           as a heartbeat conversation.
         </p>
-        <Button asChild>
+        <Button variant="primary" asChild>
           <Link href="/schedules/new" className="gap-2">
             <Plus className="h-4 w-4" /> Create schedule
           </Link>
@@ -149,12 +148,10 @@ function ScheduleListBody() {
               <ErrorAlchemyMenu />
             </span>
             <Button
+              icon={<RefreshCw />}
               variant="outline"
-              size="sm"
               onClick={() => refetchDuplicates()}
-              className="gap-1.5"
-            >
-              <RefreshCw className="h-3.5 w-3.5" /> Retry
+            > Retry
             </Button>
           </AlertDescription>
         </Alert>

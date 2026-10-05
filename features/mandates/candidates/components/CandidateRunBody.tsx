@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { Columns2, Loader2, MessagesSquare, ThumbsDown, ThumbsUp } from "lucide-react";
 
 import { OutputPreview } from "@/features/mandates/admin/bench-output-preview";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { cn } from "@/lib/utils";

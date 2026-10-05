@@ -12,17 +12,8 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Button,
-  SegmentedControl,
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@ai-matrx/design-system";
+import { SegmentedControl, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { readTranslationBundle } from "../data";
@@ -193,9 +184,7 @@ export default function TranslationGrid() {
     skippedCount > 0 && view !== "all" ? (
       <Button
         type="button"
-        size="sm"
-        variant="ghost"
-        className="h-8 text-xs text-muted-foreground"
+        variant="quiet"
         onClick={() => {
           setSkipped(new Set());
           writeSkipped(new Set());

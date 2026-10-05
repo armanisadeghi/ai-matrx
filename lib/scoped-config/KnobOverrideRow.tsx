@@ -24,7 +24,7 @@ import {
   Input,
   Popover,
   PopoverContent,
-  PopoverTrigger,
+  PopoverTrigger, Button as SurfaceButton,
 } from "@ai-matrx/design-system";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
@@ -854,7 +854,7 @@ export function KnobOverrideRow(props: {
                 />
               )}
               <Button
-                size="sm"
+                variant="primary"
                 disabled={
                   busy ||
                   draft.trim() === "" ||
@@ -895,13 +895,11 @@ export function KnobOverrideRow(props: {
           <Popover>
             <PopoverTrigger asChild>
               <Button
-                size="icon"
-                variant="ghost"
+                icon={<MoreHorizontal />}
+                variant="quiet"
                 aria-label={`Options for ${scopeLabel ?? knob.label}`}
-                className="h-9 w-9 shrink-0"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
+                className="shrink-0"
+              />
             </PopoverTrigger>
             <PopoverContent
               sizing="content"
@@ -962,7 +960,7 @@ export function KnobOverrideRow(props: {
                 ? JSON.stringify(knob.platform_default) !==
                   JSON.stringify(system.registeredDefault)
                 : isSetHere) && (
-                <Button
+                <SurfaceButton
                   size="sm"
                   variant="outline"
                   className="w-full justify-start whitespace-normal text-left"
@@ -970,7 +968,7 @@ export function KnobOverrideRow(props: {
                   onClick={() => void clear()}
                 >
                   {system ? "Restore registered default" : "Inherit this value"}
-                </Button>
+                </SurfaceButton>
               )}
               {userLockAvailable && (
                 <div className="space-y-1 border-t border-border pt-3">
@@ -982,7 +980,7 @@ export function KnobOverrideRow(props: {
                         : "allowed"}
                     </span>
                   </p>
-                  <Button
+                  <SurfaceButton
                     size="sm"
                     variant="outline"
                     className="w-full justify-start whitespace-normal text-left"
@@ -992,7 +990,7 @@ export function KnobOverrideRow(props: {
                     {knob.user_override_locked
                       ? "Allow personal overrides"
                       : "Turn off personal overrides"}
-                  </Button>
+                  </SurfaceButton>
                 </div>
               )}
             </PopoverContent>

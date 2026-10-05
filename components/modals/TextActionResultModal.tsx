@@ -95,10 +95,8 @@ export function TextActionResultModal({
             <div className="flex items-center justify-between mb-2">
               <Badge>AI Generated</Badge>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 onClick={handleCopy}
-                className="h-8"
               >
                 {copied ? (
                   <>
@@ -155,40 +153,40 @@ export function TextActionResultModal({
 
         <DialogFooter className="flex items-center justify-between sm:justify-between">
           <Button
-            variant="ghost"
+            icon={<X />}
+            variant="quiet"
             onClick={onClose}
           >
-            <X className="h-4 w-4 mr-2" />
             Cancel
           </Button>
 
           <div className="flex items-center gap-2">
             {onInsertBefore && (
               <Button
+                icon={<ArrowUpToLine />}
                 variant="outline"
                 onClick={handleInsertBefore}
               >
-                <ArrowUpToLine className="h-4 w-4 mr-2" />
                 Insert Before
               </Button>
             )}
 
             {onInsertAfter && (
               <Button
+                icon={<ArrowDownToLine />}
                 variant="outline"
                 onClick={handleInsertAfter}
               >
-                <ArrowDownToLine className="h-4 w-4 mr-2" />
                 Insert After
               </Button>
             )}
 
             {onReplace && (
               <Button
+                icon={<Replace />}
+                variant="primary"
                 onClick={handleReplace}
-                className="bg-primary"
               >
-                <Replace className="h-4 w-4 mr-2" />
                 Replace Text
               </Button>
             )}

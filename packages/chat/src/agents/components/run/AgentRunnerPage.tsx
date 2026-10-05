@@ -31,7 +31,7 @@ import { AgentConversationColumn } from "../shared/AgentConversationColumn";
 import { useComposerMode } from "../inputs/smart-input/composer/useComposerMode";
 import { ChatRoomSkeleton } from "../chat/ChatRoomSkeleton";
 import { AlertTriangle, Loader2, RotateCw, TestTube2 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { AgentRunHeader } from "./AgentRunHeader";
 import { DebugSessionActivator } from "../debug/DebugSessionActivator";
@@ -301,11 +301,11 @@ export function AgentRunnerPage({
             agent loads.
           </p>
           <Button
-            size="sm"
-            className="self-start gap-1.5"
+            icon={<RotateCw />}
+            variant="primary"
+            className="self-start"
             onClick={() => setInitAttempt((n) => n + 1)}
           >
-            <RotateCw className="w-3.5 h-3.5" />
             Retry
           </Button>
           <ErrorAlchemyMenu error={initError} />

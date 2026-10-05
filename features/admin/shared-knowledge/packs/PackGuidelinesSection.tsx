@@ -42,8 +42,7 @@ export function PackGuidelinesSection({ detail, onChanged }: { detail: AdminPack
       <div className="flex items-center justify-between">
         <span className="text-[11px] tabular-nums text-muted-foreground">{words} words</span>
         {canAuthor ? (
-          <Button size="sm" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
-            {save.isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : <Save className="mr-1 size-3.5" />}
+          <Button icon={save.isPending ? <Loader2 className="animate-spin" /> : <Save />} variant="primary" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
             Save guidelines
           </Button>
         ) : null}

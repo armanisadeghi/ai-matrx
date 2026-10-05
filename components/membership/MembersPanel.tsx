@@ -432,9 +432,8 @@ export function MembersPanel({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
+                                variant="quiet"
+                                className="w-8"
                                 onClick={() =>
                                   handleSendMessage(
                                     member.userId,
@@ -458,9 +457,8 @@ export function MembersPanel({
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0"
+                                variant="quiet"
+                                className="w-8"
                                 onClick={() =>
                                   setEmailRecipient({
                                     id: member.userId,
@@ -487,8 +485,7 @@ export function MembersPanel({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         disabled={operationLoading}
                       >
                         <MoreVertical className="h-4 w-4" />

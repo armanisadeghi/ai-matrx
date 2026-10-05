@@ -715,27 +715,25 @@ export const SandboxDiagnosticsPanel = forwardRef<
             <div className="flex items-center gap-2">
               {showResetButton && (
                 <Button
+                  icon={<RotateCcw
+                    className={`h-3 w-3 mr-1 ${resetting ? "animate-spin" : ""}`}
+                  />}
                   variant="outline"
-                  size="sm"
                   onClick={() => setResetOpen(true)}
                   disabled={resetting}
                   title="Replace the container with its configured template and resources. Your persistent home is kept unless you explicitly erase it."
                 >
-                  <RotateCcw
-                    className={`h-3 w-3 mr-1 ${resetting ? "animate-spin" : ""}`}
-                  />
                   Rebuild
                 </Button>
               )}
               <Button
+                icon={<RefreshCw
+                  className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`}
+                />}
                 variant="outline"
-                size="sm"
                 onClick={fetchDiagnostics}
                 disabled={loading}
               >
-                <RefreshCw
-                  className={`h-3 w-3 mr-1 ${loading ? "animate-spin" : ""}`}
-                />
                 Refresh
               </Button>
             </div>
@@ -897,14 +895,13 @@ export const SandboxDiagnosticsPanel = forwardRef<
                   placeholder="/home/agent"
                 />
                 <Button
+                  icon={<RefreshCw
+                    className={`h-3 w-3 mr-1 ${fsRootLoading ? "animate-spin" : ""}`}
+                  />}
                   variant="outline"
-                  size="sm"
                   onClick={fetchFsRoot}
                   disabled={fsRootLoading}
                 >
-                  <RefreshCw
-                    className={`h-3 w-3 mr-1 ${fsRootLoading ? "animate-spin" : ""}`}
-                  />
                   Load
                 </Button>
                 <span className="basis-full text-[11px] text-muted-foreground md:basis-auto md:flex-1">
@@ -953,8 +950,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
                         <div className="font-mono text-muted-foreground border-b border-border pb-1 mb-2 flex items-center justify-between gap-2 break-all">
                           <span>{selectedFile.path}</span>
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={() =>
                               void fetchFileContent(selectedFile.path)
                             }
@@ -1018,14 +1014,13 @@ export const SandboxDiagnosticsPanel = forwardRef<
                   placeholder="filter by key…"
                 />
                 <Button
+                  icon={<RefreshCw
+                    className={`h-3 w-3 mr-1 ${agentEnvLoading ? "animate-spin" : ""}`}
+                  />}
                   variant="outline"
-                  size="sm"
                   onClick={fetchAgentEnv}
                   disabled={agentEnvLoading}
                 >
-                  <RefreshCw
-                    className={`h-3 w-3 mr-1 ${agentEnvLoading ? "animate-spin" : ""}`}
-                  />
                   Refresh
                 </Button>
                 {agentEnv?.aidream_pid && (
@@ -1219,14 +1214,13 @@ export const SandboxDiagnosticsPanel = forwardRef<
                   ))}
                 </select>
                 <Button
+                  icon={<RefreshCw
+                    className={`h-3 w-3 mr-1 ${logsLoading ? "animate-spin" : ""}`}
+                  />}
                   variant="outline"
-                  size="sm"
                   onClick={fetchLogs}
                   disabled={logsLoading}
                 >
-                  <RefreshCw
-                    className={`h-3 w-3 mr-1 ${logsLoading ? "animate-spin" : ""}`}
-                  />
                   Refresh
                 </Button>
                 <span className="text-xs text-muted-foreground">

@@ -187,13 +187,10 @@ export function ScheduleRow({ task, kpis, watchesArchived = false }: Props) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-11 w-11 lg:h-8 lg:w-8"
+              icon={<MoreVertical />}
+              variant="quiet"
               aria-label="Schedule actions"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
+            />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem onClick={handleRunNow} disabled={running}>

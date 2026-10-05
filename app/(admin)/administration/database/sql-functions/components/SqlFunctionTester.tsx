@@ -146,16 +146,15 @@ export default function SqlFunctionTester({
 
         <div className="flex justify-end pt-0.5">
           <Button
+            icon={isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Play />
+            )}
+            variant="primary"
             onClick={handleExecute}
             disabled={isPending}
-            size="sm"
-            className="h-7 text-xs bg-emerald-700 hover:bg-emerald-600 text-white"
           >
-            {isPending ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Play className="h-3.5 w-3.5 mr-1.5" />
-            )}
             {isPending ? "Running…" : "Execute Function"}
           </Button>
         </div>

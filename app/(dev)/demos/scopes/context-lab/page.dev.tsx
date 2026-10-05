@@ -339,12 +339,12 @@ function AssignToItemPanel({
         </div>
 
         <Button
-          size="sm"
+          icon={<FileText />}
+          variant="primary"
           className="w-full"
           disabled={!scope || !item}
           onClick={assign}
         >
-          <FileText className="mr-1.5 h-4 w-4" />
           {scope && item
             ? `Set this file as ${scope.name}'s ${item.display_name}`
             : "Pick a scope and a slot"}
@@ -622,12 +622,12 @@ function ScopeAsValuePanel({ orgs }: { orgs: OrgNode[] }) {
         </div>
 
         <Button
-          size="sm"
+          icon={<GitBranch />}
+          variant="primary"
           className="w-full"
           disabled={!source || !item || !target}
           onClick={link}
         >
-          <GitBranch className="mr-1.5 h-4 w-4" />
           {source && item && target
             ? `Set ${source.name}'s ${item.display_name} = ${target.name}`
             : "Pick scope · relationship · target"}
@@ -1122,7 +1122,8 @@ function ContextHintsPanel({ orgs }: { orgs: OrgNode[] }) {
               {hasContext && (
                 <div className="flex gap-2">
                   <Button
-                    size="sm"
+                    icon={<Plus />}
+                    variant="primary"
                     onClick={() => {
                       console.log(
                         "[context-lab] hint ACCEPTED → ctx_associations",
@@ -1137,11 +1138,9 @@ function ContextHintsPanel({ orgs }: { orgs: OrgNode[] }) {
                       setDecided("added");
                     }}
                   >
-                    <Plus className="mr-1 h-3.5 w-3.5" />
                     Add it
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => setDecided("dismissed")}
                   >
@@ -1366,7 +1365,7 @@ function CompactContextBar({ orgs }: { orgs: OrgNode[] }) {
                 })}
               </div>
               <div className="mt-2 flex justify-end border-t border-border pt-2">
-                <Button size="sm" className="h-7" onClick={apply}>
+                <Button variant="primary" onClick={apply}>
                   Apply
                 </Button>
               </div>
@@ -1804,8 +1803,7 @@ export default function ContextLabPage() {
                 <div className="flex flex-wrap items-center gap-2">
                   <ContextAssignmentPopover
                     trigger={
-                      <Button size="sm" variant="outline">
-                        <Plus className="mr-1.5 h-4 w-4" />
+                      <Button icon={<Plus />} type="submit" variant="outline">
                         Organize (popover)
                       </Button>
                     }
@@ -1813,14 +1811,12 @@ export default function ContextLabPage() {
                     writeMode="preview"
                   />
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => setDialogOpen(true)}
                   >
                     Organize (dialog)
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => setWindowOpen(true)}
                   >
@@ -1954,7 +1950,6 @@ export default function ContextLabPage() {
                   UploadContextPrompt
                 </span>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setUploadPromptOpen(true)}
                 >

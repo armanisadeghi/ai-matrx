@@ -40,7 +40,7 @@ import {
   Trash2,
   TriangleAlert,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { RequestAccessPanel } from "@/features/access-gate/components/RequestAccessPanel";

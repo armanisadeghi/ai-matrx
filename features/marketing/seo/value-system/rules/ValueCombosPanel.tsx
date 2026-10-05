@@ -196,13 +196,12 @@ export function ValueCombosPanel({
             see exactly which keywords move before you save.
           </p>
           <Button
+            icon={<Plus />}
             type="button"
-            size="sm"
             variant="outline"
-            className="mt-2 h-7 gap-1 text-[11px]"
+            className="mt-2"
             onClick={() => setEditing(null)}
           >
-            <Plus className="h-3.5 w-3.5" />
             Write your first combination
           </Button>
         </div>
@@ -297,14 +296,13 @@ export function ValueCombosPanel({
         Two strikes — what a set of answers is worth together
       </p>
       <Button
+        icon={<Plus />}
         type="button"
-        size="sm"
         variant="outline"
         onClick={() => setEditing(null)}
-        className="ml-auto h-7 shrink-0 gap-1 text-[11px]"
+        className="ml-auto shrink-0"
         title="Combine two to four answers — you will see exactly which of your keywords it moves before you save."
       >
-        <Plus className="h-3.5 w-3.5" />
         New combination
       </Button>
     </div>

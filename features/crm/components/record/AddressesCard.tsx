@@ -231,8 +231,7 @@ export function AddressesCard({
           </label>
           <div className="col-span-6 flex justify-end">
             <Button
-              size="sm"
-              className="h-11 px-4 text-sm sm:h-7 sm:px-3 sm:text-xs"
+              variant="primary"
               onClick={submit}
               // Like every other add form on the record: enabled once the
               // form can be saved (a street or a city), named "Add".

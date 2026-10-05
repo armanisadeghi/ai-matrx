@@ -370,12 +370,11 @@ export function VerificationsSurface() {
             searchPlaceholder: "Search requests",
             actions: canGenerate && writeEmployer.active ? (
               <Button
+                icon={<Plus />}
+                variant="primary"
                 type="button"
-                size="sm"
-                className="min-h-11 sm:min-h-9"
                 onClick={() => setCreating(true)}
               >
-                <Plus className="mr-1.5 h-4 w-4" />
                 New request
               </Button>
             ) : null,

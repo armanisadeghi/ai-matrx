@@ -178,18 +178,17 @@ function SectionCard({
           />
         ) : null}
         <Button
-          size="sm"
-          variant={dirty ? "default" : "outline"}
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant={dirty ? "primary" : "outline"}
           disabled={!dirty || saving}
           onClick={onSave}
           aria-label={`Save ${title}`}
-          className="gap-1.5 text-xs shrink-0"
+          className="shrink-0"
         >
-          {saving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="h-3.5 w-3.5" />
-          )}
           Save
         </Button>
       </div>
@@ -248,43 +247,35 @@ function LinkListEditor({
             className="text-sm h-8 flex-[1.4] font-mono"
           />
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-7 shrink-0"
+            icon={<ArrowUp />}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => move(i, -1)}
             disabled={i === 0}
             aria-label="Move up"
-          >
-            <ArrowUp className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-7 shrink-0"
+            icon={<ArrowDown />}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => move(i, 1)}
             disabled={i === rows.length - 1}
             aria-label="Move down"
-          >
-            <ArrowDown className="h-3.5 w-3.5" />
-          </Button>
+          />
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+            icon={<Trash2 />}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => onChange(rows.filter((_, j) => j !== i))}
             aria-label="Remove"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         </div>
       ))}
       <Button
+        icon={<Plus />}
         variant="outline"
-        size="sm"
-        className="gap-1.5 text-xs h-7"
         onClick={() => onChange([...rows, { label: "", href: "" }])}
       >
-        <Plus className="h-3.5 w-3.5" />
         {addLabel}
       </Button>
     </div>
@@ -470,20 +461,17 @@ function ThemeSection({ site, onSaved }: SectionProps) {
               {cssVarName(row)}
             </span>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+              icon={<Trash2 />}
+              variant="quiet"
+              className="shrink-0"
               onClick={() => setRows(rows.filter((_, j) => j !== i))}
               aria-label={`Remove theme token ${i + 1}`}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ))}
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs h-7"
           onClick={() =>
             setRows([
               ...rows,
@@ -495,7 +483,6 @@ function ThemeSection({ site, onSaved }: SectionProps) {
             ])
           }
         >
-          <Plus className="h-3.5 w-3.5" />
           Add token
         </Button>
       </div>
@@ -757,14 +744,12 @@ function FooterSection({ site, onSaved }: SectionProps) {
                   className="text-sm h-8 flex-1"
                 />
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                  icon={<Trash2 />}
+                  variant="quiet"
+                  className="shrink-0"
                   onClick={() => setColumns(columns.filter((_, j) => j !== i))}
                   aria-label="Remove column"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
               <LinkListEditor
                 rows={column.links}
@@ -777,12 +762,10 @@ function FooterSection({ site, onSaved }: SectionProps) {
             </div>
           ))}
           <Button
+            icon={<Plus />}
             variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs h-7"
             onClick={() => setColumns([...columns, { heading: "", links: [] }])}
           >
-            <Plus className="h-3.5 w-3.5" />
             Add column
           </Button>
         </div>
@@ -1081,23 +1064,19 @@ function SocialSection({ site, onSaved }: SectionProps) {
               className="text-sm h-8 flex-1 font-mono"
             />
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+              icon={<Trash2 />}
+              variant="quiet"
+              className="shrink-0"
               onClick={() => setRows(rows.filter((_, j) => j !== i))}
               aria-label="Remove"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+            />
           </div>
         ))}
         <Button
+          icon={<Plus />}
           variant="outline"
-          size="sm"
-          className="gap-1.5 text-xs h-7"
           onClick={() => setRows([...rows, { platform: "", url: "" }])}
         >
-          <Plus className="h-3.5 w-3.5" />
           Add social link
         </Button>
       </div>

@@ -152,17 +152,16 @@ export function HostedBillingStep({
                   : "Signed in, but not on a Claude plan"}
               </span>
               <Button
+                icon={busy === "sign-out" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <LogOut />
+                )}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => run("sign-out", () => signOutOwnPlan(PROVIDER))}
                 disabled={busy !== null}
               >
-                {busy === "sign-out" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <LogOut className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 Sign out
               </Button>
             </div>
@@ -170,7 +169,7 @@ export function HostedBillingStep({
             <div className="flex flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
                 {status?.sign_in_url && (
-                  <Button asChild variant="outline" size="sm">
+                  <Button asChild variant="outline">
                     <a
                       href={status.sign_in_url}
                       target="_blank"
@@ -183,28 +182,26 @@ export function HostedBillingStep({
                 )}
                 {state === "awaiting_browser" && (
                   <Button
+                    icon={<RefreshCw />}
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={() =>
                       run("reading", () => readOwnPlanStatus(PROVIDER))
                     }
                     disabled={busy !== null}
                   >
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
                     Check again
                   </Button>
                 )}
                 <Button
+                  icon={<X />}
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() =>
                     run("cancel", () => cancelOwnPlanSignIn(PROVIDER))
                   }
                   disabled={busy !== null}
                 >
-                  <X className="mr-1.5 h-3.5 w-3.5" />
                   Cancel
                 </Button>
               </div>
@@ -232,15 +229,15 @@ export function HostedBillingStep({
                     className="h-8 text-base sm:text-sm"
                   />
                   <Button
+                    icon={busy === "code" ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <KeyRound />
+                    )}
+                    variant="primary"
                     type="submit"
-                    size="sm"
                     disabled={busy !== null || !code.trim()}
                   >
-                    {busy === "code" ? (
-                      <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <KeyRound className="mr-1.5 h-3.5 w-3.5" />
-                    )}
                     Connect
                   </Button>
                 </form>
@@ -249,17 +246,16 @@ export function HostedBillingStep({
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <Button
+                icon={busy === "starting" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <KeyRound />
+                )}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => run("starting", () => startOwnPlanSignIn(PROVIDER))}
                 disabled={busy !== null}
               >
-                {busy === "starting" ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <KeyRound className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 Connect your Claude account
               </Button>
               {busy === "starting" && (

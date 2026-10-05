@@ -157,21 +157,17 @@ export function CxFiltersBar({
       <div className="flex items-center gap-1 ml-auto">
         {!hideClear && hasActiveFilters && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-xs"
+            icon={<X />}
+            variant="quiet"
             onClick={clearFilters}
           >
-            <X className="w-3 h-3 mr-1" />
             Clear
           </Button>
         )}
 
         {onRefresh && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8"
+            variant="quiet"
             onClick={onRefresh}
             disabled={isPending}
           >
@@ -185,23 +181,19 @@ export function CxFiltersBar({
           <div className="flex items-center">
             {onExportCSV && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
+                icon={<Download />}
+                variant="quiet"
                 onClick={onExportCSV}
               >
-                <Download className="w-3 h-3 mr-1" />
                 CSV
               </Button>
             )}
             {onExportJSON && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 text-xs"
+                icon={<Download />}
+                variant="quiet"
                 onClick={onExportJSON}
               >
-                <Download className="w-3 h-3 mr-1" />
                 JSON
               </Button>
             )}

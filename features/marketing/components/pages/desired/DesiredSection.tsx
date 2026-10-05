@@ -50,27 +50,24 @@ export function DesiredSection({
         <div className="flex items-center justify-end gap-2">
           {onReset ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-8"
+              icon={<Undo2 />}
+              variant="quiet"
               disabled={!dirty || saving}
               onClick={onReset}
             >
-              <Undo2 className="mr-1.5 h-3.5 w-3.5" />
               Reset
             </Button>
           ) : null}
           <Button
-            size="sm"
-            className="h-8"
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             disabled={!dirty || saving}
             onClick={onSave}
           >
-            {saving ? (
-              <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-1.5 h-3.5 w-3.5" />
-            )}
             Save desired
           </Button>
         </div>

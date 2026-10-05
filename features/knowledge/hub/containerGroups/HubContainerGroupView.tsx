@@ -217,7 +217,7 @@ function DataStoresGroup({ group }: { group: Group }) {
         <span className="text-xs text-muted-foreground">
           {list.error ? "Could not count your data stores." : loading ? "Counting…" : plural(list.stores.length, "data store")}
         </span>
-        <Button asChild size="sm" variant="outline" className="ml-auto h-8 gap-1.5">
+        <Button asChild variant="outline" className="ml-auto">
           <Link href={NEW_DATA_STORE_HREF}>
             <Plus className="h-3.5 w-3.5" /> New data store
           </Link>
@@ -426,13 +426,13 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
               .join(" · ")}
             trailing={
               <>
-                <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" title="Bring up to date">
+                <Button asChild variant="quiet" title="Bring up to date">
                   <Link href={`${libraryRecordHref(r.id)}?resync=1`}>
                     <RefreshCw className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">Bring up to date</span>
                   </Link>
                 </Button>
-                <Button asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs" title="This Library's Sources in the hub">
+                <Button asChild variant="quiet" title="This Library's Sources in the hub">
                   <Link
                     href={hubHref({
                       ...DEFAULT_HUB_STATE,
@@ -450,8 +450,7 @@ function LibrariesGroup({ group, set }: { group: Group; set: (k: string, v: stri
         ))}
         {read.status === "ready" && read.rows.length < read.total ? (
           <div className="px-2 py-2 text-xs">
-            <Button size="sm" variant="outline" className="h-7" disabled={more.loading} onClick={() => void loadMore()}>
-              {more.loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+            <Button icon={more.loading ? <Loader2 className="animate-spin" /> : null} variant="outline" disabled={more.loading} onClick={() => void loadMore()}>
               Load more ({read.rows.length} of {read.total})
             </Button>
             {more.error ? (
@@ -521,7 +520,7 @@ function CatalogGroup({ group, set }: { group: Group; set: (k: string, v: string
           </Chip>
         ))}
         {isCurator ? (
-          <Button asChild size="sm" variant="ghost" className="ml-auto h-7 gap-1 px-2 text-xs">
+          <Button asChild variant="quiet" className="ml-auto">
             <Link href="/knowledge/library-curate">
               <Layers className="h-3.5 w-3.5" /> Curate
             </Link>

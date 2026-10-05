@@ -53,7 +53,7 @@ export const MatrixDeleteDialog: React.FC<MatrixDeleteDialogProps> = (
                     <Button variant="outline" onClick={onClose}>
                         Cancel
                     </Button>
-                    <Button variant="destructive" onClick={onConfirm}>
+                    <Button variant="danger" onClick={onConfirm}>
                         Delete
                     </Button>
                 </DialogFooter>

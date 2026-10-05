@@ -15,7 +15,7 @@
 import { PanelRight } from "lucide-react";
 import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import {
@@ -81,8 +81,7 @@ export function TopicHoverCard({ mapId, slug, onOpen }: TopicHoverCardProps) {
       ) : null}
 
       <div className="flex justify-end">
-        <Button type="button" size="sm" variant="secondary" onClick={() => onOpen(slug)}>
-          <PanelRight className="mr-1 h-3.5 w-3.5" aria-hidden />
+        <Button icon={<PanelRight aria-hidden />} type="button" variant="outline" onClick={() => onOpen(slug)}>
           Open topic
         </Button>
       </div>

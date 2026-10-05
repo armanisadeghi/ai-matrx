@@ -104,14 +104,12 @@ function Actions({
   return (
     <div className="flex w-full flex-col gap-2">
       {canReconnect && (
-        <Button size="sm" variant="outline" onClick={onResume} className={`w-full justify-center gap-1.5 ${tone}`}>
-          <RefreshCw className="h-4 w-4 shrink-0" />
+        <Button icon={<RefreshCw />} variant="outline" onClick={onResume} className={`w-full justify-center gap-1.5 ${tone}`}>
           Resume
         </Button>
       )}
       {canRerun && (
-        <Button size="sm" variant="ghost" onClick={onRerun} className="w-full justify-center gap-1.5">
-          <RotateCcw className="h-4 w-4 shrink-0" />
+        <Button icon={<RotateCcw />} variant="quiet" onClick={onRerun} className="w-full justify-center">
           Re-run from source
         </Button>
       )}

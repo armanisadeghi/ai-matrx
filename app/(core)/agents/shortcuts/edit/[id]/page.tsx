@@ -121,7 +121,6 @@ export default function UserEditShortcutPage({
               shortcut list.
             </p>
             <Button
-              size="sm"
               variant="outline"
               onClick={() => setFormOpen(true)}
               disabled={formOpen}

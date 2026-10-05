@@ -1,7 +1,7 @@
 import React from 'react';
 import {motion} from 'motion/react';
 import {Settings, Boxes, TestTube2} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {Button} from "@ai-matrx/design-system";
 import {
     Tooltip,
     TooltipContent,

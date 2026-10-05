@@ -33,8 +33,7 @@ function OpenModal() {
     return (
         <Credenza open={isOpen} onOpenChange={setIsOpen}>
             <CredenzaTrigger asChild>
-                <Button variant="outline" className="bg-card hover:bg-accent text-foreground font-semibold py-2 px-4 border border-border rounded shadow">
-                    <PlusCircle className="mr-2 h-4 w-4" /> Open Enhanced Modal
+                <Button icon={<PlusCircle />} variant="outline"> Open Enhanced Modal
                 </Button>
             </CredenzaTrigger>
             <CredenzaContent className="sm:max-w-[425px]">
@@ -100,7 +99,7 @@ function OpenModal() {
                 </Tabs>
                 <CredenzaFooter className="flex justify-between">
                     <Button variant="outline" onClick={() => setIsOpen(false)}>Cancel</Button>
-                    <Button onClick={() => setIsOpen(false)}>Save changes</Button>
+                    <Button variant="primary" onClick={() => setIsOpen(false)}>Save changes</Button>
                 </CredenzaFooter>
             </CredenzaContent>
         </Credenza>

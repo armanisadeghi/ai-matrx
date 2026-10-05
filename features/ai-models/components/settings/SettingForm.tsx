@@ -275,17 +275,15 @@ export default function SettingForm({
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<Trash2 />}
+                variant="quiet"
                 disabled={isSystem}
                 title={
                   isSystem
                     ? "System settings can't be deleted"
                     : "Delete this setting"
                 }
-                className="h-8 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 gap-1 disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <Trash2 className="h-3.5 w-3.5" />
                 Delete Setting
               </Button>
             </AlertDialogTrigger>

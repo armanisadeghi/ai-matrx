@@ -145,9 +145,7 @@ export function SurfaceValuesTable({
               </span>
               {onCleanUp && (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7 text-xs"
                   onClick={onCleanUp}
                 >
                   Clean up

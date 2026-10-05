@@ -796,7 +796,7 @@ export function MeetingScavengerDialog({
             </Button>
           ) : null}
           {speakers ? (
-            <Button onClick={scavenge} disabled={busy}>
+            <Button variant="primary" onClick={scavenge} disabled={busy}>
               {run.running
                 ? "Reading what you said…"
                 : "Pull out what I said"}

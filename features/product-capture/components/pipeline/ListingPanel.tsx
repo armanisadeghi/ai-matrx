@@ -96,9 +96,8 @@ export function ListingPanel({
       actions={
         <div className="flex items-center gap-1.5">
           <Button
+            icon={<FileJson />}
             variant="outline"
-            size="sm"
-            className="h-8"
             onClick={() =>
               downloadBlob(
                 `listing-${baseName}.json`,
@@ -107,13 +106,11 @@ export function ListingPanel({
               )
             }
           >
-            <FileJson className="mr-1 h-3.5 w-3.5" />
             JSON
           </Button>
           <Button
+            icon={<Download />}
             variant="outline"
-            size="sm"
-            className="h-8"
             onClick={() =>
               downloadBlob(
                 `listing-${baseName}.csv`,
@@ -122,12 +119,10 @@ export function ListingPanel({
               )
             }
           >
-            <Download className="mr-1 h-3.5 w-3.5" />
             CSV
           </Button>
           {!approved && (
-            <Button size="sm" className="h-8" onClick={() => void onApprove()}>
-              <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
+            <Button icon={<CheckCircle2 />} variant="primary" onClick={() => void onApprove()}>
               Approve
             </Button>
           )}

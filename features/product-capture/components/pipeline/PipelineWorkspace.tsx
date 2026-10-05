@@ -183,12 +183,10 @@ export function PipelineWorkspace({
           {mobileDetail && selectedId ? (
             <div className="space-y-3">
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-9"
+                icon={<ChevronLeft />}
+                variant="quiet"
                 onClick={() => setMobileDetail(false)}
               >
-                <ChevronLeft className="mr-1 h-4 w-4" />
                 Back to {stage} list
               </Button>
               {detail}

@@ -24,7 +24,6 @@ import {
   Brain,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { ChipTone } from "@ai-matrx/design-system/controls";
 import type { TargetKind } from "./types";
 
 export interface TargetPresentation {
@@ -46,8 +45,6 @@ export interface TargetPresentation {
    */
   verb: string;
   icon: LucideIcon;
-  /** THE chip tone for this format (`<Chip tone>`) — the one kind→tone table. */
-  tone: ChipTone;
   /** Icon / emphasis colour. */
   fg: string;
   /** Soft tinted chip behind the icon. */
@@ -73,7 +70,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: { one: "card", many: "cards" },
     verb: "Study",
     icon: Layers,
-    tone: "sky",
     fg: "text-sky-600 dark:text-sky-400",
     chip: "bg-sky-500/10",
     activeBorder: "border-sky-500/40",
@@ -86,7 +82,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: null,
     verb: "Read",
     icon: ScrollText,
-    tone: "emerald",
     fg: "text-emerald-600 dark:text-emerald-400",
     chip: "bg-emerald-500/10",
     activeBorder: "border-emerald-500/40",
@@ -99,7 +94,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: null,
     verb: "Explore",
     icon: Network,
-    tone: "violet",
     fg: "text-violet-600 dark:text-violet-400",
     chip: "bg-violet-500/10",
     activeBorder: "border-violet-500/40",
@@ -112,7 +106,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: null,
     verb: "Listen",
     icon: Headphones,
-    tone: "amber",
     fg: "text-amber-600 dark:text-amber-400",
     chip: "bg-amber-500/10",
     activeBorder: "border-amber-500/40",
@@ -125,7 +118,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: null,
     verb: "Review",
     icon: Brain,
-    tone: "fuchsia",
     fg: "text-fuchsia-600 dark:text-fuchsia-400",
     chip: "bg-fuchsia-500/10",
     activeBorder: "border-fuchsia-500/40",
@@ -138,7 +130,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: { one: "question", many: "questions" },
     verb: "Take quiz",
     icon: ListChecks,
-    tone: "rose",
     fg: "text-rose-600 dark:text-rose-400",
     chip: "bg-rose-500/10",
     activeBorder: "border-rose-500/40",
@@ -151,7 +142,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: { one: "question", many: "questions" },
     verb: "Take test",
     icon: FileCheck2,
-    tone: "indigo",
     fg: "text-indigo-600 dark:text-indigo-400",
     chip: "bg-indigo-500/10",
     activeBorder: "border-indigo-500/40",
@@ -164,7 +154,6 @@ export const TARGET_PRESENTATION: Record<TargetKind, TargetPresentation> = {
     unit: null,
     verb: "Read",
     icon: NotebookPen,
-    tone: "teal",
     fg: "text-teal-600 dark:text-teal-400",
     chip: "bg-teal-500/10",
     activeBorder: "border-teal-500/40",

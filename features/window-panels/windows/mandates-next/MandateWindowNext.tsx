@@ -315,9 +315,7 @@ function MandateWindowNextInner({
           <div className="flex flex-col items-start gap-1.5 px-2 py-3 text-[11px] text-muted-foreground">
             The list could not be read.
             <Button
-              size="sm"
               variant="outline"
-              className="h-6 px-2 text-[11px]"
               onClick={() => setReloads((n) => n + 1)}
             >
               Retry

@@ -432,14 +432,13 @@ export function BadExampleProbe({
           action={
             run.cancel ? (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<Square />}
+                variant="quiet"
                 disabled={run.cancelling}
                 onClick={() =>
                   void run.cancel?.("The expert stopped the probe.")
                 }
               >
-                <Square className="size-3.5" />
                 Stop
               </Button>
             ) : null
@@ -456,7 +455,6 @@ export function BadExampleProbe({
           {run.retry ? (
             <Button
               variant="outline"
-              size="sm"
               className="mt-2"
               onClick={() => void run.retry?.()}
             >
@@ -590,7 +588,7 @@ export function BadExampleProbe({
             {finished.answeredRounds === 1 ? "round" : "rounds"}.
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <Button asChild>
+            <Button variant="primary" asChild>
               <Link href={`/masterwork/${rulebook.id}`}>
                 Go and approve what came out of it
               </Link>

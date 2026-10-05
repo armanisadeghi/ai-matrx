@@ -48,7 +48,7 @@ import {
   wrapUpStatus,
   type MeetingRecord,
 } from "@ai-matrx/meet/react";
-import { Skeleton } from "@ai-matrx/design-system";
+import { Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
@@ -98,7 +98,7 @@ function ChooseOrganizationNotice() {
         you belong to.
       </p>
       <Button
-        size="sm"
+        type="submit"
         variant="outline"
         className="mt-3"
         onClick={() => void ensureOrganizationContext().catch(() => undefined)}
@@ -168,7 +168,7 @@ function Workspace({
           <ErrorAlchemyMenu error={record.failure.message} size="xs" />
         </p>
         <Button
-          size="sm"
+          type="submit"
           variant="outline"
           className="mt-3"
           onClick={record.reload}
@@ -250,11 +250,11 @@ function Workspace({
         ) : null}
         {canManage ? (
           <Button
-            size="sm"
-            className="h-8 gap-1.5"
+            icon={<Mail aria-hidden="true" />}
+            type="submit"
+            variant="primary"
             onClick={() => setRecapOpen(true)}
-          >
-            <Mail className="h-3.5 w-3.5" aria-hidden="true" /> Email recap
+          > Email recap
           </Button>
         ) : null}
         <RecordExportMenu
@@ -301,14 +301,14 @@ function Workspace({
             ) : wrapUp.state === "in-progress" ? (
               <div role="status" className="text-sm text-muted-foreground">
                 <p>{wrapUp.message}</p>
-                <Button
+                <SurfaceButton
                   variant="link"
                   size="sm"
                   className="h-auto px-0"
                   onClick={record.reload}
                 >
                   Check again
-                </Button>
+                </SurfaceButton>
               </div>
             ) : (
               <p
@@ -407,8 +407,7 @@ function Workspace({
                   className="h-8 min-w-0 flex-1 rounded-md border border-input bg-background px-2.5 text-sm"
                 />
                 <Button
-                  size="sm"
-                  className="h-8"
+                  variant="primary"
                   type="submit"
                   disabled={!question.trim() || record.asking}
                 >

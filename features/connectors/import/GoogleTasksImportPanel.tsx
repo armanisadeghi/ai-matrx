@@ -362,7 +362,6 @@ export function GoogleTasksImportPanel({
           ))}
         </ul>
         <Button
-          size="sm"
           variant="outline"
           className="self-start"
           onClick={() => setDone(null)}
@@ -391,13 +390,12 @@ export function GoogleTasksImportPanel({
               notice is up rather than dead beside it. */}
           {readFailure?.kind === "several_accounts" ? null : (
             <Button
-              size="sm"
-              variant="ghost"
-              className="ml-auto h-7 gap-1 px-2 text-xs"
+              icon={<RefreshCw />}
+              variant="quiet"
+              className="ml-auto"
               onClick={() => void load()}
               disabled={loading}
             >
-              <RefreshCw className="h-3 w-3" />
               Refresh
             </Button>
           )}
@@ -429,11 +427,9 @@ export function GoogleTasksImportPanel({
             {listing.task_lists.map((view) => (
               <Button
                 key={view.task_list_id}
-                size="sm"
                 variant={
-                  view.task_list_id === active?.task_list_id ? "secondary" : "ghost"
+                  view.task_list_id === active?.task_list_id ? "outline" : "quiet"
                 }
-                className="h-7 px-2 text-xs"
                 onClick={() => setActiveListId(view.task_list_id)}
               >
                 {view.title}
@@ -622,18 +618,14 @@ export function GoogleTasksImportPanel({
       {active && selectionControls.offered ? (
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs"
+          variant="quiet"
           onClick={selectNotHere}
           disabled={!active || active.importable === 0}
         >
           Select the {active?.importable ?? 0} not here yet
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs"
+          variant="quiet"
           onClick={selectChanged}
           disabled={
             !active || active.tasks.every((task) => (task.changes ?? []).length === 0)
@@ -642,16 +634,16 @@ export function GoogleTasksImportPanel({
           Select the changed ones
         </Button>
         <Button
-          size="sm"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <CheckSquare />
+          )}
+          variant="primary"
           className="ml-auto"
           onClick={run}
           disabled={busy || selectionControls.ids.length === 0}
         >
-          {busy ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <CheckSquare className="mr-1 h-3.5 w-3.5" />
-          )}
           Import {selectionControls.ids.length}
         </Button>
       </div>

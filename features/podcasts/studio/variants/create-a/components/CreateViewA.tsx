@@ -178,16 +178,16 @@ export function CreateViewA() {
           Cover art, video, and a two-host audio track — all generated for you.
         </p>
         <Button
-          size="lg"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <AudioLines />
+          )}
+          variant="primary"
           onClick={handleGenerate}
           disabled={!canGenerate || busy}
-          className="shrink-0 gap-2 shadow-md"
+          className="shrink-0"
         >
-          {busy ? (
-            <Loader2 className="h-4.5 w-4.5 animate-spin" />
-          ) : (
-            <AudioLines className="h-4.5 w-4.5" />
-          )}
           {busy ? "Starting…" : "Generate episode"}
         </Button>
       </div>
@@ -218,10 +218,9 @@ function UrlInputs({
           {urls.length > 1 && (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => onChange(urls.filter((_, idx) => idx !== i))}
-              className={cn("shrink-0 text-muted-foreground")}
+              className="shrink-0"
             >
               Remove
             </Button>
@@ -230,10 +229,8 @@ function UrlInputs({
       ))}
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         onClick={() => onChange([...urls, ""])}
-        className="text-muted-foreground"
       >
         Add another file URL
       </Button>

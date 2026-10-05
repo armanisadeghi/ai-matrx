@@ -86,21 +86,21 @@ export async function ForbiddenSurface() {
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
           {unverified ? (
-            <Button asChild size="sm">
+            <Button variant="primary" asChild>
               <Link href={`${pathname}${search}`}>
                 <RotateCw className="mr-1.5 h-4 w-4" aria-hidden />
                 Open it again
               </Link>
             </Button>
           ) : isAuthenticated ? null : (
-            <Button asChild size="sm">
+            <Button variant="primary" asChild>
               <Link href={signInHref}>
                 <LogIn className="mr-1.5 h-4 w-4" aria-hidden />
                 Sign in
               </Link>
             </Button>
           )}
-          <Button asChild size="sm" variant="outline">
+          <Button asChild variant="outline">
             <Link href="/dashboard">
               <ArrowLeft className="mr-1.5 h-4 w-4" aria-hidden />
               Back to what you can see

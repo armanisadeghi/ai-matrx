@@ -363,12 +363,11 @@ function FolderTree({
         />
       ) : (
         <Button
-          variant="ghost"
-          size="sm"
-          className="w-full h-6 text-[10px] justify-start gap-1 mt-1"
+          icon={<Plus />}
+          variant="quiet"
+          className="w-full justify-start mt-1"
           onClick={() => setShowRootCreate(true)}
-        >
-          <Plus className="w-3 h-3" /> New Folder
+        > New Folder
         </Button>
       )}
     </div>
@@ -885,8 +884,6 @@ export default function DocumentsPage() {
                     </div>
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="h-6 text-[10px] px-2"
                       onClick={fetchNotes}
                       disabled={loadingNotes}
                     >
@@ -897,11 +894,10 @@ export default function DocumentsPage() {
                       )}
                     </Button>
                     <Button
-                      size="sm"
-                      className="h-6 text-[10px] px-2 gap-1"
+                      icon={<FilePlus />}
+                      variant="primary"
                       onClick={() => setShowCreateNote(true)}
-                    >
-                      <FilePlus className="w-3 h-3" /> New
+                    > New
                     </Button>
                   </div>
                 </div>
@@ -983,16 +979,15 @@ export default function DocumentsPage() {
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-semibold">Edit Note</h3>
                       <Button
-                        size="sm"
-                        className="h-6 text-[10px] px-2 gap-1"
+                        icon={busy ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Save />
+                        )}
+                        variant="primary"
                         onClick={saveNote}
                         disabled={busy}
                       >
-                        {busy ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Save className="w-3 h-3" />
-                        )}
                         Save
                       </Button>
                     </div>
@@ -1034,20 +1029,17 @@ export default function DocumentsPage() {
                     />
                     <div className="flex gap-2">
                       <Button
-                        size="sm"
-                        className="h-6 text-[10px] px-3"
+                        icon={busy && (
+                          <Loader2 className="animate-spin" />
+                        )}
+                        variant="primary"
                         onClick={createNote}
                         disabled={busy || !newNoteTitle.trim()}
                       >
-                        {busy && (
-                          <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                        )}
                         Create
                       </Button>
                       <Button
-                        size="sm"
                         variant="outline"
-                        className="h-6 text-[10px] px-3"
                         onClick={() => setShowCreateNote(false)}
                       >
                         Cancel
@@ -1071,12 +1063,10 @@ export default function DocumentsPage() {
                   <RefreshCw className="w-4 h-4" /> Sync Status
                 </h2>
                 <Button
+                  icon={<RefreshCw />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
                   onClick={fetchSyncStatus}
-                >
-                  <RefreshCw className="w-3 h-3" /> Refresh
+                > Refresh
                 </Button>
               </div>
               {readErrors.sync != null ? (
@@ -1097,30 +1087,27 @@ export default function DocumentsPage() {
               )}
               <div className="flex gap-3">
                 <Button
-                  size="sm"
-                  className="h-8 text-xs px-3 gap-1.5"
+                  icon={busy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Upload />
+                  )}
+                  variant="primary"
                   onClick={triggerSync}
                   disabled={busy}
                 >
-                  {busy ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Upload className="w-3.5 h-3.5" />
-                  )}
                   Trigger Full Sync
                 </Button>
                 <Button
+                  icon={busy ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
                   variant="outline"
-                  size="sm"
-                  className="h-8 text-xs px-3 gap-1.5"
                   onClick={pullChanges}
                   disabled={busy}
                 >
-                  {busy ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3.5 h-3.5" />
-                  )}
                   Pull Changes
                 </Button>
               </div>
@@ -1152,8 +1139,7 @@ export default function DocumentsPage() {
                   />
                 </div>
                 <Button
-                  size="sm"
-                  className="h-7 text-xs px-3"
+                  variant="primary"
                   onClick={() =>
                     versionsNoteId && fetchVersions(versionsNoteId)
                   }
@@ -1191,15 +1177,13 @@ export default function DocumentsPage() {
                               : ""}
                           </span>
                           <Button
-                            size="sm"
+                            icon={<RotateCcw />}
                             variant="outline"
-                            className="h-5 text-[10px] px-1.5 gap-1"
                             onClick={() =>
                               revertToVersion(versionsNoteId, v.version_id)
                             }
                             disabled={busy}
-                          >
-                            <RotateCcw className="w-2.5 h-2.5" /> Revert
+                          > Revert
                           </Button>
                         </div>
                       </div>
@@ -1223,12 +1207,10 @@ export default function DocumentsPage() {
                   Conflicts
                 </h2>
                 <Button
+                  icon={<RefreshCw />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
                   onClick={fetchConflicts}
-                >
-                  <RefreshCw className="w-3 h-3" /> Refresh
+                > Refresh
                 </Button>
               </div>
               {readErrors.conflicts != null ? (
@@ -1284,18 +1266,14 @@ export default function DocumentsPage() {
                       </div>
                       <div className="flex gap-2">
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="h-6 text-[10px] px-2"
                           onClick={() => resolveConflict(c.id, "local")}
                           disabled={busy}
                         >
                           Keep Local
                         </Button>
                         <Button
-                          size="sm"
                           variant="outline"
-                          className="h-6 text-[10px] px-2"
                           onClick={() => resolveConflict(c.id, "remote")}
                           disabled={busy}
                         >
@@ -1325,8 +1303,7 @@ export default function DocumentsPage() {
                   onKeyDown={(e) => e.key === "Enter" && fetchLocalFiles()}
                 />
                 <Button
-                  size="sm"
-                  className="h-7 text-xs px-3"
+                  variant="primary"
                   onClick={fetchLocalFiles}
                 >
                   Browse
@@ -1373,12 +1350,10 @@ export default function DocumentsPage() {
                   </Badge>
                 </h2>
                 <Button
+                  icon={<RefreshCw />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
                   onClick={fetchShares}
-                >
-                  <RefreshCw className="w-3 h-3" /> Refresh
+                > Refresh
                 </Button>
               </div>
               {readErrors.shares != null ? (
@@ -1414,9 +1389,8 @@ export default function DocumentsPage() {
                             />
                           ) : (
                             <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5 p-0 text-destructive shrink-0 ml-2"
+                              variant="quiet"
+                              className="w-5 shrink-0 ml-2"
                               onClick={() => setDeletingShareId(id)}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -1449,12 +1423,10 @@ export default function DocumentsPage() {
                   </Badge>
                 </h2>
                 <Button
+                  icon={<RefreshCw />}
                   variant="outline"
-                  size="sm"
-                  className="h-7 text-xs px-2 gap-1"
                   onClick={fetchMappings}
-                >
-                  <RefreshCw className="w-3 h-3" /> Refresh
+                > Refresh
                 </Button>
               </div>
               {readErrors.mappings != null ? (
@@ -1490,9 +1462,8 @@ export default function DocumentsPage() {
                             />
                           ) : (
                             <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-5 w-5 p-0 text-destructive shrink-0 ml-2"
+                              variant="quiet"
+                              className="w-5 shrink-0 ml-2"
                               onClick={() => setDeletingMappingId(id)}
                             >
                               <Trash2 className="w-3 h-3" />
@@ -1563,12 +1534,11 @@ function ShareCreateForm({
         spellCheck={false}
       />
       <Button
-        size="sm"
-        className="h-6 text-[10px] px-3"
+        icon={busy && <Loader2 className="animate-spin" />}
+        variant="primary"
         onClick={create}
         disabled={busy}
       >
-        {busy && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
         Create Share
       </Button>
     </div>
@@ -1636,12 +1606,11 @@ function MappingCreateForm({
         />
       </div>
       <Button
-        size="sm"
-        className="h-6 text-[10px] px-3"
+        icon={busy && <Loader2 className="animate-spin" />}
+        variant="primary"
         onClick={create}
         disabled={busy || !localPath}
       >
-        {busy && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
         Create
       </Button>
     </div>

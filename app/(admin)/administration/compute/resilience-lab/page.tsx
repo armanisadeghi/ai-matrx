@@ -852,7 +852,6 @@ export default function ResilienceLabPage() {
                   Expected: {s.expected}
                 </div>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => runOne(s)}
                   disabled={isRunning}
@@ -876,22 +875,20 @@ export default function ResilienceLabPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={fireThreeThenReload}>
+          <Button variant="outline" onClick={fireThreeThenReload}>
             Fire 3 scenarios
           </Button>
-          <Button size="sm" variant="ghost" onClick={recovery.open}>
+          <Button variant="quiet" onClick={recovery.open}>
             Open Recovery Window ({recovery.items.length})
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<Trash2 />}
+            variant="quiet"
             onClick={async () => {
               await recovery.deleteAll();
               toast.success("Cleared all recovery entries");
             }}
-            className="text-destructive hover:text-destructive gap-1.5"
           >
-            <Trash2 className="w-3.5 h-3.5" />
             Clear all
           </Button>
         </CardContent>
@@ -925,11 +922,9 @@ export default function ResilienceLabPage() {
                       <div className="flex items-center justify-between gap-2">
                         <code className="text-xs font-semibold">{s.name}</code>
                         <Button
-                          size="sm"
                           variant="outline"
                           onClick={() => runServer(s)}
                           disabled={isRunning}
-                          className="h-6 px-2 text-[11px]"
                         >
                           {isRunning ? "..." : "Run"}
                         </Button>

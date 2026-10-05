@@ -17,7 +17,7 @@
 
 import { useEffect, useState } from "react";
 import { Loader2, Copy, RefreshCw, AlertTriangle } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { toast } from "../../host/notify";
 import { useAppStore } from "../../store/hooks";
 import { requestPromptPreview } from "./service";
@@ -79,15 +79,13 @@ export function PromptPreviewContent({
           </span>
         </span>
         <Button
+          icon={<RefreshCw
+            className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`}
+          />}
           variant="outline"
-          size="sm"
-          className="h-7 text-xs"
           onClick={() => setNonce((n) => n + 1)}
           disabled={loading}
         >
-          <RefreshCw
-            className={`h-3.5 w-3.5 mr-1 ${loading ? "animate-spin" : ""}`}
-          />
           Refresh
         </Button>
       </div>

@@ -256,6 +256,13 @@ export const CONVERTED = [
     keyShape: /^(prototype-control-class|control-visual-override)\|[^|]+\.tsx$/,
   },
   {
+    // Shrink-only baseline: a baselined key is known debt; anything else is new.
+    id: "page-top",
+    cmd: "pnpm check:page-top:strict",
+    allowKeys: () => json("scripts/page-top/baseline.json").keys ?? [],
+    keyShape: /^(raw-page-header|sentence-under-title)\|[^|]+\.tsx$/,
+  },
+  {
     id: "route-metadata-and-favicons",
     cmd: "pnpm check:route-metadata",
     allowKeys: () => [],

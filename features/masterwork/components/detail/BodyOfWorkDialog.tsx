@@ -449,7 +449,7 @@ export function BodyOfWorkDialog({
             ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
-                size="sm"
+                variant="primary"
                 onClick={() => {
                   reset();
                   onOpenChange(false);
@@ -459,7 +459,6 @@ export function BodyOfWorkDialog({
               </Button>
               {failedPieces.length > 0 ? (
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => void retryFailed()}
                 >
@@ -519,16 +518,14 @@ export function BodyOfWorkDialog({
                         {file.name}
                       </p>
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 shrink-0"
+                        icon={<X />}
+                        variant="quiet"
+                        className="shrink-0"
                         aria-label={`Remove ${file.name}`}
                         onClick={() =>
                           setFiles((prev) => prev.filter((_, i) => i !== index))
                         }
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   ))}
                 </div>
@@ -615,7 +612,6 @@ export function BodyOfWorkDialog({
             </div>
             {!summary && !running && failedPieces.length > 0 ? (
               <Button
-                size="sm"
                 variant="outline"
                 className="mt-1"
                 onClick={() => void retryFailed()}

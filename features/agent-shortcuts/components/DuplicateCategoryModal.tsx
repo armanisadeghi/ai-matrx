@@ -261,13 +261,13 @@ export function DuplicateCategoryModal({
 
   const footer = (
     <>
-      <Button variant="outline" onClick={onClose} disabled={saving} size="sm">
+      <Button variant="outline" onClick={onClose} disabled={saving}>
         Cancel
       </Button>
       <Button
+        variant="primary"
         onClick={handleDuplicate}
         disabled={saving || !category}
-        size="sm"
       >
         {saving ? (
           <>

@@ -124,11 +124,11 @@ export function LiteWindowExamples() {
           right edge or bottom-right corner — nothing you typed moves.
         </p>
         <Button
-          size="sm"
+          icon={<Plus />}
+          variant="primary"
           onClick={() => setAddScopeOpen(true)}
           disabled={!orgId}
         >
-          <Plus className="mr-1.5 h-4 w-4" />
           Add a scope type
         </Button>
         {orgId && (
@@ -164,7 +164,6 @@ export function LiteWindowExamples() {
           workbench raises it back above — one z-order, not two.
         </p>
         <Button
-          size="sm"
           variant="outline"
           onClick={() => setWorkbenchOpen(true)}
         >
@@ -187,8 +186,7 @@ export function LiteWindowExamples() {
                 where it was. The note below is edited in a lightweight window
                 that must never land behind this one.
               </p>
-              <Button size="sm" onClick={() => setNoteWindowOpen(true)}>
-                <Plus className="mr-1.5 h-4 w-4" />
+              <Button icon={<Plus />} variant="primary" onClick={() => setNoteWindowOpen(true)}>
                 Edit the note
               </Button>
               <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-sm text-foreground">
@@ -213,7 +211,6 @@ export function LiteWindowExamples() {
           footer={
             <div className="flex justify-end gap-2">
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => setNoteWindowOpen(false)}
               >

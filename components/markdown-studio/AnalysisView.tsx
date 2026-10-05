@@ -303,10 +303,9 @@ export function AnalysisView({
             </Select>
           </div>
           <Button
-            size="sm"
+            variant="primary"
             onClick={handleRun}
             disabled={isRunning || !runContent.trim()}
-            className="h-8 px-3 text-xs font-medium"
           >
             {isRunning ? (
               <>
@@ -322,24 +321,20 @@ export function AnalysisView({
           </Button>
           {result && (
             <Button
-              size="sm"
+              icon={<Copy />}
               variant="outline"
               onClick={handleCopyReport}
-              className="h-8 px-2.5 text-xs"
             >
-              <Copy className="h-3 w-3 mr-1.5" />
               Copy summary
             </Button>
           )}
           {result && (
             <Button
-              size="sm"
+              icon={<Copy />}
               variant="outline"
               onClick={handleCopyFullReport}
-              className="h-8 px-2.5 text-xs"
               title="XML with every drifting block's contents, the full input and the server address — paste it straight into an agent"
             >
-              <Copy className="h-3 w-3 mr-1.5" />
               Copy full report
             </Button>
           )}

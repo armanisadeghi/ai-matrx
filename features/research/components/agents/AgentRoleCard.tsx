@@ -303,16 +303,16 @@ export function AgentRoleCard({
                   </div>
                 </div>
                 <Button
-                  size="sm"
+                  icon={copying ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <CopyPlus />
+                  )}
+                  variant="primary"
                   onClick={handleCopyUpdate}
                   disabled={copying || isApplying}
-                  className="gap-1.5 shrink-0"
+                  className="shrink-0"
                 >
-                  {copying ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <CopyPlus className="h-3.5 w-3.5" />
-                  )}
                   Copy &amp; Update
                 </Button>
               </div>
@@ -458,14 +458,13 @@ function CurrentOverridePanel({
           </p>
         </div>
         <Button
+          icon={<Trash2 />}
           type="button"
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={onRemove}
           disabled={isApplying}
-          className="h-7 shrink-0 gap-1 rounded-md px-2 text-[11.5px] text-muted-foreground hover:text-destructive"
+          className="shrink-0"
         >
-          <Trash2 className="h-3 w-3" />
           Remove
         </Button>
       </div>

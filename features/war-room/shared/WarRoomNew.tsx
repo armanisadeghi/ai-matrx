@@ -50,7 +50,7 @@ export function WarRoomNew() {
             Couldn&apos;t create the war room
             <ErrorAlchemyMenu />
           </p>
-          <Button onClick={() => router.push("/war-room")}>
+          <Button variant="primary" onClick={() => router.push("/war-room")}>
             Back to war rooms
           </Button>
         </div>

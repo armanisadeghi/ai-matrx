@@ -62,7 +62,7 @@ export default function GoogleConnectDemoPage() {
   const [fresh, setFresh] = useState(false);
   return (
     <div className="flex h-full items-center justify-center gap-3 bg-textured p-6">
-      <Button onClick={() => { setFresh(false); setOpen(true); }}>Open (connected account)</Button>
+      <Button variant="primary" onClick={() => { setFresh(false); setOpen(true); }}>Open (connected account)</Button>
       <Button variant="outline" onClick={() => { setFresh(true); setOpen(true); }}>Open (first connection)</Button>
       <ConnectorConsentShell provider={provider} isOpen={open} onClose={() => setOpen(false)}>
         <LazyGoogleAPIProvider>

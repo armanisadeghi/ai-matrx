@@ -170,25 +170,21 @@ export default function ModelUsageAudit({
         <div className="flex items-center gap-2">
           {totalUsage > 0 && step === "idle" && (
             <Button
+              icon={<ArrowRightLeft />}
               variant="outline"
-              size="sm"
-              className="h-7 px-2 text-xs gap-1"
               onClick={handleOpenReplace}
             >
-              <ArrowRightLeft className="h-3.5 w-3.5" />
               Replace Model
             </Button>
           )}
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs gap-1"
+            icon={<RefreshCcw
+              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+            />}
+            variant="quiet"
             onClick={load}
             disabled={loading}
           >
-            <RefreshCcw
-              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-            />
             Refresh
           </Button>
         </div>
@@ -239,36 +235,31 @@ export default function ModelUsageAudit({
           )}
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 text-xs"
+              variant="quiet"
               onClick={handleCancel}
             >
               Cancel
             </Button>
             <Button
+              icon={replacing ? (
+                <RefreshCcw className="animate-spin" />
+              ) : (
+                <ArrowRightLeft />
+              )}
               variant="outline"
-              size="sm"
-              className="h-7 text-xs gap-1"
               disabled={!replacementId || replacing}
               onClick={handleQuickReplace}
             >
-              {replacing ? (
-                <RefreshCcw className="h-3 w-3 animate-spin" />
-              ) : (
-                <ArrowRightLeft className="h-3 w-3" />
-              )}
               Quick Replace
             </Button>
             <Button
-              size="sm"
-              className="h-7 text-xs gap-1 ml-auto"
+              icon={<Settings />} iconEnd={<ChevronRight />}
+              variant="primary"
+              className="ml-auto"
               disabled={!replacementId}
               onClick={handleProceedToSettings}
             >
-              <Settings className="h-3 w-3" />
               Review Settings
-              <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
         </div>

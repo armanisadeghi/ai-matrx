@@ -85,11 +85,10 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
       <div className="flex flex-wrap items-center gap-2 border-b border-border bg-card/40 px-3 py-2">
         <div className="flex items-center gap-1">
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             disabled={active <= 1}
             onClick={() => setActive((n) => Math.max(1, n - 1))}
-            className="h-6 w-6 p-0"
+            className="w-6"
             aria-label="Previous page"
           >
             <ChevronLeft className="h-3.5 w-3.5" />
@@ -109,11 +108,10 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
             of {merged.length}
           </span>
           <Button
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             disabled={active >= merged.length}
             onClick={() => setActive((n) => Math.min(merged.length, n + 1))}
-            className="h-6 w-6 p-0"
+            className="w-6"
             aria-label="Next page"
           >
             <ChevronRight className="h-3.5 w-3.5" />
@@ -125,21 +123,17 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
           {totalChars.toLocaleString()}
         </span>
         <Button
-          size="sm"
+          icon={<Copy />}
           variant="outline"
-          className="h-7 text-[10px]"
           onClick={() => void navigator.clipboard.writeText(display)}
-        >
-          <Copy className="h-3 w-3 mr-1" /> Copy page
+        > Copy page
         </Button>
         {onJumpToPage ? (
           <Button
-            size="sm"
+            icon={<FileText />}
             variant="outline"
-            className="h-7 text-[10px]"
             onClick={() => onJumpToPage(active)}
-          >
-            <FileText className="h-3 w-3 mr-1" /> Open in viewer
+          > Open in viewer
           </Button>
         ) : null}
       </div>

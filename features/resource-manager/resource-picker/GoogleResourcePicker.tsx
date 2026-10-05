@@ -27,7 +27,7 @@ import {
   type GoogleWorkspaceResourceType,
 } from "@/features/google-workspace/resource-types";
 import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";

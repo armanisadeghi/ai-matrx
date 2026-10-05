@@ -35,6 +35,19 @@ export interface GalleryCard {
   install_door: string;
   /** Present when the read asked `installed_in`: this organization's live install, or null. */
   installed: { install_id: string; state: string; version: number } | null;
+  /** The template's readable address (`spec.id`, unique and stable): /templates/<slug>. Public door only. */
+  slug?: string | null;
+  /** The main table's first rows, for the card's live thumbnail. Public door, asked with `thumb`. */
+  thumb?: GalleryThumb | null;
+}
+
+/** The first rows of a template's main table, as the public door hands them to a gallery card. */
+export interface GalleryThumb {
+  table: string | null;
+  columns: Array<{ key: string; label: string; type: string; colors: Record<string, string> | null }>;
+  rows: Array<Record<string, unknown>>;
+  /** The main table's first non-grid view (kanban, calendar, timeline, gallery), else null. */
+  view: string | null;
 }
 
 export interface GalleryFootprint {

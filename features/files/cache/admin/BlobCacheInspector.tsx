@@ -283,16 +283,15 @@ export function BlobCacheInspector() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            icon={refreshing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            size="sm"
             onClick={() => void refresh()}
             disabled={refreshing}
           >
-            {refreshing ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Refresh
           </Button>
         </div>
@@ -329,16 +328,15 @@ export function BlobCacheInspector() {
         )}
         <div className="flex items-center gap-2 pt-2">
           <Button
+            icon={busyOp === "clear-memory" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
             variant="outline"
-            size="sm"
             onClick={handleClearMemory}
             disabled={!userId || busyOp === "clear-memory"}
           >
-            {busyOp === "clear-memory" ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Clear memory
           </Button>
         </div>
@@ -369,31 +367,29 @@ export function BlobCacheInspector() {
         )}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <Button
+            icon={busyOp === "evict-half" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Layers />
+            )}
             variant="outline"
-            size="sm"
             onClick={handleEvictHalf}
             disabled={
               !userId || !l2 || l2.totalBytes === 0 || busyOp === "evict-half"
             }
           >
-            {busyOp === "evict-half" ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Layers className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Evict to 50%
           </Button>
           <Button
+            icon={busyOp === "clear-idb" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
             variant="outline"
-            size="sm"
             onClick={handleClearIdb}
             disabled={!userId || busyOp === "clear-idb"}
           >
-            {busyOp === "clear-idb" ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Clear L2
           </Button>
         </div>
@@ -408,18 +404,17 @@ export function BlobCacheInspector() {
         <SwStatusRows status={sw} />
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <Button
+            icon={busyOp === "unregister-sw" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
             variant="outline"
-            size="sm"
             onClick={handleUnregisterSw}
             disabled={
               sw.kind !== "registered" || busyOp === "unregister-sw"
             }
           >
-            {busyOp === "unregister-sw" ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-            )}
             Unregister SW
           </Button>
         </div>
@@ -437,16 +432,15 @@ export function BlobCacheInspector() {
           </p>
         </div>
         <Button
-          variant="destructive"
-          size="sm"
+          icon={busyOp === "clear-all" ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Trash2 />
+          )}
+          variant="danger"
           onClick={handleClearAll}
           disabled={!userId || busyOp === "clear-all"}
         >
-          {busyOp === "clear-all" ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-          )}
           Wipe all
         </Button>
       </div>

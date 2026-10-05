@@ -160,8 +160,7 @@ export default function ApiKeysTab() {
   };
 
   const newKeyButton = !formOpen && (
-    <Button size="sm" variant="outline" onClick={openForm}>
-      <Plus className="mr-1 h-3.5 w-3.5" />
+    <Button icon={<Plus />} variant="outline" onClick={openForm}>
       New key
     </Button>
   );
@@ -190,7 +189,6 @@ export default function ApiKeysTab() {
               </code>
               <Button
                 variant="outline"
-                size="sm"
                 aria-label={copied ? "Copied" : "Copy key"}
                 onClick={() => void handleCopy()}
               >
@@ -242,8 +240,7 @@ export default function ApiKeysTab() {
           title="New key"
           action={
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => {
                 setFormOpen(false);
                 setCreateError(null);
@@ -334,7 +331,6 @@ export default function ApiKeysTab() {
               >
                 {active ? (
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => setRevokeTarget(key)}
                   >

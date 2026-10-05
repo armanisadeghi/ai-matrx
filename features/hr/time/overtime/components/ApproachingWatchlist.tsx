@@ -92,14 +92,13 @@ export function ApproachingWatchlist({
 
                   {/* 🚨 The door. One tap, pre-filled with the threshold it is about to cross. */}
                   <Button
+                    icon={<BellRing aria-hidden />}
+                    variant="primary"
                     type="button"
-                    size="sm"
-                    className="min-h-[44px]"
                     onClick={() =>
                       onRaiseRequest({ employmentId: entry.employmentId, thresholdAxes: axes })
                     }
                   >
-                    <BellRing className="mr-1.5 h-4 w-4" aria-hidden />
                     Raise a pre-approval
                   </Button>
                 </div>

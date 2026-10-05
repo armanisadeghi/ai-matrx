@@ -510,27 +510,24 @@ export function DealsPage() {
         </div>
         <div className="flex items-center gap-1.5">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 gap-1 px-2 text-xs"
+            icon={inTrash ? (
+              <Undo2 />
+            ) : (
+              <Trash2 />
+            )}
+            variant="quiet"
             onClick={() =>
               list.setQuery({ view: inTrash ? "active" : "trash" })
             }
           >
-            {inTrash ? (
-              <Undo2 className="h-3.5 w-3.5" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
             {inTrash ? "Back to deals" : "Trash"}
           </Button>
           {!inTrash && (
             <Button
-              size="sm"
-              className="h-7 gap-1 px-2 text-xs"
+              icon={<Plus />}
+              variant="primary"
               onClick={() => setCreateOpen(true)}
             >
-              <Plus className="h-3.5 w-3.5" />
               New deal
             </Button>
           )}
@@ -738,8 +735,7 @@ export function DealsPage() {
                     ? undefined
                     : "Create the first one and work it across the board.",
                   action: !inTrash ? (
-                    <Button size="sm" onClick={() => setCreateOpen(true)}>
-                      <Plus className="mr-1 h-3.5 w-3.5" />
+                    <Button icon={<Plus />} variant="primary" onClick={() => setCreateOpen(true)}>
                       New deal
                     </Button>
                   ) : undefined,

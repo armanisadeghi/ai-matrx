@@ -218,9 +218,20 @@ export function AnnouncementsTableClient() {
           columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <>
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7"
+                icon={<Power
+                  className={
+                    row.is_active
+                      ? "h-3.5 w-3.5 text-emerald-500"
+                      : "h-3.5 w-3.5"
+                  }
+                />} aria-label={pendingWrites.isPending(row.id)
+                    ? row.is_active
+                      ? "Deactivating…"
+                      : "Activating…"
+                    : row.is_active
+                      ? "Deactivate"
+                      : "Activate"}
+                variant="quiet"
                 title={
                   pendingWrites.isPending(row.id)
                     ? row.is_active
@@ -233,24 +244,13 @@ export function AnnouncementsTableClient() {
                 disabled={pendingWrites.isPending(row.id)}
                 aria-busy={pendingWrites.isPending(row.id) || undefined}
                 onClick={() => void toggleActive(row)}
-              >
-                <Power
-                  className={
-                    row.is_active
-                      ? "h-3.5 w-3.5 text-emerald-500"
-                      : "h-3.5 w-3.5"
-                  }
-                />
-              </Button>
+              />
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                icon={<Trash2 />} aria-label="Delete"
+                variant="quiet"
                 title="Delete"
                 onClick={() => void remove(row)}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-              </Button>
+              />
             </>
           ) }]}
           getRowId={(r) => r.id}
@@ -269,7 +269,7 @@ export function AnnouncementsTableClient() {
             actions: (
               <div className="flex items-center gap-2">
                 <Button
-                  size="sm"
+                  icon={<Eye />}
                   variant="outline"
                   disabled={
                     !rows.some(
@@ -284,11 +284,9 @@ export function AnnouncementsTableClient() {
                       ) ?? null,
                     )
                   }
-                >
-                  <Eye className="mr-1.5 h-3.5 w-3.5" /> Preview user experience
+                > Preview user experience
                 </Button>
-                <Button size="sm" onClick={() => setCreateOpen(true)}>
-                  <Plus className="mr-1.5 h-3.5 w-3.5" /> New announcement
+                <Button icon={<Plus />} variant="primary" onClick={() => setCreateOpen(true)}> New announcement
                 </Button>
               </div>
             ),

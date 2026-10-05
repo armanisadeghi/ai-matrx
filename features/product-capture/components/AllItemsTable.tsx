@@ -450,34 +450,31 @@ export function AllItemsTable() {
         columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
           <>
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              icon={<Eye />}
+              variant="quiet"
               aria-label="View item"
               onClick={(e) => {
                 e.stopPropagation();
                 openView(row);
               }}
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
+            />
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
+              icon={<Camera />}
+              variant="quiet"
               aria-label="Capture more photos"
               onClick={(e) => {
                 e.stopPropagation();
                 openCapture(row);
               }}
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
+            />
             {(row.status === "capturing" || row.status === "processed") && (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
+                icon={row.status === "processed" ? (
+                  <RefreshCw />
+                ) : (
+                  <CheckCircle2 />
+                )}
+                variant="quiet"
                 aria-label={
                   row.status === "processed"
                     ? "Reprocess this item"
@@ -487,26 +484,17 @@ export function AllItemsTable() {
                   e.stopPropagation();
                   void markReady(row);
                 }}
-              >
-                {row.status === "processed" ? (
-                  <RefreshCw className="h-4 w-4" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
-              </Button>
+              />
             )}
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground"
+              icon={<Trash2 />}
+              variant="quiet"
               aria-label="Delete item"
               onClick={(e) => {
                 e.stopPropagation();
                 setConfirmDelete(row);
               }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            />
           </>
         ) }]}
         getRowId={(row) => row.id}

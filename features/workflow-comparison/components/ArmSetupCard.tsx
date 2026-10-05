@@ -45,14 +45,12 @@ export function ArmSetupCard({
         />
         {removable && (
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 shrink-0"
+            icon={<X />}
+            variant="quiet"
+            className="shrink-0"
             onClick={onRemove}
             aria-label="Remove arm"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          />
         )}
       </div>
       <WorkflowSelect draft={draft} onChange={onChange} />

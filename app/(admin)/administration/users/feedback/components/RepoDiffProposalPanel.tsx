@@ -27,7 +27,7 @@
 import { useState } from "react";
 import { Check, Copy, FileDiff, GitBranch, Terminal } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 import type { RepoDiffProposal } from "@/types/repo-diff-proposal";
 

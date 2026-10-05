@@ -45,7 +45,7 @@ import {
   Monitor,
   ShieldCheck,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -333,9 +333,8 @@ function ApprovalCard({ code }: { code: string }) {
           <ErrorAlchemyMenu error={error} />
         </p>
         <Button
-          size="sm"
           variant="outline"
-          className="mt-3 h-7 text-xs"
+          className="mt-3"
           onClick={() => router.replace("/connect-computer")}
         >
           Start over
@@ -356,9 +355,8 @@ function ApprovalCard({ code }: { code: string }) {
           page.
         </p>
         <Button
-          size="sm"
           variant="outline"
-          className="mt-3 h-7 text-xs"
+          className="mt-3"
           // The DURABLE devices route (HOME_CONNECTIONS_HREF).
           onClick={() => router.push(HOME_CONNECTIONS_HREF)}
         >
@@ -398,14 +396,12 @@ function ApprovalCard({ code }: { code: string }) {
         servers. You can pause or remove it at any time.
       </p>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Button size="sm" disabled={busy} onClick={() => void approve()}>
-          {busy ? (
-            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-          ) : null}
+        <Button icon={busy ? (
+            <Loader2 className="animate-spin" aria-hidden="true" />
+          ) : null} variant="primary" disabled={busy} onClick={() => void approve()}>
           Connect this computer
         </Button>
         <Button
-          size="sm"
           variant="outline"
           disabled={busy}
           onClick={() => void deny()}

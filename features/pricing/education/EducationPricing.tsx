@@ -196,7 +196,7 @@ export function EducationPricing({
   let premiumAction: ReactNode;
   if (isPremium) {
     premiumAction = (
-      <Button asChild size="lg" className={CTA}>
+      <Button variant="primary" asChild className={CTA}>
         <Link href={STUDY_HOME} data-tap-target>
           Open study tools
           <ArrowRight className="h-3.5 w-3.5" />
@@ -206,22 +206,21 @@ export function EducationPricing({
   } else if (isAuthenticated) {
     premiumAction = (
       <Button
+        icon={checkingOut ? <Loader2 className="animate-spin" /> : null} iconEnd={premium && !checkingOut ? (
+          <ArrowRight />
+        ) : null}
+        variant="primary"
         type="button"
-        size="lg"
         onClick={upgrade}
         disabled={!premium || checkingOut}
         className={CTA}
       >
-        {checkingOut ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         {premium ? `Upgrade to ${premium.productName}` : "Not available yet"}
-        {premium && !checkingOut ? (
-          <ArrowRight className="h-3.5 w-3.5" />
-        ) : null}
       </Button>
     );
   } else {
     premiumAction = (
-      <Button asChild size="lg" className={CTA}>
+      <Button variant="primary" asChild className={CTA}>
         <Link href={loginHref} data-tap-target>
           Sign in to upgrade
           <ArrowRight className="h-3.5 w-3.5" />
@@ -234,7 +233,7 @@ export function EducationPricing({
   // plan: the label's badge says so and the action row stays empty (their one
   // action sits on the Premium card); the subgrid keeps both cards' rows aligned.
   const freeAction = (
-    <Button asChild variant="outline" size="lg" className={CTA}>
+    <Button asChild variant="outline" className={CTA}>
       <Link href={isAuthenticated ? STUDY_HOME : signUpHref} data-tap-target>
         {isAuthenticated ? "Open study tools" : "Start free"}
         <ArrowRight className="h-3.5 w-3.5" />

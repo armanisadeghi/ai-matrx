@@ -567,7 +567,7 @@ export function ShareableRegistryPanel({
           <Badge variant="outline">{registry.length}</Badge>
         </h2>
         <Button
-          size="sm"
+          variant="primary"
           className="ml-auto"
           disabled={resolving}
           onClick={openCreate}
@@ -588,19 +588,17 @@ export function ShareableRegistryPanel({
           columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
             <>
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => openEditInSidePanel(row)}
               >
                 Edit
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
+                icon={<Columns3 />}
+                variant="quiet"
                 title="Link sharing + public columns"
                 onClick={() => openPolicy(row)}
               >
-                <Columns3 className="mr-1 h-3.5 w-3.5" />
                 Link policy
               </Button>
             </>

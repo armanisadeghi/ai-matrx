@@ -718,9 +718,8 @@ export function PlanSitesList({
         cell: (row) => (
           <ItemMenu config={() => buildRowMenu(row)}>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
+              variant="quiet"
+              className="w-7"
               aria-label="Row actions"
               onClick={(event) => event.stopPropagation()}
             >
@@ -979,25 +978,22 @@ export function PlanSitesList({
             actions: (
               <>
                 <Button
-                  size="sm"
-                  className="h-8 gap-1.5 px-2.5 text-xs"
+                  icon={<Plus />}
+                  variant="primary"
                   onClick={() =>
                     // From the plans list, the default intent is a site that
                     // doesn't exist yet — the form still offers both kinds.
                     router.push(`${marketingRoutes.newSite()}?purpose=planned`)
                   }
                 >
-                  <Plus className="h-3.5 w-3.5" />
                   New site
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
+                      icon={<Columns3 />}
                       variant="outline"
-                      size="sm"
-                      className="h-8 gap-1.5 px-2 text-xs"
                     >
-                      <Columns3 className="h-3.5 w-3.5" />
                       Columns
                     </Button>
                   </DropdownMenuTrigger>

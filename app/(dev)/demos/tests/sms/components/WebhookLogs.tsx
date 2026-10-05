@@ -86,7 +86,7 @@ export default function WebhookLogs() {
                 <UntrustedCount value={logs.length} trustworthy={!error || logs.length > 0} label="Webhook events" />)
               </CardDescription>
             </div>
-            <Button onClick={fetchLogs} variant="outline" size="sm" disabled={loading}>
+            <Button onClick={fetchLogs} variant="outline" disabled={loading}>
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (

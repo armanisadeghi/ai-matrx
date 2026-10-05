@@ -20,7 +20,8 @@ import { ListChecks } from "lucide-react";
 import { ArchivedDisclosure, RecordsMount, personActor } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import type { RecordsDataSource, RecordsError } from "@ai-matrx/records";
-import { BasicInput, Button, Skeleton } from "@ai-matrx/design-system";
+import { BasicInput, Skeleton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import { supabase } from "@/utils/supabase/client";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -155,16 +156,16 @@ export function PicklistsIndex({ organizationName, userId, dataSource }: Picklis
                 }}
                 className="h-8 max-w-xs text-base sm:text-sm"
               />
-              <Button size="sm" disabled={busy || name.trim().length === 0} onClick={() => void create()}>
+              <Button variant="primary" disabled={busy || name.trim().length === 0} onClick={() => void create()}>
                 {busy ? "Making it…" : "Create"}
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setCreating(false)} disabled={busy}>
+              <Button variant="quiet" onClick={() => setCreating(false)} disabled={busy}>
                 Cancel
               </Button>
             </>
           ) : (
             <>
-              <Button size="sm" onClick={() => setCreating(true)}>
+              <Button variant="primary" onClick={() => setCreating(true)}>
                 New picklist
               </Button>
               {organizationName ? (
@@ -192,7 +193,7 @@ export function PicklistsIndex({ organizationName, userId, dataSource }: Picklis
               The picklists could not be read, so nothing is listed — this is not an empty list. {state.why}{" "}
               <ErrorAlchemyMenu error={state.why} />
             </p>
-            <Button size="sm" variant="outline" onClick={() => setReread((n) => n + 1)}>
+            <Button variant="outline" onClick={() => setReread((n) => n + 1)}>
               Try again
             </Button>
           </div>

@@ -279,7 +279,7 @@ function ContributionCard({
               />
             </div>
           ) : null}
-          <Button asChild size="sm" variant="outline" className="h-9">
+          <Button asChild variant="outline">
             <Link
               href={`/files/f/${c.fileId}`}
               target="_blank"
@@ -297,9 +297,7 @@ function ContributionCard({
         <div className="mt-3">
           <Button
             asChild
-            size="sm"
-            variant="ghost"
-            className="h-9 px-2 text-xs"
+            variant="quiet"
           >
             <Link
               href={`/chat/${c.conversationId}`}
@@ -397,7 +395,7 @@ export function ExpertRecordPage({
         </p>
         {/* A retry the server has already refused is not offered. */}
         {refusal.retryIsPointless ? null : (
-          <Button size="sm" variant="outline" onClick={() => void load()}>
+          <Button variant="outline" onClick={() => void load()}>
             Try again
           </Button>
         )}
@@ -476,7 +474,7 @@ export function ExpertRecordPage({
                 more — a hands-free interview on the way somewhere, at no cost
                 in time at all. The second control copies the same link so it
                 can be texted to the phone that will actually be in the car. */}
-            <Button asChild size="sm" variant="outline" className="h-9">
+            <Button asChild variant="outline">
               <Link href={`/masterwork/${rulebookId}/drive`}>
                 <Mic className="mr-1 h-3.5 w-3.5" />
                 Interview me while I drive
@@ -484,7 +482,7 @@ export function ExpertRecordPage({
             </Button>
             <DriveLinkButton rulebookId={rulebookId} />
             {variant === "page" ? (
-              <Button asChild size="sm" variant="outline" className="h-9">
+              <Button asChild variant="outline">
                 <Link href={`/masterwork/${rulebookId}`}>
                   Back to the Rulebook
                 </Link>
@@ -513,9 +511,7 @@ export function ExpertRecordPage({
                 </span>
                 <Button
                   asChild
-                  size="sm"
-                  variant="ghost"
-                  className="h-9 px-2 text-xs"
+                  variant="quiet"
                 >
                   <Link
                     href={`/chat/${i.conversationId}`}
@@ -588,7 +584,7 @@ export function ExpertRecordPage({
             You haven&apos;t said anything for this Rulebook yet. The fastest
             way to start is to let us interview you.
           </p>
-          <Button asChild size="sm" className="mt-3 h-9">
+          <Button variant="primary" asChild className="mt-3">
             <Link href={`/masterwork/${rulebookId}?interview=1`}>
               Interview me
             </Link>

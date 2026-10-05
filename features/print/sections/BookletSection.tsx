@@ -50,8 +50,7 @@ export function BookletSection() {
             entry="@ai-matrx/print/booklet"
             blurb="Turn a page run into fold-and-staple sheets. Pure arithmetic plus a 2-up landscape print lane."
             actions={
-                <Button size="sm" onClick={handlePrint}>
-                    <BookOpen className="mr-1 h-3.5 w-3.5" />
+                <Button icon={<BookOpen />} variant="primary" onClick={handlePrint}>
                     Print sample booklet
                 </Button>
             }

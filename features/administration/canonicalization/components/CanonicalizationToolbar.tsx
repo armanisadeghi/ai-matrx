@@ -82,36 +82,32 @@ export function CanonicalizationToolbar({
         {actions}
         {onRefreshAudit ? (
           <Button
-            variant="default"
-            size="sm"
-            className="h-7 text-xs"
+            icon={refreshingAudit ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
+            variant="primary"
             onClick={onRefreshAudit}
             disabled={busy}
             // Runs audit.refresh().
             title="Rebuilds broken-function, dependency and findings snapshots."
           >
-            {refreshingAudit ? (
-              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1.5 h-3 w-3" />
-            )}
             Refresh audit store
           </Button>
         ) : null}
         {onReload ? (
           <Button
+            icon={reloading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            size="sm"
-            className="h-7 text-xs"
             onClick={onReload}
             disabled={busy}
             title="Re-read the current audit snapshot (does not rebuild it)"
           >
-            {reloading ? (
-              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-            ) : (
-              <RefreshCw className="mr-1.5 h-3 w-3" />
-            )}
             Re-fetch
           </Button>
         ) : null}

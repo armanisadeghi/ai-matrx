@@ -37,12 +37,12 @@ export default function PhoneVerification() {
                 </AlertDescription>
               </Alert>
               <Button
-                variant="destructive"
+                icon={enrollment.loading && <Loader2 className="animate-spin" />}
+                variant="danger"
                 onClick={enrollment.disableSms}
                 disabled={enrollment.loading}
                 className="w-full"
               >
-                {enrollment.loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Disable SMS notifications
               </Button>
             </>
@@ -80,6 +80,12 @@ export default function PhoneVerification() {
               </div>
 
               <Button
+                icon={enrollment.loading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Send />
+                )}
+                variant="primary"
                 onClick={enrollment.sendCode}
                 disabled={
                   enrollment.loading ||
@@ -88,11 +94,6 @@ export default function PhoneVerification() {
                 }
                 className="w-full"
               >
-                {enrollment.loading ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="mr-2 h-4 w-4" />
-                )}
                 Send Verification Code
               </Button>
             </>
@@ -118,15 +119,16 @@ export default function PhoneVerification() {
 
               <div className="flex gap-2">
                 <Button
+                  icon={enrollment.loading ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <CheckCircle2 />
+                  )}
+                  variant="primary"
                   onClick={enrollment.verifyCode}
                   disabled={enrollment.loading || enrollment.verificationCode.length !== 6}
                   className="flex-1"
                 >
-                  {enrollment.loading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                  )}
                   Verify Code
                 </Button>
                 <Button onClick={enrollment.reset} variant="outline" disabled={enrollment.loading}>
@@ -136,7 +138,7 @@ export default function PhoneVerification() {
 
               <Button
                 onClick={enrollment.sendCode}
-                variant="ghost"
+                variant="quiet"
                 disabled={enrollment.loading}
                 className="w-full"
               >

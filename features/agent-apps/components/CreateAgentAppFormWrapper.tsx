@@ -316,13 +316,11 @@ export function CreateAgentAppFormWrapper({
       >
         <div className="flex items-center gap-2 shrink-0">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<ChevronRight className="rotate-180" />}
+            variant="quiet"
             onClick={backToGrid}
             disabled={submitting}
-            className="gap-2 text-muted-foreground"
           >
-            <ChevronRight className="w-4 h-4 rotate-180" />
             All options
           </Button>
         </div>

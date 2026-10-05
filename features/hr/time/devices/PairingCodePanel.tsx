@@ -131,9 +131,9 @@ export function PairingCodeDialogBody({
             {issued.code}
           </code>
           <Button
+            icon={<Copy />}
             type="button"
             variant="outline"
-            className="min-h-[44px] gap-2"
             onClick={() => {
               void navigator.clipboard
                 .writeText(issued.code)
@@ -141,7 +141,6 @@ export function PairingCodeDialogBody({
                 .catch(() => toast.error("This browser would not let us copy the code"));
             }}
           >
-            <Copy className="size-4" />
             Copy
           </Button>
         </div>
@@ -150,8 +149,7 @@ export function PairingCodeDialogBody({
           The tablet will wait for you to approve it before anyone can clock in on it.
         </p>
 
-        <Button type="button" onClick={onClose} className="min-h-[44px] w-fit gap-2">
-          <Check className="size-4" />
+        <Button icon={<Check />} variant="primary" type="button" onClick={onClose} className="w-fit">
           Done
         </Button>
       </div>
@@ -207,15 +205,15 @@ export function PairingCodeDialogBody({
         </div>
 
         <Button
+          icon={busy && <Loader2 className="animate-spin" />}
+          variant="primary"
           type="button"
           disabled={busy || deviceName.trim() === "" || locationId === ""}
           onClick={() => void generate()}
-          className="min-h-[44px] gap-2"
         >
-          {busy && <Loader2 className="size-4 animate-spin" />}
           Generate code
         </Button>
-        <Button type="button" variant="ghost" onClick={onClose} className="min-h-[44px]">
+        <Button type="button" variant="quiet" onClick={onClose}>
           Cancel
         </Button>
       </div>

@@ -270,8 +270,7 @@ export function VerifyPanel({
   return (
     <section aria-label="Blind check" className="mx-auto flex w-full max-w-2xl flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
-        <Button size="sm" variant="ghost" className="h-7 gap-1 text-xs" onClick={onExit}>
-          <ArrowLeft className="h-3.5 w-3.5" /> Back to the session
+        <Button icon={<ArrowLeft />} variant="quiet" onClick={onExit}> Back to the session
         </Button>
         {phase === "review" || phase === "done" ? (
           <p className="text-xs text-muted-foreground tabular-nums">
@@ -295,7 +294,7 @@ export function VerifyPanel({
             </p>
           </div>
           {note ? <p className="text-xs text-warning">{note}</p> : null}
-          <Button size="sm" className="self-start gap-1.5" onClick={() => void runCheck()}>
+          <Button variant="primary" className="self-start" onClick={() => void runCheck()}>
             <AGENT_ICON className="h-4 w-4" /> Run the blind check
           </Button>
         </div>
@@ -357,20 +356,16 @@ export function VerifyPanel({
                   {row.decision === "undecided" && phase === "review" ? (
                     <div className="mt-1 flex gap-1.5">
                       <Button
-                        size="sm"
+                        icon={<Check />}
                         variant="outline"
-                        className="h-6 gap-1 text-[11px]"
                         onClick={() => decide(row.ruling.keywordId, "mine_stands")}
-                      >
-                        <Check className="h-3 w-3" /> Mine stands — teach it
+                      > Mine stands — teach it
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 gap-1 text-[11px]"
+                        icon={<X />}
+                        variant="quiet"
                         onClick={() => void concede(row)}
-                      >
-                        <X className="h-3 w-3" /> The checker is right
+                      > The checker is right
                       </Button>
                     </div>
                   ) : (
@@ -394,8 +389,8 @@ export function VerifyPanel({
 
           {phase === "review" ? (
             <Button
-              size="sm"
-              className="mt-1 self-start gap-1.5"
+              variant="primary"
+              className="mt-1 self-start"
               disabled={undecided > 0}
               title={
                 undecided > 0

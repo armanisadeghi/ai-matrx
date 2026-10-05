@@ -245,8 +245,8 @@ export function OpenQuestionsCard({
                       />
                       <div className="flex flex-wrap gap-2">
                         <Button
-                          size="sm"
-                          className="h-7"
+                          icon={<Check />}
+                          variant="primary"
                           disabled={isBusy}
                           onClick={() =>
                             void settle(
@@ -256,13 +256,10 @@ export function OpenQuestionsCard({
                             )
                           }
                         >
-                          <Check className="h-3.5 w-3.5" />
                           Keep both
                         </Button>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7"
+                          variant="quiet"
                           onClick={() => {
                             setKeepingBoth(null);
                             setDraft("");
@@ -329,9 +326,7 @@ export function OpenQuestionsCard({
                           Save my answer
                         </GatedActionButton>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7"
+                          variant="quiet"
                           onClick={() => {
                             setAnswering(null);
                             setDraft("");
@@ -344,8 +339,7 @@ export function OpenQuestionsCard({
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       <Button
-                        size="sm"
-                        className="h-7"
+                        variant="primary"
                         disabled={isBusy}
                         onClick={() => {
                           setAnswering(tension.id);
@@ -356,19 +350,15 @@ export function OpenQuestionsCard({
                         Answer this
                       </Button>
                       <Button
-                        size="sm"
+                        icon={<MessagesSquare />}
                         variant="outline"
-                        className="h-7"
                         disabled={isBusy}
                         onClick={() => onTalkItThrough(seedFor(tension))}
                       >
-                        <MessagesSquare className="h-3.5 w-3.5" />
                         Talk it through
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7"
+                        variant="quiet"
                         disabled={isBusy}
                         onClick={() => {
                           setKeepingBoth(tension.id);
@@ -379,13 +369,11 @@ export function OpenQuestionsCard({
                         Both are right — keep both
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 text-muted-foreground"
+                        icon={<X />}
+                        variant="quiet"
                         disabled={isBusy}
                         onClick={() => void settle(tension, "dismissed")}
                       >
-                        <X className="h-3.5 w-3.5" />
                         Not a problem
                       </Button>
                     </div>

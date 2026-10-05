@@ -67,14 +67,12 @@ function PreviewContent({
                     </div>
                 </div>
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0"
+                    icon={<Copy />} aria-label="Copy content"
+                    variant="quiet"
+                    className="flex-shrink-0"
                     onClick={() => onCopyContent(template.content ?? "")}
                     title="Copy content"
-                >
-                    <Copy className="w-3.5 h-3.5" />
-                </Button>
+                />
             </div>
 
             {/* Content area */}
@@ -88,13 +86,14 @@ function PreviewContent({
             {canEdit && (
                 <div className="flex-shrink-0 px-4 pb-4 pt-2 border-t border-border pb-safe">
                     <Button
+                        icon={<Pencil />}
+                        variant="primary"
                         className="w-full"
                         onClick={() => {
                             onClose();
                             onEdit(template);
                         }}
                     >
-                        <Pencil className="w-4 h-4 mr-2" />
                         Edit
                     </Button>
                 </div>

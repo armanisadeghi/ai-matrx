@@ -243,14 +243,12 @@ export function VaultCreateDialog({
           <CredenzaTitle className="flex items-center gap-2">
             {step.kind !== "pick" && !assigned && (
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
+                icon={<ArrowLeft />}
+                type="submit"
+                variant="quiet"
                 onClick={() => setStep({ kind: "pick" })}
                 aria-label="Back to catalog"
-              >
-                <ArrowLeft className="h-4 w-4" />
-              </Button>
+              />
             )}
             {assigned
               ? "Created for someone"
@@ -409,8 +407,7 @@ function RecipientPanel({
           <div className="grid gap-1.5 sm:grid-cols-2">
             <Button
               type="button"
-              size="sm"
-              variant={passwordMode === "provided" ? "default" : "outline"}
+              variant={passwordMode === "provided" ? "primary" : "outline"}
               onClick={() => onPasswordModeChange("provided")}
               aria-pressed={passwordMode === "provided"}
             >
@@ -418,8 +415,7 @@ function RecipientPanel({
             </Button>
             <Button
               type="button"
-              size="sm"
-              variant={passwordMode === "generate" ? "default" : "outline"}
+              variant={passwordMode === "generate" ? "primary" : "outline"}
               onClick={() => onPasswordModeChange("generate")}
               aria-pressed={passwordMode === "generate"}
             >
@@ -509,11 +505,10 @@ function AssignConfirmation({
       )}
 
       <div className="flex justify-end gap-1.5">
-        <Button variant="outline" size="sm" onClick={onAnother}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button icon={<Plus />} type="submit" variant="outline" onClick={onAnother}>
           Create another
         </Button>
-        <Button size="sm" onClick={onDone}>
+        <Button type="submit" variant="primary" onClick={onDone}>
           Done
         </Button>
       </div>
@@ -617,14 +612,13 @@ function DefinitionPicker({
             </p>
           ) : (
             <Button
+              iconEnd={<ChevronDown />}
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               className="w-full"
               onClick={() => setShowCatalog(true)}
             >
               Browse all {definitions.length} credential types
-              <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           )}
         </>
@@ -642,8 +636,7 @@ function DefinitionPicker({
                 aria-label="Search credential types"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={onCustom}>
-              <Wrench className="mr-2 h-4 w-4" />
+            <Button icon={<Wrench />} type="submit" variant="outline" onClick={onCustom}>
               Custom
             </Button>
           </div>
@@ -1411,10 +1404,10 @@ function DefinitionForm({
                 />
                 {loginUrls.length > 1 && (
                   <Button
+                    icon={<Trash2 className="text-destructive" />}
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 shrink-0"
+                    variant="quiet"
+                    className="shrink-0"
                     onClick={() => {
                       setLoginUrls((current) =>
                         current.filter((_, i) => i !== index),
@@ -1422,9 +1415,7 @@ function DefinitionForm({
                       setDestinationFeedback({});
                     }}
                     aria-label={`Remove login URL ${index + 1}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                  />
                 )}
               </div>
               {destinationFeedback[index] && (
@@ -1453,13 +1444,11 @@ function DefinitionForm({
             </div>
           ))}
           <Button
+            icon={<Plus />}
             type="button"
             variant="outline"
-            size="sm"
-            className="h-7"
             onClick={() => setLoginUrls((current) => [...current, ""])}
           >
-            <Plus className="mr-1.5 h-3 w-3" />
             Add URL
           </Button>
 
@@ -1591,30 +1580,28 @@ function DefinitionForm({
           <div className="flex flex-wrap gap-2">
             {!showRecoveryCodes && (
               <Button
+                icon={<Plus />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setShowRecoveryCodes(true)}
               >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Recovery codes
               </Button>
             )}
             {!showSecureNotes && (
               <Button
+                icon={<Plus />}
                 type="button"
                 variant="outline"
-                size="sm"
                 onClick={() => setShowSecureNotes(true)}
               >
-                <Plus className="mr-1.5 h-3.5 w-3.5" />
                 Secure note
               </Button>
             )}
             <Button
+              icon={<Plus />}
               type="button"
               variant="outline"
-              size="sm"
               onClick={() =>
                 setSupplementalAttachments((current) => [
                   ...current,
@@ -1622,7 +1609,6 @@ function DefinitionForm({
                 ])
               }
             >
-              <Plus className="mr-1.5 h-3.5 w-3.5" />
               Protected file
             </Button>
           </div>
@@ -1635,8 +1621,7 @@ function DefinitionForm({
                 </Label>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => {
                     setRecoveryCodes("");
                     setShowRecoveryCodes(false);
@@ -1674,8 +1659,7 @@ function DefinitionForm({
                 </Label>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => {
                     setSecureNotes("");
                     setShowSecureNotes(false);
@@ -1706,8 +1690,7 @@ function DefinitionForm({
                 </p>
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() =>
                     setSupplementalAttachments((current) =>
                       current.filter(
@@ -1859,10 +1842,13 @@ function DefinitionForm({
                     />
                     {(draft.def.handling ?? "revealable") !== "visible" && (
                       <Button
+                        icon={shownFieldKeys.has(draft.def.field_key) ? (
+                          <EyeOff />
+                        ) : (
+                          <Eye />
+                        )}
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="h-9"
                         onClick={() =>
                           setShownFieldKeys((current) => {
                             const next = new Set(current);
@@ -1876,11 +1862,6 @@ function DefinitionForm({
                         }
                         aria-label={`${shownFieldKeys.has(draft.def.field_key) ? "Hide" : "Show"} ${draft.def.label}`}
                       >
-                        {shownFieldKeys.has(draft.def.field_key) ? (
-                          <EyeOff className="mr-1.5 h-4 w-4" />
-                        ) : (
-                          <Eye className="mr-1.5 h-4 w-4" />
-                        )}
                         {shownFieldKeys.has(draft.def.field_key)
                           ? "Hide"
                           : "Show"}
@@ -2006,14 +1987,13 @@ function DefinitionForm({
         <p className="text-xs text-muted-foreground">{problems[0]} <ErrorAlchemyMenu /></p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" size="sm" disabled={busy || problems.length > 0}>
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Button icon={busy ? (
+            <Loader2 className="animate-spin" />
           ) : assigning ? (
-            <UserPlus className="mr-2 h-4 w-4" />
+            <UserPlus />
           ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
+            <Plus />
+          )} variant="primary" type="submit" disabled={busy || problems.length > 0}>
           {assigning ? "Create for recipient" : "Save credential"}
         </Button>
       </div>
@@ -2329,19 +2309,16 @@ function CustomBuilder({
                 </label>
                 {fields.length > 1 && (
                   <Button
+                    icon={<Trash2 className="text-destructive" />}
                     type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
+                    variant="quiet"
                     onClick={() =>
                       setFields((current) =>
                         current.filter((_, i) => i !== index),
                       )
                     }
                     aria-label="Remove field"
-                  >
-                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                  </Button>
+                  />
                 )}
               </div>
             </div>
@@ -2351,24 +2328,22 @@ function CustomBuilder({
 
       <div className="flex items-center justify-between">
         <Button
+          icon={<Plus />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={() =>
             setFields((current) => [...current, { ...EMPTY_CUSTOM_FIELD }])
           }
         >
-          <Plus className="mr-2 h-4 w-4" />
           Add field
         </Button>
-        <Button type="submit" size="sm" disabled={busy || !valid}>
-          {busy ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <Button icon={busy ? (
+            <Loader2 className="animate-spin" />
           ) : assigning ? (
-            <UserPlus className="mr-2 h-4 w-4" />
+            <UserPlus />
           ) : (
-            <Plus className="mr-2 h-4 w-4" />
-          )}
+            <Plus />
+          )} variant="primary" type="submit" disabled={busy || !valid}>
           {assigning ? "Create for recipient" : "Save credential"}
         </Button>
       </div>

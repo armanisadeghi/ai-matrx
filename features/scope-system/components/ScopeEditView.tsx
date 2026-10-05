@@ -201,7 +201,7 @@ export function ScopeEditView({
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild variant="outline">
               <Link href={scopeContextItemsHref(orgSlugOrId, scopeType, scope)}>
                 <ListChecks className="h-3.5 w-3.5 mr-1.5" />
                 Context items
@@ -257,13 +257,13 @@ export function ScopeEditView({
               </div>
               <div className="flex justify-end">
                 <Button
+                  icon={savingBasics && (
+                    <Loader2 className="animate-spin" />
+                  )}
+                  variant="primary"
                   type="submit"
                   disabled={savingBasics || !name.trim()}
-                  size="sm"
                 >
-                  {savingBasics && (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  )}
                   Save
                 </Button>
               </div>
@@ -295,17 +295,17 @@ export function ScopeEditView({
                 </p>
               </div>
               <Button
+                icon={deleting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Trash2 />
+                )}
+                type="submit"
                 variant="outline"
-                size="sm"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 shrink-0"
+                className="shrink-0"
               >
-                {deleting ? (
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                )}
                 Move to Trash
               </Button>
             </div>

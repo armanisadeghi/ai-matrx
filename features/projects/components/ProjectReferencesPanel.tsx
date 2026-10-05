@@ -247,17 +247,15 @@ export function ProjectReferencesPanel({
           )}
         </div>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7 flex-shrink-0"
+          icon={<RefreshCw
+            className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+          />} aria-label="Refresh"
+          variant="quiet"
+          className="flex-shrink-0"
           onClick={refresh}
           disabled={loading}
           title="Refresh"
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-          />
-        </Button>
+        />
       </div>
 
       {/* Content */}
@@ -284,9 +282,8 @@ export function ProjectReferencesPanel({
 
           {emptyCount > 0 && (
             <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs text-muted-foreground h-7 gap-1.5"
+              variant="quiet"
+              className="w-full"
               onClick={() => setShowEmpty((v) => !v)}
             >
               {showEmpty ? (

@@ -285,7 +285,7 @@ export function MediaResearchDialog({
                 <p className="mb-1 font-medium text-foreground">Split by beat — run one angle at a time:</p>
                 <div className="flex flex-wrap gap-1.5">
                   {splitAngles.map((choice) => (
-                    <Button key={choice.angle} type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => chooseSplit(choice)}>
+                    <Button key={choice.angle} type="button" variant="outline" onClick={() => chooseSplit(choice)}>
                       {choice.angle} ({choice.wanted_good_fits})
                     </Button>
                   ))}
@@ -295,8 +295,7 @@ export function MediaResearchDialog({
 
             {!preview && (
               <div className="flex justify-end">
-                <Button type="button" size="sm" className="h-8 gap-1 text-xs" disabled={previewing} onClick={() => void runPreview()} data-testid="media-research-preview-button">
-                  {previewing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Search className="h-3.5 w-3.5" />}
+                <Button icon={previewing ? <Loader2 className="animate-spin" /> : <Search />} variant="primary" type="button" disabled={previewing} onClick={() => void runPreview()} data-testid="media-research-preview-button">
                   See size and cost
                 </Button>
               </div>
@@ -339,10 +338,10 @@ export function MediaResearchDialog({
           <>
             <MediaResearchResults result={result} />
             <div className="flex justify-end gap-2">
-              <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={() => { setResult(null); setPreview(null); }}>
+              <Button type="button" variant="outline" onClick={() => { setResult(null); setPreview(null); }}>
                 New angle
               </Button>
-              <Button type="button" size="sm" className="h-8 text-xs" onClick={() => onOpenChange(false)}>
+              <Button variant="primary" type="button" onClick={() => onOpenChange(false)}>
                 Done
               </Button>
             </div>

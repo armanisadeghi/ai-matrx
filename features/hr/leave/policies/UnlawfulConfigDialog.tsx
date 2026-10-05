@@ -118,8 +118,7 @@ function WhyDisclosure({ finding }: { finding: LeaveConfigViolation }) {
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
       <CollapsibleTrigger asChild>
-        <Button type="button" variant="ghost" size="sm" className="h-8 px-2 text-xs">
-          <Info className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Info />} type="button" variant="quiet">
           {open ? "Hide the rule" : "Why?"}
         </Button>
       </CollapsibleTrigger>
@@ -220,11 +219,10 @@ function FindingBlock({
       <div className="flex flex-wrap items-center gap-2">
         {onTakeFix && finding.fix?.label ? (
           <Button
+            variant="primary"
             type="button"
-            size="sm"
             disabled={busy}
             onClick={() => onTakeFix(finding)}
-            className="min-h-11 sm:min-h-9"
           >
             {finding.fix.label}
           </Button>
@@ -393,7 +391,6 @@ export function UnlawfulConfigDialog({
             variant="outline"
             disabled={busy}
             onClick={() => onOpenChange(false)}
-            className="min-h-11 sm:min-h-9"
           >
             Back to the form
           </Button>
@@ -404,10 +401,10 @@ export function UnlawfulConfigDialog({
           */}
           {isWarningsOnly && refusal.saveAnyway ? (
             <Button
+              variant="primary"
               type="button"
               disabled={busy}
               onClick={onSaveAnyway}
-              className="min-h-11 sm:min-h-9"
             >
               Save anyway
             </Button>

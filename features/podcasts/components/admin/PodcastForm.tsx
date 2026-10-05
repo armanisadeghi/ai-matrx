@@ -263,7 +263,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
       </div>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={isSaving} className="flex-1">
+        <Button variant="primary" type="submit" disabled={isSaving} className="flex-1">
           {isSaving ? "Saving…" : isNew ? "Create Show" : "Save Changes"}
         </Button>
         <Button
@@ -691,7 +691,7 @@ export function EpisodeForm({
       </div>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={isSaving} className="flex-1">
+        <Button variant="primary" type="submit" disabled={isSaving} className="flex-1">
           {isSaving ? "Saving…" : isNew ? "Create Episode" : "Save Changes"}
         </Button>
         <Button

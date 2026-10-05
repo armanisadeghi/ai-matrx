@@ -129,7 +129,7 @@ export function PdfWorkbench({
             </p>
           ) : null}
         </div>
-        <Button onClick={() => onRun()} disabled={disabled} size="sm">
+        <Button variant="primary" onClick={() => onRun()} disabled={disabled}>
           {running ? (
             <>
               <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> Running
@@ -151,12 +151,10 @@ export function PdfWorkbench({
             </div>
             {source.payload ? (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<RotateCcw />}
+                variant="quiet"
                 onClick={resetSource}
-                className="h-6 px-2 text-xs"
-              >
-                <RotateCcw className="h-3 w-3 mr-1" /> Change
+              > Change
               </Button>
             ) : null}
           </div>

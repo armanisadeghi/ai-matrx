@@ -223,45 +223,36 @@ function InjuryTableRow({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<Copy />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  variant="quiet"
                   onClick={handleCopy}
                   aria-label="Copy row"
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="top">Copy row</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<Pencil />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                  variant="quiet"
                   onClick={onEdit}
                   aria-label="Edit injury"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="top">Edit injury</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
+                  icon={<Trash2 />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                  variant="quiet"
                   onClick={onDelete}
                   aria-label="Delete injury"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent side="top">Delete injury</TooltipContent>
             </Tooltip>

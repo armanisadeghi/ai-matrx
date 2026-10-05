@@ -52,9 +52,8 @@ export function ResourcePickerButton({
 
   const trigger = (
     <Button
-      variant="ghost"
-      size="sm"
-      className="h-7 w-7 p-0 text-muted-foreground/70 hover:text-foreground"
+      variant="quiet"
+      className="w-7"
       tabIndex={-1}
       title="Add resource"
       onClick={useWindowMode ? () => setIsOpen(true) : undefined}

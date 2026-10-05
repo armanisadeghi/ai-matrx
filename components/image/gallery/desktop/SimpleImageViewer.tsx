@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipTrigger,
@@ -248,15 +249,15 @@ export function SimpleImageViewer({
             </AnimatePresence>
           </div>
 
-          <Button
+          <SurfaceButton
             className="absolute top-2 right-2 z-10"
             variant="ghost"
             size="icon"
             onClick={onClose}
           >
             <X className="h-4 w-4" />
-          </Button>
-          <Button
+          </SurfaceButton>
+          <SurfaceButton
             className="absolute top-2 right-10 z-10"
             variant="ghost"
             size="icon"
@@ -267,29 +268,29 @@ export function SimpleImageViewer({
             ) : (
               <Maximize2 className="h-4 w-4" />
             )}
-          </Button>
+          </SurfaceButton>
           {isFullScreen && (
             <>
-              <Button
+              <SurfaceButton
                 className="absolute bottom-2 right-10 z-10"
                 variant="ghost"
                 size="icon"
                 onClick={() => handleZoom(true)}
               >
                 <ZoomIn className="h-4 w-4" />
-              </Button>
-              <Button
+              </SurfaceButton>
+              <SurfaceButton
                 className="absolute bottom-2 right-2 z-10"
                 variant="ghost"
                 size="icon"
                 onClick={() => handleZoom(false)}
               >
                 <ZoomOut className="h-4 w-4" />
-              </Button>
+              </SurfaceButton>
             </>
           )}
         </div>
-        <Button
+        <SurfaceButton
           className="absolute left-2 top-1/2 transform -translate-y-1/2 z-10 opacity-75 hover:opacity-100 transition-opacity"
           variant="secondary"
           size="icon"
@@ -299,8 +300,8 @@ export function SimpleImageViewer({
           }}
         >
           <ChevronLeft className="h-6 w-6" />
-        </Button>
-        <Button
+        </SurfaceButton>
+        <SurfaceButton
           className="absolute right-2 top-1/2 transform -translate-y-1/2 z-10 opacity-75 hover:opacity-100 transition-opacity"
           variant="secondary"
           size="icon"
@@ -310,7 +311,7 @@ export function SimpleImageViewer({
           }}
         >
           <ChevronRight className="h-6 w-6" />
-        </Button>
+        </SurfaceButton>
         {!isFullScreen && (
           <>
             <div className="p-4 bg-card/80 backdrop-blur-sm text-card-foreground">
@@ -322,42 +323,36 @@ export function SimpleImageViewer({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
+                      icon={<Download />} aria-label="Download"
                       variant="outline"
-                      size="icon"
                       onClick={() => onDownload(photos[imageIndex])}
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+                    />
                   </TooltipTrigger>
                   <TooltipContent>Download</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => onFavorite(photos[imageIndex])}
-                    >
-                      <Heart
+                      icon={<Heart
                         className={`h-4 w-4 ${isFavorite(photos[imageIndex]) ? "fill-current text-red-500" : ""}`}
-                      />
-                    </Button>
+                      />} aria-label="Favorite"
+                      variant="outline"
+                      onClick={() => onFavorite(photos[imageIndex])}
+                    />
                   </TooltipTrigger>
                   <TooltipContent>Favorite</TooltipContent>
                 </Tooltip>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => handleShare(photos[imageIndex])}
-                    >
-                      {isSharing ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                      icon={isSharing ? (
+                        <Check className="text-green-500" />
                       ) : (
-                        <Share2 className="h-4 w-4" />
-                      )}
-                    </Button>
+                        <Share2 />
+                      )} aria-label={isSharing ? "Copied!" : "Copy Link"}
+                      variant="outline"
+                      onClick={() => handleShare(photos[imageIndex])}
+                    />
                   </TooltipTrigger>
                   <TooltipContent>
                     {isSharing ? "Copied!" : "Copy Link"}

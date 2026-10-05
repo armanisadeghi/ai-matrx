@@ -209,8 +209,7 @@ export default function KindExampleManager({
             Add as many alternates as you like.
           </p>
         </div>
-        <Button type="button" size="sm" onClick={() => setDraft(exampleDraft())}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" /> Add example
+        <Button icon={<Plus />} variant="primary" type="button" onClick={() => setDraft(exampleDraft())}> Add example
         </Button>
       </div>
 
@@ -261,38 +260,33 @@ export default function KindExampleManager({
               </div>
               {!row.isCanonical && (
                 <Button
+                  icon={<Crown />}
                   type="button"
-                  size="sm"
-                  variant="ghost"
+                  variant="quiet"
                   disabled={pendingExampleId === row.id}
                   onClick={() => void makeCanonical(row)}
-                >
-                  <Crown className="mr-1.5 h-3.5 w-3.5" /> Make canonical
+                > Make canonical
                 </Button>
               )}
               <Button
+                icon={<Pencil />}
                 type="button"
-                size="icon"
-                variant="ghost"
+                variant="quiet"
                 aria-label={`Edit ${row.label ?? "example"}`}
                 onClick={() => {
                   setExampleError(null);
                   setDraft(exampleDraft(row));
                 }}
-              >
-                <Pencil className="h-3.5 w-3.5" />
-              </Button>
+              />
               {!row.isCanonical && (
                 <Button
+                  icon={<Trash2 className="text-destructive" />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
+                  variant="quiet"
                   aria-label={`Delete ${row.label ?? "example"}`}
                   disabled={pendingExampleId === row.id}
                   onClick={() => void deleteExample(row)}
-                >
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
+                />
               )}
             </div>
           ))}
@@ -307,8 +301,7 @@ export default function KindExampleManager({
             </h3>
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => setDraft(null)}
             >
               Cancel
@@ -373,15 +366,16 @@ export default function KindExampleManager({
           )}
           <div className="flex justify-end">
             <Button
+              icon={exampleSaving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               type="button"
               disabled={exampleSaving}
               onClick={() => void saveExample()}
             >
-              {exampleSaving ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Save className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Save example
             </Button>
           </div>

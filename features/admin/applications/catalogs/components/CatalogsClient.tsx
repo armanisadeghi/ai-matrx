@@ -392,7 +392,6 @@ export function CatalogsClient({
               </span>
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={() => setView({ mode: "kind", kind: view.kind })}
               >
@@ -561,11 +560,11 @@ export function CatalogsClient({
               ),
               actions: (
                 <Button
+                  icon={<Link2 />}
+                  variant="primary"
                   type="button"
-                  size="sm"
                   onClick={() => openAddFromLink(null)}
-                >
-                  <Link2 className="mr-1.5 h-4 w-4" /> Add from link
+                > Add from link
                 </Button>
               ),
             }}

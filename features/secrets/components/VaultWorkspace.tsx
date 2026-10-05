@@ -644,13 +644,12 @@ export function VaultWorkspace({
                 )}
                 <VaultSortControl sort={sort} onSortChange={setSort} />
                 <Button
-                  variant={favoritesOnly ? "secondary" : "outline"}
-                  size="sm"
-                  className="h-8 shrink-0"
+                  icon={<Star />}
+                  variant={favoritesOnly ? "outline" : "outline"}
+                  className="shrink-0"
                   onClick={() => setFavoritesOnly((value) => !value)}
                   aria-pressed={favoritesOnly}
-                >
-                  <Star className="mr-1 h-3.5 w-3.5" /> Favorites
+                > Favorites
                 </Button>
               </div>
 
@@ -682,12 +681,12 @@ export function VaultWorkspace({
                 />
                 {canCreate && (
                   <Button
-                    size="sm"
-                    className="h-8 shrink-0 rounded-full px-3"
+                    icon={<Plus />}
+                    variant="primary"
+                    className="shrink-0"
                     onClick={() => setCreateOpen(true)}
                     disabled={vault.busy}
                   >
-                    <Plus className="mr-1.5 h-4 w-4" />
                     <span className="hidden sm:inline">New credential</span>
                     <span className="sm:hidden">New</span>
                   </Button>
@@ -711,46 +710,38 @@ export function VaultWorkspace({
                   <div className="flex min-w-0 flex-wrap items-center gap-1">
                     {canExport && (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
+                        icon={<ShieldCheck />}
+                        variant="quiet"
                         onClick={() => setBackupOpen(true)}
                         disabled={vault.busy || vault.loading}
                       >
-                        <ShieldCheck className="mr-1.5 h-3.5 w-3.5" />
                         Backup & restore
                       </Button>
                     )}
                     {canExport && (
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 px-2 text-xs"
+                        icon={<Download />}
+                        variant="quiet"
                         onClick={() => setExportOpen(true)}
                         disabled={vault.busy || vault.loading}
                       >
-                        <Download className="mr-1.5 h-3.5 w-3.5" />
                         Export selected logins
                       </Button>
                     )}
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
+                      icon={<Upload />}
+                      variant="quiet"
                       onClick={() => setImportOpen(true)}
                       disabled={vault.busy}
                     >
-                      <Upload className="mr-1.5 h-3.5 w-3.5" />
                       Import .env
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs"
+                      icon={<Upload />}
+                      variant="quiet"
                       onClick={() => setCsvImportOpen(true)}
                       disabled={vault.busy}
                     >
-                      <Upload className="mr-1.5 h-3.5 w-3.5" />
                       Import passwords
                     </Button>
                   </div>
@@ -1078,13 +1069,12 @@ export function VaultWorkspace({
         )}
         <VaultSortControl sort={sort} onSortChange={setSort} />
         <Button
-          variant={favoritesOnly ? "secondary" : "outline"}
-          size="sm"
-          className="h-9 shrink-0"
+          icon={<Star />}
+          variant={favoritesOnly ? "outline" : "outline"}
+          className="shrink-0"
           onClick={() => setFavoritesOnly((value) => !value)}
           aria-pressed={favoritesOnly}
         >
-          <Star className="mr-1.5 h-4 w-4" />
           Favorites
         </Button>
 
@@ -1092,55 +1082,51 @@ export function VaultWorkspace({
           <>
             {canExport && (
               <Button
+                icon={<ShieldCheck />}
                 variant="outline"
-                size="sm"
-                className="h-9 shrink-0"
+                className="shrink-0"
                 onClick={() => setBackupOpen(true)}
                 disabled={vault.busy || vault.loading}
               >
-                <ShieldCheck className="mr-1.5 h-4 w-4" />
                 Backup & restore
               </Button>
             )}
             {canExport && (
               <Button
+                icon={<Download />}
                 variant="outline"
-                size="sm"
-                className="h-9 shrink-0"
+                className="shrink-0"
                 onClick={() => setExportOpen(true)}
                 disabled={vault.busy || vault.loading}
               >
-                <Download className="mr-1.5 h-4 w-4" />
                 Export selected logins
               </Button>
             )}
             <Button
+              icon={<Upload />}
               variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
+              className="shrink-0"
               onClick={() => setImportOpen(true)}
               disabled={vault.busy}
             >
-              <Upload className="mr-1.5 h-4 w-4" />
               Import .env
             </Button>
             <Button
+              icon={<Upload />}
               variant="outline"
-              size="sm"
-              className="h-9 shrink-0"
+              className="shrink-0"
               onClick={() => setCsvImportOpen(true)}
               disabled={vault.busy}
             >
-              <Upload className="mr-1.5 h-4 w-4" />
               Import passwords
             </Button>
             <Button
-              size="sm"
-              className="h-9 shrink-0"
+              icon={<Plus />}
+              variant="primary"
+              className="shrink-0"
               onClick={() => setCreateOpen(true)}
               disabled={vault.busy}
             >
-              <Plus className="mr-1.5 h-4 w-4" />
               New credential
             </Button>
           </>
@@ -1732,7 +1718,7 @@ function VaultItemStateUnavailable({
   return (
     <div className="m-3 flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
       <span>{error ?? "Favorites are unavailable. Retry."}</span>
-      <Button type="button" size="sm" variant="outline" onClick={onRetry}>
+      <Button type="button" variant="outline" onClick={onRetry}>
         Retry
       </Button>
     </div>
@@ -1782,7 +1768,6 @@ function VaultEmptyState({
         </p>
         <Button
           variant="outline"
-          size="sm"
           className="mt-3"
           onClick={onClearFilters}
         >
@@ -1808,8 +1793,7 @@ function VaultEmptyState({
             : "An organization admin can add shared credentials here."}
       </p>
       {canCreate && !isShared && (
-        <Button size="sm" className="mt-3.5" onClick={onCreate}>
-          <Plus className="mr-1.5 h-4 w-4" />
+        <Button icon={<Plus />} variant="primary" className="mt-3.5" onClick={onCreate}>
           Add your first credential
         </Button>
       )}

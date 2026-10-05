@@ -46,7 +46,7 @@ export function CreateSharpView() {
           The podcast studio turns any idea, document, or note into a fully
           produced two-host episode — with cover art, video, and audio.
         </p>
-        <Button asChild className="gap-2">
+        <Button variant="primary" asChild>
           <Link href="/login?next=/podcast/studio/create-sharp">
             <LogIn className="h-4 w-4" />
             Sign in

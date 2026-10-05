@@ -451,12 +451,11 @@ export function RunTheBench({
   return (
     <>
       <Button
+        icon={<FlaskConical />}
         variant="outline"
-        size="sm"
         className={className}
         onClick={() => setOpen(true)}
       >
-        <FlaskConical className="mr-1 h-3.5 w-3.5" />
         Run the Bench
       </Button>
       <MasterworkDictationOrigin

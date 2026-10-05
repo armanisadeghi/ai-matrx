@@ -123,16 +123,12 @@ function InlineCapabilitiesEditor({
         <div className="flex gap-1">
           <Button
             variant="outline"
-            size="sm"
-            className="h-5 px-1.5 text-[10px]"
             onClick={() => setAll(ALL_CAPABILITY_KEYS, true)}
           >
             All On
           </Button>
           <Button
             variant="outline"
-            size="sm"
-            className="h-5 px-1.5 text-[10px]"
             onClick={() => setAll(ALL_CAPABILITY_KEYS, false)}
           >
             All Off
@@ -161,16 +157,15 @@ function InlineCapabilitiesEditor({
       ))}
       <div className="flex items-center gap-2 border-t pt-1">
         <Button
-          size="sm"
-          className="h-6 gap-1 px-2 text-[11px]"
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           onClick={() => void handleSave()}
           disabled={saving}
         >
-          {saving ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Save className="h-3 w-3" />
-          )}
           Save capabilities
         </Button>
         {error && <span className="text-[10px] text-destructive">{error} <ErrorAlchemyMenu error={error} /></span>}
@@ -367,9 +362,7 @@ export default function CapabilitiesAuditTab({
                 </span>
               </span>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
+                variant="quiet"
                 onClick={() => setShowPassingModels((value) => !value)}
               >
                 {showPassingModels ? "Hide passing" : "Show all"}

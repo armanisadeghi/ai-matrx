@@ -1266,13 +1266,11 @@ export function ValueWorkbench() {
                       provisional
                     </span>
                     <Button
+                      icon={<BookOpenText />}
                       type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 px-1.5 text-[11px] max-lg:h-11"
+                      variant="quiet"
                       onClick={() => setMeaningOpen((open) => !open)}
                     >
-                      <BookOpenText className="h-3.5 w-3.5" />
                       How value works
                     </Button>
                     {bandFilter ? (
@@ -1470,9 +1468,9 @@ export function ValueWorkbench() {
                         actions: (_selected, ids) => (
                           <>
                             <Button
+                              icon={<Tag />}
+                              variant="primary"
                               type="button"
-                              size="sm"
-                              className="h-7 gap-1 px-2 text-xs"
                               disabled={ids.length === 0 || catalog.isLoading}
                               onClick={() =>
                                 setBulkAssignTarget({
@@ -1480,14 +1478,12 @@ export function ValueWorkbench() {
                                   label: `${ids.length.toLocaleString()} keyword${ids.length === 1 ? "" : "s"}`,
                                 })
                               }
-                            >
-                              <Tag className="h-3 w-3" /> Set dimensions…
+                            > Set dimensions…
                             </Button>
                             <Button
+                              icon={<Gavel />}
                               type="button"
-                              size="sm"
                               variant="outline"
-                              className="h-7 gap-1 px-2 text-xs"
                               disabled={ruling.isPending}
                               onClick={() =>
                                 setDraft({
@@ -1497,14 +1493,12 @@ export function ValueWorkbench() {
                                   tier: null,
                                 })
                               }
-                            >
-                              <Gavel className="h-3 w-3" /> Set level…
+                            > Set level…
                             </Button>
                             <Button
+                              icon={<Undo2 />}
                               type="button"
-                              size="sm"
                               variant="outline"
-                              className="h-7 gap-1 px-2 text-xs text-muted-foreground"
                               disabled={ruling.isPending}
                               onClick={() =>
                                 setDraft({
@@ -1514,8 +1508,7 @@ export function ValueWorkbench() {
                                   tier: null,
                                 })
                               }
-                            >
-                              <Undo2 className="h-3 w-3" /> Clear rulings
+                            > Clear rulings
                             </Button>
                           </>
                         ),
@@ -1525,10 +1518,9 @@ export function ValueWorkbench() {
                         defaultWidth: 440,
                         headerActions: (row) => (
                           <Button
+                            icon={<PanelRightOpen />}
                             type="button"
-                            size="sm"
                             variant="outline"
-                            className="h-7 gap-1.5 px-2 text-xs"
                             title="Everything the platform knows about this keyword"
                             onClick={() =>
                               openKeywordWindow({
@@ -1538,8 +1530,7 @@ export function ValueWorkbench() {
                                 organizationId: site.organization_id,
                               })
                             }
-                          >
-                            <PanelRightOpen className="h-3.5 w-3.5" /> Keyword intel
+                          > Keyword intel
                           </Button>
                         ),
                         render: (row) => {
@@ -1628,9 +1619,9 @@ export function ValueWorkbench() {
                               </div>
                               <div className="flex flex-wrap gap-2 border-t border-border pt-3">
                                 <Button
+                                  icon={<Gavel />}
+                                  variant="primary"
                                   type="button"
-                                  size="sm"
-                                  className="h-7 gap-1 px-2 text-xs"
                                   disabled={ruling.isPending}
                                   onClick={() =>
                                     setDraft({
@@ -1645,17 +1636,15 @@ export function ValueWorkbench() {
                                     })
                                   }
                                 >
-                                  <Gavel className="h-3 w-3" />
                                   {row.value_source === "override"
                                     ? "Change your ruling…"
                                     : "Rule the tier…"}
                                 </Button>
                                 {row.value_source === "override" ? (
                                   <Button
+                                    icon={<Undo2 />}
                                     type="button"
-                                    size="sm"
                                     variant="outline"
-                                    className="h-7 gap-1 px-2 text-xs text-muted-foreground"
                                     disabled={ruling.isPending}
                                     onClick={() =>
                                       ruling.mutate({
@@ -1664,8 +1653,7 @@ export function ValueWorkbench() {
                                         label: row.keyword,
                                       })
                                     }
-                                  >
-                                    <Undo2 className="h-3 w-3" /> Clear ruling
+                                  > Clear ruling
                                   </Button>
                                 ) : null}
                               </div>

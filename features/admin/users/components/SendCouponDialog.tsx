@@ -134,18 +134,17 @@ export function SendCouponDialog({
               const disabled = id === "dm" && !dmAllowed;
               return (
                 <Button
+                  icon={<Icon />}
                   key={id}
                   type="button"
-                  size="sm"
                   role="tab"
                   aria-selected={channel === id}
-                  variant={channel === id ? "default" : "outline"}
+                  variant={channel === id ? "primary" : "outline"}
                   disabled={disabled}
                   title={disabled ? "A new-account coupon goes to an email or phone" : undefined}
-                  className={cn("flex-1")}
+                  className="flex-1"
                   onClick={() => setChannel(id)}
                 >
-                  <Icon className="mr-1.5 h-3.5 w-3.5" />
                   {label}
                 </Button>
               );
@@ -197,11 +196,10 @@ export function SendCouponDialog({
           </label>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={() => void send()} disabled={sending || !ready}>
-            {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button icon={sending && <Loader2 className="animate-spin" />} variant="primary" onClick={() => void send()} disabled={sending || !ready}>
             Send
           </Button>
         </DialogFooter>

@@ -91,7 +91,7 @@ export default async function ShapeInstancePermalinkPage({
           generatedAt={record.createdAt}
           actions={
             <>
-              <Button asChild size="sm" variant="outline">
+              <Button asChild variant="outline">
                 <Link
                   href={`/marketing/keyword-research?keyword=${encodeURIComponent(artifact.primary_keyword)}`}
                 >

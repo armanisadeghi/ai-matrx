@@ -206,7 +206,8 @@ export default function AcceptClassInvitationPage() {
             the roster and gives you access to everything assigned to the class.
           </p>
           <Button
-            className="mt-6 w-full gap-1.5"
+            variant="primary"
+            className="mt-6 w-full"
             disabled={accepting}
             onClick={() => void accept()}
           >

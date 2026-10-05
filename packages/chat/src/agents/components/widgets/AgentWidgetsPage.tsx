@@ -56,7 +56,7 @@ import {
   buildAgentWidgetVariableRows,
 } from "../../format";
 import { Label } from "@ai-matrx/design-system";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
@@ -523,16 +523,15 @@ export function AgentWidgetsPage({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  iconEnd={<ChevronDown className="opacity-70" />}
                   variant="outline"
-                  size="sm"
                   disabled={isLoading}
-                  className="w-full justify-between h-9 text-xs font-medium"
+                  className="w-full justify-between"
                 >
                   <span className="flex items-center gap-2">
                     <Rocket className="w-3.5 h-3.5 text-primary" />
                     Launch Display Mode
                   </span>
-                  <ChevronDown className="w-3.5 h-3.5 opacity-70" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-[260px]">

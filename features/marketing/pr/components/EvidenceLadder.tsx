@@ -274,12 +274,10 @@ export function EvidenceLadder({
                       </p>
                       <div className="mt-1.5 flex flex-wrap items-center gap-2">
                         <Button
-                          size="sm"
+                          icon={<Check />}
                           variant="outline"
-                          className="h-6 gap-1 px-2 text-[10px]"
                           onClick={() => onHoldEvidence(rung.key)}
-                        >
-                          <Check className="h-3 w-3" />I have this
+                        >I have this
                         </Button>
                         <span className="text-[10px] uppercase tracking-wide text-muted-foreground/80">
                           {OWNER_LABEL[rung.missing.owner]} ·{" "}

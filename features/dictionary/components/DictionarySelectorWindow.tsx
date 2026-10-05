@@ -370,16 +370,14 @@ function CustomEntriesSection({
           aria-label="Pronunciation respelling"
         />
         <Button
+          icon={<Plus />}
           type="button"
-          size="icon"
-          variant="secondary"
-          className="h-8 w-8 shrink-0"
+          variant="outline"
+          className="shrink-0"
           onClick={commit}
           disabled={!term.trim() || !say.trim()}
           aria-label="Add per-task pronunciation"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        />
       </div>
     </div>
   );

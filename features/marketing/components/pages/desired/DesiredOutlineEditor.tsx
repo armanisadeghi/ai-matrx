@@ -72,19 +72,15 @@ export function DesiredOutlineEditor({
     return (
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
+          icon={<Plus />}
           variant="outline"
-          className="h-7"
           onClick={() => onChange([{ level: 1, text: "" }])}
         >
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
           Start a heading plan
         </Button>
         {seedFrom && seedFrom.length > 0 ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7"
+            variant="quiet"
             onClick={() => onChange(seedFrom.map((entry) => ({ ...entry })))}
           >
             Seed from observed outline

@@ -269,8 +269,6 @@ export function PartyNotes({
           <span>Couldn&apos;t load notes — {loadError} <ErrorAlchemyMenu error={loadError} /></span>
           <Button
             variant="outline"
-            size="sm"
-            className="h-6 px-2 text-xs"
             onClick={() => setReloadNonce((current) => current + 1)}
           >
             Retry

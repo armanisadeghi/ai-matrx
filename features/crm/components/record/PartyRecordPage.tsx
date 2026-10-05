@@ -416,19 +416,16 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
               // the destructive one last after a divider.
               <>
                 {emailAction === "send" && (
-                  <Button variant="ghost" size="sm" onClick={openCompose}>
-                    <Send className="mr-1 h-3.5 w-3.5" />
+                  <Button icon={<Send />} variant="quiet" onClick={openCompose}>
                     Send email
                   </Button>
                 )}
                 {emailAction === "add" && (
-                  <Button variant="ghost" size="sm" onClick={requestAddEmail}>
-                    <Plus className="mr-1 h-3.5 w-3.5" />
+                  <Button icon={<Plus />} variant="quiet" onClick={requestAddEmail}>
                     Add email
                   </Button>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => void copyLink()}>
-                  <Link2 className="mr-1 h-3.5 w-3.5" />
+                <Button icon={<Link2 />} variant="quiet" onClick={() => void copyLink()}>
                   Copy link
                 </Button>
                 <TapTargetButton
@@ -438,12 +435,10 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                   onClick={jumpToActivity}
                 />
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
+                  icon={<Trash2 />}
+                  variant="quiet"
                   onClick={() => void onDelete()}
                 >
-                  <Trash2 className="mr-1 h-3.5 w-3.5" />
                   Move to trash…
                 </Button>
               </>
@@ -458,27 +453,23 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                     record, which stays readable behind it. */}
                 {emailAction === "send" && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    icon={<Send />}
+                    variant="quiet"
                     onClick={openCompose}
                     aria-label="Send email"
                     title="Send email"
-                    className="h-7 px-2 text-xs"
                   >
-                    <Send className="h-3.5 w-3.5 lg:mr-1" />
                     <span className="max-lg:sr-only">Send email</span>
                   </Button>
                 )}
                 {emailAction === "add" && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    icon={<Plus />}
+                    variant="quiet"
                     onClick={requestAddEmail}
                     aria-label="Add email"
                     title="Add email"
-                    className="h-7 px-2 text-xs"
                   >
-                    <Plus className="h-3.5 w-3.5 lg:mr-1" />
                     <span className="max-lg:sr-only">Add email</span>
                   </Button>
                 )}
@@ -494,37 +485,31 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                   </span>
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<Link2 />}
+                  variant="quiet"
                   onClick={() => void copyLink()}
                   aria-label="Copy link"
                   title="Copy link"
-                  className="h-7 px-2 text-xs"
                 >
-                  <Link2 className="h-3.5 w-3.5 lg:mr-1" />
                   <span className="max-lg:sr-only">Copy link</span>
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  icon={<History />}
+                  variant="quiet"
                   onClick={jumpToActivity}
                   aria-label="Log an activity"
                   title="Log an activity"
-                  className="h-7 px-2 text-xs"
                 >
-                  <History className="h-3.5 w-3.5 lg:mr-1" />
                   <span className="max-lg:sr-only">Log an activity</span>
                 </Button>
                 <span className="ml-1 flex items-center border-l border-border pl-1">
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    icon={<Trash2 />}
+                    variant="quiet"
                     onClick={() => void onDelete()}
                     aria-label="Move to trash…"
                     title="Move to trash…"
-                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="h-3.5 w-3.5 lg:mr-1" />
                     <span className="max-lg:sr-only">Move to trash…</span>
                   </Button>
                 </span>
@@ -572,7 +557,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
         {party && error && (
           <div className="mx-auto mb-3 flex max-w-3xl items-center justify-between gap-2 rounded-md border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
             <span>This record couldn&apos;t be refreshed just now. <ErrorAlchemyMenu /></span>
-            <Button variant="outline" size="sm" onClick={() => void refresh()}>
+            <Button variant="outline" onClick={() => void refresh()}>
               Retry
             </Button>
           </div>

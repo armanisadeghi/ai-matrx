@@ -703,7 +703,7 @@ export function IngestSourceDialog({
             ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
-                size="sm"
+                variant="primary"
                 onClick={() => {
                   reset();
                   onOpenChange(false);
@@ -713,7 +713,6 @@ export function IngestSourceDialog({
               </Button>
               {run.result?.followupSeed && onFollowupSeed ? (
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => {
                     const seed = run.result?.followupSeed;
@@ -823,8 +822,8 @@ export function IngestSourceDialog({
                       </p>
                     </div>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      icon={<X />}
+                      variant="quiet"
                       aria-label="Start over"
                       onClick={() => {
                         setFile(null);
@@ -832,9 +831,7 @@ export function IngestSourceDialog({
                         if (fileInputRef.current)
                           fileInputRef.current.value = "";
                       }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 ) : (
                   <MonologueRecorder
@@ -899,17 +896,15 @@ export function IngestSourceDialog({
                       </p>
                     </div>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      icon={<X />}
+                      variant="quiet"
                       aria-label="Remove the chosen file"
                       onClick={() => {
                         setFile(null);
                         if (fileInputRef.current)
                           fileInputRef.current.value = "";
                       }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 ) : (
                   <button

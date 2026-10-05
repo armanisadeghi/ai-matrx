@@ -14,13 +14,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, ExternalLink, HardDrive, Database } from "lucide-react";
-import {
-  Badge,
-  Button,
-  SegmentedControl,
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@ai-matrx/design-system";
+import { Badge, SegmentedControl, ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   createRecordsClient,
   type RecordsClient,
@@ -322,15 +317,14 @@ export default function PageCleanupReview() {
             </span>
           ) : null}
           <Button
-            size="sm"
+            icon={copied ? (
+              <Check />
+            ) : (
+              <Copy />
+            )}
             variant="outline"
             onClick={() => void copyDecisions()}
           >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
             Copy decisions
           </Button>
         </div>

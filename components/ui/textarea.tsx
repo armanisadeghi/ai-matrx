@@ -23,24 +23,30 @@ import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import {
   BasicTextarea,
-  Textarea,
-  type TextareaProps,
+  Textarea as PackageTextarea,
+  type TextareaProps as PackageTextareaProps,
 } from "@ai-matrx/design-system";
 import { Check, Copy } from "lucide-react";
 
-export {
-  BasicTextarea,
-  Textarea,
-  TextareaWithPrefix,
-} from "@ai-matrx/design-system";
-export type {
-  TextareaProps,
-  TextareaWithPrefixProps,
-} from "@ai-matrx/design-system";
+/**
+ * THE ONE CONTROL (2026-10-05, wave 1B): `Textarea` is the controls' textarea — the field skin,
+ * multi-line, 13px, 8px radius, colour locked. Height is its own business: `rows`,
+ * `minHeight` / `maxHeight` (px), `autoGrow`, `resize` — never a class. Options:
+ * `variant="bare"` (a composer whose surface draws the frame), `mono`.
+ * Codemod + census: `scripts/ui-rollout/doors-codemod.mjs`.
+ */
+export { Textarea } from "@ai-matrx/design-system/controls";
+export type { TextareaProps } from "@ai-matrx/design-system/controls";
+export { BasicTextarea, TextareaWithPrefix } from "@ai-matrx/design-system";
+export type { TextareaWithPrefixProps } from "@ai-matrx/design-system";
+
+/** FROZEN — the pre-rollout elevated textarea, for areas the rollout may not touch. Never in new code. */
+export { PackageTextarea as TextareaLegacy };
+
 
 function useCopy(
   ref: React.RefObject<HTMLTextAreaElement | null>,
-  props: TextareaProps,
+  props: PackageTextareaProps,
 ) {
   const [hasCopied, setHasCopied] = React.useState(false);
 
@@ -87,7 +93,7 @@ function CopyButton({
 }
 
 /** The plain control plus a copy affordance. */
-const CopyTextarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
+const CopyTextarea = React.forwardRef<HTMLTextAreaElement, PackageTextareaProps>(
   ({ className, ...props }, forwarded) => {
     const internal = React.useRef<HTMLTextAreaElement | null>(null);
     const setRef = React.useCallback(
@@ -114,12 +120,12 @@ const CopyTextarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
 );
 CopyTextarea.displayName = "CopyTextarea";
 
-interface FancyTextareaProps extends Omit<TextareaProps, "prefix"> {
+interface FancyPackageTextareaProps extends Omit<PackageTextareaProps, "prefix"> {
   prefix?: React.ReactNode;
 }
 
 /** The elevated textarea plus a leading adornment and a copy affordance. */
-const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyTextareaProps>(
+const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyPackageTextareaProps>(
   ({ prefix, className, wrapperClassName, ...props }, forwarded) => {
     const internal = React.useRef<HTMLTextAreaElement | null>(null);
     const setRef = React.useCallback(
@@ -139,7 +145,7 @@ const FancyTextarea = React.forwardRef<HTMLTextAreaElement, FancyTextareaProps>(
             {prefix}
           </div>
         ) : null}
-        <Textarea
+        <PackageTextarea
           ref={setRef}
           className={cn(prefix && "pl-10", "pr-10", className)}
           {...props}

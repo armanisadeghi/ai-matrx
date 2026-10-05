@@ -399,8 +399,7 @@ export function CatalogKindTable({
     <div className="flex h-full flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Button type="button" variant="ghost" size="sm" onClick={onBack}>
-            <ArrowLeft className="mr-1.5 h-4 w-4" /> All kinds
+          <Button icon={<ArrowLeft />} type="button" variant="quiet" onClick={onBack}> All kinds
           </Button>
           <div className="min-w-0">
             <h2 className="truncate text-base font-semibold">
@@ -472,16 +471,14 @@ export function CatalogKindTable({
             searchPlaceholder: "Search key, name…",
             actions: (
               <div className="flex items-center gap-2">
-                <Button type="button" size="sm" onClick={onAddFromLink}>
-                  <Link2 className="mr-1.5 h-4 w-4" /> Add from link
+                <Button icon={<Link2 />} variant="primary" type="button" onClick={onAddFromLink}> Add from link
                 </Button>
                 <Button
+                  icon={<Plus />}
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={onNewEntry}
-                >
-                  <Plus className="mr-1.5 h-4 w-4" /> New entry
+                > New entry
                 </Button>
               </div>
             ),

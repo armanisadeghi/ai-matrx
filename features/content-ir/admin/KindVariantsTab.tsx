@@ -218,14 +218,13 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
             </code>
           </span>
           <Button
+            icon={<Plus />}
             type="button"
-            size="sm"
             variant="outline"
-            className="ml-auto min-h-10"
+            className="ml-auto"
             disabled={saving || draft !== null}
             onClick={() => setDraft(emptyDraft())}
-          >
-            <Plus className="mr-1 h-3.5 w-3.5" /> Add variant
+          > Add variant
           </Button>
         </div>
         <p className="border-b border-border px-3 py-2 text-xs text-muted-foreground">
@@ -264,25 +263,21 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
                     </span>
                     <div className="ml-auto flex items-center gap-1">
                       <Button
+                        icon={<Pencil />}
                         type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="min-h-10"
+                        variant="quiet"
                         disabled={saving || draft !== null}
                         onClick={() => setDraft(draftFromVariant(variant))}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
                         <span className="sr-only">Edit {variant.name}</span>
                       </Button>
                       <Button
+                        icon={<Trash2 />}
                         type="button"
-                        size="sm"
-                        variant="ghost"
-                        className="min-h-10 text-red-600 dark:text-red-400"
+                        variant="quiet"
                         disabled={saving || draft !== null}
                         onClick={() => void deleteVariant(variant.name)}
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
                         <span className="sr-only">Delete {variant.name}</span>
                       </Button>
                     </div>
@@ -407,20 +402,19 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
 
             <div className="flex flex-wrap items-center gap-2">
               <Button
+                icon={saving ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 type="button"
-                className="min-h-10"
                 disabled={saving || draftValidation.errors.length > 0}
                 onClick={commitDraft}
               >
-                {saving ? (
-                  <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-                ) : null}
                 {draft.originalName === null ? "Register variant" : "Save"}
               </Button>
               <Button
                 type="button"
-                variant="ghost"
-                className="min-h-10"
+                variant="quiet"
                 disabled={saving}
                 onClick={() => setDraft(null)}
               >

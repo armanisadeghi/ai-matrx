@@ -119,7 +119,7 @@ export function SavedCanvasItemCard({
               aria-label="Item title"
               className="h-8 min-w-0 text-sm"
             />
-            <Button size="sm" onClick={onSaveEdit} className="h-8 shrink-0 px-2">
+            <Button variant="primary" onClick={onSaveEdit} className="shrink-0">
               Save
             </Button>
           </div>
@@ -160,24 +160,22 @@ export function SavedCanvasItemCard({
 
       <div className="flex min-w-0 items-center gap-1.5">
         <Button
+          icon={<Eye aria-hidden />}
           variant="outline"
-          size="sm"
           onClick={onOpen}
           aria-label={`Open ${title}`}
           className="min-w-0 flex-1"
         >
-          <Eye className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className={cn(SAVED_CARD_LAYOUT.openLabel, "ml-1.5")}>Open</span>
         </Button>
 
         <div className={SAVED_CARD_LAYOUT.inlineActions} data-saved-card-inline-actions="">
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onToggleFavorite}
             aria-label={favoriteLabel}
             title={favoriteLabel}
-            className="h-7 w-7 rounded-full p-0"
+            className="w-7"
           >
             <Star
               className={cn(
@@ -187,22 +185,20 @@ export function SavedCanvasItemCard({
             />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onShare}
             aria-label="Share"
             title="Share"
-            className="h-7 w-7 rounded-full p-0"
+            className="w-7"
           >
             <Share2 className="h-3.5 w-3.5 text-muted-foreground" />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onToggleArchive}
             aria-label={archiveLabel}
             title={archiveLabel}
-            className="h-7 w-7 rounded-full p-0"
+            className="w-7"
           >
             <ArchiveIcon
               className={cn(
@@ -212,12 +208,11 @@ export function SavedCanvasItemCard({
             />
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={onDelete}
             aria-label="Delete"
             title="Delete"
-            className="h-7 w-7 rounded-full p-0 text-muted-foreground hover:text-destructive"
+            className="w-7"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -227,11 +222,10 @@ export function SavedCanvasItemCard({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
+                variant="quiet"
                 aria-label="More actions"
                 title="More actions"
-                className="h-7 w-7 rounded-full p-0"
+                className="w-7"
               >
                 <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
               </Button>

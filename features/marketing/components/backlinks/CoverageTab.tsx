@@ -649,7 +649,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
                     : "you and your rivals"}
               </b>
             </span>
-            <Button asChild size="sm" variant="outline" className="h-7">
+            <Button asChild variant="outline">
               <Link href={lensHref({})}>Show all your coverage</Link>
             </Button>
           </>
@@ -657,7 +657,7 @@ export function CoverageTab({ siteId }: { siteId: string }) {
         <div className="ml-auto flex items-center gap-1.5">
           {/* The ONE tracker editor (both lenses) — the same one the brand's
               Monitoring page opens. */}
-          <Button asChild size="sm" variant="outline" className="h-7">
+          <Button asChild variant="outline">
             <Link
               href={marketingRoutes.brandMonitorSetup(brandId, {
                 trackerId: activeTracker?.id,

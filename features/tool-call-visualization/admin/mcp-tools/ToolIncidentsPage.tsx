@@ -22,13 +22,11 @@ export function ToolIncidentsPage({ toolId, toolName }: Props) {
             {/* Header */}
             <div className="flex-shrink-0 flex items-center gap-3 px-6 py-3 border-b border-border">
                 <Button
-                    variant="ghost"
-                    size="sm"
+                    icon={<ArrowLeft />}
+                    variant="quiet"
                     onClick={() => startTransition(() => pushAppHref(router, `/administration/agents/mcp-tools/${toolId}`))}
                     disabled={isPending}
-                    className="gap-1.5 h-8"
                 >
-                    <ArrowLeft className="h-4 w-4" />
                     {humanizeIdentifier(toolName)}
                 </Button>
                 <span className="text-sm font-medium text-muted-foreground">/</span>

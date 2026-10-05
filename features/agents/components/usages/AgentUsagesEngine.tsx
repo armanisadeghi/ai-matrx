@@ -387,15 +387,13 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
           <ErrorAlchemyMenu error={scan.error} />
         </p>
         <Button
+          icon={<RotateCw />}
           variant="outline"
-          size="sm"
           onClick={() => {
             scan.refresh();
             mandates.refresh();
           }}
-          className="gap-1.5"
         >
-          <RotateCw className="h-3.5 w-3.5" />
           Retry
         </Button>
       </div>
@@ -440,9 +438,8 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
           <>
             {verdicts.length > 0 ? (
               <Button
-                size="sm"
+                icon={<FlaskConical />}
                 variant="outline"
-                className="h-7 gap-1.5 px-2.5 text-xs"
                 onClick={() =>
                   openImpactBatchWindow({
                     agentIds: [agentId],
@@ -456,53 +453,47 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
                 }
                 title="Open the pinned and newest versions side by side, and run one of these mandates against each."
               >
-                <FlaskConical className="h-3 w-3" />
                 Compare versions & test
               </Button>
             ) : null}
             {safeMandates.length > 0 ? (
               <Button
-                size="sm"
-                className="h-7 gap-1.5 px-2.5 text-xs"
+                icon={advanceApi.busy === "advance" ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RotateCw />
+                )}
+                variant="primary"
                 disabled={advanceApi.busy !== null}
                 onClick={() => void advanceMandates(safeMandates)}
                 title="Every green or identical mandate pin that is behind the newest version — moved in one batch, with a put-back door."
               >
-                {advanceApi.busy === "advance" ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RotateCw className="h-3 w-3" />
-                )}
                 Move all green mandates ({safeMandates.length})
               </Button>
             ) : null}
             {updatableUsages.length > 0 ? (
               <Button
-                size="sm"
-                variant={safeMandates.length > 0 ? "outline" : "default"}
-                className="h-7 gap-1.5 px-2.5 text-xs"
+                icon={bulkRunning ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RotateCw />
+                )}
+                variant={safeMandates.length > 0 ? "outline" : "primary"}
                 disabled={bulkRunning}
                 onClick={() => void updateAllUsages(updatableUsages.length)}
                 title="Every stale shortcut, app, and derived-agent pin you manage — re-pinned to the active version."
               >
-                {bulkRunning ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <RotateCw className="h-3 w-3" />
-                )}
                 Move all stale usages ({updatableUsages.length})
               </Button>
             ) : null}
             {latestBatch && latestBatch.action !== "revert" && revertableIds.size > 0 ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 gap-1.5 px-2.5 text-xs"
+                icon={<Undo2 />}
+                variant="quiet"
                 disabled={advanceApi.busy !== null}
                 onClick={() => void advanceApi.revert(latestBatch, null)}
                 title="Put every pin the last batch moved back where it was."
               >
-                <Undo2 className="h-3 w-3" />
                 Put back last batch ({revertableIds.size})
               </Button>
             ) : null}
@@ -571,31 +562,28 @@ export function AgentUsagesEngine({ agentId, mode }: AgentUsagesEngineProps) {
                 <div className="flex items-center gap-1.5">
                   {chosenVerdicts.length > 0 ? (
                     <Button
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
+                      icon={advanceApi.busy === "advance" ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <RotateCw />
+                      )}
+                      variant="primary"
                       disabled={advanceApi.busy !== null}
                       onClick={() => void advanceMandates(chosenVerdicts)}
                     >
-                      {advanceApi.busy === "advance" ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <RotateCw className="h-3 w-3" />
-                      )}
                       Move {chosenVerdicts.length} mandate pin{chosenVerdicts.length === 1 ? "" : "s"}
                     </Button>
                   ) : null}
                   {chosenUsages.length > 0 ? (
                     <Button
-                      size="sm"
+                      icon={<RotateCw />}
                       variant="outline"
-                      className="h-7 gap-1 text-xs"
                       disabled={bulkRunning}
                       onClick={async () => {
                         for (const usage of chosenUsages) await updateUsage(usage);
                         setSelected([]);
                       }}
                     >
-                      <RotateCw className="h-3 w-3" />
                       Move {chosenUsages.length} usage{chosenUsages.length === 1 ? "" : "s"}
                     </Button>
                   ) : null}

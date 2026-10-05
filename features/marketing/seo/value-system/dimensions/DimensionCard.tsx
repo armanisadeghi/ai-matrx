@@ -311,13 +311,11 @@ function ValueRow({
             values are platform-shared, but each site's brand/class matchers
             live here). */}
         <Button
-          size="sm"
+          icon={<ListFilter />}
           variant="outline"
-          className="h-6 px-1.5 text-[11px]"
           onClick={() => setMatchersOpen(true)}
           title="What finds this answer, and what it would catch"
         >
-          <ListFilter className="mr-1 h-3 w-3" />
           {matcherCount === undefined
             ? "Matchers"
             : matcherCount === 0
@@ -326,12 +324,10 @@ function ValueRow({
         </Button>
         {editable ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[11px]"
+            icon={<Pencil />}
+            variant="quiet"
             onClick={() => setEditing(true)}
-          >
-            <Pencil className="mr-1 h-3 w-3" /> Edit
+          > Edit
           </Button>
         ) : null}
         {/* DELETE IS ONE THING (Arman, 2026-08-24). The confirm states the
@@ -344,18 +340,16 @@ function ValueRow({
             row. Hidden, not disabled. */}
         {editable && !value.abstain ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+            icon={remove.isPending ? (
+              <RefreshCw className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
+            variant="quiet"
             disabled={remove.isPending}
             title={`Delete “${value.label}” and everything it stamped`}
             onClick={() => void askAndDelete()}
           >
-            {remove.isPending ? (
-              <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-            ) : (
-              <Trash2 className="mr-1 h-3 w-3" />
-            )}
             Delete
           </Button>
         ) : null}
@@ -665,9 +659,13 @@ export function DimensionCard({
         <div className="flex shrink-0 items-center gap-1">
           {situational && dimension.condition_matcher_count > 0 ? (
             <Button
-              size="sm"
+              icon={<RefreshCw
+                className={cn(
+                  "mr-1 h-3 w-3",
+                  stampMutations.evaluate.isPending && "animate-spin",
+                )}
+              />}
               variant="outline"
-              className="h-7 px-2 text-[11px]"
               disabled={stampMutations.evaluate.isPending}
               title="Run this dimension's Dig Here rules again over the current window and update what every keyword carries."
               onClick={() => {
@@ -687,12 +685,6 @@ export function DimensionCard({
                 );
               }}
             >
-              <RefreshCw
-                className={cn(
-                  "mr-1 h-3 w-3",
-                  stampMutations.evaluate.isPending && "animate-spin",
-                )}
-              />
               {stampMutations.evaluate.isPending
                 ? "Re-evaluating…"
                 : "Re-evaluate"}
@@ -700,12 +692,10 @@ export function DimensionCard({
           ) : null}
           {owned && !editingDimension ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-1.5 text-[11px]"
+              icon={<Pencil />}
+              variant="quiet"
               onClick={() => setEditingDimension(true)}
-            >
-              <Pencil className="mr-1 h-3 w-3" /> Edit
+            > Edit
             </Button>
           ) : null}
           {/* Retiring a whole question takes every answer, every match and
@@ -715,18 +705,16 @@ export function DimensionCard({
               super admin anyway. */}
           {owned && !editingDimension ? (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-1.5 text-[11px] text-muted-foreground hover:text-destructive"
+              icon={removeDimension.isPending ? (
+                <RefreshCw className="animate-spin" />
+              ) : (
+                <Trash2 />
+              )}
+              variant="quiet"
               disabled={removeDimension.isPending}
               title={`Retire “${dimension.label}” and everything under it`}
               onClick={() => void askAndRetireDimension()}
             >
-              {removeDimension.isPending ? (
-                <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Trash2 className="mr-1 h-3 w-3" />
-              )}
               Delete
             </Button>
           ) : null}
@@ -791,12 +779,10 @@ export function DimensionCard({
               />
             ) : (
               <Button
-                size="sm"
+                icon={<Plus />}
                 variant="outline"
-                className="h-7 text-[11px]"
                 onClick={() => setAddingValue(true)}
-              >
-                <Plus className="mr-1 h-3 w-3" /> Add an answer
+              > Add an answer
               </Button>
             )
           ) : (

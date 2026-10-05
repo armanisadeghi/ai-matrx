@@ -274,9 +274,7 @@ function ChunkListControls({
       {onShowAll && (
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-[11px]"
+          variant="quiet"
           onClick={onShowAll}
         >
           Show all {scope.total}
@@ -515,9 +513,7 @@ export function ChunksOnPage({
             </p>
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="h-6 px-2 text-[11px]"
+              variant="quiet"
               onClick={() => setLimit(total)}
             >
               Show all

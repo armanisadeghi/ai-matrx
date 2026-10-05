@@ -537,19 +537,18 @@ export function ManifestDriftDialog({ onClose, onSyncClick }: Props) {
           </div>
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<RefreshCw />}
+              variant="quiet"
               onClick={() => void load()}
               disabled={loading}
-              className="h-7 gap-1.5 text-xs"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
               Refresh
             </Button>
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="quiet" onClick={onClose}>
               Close
             </Button>
             <Button
+              variant="primary"
               onClick={onSyncClick}
               disabled={!report || totalIssues === 0}
             >
@@ -761,12 +760,10 @@ function DeleteMirrorRowButton({
     return (
       <div className="pt-0.5">
         <Button
+          icon={<Trash2 />}
           variant="outline"
-          size="sm"
           onClick={() => setConfirming(true)}
-          className="h-6 text-[11px] gap-1 text-muted-foreground hover:text-destructive"
         >
-          <Trash2 className="h-3 w-3" />
           Archive this row
         </Button>
       </div>
@@ -804,25 +801,21 @@ function DeleteMirrorRowButton({
       </div>
       <div className="flex items-center gap-1.5">
         <Button
-          variant="destructive"
-          size="sm"
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Trash2 />
+          )}
+          variant="danger"
           onClick={() => void runDelete(recentWarning !== null)}
           disabled={busy}
-          className="h-6 text-[11px] gap-1"
         >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Trash2 className="h-3 w-3" />
-          )}
           {recentWarning ? "Archive anyway" : "Archive row"}
         </Button>
         <Button
-          variant="ghost"
-          size="sm"
+          variant="quiet"
           onClick={reset}
           disabled={busy}
-          className="h-6 text-[11px]"
         >
           Cancel
         </Button>
@@ -954,12 +947,11 @@ function BrokenRow({
             </SelectContent>
           </Select>
           <Button
-            size="sm"
+            variant="primary"
             onClick={() =>
               void applyAction({ action: "remap_to", target: remapTarget })
             }
             disabled={busy || !remapTarget}
-            className="h-7 text-[11px]"
           >
             {busy ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -968,14 +960,12 @@ function BrokenRow({
             )}
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => {
               setShowRemap(false);
               setRemapTarget("");
             }}
             disabled={busy}
-            className="h-7 text-[11px]"
           >
             Cancel
           </Button>
@@ -983,33 +973,27 @@ function BrokenRow({
       ) : (
         <div className="flex items-center gap-1.5 pt-0.5">
           <Button
+            icon={<CheckCircle2 />}
             variant="outline"
-            size="sm"
             onClick={() => void openRemap()}
             disabled={busy}
-            className="h-6 text-[11px] gap-1"
           >
-            <CheckCircle2 className="h-3 w-3" />
             Remap to…
           </Button>
           <Button
+            icon={<Trash2 />}
             variant="outline"
-            size="sm"
             onClick={() => void applyAction({ action: "remove" })}
             disabled={busy}
-            className="h-6 text-[11px] gap-1 text-muted-foreground hover:text-destructive"
           >
-            <Trash2 className="h-3 w-3" />
             Remove
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Bell />}
+            variant="quiet"
             onClick={() => void applyAction({ action: "notify_only" })}
             disabled={busy}
-            className="h-6 text-[11px] gap-1"
           >
-            <Bell className="h-3 w-3" />
             Keep &amp; notify
           </Button>
         </div>

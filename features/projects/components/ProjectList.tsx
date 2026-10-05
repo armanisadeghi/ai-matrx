@@ -73,10 +73,10 @@ export function ProjectList({ organizationId, orgSlug, canCreate = false }: Proj
             </p>
             {canCreate && (
               <Button
+                icon={<Plus />}
+                variant="primary"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white"
               >
-                <Plus className="h-4 w-4 mr-2" />
                 Create Project
               </Button>
             )}
@@ -110,10 +110,10 @@ export function ProjectList({ organizationId, orgSlug, canCreate = false }: Proj
         </div>
         {canCreate && (
           <Button
+            icon={<Plus />}
+            variant="primary"
             onClick={() => setIsCreateModalOpen(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white"
           >
-            <Plus className="h-4 w-4 mr-2" />
             New Project
           </Button>
         )}

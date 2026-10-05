@@ -102,7 +102,7 @@ const [isOpen, setIsOpen] = useState(false);
         description="A full-screen overlay with tabbed interface, perfect for modal dialogs, settings panels, or any content that requires focused attention."
       >
         <div className="flex justify-center p-4">
-          <Button onClick={() => setIsOpen(true)}>Open Overlay</Button>
+          <Button variant="primary" onClick={() => setIsOpen(true)}>Open Overlay</Button>
         </div>
       </ComponentDisplayWrapper>
       

@@ -259,7 +259,6 @@ export default function ShapeRenderStatusStrip({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
                 disabled={artisanLaunching}
                 onClick={() =>
                   void launchArtisan(
@@ -321,16 +320,14 @@ export default function ShapeRenderStatusStrip({
                   </span>
                 ) : isOwnedByViewer && c.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY ? (
                   <Button
+                    icon={switchingId === c.id ? (
+                      <Loader2 className="animate-spin" />
+                    ) : null}
                     type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-[11px]"
+                    variant="quiet"
                     disabled={switchingId === c.id}
                     onClick={() => void switchDefault(c.id)}
                   >
-                    {switchingId === c.id ? (
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                    ) : null}
                     Make default
                   </Button>
                 ) : null}

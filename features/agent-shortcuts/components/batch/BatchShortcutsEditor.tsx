@@ -13,6 +13,7 @@ import {
 import { toast } from "@/lib/toast";
 import { ApplyRefusal } from "./BatchGridParts";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
@@ -684,9 +685,8 @@ export function BatchShortcutsEditor({
                 </span>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
-                  className="h-6 px-2 text-[11px] shrink-0"
+                  className="shrink-0"
                   onClick={onClearCollisions}
                 >
                   Clear {tally.collide}
@@ -786,7 +786,7 @@ export function BatchShortcutsEditor({
                 </ul>
               )}
               {result.failed.length === 0 && (
-                <Button
+                <SurfaceButton
                   variant="link"
                   size="sm"
                   className="h-auto p-0 mt-1 text-xs"
@@ -795,7 +795,7 @@ export function BatchShortcutsEditor({
                   }
                 >
                   View all shortcuts →
-                </Button>
+                </SurfaceButton>
               )}
             </div>
           )}
@@ -833,15 +833,16 @@ export function BatchShortcutsEditor({
               </span>
             )}
             <Button
+              icon={applying ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Rocket />
+              )}
+              variant="primary"
               onClick={() => void onApply()}
               disabled={applying || Boolean(applyRefusal)}
-              className="h-9 gap-1.5 text-sm min-w-[150px]"
+              className="min-w-[150px]"
             >
-              {applying ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Rocket className="h-4 w-4" />
-              )}
               {applying ? "Applying…" : `Apply ${pendingCount || ""}`.trim()}
             </Button>
           </div>

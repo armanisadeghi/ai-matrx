@@ -240,13 +240,12 @@ export function NewNodeDialog({
         <DialogFooter>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => onOpenChange(false)}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            variant="primary"
             disabled={!label.trim() || Boolean(conflict) || create.isPending}
             onClick={submit}
           >

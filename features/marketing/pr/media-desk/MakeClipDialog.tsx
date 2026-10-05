@@ -126,8 +126,7 @@ export function MakeClipDialog({
     >
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button size="sm" variant="outline" className="h-6 gap-1 px-2 text-[10px]">
-            <Scissors className="h-3 w-3" aria-hidden /> Make clip
+          <Button icon={<Scissors aria-hidden />} type="submit" variant="outline"> Make clip
           </Button>
         )}
       </DialogTrigger>
@@ -189,8 +188,7 @@ export function MakeClipDialog({
         </div>
 
         <DialogFooter>
-          <Button onClick={() => void run()} disabled={!canRun}>
-            <Scissors className="mr-1.5 h-4 w-4" aria-hidden />
+          <Button icon={<Scissors aria-hidden />} variant="primary" onClick={() => void run()} disabled={!canRun}>
             {running ? "Making the clip…" : shown ? "Make it again" : "Make clip"}
           </Button>
         </DialogFooter>

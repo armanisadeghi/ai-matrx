@@ -175,7 +175,7 @@ export function ImportDeckPanel() {
             className="min-h-[120px] text-sm"
           />
           <Button
-            size="sm"
+            variant="primary"
             disabled={busy || !pasteText.trim()}
             onClick={() =>
               runImport(() =>
@@ -209,7 +209,7 @@ export function ImportDeckPanel() {
                 />
                 <span className="shrink-0 text-muted-foreground">· {d.cardCount} cards</span>
               </div>
-              <Button size="sm" variant="ghost" asChild>
+              <Button variant="quiet" asChild>
                 <Link href={`/education/flashcards/${d.setId}`}>Open</Link>
               </Button>
             </div>
@@ -242,7 +242,7 @@ export function ImportDeckPanel() {
               · {result.cardCount} cards
             </span>
           </div>
-          <Button size="sm" variant="outline" asChild>
+          <Button variant="outline" asChild>
             <Link href={`/education/flashcards/${result.setId}`}>Open</Link>
           </Button>
         </div>

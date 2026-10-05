@@ -132,7 +132,7 @@ export function DnsRecordCard({
           </p>
         ) : null}
         <div className="flex items-center gap-3">
-          <Button size="sm" onClick={onCheck} disabled={checking}>
+          <Button variant="primary" onClick={onCheck} disabled={checking}>
             {checking ? (
               <>
                 <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />

@@ -115,8 +115,7 @@ export function IngestRequestsDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-6 text-[10px]">
-          <Inbox className="mr-1 h-3 w-3" aria-hidden />
+        <Button icon={<Inbox aria-hidden />} variant="outline">
           Add requests
         </Button>
       </DialogTrigger>
@@ -232,7 +231,7 @@ export function IngestRequestsDialog({
 
         <DialogFooter>
           <Button
-            size="sm"
+            variant="primary"
             onClick={() => void submit()}
             disabled={run.running || !rawText.trim() || !siteId}
           >

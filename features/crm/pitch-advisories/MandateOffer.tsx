@@ -60,14 +60,13 @@ export function MandateOffer({
   return (
     <span className="inline-flex min-w-0 flex-col gap-1">
       <Button
+        icon={state === "checking" && <Loader2 className="animate-spin" />}
         type="button"
-        size="sm"
         variant="outline"
-        className="h-7 w-fit text-xs"
+        className="w-fit"
         onClick={() => void run()}
         disabled={state === "checking"}
       >
-        {state === "checking" && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
         {offer.label}
       </Button>
       {note && <span className="text-[11px] text-muted-foreground">{note}</span>}

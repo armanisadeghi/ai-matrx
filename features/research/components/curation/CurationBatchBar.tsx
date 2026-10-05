@@ -47,36 +47,29 @@ export function CurationBatchBar({
       {busy && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
       <div className="h-4 w-px bg-border" />
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<Eye className="text-green-500" />}
+        variant="quiet"
         onClick={onInclude}
         disabled={busy}
-        className="gap-1.5 text-xs"
       >
-        <Eye className="h-3.5 w-3.5 text-green-500" />
         Include
       </Button>
       <Button
-        variant="ghost"
-        size="sm"
+        icon={<EyeOff />}
+        variant="quiet"
         onClick={onExclude}
         disabled={busy}
-        className="gap-1.5 text-xs"
       >
-        <EyeOff className="h-3.5 w-3.5" />
         Exclude
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Tags className="text-primary" />} iconEnd={<ChevronDown className="opacity-60" />}
+            variant="quiet"
             disabled={busy}
-            className="gap-1.5 text-xs"
           >
-            <Tags className="h-3.5 w-3.5 text-primary" />
             Add to tag
-            <ChevronDown className="h-3 w-3 opacity-60" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
@@ -97,15 +90,13 @@ export function CurationBatchBar({
         </DropdownMenuContent>
       </DropdownMenu>
       <Button
-        variant="ghost"
-        size="icon"
+        icon={<X />}
+        variant="quiet"
         onClick={onClear}
         disabled={busy}
         aria-label="Clear selection"
-        className="h-6 w-6 rounded-full ml-1"
-      >
-        <X className="h-3 w-3" />
-      </Button>
+        className="ml-1"
+      />
     </div>
   );
 }

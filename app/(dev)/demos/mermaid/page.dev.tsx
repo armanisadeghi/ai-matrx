@@ -115,7 +115,6 @@ export default function MermaidPlaygroundPage() {
               </select>
             </label>
             <Button
-              size="sm"
               variant="outline"
               onClick={() => setSource(BROKEN_SAMPLE)}
             >
@@ -212,30 +211,24 @@ function StreamingSimulation() {
         <h2 className="text-sm font-medium">Streaming simulation</h2>
         <div className="ml-auto flex gap-1.5">
           <Button
-            size="sm"
+            icon={<Play />}
             variant="outline"
             onClick={start}
             disabled={running}
-            className="gap-1"
-          >
-            <Play className="h-3.5 w-3.5" /> Stream
+          > Stream
           </Button>
           <Button
-            size="sm"
+            icon={<Square />}
             variant="outline"
             onClick={stop}
             disabled={!running}
-            className="gap-1"
-          >
-            <Square className="h-3.5 w-3.5" /> Stop
+          > Stop
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<RotateCcw />}
+            variant="quiet"
             onClick={() => setStreamed(full)}
-            className="gap-1"
-          >
-            <RotateCcw className="h-3.5 w-3.5" /> Complete
+          > Complete
           </Button>
         </div>
       </div>

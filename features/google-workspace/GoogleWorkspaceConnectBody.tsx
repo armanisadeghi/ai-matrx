@@ -622,7 +622,7 @@ function GoogleWorkspaceConnectBodyContent({
               </span>
             </p>
             <Button
-              size="sm"
+              variant="primary"
               onClick={connect}
               disabled={authorizationActionDisabled}
             >
@@ -634,7 +634,6 @@ function GoogleWorkspaceConnectBodyContent({
             </Button>
 
             <Button
-              size="sm"
               variant="outline"
               onClick={connectInThisTab}
               disabled={authorizationActionDisabled}
@@ -663,19 +662,17 @@ function GoogleWorkspaceConnectBodyContent({
             ) : null}
 
             <Button
-              size="sm"
-              variant="ghost"
+              icon={<Plus />}
+              variant="quiet"
               onClick={connect}
               disabled={authorizationActionDisabled}
               className="self-start"
             >
-              <Plus className="mr-1.5 h-4 w-4" />
               {busy === "connect" ? "Connecting…" : "Add another account"}
             </Button>
 
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={connectInThisTab}
               disabled={authorizationActionDisabled}
               className="self-start"
@@ -686,7 +683,6 @@ function GoogleWorkspaceConnectBodyContent({
             </Button>
 
             <Button
-              size="sm"
               variant="outline"
               onClick={chooseFile}
               disabled={
@@ -734,7 +730,7 @@ function GoogleWorkspaceConnectBodyContent({
                   <p className="mt-1 text-destructive">{driveRetryError} <ErrorAlchemyMenu error={driveRetryError} /></p>
                 ) : null}
                 <Button
-                  size="sm"
+                  variant="primary"
                   className="mt-2"
                   disabled={busy === "pick"}
                   onClick={retryDriveFailures}
@@ -751,11 +747,10 @@ function GoogleWorkspaceConnectBodyContent({
                     `${driveRetained.size} imported file${driveRetained.size === 1 ? " is" : "s are"} waiting to be attached.`}
                 </p>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  <Button size="sm" onClick={retryDriveDelivery}>
+                  <Button variant="primary" onClick={retryDriveDelivery}>
                     Retry attaching
                   </Button>
                   <Button
-                    size="sm"
                     variant="outline"
                     onClick={() => void finishDriveImport()}
                   >
@@ -880,7 +875,6 @@ function GoogleWorkspaceConnectBodyContent({
                   yourself.
                 </p>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={enableSending}
                   disabled={authorizationActionDisabled}

@@ -65,8 +65,7 @@ export function SuggestEditDialog({
   };
 
   const trigger = (
-    <Button variant="ghost" size="sm" className="gap-1.5">
-      <Lightbulb className="h-3.5 w-3.5" /> Suggest edit
+    <Button icon={<Lightbulb />} type="submit" variant="quiet"> Suggest edit
     </Button>
   );
 
@@ -103,11 +102,12 @@ export function SuggestEditDialog({
               Cancel
             </Button>
             <Button
+              icon={isPending ? <Loader2 className="animate-spin" /> : null}
+              variant="primary"
               onClick={submit}
               disabled={isPending}
-              className="flex-1 gap-1.5"
+              className="flex-1"
             >
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Send suggestion
             </Button>
           </DrawerFooter>
@@ -136,8 +136,7 @@ export function SuggestEditDialog({
           >
             Cancel
           </Button>
-          <Button onClick={submit} disabled={isPending} className="gap-1.5">
-            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+          <Button icon={isPending ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={submit} disabled={isPending}>
             Send suggestion
           </Button>
         </DialogFooter>

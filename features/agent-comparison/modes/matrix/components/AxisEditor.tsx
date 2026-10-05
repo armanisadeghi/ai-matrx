@@ -64,35 +64,29 @@ export function AxisEditor({ axis }: { axis: MatrixAxisKey }) {
         <span className="text-xs text-muted-foreground tabular-nums">{data.variants.length}</span>
         <div className="flex-1" />
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 gap-1"
+          icon={<ClipboardPaste />}
+          variant="quiet"
           onClick={() => setPasteOpen(true)}
           title="Paste many prompts, one per row"
         >
-          <ClipboardPaste className="w-3.5 h-3.5" />
           Paste
         </Button>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 gap-1"
+          icon={<Plus />}
+          variant="quiet"
           onClick={() => dispatch(addVariant({ axis }))}
           title={`Add one to ${data.label || axis}`}
         >
-          <Plus className="w-3.5 h-3.5" />
           Add
         </Button>
       </header>
 
       {data.variants.length === 0 ? (
         <div className="flex items-center justify-center gap-2 py-6">
-          <Button size="sm" variant="outline" className="gap-1" onClick={() => setPasteOpen(true)}>
-            <ClipboardPaste className="w-3.5 h-3.5" />
+          <Button icon={<ClipboardPaste />} variant="outline" onClick={() => setPasteOpen(true)}>
             Paste prompts
           </Button>
-          <Button size="sm" variant="outline" className="gap-1" onClick={() => dispatch(addVariant({ axis }))}>
-            <Plus className="w-3.5 h-3.5" />
+          <Button icon={<Plus />} variant="outline" onClick={() => dispatch(addVariant({ axis }))}>
             Add one
           </Button>
         </div>
@@ -275,10 +269,11 @@ function PasteDialog({
           <span className="mr-auto text-xs text-muted-foreground tabular-nums">
             {prompts.length} {prompts.length === 1 ? "prompt" : "prompts"}
           </span>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+          <Button variant="quiet" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
           <Button
+            variant="primary"
             disabled={prompts.length === 0}
             onClick={() => {
               onConfirm(prompts);

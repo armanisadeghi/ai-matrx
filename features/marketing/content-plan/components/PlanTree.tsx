@@ -709,9 +709,8 @@ function TreeRow({
         </div>
       </div>
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-5 w-5 shrink-0 p-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+        variant="quiet"
+        className="w-5 shrink-0 opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
         aria-label="Add child node"
         onClick={onAddChild}
       >

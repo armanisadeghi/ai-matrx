@@ -1139,15 +1139,13 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
         <div className="p-4 border-b border-border">
           <div className="flex gap-2 mb-3">
             <Button
+              icon={<Settings />}
               onClick={() => setIsCategoryManagementOpen(true)}
-              size="sm"
               variant="outline"
             >
-              <Settings className="w-4 h-4 mr-1" />
               Manage
             </Button>
-            <Button onClick={handleCreateNew} size="sm">
-              <Plus className="w-4 h-4 mr-1" />
+            <Button icon={<Plus />} variant="primary" onClick={handleCreateNew}>
               Add
             </Button>
           </div>
@@ -1325,40 +1323,37 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                 <div className="flex items-center gap-2">
                   {hasUnsavedChanges && (
                     <Button
+                      icon={<X />}
                       variant="outline"
-                      size="sm"
                       onClick={handleDiscardChanges}
                     >
-                      <X className="w-4 h-4 mr-1" />
                       Discard
                     </Button>
                   )}
                   <Button
-                    size="sm"
+                    icon={<Save />}
+                    variant="primary"
                     onClick={handleSaveChanges}
                     disabled={!hasUnsavedChanges}
                   >
-                    <Save className="w-4 h-4 mr-1" />
                     Save Changes
                   </Button>
                   <Button
+                    icon={selectedBlock.is_active ? (
+                      <EyeOff />
+                    ) : (
+                      <Eye />
+                    )}
                     variant="outline"
-                    size="sm"
                     onClick={() => handleToggleActive(selectedBlock)}
                   >
-                    {selectedBlock.is_active ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
                     {selectedBlock.is_active ? "Deactivate" : "Activate"}
                   </Button>
                   <Button
-                    variant="destructive"
-                    size="sm"
+                    icon={<Trash2 />}
+                    variant="danger"
                     onClick={() => handleDeleteBlock(selectedBlock)}
                   >
-                    <Trash2 className="w-4 h-4 mr-1" />
                     Delete
                   </Button>
                 </div>
@@ -1569,54 +1564,49 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                       <CardTitle>Template Content</CardTitle>
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <Button
+                          icon={<PanelLeft />}
                           variant={
-                            previewMode === "editor" ? "default" : "outline"
+                            previewMode === "editor" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setPreviewMode("editor")}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <PanelLeft className="w-4 h-4" />
                           Editor
                         </Button>
                         <Button
+                          icon={<Columns2 />}
                           variant={
-                            previewMode === "preview" ? "default" : "outline"
+                            previewMode === "preview" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setPreviewMode("preview")}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <Columns2 className="w-4 h-4" />
                           Preview
                         </Button>
                         <Button
+                          icon={<Cpu />}
                           variant={
-                            previewMode === "json" ? "default" : "outline"
+                            previewMode === "json" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setPreviewMode("json")}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <Cpu className="w-4 h-4" />
                           JSON
                         </Button>
                         <Button
+                          icon={<Waves />}
                           variant={
-                            previewMode === "stream" ? "default" : "outline"
+                            previewMode === "stream" ? "primary" : "outline"
                           }
-                          size="sm"
                           onClick={() => setPreviewMode("stream")}
-                          className="flex items-center gap-1.5"
+                          className="flex"
                         >
-                          <Waves className="w-4 h-4" />
                           Stream
                         </Button>
                         {(previewMode === "json" ||
                           previewMode === "stream") && (
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant="quiet"
                             onClick={() =>
                               runBlockProcessing(
                                 previewMode,
@@ -1627,7 +1617,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               isProcessing || !(editData.template || "").trim()
                             }
                             title="Re-run"
-                            className="px-2"
                           >
                             {isProcessing ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1696,11 +1685,9 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                           {/* Toolbar: strict mode + copy raw */}
                           <div className="sticky top-0 z-10 flex items-center justify-end gap-1 px-3 pt-2 pb-1">
                             <Button
-                              size="sm"
                               variant={
-                                strictServerData ? "destructive" : "ghost"
+                                strictServerData ? "danger" : "quiet"
                               }
-                              className="h-6 px-2 text-[10px] font-mono"
                               onClick={() => setStrictServerData((v) => !v)}
                               title={
                                 strictServerData
@@ -1711,20 +1698,18 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               {strictServerData ? "STRICT" : "strict"}
                             </Button>
                             <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+                              icon={rawCopied ? (
+                                <Check className="text-green-500" />
+                              ) : (
+                                <Copy />
+                              )}
+                              variant="quiet"
                               onClick={copyRawApiData}
                               disabled={
                                 !processedEvents.length && !processError
                               }
                               title="Copy raw API response"
                             >
-                              {rawCopied ? (
-                                <Check className="w-3 h-3 mr-1 text-green-500" />
-                              ) : (
-                                <Copy className="w-3 h-3 mr-1" />
-                              )}
                               {rawCopied ? "Copied!" : "Copy raw"}
                             </Button>
                           </div>
@@ -2002,7 +1987,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleCreateBlock}>Create</Button>
+                <Button variant="primary" onClick={handleCreateBlock}>Create</Button>
               </div>
             </div>
           </div>
@@ -2101,6 +2086,8 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         </div>
                       </div>
                       <Button
+                        icon={<Plus />}
+                        variant="primary"
                         onClick={() =>
                           handleCreateCategory(
                             newCategoryLabel,
@@ -2112,7 +2099,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                         disabled={!newCategoryLabel.trim()}
                         className="mt-5"
                       >
-                        <Plus className="w-4 h-4 mr-1" />
                         Create
                       </Button>
                     </div>
@@ -2182,7 +2168,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                                 className="w-16 h-9"
                               />
                               <Button
-                                size="sm"
+                                variant="primary"
                                 onClick={() => {
                                   handleUpdateCategory(category.id, {
                                     label: category.label,
@@ -2195,7 +2181,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                                 <Check className="w-4 h-4" />
                               </Button>
                               <Button
-                                size="sm"
                                 variant="outline"
                                 onClick={() => {
                                   setEditingCategoryId(null);
@@ -2227,15 +2212,13 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               </Badge>
                             )}
                             <Button
-                              size="sm"
-                              variant="ghost"
+                              variant="quiet"
                               onClick={() => setEditingCategoryId(category.id)}
                             >
                               <Edit2 className="w-4 h-4" />
                             </Button>
                             <Button
-                              size="sm"
-                              variant="ghost"
+                              variant="quiet"
                               onClick={() => handleDeleteCategory(category.id)}
                             >
                               <Trash2 className="w-4 h-4" />
@@ -2310,7 +2293,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                                       showLucideLink={false}
                                     />
                                     <Button
-                                      size="sm"
+                                      variant="primary"
                                       onClick={() => {
                                         handleUpdateCategory(childCat.id, {
                                           label: childCat.label,
@@ -2322,7 +2305,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                                       <Check className="w-3 h-3" />
                                     </Button>
                                     <Button
-                                      size="sm"
                                       variant="outline"
                                       onClick={() => {
                                         setEditingCategoryId(null);
@@ -2352,8 +2334,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                                       </Badge>
                                     )}
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
+                                      variant="quiet"
                                       onClick={() =>
                                         setEditingCategoryId(childCat.id)
                                       }
@@ -2361,8 +2342,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                                       <Edit2 className="w-3 h-3" />
                                     </Button>
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
+                                      variant="quiet"
                                       onClick={() =>
                                         handleDeleteCategory(childCat.id)
                                       }
@@ -2412,7 +2392,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               autoFocus
                             />
                             <Button
-                              size="sm"
+                              variant="primary"
                               onClick={() =>
                                 handleCreateCategory(
                                   newCategoryData.label,
@@ -2433,7 +2413,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               <Check className="w-3 h-3" />
                             </Button>
                             <Button
-                              size="sm"
                               variant="outline"
                               onClick={() =>
                                 setNewCategoryData({
@@ -2449,7 +2428,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                           </div>
                         ) : (
                           <Button
-                            size="sm"
+                            icon={<Plus />}
                             variant="outline"
                             className="w-full"
                             onClick={() =>
@@ -2461,7 +2440,6 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                               })
                             }
                           >
-                            <Plus className="w-3 h-3 mr-1" />
                             Add Child Category
                           </Button>
                         )}
@@ -2474,7 +2452,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
           </div>
 
           <div className="flex justify-end pt-4 border-t border-border">
-            <Button onClick={() => setIsCategoryManagementOpen(false)}>
+            <Button variant="primary" onClick={() => setIsCategoryManagementOpen(false)}>
               Done
             </Button>
           </div>
@@ -2573,6 +2551,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
                 Cancel
               </Button>
               <Button
+                variant="primary"
                 onClick={handleQuickCreateCategory}
                 disabled={!quickCategoryData.label.trim()}
               >

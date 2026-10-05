@@ -509,7 +509,7 @@ export function StartHero() {
           )}
 
           <Button
-            size="lg"
+            variant="primary"
             className="w-full"
             disabled={!canGenerate || ingestGuard.isChecking || holdingForClean}
             onClick={onBuild}
@@ -541,8 +541,7 @@ export function StartHero() {
           {holdingForClean && (
             // A held build is never a dead end: the raw text is already usable.
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               className="w-full"
               onClick={() => {
                 setHoldingForClean(false);

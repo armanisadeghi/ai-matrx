@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { SlidersHorizontal, AlertTriangle } from "lucide-react";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Dialog,
   DialogContent,

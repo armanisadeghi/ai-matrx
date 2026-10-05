@@ -173,7 +173,7 @@ export default function AgentReviewQueueTable() {
         cell: (row) => {
           const target = reviewTargetPageDisplay(row.url);
           return (
-            <Button asChild size="sm" variant="outline" className="h-8 gap-1.5">
+            <Button asChild variant="outline">
               <AppLink
                 data-matrx-cell-control
                 href={target.href}
@@ -205,9 +205,8 @@ export default function AgentReviewQueueTable() {
         width: 56,
         cell: (row) => (
           <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7"
+            icon={<Link2 />}
+            variant="quiet"
             title="Copy this review's direct link"
             aria-label={`Copy the direct link to: ${row.title}`}
             onClick={(event) => {
@@ -218,9 +217,7 @@ export default function AgentReviewQueueTable() {
                 // "shared" spoke for itself; "manual" opened the copy dialog.
               });
             }}
-          >
-            <Link2 className="h-3.5 w-3.5" />
-          </Button>
+          />
         ),
       },
       {
@@ -477,8 +474,7 @@ export default function AgentReviewQueueTable() {
           <h1 className="text-xl font-semibold">Agent Review</h1>
           <div className="flex w-full items-center gap-2 overflow-x-auto pb-1 sm:w-auto sm:overflow-visible sm:pb-0">
             <Button
-              size="sm"
-              variant={view === "inbox" ? "default" : "outline"}
+              variant={view === "inbox" ? "primary" : "outline"}
               onClick={() => setQueueView("inbox")}
             >
               Ready for you (
@@ -490,8 +486,7 @@ export default function AgentReviewQueueTable() {
               )
             </Button>
             <Button
-              size="sm"
-              variant={view === "all" ? "default" : "outline"}
+              variant={view === "all" ? "primary" : "outline"}
               onClick={() => setQueueView("all")}
             >
               All activity (
@@ -503,12 +498,11 @@ export default function AgentReviewQueueTable() {
               )
             </Button>
             <Button
+              icon={<RefreshCw />}
               variant="outline"
-              size="sm"
               disabled={!userId || loading}
               onClick={() => void refresh()}
-            >
-              <RefreshCw className="mr-1.5 h-4 w-4" /> Refresh
+            > Refresh
             </Button>
           </div>
         </div>
@@ -581,9 +575,7 @@ export default function AgentReviewQueueTable() {
                   <UntrustedCount value={matchesElsewhere} trustworthy={!loadError} label="Matches elsewhere" /> outside {stepLabel}.
                 </span>
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7"
                   onClick={() => setNarrowToStep(true)}
                 >
                   Narrow to {stepLabel}
@@ -598,9 +590,7 @@ export default function AgentReviewQueueTable() {
                   in other steps.
                 </span>
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7"
                   onClick={() => setNarrowToStep(false)}
                 >
                   Search every step

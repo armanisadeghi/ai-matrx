@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Copy, Check } from "lucide-react";
 import { formatScraperDiagnosticsJson } from "@/utils/scraper-diagnostics-json";
 

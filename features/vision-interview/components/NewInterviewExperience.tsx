@@ -129,13 +129,12 @@ export function NewInterviewExperience() {
               className="h-11 max-w-xs text-base sm:text-sm"
             />
             <Button
-              size="lg"
-              className="h-11 px-8 text-base"
+              iconEnd={<ArrowRight aria-hidden />}
+              variant="primary"
               disabled={!vision.trim() || busy}
               onClick={() => void begin()}
             >
               {busy ? "Opening the room…" : "Begin the interview"}
-              <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
             </Button>
           </div>
 

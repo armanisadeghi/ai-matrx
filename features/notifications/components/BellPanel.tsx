@@ -151,7 +151,7 @@ export function BellPanel({ variant = "compact", onNavigate, className }: BellPa
           <div className="font-medium">Your notifications didn&apos;t load.</div>
           <div className="truncate text-xs text-muted-foreground">{feed.error.message}</div>
         </div>
-        <Button type="button" variant="outline" size="sm" className="h-7 px-2 text-xs" onClick={feed.refetch}>
+        <Button type="button" variant="outline" onClick={feed.refetch}>
           Retry
         </Button>
         <ErrorAlchemyMenu error={feed.error.message} />

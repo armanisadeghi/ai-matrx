@@ -22,7 +22,7 @@ import {
   X,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import type { ChartType } from "./chart-spec";
 import { chartNotice, chartableTypes, tableToChartSpec, type PlainTable } from "./table-chart";

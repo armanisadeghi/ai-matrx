@@ -744,7 +744,7 @@ function ShortcutAction({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant="outline" size="sm" onClick={onClick}>
+        <Button variant="outline" onClick={onClick}>
           {children}
         </Button>
       </TooltipTrigger>

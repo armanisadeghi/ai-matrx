@@ -287,9 +287,8 @@ export function OrgShareReviewCard({
                     </Badge>
                     {isAdmin && (
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 shrink-0"
+                        variant="quiet"
+                        className="shrink-0"
                         disabled={busyId === grant.permissionId}
                         onClick={() => act(grant, "active")}
                       >
@@ -316,9 +315,8 @@ export function OrgShareReviewCard({
                     {isAdmin && (
                       <>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 shrink-0 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                          variant="quiet"
+                          className="shrink-0"
                           disabled={busyId === grant.permissionId}
                           onClick={() => act(grant, "active")}
                         >
@@ -332,13 +330,12 @@ export function OrgShareReviewCard({
                           )}
                         </Button>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                          icon={<X />}
+                          variant="quiet"
+                          className="shrink-0"
                           disabled={busyId === grant.permissionId}
                           onClick={() => act(grant, "rejected")}
                         >
-                          <X className="h-3.5 w-3.5 mr-1" />
                           Reject
                         </Button>
                       </>
@@ -355,9 +352,8 @@ export function OrgShareReviewCard({
                     </Badge>
                     {isAdmin && (
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 shrink-0 text-red-600 hover:text-red-700 dark:text-red-400"
+                        variant="quiet"
+                        className="shrink-0"
                         disabled={busyId === grant.permissionId}
                         onClick={() => act(grant, "rejected")}
                       >

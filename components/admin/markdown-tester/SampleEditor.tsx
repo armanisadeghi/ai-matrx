@@ -151,14 +151,12 @@ function SampleEditorForm({
         <div className="flex items-center justify-between">
           <Label className="text-xs">Detected blocks</Label>
           <Button
+            icon={<ScanLine />}
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             onClick={handleAutoDetect}
             disabled={busy || !initial.content.trim()}
-            className="h-6 px-2 text-xs"
           >
-            <ScanLine className="h-3 w-3 mr-1" />
             Auto-detect
           </Button>
         </div>
@@ -237,8 +235,7 @@ export function SampleEditor({
       >
         Cancel
       </Button>
-      <Button type="submit" form="sample-editor-form" disabled={busy}>
-        {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+      <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" type="submit" form="sample-editor-form" disabled={busy}>
         {confirmLabel}
       </Button>
     </>

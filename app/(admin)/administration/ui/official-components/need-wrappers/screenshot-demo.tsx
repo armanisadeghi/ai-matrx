@@ -44,10 +44,11 @@ export default function ScreenshotDemo() {
                 <CardContent className="space-y-4">
                     <div className="flex gap-4 items-center">
                         <Button
+                            icon={isCapturing && <Loader2 className="animate-spin" />}
+                            variant="primary"
                             onClick={handleCapture}
                             disabled={isCapturing}
                         >
-                            {isCapturing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Capture Screenshot
                         </Button>
                         <div className="no-capture text-sm text-muted-foreground">
@@ -75,14 +76,13 @@ export default function ScreenshotDemo() {
                                     </TabsList>
                                     {activeTab !== 'api' && activeTab !== 'metadata' && (
                                         <Button
+                                            icon={<Download />}
                                             variant="outline"
-                                            size="sm"
                                             onClick={() => handleDownload(
                                                 preview[activeTab as keyof Pick<ProcessedScreenshotData, 'fullSize' | 'compressed' | 'thumbnail'>],
                                                 activeTab
                                             )}
                                         >
-                                            <Download className="h-4 w-4 mr-2" />
                                             Download
                                         </Button>
                                     )}

@@ -191,7 +191,7 @@ export function DetailShowcase() {
             ) : (
               <Skeleton className="h-3 w-24" />
             )}
-            <Button size="sm" variant="secondary" className="ml-auto h-7 text-xs" disabled={!ref} onClick={() => open()}>
+            <Button variant="outline" className="ml-auto" disabled={!ref} onClick={() => open()}>
               Open with my setting
             </Button>
           </div>
@@ -254,7 +254,7 @@ export function DetailShowcase() {
                   ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">{blurb}</p>
-                <Button size="sm" className="h-8 w-full text-xs" disabled={!ref} onClick={() => open(value)}>
+                <Button variant="primary" className="w-full" disabled={!ref} onClick={() => open(value)}>
                   Open as {label.toLowerCase()}
                 </Button>
                 {link ? (

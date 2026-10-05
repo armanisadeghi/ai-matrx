@@ -9,7 +9,7 @@ import {
   Check,
   Save,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import MarkdownStream from "@host/components/MarkdownStream";
 import AudioOutputBlockSkeleton from "@host/components/mardown-display/blocks/audio/AudioOutputBlockSkeleton";
 import { useDomCapturePrint } from "../../../conversation/hooks/useDomCapturePrint";
@@ -219,36 +219,32 @@ export function AssistantMessage({
             />
             <div className="flex items-center gap-2">
               <Button
-                variant="ghost"
-                size="sm"
+                icon={isDownloading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Download />
+                )}
+                variant="quiet"
                 onClick={handleDownloadAudio}
                 disabled={isDownloading}
-                className="h-6 gap-1 px-2 text-xs text-primary hover:text-primary"
               >
-                {isDownloading ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : (
-                  <Download className="w-3 h-3" />
-                )}
                 {isDownloading ? "Downloading\u2026" : "Download audio"}
               </Button>
               <Button
-                variant="ghost"
-                size="sm"
+                icon={isAudioLinkCopied ? (
+                  <Check />
+                ) : (
+                  <LinkIcon />
+                )}
+                variant="quiet"
                 onClick={async () => {
                   if (!audioUrl) return;
                   await navigator.clipboard.writeText(audioUrl).catch(() => {});
                   setIsAudioLinkCopied(true);
                   setTimeout(() => setIsAudioLinkCopied(false), 2000);
                 }}
-                className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
                 title="Copy audio link"
               >
-                {isAudioLinkCopied ? (
-                  <Check className="w-3 h-3" />
-                ) : (
-                  <LinkIcon className="w-3 h-3" />
-                )}
                 {isAudioLinkCopied ? "Copied!" : "Copy link"}
               </Button>
             </div>
@@ -298,17 +294,15 @@ export function AssistantMessage({
                     />
                     {hasUnsavedChanges && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        icon={isSaving ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <Save />
+                        )}
+                        variant="quiet"
                         onClick={handleQuickSave}
-                        className="h-8 gap-1 px-2 text-xs text-primary"
                         aria-label="Save changes"
                       >
-                        {isSaving ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Save className="h-4 w-4" />
-                        )}
                         Save
                       </Button>
                     )}

@@ -11,7 +11,7 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";

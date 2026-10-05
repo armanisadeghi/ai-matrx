@@ -205,9 +205,8 @@ function ParameterField({
                   )}
                 </div>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-10 w-10 flex-shrink-0 p-0 sm:h-8 sm:w-8"
+                  variant="quiet"
+                  className="w-10 flex-shrink-0 sm:w-8"
                   onClick={() => {
                     const updated = arrValue.filter((_, i) => i !== idx);
                     onChange(updated);
@@ -218,9 +217,9 @@ function ParameterField({
               </div>
             ))}
             <Button
-              size="sm"
+              icon={<Plus />}
               variant="outline"
-              className="h-10 w-full text-sm sm:h-7 sm:text-xs"
+              className="w-full"
               onClick={() => {
                 const newItem = param.items ? getDefaultValue(param.items) : '';
                 onChange([...arrValue, newItem]);
@@ -229,7 +228,6 @@ function ParameterField({
                 param.maxItems !== undefined && arrValue.length >= param.maxItems
               }
             >
-              <Plus className="h-3 w-3 mr-1" />
               Add item
             </Button>
           </div>

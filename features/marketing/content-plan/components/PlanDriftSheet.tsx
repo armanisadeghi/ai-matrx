@@ -123,9 +123,7 @@ export function PlanDriftSheet({
               return (
                 <Button
                   key={value}
-                  variant={filter === value ? "secondary" : "ghost"}
-                  size="sm"
-                  className="h-7 px-2 text-xs"
+                  variant={filter === value ? "outline" : "quiet"}
                   onClick={() => onFilterChange(value)}
                 >
                   {FILTER_LABEL[value]}
@@ -209,14 +207,14 @@ export function PlanDriftSheet({
                 {publishPending.explainer}
               </p>
               <Button
-                size="sm"
-                className="mt-2 h-7 text-xs"
+                icon={previewing === publishPending.id ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
+                className="mt-2"
                 disabled={previewing === publishPending.id}
                 onClick={() => void startRepair(publishPending)}
               >
-                {previewing === publishPending.id ? (
-                  <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
-                ) : null}
                 {publishPending.label}
               </Button>
             </div>
@@ -415,17 +413,15 @@ function DriftRow({
             )}
             {repairs.map((repair) => (
               <Button
+                icon={previewingId === repair.id ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
                 key={repair.id}
-                size="sm"
-                variant={repair.tone === "destructive" ? "outline" : "secondary"}
-                className="h-6 px-2 text-[11px]"
+                variant={repair.tone === "destructive" ? "outline" : "outline"}
                 title={repair.explainer}
                 disabled={previewingId === repair.id}
                 onClick={() => onRepair(repair)}
               >
-                {previewingId === repair.id ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                ) : null}
                 {repair.label}
               </Button>
             ))}

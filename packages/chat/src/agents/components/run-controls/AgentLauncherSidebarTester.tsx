@@ -10,7 +10,8 @@
 
 import { useState } from "react";
 import { getIconComponent } from "@ai-matrx/icons";
-import { Button } from "@ai-matrx/design-system";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import {
@@ -60,7 +61,7 @@ export function AgentLauncherSidebarTester({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <CollapsibleTrigger asChild>
         <div className="border-b border-border">
-          <Button
+          <SurfaceButton
             variant="ghost"
             size="sm"
             className="w-full justify-between h-7 px-2 text-xs"
@@ -72,7 +73,7 @@ export function AgentLauncherSidebarTester({
             <ChevronDown
               className={`w-3 h-3 transition-transform ${isOpen ? "rotate-180" : ""}`}
             />
-          </Button>
+          </SurfaceButton>
         </div>
       </CollapsibleTrigger>
 
@@ -102,10 +103,9 @@ export function AgentLauncherSidebarTester({
           {displayTypes.map((display) => (
             <Button
               key={display.displayMode}
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => tester.openWithDisplayType(display.displayMode)}
-              className="w-full justify-start h-8 px-2 text-xs hover:bg-accent"
+              className="w-full justify-start"
               title={display.note}
             >
               {display.icon && (

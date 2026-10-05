@@ -312,7 +312,7 @@ export function LibraryCatalogPage() {
                 everyone sees would lead almost everyone to an empty state. Same cached
                 read the door itself uses. */}
             {isCurator ? (
-              <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-xs">
+              <Button asChild variant="quiet">
                 <Link href="/knowledge/library-curate">
                   <Layers className="mr-1 size-3.5" /> Curate
                 </Link>
@@ -633,9 +633,12 @@ function StoreDetailPanel({
           <div className="ml-auto flex items-center gap-1">
             {item.subscribed ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-muted-foreground hover:text-destructive"
+                icon={pending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <X />
+                )}
+                variant="quiet"
                 disabled={pending}
                 onClick={async () => {
                   setPending(true);
@@ -643,18 +646,16 @@ function StoreDetailPanel({
                   setPending(false);
                 }}
               >
-                {pending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <X className="h-3.5 w-3.5" />
-                )}
                 Leave
               </Button>
             ) : (
               <Button
-                size="sm"
+                icon={pending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Plus />
+                )}
                 variant="outline"
-                className="h-7"
                 disabled={pending}
                 onClick={async () => {
                   setPending(true);
@@ -662,11 +663,6 @@ function StoreDetailPanel({
                   setPending(false);
                 }}
               >
-                {pending ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Plus className="h-3.5 w-3.5" />
-                )}
                 Subscribe
               </Button>
             )}

@@ -28,7 +28,7 @@ import { Check, Plus, X } from "lucide-react";
 import { typedMatchScore } from "@ai-matrx/records";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Command,
   CommandEmpty,

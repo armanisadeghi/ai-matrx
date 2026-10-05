@@ -28,7 +28,7 @@ import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
 
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
 import { QuestionsAskForm } from "@ai-matrx/chat/agents/ui-first-tools/ui/QuestionsAskForm";
@@ -251,7 +251,7 @@ export function ActionRequestAnswerForm({
           {render.choices.map((choice) => (
             <Button
               key={choice.value}
-              variant={choice.tone === "primary" ? "default" : "ghost"}
+              variant={choice.tone === "primary" ? "primary" : "quiet"}
               className="w-full"
               disabled={busy}
               onClick={() => void onSubmit({ result: { approved: choice.value === "yes" } })}
@@ -269,7 +269,7 @@ export function ActionRequestAnswerForm({
       return shell(
         <div className="flex flex-col gap-3">
           {render.choices.map((choice) => (
-            <Button
+            <SurfaceButton
               key={choice.value}
               variant="outline"
               className="h-auto w-full flex-col items-start gap-1 whitespace-normal py-3 text-left"
@@ -282,7 +282,7 @@ export function ActionRequestAnswerForm({
                   {choice.detail}
                 </span>
               ) : null}
-            </Button>
+            </SurfaceButton>
           ))}
         </div>,
       );
@@ -308,6 +308,7 @@ export function ActionRequestAnswerForm({
             </p>
           ) : null}
           <Button
+            variant="primary"
             className="w-full"
             disabled={busy}
             onClick={() =>
@@ -389,6 +390,7 @@ function ConfirmDetails({ render, busy, idPrefix, onSubmit }: FormProps<ConfirmD
         ),
       )}
       <Button
+        variant="primary"
         className="w-full"
         disabled={busy}
         onClick={() => {
@@ -415,7 +417,7 @@ function PickTime({ render, busy, onSubmit }: FormProps<PickTimeRender>) {
   return (
     <div className="flex flex-col gap-3">
       {render.options.map((option) => (
-        <Button
+        <SurfaceButton
           key={option}
           variant="outline"
           className="h-auto w-full justify-start whitespace-normal py-3 text-left"
@@ -430,7 +432,7 @@ function PickTime({ render, busy, onSubmit }: FormProps<PickTimeRender>) {
           }
         >
           {safeFormat(format, option)}
-        </Button>
+        </SurfaceButton>
       ))}
       <p className="text-xs text-muted-foreground">
         {render.timezone ? `Times are ${render.timezone}.` : "Times are in your device's timezone."}
@@ -543,6 +545,7 @@ function Credential({ render, busy, idPrefix, onSubmit }: FormProps<CredentialRe
       ) : null}
 
       <Button
+        variant="primary"
         className="w-full"
         disabled={busy}
         onClick={() =>
@@ -586,6 +589,7 @@ function VaultItem({ render, busy, idPrefix, onSubmit }: FormProps<VaultItemRend
       />
 
       <Button
+        variant="primary"
         className="w-full"
         disabled={busy}
         onClick={() =>
@@ -649,7 +653,7 @@ function OneTimeCode({ render, busy, idPrefix, autoFocus, onSubmit }: FormProps<
         />
       </div>
 
-      <Button className="w-full" disabled={!ready} onClick={send}>
+      <Button variant="primary" className="w-full" disabled={!ready} onClick={send}>
         {render.submit_label}
       </Button>
     </div>
@@ -807,11 +811,11 @@ function ApproveSpend({
       </div>
 
       <div className="flex flex-col gap-3">
-        <Button className="w-full" disabled={busy} onClick={approve}>
+        <Button variant="primary" className="w-full" disabled={busy} onClick={approve}>
           {yes?.label ?? "Approve this amount"}
         </Button>
         <Button
-          variant="ghost"
+          variant="quiet"
           className="w-full"
           disabled={busy}
           onClick={() => void onSubmit({ result: { approved: false } })}

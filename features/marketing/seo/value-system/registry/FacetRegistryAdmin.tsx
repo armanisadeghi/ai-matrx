@@ -176,28 +176,25 @@ function InlineEdit({
       />
       <div className="flex items-center gap-1">
         <Button
+          icon={save.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
           disabled={save.isPending || !draftLabel.trim()}
           onClick={() => save.mutate()}
-          className="h-6 gap-1 px-2 text-[11px]"
         >
-          {save.isPending ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Check className="h-3 w-3" />
-          )}
           Save
         </Button>
         <Button
+          icon={<X />}
           type="button"
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           disabled={save.isPending}
           onClick={() => setEditing(false)}
-          className="h-6 gap-1 px-2 text-[11px] text-muted-foreground"
-        >
-          <X className="h-3 w-3" /> Cancel
+        > Cancel
         </Button>
       </div>
     </div>
@@ -241,13 +238,11 @@ function AddValueForm({
   if (!open) {
     return (
       <Button
+        icon={<Plus />}
         type="button"
-        size="sm"
         variant="outline"
         onClick={() => setOpen(true)}
-        className="h-6 gap-1 px-1.5 text-[10px]"
-      >
-        <Plus className="h-3 w-3" /> Add a value
+      > Add a value
       </Button>
     );
   }
@@ -288,22 +283,19 @@ function AddValueForm({
       />
       <div className="flex items-center gap-1">
         <Button
+          icon={add.isPending ? <Loader2 className="animate-spin" /> : null}
+          variant="primary"
           type="button"
-          size="sm"
           disabled={add.isPending || !value.trim() || !label.trim()}
           onClick={() => add.mutate()}
-          className="h-6 gap-1 px-2 text-[11px]"
         >
-          {add.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
           Add value
         </Button>
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           disabled={add.isPending}
           onClick={() => setOpen(false)}
-          className="h-6 px-2 text-[11px] text-muted-foreground"
         >
           Cancel
         </Button>
@@ -373,14 +365,12 @@ export function FacetRegistryAdmin() {
           const Icon = item.icon;
           return (
             <Button
+              icon={<Icon />}
               key={item.key}
               type="button"
-              size="sm"
-              variant={item.key === dimension ? "default" : "outline"}
+              variant={item.key === dimension ? "primary" : "outline"}
               onClick={() => setDimension(item.key)}
-              className="h-7 gap-1.5 text-xs"
             >
-              <Icon className="h-3.5 w-3.5" />
               {item.label}
             </Button>
           );

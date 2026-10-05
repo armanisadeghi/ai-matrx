@@ -100,9 +100,8 @@ function ModalPortal({
             )}
           </div>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 w-6 p-0 hover:bg-muted"
+            variant="quiet"
+            className="w-6"
             onClick={handleClose}
           >
             <X className="w-3 h-3" />
@@ -139,18 +138,15 @@ function ModalPortal({
               <Button
                 variant="outline"
                 onClick={handleClose}
-                size="sm"
-                className="h-8 text-xs px-4"
               >
                 Exit — keep original settings
               </Button>
               <Button
+                iconEnd={<ArrowRight />}
+                variant="primary"
                 onClick={() => setConfirmed(true)}
-                size="sm"
-                className="h-8 text-xs px-4 gap-1.5 bg-amber-600 hover:bg-amber-700 text-white border-amber-700"
               >
                 I understand — proceed
-                <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>
           </>
@@ -171,10 +167,8 @@ function ModalPortal({
             <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-border bg-muted/30 shrink-0">
               {footer ?? (
                 <Button
-                  variant="ghost"
+                  variant="quiet"
                   onClick={handleClose}
-                  size="sm"
-                  className="h-7 text-xs"
                 >
                   Close
                 </Button>
@@ -230,12 +224,10 @@ export function AgentSettingsModalButton({
   return (
     <>
       <Button
+        icon={<Settings2 />}
         variant="outline"
-        size="sm"
-        className="h-8 gap-1.5 text-xs"
         onClick={() => setOpen(true)}
       >
-        <Settings2 className="w-3.5 h-3.5" />
         {label}
         {hasPendingSwitch && (
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />

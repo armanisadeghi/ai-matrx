@@ -639,18 +639,14 @@ export function IngestFlowAnimation({
                   </div>
                   <div className="mt-2.5 flex items-center gap-1.5">
                     <Button
-                      size="sm"
+                      icon={<RotateCw />}
                       variant="outline"
-                      className="h-7 text-xs"
                       onClick={() => void ingest.run({ force: true })}
                     >
-                      <RotateCw className="mr-1 h-3 w-3" />
                       Retry
                     </Button>
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 text-xs"
+                      variant="quiet"
                       onClick={onClose}
                     >
                       Dismiss
@@ -715,19 +711,15 @@ export function IngestFlowAnimation({
             )}
             {ingest.status === "running" ? (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[11px]"
+                icon={<XIcon />}
+                variant="quiet"
                 onClick={ingest.cancel}
               >
-                <XIcon className="mr-1 h-3 w-3" />
                 Cancel
               </Button>
             ) : (
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[11px]"
+                variant="quiet"
                 onClick={onClose}
               >
                 Close

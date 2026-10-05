@@ -17,7 +17,7 @@
 
 import { Lock, PencilLine } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import {
   AGENT_EDIT_ACCESS_LABEL,

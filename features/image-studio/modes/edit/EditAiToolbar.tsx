@@ -385,16 +385,15 @@ export function EditAiToolbar({
       <Popover open={adjustOpen} onOpenChange={setAdjustOpen}>
         <PopoverTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+            icon={busy === "adjust" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Sliders />
+            )}
+            variant="quiet"
+            className="shrink-0"
             disabled={anyBusy || idMissing}
           >
-            {busy === "adjust" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sliders className="h-3.5 w-3.5" />
-            )}
             Adjust
           </Button>
         </PopoverTrigger>
@@ -441,9 +440,7 @@ export function EditAiToolbar({
             />
             <div className="flex justify-between items-center pt-1">
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
+                variant="quiet"
                 onClick={() =>
                   setAdjustValues({
                     brightness: 1,
@@ -456,8 +453,7 @@ export function EditAiToolbar({
                 Reset
               </Button>
               <Button
-                size="sm"
-                className="h-7 text-xs"
+                variant="primary"
                 onClick={handleAdjust}
                 disabled={anyBusy}
               >
@@ -534,17 +530,16 @@ export function EditAiToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
+            icon={busy === "up2" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ArrowUpRight />
+            )}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => handleUpscale(2)}
             disabled={anyBusy || idMissing}
           >
-            {busy === "up2" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            )}
             2×
           </Button>
         </TooltipTrigger>
@@ -554,17 +549,16 @@ export function EditAiToolbar({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0 gap-1 text-xs text-foreground/80 hover:text-foreground"
+            icon={busy === "up4" ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <ArrowUpRight />
+            )}
+            variant="quiet"
+            className="shrink-0"
             onClick={() => handleUpscale(4)}
             disabled={anyBusy || idMissing}
           >
-            {busy === "up4" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            )}
             4×
           </Button>
         </TooltipTrigger>
@@ -600,9 +594,8 @@ export function EditAiToolbar({
         <Popover open={promptOpen} onOpenChange={setPromptOpen}>
           <PopoverTrigger asChild>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+              variant="quiet"
+              className="shrink-0"
               disabled={anyBusy || idMissing}
             >
               {busy === "prompt" ? (
@@ -645,17 +638,14 @@ export function EditAiToolbar({
               />
               <div className="flex justify-between items-center pt-1">
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs"
+                  variant="quiet"
                   onClick={() => setPromptText("")}
                   disabled={anyBusy || !promptText}
                 >
                   Clear
                 </Button>
                 <Button
-                  size="sm"
-                  className="h-7 text-xs"
+                  variant="primary"
                   onClick={handlePrompt}
                   disabled={anyBusy || !promptText.trim()}
                 >
@@ -695,17 +685,16 @@ function ToolbarOpButton({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 shrink-0 gap-1.5 text-xs text-foreground/80 hover:text-foreground"
+          icon={running ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Icon />
+          )}
+          variant="quiet"
+          className="shrink-0"
           onClick={onClick}
           disabled={disabled}
         >
-          {running ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Icon className="h-3.5 w-3.5" />
-          )}
           {label}
           {badge ? (
             <span className="text-[9px] uppercase tracking-wide text-primary/80 ml-0.5">

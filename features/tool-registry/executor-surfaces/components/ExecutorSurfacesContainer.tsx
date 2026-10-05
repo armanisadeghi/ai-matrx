@@ -109,13 +109,11 @@ export function ExecutorSurfacesContainer() {
         )}
         <div className="ml-auto flex items-center gap-1.5">
           <Button
-            size="sm"
-            variant="ghost"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={() => void load()}
-            className="h-7 gap-1.5 text-xs"
             disabled={loading}
           >
-            <RefreshCw className="h-3.5 w-3.5" />
             Refresh
           </Button>
         </div>

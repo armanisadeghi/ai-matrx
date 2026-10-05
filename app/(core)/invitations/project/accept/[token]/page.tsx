@@ -211,7 +211,7 @@ export default function AcceptProjectInvitationPage() {
                 <Button onClick={() => router.push('/projects')} variant="outline">
                   My Projects
                 </Button>
-                <Button onClick={() => router.push('/dashboard')}>Dashboard</Button>
+                <Button variant="primary" onClick={() => router.push('/dashboard')}>Dashboard</Button>
               </div>
             </div>
           </Card>
@@ -269,7 +269,6 @@ export default function AcceptProjectInvitationPage() {
             <Button
               onClick={handleDecline}
               variant="outline"
-              size="lg"
               disabled={accepting || declining}
             >
               {declining ? (
@@ -285,10 +284,9 @@ export default function AcceptProjectInvitationPage() {
               )}
             </Button>
             <Button
+              variant="primary"
               onClick={handleAccept}
-              size="lg"
               disabled={accepting || declining}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
             >
               {accepting ? (
                 <>

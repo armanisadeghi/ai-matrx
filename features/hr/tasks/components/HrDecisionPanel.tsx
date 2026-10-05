@@ -360,7 +360,7 @@ export function HrDecisionPanel({
             {embedded && !restricted ? null : (
                 <div className="flex items-center gap-2 border-b border-border px-4 py-3">
                     {embedded ? null : (
-                        <Button size="sm" variant="ghost" asChild>
+                        <Button variant="quiet" asChild>
                             <Link href={hrTasksHref(orgRef)}>
                                 <ArrowLeft className="mr-1 h-4 w-4" />
                                 All HR tasks
@@ -579,6 +579,7 @@ export function HrDecisionPanel({
                                 />
                                 <div className="flex flex-wrap gap-2">
                                     <Button
+                                        variant="primary"
                                         ref={approveRef}
                                         disabled={busy}
                                         onClick={() => void act("approve")}
@@ -600,7 +601,7 @@ export function HrDecisionPanel({
                                         Return for changes
                                     </Button>
                                     <Button
-                                        variant="ghost"
+                                        variant="quiet"
                                         disabled={busy}
                                         onClick={() => {
                                             setEscalateReason(reason.trim());
@@ -661,7 +662,6 @@ export function HrDecisionPanel({
                                             ) : null}
                                             <Button
                                                 className="ml-auto shrink-0"
-                                                size="sm"
                                                 variant="outline"
                                                 onClick={() =>
                                                     setPickedFailure({
@@ -678,8 +678,7 @@ export function HrDecisionPanel({
                                 </ul>
                                 {hiddenOpenFailureCount > 0 ? (
                                     <Button
-                                        size="sm"
-                                        variant="ghost"
+                                        variant="quiet"
                                         onClick={() =>
                                             setFailureWindow({
                                                 instanceId,
@@ -774,8 +773,7 @@ export function HrDecisionPanel({
                         {str(instance, "requester_employment_id") ? (
                             <section className="flex flex-wrap gap-2">
                                 <Button
-                                    size="sm"
-                                    variant="ghost"
+                                    variant="quiet"
                                     onClick={() => {
                                         setCloseReason(reason.trim());
                                         setDialogRefusal(null);
@@ -786,8 +784,7 @@ export function HrDecisionPanel({
                                     Withdraw
                                 </Button>
                                 <Button
-                                    size="sm"
-                                    variant="ghost"
+                                    variant="quiet"
                                     onClick={() => {
                                         setCloseReason(reason.trim());
                                         setDialogRefusal(null);

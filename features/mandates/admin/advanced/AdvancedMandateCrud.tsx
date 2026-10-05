@@ -277,9 +277,7 @@ export function AdvancedMandateCrud() {
           columns={[...(tableColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: relation?.writable && pk && relation.softDeletes
               ? (row) => (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive"
+                    variant="quiet"
                     onClick={() => doDelete(row)}
                     title="Move to Trash (restorable)"
                     aria-label="Move to Trash"
@@ -330,13 +328,11 @@ export function AdvancedMandateCrud() {
                   <UntrustedCount read={rowsRead} label="Total rows" value={total} /> row
                   {total === 1 ? "" : "s"}
                 </span>
-                <Button size="sm" variant="outline" onClick={load} disabled={isPending}>
-                  <RefreshCw className="mr-1 h-3 w-3" />
+                <Button icon={<RefreshCw />} variant="outline" onClick={load} disabled={isPending}>
                   Refresh
                 </Button>
                 {relation?.writable && (
-                  <Button size="sm" onClick={() => setInsertOpen(true)}>
-                    <Plus className="mr-1 h-3 w-3" />
+                  <Button icon={<Plus />} variant="primary" onClick={() => setInsertOpen(true)}>
                     Insert row
                   </Button>
                 )}
@@ -385,7 +381,7 @@ export function AdvancedMandateCrud() {
             <Button variant="outline" onClick={() => setInsertOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={doInsert}>Insert</Button>
+            <Button variant="primary" onClick={doInsert}>Insert</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -409,7 +409,7 @@ export function SiteIntakeWizard() {
         {runError ? (
           <div className="flex items-center justify-between rounded-md border border-destructive/40 bg-destructive/5 p-2.5 text-sm">
             <span>{runError}</span>
-            <Button size="sm" variant="outline" onClick={() => void startInterview(false)}>
+            <Button variant="outline" onClick={() => void startInterview(false)}>
               Try again
             </Button>
             <ErrorAlchemyMenu error={runError} />
@@ -481,13 +481,9 @@ export function SiteIntakeWizard() {
                               (cls) => (
                                 <Button
                                   key={cls}
-                                  size="sm"
                                   variant={
-                                    decision.include && decision.ruling === cls
-                                      ? "secondary"
-                                      : "ghost"
+                                    decision.include && decision.ruling === cls ? "outline" : "quiet"
                                   }
-                                  className="h-6 px-2 text-[11px]"
                                   onClick={() =>
                                     setDecisions((prev) =>
                                       prev.map((d, i) =>
@@ -503,9 +499,7 @@ export function SiteIntakeWizard() {
                               ),
                             )}
                             <Button
-                              size="sm"
-                              variant={decision.include ? "ghost" : "secondary"}
-                              className="h-6 px-2 text-[11px]"
+                              variant={decision.include ? "quiet" : "outline"}
                               onClick={() =>
                                 setDecisions((prev) =>
                                   prev.map((d, i) =>
@@ -558,13 +552,9 @@ export function SiteIntakeWizard() {
                           {question.suggested_answers.map((suggestion) => (
                             <Button
                               key={suggestion}
-                              size="sm"
                               variant={
-                                answers[question.id] === suggestion
-                                  ? "secondary"
-                                  : "outline"
+                                answers[question.id] === suggestion ? "outline" : "outline"
                               }
-                              className="h-6 px-2 text-[11px] font-normal"
                               onClick={() =>
                                 setAnswers((prev) => ({
                                   ...prev,
@@ -603,10 +593,11 @@ export function SiteIntakeWizard() {
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {proposal.proposed_brand_aliases.map((alias) => (
                     <Button
+                      icon={aliasChecks[alias] ? (
+                        <Check aria-hidden="true" />
+                      ) : null}
                       key={alias}
-                      size="sm"
-                      variant={aliasChecks[alias] ? "secondary" : "outline"}
-                      className="h-6 px-2 text-[11px] font-normal"
+                      variant={aliasChecks[alias] ? "outline" : "outline"}
                       aria-pressed={aliasChecks[alias]}
                       onClick={() =>
                         setAliasChecks((prev) => ({
@@ -615,9 +606,6 @@ export function SiteIntakeWizard() {
                         }))
                       }
                     >
-                      {aliasChecks[alias] ? (
-                        <Check className="h-3 w-3" aria-hidden="true" />
-                      ) : null}
                       {alias}
                     </Button>
                   ))}
@@ -640,8 +628,7 @@ export function SiteIntakeWizard() {
 
             {!applyResult ? (
               <div className="flex items-center gap-3">
-                <Button disabled={applying} onClick={() => void applyRulings()}>
-                  <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                <Button icon={<CheckCircle2 />} variant="primary" disabled={applying} onClick={() => void applyRulings()}>
                   Save these rulings
                 </Button>
                 <span className="text-xs text-muted-foreground">
@@ -684,12 +671,12 @@ export function SiteIntakeWizard() {
               </p>
             ) : null}
             <div className="mt-2 flex gap-2">
-              <Button asChild size="sm">
+              <Button variant="primary" asChild>
                 <Link href={marketingRoutes.searchConsole(site.id)}>
                   Open the dashboard
                 </Link>
               </Button>
-              <Button asChild size="sm" variant="outline">
+              <Button asChild variant="outline">
                 <Link
                   href={`${marketingRoutes.site(site.brand_id, site.id)}/keywords`}
                 >

@@ -19,6 +19,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from "@/components/ui/badge";
 
 interface ComponentDisplayProps {
@@ -176,20 +177,19 @@ const buttons: IconButtonConfig[] = [
       id: "star",
       render: (isMobile) =>
         isMobile ? (
-          <Button
+          <SurfaceButton
             variant="ghost"
             className="w-full h-14 flex items-center justify-start gap-4 text-base rounded-xl"
           >
             <Star className="w-5 h-5 text-yellow-500" />
             <span className="flex-1 text-left">Favourite</span>
-          </Button>
+          </SurfaceButton>
         ) : (
           <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1 text-yellow-500 h-8 px-2"
-          >
-            <Star className="w-4 h-4" /> Favourite
+            icon={<Star />}
+            type="submit"
+            variant="quiet"
+          > Favourite
           </Button>
         ),
     },
@@ -259,8 +259,7 @@ const buttons: IconButtonConfig[] = [
               sheetTitle="Actions"
               forceMobile={true}
               mobileTrigger={
-                <Button variant="outline" size="sm" className="gap-1">
-                  <MoreHorizontal className="w-4 h-4" />
+                <Button icon={<MoreHorizontal />} type="submit" variant="outline">
                   Actions
                 </Button>
               }

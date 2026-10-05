@@ -18,7 +18,7 @@ import {
   isProposedGoogleWrite,
 } from "@/features/google-workspace/export/proposedWrite";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 
 interface SendToGoogleSheetButtonProps {
   headers: string[];

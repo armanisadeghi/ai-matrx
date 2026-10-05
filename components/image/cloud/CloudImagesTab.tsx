@@ -644,25 +644,21 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                 />
               </div>
               <Button
+                icon={<SlidersHorizontal />}
                 type="button"
                 variant="outline"
-                size="icon"
                 onClick={() => setMobileOptionsOpen(true)}
-                className="h-9 w-9 shrink-0 md:hidden"
+                className="shrink-0 md:hidden"
                 aria-label="Image view options"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-              </Button>
+              />
               <div className="ml-auto hidden shrink-0 items-center gap-2 md:flex">
                 <Button
+                  icon={<Clock />}
                   type="button"
-                  variant={showRecentsOnly ? "default" : "outline"}
-                  size="sm"
+                  variant={showRecentsOnly ? "primary" : "outline"}
                   onClick={() => handleRecentsOnlyChange(!showRecentsOnly)}
-                  className="h-9"
                   data-surface-value="recents_only"
                 >
-                  <Clock className="h-3.5 w-3.5 mr-1.5" />
                   Recents
                 </Button>
                 <div data-surface-value="view_mode">

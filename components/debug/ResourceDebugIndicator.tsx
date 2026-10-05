@@ -280,8 +280,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                     user_input (assembleRequest)
                   </h4>
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     onClick={async () => {
                       await navigator.clipboard.writeText(
                         previewData.fullMessage,
@@ -401,9 +400,8 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                         </span>
                       </div>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0"
+                        variant="quiet"
+                        className="w-5"
                         onClick={(e) => {
                           e.stopPropagation();
                           void copyToClipboard(payload, index);
@@ -438,9 +436,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                 {resources.length} resource{resources.length !== 1 ? "s" : ""}
               </span>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs"
+                variant="quiet"
                 onClick={copyAll}
               >
                 {copiedIndex === -1 ? (
@@ -457,8 +453,8 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
               </Button>
             </div>
             <Button
-              size="sm"
-              className="w-full h-7 text-xs"
+              variant="primary"
+              className="w-full"
               onClick={generateMessagePreview}
               disabled={isGeneratingPreview}
             >

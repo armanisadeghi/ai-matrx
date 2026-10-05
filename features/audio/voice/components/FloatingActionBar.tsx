@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 interface FloatingActionBarProps {
@@ -78,8 +79,7 @@ export function FloatingActionBar({
                                 </button>
                             )}
                             <Button
-                                variant="ghost"
-                                size="sm"
+                                variant="quiet"
                                 onClick={handleSearchCancel}
                                 className="mr-1"
                             >
@@ -98,7 +98,7 @@ export function FloatingActionBar({
             <div className="container mx-auto px-4 sm:px-6 md:px-8 lg:px-12 max-w-[1800px] pb-4">
                 <div className="flex items-center gap-2 p-2 rounded-full bg-background/80 backdrop-blur-xl border border-border/50 shadow-lg">
                     {/* Filter Button */}
-                    <Button
+                    <SurfaceButton
                         variant="ghost"
                         size="icon"
                         onClick={onFilterClick}
@@ -108,7 +108,7 @@ export function FloatingActionBar({
                         {showFilterBadge && (
                             <span className="absolute top-1 right-1 h-2 w-2 bg-primary rounded-full" />
                         )}
-                    </Button>
+                    </SurfaceButton>
 
                     {/* Compact Search Bar */}
                     <button

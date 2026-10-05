@@ -704,6 +704,7 @@ export function EnrollDialog({
             Cancel
           </Button>
           <Button
+            variant="primary"
             disabled={!canSubmit}
             onClick={() => enrollMutation.mutate()}
             data-testid="hindsight-enroll-submit"

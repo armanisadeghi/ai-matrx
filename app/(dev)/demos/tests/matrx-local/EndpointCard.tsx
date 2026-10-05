@@ -54,6 +54,7 @@ const EndpointCard = ({ endpoint, onTest, response, loading, baseUrl }: Endpoint
                 )}
 
                 <Button
+                    variant="primary"
                     onClick={handleTest}
                     disabled={loading}
                 >

@@ -270,8 +270,8 @@ export function AskPanel({
                   : ""}
             </span>
             <Button
+              variant="primary"
               type="submit"
-              size="sm"
               className="ml-auto"
               disabled={!question.trim() || phase.kind === "asking" || noSources || onCount === 0}
             >

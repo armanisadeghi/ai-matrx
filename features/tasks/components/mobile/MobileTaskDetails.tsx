@@ -453,14 +453,12 @@ export default function MobileTaskDetails({
             <div className="flex items-center justify-between p-3">
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <Button
-                  variant="ghost"
-                  size="icon"
+                  icon={<ChevronLeft size={18} />}
+                  variant="quiet"
                   onClick={onBack}
                   aria-label="Back to tasks"
-                  className="flex-shrink-0 h-11 w-11 rounded-full"
-                >
-                  <ChevronLeft size={18} />
-                </Button>
+                  className="flex-shrink-0"
+                />
                 <Checkbox
                   checked={task.completed}
                   onCheckedChange={() => void handleToggleComplete()}
@@ -527,13 +525,11 @@ export default function MobileTaskDetails({
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      icon={<MoreVertical size={16} />}
+                      variant="quiet"
                       aria-label="Task actions"
-                      className="flex-shrink-0 h-11 w-11 rounded-full"
-                    >
-                      <MoreVertical size={16} />
-                    </Button>
+                      className="flex-shrink-0"
+                    />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {isDirty && (
@@ -783,7 +779,6 @@ export default function MobileTaskDetails({
                         key={option.value}
                         type="button"
                         variant="outline"
-                        size="sm"
                         aria-pressed={active}
                         onClick={() => {
                           setLabels((current) =>
@@ -831,14 +826,12 @@ export default function MobileTaskDetails({
                         {subtask.title}
                       </span>
                       <Button
-                        size="icon"
-                        variant="ghost"
+                        icon={<X size={14} />}
+                        variant="quiet"
                         onClick={() => handleDeleteSubtask(subtask.id)}
-                        className="h-11 w-11 rounded-full opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+                        className="opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
                         aria-label={`Delete subtask ${subtask.title}`}
-                      >
-                        <X size={14} />
-                      </Button>
+                      />
                     </div>
                   ))}
                   <ProInput
@@ -866,11 +859,9 @@ export default function MobileTaskDetails({
           the iOS home-indicator inset on real devices. */}
           <div className="flex-shrink-0 border-t border-border bg-card px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="lg"
+              variant="quiet"
               onClick={handleDelete}
               disabled={isDeleting}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               {isDeleting ? (
                 <Loader2 size={18} className="animate-spin" />
@@ -879,10 +870,10 @@ export default function MobileTaskDetails({
               )}
             </Button>
             <Button
+              variant="primary"
               onClick={handleSave}
               disabled={!isDirty || isSaving}
               className="flex-1"
-              size="lg"
             >
               {isSaving ? (
                 <>

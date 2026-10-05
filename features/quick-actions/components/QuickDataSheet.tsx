@@ -160,7 +160,6 @@ export function QuickDataSheet({
         </div>
         <Button
           variant="outline"
-          size="sm"
           onClick={() => window.open("/data", "_blank")}
         >
           Create a Table
@@ -205,13 +204,10 @@ export function QuickDataSheet({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  icon={<ExternalLink />} aria-label="Open in New Tab"
+                  variant="quiet"
                   onClick={() => window.open("/data", "_blank")}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
+                />
               </TooltipTrigger>
               <TooltipContent>Open in New Tab</TooltipContent>
             </Tooltip>

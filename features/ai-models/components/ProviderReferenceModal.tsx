@@ -202,7 +202,7 @@ function ProviderTab({ provider }: { provider: AiProvider }) {
             Sync this provider to fetch their model list
           </p>
         </div>
-        <Button asChild size="sm" variant="outline">
+        <Button asChild variant="outline">
           <AppLink href="/administration/ai/ai-models/provider-sync">
             <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
             Go to Provider Sync
@@ -335,9 +335,7 @@ export default function ProviderReferenceModal({ providers, onClose }: Props) {
         <span className="text-sm font-semibold flex-1">Provider Reference</span>
         <Button
           asChild
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 text-[10px] text-muted-foreground hover:text-foreground"
+          variant="quiet"
         >
           <AppLink href="/administration/ai/ai-models/provider-sync">
             <RefreshCw className="h-3 w-3 mr-1" />

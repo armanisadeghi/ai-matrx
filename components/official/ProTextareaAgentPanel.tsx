@@ -39,7 +39,7 @@ import {
   setShowAttachments,
   setShowMicrophone,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useMandate } from "@ai-matrx/chat/mandates/useMandate";
 import { useMandateDisplayName } from "@/features/mandates/useMandateDisplayName";

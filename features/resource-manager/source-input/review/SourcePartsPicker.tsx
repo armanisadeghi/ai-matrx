@@ -14,7 +14,8 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import type { SourceRef } from "@ai-matrx/agents/sources";
-import { Button, Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatChars } from "@ai-matrx/kit/tokens";
 import { findParts, isWordQuery, type SourcePart } from "@ai-matrx/agents/sources/runtime";
@@ -77,8 +78,7 @@ export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: S
         <span className="flex gap-1">
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             disabled={shown.length === 0}
             onClick={() => commit(new Set([...chosen, ...shown.map((s) => s.id)]))}
           >
@@ -86,8 +86,7 @@ export function SourcePartsPicker({ sourceRef, segments, selected, onChange }: S
           </Button>
           <Button
             type="button"
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             disabled={chosen.size === 0}
             onClick={() => {
               const next = new Set(chosen);

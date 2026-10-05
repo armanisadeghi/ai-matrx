@@ -235,7 +235,11 @@ export function DeliveryControls({
       {trackerId ? (
         <div>
           <Button
-            size="sm"
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
             variant="outline"
             disabled={!dirty || saving}
             onClick={() =>
@@ -246,11 +250,6 @@ export function DeliveryControls({
                 .catch(() => undefined)
             }
           >
-            {saving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="h-3.5 w-3.5" />
-            )}
             {dirty ? "Save who hears about it" : "Saved"}
           </Button>
         </div>

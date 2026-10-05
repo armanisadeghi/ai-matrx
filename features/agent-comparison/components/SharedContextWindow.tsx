@@ -234,13 +234,12 @@ function SharedContextComposerFooter({
           className="flex-1 min-w-0 text-[11px] bg-background border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:border-primary"
         />
         <Button
-          size="sm"
-          variant="default"
+          icon={<Plus />}
+          variant="primary"
           onClick={handleAdd}
           disabled={submittableCount === 0}
-          className="!h-7 shrink-0"
+          className="shrink-0"
         >
-          <Plus className="w-3 h-3" />
           Add
         </Button>
       </div>

@@ -62,14 +62,12 @@ export function WeeklyEarningsField({ value, onChange }: WeeklyEarningsFieldProp
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
+                icon={<Zap />}
                 type="button"
-                variant={isAtMax ? "secondary" : "ghost"}
-                size="sm"
-                className="h-7 px-2 text-xs gap-1.5"
+                variant={isAtMax ? "outline" : "quiet"}
                 onClick={() => onChange(maxEarnings)}
                 aria-pressed={isAtMax}
               >
-                <Zap className="h-3 w-3" />
                 Max
               </Button>
             </TooltipTrigger>
@@ -122,12 +120,10 @@ function AwcHelper({ onApply }: { onApply: (weeklyEarnings: number) => void }) {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          icon={<Calculator />}
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+          variant="quiet"
         >
-          <Calculator className="h-3 w-3" />
           Calculate from gross
         </Button>
       </PopoverTrigger>
@@ -186,15 +182,14 @@ function AwcHelper({ onApply }: { onApply: (weeklyEarnings: number) => void }) {
           <div className="flex items-center justify-end gap-2">
             <Button
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => setOpen(false)}
             >
               Cancel
             </Button>
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={apply}
               disabled={!valid}
             >

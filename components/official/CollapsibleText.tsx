@@ -130,36 +130,31 @@ export function CollapsibleText({
       {isCollapsed ? (
         <div className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center">
           <Button
+            icon={<ChevronDown />}
             type="button"
             variant="outline"
-            size="icon"
             aria-label={expandLabel}
             aria-expanded={false}
             onClick={(event) => {
               event.stopPropagation();
               onExpandedChange(true);
             }}
-            className="pointer-events-auto h-11 w-11 rounded-full bg-card/90 shadow-sm backdrop-blur-sm sm:h-6 sm:w-6"
-          >
-            <ChevronDown className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-          </Button>
+            className="pointer-events-auto"
+          />
         </div>
       ) : isOverflowing ? (
         <div className="flex justify-center pt-0.5">
           <Button
+            icon={<ChevronUp />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             aria-label={collapseLabel}
             aria-expanded
             onClick={(event) => {
               event.stopPropagation();
               onExpandedChange(false);
             }}
-            className="h-11 w-11 rounded-full text-muted-foreground sm:h-6 sm:w-6"
-          >
-            <ChevronUp className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
-          </Button>
+          />
         </div>
       ) : null}
     </div>
@@ -186,32 +181,26 @@ export function CollapsibleTextGroupControls({
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            icon={<ChevronsDown className="!size-[18px] lg:!size-3.5" />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             aria-label="Expand all"
             onClick={onExpandAll}
             disabled={disabled || allExpanded}
-            className="h-11 w-11 lg:h-7 lg:w-7"
-          >
-            <ChevronsDown className="!size-[18px] lg:!size-3.5" />
-          </Button>
+          />
         </TooltipTrigger>
         <TooltipContent side="top">Expand all</TooltipContent>
       </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
+            icon={<ChevronsUp className="!size-[18px] lg:!size-3.5" />}
             type="button"
-            variant="ghost"
-            size="icon"
+            variant="quiet"
             aria-label="Collapse all"
             onClick={onCollapseAll}
             disabled={disabled || !anyExpanded}
-            className="h-11 w-11 lg:h-7 lg:w-7"
-          >
-            <ChevronsUp className="!size-[18px] lg:!size-3.5" />
-          </Button>
+          />
         </TooltipTrigger>
         <TooltipContent side="top">Collapse all</TooltipContent>
       </Tooltip>

@@ -424,18 +424,16 @@ export function OffboardEmployeeDialog({
             type="button"
             variant="outline"
             onClick={onClose}
-            className="min-h-11 sm:min-h-9"
           >
             Cancel
           </Button>
           <Button
+            icon={<DoorOpen />}
             type="button"
-            variant="destructive"
+            variant="danger"
             onClick={submit}
             disabled={!canSubmit}
-            className="min-h-11 sm:min-h-9"
           >
-            <DoorOpen className="mr-1.5 h-3.5 w-3.5" />
             Offboard {subject.displayName}
           </Button>
         </DialogFooter>

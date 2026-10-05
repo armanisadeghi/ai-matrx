@@ -140,48 +140,43 @@ export function CharacterCounter({
           ) : null}
         </div>
         <div className="flex flex-wrap gap-1.5">
-          <Button variant="outline" size="sm" onClick={pasteText}>
-            <ClipboardPaste className="h-3.5 w-3.5" />
+          <Button icon={<ClipboardPaste />} variant="outline" onClick={pasteText}>
             Paste
           </Button>
           <Button
+            icon={<BrushCleaning />}
             variant="outline"
-            size="sm"
             onClick={() => setText(normalizeCounterText(text))}
             disabled={!text}
           >
-            <BrushCleaning className="h-3.5 w-3.5" />
             Clean
           </Button>
           <Button
+            icon={copied ? (
+              <Check />
+            ) : (
+              <Copy />
+            )}
             variant="outline"
-            size="sm"
             onClick={copyText}
             disabled={!text}
           >
-            {copied ? (
-              <Check className="h-3.5 w-3.5" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
             {copied ? "Copied" : "Copy"}
           </Button>
           <Button
+            icon={<Download />}
             variant="outline"
-            size="sm"
             onClick={downloadText}
             disabled={!text}
           >
-            <Download className="h-3.5 w-3.5" />
             Download
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Eraser />}
+            variant="quiet"
             onClick={() => setText("")}
             disabled={!text}
           >
-            <Eraser className="h-3.5 w-3.5" />
             Clear
           </Button>
         </div>

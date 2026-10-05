@@ -55,9 +55,7 @@ export default function TaskScopeFilter({ className }: TaskScopeFilterProps) {
         </h2>
         {filterScopeIds.length > 0 && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 text-xs"
+            variant="quiet"
             onClick={handleClear}
           >
             Clear
@@ -150,9 +148,8 @@ export function ActiveScopeFilterChips({ className }: { className?: string }) {
         );
       })}
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-5 text-[11px] px-2 ml-auto"
+        variant="quiet"
+        className="ml-auto"
         onClick={() => dispatch(clearFilterScopes())}
       >
         Clear all

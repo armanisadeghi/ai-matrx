@@ -812,12 +812,10 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
                 {!layout.sideInline && (
                   <div className="flex shrink-0 justify-end border-b px-3 py-1">
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 text-xs"
+                      icon={<Boxes />}
+                      variant="quiet"
                       onClick={() => setSideSheetOpen(true)}
                     >
-                      <Boxes className="h-3.5 w-3.5" />
                       Chunks, entities and attachments
                       {!chunksRead.loading ? ` (${chunksRead.total})` : ""}
                     </Button>
@@ -944,9 +942,8 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
             <div className="flex h-10 shrink-0 items-center gap-2 border-b px-4">
               <h2 className="text-sm font-semibold">Chunks, entities and attachments</h2>
               <Button
-                variant="ghost"
-                size="sm"
-                className="ml-auto h-7 px-2 text-xs"
+                variant="quiet"
+                className="ml-auto"
                 onClick={() => setSideSheetOpen(false)}
               >
                 Close
@@ -1014,8 +1011,7 @@ export function SourceStudio({ documentId, deepLink, embedded = false }: SourceS
                     <Button variant="outline" onClick={() => setEditing(null)} disabled={savingEdit}>
                       Cancel
                     </Button>
-                    <Button onClick={() => void saveEdit()} disabled={savingEdit}>
-                      {savingEdit ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+                    <Button icon={savingEdit ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => void saveEdit()} disabled={savingEdit}>
                       Save edit
                     </Button>
                   </div>
@@ -1107,15 +1103,13 @@ function EmbeddedActionBar({
             </>
           );
           return a.href ? (
-            <Button key={a.label} asChild size="sm" variant="ghost" className="h-7 gap-1 px-2 text-xs">
+            <Button key={a.label} asChild variant="quiet">
               <a href={a.href}>{body}</a>
             </Button>
           ) : (
             <Button
               key={a.label}
-              size="sm"
-              variant={a.primary ? "default" : "ghost"}
-              className="h-7 gap-1 px-2 text-xs"
+              variant={a.primary ? "primary" : "quiet"}
               disabled={a.disabled}
               onClick={a.onPress}
             >
@@ -1374,11 +1368,10 @@ function PortionTextPane({
           autoFocus
         />
         <div className="flex gap-2">
-          <Button size="sm" onClick={onEditSave} disabled={savingEdit}>
-            {savingEdit && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+          <Button icon={savingEdit && <Loader2 className="animate-spin" />} variant="primary" onClick={onEditSave} disabled={savingEdit}>
             Save edit
           </Button>
-          <Button size="sm" variant="outline" onClick={onEditCancel} disabled={savingEdit}>
+          <Button variant="outline" onClick={onEditCancel} disabled={savingEdit}>
             Cancel
           </Button>
         </div>

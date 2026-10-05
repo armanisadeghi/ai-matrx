@@ -194,15 +194,14 @@ export function MemoryAidButton({
 
   const chatButton = run.conversationId ? (
     <Button
+      icon={<MessageSquare />}
       type="button"
-      variant="ghost"
-      size="sm"
-      className={toolbar ? STUDY_TOOL_BUTTON : "gap-1.5 text-xs"}
+      variant="quiet"
+      className={toolbar ? STUDY_TOOL_BUTTON : ""}
       onClick={openConversation}
       aria-label="Chat about this memory aid"
       title="Chat about this memory aid"
     >
-      <MessageSquare className="h-3.5 w-3.5" />
       Chat
     </Button>
   ) : null;
@@ -213,23 +212,19 @@ export function MemoryAidButton({
       {toolbar ? (
         <>
           <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={cn(
-              STUDY_TOOL_BUTTON,
-              (loading || shown) && STUDY_TOOL_BUTTON_ACTIVE,
+            icon={loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Brain />
             )}
+            type="button"
+            variant="quiet"
+            className={cn(STUDY_TOOL_BUTTON, (loading || shown) && STUDY_TOOL_BUTTON_ACTIVE)}
             onClick={() => void fetchHint()}
             disabled={loading}
             title={shown || asked ? "Another memory aid" : "Give me a memory aid"}
             aria-label="Memory aid"
           >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Brain className="h-3.5 w-3.5" />
-            )}
             Memory
           </Button>
           {chatButton}
@@ -237,18 +232,17 @@ export function MemoryAidButton({
       ) : (
         <div className="flex items-center gap-1">
           <Button
+            icon={loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Brain />
+            )}
             type="button"
-            variant="ghost"
-            size="sm"
-            className="flex-1 gap-1.5 text-xs"
+            variant="quiet"
+            className="flex-1"
             onClick={() => void fetchHint()}
             disabled={loading}
           >
-            {loading ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Brain className="h-3.5 w-3.5" />
-            )}
             {shown || asked ? "Another memory aid" : "Give me a memory aid"}
           </Button>
           {chatButton}

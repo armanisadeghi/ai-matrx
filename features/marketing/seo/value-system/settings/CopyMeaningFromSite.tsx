@@ -130,17 +130,15 @@ export function CopyMeaningFromSite({ siteId }: { siteId: string }) {
             ))}
           </select>
           <Button
-            size="sm"
+            icon={run.isPending ? (
+              <Loader2 className="animate-spin" aria-hidden />
+            ) : (
+              <ArrowRight aria-hidden />
+            )}
             variant="outline"
-            className="h-8 text-xs"
             disabled={!sourceId || run.isPending}
             onClick={() => run.mutate(true)}
           >
-            {run.isPending ? (
-              <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-            ) : (
-              <ArrowRight className="mr-1 h-3 w-3" aria-hidden />
-            )}
             See what would copy
           </Button>
         </div>
@@ -182,16 +180,15 @@ export function CopyMeaningFromSite({ siteId }: { siteId: string }) {
               </p>
             ) : (
               <Button
-                size="sm"
-                className="h-8"
+                icon={run.isPending ? (
+                  <Loader2 className="animate-spin" aria-hidden />
+                ) : (
+                  <Copy aria-hidden />
+                )}
+                variant="primary"
                 disabled={run.isPending}
                 onClick={() => run.mutate(false)}
               >
-                {run.isPending ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" aria-hidden />
-                ) : (
-                  <Copy className="mr-1 h-3 w-3" aria-hidden />
-                )}
                 Copy {preview.total_copied}{" "}
                 {preview.total_copied === 1 ? "item" : "items"}
               </Button>

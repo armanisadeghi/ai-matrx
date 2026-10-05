@@ -820,10 +820,9 @@ export function TaskEditorBody({
                       {taskId}
                     </code>
                     <Button
-                      size="sm"
-                      variant="ghost"
+                      variant="quiet"
                       onClick={handleCopyId}
-                      className="h-7 w-7 p-0 shrink-0"
+                      className="w-7 shrink-0"
                     >
                       {idCopied ? (
                         <Check className="w-3 h-3 text-green-500" />

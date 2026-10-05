@@ -53,14 +53,13 @@ export function CategoryPicker({
           />
         </div>
         <Button
+          icon={<Plus />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={() => setOpenCreate(true)}
           disabled={disabled}
-          className="h-9 gap-1 shrink-0"
+          className="shrink-0"
         >
-          <Plus className="h-3.5 w-3.5" />
           New
         </Button>
       </div>
@@ -176,15 +175,15 @@ function NewCategoryDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={busy}>
+          <Button variant="quiet" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
           <Button
+            icon={busy && <Loader2 className="animate-spin" />}
+            variant="primary"
             onClick={() => void onSubmit()}
             disabled={busy || !label.trim()}
-            className="gap-1.5"
           >
-            {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Create
           </Button>
         </DialogFooter>

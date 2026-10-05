@@ -6,8 +6,11 @@
 // data home's "Start from an example" (tableFromExample with a use case) — were retired onto it.
 // Every entry links here, never to a second gallery.
 
-/** The /make gallery, scrolled to its "Start from a template" section. */
-export const TEMPLATE_GALLERY_HREF = "/make#make-templates";
+/** THE gallery, one route for everyone (lane CHAIR-GALLERY, 2026-10-05): /templates. */
+export const TEMPLATE_GALLERY_HREF = "/templates";
 
-/** One published template's preview and install. */
-export const templatePreviewHref = (templateId: string): string => `/make/templates/${encodeURIComponent(templateId)}`;
+/**
+ * One template's page and install. A version id resolves to the template's readable address
+ * (/templates/<slug>); an organization's own saved template opens on the same route, signed in.
+ */
+export const templatePreviewHref = (templateId: string): string => `/templates/${encodeURIComponent(templateId)}`;

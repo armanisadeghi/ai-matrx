@@ -433,22 +433,18 @@ export function AdminAuditTable<T>({
         {toolbarExtra}
         {hasActiveFilters ? (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-8"
+            icon={<X />}
+            variant="quiet"
             onClick={clearAllFilters}
-          >
-            <X className="mr-1 h-3.5 w-3.5" /> Clear filters
+          > Clear filters
           </Button>
         ) : null}
         {csvFilename ? (
           <Button
+            icon={<Download />}
             variant="outline"
-            size="sm"
-            className="h-8"
             onClick={handleExport}
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5" /> Export CSV
+          > Export CSV
           </Button>
         ) : null}
         {copyForAi && processed.length > 0 ? (

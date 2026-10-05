@@ -462,13 +462,8 @@ export function IntakeCaptureScreenV2({
                   />
                 )}
                 <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-9 shrink-0 rounded-full px-3 text-white/90 hover:bg-white/20 hover:text-white",
-                    session.notes.trim() !== "" ? "bg-white/20" : "bg-white/10",
-                    !qrMode && "flex-1",
-                  )}
+                  variant="quiet"
+                  className={cn("shrink-0", !qrMode && "flex-1")}
                   onClick={() => setNotesOpen((o) => !o)}
                   aria-label={qrMode ? "Item notes" : "Batch notes"}
                 >
@@ -483,7 +478,8 @@ export function IntakeCaptureScreenV2({
                 />
                 {instantMode && qrMode && (
                   <Button
-                    className="h-9 shrink-0 rounded-full px-3"
+                    variant="primary"
+                    className="shrink-0"
                     onClick={onProcess}
                     disabled={
                       currentAsset === null ||
@@ -525,25 +521,22 @@ export function IntakeCaptureScreenV2({
           ),
           modeRowTrailing: qrMode ? (
             <Button
-              size="sm"
-              className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
+              icon={<PackagePlus />}
+              variant="primary"
               onClick={session.nextItem}
               disabled={currentAsset === null || host.recording}
             >
-              <PackagePlus className="mr-1 h-3.5 w-3.5" />
               Next
             </Button>
           ) : (
             <Button
-              size="sm"
-              variant="secondary"
-              className="h-8 whitespace-nowrap rounded-full px-2.5 text-xs"
+              icon={<Scissors />}
+              variant="outline"
               onClick={() =>
                 host.capturePhotoWith({ fileNamePrefix: "delineator" })
               }
               disabled={host.recording || host.cameraBlocked}
             >
-              <Scissors className="mr-1 h-3.5 w-3.5" />
               Break
             </Button>
           ),

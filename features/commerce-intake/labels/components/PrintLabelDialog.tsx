@@ -294,7 +294,7 @@ export function PrintLabelDialog({
               Reprint current
             </Button>
           )}
-          <Button disabled={busy} onClick={() => void assignNew()}>
+          <Button variant="primary" disabled={busy} onClick={() => void assignNew()}>
             {busy
               ? "Working…"
               : livePrimary

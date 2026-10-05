@@ -851,7 +851,12 @@ export default function JsonBlockDetectorPage() {
         <div className="flex min-h-0 flex-1 flex-col gap-2">
           <div className="flex shrink-0 items-center gap-2">
             <Button
-              size="sm"
+              icon={isRunning ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Play />
+              )}
+              variant="primary"
               onClick={runStream}
               disabled={
                 isRunning ||
@@ -864,20 +869,14 @@ export default function JsonBlockDetectorPage() {
                 !!samplesError
               }
             >
-              {isRunning ? (
-                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-              ) : (
-                <Play className="mr-1.5 size-3.5" />
-              )}
               Run
             </Button>
             <Button
-              size="sm"
+              icon={<RotateCcw />}
               variant="outline"
               onClick={reset}
               disabled={!isRunning && events.length === 0}
             >
-              <RotateCcw className="mr-1.5 size-3.5" />
               Reset
             </Button>
             {isRunning && (

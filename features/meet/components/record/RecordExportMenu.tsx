@@ -112,12 +112,11 @@ export function RecordExportMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 gap-1.5">
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+        <Button icon={busy ? (
+            <Loader2 className="animate-spin" aria-hidden="true" />
           ) : (
-            <Download className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
+            <Download aria-hidden="true" />
+          )} variant="outline">
           Export
         </Button>
       </DropdownMenuTrigger>

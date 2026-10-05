@@ -193,26 +193,23 @@ export default function ScraperSearchAndScrapePage() {
               </div>
               {allResults.length > 0 && (
                 <Button
+                  icon={<X />}
                   onClick={handleClear}
                   variant="outline"
-                  size="sm"
-                  className="h-8"
                 >
-                  <X className="w-3.5 h-3.5 mr-1" />
                   Clear
                 </Button>
               )}
               <Button
+                icon={isLoading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Zap />
+                )}
+                variant="primary"
                 onClick={handleSearchAndScrape}
                 disabled={!keyword.trim() || isLoading}
-                size="sm"
-                className="h-8 gap-1.5"
               >
-                {isLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Zap className="w-3.5 h-3.5" />
-                )}
                 {isLoading
                   ? (statusMessage ?? "Processing...")
                   : "Search & Scrape"}

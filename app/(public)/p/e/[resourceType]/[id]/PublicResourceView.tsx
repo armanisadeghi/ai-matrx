@@ -105,7 +105,7 @@ export function PublicResourceView({ resource }: { resource: PublicResource }) {
           size="sm"
         />
       )}
-      <Button asChild size="sm" variant="outline" className="h-7 px-2 sm:px-3">
+      <Button asChild variant="outline">
         <Link href={source.href} aria-label={source.label}>
           <span className="hidden sm:inline">{source.label}</span>
           <ArrowUpRight className="h-4 w-4 sm:ml-1" />

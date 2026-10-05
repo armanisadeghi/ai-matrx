@@ -204,8 +204,12 @@ export function AiVisibilityReport({
           </div>
           {url ? (
             <Button
-              size="lg"
-              className="gap-2"
+              icon={copied ? (
+                <CheckCircle2 />
+              ) : (
+                <Share2 />
+              )}
+              variant="primary"
               onClick={() =>
                 void share({
                   title: `${result.brand_name} AI Visibility Report`,
@@ -216,11 +220,6 @@ export function AiVisibilityReport({
                 })
               }
             >
-              {copied ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <Share2 className="h-4 w-4" />
-              )}
               {copied ? "Link copied" : "Share this report"}
             </Button>
           ) : null}
@@ -419,7 +418,6 @@ export function AiVisibilityReport({
                           <Button
                             key={`${sourceUrl}-${index}`}
                             asChild
-                            size="sm"
                             variant="outline"
                             className="max-w-full"
                           >
@@ -460,7 +458,7 @@ export function AiVisibilityReport({
               an anonymous recipient can run their own check right now, which
               is the entire referral mechanic. See
               features/sharing/lenses/source-surface.ts. */}
-          <Button asChild size="lg" className="mt-5 gap-2">
+          <Button variant="primary" asChild className="mt-5">
             <Link href="/seo/ai-visibility">
               Check your own brand
               <ArrowRight className="h-4 w-4" />

@@ -120,7 +120,7 @@ export function AudioStudyHome() {
             <p className="text-sm text-muted-foreground">
               Sign in to view and create your audio studies.
             </p>
-            <Button asChild className="mt-4" size="sm">
+            <Button variant="primary" asChild className="mt-4">
               <Link href={loginHref}>Sign in</Link>
             </Button>
           </div>
@@ -140,22 +140,19 @@ export function AudioStudyHome() {
           label="audio studies"
         />
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => router.push("/education/audio-study/new/manual")}>Add audio file</Button>
+          <Button variant="outline" onClick={() => router.push("/education/audio-study/new/manual")}>Add audio file</Button>
           <Button
+            icon={<Mic />}
             variant="outline"
-            size="sm"
-            className="gap-1.5"
             onClick={() => router.push("/education/audio-study/review")}
           >
-            <Mic className="h-4 w-4" />
             Audio review
           </Button>
           <Button
-            size="sm"
-            className="gap-1.5"
+            icon={<Plus />}
+            variant="primary"
             onClick={() => router.push("/education/audio-study/new")}
           >
-            <Plus className="h-4 w-4" />
             New audio
           </Button>
         </div>
@@ -193,7 +190,7 @@ function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
     <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 p-10 text-center">
       <AlertCircle className="h-8 w-8 text-destructive" />
       <p className="text-sm text-muted-foreground">Could not load audio studies right now.</p>
-      <Button size="sm" onClick={onRetry}>Try again</Button>
+      <Button variant="primary" onClick={onRetry}>Try again</Button>
       <ErrorAlchemyMenu />
     </div>
   );
@@ -258,8 +255,7 @@ function EmptyState({ onNew }: { onNew: () => void }) {
       <p className="text-sm text-muted-foreground">
         No audio yet. Turn a deck or a topic into a produced audio session.
       </p>
-      <Button size="sm" className="gap-1.5" onClick={onNew}>
-        <Plus className="h-4 w-4" />
+      <Button icon={<Plus />} variant="primary" onClick={onNew}>
         New audio
       </Button>
     </div>

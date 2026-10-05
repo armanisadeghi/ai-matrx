@@ -895,13 +895,11 @@ export function InitialCropSkipButton({
   if (controller.totalFiles <= 1) return null;
   return (
     <Button
-      variant="ghost"
-      size="sm"
+      icon={<SkipForward />}
+      variant="quiet"
       onClick={controller.skipRemaining}
       disabled={controller.isProcessing}
-      className="text-muted-foreground"
     >
-      <SkipForward className="h-3.5 w-3.5 mr-1.5" />
       Use originals for the rest
     </Button>
   );
@@ -916,11 +914,11 @@ export function InitialCropApplyButton({
 }: InitialCropApplyButtonProps) {
   return (
     <Button
-      size="sm"
+      icon={<Crop />}
+      variant="primary"
       onClick={controller.applyCurrent}
       disabled={controller.isProcessing || !controller.hasCrop}
     >
-      <Crop className="h-3.5 w-3.5 mr-1.5" />
       {controller.isProcessing
         ? "Cropping…"
         : controller.cropIsModified

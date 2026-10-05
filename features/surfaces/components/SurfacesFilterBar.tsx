@@ -189,13 +189,11 @@ export function SurfacesFilterBar(props: Props) {
   return (
     <>
       <Button
-        size="sm"
-        variant={count > 0 ? "secondary" : "outline"}
-        className="h-9 gap-1.5"
+        icon={<SlidersHorizontal />}
+        variant={count > 0 ? "outline" : "outline"}
         onClick={() => setOpen(true)}
         aria-label={count > 0 ? `Filters, ${count} on` : "Filters"}
       >
-        <SlidersHorizontal className="h-4 w-4" />
         Filters
         {count > 0 && <span className="tabular-nums">{count}</span>}
       </Button>
@@ -209,13 +207,13 @@ export function SurfacesFilterBar(props: Props) {
             <div className="flex gap-2 pt-2">
               <Button
                 variant="outline"
-                className="h-11 flex-1"
+                className="flex-1"
                 disabled={count === 0}
                 onClick={() => props.onClear?.()}
               >
                 Clear
               </Button>
-              <Button className="h-11 flex-1" onClick={() => setOpen(false)}>
+              <Button variant="primary" className="flex-1" onClick={() => setOpen(false)}>
                 Done
               </Button>
             </div>

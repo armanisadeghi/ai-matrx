@@ -332,7 +332,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
             never edits Google contacts, calendars, tasks, YouTube content, or
             Tag Manager configuration through these connections.
           </p>
-          <Button asChild size="sm" variant="outline" className="min-h-11">
+          <Button asChild variant="outline">
             <Link
               href={marketingRoutes.connectionsGoogle()}
               target="_blank"
@@ -359,13 +359,13 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Button
-                className="min-h-11"
+                icon={connect.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : null}
+                variant="primary"
                 onClick={() => void authorizeSweep()}
                 disabled={!allDisclosuresAccepted || connect.isPending}
               >
-                {connect.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : null}
                 Authorize all five read-only features
               </Button>
               {sweepConnections.length ? (
@@ -415,11 +415,11 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                 </span>
               </label>
               {sweepConnections.length ? (
-                <Button asChild className="min-h-11">
+                <Button variant="primary" asChild>
                   <Link href="/crm/import">Open Google Contacts import</Link>
                 </Button>
               ) : (
-                <Button className="min-h-11" disabled>
+                <Button type="submit" variant="primary" disabled>
                   Authorize the batch above first
                 </Button>
               )}
@@ -505,7 +505,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
                 </ResultList>
                 {googleTasks.some((list) => list.children?.length) ? (
                   <Button
-                    className="min-h-11"
+                    variant="primary"
                     onClick={() => setTaskImportOpen(true)}
                   >
                     Choose tasks to import into AI Matrx
@@ -714,13 +714,13 @@ function CapabilityCard({
             </select>
             {extraControl}
             <Button
-              className="min-h-11"
+              icon={loading ? (
+                <Loader2 className="animate-spin" />
+              ) : null}
+              variant="primary"
               onClick={onLoad}
               disabled={loading || loadDisabled}
             >
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
               {resultLabel}
             </Button>
           </>

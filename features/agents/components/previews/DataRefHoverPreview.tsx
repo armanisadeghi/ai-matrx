@@ -170,12 +170,11 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
 
       <div className="flex items-center gap-1.5 pt-1 border-t border-border">
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-7 px-2 text-xs gap-1 ml-auto"
+          icon={copied ? <Check className="text-success" /> : <Copy />}
+          variant="quiet"
+          className="ml-auto"
           onClick={handleCopyJson}
         >
-          {copied ? <Check className="text-success" /> : <Copy />}
           {copied ? "Copied" : "Copy JSON"}
         </Button>
       </div>

@@ -255,7 +255,7 @@ function DeckProgressBody({
         <p className="text-sm text-muted-foreground">
           Study this deck once to start tracking it.
         </p>
-        <Button asChild className="mt-1 h-11 px-6">
+        <Button variant="primary" asChild className="mt-1">
           <Link href={`${deckHref}/study`}>
             <Play className="mr-1.5 h-4 w-4 fill-current" />
             Study
@@ -315,7 +315,7 @@ function DeckProgressBody({
             )}
           </h2>
           {practice.length > 0 && (
-            <Button asChild className="h-10 px-4">
+            <Button variant="primary" asChild>
               <Link
                 href={`${EDU_BASE}/weak-areas?set=${setId}`}
                 data-progress-action="practice"

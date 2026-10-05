@@ -290,17 +290,16 @@ export function AiMatrxReplyComposer({
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Send />
+          )}
+          variant="primary"
           type="button"
-          size="sm"
           onClick={() => void submit()}
           disabled={!canSend}
-          className="gap-1.5"
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Send className="h-3.5 w-3.5" />
-          )}
           Send to AI Matrx
         </Button>
         <IntelligenceIndicator

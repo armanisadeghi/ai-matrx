@@ -126,9 +126,9 @@ export function SshAccessPanel({
             </div>
           )}
           <Button
+            variant="primary"
             onClick={handleRequestAccess}
             disabled={disabled || loading}
-            size="sm"
           >
             {loading ? (
               <>
@@ -170,10 +170,8 @@ export function SshAccessPanel({
           </CardTitle>
           <Button
             variant="outline"
-            size="sm"
             onClick={handleRequestAccess}
             disabled={loading}
-            className="h-7 px-2 text-xs"
           >
             {loading ? (
               <Loader2 className="w-3 h-3 animate-spin" />
@@ -204,10 +202,9 @@ export function SshAccessPanel({
               {localSshCommand}
             </code>
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={() => copyToClipboard(localSshCommand, "command")}
-              className="shrink-0 h-8 w-8 p-0"
+              className="shrink-0 w-8"
             >
               {copiedField === "command" ? (
                 <Check className="w-3.5 h-3.5 text-green-500" />
@@ -220,19 +217,15 @@ export function SshAccessPanel({
 
         <div className="flex items-center gap-2">
           <Button
+            icon={<Download />}
             variant="outline"
-            size="sm"
             onClick={handleDownloadKey}
-            className="text-xs"
           >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
             Download Key (.pem)
           </Button>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => copyToClipboard(access.private_key, "key")}
-            className="text-xs"
           >
             {copiedField === "key" ? (
               <>

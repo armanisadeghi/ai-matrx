@@ -696,12 +696,11 @@ function AutoCreateAgentAppFormWithAgent({
         {/* Back button and heading */}
         <div className="space-y-4">
           <Button
-            variant="ghost"
+            icon={<ChevronRight className="rotate-180" />}
+            variant="quiet"
             onClick={() => (onBack ? onBack() : setCreationMode("initial"))}
-            className="gap-2"
             disabled={isCreating}
           >
-            <ChevronRight className="w-4 h-4 rotate-180" />
             Back
           </Button>
 
@@ -774,10 +773,10 @@ function AutoCreateAgentAppFormWithAgent({
         {/* Submit */}
         <div className="flex justify-end pt-4 border-t">
           <Button
+            variant="primary"
             onClick={handleSubmit}
             disabled={!isValid || isCreating}
-            size="lg"
-            className="min-w-[200px] gap-2"
+            className="min-w-[200px]"
           >
             {!isValid ? (
               "Describe your vision above"
@@ -798,12 +797,11 @@ function AutoCreateAgentAppFormWithAgent({
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Back button */}
       <Button
-        variant="ghost"
+        icon={<ChevronRight className="rotate-180" />}
+        variant="quiet"
         onClick={() => setCreationMode("initial")}
-        className="gap-2"
         disabled={isCreating}
       >
-        <ChevronRight className="w-4 h-4 rotate-180" />
         Back
       </Button>
 
@@ -1503,10 +1501,10 @@ function AutoCreateAgentAppFormWithAgent({
       {/* Submit Button */}
       <div className="flex justify-end pt-4 border-t">
         <Button
+          variant="primary"
           onClick={handleSubmit}
           disabled={!isValid || isCreating}
-          size="lg"
-          className="min-w-[200px] gap-2"
+          className="min-w-[200px]"
         >
           {!isValid ? (
             "Complete All Steps"
@@ -1668,7 +1666,7 @@ function ErrorCard({
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             {draftAppId && (
-              <Button variant="outline" size="sm" asChild className="gap-2">
+              <Button variant="outline" asChild>
                 <Link href={draftRecoveryHref(draftAppId)} target="_blank">
                   <ExternalLink className="w-4 h-4" />
                   Open draft
@@ -1677,12 +1675,10 @@ function ErrorCard({
             )}
             {canRetry && (
               <Button
+                icon={<RefreshCw />}
                 variant="outline"
-                size="sm"
                 onClick={onRetry}
-                className="gap-2"
               >
-                <RefreshCw className="w-4 h-4" />
                 Try Again
               </Button>
             )}

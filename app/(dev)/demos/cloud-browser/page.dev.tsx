@@ -35,7 +35,7 @@ export default function CloudBrowserDemoPage() {
       </header>
 
       <section className="flex flex-wrap gap-2">
-        <Button onClick={() => openPanel({ initialProfileId: "bp_personal_default" })}>
+        <Button variant="primary" onClick={() => openPanel({ initialProfileId: "bp_personal_default" })}>
           Open the Cloud Browser panel
         </Button>
         <Button variant="outline" onClick={() => setInline((v) => !v)}>

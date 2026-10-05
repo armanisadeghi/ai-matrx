@@ -8,6 +8,7 @@ import {
     Loader2, AlertCircle, CheckCircle2, Edit2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -146,8 +147,7 @@ export function AgentWiringDashboard() {
                             View and manage agent assignments across all templates. Each agent role can use a different prompt builtin per template.
                         </p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={loadData} className="gap-1.5">
-                        <RefreshCw className="h-3.5 w-3.5" />
+                    <Button icon={<RefreshCw />} variant="outline" onClick={loadData}>
                         Refresh
                     </Button>
                 </div>
@@ -306,23 +306,20 @@ export function AgentWiringDashboard() {
                                                                         showPinnedAgent={Boolean(val)}
                                                                         triggerSlot={
                                                                             <Button
+                                                                                iconEnd={<ChevronDown />}
                                                                                 type="button"
                                                                                 variant="outline"
-                                                                                size="sm"
-                                                                                className="h-8 min-w-0 flex-1 justify-between px-2 text-xs"
+                                                                                className="min-w-0 flex-1 justify-between"
                                                                                 disabled={saving}
                                                                             >
                                                                                 <span className="truncate">{val ? (builtinNames[val] ?? 'Select system agent') : 'System default'}</span>
-                                                                                <ChevronDown className="h-3 w-3 shrink-0" />
                                                                             </Button>
                                                                         }
                                                                     />
                                                                     {val && !saving && (
                                                                         <Button
                                                                             type="button"
-                                                                            variant="ghost"
-                                                                            size="sm"
-                                                                            className="h-8 px-2 text-xs"
+                                                                            variant="quiet"
                                                                             onClick={() => void handleAgentChange(template.id, key, '__none__')}
                                                                         >
                                                                             Default
@@ -350,14 +347,14 @@ export function AgentWiringDashboard() {
                                                             )}
                                                         </div>
                                                         {!isEditing && (
-                                                            <Button
+                                                            <SurfaceButton
                                                                 size="icon"
                                                                 variant="ghost"
                                                                 className="h-7 w-7 shrink-0"
                                                                 onClick={() => setEditingCell({ templateId: template.id, key })}
                                                             >
                                                                 <Edit2 className="h-3 w-3" />
-                                                            </Button>
+                                                            </SurfaceButton>
                                                         )}
                                                     </div>
                                                 );

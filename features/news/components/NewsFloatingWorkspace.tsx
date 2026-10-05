@@ -114,13 +114,11 @@ export function NewsFloatingWorkspace() {
               <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted rounded-full uppercase">{country}</span>
            </div>
            <Button
-              variant="ghost"
-              size="sm"
+              icon={loading ? <Loader2 className="animate-spin" /> : <RefreshCcw />}
+              variant="quiet"
               onClick={handleFetchNews}
               disabled={loading}
-              className="h-6 px-2 text-[10px]"
             >
-              {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCcw className="h-3 w-3 mr-1.5" />}
               Refresh
            </Button>
         </div>

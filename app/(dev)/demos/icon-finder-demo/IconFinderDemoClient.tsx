@@ -112,8 +112,7 @@ export function IconFinderDemoClient() {
                 </div>
                 <Button
                   type="button"
-                  variant={mounted[key] ? "secondary" : "outline"}
-                  size="sm"
+                  variant={mounted[key] ? "outline" : "outline"}
                   className="shrink-0"
                   onClick={() => toggle(key)}
                 >
@@ -125,9 +124,7 @@ export function IconFinderDemoClient() {
           {anyMounted ? (
             <Button
               type="button"
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground"
+              variant="quiet"
               onClick={unmountAll}
             >
               Unmount all

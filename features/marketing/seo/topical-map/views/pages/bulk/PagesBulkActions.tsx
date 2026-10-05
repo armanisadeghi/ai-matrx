@@ -180,17 +180,15 @@ function BulkActionPopover({
     <Popover open={open} onOpenChange={onOpenChange}>
       <PopoverTrigger asChild>
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Icon aria-hidden />
+          )}
           type="button"
-          size="sm"
-          variant={action.destructive ? "destructive" : "outline"}
-          className="h-11 gap-1.5 px-2 text-xs lg:h-7"
+          variant={action.destructive ? "danger" : "outline"}
           data-bulk-intent-action={action.id}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <Icon className="h-3.5 w-3.5" aria-hidden />
-          )}
           {action.label}
         </Button>
       </PopoverTrigger>
@@ -253,9 +251,8 @@ function BulkActionPopover({
         ) : (
           <Button
             type="button"
-            size="sm"
-            variant={action.destructive ? "destructive" : "default"}
-            className="h-7 self-start px-2 text-xs"
+            variant={action.destructive ? "danger" : "primary"}
+            className="self-start"
             onClick={() => {
               void flow.run(action.id, draft).then((result) => {
                 if (result === "written") onRan();

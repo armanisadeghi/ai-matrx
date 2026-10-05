@@ -248,8 +248,7 @@ export function IndustriesTab({
             Taxonomy (
             <UntrustedCount value={industries.length} read={readOf({ loading, error })} label="Industries" />)
           </div>
-          <Button size="sm" onClick={openCreate}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" /> New industry
+          <Button icon={<Plus />} variant="primary" onClick={openCreate}> New industry
           </Button>
         </div>
         {error ? (
@@ -307,9 +306,8 @@ export function IndustriesTab({
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 w-9 p-0 sm:h-7 sm:w-auto sm:px-2"
+                    variant="quiet"
+                    className="w-9 sm:w-auto"
                     onClick={(e) => {
                       e.stopPropagation();
                       openEdit(i);
@@ -320,9 +318,8 @@ export function IndustriesTab({
                   </Button>
                   {i.isActive ? (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0 text-muted-foreground hover:text-destructive sm:h-7 sm:w-auto sm:px-2"
+                      variant="quiet"
+                      className="w-9 sm:w-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         setDeactivateTarget(i);
@@ -333,9 +330,8 @@ export function IndustriesTab({
                     </Button>
                   ) : (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-9 w-9 p-0 text-muted-foreground hover:text-foreground sm:h-7 sm:w-auto sm:px-2"
+                      variant="quiet"
+                      className="w-9 sm:w-auto"
                       disabled={activeBusy}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -380,16 +376,16 @@ export function IndustriesTab({
                 </SelectContent>
               </Select>
               <Button
+                icon={assigning ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Plus />
+                )}
+                variant="primary"
                 onClick={onAssign}
                 disabled={!assignOrgId || assigning}
-                size="sm"
                 className="shrink-0"
               >
-                {assigning ? (
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Plus className="mr-1.5 h-3.5 w-3.5" />
-                )}
                 Assign
               </Button>
             </div>
@@ -427,9 +423,8 @@ export function IndustriesTab({
                       ) : null}
                     </span>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 shrink-0 px-2 text-muted-foreground hover:text-destructive"
+                      variant="quiet"
+                      className="shrink-0"
                       onClick={() =>
                         setUnassignTarget({ orgId: a.orgId, orgName: a.orgName })
                       }
@@ -563,10 +558,9 @@ export function IndustriesTab({
                 rows={2}
               />
             </div>
-            <Button onClick={onSave} disabled={saving} className="w-full">
-              {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : null}
+            <Button icon={saving ? (
+                <Loader2 className="animate-spin" />
+              ) : null} variant="primary" onClick={onSave} disabled={saving} className="w-full">
               {editing ? "Save changes" : "Create industry"}
             </Button>
           </div>

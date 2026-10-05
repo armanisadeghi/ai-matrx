@@ -663,13 +663,13 @@ export default function ReviewWalkWindow(props: ReviewWalkWindowProps) {
               </span>
             )}
             <Button
+              icon={<Flag aria-hidden />}
+              variant="primary"
               type="button"
-              size="sm"
-              className="ml-auto h-8 shrink-0 gap-1.5 rounded-full px-4 text-xs"
+              className="ml-auto shrink-0"
               disabled={submitting}
               onClick={openReport}
             >
-              <Flag className="h-3.5 w-3.5" aria-hidden />
               {flagEntries.length > 0
                 ? `Report ${flagEntries.length} flagged item${flagEntries.length === 1 ? "" : "s"}`
                 : "Report a problem"}
@@ -840,8 +840,7 @@ function StopStatePanel({
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="mt-3 h-9"
+          className="mt-3"
           onClick={onGoUp}
         >
           Back up one layer
@@ -947,22 +946,23 @@ function FilingPanel({
       </div>
       <div className="flex flex-col gap-2 pt-1 sm:flex-row">
         <Button
+          icon={submitting ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <CheckCircle2 aria-hidden />
+          )}
+          variant="primary"
           type="button"
-          className="h-10 w-full gap-1.5 rounded-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={submitting || title.trim().length < 3}
           onClick={onSubmit}
         >
-          {submitting ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <CheckCircle2 className="h-4 w-4" aria-hidden />
-          )}
           Send report
         </Button>
         <Button
           type="button"
           variant="outline"
-          className="h-10 w-full rounded-full sm:w-auto"
+          className="w-full sm:w-auto"
           disabled={submitting}
           onClick={onCancel}
         >
@@ -1035,8 +1035,6 @@ function ReceiptPanel({
       <Button
         type="button"
         variant="outline"
-        size="sm"
-        className="h-9"
         onClick={onClose}
       >
         Done

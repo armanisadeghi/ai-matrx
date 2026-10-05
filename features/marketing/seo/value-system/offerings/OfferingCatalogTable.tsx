@@ -352,8 +352,7 @@ export function OfferingCatalogTable({
           </span>
         ),
         actions: (
-          <Button size="sm" className="h-10 text-sm lg:h-7 lg:text-xs" onClick={onAdd}>
-            <Plus className="mr-1 h-3.5 w-3.5" />
+          <Button icon={<Plus />} variant="primary" onClick={onAdd}>
             Add offering
           </Button>
         ),
@@ -365,18 +364,14 @@ export function OfferingCatalogTable({
         actions: (_selected, ids) => (
           <div className="flex flex-wrap items-center gap-1.5">
             <Button
-              size="sm"
               variant="outline"
-              className="h-10 text-sm lg:h-7 lg:text-xs"
               disabled={busy || ids.length === 0}
               onClick={() => actions.onBulkAvailability(ids, true)}
             >
               Offer on this site
             </Button>
             <Button
-              size="sm"
               variant="outline"
-              className="h-10 text-sm text-destructive hover:text-destructive lg:h-7 lg:text-xs"
               disabled={busy || ids.length === 0}
               onClick={() => actions.onBulkAvailability(ids, false)}
             >
@@ -448,14 +443,11 @@ function RowActions({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          variant="ghost"
-          size="icon"
+          icon={<MoreVertical />}
+          variant="quiet"
           disabled={busy}
-          className="h-11 w-11 lg:h-5 lg:w-5 [&_svg]:size-3"
           aria-label={`Actions for ${o.name}`}
-        >
-          <MoreVertical className="h-4 w-4" />
-        </Button>
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuItem onSelect={() => actions.onToggleOffered(node, !o.available)}>

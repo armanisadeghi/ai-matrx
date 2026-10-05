@@ -471,16 +471,15 @@ function ResourceAttachPickerBody({
           </span>
           <div className="flex items-center gap-2">
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onClose}
               disabled={saving}
-              className="max-sm:min-h-11"
             >
               Cancel
             </Button>
             <Button
-              size="sm"
+              icon={saving && <Loader2 className="animate-spin" />}
+              variant="primary"
               onClick={() => void commit()}
               disabled={selectedList.length === 0 || saving}
               title={
@@ -488,9 +487,7 @@ function ResourceAttachPickerBody({
                   ? `Pick at least one of your ${noun} to attach`
                   : undefined
               }
-              className="max-sm:min-h-11"
             >
-              {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Attach
               {selectedList.length > 0 ? ` ${selectedList.length}` : ""}
             </Button>

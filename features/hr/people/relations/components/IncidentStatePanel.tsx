@@ -142,14 +142,12 @@ export function IncidentStatePanel({
           <div className="flex flex-wrap gap-2">
             {next.map((state) => (
               <Button
+                icon={<ArrowRight />}
                 key={state}
                 type="button"
-                size="sm"
-                variant={target === state ? "default" : "outline"}
-                className="min-h-11 sm:min-h-9"
+                variant={target === state ? "primary" : "outline"}
                 onClick={() => setTarget(target === state ? null : state)}
               >
-                <ArrowRight className="mr-1.5 h-4 w-4" />
                 {HR_INCIDENT_STATE_LABELS[state]}
               </Button>
             ))}
@@ -171,11 +169,10 @@ export function IncidentStatePanel({
 
           {target ? (
             <Button
+              variant="primary"
               type="button"
-              size="sm"
               onClick={advance}
               disabled={blocked || saving}
-              className="min-h-11 sm:min-h-9"
             >
               Move to {HR_INCIDENT_STATE_LABELS[target].toLowerCase()}
             </Button>
@@ -207,20 +204,16 @@ export function IncidentStatePanel({
               <div className="flex flex-wrap gap-2">
                 <Button
                   type="button"
-                  size="sm"
-                  variant="destructive"
+                  variant="danger"
                   onClick={voidIt}
                   disabled={!voidReason.trim() || saving}
-                  className="min-h-11 sm:min-h-9"
                 >
                   Set it aside
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   variant="outline"
                   onClick={() => setVoiding(false)}
-                  className="min-h-11 sm:min-h-9"
                 >
                   Cancel
                 </Button>
@@ -228,13 +221,11 @@ export function IncidentStatePanel({
             </div>
           ) : (
             <Button
+              icon={<Ban />}
               type="button"
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => setVoiding(true)}
-              className="min-h-11 text-muted-foreground sm:min-h-9"
             >
-              <Ban className="mr-1.5 h-3.5 w-3.5" />
               This record should not stand
             </Button>
           )}

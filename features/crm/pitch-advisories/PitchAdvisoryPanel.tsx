@@ -60,9 +60,8 @@ function OfferControl({
     return (
       <Button
         type="button"
-        size="sm"
         variant="outline"
-        className="h-7 w-fit text-xs"
+        className="w-fit"
         onClick={() => onLocalOffer(advisory, offer)}
       >
         {offer.label}
@@ -110,7 +109,7 @@ export function PitchAdvisoryPanel({
         <p className="text-muted-foreground">
           The pitch check could not run ({error}). Nothing is stopping {actionLabel}; you just won&rsquo;t see its warnings.
         </p>
-        <Button type="button" size="sm" variant="ghost" className="mt-1 h-6 px-2 text-xs" onClick={retry}>
+        <Button type="button" variant="quiet" className="mt-1" onClick={retry}>
           Check again
         </Button>
       </div>

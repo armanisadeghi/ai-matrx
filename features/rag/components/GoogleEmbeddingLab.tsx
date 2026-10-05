@@ -176,11 +176,12 @@ export function GoogleEmbeddingLab() {
 
             <div className="sm:col-span-3">
               <Button
+                icon={running ? <Loader2 className="animate-spin" /> : <Binary />}
+                variant="primary"
                 type="button"
                 onClick={() => void run()}
                 disabled={running}
               >
-                {running ? <Loader2 className="animate-spin" /> : <Binary />}
                 Generate vectors
               </Button>
             </div>
@@ -206,8 +207,8 @@ export function GoogleEmbeddingLab() {
                   </p>
                 </div>
                 <Button
+                  icon={copied ? <Check /> : <Clipboard />}
                   type="button"
-                  size="sm"
                   variant="outline"
                   onClick={() => {
                     void navigator.clipboard.writeText(
@@ -217,7 +218,6 @@ export function GoogleEmbeddingLab() {
                     setTimeout(() => setCopied(false), 1500);
                   }}
                 >
-                  {copied ? <Check /> : <Clipboard />}
                   {copied ? "Copied" : "Copy all vectors"}
                 </Button>
               </div>

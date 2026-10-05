@@ -12,7 +12,7 @@ import {
   Check,
   Scissors,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Slider } from "@/components/ui/slider";
 import {
   Dialog,

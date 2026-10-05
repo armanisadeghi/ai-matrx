@@ -126,8 +126,6 @@ export function PartyDealsCard({ party, onStateChange }: Props) {
           <span>Couldn&apos;t load deals — {loadError} <ErrorAlchemyMenu error={loadError} /></span>
           <Button
             variant="outline"
-            size="sm"
-            className="h-6 px-2 text-xs"
             onClick={() => setGeneration((g) => g + 1)}
           >
             Retry

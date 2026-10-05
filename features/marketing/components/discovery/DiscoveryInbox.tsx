@@ -45,7 +45,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { Input } from "@ai-matrx/design-system";
+import { Input, Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Select,
   SelectContent,
@@ -753,51 +753,42 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
                         </SelectContent>
                       </Select>
                       <Button
-                        size="sm"
-                        className="h-7 gap-1"
+                        icon={<Check />}
+                        variant="primary"
                         disabled={bulkBusy}
                         onClick={() => void runBulkConfirm()}
                       >
-                        <Check className="h-3.5 w-3.5" />
                         Confirm {selectedItems.length}
                       </Button>
                       <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 gap-1 text-muted-foreground"
+                        icon={<X />}
+                        variant="quiet"
                         disabled={bulkBusy}
                         onClick={() => void runBulkDismiss()}
                       >
-                        <X className="h-3.5 w-3.5" />
                         Dismiss
                       </Button>
                     </>
                   ) : (
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 gap-1 text-muted-foreground"
+                      icon={<Undo2 />}
+                      variant="quiet"
                       disabled={bulkBusy}
                       onClick={() => void runBulkRestore()}
                     >
-                      <Undo2 className="h-3.5 w-3.5" />
                       Restore
                     </Button>
                   )}
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 gap-1 text-muted-foreground hover:text-destructive"
+                    icon={<Trash2 />}
+                    variant="quiet"
                     disabled={bulkBusy}
                     onClick={() => setConfirmingBulkDelete(true)}
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
                     Delete
                   </Button>
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-muted-foreground"
+                    variant="quiet"
                     disabled={bulkBusy}
                     onClick={() => setSelected(new Set())}
                   >
@@ -919,27 +910,23 @@ export function DiscoveryInbox({ brandId }: { brandId: string }) {
                   </SelectContent>
                 </Select>
                 <Button
-                  size="sm"
+                  icon={<ChevronLeft />}
                   variant="outline"
-                  className="h-7 gap-1"
                   disabled={currentPage <= 1 || items.isFetching}
                   onClick={() => goToPage(currentPage - 1)}
                 >
-                  <ChevronLeft className="h-3.5 w-3.5" />
                   Prev
                 </Button>
                 <span className="text-xs tabular-nums text-muted-foreground">
                   {currentPage} / {pageCount}
                 </span>
                 <Button
-                  size="sm"
+                  iconEnd={<ChevronRight />}
                   variant="outline"
-                  className="h-7 gap-1"
                   disabled={currentPage >= pageCount || items.isFetching}
                   onClick={() => goToPage(currentPage + 1)}
                 >
                   Next
-                  <ChevronRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </footer>
@@ -1201,7 +1188,7 @@ function DiscoveryRow({
         <CopyButtons size="icon" {...itemCopy} />
       </span>
       {item.url ? (
-        <Button
+        <SurfaceButton
           asChild
           variant="ghost"
           size="icon"
@@ -1216,7 +1203,7 @@ function DiscoveryRow({
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
-        </Button>
+        </SurfaceButton>
       ) : null}
 
       {readOnly ? (
@@ -1230,23 +1217,19 @@ function DiscoveryRow({
           {item.status === "dismissed" ? (
             <>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 gap-1 text-muted-foreground"
+                icon={<Undo2 />}
+                variant="quiet"
                 disabled={busy}
                 onClick={() => void restore()}
               >
-                <Undo2 className="h-3.5 w-3.5" />
                 Restore
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 gap-1 text-muted-foreground hover:text-destructive"
+                icon={<Trash2 />}
+                variant="quiet"
                 disabled={busy}
                 onClick={() => setConfirmingDelete(true)}
               >
-                <Trash2 className="h-3.5 w-3.5" />
                 Delete
               </Button>
             </>
@@ -1280,28 +1263,24 @@ function DiscoveryRow({
             }
           />
           <Button
-            size="sm"
-            className="h-8 gap-1"
+            icon={<Check />}
+            variant="primary"
             disabled={busy || (customLabelRequired && !label.trim())}
             onClick={() => void confirm()}
           >
-            <Check className="h-3.5 w-3.5" />
             Confirm
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 gap-1 text-muted-foreground"
+            icon={<X />}
+            variant="quiet"
             disabled={busy}
             onClick={() => void reject()}
           >
-            <X className="h-3.5 w-3.5" />
             Dismiss
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+            variant="quiet"
+            className="w-8"
             title="Delete discovery"
             disabled={busy}
             onClick={() => setConfirmingDelete(true)}

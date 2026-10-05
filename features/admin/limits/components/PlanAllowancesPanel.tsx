@@ -569,9 +569,7 @@ export function PlanAllowancesPanel() {
               return (
                 <Button
                   key={period}
-                  size="sm"
-                  variant={on ? "secondary" : "outline"}
-                  className="h-7 text-xs"
+                  variant={on ? "outline" : "outline"}
                   disabled={locked}
                   title={locked ? "A plan already has this window" : undefined}
                   onClick={() =>
@@ -627,16 +625,14 @@ export function PlanAllowancesPanel() {
               </SelectContent>
             </Select>
             <Button
-              size="sm"
+              icon={<Plus />}
               variant="outline"
-              className="h-8 text-xs"
               disabled={!newCapability}
               onClick={() => {
                 setAddedColumns((prev) => [...prev, { capability: newCapability, period: newPeriod }]);
                 setNewCapability("");
               }}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" /> Add window
+            > Add window
             </Button>
           </div>
         </div>

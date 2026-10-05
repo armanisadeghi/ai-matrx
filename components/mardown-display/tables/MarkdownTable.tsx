@@ -10,7 +10,7 @@ import React, {
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   Download,
   Copy,

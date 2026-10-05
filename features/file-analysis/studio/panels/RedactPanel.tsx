@@ -54,20 +54,17 @@ export function RedactPanel({ fileId }: Props) {
         </div>
         <div className="flex gap-1.5">
           <Button
-            size="sm"
+            icon={<Undo2 />}
             variant="outline"
             onClick={() => setRestoreOpen(true)}
-            className="h-7 text-[10px]"
-          >
-            <Undo2 className="h-3 w-3 mr-1" /> Restore
+          > Restore
           </Button>
           <Button
-            size="sm"
+            icon={<ShieldCheck />}
+            variant="primary"
             disabled={!flagged.length}
             onClick={() => setMaskOpen(true)}
-            className="h-7 text-[10px]"
-          >
-            <ShieldCheck className="h-3 w-3 mr-1" /> Mask
+          > Mask
           </Button>
         </div>
       </div>
@@ -188,17 +185,15 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
           Repeated regions (headers / footers)
         </span>
         <Button
-          size="sm"
+          icon={detecting ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Layers />
+          )}
           variant="outline"
-          className="h-6 text-[10px]"
           onClick={() => void detect()}
           disabled={detecting || redacting}
         >
-          {detecting ? (
-            <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-          ) : (
-            <Layers className="h-3 w-3 mr-1" />
-          )}
           {report ? "Re-detect" : "Detect"}
         </Button>
       </div>
@@ -240,16 +235,16 @@ function RepeatedRegionsRedactSection({ fileId }: { fileId: string }) {
               className="h-7 text-[11px]"
             />
             <Button
-              size="sm"
-              className="h-7 w-full text-[10px]"
+              icon={redacting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ShieldCheck />
+              )}
+              variant="primary"
+              className="w-full"
               onClick={() => void redactAccepted()}
               disabled={redacting || detecting || !accepted.size}
             >
-              {redacting ? (
-                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              ) : (
-                <ShieldCheck className="h-3 w-3 mr-1" />
-              )}
               Redact {accepted.size} region{accepted.size === 1 ? "" : "s"} on
               all pages
             </Button>

@@ -369,7 +369,7 @@ export function EntityTypeForm({
         <Button variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button disabled={saving || !valid} onClick={onSave}>
+        <Button variant="primary" disabled={saving || !valid} onClick={onSave}>
           {editor.mode === "create" ? "Register entity type" : "Save entity type"}
         </Button>
       </div>

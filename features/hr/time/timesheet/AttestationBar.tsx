@@ -173,8 +173,8 @@ export function AttestationBar({
           />
           <div className="flex flex-col gap-2 sm:flex-row">
             <Button
+              variant="primary"
               type="button"
-              className="min-h-11 sm:min-h-9"
               disabled={busy || note.trim().length < MIN_REASON_LENGTH}
               onClick={() => void submit(note.trim())}
             >
@@ -183,7 +183,6 @@ export function AttestationBar({
             <Button
               type="button"
               variant="outline"
-              className="min-h-11 sm:min-h-9"
               disabled={busy}
               onClick={() => {
                 setMode("idle");
@@ -200,34 +199,32 @@ export function AttestationBar({
             <>
               {/* ≥44px on a phone — L3-77 / UI-IA §7. */}
               <Button
+                icon={<CheckCircle2 aria-hidden />}
+                variant="primary"
                 type="button"
-                className="min-h-11 sm:min-h-9"
                 disabled={busy}
                 onClick={() => void submit()}
               >
-                <CheckCircle2 className="mr-2 h-4 w-4" aria-hidden />
                 These hours are right
               </Button>
               <Button
+                icon={<FileWarning aria-hidden />}
                 type="button"
                 variant="outline"
-                className="min-h-11 sm:min-h-9"
                 disabled={busy}
                 onClick={() => setMode("exception")}
               >
-                <FileWarning className="mr-2 h-4 w-4" aria-hidden />
                 Submit, but something is wrong
               </Button>
             </>
           ) : null}
 
           <Button
+            icon={<PencilLine aria-hidden />}
             type="button"
-            variant="ghost"
-            className="min-h-11 sm:min-h-9"
+            variant="quiet"
             onClick={() => void announceComingSoon("hr.timecard-correction-request")}
           >
-            <PencilLine className="mr-2 h-4 w-4" aria-hidden />
             Ask for a correction
           </Button>
         </div>

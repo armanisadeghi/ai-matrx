@@ -14,7 +14,8 @@
 
 import { useState } from "react";
 import { PanelTop } from "lucide-react";
-import { Button, Input } from "@ai-matrx/design-system";
+import { Input } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { createSourceRef, createSourceSet, type SourceSet } from "@ai-matrx/agents/sources";
 import { SourceReview } from "@/features/resource-manager/source-input/review/SourceReview";
 import { openSourceReview } from "@/features/resource-manager/source-input/review/openSourceReview";
@@ -114,6 +115,8 @@ export default function SourceReviewHarnessPage() {
             Load
           </Button>
           <Button
+            icon={<PanelTop />}
+            variant="primary"
             type="button"
             onClick={async () => {
               const result = await openSourceReview(set, {
@@ -124,7 +127,6 @@ export default function SourceReviewHarnessPage() {
               setOutcome(result);
             }}
           >
-            <PanelTop className="mr-1.5 h-4 w-4" />
             Open as a window
           </Button>
         </div>
@@ -149,7 +151,6 @@ export default function SourceReviewHarnessPage() {
           </span>
           <Button
             type="button"
-            size="sm"
             variant="outline"
             disabled={!plan || checking}
             onClick={() => plan && runCheck(plan.sourceSet, plan.sentChars)}

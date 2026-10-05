@@ -22,7 +22,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { OpenDestinationDialog } from "@/features/page-extraction/data-review/OpenDestinationDialog";
 
 interface SendToWorkbookButtonProps {

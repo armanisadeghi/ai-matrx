@@ -175,17 +175,16 @@ export function SurfaceCandidatesDialog({
             </SelectContent>
           </Select>
           <Button
-            size="sm"
-            variant="ghost"
+            icon={allVisibleSelected ? (
+              <CheckSquare />
+            ) : (
+              <Square />
+            )}
+            variant="quiet"
             onClick={toggleAll}
             disabled={visible.length === 0 || busy}
-            className="h-7 text-xs gap-1.5 ml-auto"
+            className="ml-auto"
           >
-            {allVisibleSelected ? (
-              <CheckSquare className="h-3.5 w-3.5" />
-            ) : (
-              <Square className="h-3.5 w-3.5" />
-            )}
             {allVisibleSelected ? "Deselect visible" : "Select visible"}
           </Button>
         </div>
@@ -260,10 +259,11 @@ export function SurfaceCandidatesDialog({
             <span className="text-[11px] text-muted-foreground">
               {selected.size} selected
             </span>
-            <Button variant="ghost" onClick={onClose} disabled={busy}>
+            <Button variant="quiet" onClick={onClose} disabled={busy}>
               Cancel
             </Button>
             <Button
+              variant="primary"
               onClick={() => void onAdd()}
               disabled={busy || selected.size === 0}
             >

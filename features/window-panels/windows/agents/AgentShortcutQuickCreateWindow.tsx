@@ -390,20 +390,17 @@ function FooterRight({ state }: { state: ShortcutQuickCreateState }) {
     <div className="flex items-center gap-1.5">
       <Button
         type="button"
-        variant="ghost"
-        size="sm"
+        variant="quiet"
         onClick={onClose}
         disabled={isSaving}
-        className="h-5 px-2 text-xs"
       >
         Cancel
       </Button>
       <Button
+        variant="primary"
         type="button"
-        size="sm"
         onClick={handlePrimary}
         disabled={primaryDisabled}
-        className="h-5 px-2.5 text-xs"
       >
         {isSaving ? (
           <>

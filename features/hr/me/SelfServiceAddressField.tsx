@@ -154,9 +154,8 @@ export function SelfServiceAddressField({
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button
+            variant="primary"
             type="button"
-            size="sm"
-            className="min-h-11 sm:min-h-8"
             disabled={saving}
             onClick={async () => {
               // Empty parts are dropped rather than sent as "", so an untouched
@@ -173,9 +172,7 @@ export function SelfServiceAddressField({
           </Button>
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="min-h-11 sm:min-h-8"
+            variant="quiet"
             onClick={() => {
               setDraft(toParts(value));
               setEditing(false);
@@ -207,9 +204,8 @@ export function SelfServiceAddressField({
         )}
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 shrink-0 p-0 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+          variant="quiet"
+          className="w-8 shrink-0 opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
           aria-label={`Change ${heading.toLowerCase()}`}
           onClick={() => setEditing(true)}
         >

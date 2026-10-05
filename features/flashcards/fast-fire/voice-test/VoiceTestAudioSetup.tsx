@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Mic,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { MediaDevicesPanel } from "@/features/audio/components/devices/MediaDevicesPanel";
 import { useAppDispatch } from "@/lib/redux/hooks";

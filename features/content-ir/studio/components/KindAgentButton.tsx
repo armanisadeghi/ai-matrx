@@ -13,7 +13,7 @@
  */
 
 import { PencilRuler } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ADMIN_KIND_REGISTRY_SURFACE_NAME } from "@/features/surfaces/manifests/admin-kind-registry.manifest";
 import { useKindAgentLaunch } from "@/features/content-ir/studio/useKindAgentLaunch";
 import {

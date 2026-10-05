@@ -165,13 +165,11 @@ export function NodeMeasureCard({
 
       <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
         <Button
+          icon={<BarChart3 />}
           variant="outline"
-          size="sm"
-          className="h-7 gap-1.5 px-2 text-xs"
           onClick={() => setWindowOpen(true)}
           title="The full measured page — analyzer, findings, snapshots, Search Console — beside the plan"
         >
-          <BarChart3 className="h-3.5 w-3.5" />
           Open measurement
         </Button>
         {workspaceHref ? (

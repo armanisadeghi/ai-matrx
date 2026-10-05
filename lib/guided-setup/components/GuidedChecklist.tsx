@@ -82,16 +82,14 @@ function CopyRow({ value }: { value: CopyValue }) {
           {value.label}
         </span>
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[11px]"
+          icon={copied ? (
+            <Check className="text-emerald-600" />
+          ) : (
+            <Copy />
+          )}
+          variant="quiet"
           onClick={() => void copy()}
         >
-          {copied ? (
-            <Check className="mr-1 h-3 w-3 text-emerald-600" />
-          ) : (
-            <Copy className="mr-1 h-3 w-3" />
-          )}
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
@@ -230,9 +228,7 @@ function StepRow<Ctx>({
           <div className="mt-1.5 flex flex-wrap items-center gap-2">
             {definition.kind === "confirmed" && resolved.status !== "blocked" ? (
               <Button
-                size="sm"
-                variant={resolved.status === "done" ? "ghost" : "default"}
-                className="h-7"
+                variant={resolved.status === "done" ? "quiet" : "primary"}
                 onClick={() =>
                   onConfirm(resolved.id, resolved.status !== "done")
                 }
@@ -247,8 +243,7 @@ function StepRow<Ctx>({
             definition.autoRun === false &&
             resolved.status === "action" ? (
               <Button
-                size="sm"
-                className="h-7"
+                variant="primary"
                 onClick={() => onRun(resolved.id)}
               >
                 {definition.runLabel ?? "Do this for me"}
@@ -283,7 +278,7 @@ function StepRow<Ctx>({
             resolved.status !== "busy" &&
             resolved.status !== "blocked" ? (
               fix.href ? (
-                <Button asChild size="sm" variant="outline" className="h-7">
+                <Button asChild variant="outline">
                   <Link
                     href={fix.href}
                     target={fix.newTab ? "_blank" : undefined}
@@ -297,9 +292,7 @@ function StepRow<Ctx>({
                 </Button>
               ) : fix.run ? (
                 <Button
-                  size="sm"
                   variant="outline"
-                  className="h-7"
                   onClick={() => onFix(resolved.id)}
                 >
                   {fix.label}
@@ -381,12 +374,10 @@ export function GuidedChecklist<Ctx>({
             {resolved.requiredCount} done
           </span>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[11px]"
+            icon={<RefreshCw />}
+            variant="quiet"
             onClick={recheck}
           >
-            <RefreshCw className="mr-1 h-3 w-3" />
             Check again
           </Button>
         </div>

@@ -188,12 +188,10 @@ export function PdfManipulationWorkbench({
             </div>
             {source.payload ? (
               <Button
-                variant="ghost"
-                size="sm"
+                icon={<RotateCcw />}
+                variant="quiet"
                 onClick={resetSource}
-                className="h-7 gap-1.5 text-xs"
               >
-                <RotateCcw className="h-3 w-3" />
                 Change file
               </Button>
             ) : null}

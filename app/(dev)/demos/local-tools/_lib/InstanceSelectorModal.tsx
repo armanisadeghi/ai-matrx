@@ -162,16 +162,15 @@ function EditTunnelRow({ inst, onSave }: EditTunnelRowProps) {
       </div>
       <div className="flex items-center gap-2 pt-0.5">
         <Button
-          size="sm"
-          className="h-6 px-2 text-xs gap-1"
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           onClick={handleSave}
           disabled={saving}
         >
-          {saving ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <Save className="w-3 h-3" />
-          )}
           Save
         </Button>
         <button
@@ -337,20 +336,18 @@ function InstanceCard({
         <div className="flex items-center gap-1.5 shrink-0">
           {hasTunnel && (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 px-2 text-xs gap-1 text-muted-foreground"
+              icon={inst.restStatus === "testing" || inst.wsStatus === "testing" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Globe />
+              )}
+              variant="quiet"
               onClick={() => onTest(inst)}
               disabled={
                 inst.restStatus === "testing" || inst.wsStatus === "testing"
               }
               title="Test connection"
             >
-              {inst.restStatus === "testing" || inst.wsStatus === "testing" ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Globe className="w-3.5 h-3.5" />
-              )}
               <span className="hidden sm:inline">Test</span>
             </Button>
           )}
@@ -358,9 +355,7 @@ function InstanceCard({
             // Machine is reachable on localhost — steer to the direct path;
             // routing through the tunnel from the same device is pure waste.
             <Button
-              size="sm"
-              variant="default"
-              className="h-7 px-2.5 text-xs"
+              variant="primary"
               onClick={() => onUseLocal(localEngineUrl)}
               title={`Connect directly via ${localEngineUrl}`}
             >
@@ -369,9 +364,7 @@ function InstanceCard({
           ) : (
             hasTunnel && (
               <Button
-                size="sm"
-                variant={isSelected ? "default" : "outline"}
-                className="h-7 px-2.5 text-xs"
+                variant={isSelected ? "primary" : "outline"}
                 onClick={() => onSelect(inst)}
               >
                 {isSelected ? "Selected" : "Use"}
@@ -541,17 +534,15 @@ export function InstanceSelectorModal({
             </DialogTitle>
             <div className="flex items-center gap-2">
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 px-2 gap-1.5 text-xs text-muted-foreground"
+                icon={loading ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <RefreshCw />
+                )}
+                variant="quiet"
                 onClick={refresh}
                 disabled={loading}
               >
-                {loading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <RefreshCw className="w-3.5 h-3.5" />
-                )}
                 Refresh
               </Button>
               <button
@@ -577,17 +568,15 @@ export function InstanceSelectorModal({
               </p>
               {onRefreshLocal && (
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 px-2 gap-1 text-[10px] text-muted-foreground"
+                  icon={discoveringEngines ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <RefreshCw />
+                  )}
+                  variant="quiet"
                   onClick={onRefreshLocal}
                   disabled={discoveringEngines}
                 >
-                  {discoveringEngines ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-3 h-3" />
-                  )}
                   Rescan
                 </Button>
               )}
@@ -648,9 +637,8 @@ export function InstanceSelectorModal({
                     </div>
                   </div>
                   <Button
-                    size="sm"
-                    variant={isCurrent ? "default" : "outline"}
-                    className="h-7 px-2.5 text-xs shrink-0"
+                    variant={isCurrent ? "primary" : "outline"}
+                    className="shrink-0"
                     onClick={() => {
                       onSelectLocalEngine?.(engine.url);
                       onClose();
@@ -732,22 +720,21 @@ export function InstanceSelectorModal({
                 onKeyDown={(e) => e.key === "Enter" && handleTestCustom()}
               />
               <Button
-                size="sm"
+                icon={customTesting ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Globe />
+                )}
                 variant="outline"
-                className="h-8 px-3 gap-1.5 text-xs shrink-0"
+                className="shrink-0"
                 onClick={handleTestCustom}
                 disabled={customTesting || !customUrl.trim()}
               >
-                {customTesting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Globe className="w-3.5 h-3.5" />
-                )}
                 Test
               </Button>
               <Button
-                size="sm"
-                className="h-8 px-3 text-xs shrink-0"
+                variant="primary"
+                className="shrink-0"
                 onClick={handleSelectCustom}
                 disabled={!customUrl.trim()}
               >

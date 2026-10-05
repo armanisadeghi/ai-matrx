@@ -91,26 +91,23 @@ export function ContentViewer({
         <div className="flex items-center gap-1">
           {!editing ? (
             <Button
-              variant="ghost"
-              size="sm"
+              icon={<Pencil />}
+              variant="quiet"
               onClick={startEdit}
-              className="gap-1.5"
             >
-              <Pencil className="h-3.5 w-3.5" />
               Edit
             </Button>
           ) : (
             <>
-              <Button variant="ghost" size="sm" onClick={cancelEdit}>
+              <Button variant="quiet" onClick={cancelEdit}>
                 <X className="h-3.5 w-3.5" />
               </Button>
               <Button
-                size="sm"
+                icon={<Save />}
+                variant="primary"
                 onClick={saveEdit}
                 disabled={saving}
-                className="gap-1.5"
               >
-                <Save className="h-3.5 w-3.5" />
                 Save
               </Button>
             </>

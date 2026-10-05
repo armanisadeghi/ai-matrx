@@ -41,12 +41,10 @@ export function SystemInstructionEditor({
           Structured System Instruction
         </p>
         <Button
-          variant="ghost"
-          size="sm"
+          icon={<RotateCcw />}
+          variant="quiet"
           onClick={handleReset}
-          className="text-muted-foreground h-6 text-xs"
         >
-          <RotateCcw className="w-3 h-3 mr-1" />
           Reset
         </Button>
       </div>
@@ -308,12 +306,10 @@ function StringListField({
       </div>
 
       <Button
+        icon={<Plus />}
         variant="outline"
-        size="sm"
         onClick={addItem}
-        className="h-7 text-xs"
       >
-        <Plus className="w-3 h-3 mr-1" />
         Add
       </Button>
     </div>

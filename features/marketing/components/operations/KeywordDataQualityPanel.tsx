@@ -112,8 +112,7 @@ function ClassifyCard() {
               className="w-28"
             />
           </div>
-          <Button size="sm" className="h-8 gap-1.5" disabled={submitting} onClick={run}>
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+          <Button icon={submitting ? <Loader2 className="animate-spin" /> : null} variant="primary" disabled={submitting} onClick={run}>
             Run classifier
           </Button>
           {command.stage && submitting ? (
@@ -216,12 +215,11 @@ function AssignTopicsCard() {
             />
           </div>
           <Button
-            size="sm"
-            className="h-8 gap-1.5"
+            icon={submitting ? <Loader2 className="animate-spin" /> : null}
+            variant="primary"
             disabled={submitting || !territory.trim()}
             onClick={run}
           >
-            {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
             Run topic assigner
           </Button>
           {command.stage && submitting ? (

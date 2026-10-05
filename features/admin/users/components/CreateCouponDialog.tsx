@@ -207,11 +207,10 @@ export function CreateCouponDialog({
                     </code>
                     <span className="max-w-[140px] truncate text-xs text-muted-foreground">{labelFor(c) ?? ""}</span>
                     <Button
-                      size="sm"
+                      icon={<Send />}
                       variant="outline"
                       onClick={() => onSend(c, redeemable, planName(c.plan_key), labelFor(c))}
                     >
-                      <Send className="mr-1 h-3.5 w-3.5" />
                       Send
                     </Button>
                   </li>
@@ -322,15 +321,16 @@ export function CreateCouponDialog({
           </div>
         )}
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             {created ? "Done" : "Cancel"}
           </Button>
           {!created && (
             <Button
+              icon={saving && <Loader2 className="animate-spin" />}
+              variant="primary"
               onClick={() => void create()}
               disabled={saving || !planKey || !knobs || !!monthsError || !!batchError || invalid.length > 0}
             >
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Make {total > 0 && Number.isFinite(total) ? total : ""} coupon{total === 1 ? "" : "s"}
             </Button>
           )}

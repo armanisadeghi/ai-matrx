@@ -67,14 +67,13 @@ export function AssistActionTextEditor({
   if (!open) {
     return (
       <Button
+        icon={<PencilLine />}
         type="button"
-        size="sm"
         variant="outline"
         disabled={disabled}
         onClick={() => onOpenChange(true)}
-        className="mb-2 min-h-11 w-full justify-start gap-1.5 px-2 text-xs md:h-8 md:min-h-0"
+        className="mb-2 w-full justify-start"
       >
-        <PencilLine className="h-3.5 w-3.5" />
         {definition.triggerLabel}
         {isDirty && (
           <span className="ml-auto text-[11px] font-normal text-primary">
@@ -101,14 +100,13 @@ export function AssistActionTextEditor({
         </div>
         {isDirty && (
           <Button
+            icon={<RotateCcw />}
             type="button"
-            size="sm"
-            variant="ghost"
+            variant="quiet"
             disabled={disabled}
             onClick={onReset}
-            className="min-h-10 shrink-0 gap-1 px-2 text-[11px] text-muted-foreground md:h-7 md:min-h-0"
+            className="shrink-0"
           >
-            <RotateCcw className="h-3 w-3" />
             Reset
           </Button>
         )}
@@ -137,11 +135,9 @@ export function AssistActionTextEditor({
         ) : null}
         <Button
           type="button"
-          size="sm"
-          variant="ghost"
+          variant="quiet"
           disabled={disabled || Boolean(validationMessage)}
           onClick={() => onOpenChange(false)}
-          className="min-h-10 px-2 text-xs md:h-7 md:min-h-0"
         >
           Done
         </Button>

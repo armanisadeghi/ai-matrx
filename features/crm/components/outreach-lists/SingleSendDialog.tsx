@@ -410,27 +410,28 @@ export function SingleSendDialog({
         <DialogFooter className="gap-2 sm:gap-2">
           {!draft ? (
             <Button
+              icon={busy === "preview" && (
+                <Loader2 className="animate-spin" />
+              )}
+              variant="primary"
               onClick={() => void preview()}
               disabled={!templateId || busy !== null}
             >
-              {busy === "preview" && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
               Preview real message
             </Button>
           ) : draft.sent_at ? (
-            <Button onClick={() => onOpenChange(false)}>Done</Button>
+            <Button variant="primary" onClick={() => onOpenChange(false)}>Done</Button>
           ) : (
             <>
               {draft.approval.required_for_this_message && !approved && (
                 <Button
+                  icon={busy === "approve" && (
+                    <Loader2 className="animate-spin" />
+                  )}
                   variant="outline"
                   onClick={() => void approve()}
                   disabled={busy !== null}
                 >
-                  {busy === "approve" && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
                   Approve exact message
                 </Button>
               )}
@@ -440,14 +441,15 @@ export function SingleSendDialog({
                 compact
               >
                 <Button
+                  icon={busy === "send" ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Send />
+                  )}
+                  variant="primary"
                   onClick={() => void send()}
                   disabled={!canSend || busy !== null}
                 >
-                  {busy === "send" ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="mr-2 h-4 w-4" />
-                  )}
                   Send email
                 </Button>
               </CapabilityGate>

@@ -198,27 +198,23 @@ function ImagePreview({
             {refs.length > 1 ? (
               <>
                 <Button
+                  icon={<ChevronRight className="rotate-180" />}
                   aria-label="Previous screenshot"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 text-white"
+                  variant="quiet"
+                  className="absolute left-2"
                   onClick={() =>
                     setIndex((i) => (i === 0 ? refs.length - 1 : i - 1))
                   }
-                >
-                  <ChevronRight className="rotate-180" />
-                </Button>
+                />
                 <Button
+                  icon={<ChevronRight />}
                   aria-label="Next screenshot"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 text-white"
+                  variant="quiet"
+                  className="absolute right-2"
                   onClick={() =>
                     setIndex((i) => (i === refs.length - 1 ? 0 : i + 1))
                   }
-                >
-                  <ChevronRight />
-                </Button>
+                />
               </>
             ) : null}
           </div>
@@ -414,9 +410,10 @@ export default function FeedbackTable() {
           const children = rows.filter((child) => child.parent_id === r.id);
           return children.length ? (
             <Button
-              variant="ghost"
-              size="xs"
-              className="gap-1"
+              icon={<GitBranch />} iconEnd={<ChevronRight
+                className={cn("size-3", expanded.has(r.id) && "rotate-90")}
+              />}
+              variant="quiet"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpanded((old) => {
@@ -426,11 +423,7 @@ export default function FeedbackTable() {
                 });
               }}
             >
-              <GitBranch className="size-3" />
               {children.length}
-              <ChevronRight
-                className={cn("size-3", expanded.has(r.id) && "rotate-90")}
-              />
             </Button>
           ) : r.parent_id ? (
             <span className="text-xs text-muted-foreground">Child</span>
@@ -513,9 +506,7 @@ export default function FeedbackTable() {
           const item = r.category_id ? categoryById.get(r.category_id) : null;
           return item ? (
             <Button
-              variant="ghost"
-              size="xs"
-              className="h-6 px-1.5"
+              variant="quiet"
               onClick={(e) => {
                 e.stopPropagation();
                 setCategory(item.id);
@@ -543,16 +534,14 @@ export default function FeedbackTable() {
             ) : null}
             {getFeedbackScreenshotRefs(r).length ? (
               <Button
-                variant="ghost"
-                size="xs"
-                className="h-6 px-1"
+                icon={<ImageIcon />}
+                variant="quiet"
                 onClick={(e) => {
                   e.stopPropagation();
                   setImages(getFeedbackScreenshotRefs(r));
                   setImageOpen(true);
                 }}
               >
-                <ImageIcon className="size-3" />
                 {getFeedbackScreenshotRefs(r).length}
               </Button>
             ) : null}
@@ -586,17 +575,14 @@ export default function FeedbackTable() {
               </Badge>
               {r.status === "triaged" && value === "pending" ? (
                 <Button
+                  icon={<CheckCircle2 />}
                   aria-label="Quick approve"
-                  variant="ghost"
-                  size="icon"
-                  className="size-6 text-green-600"
+                  variant="quiet"
                   onClick={(e) => {
                     e.stopPropagation();
                     void approve(r.id);
                   }}
-                >
-                  <CheckCircle2 className="size-4" />
-                </Button>
+                />
               ) : null}
             </span>
           );
@@ -675,15 +661,13 @@ export default function FeedbackTable() {
           return (
             <span className="inline-flex items-center gap-1">
               <Button
-                variant="ghost"
-                size="xs"
-                className="h-6 px-1.5"
+                icon={<UserCheck />}
+                variant="quiet"
                 onClick={(e) => {
                   e.stopPropagation();
                   setAssignee(r.assigned_to!);
                 }}
               >
-                <UserCheck className="size-3" />
                 {label}
               </Button>
               <AdminUserDoorControls userId={r.assigned_to} label={label} />
@@ -762,7 +746,6 @@ export default function FeedbackTable() {
           </span>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => void loadReferenceData()}
           >
             Retry filters

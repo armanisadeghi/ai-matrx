@@ -271,15 +271,12 @@ export function MarketingReportsWorkspace() {
                   json={() => clientReport}
                 />
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-11 w-11 lg:h-7 lg:w-7"
+                  icon={<Printer />}
+                  variant="quiet"
                   onClick={() => void printLivePage()}
                   aria-label="Print or save report as PDF"
                   title="Print / Save PDF"
-                >
-                  <Printer className="h-4 w-4" />
-                </Button>
+                />
               </div>
             ) : undefined
           }
@@ -573,11 +570,10 @@ export function MarketingReportsWorkspace() {
                       json={() => clientReport}
                     />
                     <Button
-                      size="sm"
+                      icon={<Printer />}
                       variant="outline"
                       onClick={() => void printLivePage()}
-                    >
-                      <Printer className="h-4 w-4" /> Print / Save PDF
+                    > Print / Save PDF
                     </Button>
                   </div>
                 </footer>
@@ -601,7 +597,7 @@ function NoConnections() {
         Reports only name findings supported by synced provider data. Connect a
         site and sync Search Console first.
       </p>
-      <Button asChild className="mt-4">
+      <Button variant="primary" asChild className="mt-4">
         <Link href={marketingRoutes.connections()}>
           Open data connections <ArrowRight className="h-4 w-4" />
         </Link>
@@ -658,7 +654,7 @@ function UnclassifiedDoor({
           </p>
         </div>
       </div>
-      <Button asChild size="sm" variant="outline">
+      <Button asChild variant="outline">
         <Link
           href={`${marketingRoutes.site(brandId, siteId, "/keywords")}?view=classification&f_traffic_class=select:unclassified`}
         >

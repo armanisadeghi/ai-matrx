@@ -213,7 +213,7 @@ export function RobotsTesterTool() {
             </div>
 
             <div className="flex items-start gap-2 sm:pt-6">
-              <Button type="submit" disabled={running || !url.trim()}>
+              <Button variant="primary" type="submit" disabled={running || !url.trim()}>
                 {running ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking
@@ -225,9 +225,13 @@ export function RobotsTesterTool() {
                 )}
               </Button>
               <Button
+                icon={copied ? (
+                  <Check />
+                ) : (
+                  <Share2 />
+                )}
                 type="button"
                 variant="outline"
-                size="icon"
                 aria-label="Share this robots.txt tester"
                 title={copied ? "Link copied" : "Share this tool"}
                 onClick={() =>
@@ -237,13 +241,7 @@ export function RobotsTesterTool() {
                     url: TOOL_URL,
                   })
                 }
-              >
-                {copied ? (
-                  <Check className="h-4 w-4" />
-                ) : (
-                  <Share2 className="h-4 w-4" />
-                )}
-              </Button>
+              />
             </div>
           </form>
 

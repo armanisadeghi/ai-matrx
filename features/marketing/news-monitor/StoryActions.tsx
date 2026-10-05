@@ -89,9 +89,7 @@ export function StoryActions({
       <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground" data-story-action="dismissed">
         Dismissed{story.dismissed_reason ? ` — ${REASON_LABEL[story.dismissed_reason as StoryDismissReason] ?? humanizeIdentifier(story.dismissed_reason)}` : ""}
         <Button
-          size="sm"
-          variant="ghost"
-          className="h-6 px-1.5 text-[11px]"
+          variant="quiet"
           disabled={Boolean(busy)}
           onClick={() => void act("undo-dismiss", () => undoDismiss(story), "Dismissal undone.")}
         >
@@ -109,9 +107,7 @@ export function StoryActions({
         <span className="inline-flex items-center gap-1 text-[11px] text-success">
           Surfaced by you
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[11px]"
+            variant="quiet"
             disabled={Boolean(busy)}
             onClick={() =>
               void act(
@@ -127,9 +123,7 @@ export function StoryActions({
         </span>
       ) : story.status !== "surfaced" ? (
         <Button
-          size="sm"
           variant="outline"
-          className="h-6 px-1.5 text-[11px]"
           disabled={Boolean(busy)}
           title="Bring this story to you even though the monitor held it back. The next run keeps it."
           onClick={() =>
@@ -141,13 +135,11 @@ export function StoryActions({
         </Button>
       ) : null}
       <Button
-        size="sm"
-        variant="ghost"
-        className="h-6 px-1.5 text-[11px]"
+        icon={<EyeOff />}
+        variant="quiet"
         disabled={Boolean(busy)}
         onClick={() => setDismissOpen(true)}
       >
-        <EyeOff className="h-3 w-3" />
         Dismiss
       </Button>
       <Dialog open={dismissOpen} onOpenChange={setDismissOpen}>
@@ -180,11 +172,11 @@ export function StoryActions({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setDismissOpen(false)}>
+            <Button variant="outline" onClick={() => setDismissOpen(false)}>
               Keep it
             </Button>
             <Button
-              size="sm"
+              variant="primary"
               disabled={Boolean(busy)}
               onClick={async () => {
                 const ok = await act(

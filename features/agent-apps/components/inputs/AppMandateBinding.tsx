@@ -88,7 +88,7 @@ export function AppMandateBinding({
       </div>
 
       {mandateHref ? (
-        <Button asChild variant="outline" size="sm">
+        <Button asChild variant="outline">
           <Link href={mandateHref} target="_blank" rel="noopener noreferrer">
             Open this job
             <ExternalLink className="size-3.5" />

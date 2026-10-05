@@ -36,9 +36,8 @@ export function CxJsonViewer({ data, label, defaultCollapsed = true, maxHeight =
         )}
         <span className="text-xs font-medium text-muted-foreground">{label || "JSON Data"}</span>
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-5 ml-auto px-1.5"
+          variant="quiet"
+          className="ml-auto"
           onClick={(e) => {
             e.stopPropagation();
             handleCopy();

@@ -103,12 +103,11 @@ export function CostBanner({
         )}
       </div>
       {pausedAt ? (
-        <Button size="sm" onClick={() => void resume()} disabled={resuming}>
-          {resuming ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Button icon={resuming ? (
+            <Loader2 className="animate-spin" />
           ) : (
-            <PlayCircle className="h-3.5 w-3.5" />
-          )}
+            <PlayCircle />
+          )} variant="primary" onClick={() => void resume()} disabled={resuming}>
           Resume scheduled runs
         </Button>
       ) : null}

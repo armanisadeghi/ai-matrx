@@ -347,15 +347,15 @@ function BindingsSection({ toolId }: { toolId: string }) {
           </Select>
         </div>
         <Button
-          size="sm"
+          icon={adding ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
           onClick={() => void onAdd()}
           disabled={adding || !pendingExecutor}
         >
-          {adding ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
-          )}
           Bind
         </Button>
       </div>
@@ -519,15 +519,15 @@ function SurfacesSection({ toolId }: { toolId: string }) {
           </Select>
         </div>
         <Button
-          size="sm"
+          icon={adding ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Plus />
+          )}
+          variant="primary"
           onClick={() => void onAdd()}
           disabled={adding || !pendingSurface}
         >
-          {adding ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Plus className="h-3.5 w-3.5" />
-          )}
           Include
         </Button>
       </div>
@@ -678,7 +678,7 @@ function GatingSection({
         count={gates.length}
         description="Checks that must all pass before the tool runs."
         action={
-          <Button size="sm" onClick={() => void onSave()} disabled={busy}>
+          <Button variant="primary" onClick={() => void onSave()} disabled={busy}>
             {busy ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
@@ -709,10 +709,9 @@ function GatingSection({
                   )}
                 </div>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="quiet"
                   onClick={() => onRemove(idx)}
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                  className="w-7"
                   aria-label="Remove gate"
                 >
                   <X className="h-3.5 w-3.5" />
@@ -786,12 +785,11 @@ function GatingSection({
             />
           </div>
           <Button
-            size="sm"
+            icon={<Plus />}
             variant="outline"
             onClick={() => onAdd(customGate)}
             disabled={!customGate.trim()}
-          >
-            <Plus className="h-3.5 w-3.5" /> Add
+          > Add
           </Button>
         </div>
       </div>

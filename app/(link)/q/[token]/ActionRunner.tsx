@@ -113,7 +113,7 @@ export function TextMeANewLink({ token }: { token: string }) {
   if (said) return <p className="text-sm text-muted-foreground">{said}</p>;
 
   return (
-    <Button className="w-full" disabled={busy} onClick={() => void send()}>
+    <Button variant="primary" className="w-full" disabled={busy} onClick={() => void send()}>
       {busy ? "Sending…" : "Text me a new link"}
     </Button>
   );

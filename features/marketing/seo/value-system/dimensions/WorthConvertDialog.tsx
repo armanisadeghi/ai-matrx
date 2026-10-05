@@ -366,18 +366,17 @@ export function WorthConvertDialog({
             and re-scores immediately; your keyword rulings are untouched.
           </p>
           <div className="flex shrink-0 items-center gap-2">
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={onClose}>
+            <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
             <Button
-              size="sm"
-              className="h-8 text-xs"
+              icon={save.isPending ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : null}
+              variant="primary"
               disabled={!amountOk || save.isPending}
               onClick={() => save.mutate()}
             >
-              {save.isPending ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : null}
               {preview.data && amountOk
                 ? `Make it ${signed(parsed)} points — ${formatCount(preview.data.moved_keywords)} change level`
                 : "Make it points"}

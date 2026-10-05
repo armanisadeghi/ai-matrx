@@ -168,17 +168,15 @@ export function SavedViewTabs({
         );
       })}
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 gap-1 px-1.5 text-xs text-muted-foreground"
+        icon={busy || loading ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Plus />
+        )}
+        variant="quiet"
         onClick={onSaveNew}
         disabled={busy}
       >
-        {busy || loading ? (
-          <Loader2 className="h-3 w-3 animate-spin" />
-        ) : (
-          <Plus className="h-3 w-3" />
-        )}
         Save this view
       </Button>
     </div>

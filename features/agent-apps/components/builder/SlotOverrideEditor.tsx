@@ -232,28 +232,25 @@ function SlotRow({
           />
           <div className="flex items-center justify-end gap-2">
             <Button
+              icon={<RotateCcw />}
               type="button"
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={handleReset}
               disabled={disabled || saving}
-              className="gap-1.5"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
               Reset to stub
             </Button>
             <Button
+              icon={saving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
+              variant="primary"
               type="button"
-              size="sm"
               onClick={handleSave}
               disabled={disabled || saving || !isDirty}
-              className="gap-1.5"
             >
-              {saving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Save className="w-3.5 h-3.5" />
-              )}
               Save
             </Button>
           </div>

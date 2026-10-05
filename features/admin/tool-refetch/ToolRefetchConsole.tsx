@@ -500,7 +500,7 @@ export function ToolDetail({
       <div className="flex items-center gap-2 px-3 py-4 text-xs text-rose-700 dark:text-rose-300">
         <AlertTriangle className="h-3.5 w-3.5" />
         {detail.error instanceof Error ? detail.error.message : "Failed to load the repeats for this tool."}
-        <Button size="sm" variant="outline" onClick={() => void detail.refetch()}>
+        <Button variant="outline" onClick={() => void detail.refetch()}>
           Retry
         </Button>
         <ErrorAlchemyMenu error={detail.error.message} />
@@ -652,8 +652,7 @@ export function ToolRefetchConsole() {
           {REFETCH_WINDOWS.map((w) => (
             <Button
               key={w.key}
-              size="sm"
-              variant={w.key === win ? "default" : "outline"}
+              variant={w.key === win ? "primary" : "outline"}
               onClick={() => {
                 setWin(w.key);
               }}
@@ -689,10 +688,10 @@ export function ToolRefetchConsole() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2 pl-6">
-            <Button size="sm" variant="outline" onClick={() => setWin("90d")}>
+            <Button variant="outline" onClick={() => setWin("90d")}>
               Show 90 days instead
             </Button>
-            <Button size="sm" variant="outline" onClick={() => void report.refetch()} disabled={refreshing}>
+            <Button variant="outline" onClick={() => void report.refetch()} disabled={refreshing}>
               Try again anyway
             </Button>
           </div>

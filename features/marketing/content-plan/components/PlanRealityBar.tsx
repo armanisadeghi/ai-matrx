@@ -93,9 +93,8 @@ export function PlanRealityBar({
         </span>
       ) : null}
       <Button
-        variant="ghost"
-        size="sm"
-        className="h-6 w-6 shrink-0 p-0"
+        variant="quiet"
+        className="w-6 shrink-0"
         aria-label="Dismiss reality overlay"
         onClick={onDismiss}
       >

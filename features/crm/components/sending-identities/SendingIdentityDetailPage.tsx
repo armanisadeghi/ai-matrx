@@ -301,22 +301,20 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
             </div>
             <div className="flex shrink-0 gap-2">
               {identity.status === "paused" ? (
-                <Button size="sm" disabled={busy !== null} onClick={() => void resume()}>
-                  {busy === "review_and_resume" ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                <Button icon={busy === "review_and_resume" ? (
+                    <Loader2 className="animate-spin" />
                   ) : (
-                    <PlayCircle className="mr-1.5 h-3.5 w-3.5" />
-                  )}
+                    <PlayCircle />
+                  )} variant="primary" disabled={busy !== null} onClick={() => void resume()}>
                   Resume sending
                 </Button>
               ) : (
                 <Button
-                  size="sm"
+                  icon={<PauseCircle />}
                   variant="outline"
                   disabled={busy !== null}
                   onClick={() => void pause("Paused from the mailbox screen.")}
                 >
-                  <PauseCircle className="mr-1.5 h-3.5 w-3.5" />
                   Pause
                 </Button>
               )}
@@ -433,16 +431,15 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
               Everything sent from this mailbox
             </CardTitle>
             <Button
-              size="sm"
+              icon={busy === "refresh_health" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Activity />
+              )}
               variant="outline"
               disabled={busy !== null}
               onClick={() => void refreshHealth()}
             >
-              {busy === "refresh_health" ? (
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Activity className="mr-1.5 h-3.5 w-3.5" />
-              )}
               Refresh
             </Button>
           </CardHeader>
@@ -461,7 +458,6 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
                 </div>
                 {(events?.length ?? 0) > visibleEvents.length ? (
                   <Button
-                    size="sm"
                     variant="outline"
                     className="mt-3"
                     onClick={() => setShowAllEvents(true)}

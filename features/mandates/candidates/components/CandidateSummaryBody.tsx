@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { ArrowUpCircle, ChevronRight, Undo2, XCircle } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";

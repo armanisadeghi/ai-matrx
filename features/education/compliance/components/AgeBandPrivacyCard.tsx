@@ -69,13 +69,12 @@ export function AgeBandPrivacyCard() {
       <div className="mb-3 flex flex-wrap gap-2">
         {BANDS.map((b) => (
           <Button
+            icon={saving === b.value ? <Loader2 className="animate-spin" /> : null}
             key={b.value}
-            size="sm"
-            variant={current === b.value ? "default" : "outline"}
+            variant={current === b.value ? "primary" : "outline"}
             disabled={saving !== null || gate.loading}
             onClick={() => setBand(b.value)}
           >
-            {saving === b.value ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             {b.label}
           </Button>
         ))}

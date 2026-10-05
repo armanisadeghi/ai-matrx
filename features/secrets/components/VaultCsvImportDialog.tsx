@@ -767,11 +767,11 @@ export function VaultCsvImportDialog({
                 </a>
               )}
               <Button
+                icon={<FileUp />}
                 type="button"
                 variant="outline"
                 onClick={() => fileInput.current?.click()}
               >
-                <FileUp className="mr-2 h-4 w-4" />
                 Choose import file
               </Button>
               <input
@@ -839,7 +839,6 @@ export function VaultCsvImportDialog({
                     <Button
                       type="button"
                       variant="outline"
-                      size="sm"
                       onClick={() =>
                         setSkipInvalidRows((current) => {
                           const next = new Set(current);
@@ -1010,7 +1009,6 @@ export function VaultCsvImportDialog({
                         <Button
                           type="button"
                           variant="outline"
-                          size="sm"
                           onClick={() =>
                             setSkipInvalidRows((current) => {
                               const next = new Set(current);
@@ -1137,6 +1135,7 @@ export function VaultCsvImportDialog({
           <div className="flex justify-end gap-2">
             {running && (
               <Button
+                icon={<X />}
                 type="button"
                 variant="outline"
                 onClick={() => {
@@ -1144,21 +1143,21 @@ export function VaultCsvImportDialog({
                   clearAfterRun.current = true;
                 }}
               >
-                <X className="mr-2 h-4 w-4" />
                 Stop after current row
               </Button>
             )}
             {(preview || jsonLoaded) && (!result || result.failed > 0) && (
               <Button
+                icon={running ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Upload />
+                )}
+                variant="primary"
                 type="button"
                 disabled={running}
                 onClick={() => void importRows(Boolean(result?.failed))}
               >
-                {running ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="mr-2 h-4 w-4" />
-                )}
                 {result?.failed
                   ? "Retry current row"
                   : "Import selected records"}

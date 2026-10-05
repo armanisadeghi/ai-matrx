@@ -1,6 +1,6 @@
 import React from "react";
 import { Braces } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 
 interface VariableSelectorProps {

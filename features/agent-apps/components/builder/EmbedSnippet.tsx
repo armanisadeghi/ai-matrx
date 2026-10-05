@@ -117,10 +117,8 @@ export function EmbedSnippet({
         <div className="flex justify-end">
           <Button
             type="button"
-            size="sm"
             variant="outline"
             onClick={() => copy(iframeSnippet, "snippet")}
-            className="gap-1.5"
           >
             {copiedKey === "snippet" ? (
               <>

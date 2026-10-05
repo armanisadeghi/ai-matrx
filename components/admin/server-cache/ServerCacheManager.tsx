@@ -123,11 +123,11 @@ export default function ServerCacheManager() {
                     </div>
                     {cacheItems.length > 1 && (
                         <Button
+                            icon={<RefreshCw />}
+                            variant="primary"
                             onClick={handleRefreshAll}
                             disabled={Object.values(refreshStates).some(state => state.loading)}
-                            className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
                         >
-                            <RefreshCw className="h-4 w-4 mr-2" />
                             Refresh All
                         </Button>
                     )}
@@ -197,9 +197,10 @@ export default function ServerCacheManager() {
 
                                     {/* Action Button */}
                                     <Button
+                                        variant="primary"
                                         onClick={() => handleRefresh(item)}
                                         disabled={state?.loading}
-                                        className="w-full bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white"
+                                        className="w-full"
                                     >
                                         {state?.loading ? (
                                             <>

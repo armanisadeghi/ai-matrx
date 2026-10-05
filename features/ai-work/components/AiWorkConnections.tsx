@@ -202,7 +202,7 @@ export function AiWorkConnections() {
               sync do not prove one another.
             </p>
           </div>
-          <Button asChild size="sm" variant="outline" className="gap-1.5">
+          <Button asChild variant="outline">
             <Link href="/agent-connections/plugins" target="_blank" rel="noopener noreferrer">
               Technical diagnostics
               <ExternalLink className="h-3.5 w-3.5" />
@@ -244,16 +244,14 @@ export function AiWorkConnections() {
               </p>
             </div>
             <Button
+              icon={<RefreshCw
+                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
+              />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 gap-1.5"
+              variant="quiet"
               onClick={refresh}
               disabled={loading}
             >
-              <RefreshCw
-                className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-              />
               Refresh
             </Button>
           </div>
@@ -385,7 +383,6 @@ export function AiWorkConnections() {
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <Button
                 type="button"
-                size="sm"
                 variant="outline"
                 onClick={loadOlder}
                 disabled={loadingMore}
@@ -434,9 +431,8 @@ export function AiWorkConnections() {
                     </p>
                     <Button
                       asChild
-                      size="sm"
                       variant="outline"
-                      className="mt-2 gap-1.5"
+                      className="mt-2"
                     >
                       <Link href="/work/new">
                         <Play className="h-3.5 w-3.5" />
@@ -495,9 +491,8 @@ export function AiWorkConnections() {
                 </p>
                 <Button
                   asChild
-                  size="sm"
                   variant="outline"
-                  className="mt-2 gap-1.5"
+                  className="mt-2"
                 >
                   <a
                     href={MATRX_LOCAL_DOWNLOAD_PATH}

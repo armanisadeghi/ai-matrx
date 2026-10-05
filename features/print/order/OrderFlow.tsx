@@ -494,11 +494,12 @@ export function OrderFlow({
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <Button
+            icon={<CreditCard />}
+            variant="primary"
             data-testid="order-and-pay"
             onClick={submit}
             disabled={!formComplete || submitting}
           >
-            <CreditCard className="size-4" />
             {submitting ? "Opening checkout…" : "Order & pay"}
           </Button>
           {!ready ? (
@@ -520,12 +521,11 @@ export function OrderFlow({
             Your print orders
           </h2>
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<RefreshCcw />}
+            variant="quiet"
             onClick={refreshOrders}
             disabled={ordersState.status === "loading"}
           >
-            <RefreshCcw className="size-3.5" />
             Refresh
           </Button>
         </div>
@@ -568,13 +568,11 @@ export function OrderFlow({
                   <StatusChip status={order.status} />
                   {isCancelable(order) ? (
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
+                      icon={<XCircle />}
+                      variant="quiet"
                       disabled={cancelingId === order.id}
                       onClick={() => handleCancel(order)}
                     >
-                      <XCircle className="size-3.5" />
                       Cancel
                     </Button>
                   ) : null}

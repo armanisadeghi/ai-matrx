@@ -435,9 +435,8 @@ export function CmsArtifactList() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 shrink-0 px-2 text-xs text-muted-foreground"
+                variant="quiet"
+                className="shrink-0"
               >
                 {statusButtonLabel}
               </Button>
@@ -458,20 +457,17 @@ export function CmsArtifactList() {
           </DropdownMenu>
 
           <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 shrink-0"
+            icon={isLoading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )} aria-label="Refresh"
+            variant="quiet"
+            className="shrink-0"
             onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
             disabled={isLoading}
             title="Refresh"
-          >
-            {isLoading ? (
-              <Loader2 className="size-3.5 animate-spin" />
-            ) : (
-              <RefreshCw className="size-3.5" />
-            )}
-            <span className="sr-only">Refresh</span>
-          </Button>
+          />
         </div>
       </div>
 
@@ -486,7 +482,6 @@ export function CmsArtifactList() {
           <p className="text-xs text-muted-foreground">{fetchError}</p>
           <Button
             variant="outline"
-            size="sm"
             onClick={() => dispatch(fetchUserArtifactsThunk(undefined))}
           >
             Retry
@@ -505,14 +500,14 @@ export function CmsArtifactList() {
                 {/* A roomy library shows the four doors inline; a narrow one
                     (canvas open, phone) keeps the name and folds them into ⋯. */}
                 <div className="hidden items-center gap-0.5 @2xl/artifacts:flex">
-                  <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page"><FileText className="size-3.5" /></Button>
-                  <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending || !canEdit} onClick={() => handleOpenEditor(artifact)} title="Edit content"><Pencil className="size-3.5" /></Button>
-                  {artifact.externalUrl && <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live"><ExternalLink className="size-3.5" /></a></Button>}
-                  <Button variant="ghost" size="icon" className="size-7" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash"><ArchiveIcon className="size-3.5" /></Button>
+                  <Button icon={<FileText />} aria-label="Open full page" variant="quiet" disabled={navigationPending} onClick={() => handleNavigate(artifact.id)} title="Open full page" />
+                  <Button icon={<Pencil />} aria-label="Edit content" variant="quiet" disabled={navigationPending || !canEdit} onClick={() => handleOpenEditor(artifact)} title="Edit content" />
+                  {artifact.externalUrl && <Button icon={<ExternalLink />} aria-label="View live" variant="quiet" disabled={navigationPending} asChild><a href={artifact.externalUrl} target="_blank" rel="noopener noreferrer" title="View live" /></Button>}
+                  <Button icon={<ArchiveIcon />} aria-label="Move to Trash" variant="quiet" disabled={navigationPending} onClick={() => handleArchive(artifact)} title="Move to Trash" />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="size-7 @2xl/artifacts:hidden" disabled={navigationPending} title="Artifact actions" aria-label="Artifact actions"><MoreHorizontal className="size-3.5" /></Button>
+                    <Button icon={<MoreHorizontal />} variant="quiet" disabled={navigationPending} title="Artifact actions" aria-label="Artifact actions" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-44">
                     <DropdownMenuItem onSelect={() => handleNavigate(artifact.id)}><FileText className="mr-2 size-3.5" />Open full page</DropdownMenuItem>
@@ -536,9 +531,7 @@ export function CmsArtifactList() {
               : "Try a different search or filter.",
             action: allArtifacts.length > 0 ? (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs"
+                variant="quiet"
                 onClick={() => setFilters({ type: "all", status: "all", search: "" })}
               >
                 Clear filters

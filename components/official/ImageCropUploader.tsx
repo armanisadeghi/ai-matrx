@@ -277,11 +277,11 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
             autoFocus
           />
           <Button
+            variant="primary"
             type="button"
-            size="sm"
             onClick={() => void handleUrl()}
             disabled={!url.trim() || fetching}
-            className="h-8 px-3 text-xs shrink-0"
+            className="shrink-0"
           >
             {fetching ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -347,11 +347,10 @@ function CropStep({
           <X className="h-3.5 w-3.5" /> Cancel
         </button>
         <Button
+          variant="primary"
           type="button"
-          size="sm"
           onClick={() => void ctrl.applyCurrent()}
           disabled={ctrl.isProcessing}
-          className="h-8 px-4 text-xs"
         >
           {ctrl.isProcessing ? (
             <>

@@ -351,8 +351,7 @@ export default function GenericDataTable<T>({
                         return (
                             <Button
                                 key={actionIndex}
-                                variant="ghost"
-                                size={customSettings?.actionButtonSize || "sm"}
+                                variant="quiet"
                                 onClick={(e) => handleActionClick(item, action, e)}
                                 className={`opacity-70 group-hover:opacity-100 p-0 h-8 ${action.className || ''} ${customSettings?.actionButtonClassName || ''}`}
                             >
@@ -370,8 +369,7 @@ export default function GenericDataTable<T>({
                     return (
                         <Button
                             key={actionIndex}
-                            variant="ghost"
-                            size={customSettings?.actionButtonSize || "sm"}
+                            variant="quiet"
                             onClick={(e) => handleActionClick(item, action, e)}
                             className={`opacity-70 group-hover:opacity-100 p-1 h-8 w-8 ${action.className || ''} ${customSettings?.actionButtonClassName || ''}`}
                         >
@@ -423,7 +421,7 @@ export default function GenericDataTable<T>({
                     <p className="text-gray-500 dark:text-gray-400 mb-4 max-w-md">
                         {emptyState.description}
                     </p>
-                    <Button onClick={emptyState.onButtonClick}>{emptyState.buttonText}</Button>
+                    <Button variant="primary" onClick={emptyState.onButtonClick}>{emptyState.buttonText}</Button>
                 </div>
             ) : (
                 <div className="overflow-auto">

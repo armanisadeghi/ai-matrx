@@ -655,13 +655,12 @@ export function RuleRow({
         ) : null}
         {canEdit && rejected ? (
           <Button
-            size="sm"
+            icon={<RotateCcw />}
             variant="outline"
-            className="h-7 w-full shrink-0 justify-center sm:w-auto"
+            className="w-full shrink-0 justify-center sm:w-auto"
             onClick={onReconsider}
             title="Take it back from the interviewer and review it yourself again."
           >
-            <RotateCcw className="h-3.5 w-3.5" />
             Reconsider
           </Button>
         ) : null}
@@ -741,26 +740,23 @@ export function RuleRow({
           </div>
           {canEdit ? (
             <div className="flex flex-wrap gap-2 pt-1">
-              <Button size="sm" variant="outline" onClick={onEdit}>
-                <Pencil className="h-3.5 w-3.5" />
+              <Button icon={<Pencil />} variant="outline" onClick={onEdit}>
                 Edit
               </Button>
               {!retired && !rejected ? (
-                <Button size="sm" variant="outline" onClick={onImprove}>
+                <Button variant="outline" onClick={onImprove}>
                   <AGENT_ICON className="h-3.5 w-3.5" />
                   Improve
                 </Button>
               ) : null}
               {!retired && !rejected ? (
-                <Button size="sm" variant="outline" onClick={onRequestChanges}>
-                  <MessageSquareWarning className="h-3.5 w-3.5" />
+                <Button icon={<MessageSquareWarning />} variant="outline" onClick={onRequestChanges}>
                   {rule.feedback
                     ? "Change what you said"
                     : words.requestChanges}
                 </Button>
               ) : null}
-              <Button size="sm" variant="ghost" onClick={onToggleRetired}>
-                <RotateCcw className="h-3.5 w-3.5" />
+              <Button icon={<RotateCcw />} variant="quiet" onClick={onToggleRetired}>
                 {retired ? "Restore" : "Retire"}
               </Button>
             </div>
@@ -2442,9 +2438,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                     Couldn&apos;t check the Library
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 px-2 text-xs"
+                      variant="quiet"
                       onClick={() => setLibraryOrgAttempt((n) => n + 1)}
                     >
                       Try again
@@ -2458,14 +2452,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
+                          icon={<Library />}
+                          variant="quiet"
                           aria-label="Give this Rulebook to an industry"
                           onClick={() => setPublishOpen(true)}
-                        >
-                          <Library className="h-4 w-4" />
-                        </Button>
+                        />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
                         <p>
@@ -2613,12 +2604,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="sm"
+                      icon={<Stethoscope />}
                       variant="outline"
-                      className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                      className="w-full min-w-0 justify-center"
                       onClick={() => openCheckup({ rulebookId: rulebook.id })}
                     >
-                      <Stethoscope className="h-3.5 w-3.5" />
                       Check gaps
                     </Button>
                   </TooltipTrigger>
@@ -2640,12 +2630,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                      icon={<CheckCircle2 />}
+                      variant="quiet"
+                      className="w-full min-w-0 justify-center"
                       onClick={() => setConfirmActivate(true)}
                     >
-                      <CheckCircle2 className="h-3.5 w-3.5" />
                       Ready
                     </Button>
                   </TooltipTrigger>
@@ -2666,11 +2655,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
               {draftCount > 0 && canEdit ? (
                 <>
                   <Button
-                    size="sm"
-                    className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                    icon={<ListTodo />}
+                    variant="primary"
+                    className="w-full min-w-0 justify-center"
                     onClick={() => setWizardOpen(true)}
                   >
-                    <ListTodo className="h-3.5 w-3.5" />
                     Review
                   </Button>
                   {/* W59 + W61, 2026-09-12. A distiller reads the page in
@@ -2681,12 +2670,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        size="sm"
+                        icon={<ListFilter />}
                         variant="outline"
-                        className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                        className="w-full min-w-0 justify-center"
                         onClick={() => setTriageOpen(true)}
                       >
-                        <ListFilter className="h-3.5 w-3.5" />
                         Sort the drafts
                       </Button>
                     </TooltipTrigger>
@@ -2730,9 +2718,8 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   {builtCount > 0 ? (
                     <Button
                       asChild
-                      size="sm"
-                      variant="ghost"
-                      className="h-8 shrink-0 px-2 text-xs"
+                      variant="quiet"
+                      className="shrink-0"
                     >
                       <Link href={`/masterwork/${rulebook.id}/masterworks`}>
                         View all
@@ -2801,12 +2788,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
+                          icon={<Hammer />}
                           variant="outline"
-                          className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                          className="w-full min-w-0 justify-center"
                           onClick={openBuildWindow}
                         >
-                          <Hammer className="h-3.5 w-3.5" />
                           Quick build
                         </Button>
                       </TooltipTrigger>
@@ -2825,8 +2811,8 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          size="sm"
-                          className="h-8 w-full min-w-0 justify-center px-2 text-xs"
+                          variant="primary"
+                          className="w-full min-w-0 justify-center"
                           onClick={() => setConductorOpen(true)}
                         >
                           <AGENT_ICON className="h-3.5 w-3.5" />
@@ -2919,7 +2905,6 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   Calls you made before you knew
                 </h2>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setPredictionOpen(true)}
                 >
@@ -2941,7 +2926,6 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   Your daily question
                 </h2>
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => setDripOpen(true)}
                 >
@@ -3023,9 +3007,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   <Button
                     key={filter}
                     type="button"
-                    size="sm"
-                    variant={ruleFilter === filter ? "secondary" : "ghost"}
-                    className="h-8 px-2.5 text-xs"
+                    variant={ruleFilter === filter ? "outline" : "quiet"}
                     onClick={() => setRuleFilter(filter)}
                   >
                     {label}
@@ -3036,11 +3018,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
-                      size="sm"
-                      className="h-10 w-full sm:h-8 sm:w-auto"
+                      icon={<Plus />}
+                      variant="primary"
+                      className="w-full sm:w-auto"
                       onClick={() => openAddRuleWindow()}
                     >
-                      <Plus className="h-4 w-4" />
                       Add rule
                     </Button>
                   </TooltipTrigger>
@@ -3079,12 +3061,11 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   </p>
                   {canEdit ? (
                     <Button
-                      size="sm"
+                      icon={<Plus />}
                       variant="outline"
                       className="mt-3"
                       onClick={() => openAddRuleWindow()}
                     >
-                      <Plus className="h-4 w-4" />
                       Or write one yourself
                     </Button>
                   ) : null}
@@ -3096,8 +3077,7 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                   </p>
                   <Button
                     type="button"
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     className="mt-2"
                     onClick={() => {
                       setSearch("");
@@ -3121,12 +3101,10 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
                         </h3>
                         {canEdit && group.code !== "?" ? (
                           <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-10 sm:h-7"
+                            icon={<Plus />}
+                            variant="quiet"
                             onClick={() => openAddRuleWindow(group.code)}
                           >
-                            <Plus className="h-3.5 w-3.5" />
                             Add here
                           </Button>
                         ) : null}
@@ -3176,20 +3154,17 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
               <span className="text-sm font-medium text-foreground">
                 {selectedIds.size} selected
               </span>
-              <Button size="sm" onClick={openBulkApprove}>
-                <CheckCircle2 className="h-3.5 w-3.5" />
+              <Button icon={<CheckCircle2 />} variant="primary" onClick={openBulkApprove}>
                 Approve
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() => setSelectedIds(new Set())}
               >
                 Clear
               </Button>
               <Button
-                size="sm"
-                variant="ghost"
+                variant="quiet"
                 onClick={() =>
                   setSelectedIds(new Set(visibleRules.map((r) => r.id)))
                 }

@@ -404,8 +404,7 @@ function AngleRow({
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 {angle.status !== "accepted" && angle.status !== "developing" ? (
                   <Button
-                    size="sm"
-                    className="h-7 text-[11px]"
+                    variant="primary"
                     onClick={() => onRule("accepted")}
                   >
                     Accept this angle
@@ -413,9 +412,7 @@ function AngleRow({
                 ) : null}
                 {angle.status !== "pitched" && angle.status !== "landed" ? (
                   <Button
-                    size="sm"
                     variant="outline"
-                    className="h-7 text-[11px]"
                     onClick={() => onRule("pitched")}
                   >
                     Mark pitched
@@ -423,9 +420,7 @@ function AngleRow({
                 ) : null}
                 {angle.status !== "dismissed" ? (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-[11px] text-muted-foreground"
+                    variant="quiet"
                     onClick={() => onRule("dismissed")}
                   >
                     Dismiss
@@ -852,9 +847,8 @@ export function StoryAngleQueue({
           </p>
           {viewId !== "all" ? (
             <Button
-              size="sm"
               variant="outline"
-              className="mt-3 h-7 text-[11px]"
+              className="mt-3"
               onClick={() => {
                 onViewChange(viewId === "ready" ? "proof" : "all");
                 setSearch("");

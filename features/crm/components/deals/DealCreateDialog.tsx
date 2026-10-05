@@ -378,14 +378,13 @@ export function DealCreateDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
-            size="sm"
+            variant="quiet"
             onClick={() => onOpenChange(false)}
             disabled={saving}
           >
             Cancel
           </Button>
-          <Button size="sm" onClick={() => void submit()} disabled={saving}>
+          <Button variant="primary" onClick={() => void submit()} disabled={saving}>
             {saving ? "Creating…" : "Create deal"}
           </Button>
         </DialogFooter>

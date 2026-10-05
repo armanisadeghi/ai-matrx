@@ -141,7 +141,7 @@ export function KitBoard({
             </span>
           )}
           {studyNotesHref && (
-            <Button asChild size="sm" variant="outline" className="gap-1.5">
+            <Button asChild variant="outline">
               <Link href={studyNotesHref}>
                 <FileText className="h-4 w-4" />
                 Read study guide
@@ -152,7 +152,7 @@ export function KitBoard({
               artifacts persist but the THING the learner made — one subject,
               everything for it — was reachable from nowhere afterwards. */}
           {done && finished > 0 && kit.source?.ref?.fileId && (
-            <Button asChild size="sm" className="gap-1.5">
+            <Button variant="primary" asChild>
               <Link href={kitHref("file", kit.source.ref.fileId)}>
                 <Package className="h-4 w-4" />
                 Open your kit
@@ -160,7 +160,7 @@ export function KitBoard({
             </Button>
           )}
           {done && (
-            <Button variant="outline" size="sm" onClick={onReset}>
+            <Button variant="outline" onClick={onReset}>
               Make another
             </Button>
           )}

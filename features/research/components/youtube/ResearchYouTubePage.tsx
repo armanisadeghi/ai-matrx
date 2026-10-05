@@ -188,26 +188,22 @@ export default function ResearchYouTubePage() {
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
           <div className="flex rounded-xl border border-border bg-muted/30 p-1">
             <Button
+              icon={<Search />}
               type="button"
-              size="sm"
-              variant={view === "discover" ? "default" : "ghost"}
+              variant={view === "discover" ? "primary" : "quiet"}
               onClick={() => setView("discover")}
-              className="rounded-lg"
             >
-              <Search className="mr-2 h-4 w-4" />
               Discover
             </Button>
             <Button
+              icon={<Library />}
               type="button"
-              size="sm"
-              variant={view === "library" ? "default" : "ghost"}
+              variant={view === "library" ? "primary" : "quiet"}
               onClick={() => {
                 setLoading(true);
                 setView("library");
               }}
-              className="rounded-lg"
             >
-              <Library className="mr-2 h-4 w-4" />
               Topic library
               {videos.length > 0 && (
                 <span className="ml-2 rounded-full bg-background/70 px-2 py-0.5 text-[10px]">
@@ -218,16 +214,16 @@ export default function ResearchYouTubePage() {
           </div>
           {view === "library" && selected.size > 0 && (
             <Button
+              icon={processing ? (
+                <LoaderCircle className="animate-spin" />
+              ) : (
+                <Brain />
+              )}
+              variant="primary"
               type="button"
               onClick={() => void processSelected()}
               disabled={processing}
-              className="rounded-xl bg-red-500 text-white hover:bg-red-400"
             >
-              {processing ? (
-                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Brain className="mr-2 h-4 w-4" />
-              )}
               {processing
                 ? (batchProgress ?? "Analyzing selected videos…")
                 : `Analyze ${selected.size} selected`}
@@ -272,9 +268,10 @@ export default function ResearchYouTubePage() {
                 Use Discover to search YouTube and add the strongest results.
               </p>
               <Button
+                variant="primary"
                 type="button"
                 onClick={() => setView("discover")}
-                className="mt-5 rounded-xl"
+                className="mt-5"
               >
                 Discover videos
               </Button>
@@ -337,8 +334,7 @@ export default function ResearchYouTubePage() {
                       <Button
                         asChild
                         variant="outline"
-                        size="sm"
-                        className="mt-4 rounded-xl"
+                        className="mt-4"
                       >
                         <Link
                           href={marketingRoutes.youtubeVideo(

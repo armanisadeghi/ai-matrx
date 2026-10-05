@@ -85,10 +85,10 @@ export default function EditableProjectName({
           placeholder="Project name..."
         />
         <Button
-          size="sm"
+          variant="primary"
           onClick={handleSave}
           disabled={isSaving || !editedName.trim()}
-          className="h-8 w-8 p-0"
+          className="w-8"
         >
           {isSaving ? (
             <Loader2 size={14} className="animate-spin" />
@@ -97,11 +97,10 @@ export default function EditableProjectName({
           )}
         </Button>
         <Button
-          size="sm"
           variant="outline"
           onClick={handleCancel}
           disabled={isSaving}
-          className="h-8 w-8 p-0"
+          className="w-8"
         >
           <X size={14} />
         </Button>

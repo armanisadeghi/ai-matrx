@@ -126,7 +126,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({ voice, onClose }) => {
             </p>
           </div>
           <div className="flex justify-between items-center">
-            <Button onClick={handleSendMessage}>Play Sample</Button>
+            <Button variant="primary" onClick={handleSendMessage}>Play Sample</Button>
             <Button
               variant="outline"
               onClick={() => console.log("Use this aiAudio")}

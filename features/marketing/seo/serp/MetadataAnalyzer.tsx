@@ -160,21 +160,19 @@ export function MetadataAnalyzer({
                   />
                   {enableFetch ? (
                     <Button
+                      icon={isFetching ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Search />
+                      )}
                       type="button"
-                      size="icon"
-                      variant="default"
+                      variant="primary"
                       disabled={!url.trim() || isFetching}
-                      className="h-9 w-9 shrink-0"
+                      className="shrink-0"
                       aria-label="Fetch metadata from URL"
                       title="Fetch metadata from URL"
                       onClick={() => void handleFetchMetadata()}
-                    >
-                      {isFetching ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Search className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                    />
                   ) : null}
                 </div>
               </div>

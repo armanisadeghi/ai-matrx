@@ -211,7 +211,6 @@ export function ClassHubView({ classParam }: ClassHubViewProps) {
               operation="Open a class"
               actions={
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => {
                     void refreshMyClasses();
@@ -235,12 +234,11 @@ function BackToClasses() {
   const router = useRouter();
   return (
     <Button
-      variant="ghost"
-      size="sm"
-      className="-ml-2 h-7 gap-1.5 text-muted-foreground"
+      icon={<ChevronLeft />}
+      variant="quiet"
+      className="-ml-2"
       onClick={() => router.push("/education/classes")}
     >
-      <ChevronLeft className="h-4 w-4" />
       My Classes
     </Button>
   );
@@ -486,23 +484,17 @@ function ClassHubBody({
           </div>
           <div className="flex shrink-0 items-center gap-1">
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground"
+              icon={<Pencil />}
+              variant="quiet"
               onClick={() => setEditOpen(true)}
               aria-label="Edit class"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
+            />
             <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              icon={<Archive />}
+              variant="quiet"
               onClick={handleArchive}
               aria-label="Archive class"
-            >
-              <Archive className="h-4 w-4" />
-            </Button>
+            />
           </div>
         </div>
 
@@ -540,8 +532,7 @@ function ClassHubBody({
                   {!past && (
                     <Button
                       variant="outline"
-                      size="sm"
-                      className="h-7 shrink-0 gap-1 text-xs"
+                      className="shrink-0"
                       onClick={() =>
                         router.push(
                           `/education/planner?examBy=${encodeURIComponent(exam.date)}&for=${encodeURIComponent(cls.name)}`,

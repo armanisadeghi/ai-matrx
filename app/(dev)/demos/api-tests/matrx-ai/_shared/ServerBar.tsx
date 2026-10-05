@@ -121,13 +121,12 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => {
                 setTemp(config.authToken);
                 setEditing(true);
               }}
-              className="h-5 w-5 p-0"
+              className="w-5"
             >
               <Pencil className="h-2.5 w-2.5" />
             </Button>
@@ -137,10 +136,9 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={clear}
-              className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+              className="w-5"
             >
               <X className="h-2.5 w-2.5" />
             </Button>
@@ -170,11 +168,10 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
-            size="sm"
-            variant="default"
+            variant="primary"
             onClick={save}
             disabled={!temp.trim()}
-            className="h-7 w-7 p-0 flex-shrink-0"
+            className="w-7 flex-shrink-0"
           >
             <Check className="h-3 w-3" />
           </Button>
@@ -185,13 +182,12 @@ function AuthTokenWidget({ config }: { config: UseServerConfigReturn }) {
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="sm"
-              variant="ghost"
+              variant="quiet"
               onClick={() => {
                 setTemp(config.authToken);
                 setEditing(false);
               }}
-              className="h-7 w-7 p-0 flex-shrink-0"
+              className="w-7 flex-shrink-0"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -298,14 +294,13 @@ export function ServerBar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="sm"
               variant="outline"
               onClick={() =>
                 config.setApiVersion(
                   config.apiVersion === "v2" ? "v1" : "v2",
                 )
               }
-              className="h-7 text-xs px-2.5 gap-1.5 flex-shrink-0 font-mono"
+              className="flex-shrink-0"
               style={
                 config.apiVersion === "v1" ? { color: "#facc15" } : undefined
               }
@@ -341,17 +336,16 @@ export function ServerBar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
-              size="sm"
+              icon={config.healthStatus === "checking" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Heart />
+              )}
               variant="outline"
               onClick={config.checkHealth}
               disabled={config.healthStatus === "checking" || !config.serverUrl}
-              className="h-7 text-xs px-2.5 gap-1.5 flex-shrink-0"
+              className="flex-shrink-0"
             >
-              {config.healthStatus === "checking" ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Heart className="h-3 w-3" />
-              )}
               Health
             </Button>
           </TooltipTrigger>

@@ -435,41 +435,32 @@ export function RowActions({
     <>
       <div className="flex items-center gap-0.5 opacity-100 transition-opacity xl:opacity-0 xl:group-hover:opacity-100">
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 max-lg:h-10 max-lg:w-10"
+          icon={<Eye />} aria-label="View"
+          variant="quiet"
           title="View"
           onClick={(e) => {
             e.stopPropagation();
             onView(item);
           }}
-        >
-          <Eye className="h-3.5 w-3.5" />
-        </Button>
+        />
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 max-lg:h-10 max-lg:w-10"
+          icon={<Pencil />} aria-label="Edit"
+          variant="quiet"
           title="Edit"
           onClick={(e) => {
             e.stopPropagation();
             onEdit(item);
           }}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
+        />
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 max-lg:h-10 max-lg:w-10"
+          icon={<Copy />} aria-label="Duplicate"
+          variant="quiet"
           title="Duplicate"
           onClick={(e) => {
             e.stopPropagation();
             onDuplicate(item);
           }}
-        >
-          <Copy className="h-3.5 w-3.5" />
-        </Button>
+        />
         <span onClick={(e) => e.stopPropagation()} className="contents">
           <CopyButtons
             size="icon"
@@ -489,17 +480,14 @@ export function RowActions({
           />
         </span>
         <Button
-          variant="ghost"
-          size="icon"
-          className="h-6 w-6 text-destructive hover:bg-destructive/10 hover:text-destructive max-lg:h-10 max-lg:w-10"
+          icon={<Trash2 />} aria-label="Move to Trash"
+          variant="quiet"
           title="Move to Trash"
           onClick={(e) => {
             e.stopPropagation();
             setPendingDelete(true);
           }}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        />
       </div>
 
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
@@ -633,9 +621,7 @@ function SelectFilterContent({
       </Select>
       {value !== undefined && (
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 text-xs text-muted-foreground"
+          variant="quiet"
           onClick={onClear}
         >
           Clear filter
@@ -682,9 +668,7 @@ function BoolFilterContent({
       </Select>
       {value !== undefined && (
         <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 text-xs text-muted-foreground"
+          variant="quiet"
           onClick={onClear}
         >
           Clear filter
@@ -1151,8 +1135,7 @@ function CurrentAiModelTable({
                     <p className="text-sm">No AI models found</p>
                     {(q || Object.keys(filters).length > 0) && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant="quiet"
                         onClick={handleClearAll}
                       >
                         Clear filters

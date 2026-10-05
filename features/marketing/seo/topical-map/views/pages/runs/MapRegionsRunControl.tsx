@@ -239,9 +239,8 @@ export function MapRegionsRunControl({
           ) : (
             <Button
               type="button"
-              size="sm"
-              className="h-7 w-full text-xs"
-              variant={retire && !dryRun ? "destructive" : "default"}
+              className="w-full"
+              variant={retire && !dryRun ? "danger" : "primary"}
               onClick={() =>
                 void run.run({
                   deriveValues,

@@ -19,7 +19,7 @@
 import * as React from "react";
 import { Loader2, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import {
   DropdownMenu,
   DropdownMenuContent,

@@ -679,14 +679,13 @@ export function EntityTypesClient({ entityTypes }: Props) {
             ) : null}
           </span>
           <Button
-            size="sm"
+            icon={<Copy />}
             variant="outline"
             onClick={() => {
               void navigator.clipboard.writeText("pnpm gen:entity-types");
               toast.success("Command copied");
             }}
           >
-            <Copy className="mr-1.5 h-3.5 w-3.5" />
             Copy command
           </Button>
         </div>
@@ -698,8 +697,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
           {activeCount} active / {entityTypes.length}
         </Badge>
         {/* platform.entity_types: canonical token vocabulary; deletion is deactivate-only. */}
-        <Button size="sm" className="ml-auto" onClick={openCreate}>
-          <Plus className="mr-1.5 h-3.5 w-3.5" />
+        <Button icon={<Plus />} variant="primary" className="ml-auto" onClick={openCreate}>
           New entity type
         </Button>
       </div>

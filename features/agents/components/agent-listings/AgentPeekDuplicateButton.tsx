@@ -74,13 +74,12 @@ export function AgentPeekDuplicateButton({
 
   return (
     <Button
+      icon={busy ? <Loader2 className="animate-spin" /> : <CopyPlus />}
       variant="outline"
-      size="sm"
       onClick={duplicate}
       disabled={busy}
       title="Make your own copy of this agent"
     >
-      {busy ? <Loader2 className="animate-spin" /> : <CopyPlus />}
       Duplicate
     </Button>
   );

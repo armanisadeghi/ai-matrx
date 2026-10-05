@@ -121,10 +121,9 @@ export function MultiFileCodeEditorBody({
         <div className="flex items-center gap-2 min-w-0">
           {onToggleSidebar && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant="quiet"
               onClick={onToggleSidebar}
-              className="h-6 w-6 p-0 flex-shrink-0 hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="w-6 flex-shrink-0"
               title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
             >
               <PanelLeftClose className="h-3.5 w-3.5" />

@@ -612,7 +612,7 @@ export function ChatImportDialog({
             <p className="text-sm text-foreground">{summary}</p>
             <div className="flex flex-wrap gap-2">
               <Button
-                size="sm"
+                variant="primary"
                 onClick={() => {
                   reset();
                   onOpenChange(false);
@@ -622,7 +622,6 @@ export function ChatImportDialog({
               </Button>
               {run.result?.followupSeed && onFollowupSeed ? (
                 <Button
-                  size="sm"
                   variant="outline"
                   onClick={() => {
                     const seed = run.result?.followupSeed;
@@ -667,7 +666,6 @@ export function ChatImportDialog({
                 className="h-8 max-w-xs"
               />
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() =>
                   setSelected(new Set(visibleRows.map((r) => r.key)))
@@ -676,7 +674,6 @@ export function ChatImportDialog({
                 Select all
               </Button>
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => setSelected(new Set())}
               >
@@ -697,7 +694,6 @@ export function ChatImportDialog({
                   className="h-8 min-w-0 flex-1"
                 />
                 <Button
-                  size="sm"
                   variant="outline"
                   disabled={shortlisting}
                   onClick={() => void shortlist()}
@@ -807,17 +803,15 @@ export function ChatImportDialog({
                       {file.name}
                     </p>
                     <Button
-                      variant="ghost"
-                      size="icon"
+                      icon={<X />}
+                      variant="quiet"
                       aria-label="Remove the chosen file"
                       onClick={() => {
                         setFile(null);
                         if (fileInputRef.current)
                           fileInputRef.current.value = "";
                       }}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                    />
                   </div>
                 ) : (
                   <button

@@ -12,7 +12,7 @@
 
 import Link from "next/link";
 import { ArrowUpRight, Undo2, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import type { ReversibleFoundAt, ReversibleTier } from "@ai-matrx/kit/reversible";
 import { foundAtHref } from "@ai-matrx/kit/reversible";
 import { cn } from "@/lib/utils";

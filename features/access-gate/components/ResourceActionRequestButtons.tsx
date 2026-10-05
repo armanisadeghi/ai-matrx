@@ -185,31 +185,30 @@ export function ResourceActionRequestButtons({
     <div className="flex flex-wrap gap-2">
       {action ? (
         <Button
+          icon={busy ? (
+            <Loader2 className="animate-spin" aria-hidden />
+          ) : (
+            <Trash2 aria-hidden />
+          )}
+          variant="primary"
           className={size}
-          size="sm"
           disabled={busy}
           onClick={() => void completeAction()}
         >
-          {busy ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-          ) : (
-            <Trash2 className="h-3.5 w-3.5" aria-hidden />
-          )}
           {action.label}
         </Button>
       ) : null}
       <Button
+        icon={<KeyRound aria-hidden />}
         className={size}
-        size="sm"
         variant="outline"
         disabled={busy}
         onClick={() => void grantFullAccess()}
       >
-        <KeyRound className="h-3.5 w-3.5" aria-hidden />
         Give full access
       </Button>
       {safeHref ? (
-        <Button asChild className={size} size="sm" variant="outline">
+        <Button asChild className={size} variant="outline">
           <Link href={safeHref} target="_blank" rel="noopener noreferrer">
             <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             Open item
@@ -217,23 +216,21 @@ export function ResourceActionRequestButtons({
         </Button>
       ) : null}
       <Button
+        icon={<CircleSlash aria-hidden />}
         className={size}
-        size="sm"
-        variant="ghost"
+        variant="quiet"
         disabled={busy}
         onClick={() => void decline()}
       >
-        <CircleSlash className="h-3.5 w-3.5" aria-hidden />
         Decline
       </Button>
       <Button
+        icon={<Flag aria-hidden />}
         className={size}
-        size="sm"
-        variant="ghost"
+        variant="quiet"
         disabled={busy}
         onClick={() => void report()}
       >
-        <Flag className="h-3.5 w-3.5" aria-hidden />
         Report
       </Button>
     </div>

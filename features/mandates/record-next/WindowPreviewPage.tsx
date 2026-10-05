@@ -22,8 +22,7 @@ export function WindowPreviewPage() {
   }, [openWindow]);
   return (
     <div className="p-4">
-      <Button variant="outline" size="sm" onClick={() => openWindow()} className="gap-2">
-        <AppWindow className="h-4 w-4" />
+      <Button icon={<AppWindow />} variant="outline" onClick={() => openWindow()}>
         Open the mandate window again
       </Button>
     </div>

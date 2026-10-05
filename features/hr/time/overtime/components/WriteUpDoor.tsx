@@ -64,13 +64,12 @@ export function WriteUpDoor({
           record.
         </p>
         <Button
+          icon={<FileText aria-hidden />}
           type="button"
-          size="sm"
           variant="outline"
-          className="mt-2 min-h-[44px]"
+          className="mt-2"
           onClick={() => void announceComingSoon("hr.corrective-action-record")}
         >
-          <FileText className="mr-1.5 h-4 w-4" aria-hidden />
           Open the corrective action
         </Button>
       </section>
@@ -116,14 +115,13 @@ export function WriteUpDoor({
       ) : null}
 
       <Button
+        icon={<FileText aria-hidden />}
         type="button"
-        size="sm"
         variant="outline"
-        className="mt-3 min-h-[44px]"
+        className="mt-3"
         disabled={blockedByUnacknowledgedDispute}
         onClick={() => void announceComingSoon("hr.corrective-action-create")}
       >
-        <FileText className="mr-1.5 h-4 w-4" aria-hidden />
         Start a corrective action
       </Button>
     </section>

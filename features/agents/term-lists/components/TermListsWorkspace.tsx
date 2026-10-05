@@ -3,15 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Archive, BookA, ChevronLeft, Loader2, Plus, Save } from "lucide-react";
-import {
-  Button,
-  Input,
-  Skeleton,
-  Textarea,
-  ToggleGroup,
-  ToggleGroupItem,
-  cn,
-} from "@ai-matrx/design-system";
+import { Input, Skeleton, Textarea, ToggleGroup, ToggleGroupItem, cn } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -122,14 +115,12 @@ export function TermListsWorkspace() {
             {selectedId ? (
               // Phone: the list and the editor are one screen each (list → detail).
               <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 md:hidden"
+                icon={<ChevronLeft />}
+                variant="quiet"
+                className="md:hidden"
                 aria-label="All term lists"
                 onClick={() => replaceAddressOrNavigate(router, "/resources/term-lists")}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+              />
             ) : null}
             <span className="text-sm font-medium">Term lists</span>
           </div>
@@ -332,24 +323,23 @@ export function TermListEditor({
         />
         <div className="ml-auto flex items-center gap-1">
           <Button
-            variant="ghost"
-            size="sm"
+            icon={<Archive />}
+            variant="quiet"
             aria-label="Archive"
             onClick={() => void archive()}
           >
-            <Archive className="h-3.5 w-3.5 sm:mr-1" />
             <span className="hidden sm:inline">Archive</span>
           </Button>
           <Button
-            size="sm"
+            icon={saving ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
+            variant="primary"
             onClick={() => void save()}
             disabled={!dirty || saving || !draft.name.trim() || problems.length > 0}
           >
-            {saving ? (
-              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Save className="mr-1 h-3.5 w-3.5" />
-            )}
             Save
           </Button>
         </div>

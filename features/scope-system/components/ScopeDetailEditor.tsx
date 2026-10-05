@@ -266,29 +266,25 @@ export function ScopeDetailEditor({
                   style={{ fontSize: "16px" }}
                 />
                 <Button
+                  icon={savingName ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Check />
+                  )}
                   type="button"
-                  size="icon"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={saveName}
                   disabled={savingName}
                   aria-label="Save scope name"
-                >
-                  {savingName ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
-                </Button>
+                />
                 <Button
+                  icon={<XIcon />}
                   type="button"
-                  size="icon"
-                  variant="ghost"
+                  variant="quiet"
                   onClick={cancelNameEdit}
                   disabled={savingName}
                   aria-label="Cancel editing scope name"
-                >
-                  <XIcon className="h-4 w-4" />
-                </Button>
+                />
               </div>
             ) : (
               <div className="flex items-center gap-2 group">
@@ -296,16 +292,14 @@ export function ScopeDetailEditor({
                   {scope.name}
                 </h1>
                 <Button
+                  icon={<Pencil />}
                   ref={editNameButtonRef}
                   type="button"
-                  size="icon"
-                  variant="ghost"
+                  variant="quiet"
                   className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
                   onClick={() => setEditingName(true)}
                   aria-label="Edit name"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
+                />
               </div>
             )}
             <p className="text-xs text-muted-foreground mt-1">
@@ -331,20 +325,19 @@ export function ScopeDetailEditor({
                 />
                 <div className="flex items-center gap-2">
                   <Button
+                    icon={savingDescription && (
+                      <Loader2 className="animate-spin" />
+                    )}
+                    variant="primary"
                     type="button"
-                    size="sm"
                     onClick={saveDescription}
                     disabled={savingDescription}
                   >
-                    {savingDescription && (
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    )}
                     Save description
                   </Button>
                   <Button
                     type="button"
-                    size="sm"
-                    variant="ghost"
+                    variant="quiet"
                     onClick={cancelDescriptionEdit}
                     disabled={savingDescription}
                   >
@@ -410,9 +403,7 @@ export function ScopeDetailEditor({
           </h2>
           <Button
             asChild
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground"
+            variant="quiet"
           >
             <Link href={scopeContextItemsHref(orgSlugOrId, scopeType, scope)}>
               Open full page

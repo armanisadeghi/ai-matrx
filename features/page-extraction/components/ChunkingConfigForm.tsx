@@ -638,12 +638,12 @@ export function ChunkingConfigForm({
           </p>
         </div>
         <Button
-          size="sm"
-          className="h-7 px-2 text-[10px] shrink-0"
+          icon={<Plus />}
+          variant="primary"
+          className="shrink-0"
           onClick={enterNewTemplate}
           title="Compose a fresh template"
         >
-          <Plus className="w-3 h-3 mr-0.5" />
           New
         </Button>
       </div>
@@ -1099,8 +1099,7 @@ function TemplateEditor({
               <Button
                 type="button"
                 variant="outline"
-                size="sm"
-                className="h-7 w-full justify-center gap-1.5 text-[11px]"
+                className="w-full justify-center"
                 disabled={!canApplyRecommended}
                 onClick={handleApplyRecommended}
               >
@@ -1264,9 +1263,8 @@ function TemplateEditor({
       <div className="shrink-0 px-3 py-2 border-t border-border bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-2">
           <Button
-            size="sm"
-            variant="ghost"
-            className="flex-1 h-8 text-[11px]"
+            variant="quiet"
+            className="flex-1"
             onClick={handleCancel}
             disabled={saving}
             title={
@@ -1278,8 +1276,8 @@ function TemplateEditor({
             Cancel
           </Button>
           <Button
-            size="sm"
-            className="flex-1 h-8 text-[11px]"
+            variant="primary"
+            className="flex-1"
             disabled={!canSave}
             onClick={() => void handleSave()}
             title={

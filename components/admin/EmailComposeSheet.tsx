@@ -261,6 +261,7 @@ export function EmailComposeSheet({
             Cancel
           </Button>
           <Button
+            variant="primary"
             onClick={handleSend}
             disabled={loading || !subject.trim() || !message.trim()}
             className="flex-1"

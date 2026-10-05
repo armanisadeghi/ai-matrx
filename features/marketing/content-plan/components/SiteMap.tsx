@@ -556,17 +556,14 @@ export function SiteMap({
         </Select>
         <Button
           variant="outline"
-          size="sm"
-          className="h-7 text-xs"
           onClick={anyCollapsed ? expandAll : collapseBranches}
         >
           {anyCollapsed ? "Expand all" : "Collapse branches"}
         </Button>
         <div className="flex items-center gap-0.5">
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
+            variant="quiet"
+            className="w-7"
             aria-label="Zoom out"
             disabled={zoom <= ZOOM_MIN}
             onClick={() => setZoom((current) => clampZoom(current - ZOOM_STEP))}
@@ -582,9 +579,8 @@ export function SiteMap({
             {Math.round(zoom * 100)}%
           </button>
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0"
+            variant="quiet"
+            className="w-7"
             aria-label="Zoom in"
             disabled={zoom >= ZOOM_MAX}
             onClick={() => setZoom((current) => clampZoom(current + ZOOM_STEP))}
@@ -697,8 +693,6 @@ export function SiteMap({
             </p>
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 text-xs"
               onClick={() => {
                 setSearch("");
                 setStatusFilter("all");

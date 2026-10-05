@@ -396,9 +396,7 @@ export function LoadFromLibraryDialog({
                   . {chosenIds.length} chosen.
                 </p>
                 <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-xs"
+                  variant="quiet"
                   disabled={busy}
                   onClick={() =>
                     setChosenIds(
@@ -481,7 +479,7 @@ export function LoadFromLibraryDialog({
 
         <DialogFooter>
           <Button
-            variant="ghost"
+            variant="quiet"
             disabled={busy}
             onClick={() => onOpenChange(false)}
           >
@@ -491,12 +489,13 @@ export function LoadFromLibraryDialog({
           </Button>
           {readiness?.canStart && phase.kind !== "arrived" ? (
             <Button
+              icon={busy ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : null}
+              variant="primary"
               disabled={busy || chosenIds.length === 0}
               onClick={() => void start()}
             >
-              {busy ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
-              ) : null}
               {chosenIds.length === 0
                 ? "Choose at least one item"
                 : `Load ${chosenIds.length} test cases`}

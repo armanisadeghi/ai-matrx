@@ -179,9 +179,7 @@ export function ImportQuickFixes({
             />
             <Button
               type="button"
-              variant="secondary"
-              size="sm"
-              className="h-7 text-xs"
+              variant="outline"
               onClick={() => patch({ kind: "set-name" }, nameDraft)}
               disabled={!nameDraft.trim()}
             >
@@ -291,8 +289,7 @@ export function ImportQuickFixes({
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="h-7 text-xs w-full"
+          className="w-full"
           onClick={runAutoFixes}
         >
           Apply {autoFixCount} automatic fix{autoFixCount === 1 ? "" : "es"}{" "}

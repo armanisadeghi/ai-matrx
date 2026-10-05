@@ -205,11 +205,10 @@ function ResetDialog({
           </p>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={() => void submit()} disabled={saving || !ready}>
-            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button icon={saving && <Loader2 className="animate-spin" />} variant="danger" onClick={() => void submit()} disabled={saving || !ready}>
             Reset usage
           </Button>
         </DialogFooter>
@@ -367,9 +366,7 @@ export function UsageLimitsClient() {
               customActions: (row) => (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" title="Actions">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <Button icon={<MoreHorizontal />} aria-label="Actions" variant="quiet" title="Actions" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onSelect={() => setResetTarget(row)}>
@@ -409,9 +406,7 @@ export function UsageLimitsClient() {
                 {SEGMENTS.map((s) => (
                   <Button
                     key={s.id}
-                    size="sm"
-                    variant={segment === s.id ? "secondary" : "ghost"}
-                    className="h-7 px-2 text-xs"
+                    variant={segment === s.id ? "outline" : "quiet"}
                     aria-pressed={segment === s.id}
                     onClick={() => setSegment(s.id)}
                   >

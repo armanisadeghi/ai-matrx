@@ -114,15 +114,13 @@ function StartOutreachOnDomain({
   return (
     <>
       <Button
-        size="sm"
-        variant={compact ? "ghost" : "default"}
-        className={compact ? "h-7 gap-1 px-2 text-xs" : "gap-1.5"}
+        icon={<Send />}
+        variant={compact ? "quiet" : "primary"}
         onClick={(event) => {
           event.stopPropagation();
           setOpen(true);
         }}
-      >
-        <Send className="h-3.5 w-3.5" /> Start outreach
+      > Start outreach
       </Button>
       {open && (
         <StartOutreachDialog
@@ -253,16 +251,16 @@ function DomainDetail({
           className="mt-2 min-h-24 text-xs"
         />
         <Button
-          size="sm"
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           className="mt-2"
           disabled={saving}
           onClick={() => void save()}
         >
-          {saving ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Save className="h-3.5 w-3.5" />
-          )}
           Save
         </Button>
       </section>

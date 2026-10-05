@@ -499,7 +499,7 @@ export default function CollectionItemsPage() {
       <div className="px-4 sm:px-6 py-4 space-y-4">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="ghost" size="sm" className="gap-1 text-xs" asChild>
+          <Button variant="quiet" asChild>
             <Link href={`/cms/${siteId}/collections`}>
               <ChevronLeft className="h-3.5 w-3.5" />
               Collections
@@ -523,28 +523,25 @@ export default function CollectionItemsPage() {
               />
             </div>
             <Button
-              size="sm"
-              className="gap-1.5 text-xs"
+              icon={<Plus />}
+              variant="primary"
               onClick={() => {
                 setEditingItem(null);
                 setItemEditorOpen(true);
               }}
             >
-              <Plus className="h-3.5 w-3.5" />
               Add item
             </Button>
             <Button
+              icon={isExporting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Download />
+              )}
               variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs"
               onClick={handleExport}
               disabled={isExporting}
             >
-              {isExporting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Download className="h-3.5 w-3.5" />
-              )}
               Export CSV
             </Button>
           </div>
@@ -555,9 +552,7 @@ export default function CollectionItemsPage() {
           {FILTERS.map((f) => (
             <Button
               key={f.value}
-              variant={filter === f.value ? "secondary" : "ghost"}
-              size="sm"
-              className="text-xs h-7"
+              variant={filter === f.value ? "outline" : "quiet"}
               onClick={() => {
                 setFilter(f.value);
                 setPage(1);
@@ -577,79 +572,65 @@ export default function CollectionItemsPage() {
             {/* read-gate-exempt: how many items the person has ticked (selection state), not a count from a read */}
             <span className="text-xs font-medium">{selected.size} selected</span>
             <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-xs"
+              icon={<MailCheck />}
+              variant="quiet"
               disabled={bulkBusy}
               onClick={() => bulkFlags({ seen: true }, "Marked seen")}
             >
-              <MailCheck className="h-3.5 w-3.5" />
               Mark seen
             </Button>
             <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-xs"
+              icon={<MailX />}
+              variant="quiet"
               disabled={bulkBusy}
               onClick={() => bulkFlags({ seen: false }, "Marked unseen")}
             >
-              <MailX className="h-3.5 w-3.5" />
               Mark unseen
             </Button>
             {filter === "spam" ? (
               <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs"
+                icon={<ShieldCheck />}
+                variant="quiet"
                 disabled={bulkBusy}
                 onClick={() => bulkFlags({ isSpam: false }, "Marked not spam")}
               >
-                <ShieldCheck className="h-3.5 w-3.5" />
                 Not spam
               </Button>
             ) : (
               <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs"
+                icon={<ShieldAlert />}
+                variant="quiet"
                 disabled={bulkBusy}
                 onClick={() => bulkFlags({ isSpam: true }, "Marked spam")}
               >
-                <ShieldAlert className="h-3.5 w-3.5" />
                 Spam
               </Button>
             )}
             {filter === "archived" ? (
               <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs"
+                icon={<Inbox />}
+                variant="quiet"
                 disabled={bulkBusy}
                 onClick={() => bulkFlags({ status: "active" }, "Restored")}
               >
-                <Inbox className="h-3.5 w-3.5" />
                 Restore
               </Button>
             ) : (
               <Button
-                variant="ghost"
-                size="sm"
-                className="gap-1.5 text-xs"
+                icon={<Archive />}
+                variant="quiet"
                 disabled={bulkBusy}
                 onClick={() => bulkFlags({ status: "archived" }, "Archived")}
               >
-                <Archive className="h-3.5 w-3.5" />
                 Archive
               </Button>
             )}
             <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-xs text-destructive hover:text-destructive"
+              icon={<Trash2 />}
+              variant="quiet"
               disabled={bulkBusy}
               onClick={() => setDeleteOpen(true)}
             >
-              <Trash2 className="h-3.5 w-3.5" />
               Delete
             </Button>
             {bulkBusy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
@@ -694,14 +675,13 @@ export default function CollectionItemsPage() {
                   one yourself.
                 </p>
                 <Button
-                  size="sm"
-                  className="gap-1.5 text-xs"
+                  icon={<Plus />}
+                  variant="primary"
                   onClick={() => {
                     setEditingItem(null);
                     setItemEditorOpen(true);
                   }}
                 >
-                  <Plus className="h-3.5 w-3.5" />
                   Add item
                 </Button>
               </>
@@ -882,9 +862,8 @@ export default function CollectionItemsPage() {
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          variant="quiet"
+                          className="w-7"
                           aria-label="Edit item"
                           onClick={() => {
                             setEditingItem(item);
@@ -910,8 +889,7 @@ export default function CollectionItemsPage() {
             </span>
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
+              className="w-7"
               disabled={page <= 1 || itemsLoading}
               onClick={() => setPage(page - 1)}
               aria-label="Previous page"
@@ -920,8 +898,7 @@ export default function CollectionItemsPage() {
             </Button>
             <Button
               variant="outline"
-              size="sm"
-              className="h-7 w-7 p-0"
+              className="w-7"
               disabled={page >= totalPages || itemsLoading}
               onClick={() => setPage(page + 1)}
               aria-label="Next page"
@@ -983,15 +960,13 @@ export default function CollectionItemsPage() {
               </div>
               <div className="flex justify-end">
                 <Button
+                  icon={<Pencil />}
                   variant="outline"
-                  size="sm"
-                  className="gap-1.5 text-xs"
                   onClick={() => {
                     setEditingItem(openItem);
                     setItemEditorOpen(true);
                   }}
                 >
-                  <Pencil className="h-3.5 w-3.5" />
                   Edit item
                 </Button>
               </div>

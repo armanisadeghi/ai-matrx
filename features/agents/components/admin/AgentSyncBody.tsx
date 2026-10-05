@@ -155,9 +155,8 @@ function AgentHeadCard({
         </span>
         <Button
           asChild
-          variant="ghost"
-          size="sm"
-          className="h-6 shrink-0 gap-1 px-1.5 text-[10px]"
+          variant="quiet"
+          className="shrink-0"
         >
           <Link
             href={getAgentModeHref("versions", agentRef.id, basePath)}
@@ -599,8 +598,7 @@ export function AgentSyncBody({
           <Button variant="outline" onClick={onClose}>
             Close
           </Button>
-          <Button onClick={load} className="gap-1.5">
-            <RefreshCw className="w-3.5 h-3.5" />
+          <Button icon={<RefreshCw />} variant="primary" onClick={load}>
             Retry
           </Button>
         </div>
@@ -634,15 +632,14 @@ export function AgentSyncBody({
           </div>
         </div>
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancel
           </Button>
-          <Button size="sm" onClick={runCreateCopy} disabled={busy === "copy"}>
-            {busy === "copy" ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <Button icon={busy === "copy" ? (
+              <Loader2 className="animate-spin" />
             ) : (
-              <Copy className="w-3.5 h-3.5" />
-            )}
+              <Copy />
+            )} variant="primary" onClick={runCreateCopy} disabled={busy === "copy"}>
             Create my personal copy
           </Button>
         </div>
@@ -662,7 +659,7 @@ export function AgentSyncBody({
           </div>
         </div>
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Close
           </Button>
         </div>
@@ -732,18 +729,17 @@ export function AgentSyncBody({
             </div>
             {onRebindToSystem && (
               <Button
-                size="sm"
+                icon={rebindBusy ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <ShieldCheck />
+                )}
                 variant="outline"
-                className="h-6 shrink-0 gap-1 px-1.5 text-[11px]"
+                className="shrink-0"
                 disabled={rebindBusy || busy !== null}
                 title={`Rebind mandate ${mandateDisplayName} to the system agent "${systemSide.name}" (tracks latest)`}
                 onClick={() => void runRebindToSystem()}
               >
-                {rebindBusy ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <ShieldCheck className="h-3 w-3" />
-                )}
                 Rebind mandate to system side
               </Button>
             )}
@@ -792,15 +788,14 @@ export function AgentSyncBody({
                 <ErrorAlchemyMenu error={currentComparisonError} />
               </p>
               <Button
+                icon={<RefreshCw />}
                 variant="outline"
-                size="sm"
                 onClick={() => {
                   setComparisonError(null);
                   setComparisonState(null);
                   setComparisonRetry((value) => value + 1);
                 }}
               >
-                <RefreshCw className="h-3.5 w-3.5" />
                 Retry comparison
               </Button>
             </div>
@@ -855,7 +850,6 @@ export function AgentSyncBody({
                     </span>
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => {
                         setComparisonError(null);
                         setComparisonState(null);
@@ -901,7 +895,6 @@ export function AgentSyncBody({
                   {comparison.changedFields.length > 0 && (
                     <Button
                       variant="outline"
-                      size="sm"
                       className="shrink-0"
                       onClick={() => setActiveView("differences")}
                     >
@@ -1036,13 +1029,17 @@ export function AgentSyncBody({
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Close
           </Button>
           <div className="flex items-center gap-2">
             <Button
+              icon={busy === "pull" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowDownToLine />
+              )}
               variant="outline"
-              size="sm"
               onClick={runPull}
               disabled={
                 !canPull ||
@@ -1060,15 +1057,15 @@ export function AgentSyncBody({
                   : "You can only pull into a copy you own"
               }
             >
-              {busy === "pull" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ArrowDownToLine className="h-3.5 w-3.5" />
-              )}
               Update personal copy
             </Button>
             <Button
-              size="sm"
+              icon={busy === "push" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ArrowUpFromLine />
+              )}
+              variant="primary"
               onClick={() => setConfirmPushOpen(true)}
               disabled={
                 !canPush ||
@@ -1086,11 +1083,6 @@ export function AgentSyncBody({
                   : "Only super admins can update a system agent"
               }
             >
-              {busy === "push" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <ArrowUpFromLine className="h-3.5 w-3.5" />
-              )}
               Update system baseline
             </Button>
           </div>

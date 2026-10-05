@@ -205,30 +205,32 @@ export function ApproveBrowserWorkspace() {
                           : "Your account has no password or passkey yet, so a browser cannot be approved. Add a passkey to your account, then approve this browser with it."}
                     </p>
                     <Button
+                      icon={busy === "add" ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Fingerprint />
+                      )}
+                      variant="primary"
                       onClick={() => void addPasskey()}
                       disabled={busy !== null}
                       className="w-full"
                     >
-                      {busy === "add" ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                        <Fingerprint className="mr-2 h-4 w-4" />
-                      )}
                       Add a passkey
                     </Button>
                   </div>
                 ) : methods ? (
                   <Button
+                    icon={busy === "approve" ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <Fingerprint />
+                    )}
+                    variant="primary"
                     onClick={() => void approve()}
                     disabled={busy !== null}
                     className="mt-4 w-full"
                     data-testid="approve-browser-passkey"
                   >
-                    {busy === "approve" ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Fingerprint className="mr-2 h-4 w-4" />
-                    )}
                     Approve with passkey
                   </Button>
                 ) : null}

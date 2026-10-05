@@ -47,7 +47,7 @@ import { Settings } from 'lucide-react';
           value="settings-section"
           defaultOpen={true}
           rightElement={
-            <Button size="sm" variant="ghost">
+            <Button type="submit" variant="quiet">
               <Settings className="h-4 w-4" />
             </Button>
           }

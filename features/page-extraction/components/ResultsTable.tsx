@@ -306,9 +306,7 @@ function SingleJobResultsTable({
         <div className="flex items-center gap-1">
           {dupeCount > 0 && (
             <Button
-              size="sm"
-              variant="ghost"
-              className="h-6 px-1.5 text-[10px] text-muted-foreground"
+              variant="quiet"
               onClick={() => setHideDuplicates((v) => !v)}
               title="Rows a validation pass flagged as duplicates"
             >
@@ -318,31 +316,27 @@ function SingleJobResultsTable({
             </Button>
           )}
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[10px] text-muted-foreground"
+            icon={<RefreshCw
+              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
+            />}
+            variant="quiet"
             disabled={loading}
             onClick={() => refetch()}
             title="Refresh results"
           >
-            <RefreshCw
-              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
-            />
             Refresh
           </Button>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+            icon={clearing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Trash2 />
+            )}
+            variant="quiet"
             disabled={clearing}
             onClick={() => void handleClearData()}
             title="Move every result row for this template to Trash (template stays)"
           >
-            {clearing ? (
-              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-            ) : (
-              <Trash2 className="w-3 h-3 mr-1" />
-            )}
             Clear data
           </Button>
         </div>
@@ -674,16 +668,14 @@ function AllResultsTable({
             All extractions
           </span>
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-[10px] text-muted-foreground"
+            icon={<RefreshCw
+              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
+            />}
+            variant="quiet"
             disabled={loading}
             onClick={() => refetch()}
             title="Refresh results"
           >
-            <RefreshCw
-              className={cn("w-3 h-3 mr-1", loading && "animate-spin")}
-            />
             Refresh
           </Button>
         </div>

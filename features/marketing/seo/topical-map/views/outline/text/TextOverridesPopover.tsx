@@ -19,14 +19,8 @@
 import { useState } from "react";
 import { RotateCcw, SlidersHorizontal } from "lucide-react";
 
-import {
-  Button,
-  Input,
-  Label,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@ai-matrx/design-system";
+import { Input, Label, Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 
 import type { TopicalMapKnobs } from "../../../knobs";
 
@@ -88,13 +82,11 @@ export function TextOverridesPopover({ knobs, overrides, onChange }: TextOverrid
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          icon={<SlidersHorizontal className="text-muted-foreground" aria-hidden />}
           type="button"
-          size="sm"
-          variant={active > 0 ? "secondary" : "outline"}
-          className="h-8 text-xs"
+          variant={active > 0 ? "outline" : "outline"}
           aria-pressed={active > 0}
         >
-          <SlidersHorizontal className="mr-1 h-3.5 w-3.5 text-muted-foreground" aria-hidden />
           Sizing
           {active > 0 ? (
             <span className="ml-1 tabular-nums text-muted-foreground">
@@ -108,13 +100,11 @@ export function TextOverridesPopover({ knobs, overrides, onChange }: TextOverrid
           <p className="text-xs font-medium">Try other sizes</p>
           {active > 0 ? (
             <Button
+              icon={<RotateCcw aria-hidden />}
               type="button"
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs"
+              variant="quiet"
               onClick={() => onChange({})}
             >
-              <RotateCcw className="mr-1 h-3 w-3" aria-hidden />
               Reset to the settings
             </Button>
           ) : null}

@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Tooltip,
   TooltipContent,
@@ -55,7 +56,7 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({
         <ScrollArea className="w-full">
           <div className="flex gap-2 pb-2">
             {ideas.map(({ title, description }, index) => (
-              <Button
+              <SurfaceButton
                 key={index}
                 className="flex h-14 flex-col items-start gap-0 flex-shrink-0"
                 variant="outline"
@@ -63,7 +64,7 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({
               >
                 <p className="text-sm font-medium">{title}</p>
                 <p className="text-xs text-muted-foreground">{description}</p>
-              </Button>
+              </SurfaceButton>
             ))}
           </div>
         </ScrollArea>
@@ -85,8 +86,8 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    size="sm"
-                    className="h-8 w-8"
+                    variant="primary"
+                    className="w-8"
                     disabled={!prompt}
                     onClick={handleSend}
                   >
@@ -99,16 +100,13 @@ const PromptInputWithActions: React.FC<PromptInputWithActionsProps> = ({
           </div>
           <div className="flex w-full items-center justify-between gap-2 px-4 pb-4">
             <div className="flex w-full gap-1 md:gap-3">
-              <Button size="sm" variant="ghost">
-                <Paperclip className="h-4 w-4 mr-2" />
+              <Button icon={<Paperclip />} type="submit" variant="quiet">
                 Attach
               </Button>
-              <Button size="sm" variant="ghost">
-                <Mic className="h-4 w-4 mr-2" />
+              <Button icon={<Mic />} type="submit" variant="quiet">
                 Voice Commands
               </Button>
-              <Button size="sm" variant="ghost">
-                <FileText className="h-4 w-4 mr-2" />
+              <Button icon={<FileText />} type="submit" variant="quiet">
                 Templates
               </Button>
             </div>

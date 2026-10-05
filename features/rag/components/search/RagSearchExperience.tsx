@@ -1144,6 +1144,7 @@ function SearchTab({
             />
           </EditableContextMenu>
           <Button
+            variant="primary"
             type="submit"
             disabled={!query.trim() || running}
             className="shrink-0"
@@ -1585,9 +1586,9 @@ function AgentToolResultBlock({
                 </code>
                 {h.chunk_id && (
                   <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 text-[10px] ml-auto"
+                    type="submit"
+                    variant="quiet"
+                    className="ml-auto"
                     onClick={() => playOut(h.chunk_id as string)}
                     disabled={out?.loading}
                   >
@@ -1756,22 +1757,21 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
             />
             {queries.length > 1 && (
               <Button
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 shrink-0"
+                icon={<X />}
+                type="submit"
+                variant="quiet"
+                className="shrink-0"
                 onClick={() =>
                   setQueries((qs) => qs.filter((_, idx) => idx !== i))
                 }
                 aria-label="Remove query"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+              />
             )}
           </div>
         ))}
         <div className="flex items-center gap-2">
           <Button
-            size="sm"
+            type="submit"
             variant="outline"
             onClick={() =>
               setQueries((qs) => (qs.length >= 8 ? qs : [...qs, ""]))
@@ -1781,7 +1781,8 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
             + Add query
           </Button>
           <Button
-            size="sm"
+            type="submit"
+            variant="primary"
             onClick={run}
             disabled={running || queries.every((q) => !q.trim())}
             className="ml-auto"
@@ -2011,6 +2012,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
             />
           </div>
           <Button
+            variant="primary"
             type="submit"
             disabled={!query.trim() || running}
             className="shrink-0"
@@ -2522,7 +2524,7 @@ function DiagnosticsTab({ scope }: { scope: Scope }) {
               ' Toggle "Admin: bypass ACL" in the sidebar to compare against the full database.'}
           </div>
         </div>
-        <Button onClick={refresh} disabled={loading} size="sm">
+        <Button type="submit" variant="primary" onClick={refresh} disabled={loading}>
           {loading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
@@ -2793,15 +2795,13 @@ export function RagSearchExperience() {
             {/* Mobile-only: scope drawer trigger sits where the sidebar would be */}
             {isMobile && !reviewMode && (
               <Button
+                icon={<PanelLeftOpen />}
                 type="button"
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 shrink-0"
+                variant="quiet"
+                className="shrink-0"
                 aria-label="Open scope picker"
                 onClick={() => setScopeOpen(true)}
-              >
-                <PanelLeftOpen className="h-4 w-4" />
-              </Button>
+              />
             )}
             {/* Below md the strip scrolls; from md up it is never squeezed — the scope chips
                 (which truncate) give way, so no tab (Diagnostics) is ever clipped. */}

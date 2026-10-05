@@ -77,24 +77,20 @@ export function OrchestraRunPanel({
             Members light up on the canvas as they run
           </div>
         </div>
-        <Button variant="ghost" size="icon" asChild>
+        <Button icon={<ExternalLink />} aria-label="Open full runner" variant="quiet" asChild>
           <Link
             href={fullRunnerHref}
             target="_blank"
             aria-label="Open full runner"
             title="Open full runner"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Link>
+          />
         </Button>
         <Button
-          variant="ghost"
-          size="icon"
+          icon={<X />}
+          variant="quiet"
           onClick={onClose}
           aria-label="Close run panel"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        />
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">

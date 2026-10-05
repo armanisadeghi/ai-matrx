@@ -239,14 +239,13 @@ export default function SharpContextLabPage() {
             <AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
             <span className="flex-1 text-destructive">{data.error}</span>
             <Button
-              size="sm"
+              icon={<RotateCw />}
               variant="outline"
               onClick={() => {
                 data.retry();
                 setNonce((n) => n + 1);
               }}
             >
-              <RotateCw className="mr-1.5 h-3.5 w-3.5" />
               Retry
             </Button>
             <ErrorAlchemyMenu error={data.error} />

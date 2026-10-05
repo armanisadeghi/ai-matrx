@@ -399,12 +399,10 @@ export function CollectionEditorDialog({
             <div className="flex items-center justify-between mb-2">
               <label className="text-sm font-medium">Fields</label>
               <Button
+                icon={<Plus />}
                 variant="outline"
-                size="sm"
                 onClick={addField}
-                className="gap-1.5 text-xs"
               >
-                <Plus className="h-3.5 w-3.5" />
                 Add field
               </Button>
             </div>
@@ -463,9 +461,8 @@ export function CollectionEditorDialog({
                       </label>
                       <div className="flex items-center ml-auto">
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          variant="quiet"
+                          className="w-7"
                           disabled={i === 0}
                           onClick={() => moveField(i, -1)}
                           aria-label="Move up"
@@ -473,9 +470,8 @@ export function CollectionEditorDialog({
                           <ArrowUp className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0"
+                          variant="quiet"
+                          className="w-7"
                           disabled={i === form.fields.length - 1}
                           onClick={() => moveField(i, 1)}
                           aria-label="Move down"
@@ -483,9 +479,8 @@ export function CollectionEditorDialog({
                           <ArrowDown className="h-3.5 w-3.5" />
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                          variant="quiet"
+                          className="w-7"
                           onClick={() => removeField(i)}
                           aria-label="Remove field"
                         >
@@ -757,8 +752,7 @@ export function CollectionEditorDialog({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+          <Button icon={isSaving && <Loader2 className="animate-spin" />} variant="primary" onClick={handleSave} disabled={isSaving}>
             {collection ? "Save changes" : "Create collection"}
           </Button>
         </DialogFooter>

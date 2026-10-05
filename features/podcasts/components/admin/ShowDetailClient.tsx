@@ -263,8 +263,8 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                   : `${episodes.length} episode${episodes.length === 1 ? "" : "s"}`}
               </p>
               <Button
-                size="sm"
-                className="h-8 gap-1.5"
+                icon={<Plus />}
+                variant="primary"
                 onClick={() =>
                   startTransition(() =>
                     pushAppHref(router, `/administration/knowledge/podcasts/shows/${showId}/episodes/new`,
@@ -272,7 +272,6 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                   )
                 }
               >
-                <Plus className="h-3.5 w-3.5" />
                 New Episode
               </Button>
             </div>
@@ -282,7 +281,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                 <Music className="h-12 w-12 opacity-20" />
                 <p className="text-sm">No episodes for this show yet.</p>
                 <Button
-                  size="sm"
+                  icon={<Plus />}
                   variant="outline"
                   onClick={() =>
                     startTransition(() =>
@@ -291,7 +290,6 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                     )
                   }
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1.5" />
                   Create first episode
                 </Button>
               </div>

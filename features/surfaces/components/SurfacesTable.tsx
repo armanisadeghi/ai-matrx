@@ -526,11 +526,10 @@ export function SurfacesTable({
                 sheetExtras: registryActions.map((a) => (
                   <Button
                     key={a.key}
-                    variant="ghost"
-                    size="sm"
+                    variant="quiet"
                     disabled={a.disabled}
                     onClick={a.onClick}
-                    className="h-9 w-full justify-start gap-2 px-2 font-normal"
+                    className="w-full justify-start"
                   >
                     <a.icon className="h-4 w-4 shrink-0" />
                     <span className="flex-1 text-left">{a.label}</span>
@@ -636,13 +635,11 @@ export function SurfacesTable({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="-mr-1 h-8 w-8 shrink-0"
+                  icon={<MoreVertical />}
+                  variant="quiet"
+                  className="-mr-1 shrink-0"
                   aria-label={`Actions for ${surfaceRowTitle(row)}`}
-                >
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
+                />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem className="gap-2" onSelect={() => onPeek(row)}>

@@ -185,10 +185,8 @@ export function RunsPopover({
         {iconOnly ? (
           <HistoryTapButton ariaLabel={label} tooltip={label} />
         ) : (
-          <Button variant="outline" size="sm">
-            <History className="h-4 w-4 sm:mr-2" />
+          <Button icon={<History />} iconEnd={<ChevronDown className="opacity-60" />} type="submit" variant="outline">
             <span className="hidden sm:inline">{label}</span>
-            <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
           </Button>
         )}
       </PopoverTrigger>
@@ -262,51 +260,42 @@ export function RunsPopover({
                     </button>
                     {run.status === "running" || run.status === "queued" ? (
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
+                        icon={busy === run.id ? (
+                          <Loader2 className="animate-spin" />
+                        ) : (
+                          <XCircle className="text-destructive" />
+                        )} aria-label="Cancel run"
+                        variant="quiet"
                         title="Cancel run"
                         disabled={busy === run.id}
                         onClick={() => void doCancel(run.id)}
-                      >
-                        {busy === run.id ? (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                          <XCircle className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                      </Button>
+                      />
                     ) : (
                       <>
                         {run.failed_chunks > 0 && (
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            title="View failed chunks"
-                            onClick={() => void expand(run.id)}
-                          >
-                            <ChevronDown
+                            icon={<ChevronDown
                               className={cn(
                                 "h-3.5 w-3.5 transition-transform",
                                 expanded === run.id && "rotate-180",
                               )}
-                            />
-                          </Button>
+                            />} aria-label="View failed chunks"
+                            variant="quiet"
+                            title="View failed chunks"
+                            onClick={() => void expand(run.id)}
+                          />
                         )}
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                          icon={busy === run.id ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Trash2 />
+                          )} aria-label="Move this entire run (chunks + results) to Trash"
+                          variant="quiet"
                           title="Move this entire run (chunks + results) to Trash"
                           disabled={busy === run.id}
                           onClick={() => void doDelete(run, num)}
-                        >
-                          {busy === run.id ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
+                        />
                       </>
                     )}
                   </div>
@@ -326,19 +315,16 @@ export function RunsPopover({
                               {pr.page_numbers.join(", ")}
                             </span>
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5"
+                              icon={busy === pr.id ? (
+                                <Loader2 className="animate-spin" />
+                              ) : (
+                                <RotateCcw />
+                              )} aria-label="Retry chunk"
+                              variant="quiet"
                               title="Retry chunk"
                               disabled={busy === pr.id}
                               onClick={() => void doRetry(pr.id)}
-                            >
-                              {busy === pr.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <RotateCcw className="h-3 w-3" />
-                              )}
-                            </Button>
+                            />
                           </div>
                         ))}
                       {pageRuns.filter((pr) => pr.status === "failed")

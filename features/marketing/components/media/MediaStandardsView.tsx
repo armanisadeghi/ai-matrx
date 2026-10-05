@@ -224,15 +224,12 @@ export function MediaStandardsView({
           </div>
         ))}
         <div className="flex items-center gap-1.5">
-          <Button size="sm" variant="outline" className="h-7" onClick={addSlot}>
-            <Plus className="mr-1.5 h-3.5 w-3.5" />
+          <Button icon={<Plus />} variant="outline" onClick={addSlot}>
             Add slot
           </Button>
           {draft.slots.length === 0 ? (
             <Button
-              size="sm"
               variant="outline"
-              className="h-7"
               onClick={seedDefaults}
             >
               Start from the common set
@@ -256,16 +253,15 @@ export function MediaStandardsView({
 
       <div className="flex items-center gap-2">
         <Button
-          size="sm"
-          className="h-8"
+          icon={save.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          variant="primary"
           disabled={!dirty || save.isPending}
           onClick={() => void onSave()}
         >
-          {save.isPending ? (
-            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="mr-1.5 h-4 w-4" />
-          )}
           Save standards
         </Button>
         {dirty ? (

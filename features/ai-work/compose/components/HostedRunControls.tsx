@@ -73,17 +73,16 @@ export function HostedRunControls({
   return (
     <div className="flex items-center gap-2">
       <Button
+        icon={cancelling ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Square />
+        )}
         type="button"
         variant="outline"
-        size="sm"
         onClick={stop}
         disabled={cancelling}
       >
-        {cancelling ? (
-          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <Square className="mr-1.5 h-3.5 w-3.5" />
-        )}
         Stop the hosted session
       </Button>
       <span className="text-xs text-muted-foreground">

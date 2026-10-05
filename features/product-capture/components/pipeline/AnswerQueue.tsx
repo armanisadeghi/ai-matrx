@@ -217,8 +217,7 @@ export function AnswerQueue() {
         <p className="text-sm text-muted-foreground">
           The agents keep working with what you gave them.
         </p>
-        <Button variant="outline" className="h-10" onClick={() => void load()}>
-          <RotateCw className="mr-1.5 h-4 w-4" />
+        <Button icon={<RotateCw />} variant="outline" onClick={() => void load()}>
           Check again
         </Button>
       </div>
@@ -274,7 +273,7 @@ export function AnswerQueue() {
               {item.notes ? ` · ${item.notes}` : ""}
             </p>
           </div>
-          <Button asChild variant="ghost" size="sm" className="h-9 shrink-0">
+          <Button asChild variant="quiet" className="shrink-0">
             <Link href={`/tools/product-capture/manage?item=${item.id}`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-1 h-3.5 w-3.5" />
               Full listing
@@ -299,7 +298,7 @@ export function AnswerQueue() {
                 <Button
                   key={o.value}
                   variant="outline"
-                  className="h-11 flex-1 basis-[calc(50%-0.25rem)]"
+                  className="flex-1 basis-[calc(50%-0.25rem)]"
                   disabled={busy}
                   onClick={() => void submitAnswer(o.value)}
                 >
@@ -312,7 +311,7 @@ export function AnswerQueue() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                className="h-11 flex-1"
+                className="flex-1"
                 disabled={busy}
                 onClick={() => void submitAnswer("yes")}
               >
@@ -320,7 +319,7 @@ export function AnswerQueue() {
               </Button>
               <Button
                 variant="outline"
-                className="h-11 flex-1"
+                className="flex-1"
                 disabled={busy}
                 onClick={() => void submitAnswer("no")}
               >
@@ -349,15 +348,16 @@ export function AnswerQueue() {
           </div>
 
           <Button
-            className="h-11 w-full"
+            icon={busy ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Check />
+            )}
+            variant="primary"
+            className="w-full"
             disabled={busy || !draft.trim()}
             onClick={() => void submitAnswer(draft)}
           >
-            {busy ? (
-              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : (
-              <Check className="mr-1.5 h-4 w-4" />
-            )}
             Answer &amp; next
           </Button>
         </div>
@@ -366,21 +366,21 @@ export function AnswerQueue() {
       {/* Queue controls */}
       <div className="flex gap-2">
         <Button
+          icon={<SkipForward />}
           variant="outline"
-          className="h-11 flex-1"
+          className="flex-1"
           disabled={busy}
           onClick={() => void skip()}
         >
-          <SkipForward className="mr-1.5 h-4 w-4" />
           Skip for now
         </Button>
         <Button
+          icon={<Wrench />}
           variant="outline"
-          className="h-11 flex-1 text-muted-foreground"
+          className="flex-1"
           disabled={busy}
           onClick={() => void defer()}
         >
-          <Wrench className="mr-1.5 h-4 w-4" />
           Not a quick answer
         </Button>
       </div>

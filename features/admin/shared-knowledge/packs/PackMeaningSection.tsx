@@ -307,8 +307,7 @@ function MeaningEditor({
             placeholder="phrase, e.g. data destruction"
             className="h-7 min-w-40 flex-1 font-mono text-xs"
           />
-          <Button size="sm" variant="outline" className="h-7" onClick={addPhrase}>
-            <Plus className="mr-1 size-3" /> Add phrase
+          <Button icon={<Plus />} variant="outline" onClick={addPhrase}> Add phrase
           </Button>
         </div>
       </div>
@@ -345,11 +344,10 @@ function MeaningEditor({
         </p>
       ) : null}
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="ghost" onClick={() => onDone(false)}>
+        <Button variant="quiet" onClick={() => onDone(false)}>
           Cancel
         </Button>
-        <Button size="sm" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
-          {save.isPending ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
+        <Button icon={save.isPending ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={() => save.mutate()} disabled={!valid || save.isPending}>
           Save answer
         </Button>
       </div>
@@ -398,13 +396,11 @@ export function PackMeaningSection({
         </p>
         {canAuthor ? (
           <Button
-            size="sm"
+            icon={<Plus />}
             variant="outline"
-            className="h-7"
             onClick={() => setAdding(true)}
             disabled={adding}
-          >
-            <Plus className="mr-1 size-3.5" /> Add answer
+          > Add answer
           </Button>
         ) : null}
       </div>
@@ -483,18 +479,16 @@ export function PackMeaningSection({
                     {canAuthor ? (
                       <>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-1.5 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                          variant="quiet"
+                          className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => setEditingId(item.item_id)}
                           aria-label={`Edit ${item.label}`}
                         >
                           <Pencil className="size-3.5" />
                         </Button>
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 px-1.5 text-muted-foreground opacity-100 transition-opacity hover:text-destructive [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                          variant="quiet"
+                          className="opacity-100 transition-opacity [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           onClick={() => setDeleteTarget(item)}
                           aria-label={`Remove ${item.label}`}
                         >

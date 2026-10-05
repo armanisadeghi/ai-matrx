@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FileText, Loader2, Trash } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { Card, CardContent } from "@/components/ui/card";
 import type { DocumentRow } from "@/features/data-tables/types";
 import { documentSourceLabel } from "@/features/data-tables/utils/documentsHubDisplay";

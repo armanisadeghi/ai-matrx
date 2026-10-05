@@ -247,12 +247,12 @@ function BindingRow({
           {!readOnly && (
             <div className="flex items-center justify-end gap-1.5 border-t border-border px-2 py-1.5">
               <Inert what="open the value-mapping editor for this binding">
-                <Button variant="outline" size="sm" className="h-6 text-[11px]">
+                <Button type="submit" variant="outline">
                   Edit mapping
                 </Button>
               </Inert>
               <Inert what="open the per-target write-policy editor">
-                <Button variant="outline" size="sm" className="h-6 text-[11px]">
+                <Button type="submit" variant="outline">
                   Write policy
                 </Button>
               </Inert>
@@ -281,7 +281,7 @@ export function BindingsPanel({ readOnly }: { readOnly: boolean }) {
       actions={
         !readOnly ? (
           <Inert what="open the surface-first bind composer">
-            <Button variant="outline" size="sm" className="h-7 text-[11px]">
+            <Button type="submit" variant="outline">
               Bind a Mandate Holder
             </Button>
           </Inert>

@@ -328,7 +328,13 @@ export function VaultPasswordHistoryPanel({
                   {valueAvailable ? (
                     <div className="flex flex-wrap gap-2">
                       <Button
-                        size="sm"
+                        icon={working ? (
+                          <Loader2 className="animate-spin" />
+                        ) : showing ? (
+                          <EyeOff />
+                        ) : (
+                          <Eye />
+                        )}
                         variant="outline"
                         disabled={working}
                         onClick={() => {
@@ -339,18 +345,10 @@ export function VaultPasswordHistoryPanel({
                           } else void reveal(entry.revision);
                         }}
                       >
-                        {working ? (
-                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                        ) : showing ? (
-                          <EyeOff className="mr-1.5 h-3.5 w-3.5" />
-                        ) : (
-                          <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        )}
                         {showing ? "Hide" : "Show old password"}
                       </Button>
                       {restoreAvailable && (
                         <Button
-                          size="sm"
                           variant="outline"
                           disabled={working}
                           onClick={() => {
@@ -390,14 +388,13 @@ export function VaultPasswordHistoryPanel({
       )}
       {history?.next_before_revision && (
         <Button
-          size="sm"
+          icon={loadingMore && (
+            <Loader2 className="animate-spin" />
+          )}
           variant="outline"
           disabled={loadingMore}
           onClick={() => void loadMore()}
         >
-          {loadingMore && (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          )}
           Load earlier changes
         </Button>
       )}

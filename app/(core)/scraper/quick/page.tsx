@@ -253,37 +253,35 @@ export default function QuickScrapePage() {
               <Button
                 onClick={handleNew}
                 variant="outline"
-                size="sm"
                 className="flex-shrink-0"
               >
                 New
               </Button>
             ) : null}
             <Button
+              icon={isLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Zap />
+              )}
               onClick={handleQuickScrape}
               disabled={isAnyLoading || !url.trim()}
-              size="sm"
-              variant="secondary"
-              className="flex-shrink-0 gap-1.5"
+              variant="outline"
+              className="flex-shrink-0"
             >
-              {isLoading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Zap className="w-3.5 h-3.5" />
-              )}
               <span className="hidden sm:inline">Quick</span>
             </Button>
             <Button
+              icon={fullScrapeApi.isLoading ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <ScanSearch />
+              )}
+              variant="primary"
               onClick={handleFullScrape}
               disabled={isAnyLoading || !url.trim()}
-              size="sm"
-              className="flex-shrink-0 gap-1.5"
+              className="flex-shrink-0"
             >
-              {fullScrapeApi.isLoading ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <ScanSearch className="w-3.5 h-3.5" />
-              )}
               <span className="hidden sm:inline">Full Scrape</span>
             </Button>
           </div>
@@ -429,7 +427,6 @@ export default function QuickScrapePage() {
                         <Button
                           onClick={handleCopy}
                           variant="outline"
-                          size="sm"
                           className="flex-shrink-0"
                         >
                           {copied ? (

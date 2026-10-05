@@ -140,12 +140,11 @@ export function OrgEmailTab({
           </p>
         </div>
         <Button
+          icon={<Send />}
+          variant="primary"
           onClick={() => setComposeOpen(true)}
           disabled={selectedRecipients.length === 0}
-          size="sm"
-          className="gap-1.5"
         >
-          <Send className="h-3.5 w-3.5" />
           Compose ({selectedRecipients.length})
         </Button>
       </div>
@@ -182,8 +181,6 @@ export function OrgEmailTab({
         <div className="flex gap-1.5 flex-shrink-0">
           <Button
             variant="outline"
-            size="sm"
-            className="h-8 text-xs"
             onClick={allFilteredSelected ? selectNone : selectAll}
           >
             {allFilteredSelected ? "Deselect All" : "Select All"}

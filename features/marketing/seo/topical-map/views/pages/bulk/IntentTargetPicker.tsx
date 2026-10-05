@@ -150,9 +150,7 @@ function TopicSegment({
           </span>
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-xs"
+            variant="quiet"
             onClick={() =>
               onChange({ ...draft, topicSlug: null, topicName: null })
             }
@@ -255,9 +253,7 @@ function LivePageSegment({
           />
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-xs"
+            variant="quiet"
             onClick={() =>
               onChange({ ...draft, intoPageId: null, intoPageLabel: null })
             }
@@ -363,9 +359,7 @@ function PlannedPageSegment({
           />
           <Button
             type="button"
-            size="sm"
-            variant="ghost"
-            className="h-6 px-1.5 text-xs"
+            variant="quiet"
             onClick={() =>
               onChange({ ...draft, intoNodeId: null, intoNodeLabel: null })
             }
@@ -452,17 +446,15 @@ function PlannedPageSegment({
           ) : null}
           {label.trim() ? (
             <Button
+              icon={create.isPending ? (
+                <Loader2 className="animate-spin" aria-hidden />
+              ) : (
+                <Plus aria-hidden />
+              )}
               type="button"
-              size="sm"
               variant="outline"
-              className="h-7 gap-1.5 px-2 text-xs"
               onClick={submit}
             >
-              {create.isPending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              ) : (
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-              )}
               {create.isPending ? "Creating the planned page…" : "Create and point here"}
             </Button>
           ) : (

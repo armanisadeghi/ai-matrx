@@ -197,9 +197,7 @@ export function TopicPlacementStrip({
           />
           {isAdmin ? (
             <Button
-              size="sm"
-              variant={complete ? "outline" : "default"}
-              className="h-6 gap-1 text-[11px]"
+              variant={complete ? "outline" : "primary"}
               disabled={running || complete}
               title={
                 complete

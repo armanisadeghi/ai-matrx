@@ -188,16 +188,17 @@ export default function KindContentBlockGenerator({
 
       <div className="flex justify-end">
         <Button
+          icon={saving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Braces />
+          )}
+          variant="primary"
           type="button"
           disabled={saving}
           onClick={() => void persist()}
-          className="min-h-11 w-full sm:w-auto"
+          className="w-full sm:w-auto"
         >
-          {saving ? (
-            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Braces className="mr-1.5 h-3.5 w-3.5" />
-          )}
           {storeLabel ??
             (alreadyStored ? "Regenerate & save" : "Generate & save")}
         </Button>

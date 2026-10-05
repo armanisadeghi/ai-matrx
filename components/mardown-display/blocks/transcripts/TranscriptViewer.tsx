@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Input } from '@ai-matrx/design-system';
+import { Input, Button as SurfaceButton } from '@ai-matrx/design-system';
 import { Separator } from '@/components/ui/separator';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
@@ -323,7 +323,7 @@ const TranscriptViewer = ({
                       `${currentSearchIndex + 1}/${searchResults.length}` : 
                       '0/0'}
                   </Badge>
-                  <Button 
+                  <SurfaceButton 
                     size="icon" 
                     variant="ghost" 
                     className="h-7 w-7" 
@@ -331,8 +331,8 @@ const TranscriptViewer = ({
                     disabled={searchResults.length === 0}
                   >
                     <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button 
+                  </SurfaceButton>
+                  <SurfaceButton 
                     size="icon" 
                     variant="ghost" 
                     className="h-7 w-7" 
@@ -340,7 +340,7 @@ const TranscriptViewer = ({
                     disabled={searchResults.length === 0}
                   >
                     <ArrowDown className="h-4 w-4" />
-                  </Button>
+                  </SurfaceButton>
                 </div>
               )}
             </div>
@@ -348,9 +348,7 @@ const TranscriptViewer = ({
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Button 
-                  size="sm" 
-                  variant="outline" 
-                  className="h-8 gap-1"
+                  variant="outline"
                   onClick={() => setIsCompactView(!isCompactView)}
                 >
                   {isCompactView ? (
@@ -434,12 +432,10 @@ const TranscriptViewer = ({
                     <div className="flex items-center gap-2">
                       {showTimecodes && (
                         <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-2 font-mono text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                          icon={<Clock />}
+                          variant="quiet"
                           onClick={() => handleTimeClick(segment.seconds)}
                         >
-                          <Clock className="mr-1 h-3 w-3" />
                           {segment.timecode}
                         </Button>
                       )}
@@ -452,9 +448,8 @@ const TranscriptViewer = ({
                     </div>
                     
                     <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-7 w-7 opacity-100 transition-opacity sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+                      variant="quiet"
+                      className="w-7 opacity-100 transition-opacity sm:[@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                       onClick={() => handleCopySegment(segment.text, segment.id)}
                       aria-label="Copy segment"
                     >

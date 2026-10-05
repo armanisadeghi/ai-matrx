@@ -231,10 +231,8 @@ export function CandidatesPage() {
         {views.map((v) => (
           <Button
             key={v.id}
-            size="sm"
-            variant={view === v.id ? "default" : "outline"}
+            variant={view === v.id ? "primary" : "outline"}
             onClick={() => setView(v.id)}
-            className={cn("h-8")}
           >
             {v.label}
             <span className="ml-1.5 tabular-nums opacity-70">{v.count}</span>

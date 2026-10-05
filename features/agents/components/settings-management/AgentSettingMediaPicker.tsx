@@ -199,15 +199,14 @@ export function AgentSettingMediaPicker({
 
   const trigger = (
     <Button
+      icon={<Plus />}
       variant="outline"
-      size="sm"
-      className="h-7 px-2 text-xs gap-1 flex-shrink-0"
+      className="flex-shrink-0"
       disabled={!isEnabled}
       tabIndex={-1}
       title={multi ? "Add media" : "Pick media"}
       type="button"
     >
-      <Plus className="w-3 h-3" />
       {multi || refs.length === 0 ? (multi ? "Add" : "Pick") : "Replace"}
     </Button>
   );

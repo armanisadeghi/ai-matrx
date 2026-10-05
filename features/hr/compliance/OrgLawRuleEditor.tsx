@@ -187,8 +187,7 @@ function RefusalPanel({
             <ErrorAlchemyMenu />
           </p>
         )}
-        <Button type="button" variant="outline" size="sm" onClick={onSaveAnyway} disabled={busy}>
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <Button icon={busy ? <Loader2 className="animate-spin" /> : null} type="button" variant="outline" onClick={onSaveAnyway} disabled={busy}>
           Save anyway
         </Button>
       <ErrorAlchemyMenu /></div>
@@ -457,11 +456,10 @@ export function OrgLawRuleEditor({
       ) : null}
 
       <div className="flex items-center gap-2">
-        <Button type="button" onClick={() => void save(false)} disabled={busy}>
-          {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+        <Button icon={busy ? <Loader2 className="animate-spin" /> : null} variant="primary" type="button" onClick={() => void save(false)} disabled={busy}>
           {rule ? "Save changes" : "Add this rule"}
         </Button>
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={busy}>
+        <Button type="button" variant="quiet" onClick={onCancel} disabled={busy}>
           Cancel
         </Button>
       </div>

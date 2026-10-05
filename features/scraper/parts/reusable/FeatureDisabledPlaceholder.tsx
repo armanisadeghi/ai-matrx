@@ -32,9 +32,10 @@ const FeatureDisabledPlaceholder = ({
           {description || `This feature is currently turned off. Enable it to activate ${featureName}.`}
         </p>
         
-        <Button 
+        <Button
+          variant="primary" 
           onClick={onEnable}
-          className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-medium py-2 rounded-lg transition-all duration-200 shadow-md"
+          className="w-full"
         >
           Activate {featureName}
         </Button>

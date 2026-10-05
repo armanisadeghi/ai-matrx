@@ -63,6 +63,7 @@ export function AddToBoardRedirect({ addKey }: { addKey: string }) {
           calls={["boards"]}
           actions={
             <Button
+              variant="primary"
               onClick={() => {
                 setFailure(null);
                 setAttempt((n) => n + 1);

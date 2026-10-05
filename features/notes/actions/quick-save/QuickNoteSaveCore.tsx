@@ -284,7 +284,6 @@ export function QuickNoteSaveCore({
         <Button
           type="button"
           variant="outline"
-          size="sm"
           onClick={() => handlePostSaveAction("newTab")}
           className={footerBtnClass}
         >
@@ -293,28 +292,26 @@ export function QuickNoteSaveCore({
           <span className="hidden sm:inline">New tab</span>
         </Button>
         <Button
+          icon={<LayoutPanelLeft />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={() => handlePostSaveAction("openWindow")}
           className={footerBtnClass}
         >
-          <LayoutPanelLeft className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Window</span>
         </Button>
         <Button
+          icon={<ArrowRight />}
           type="button"
           variant="outline"
-          size="sm"
           onClick={() => handlePostSaveAction("navigate")}
           className={footerBtnClass}
         >
-          <ArrowRight className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Go to note</span>
         </Button>
         <Button
+          variant="primary"
           type="button"
-          size="sm"
           onClick={() => handlePostSaveAction("none")}
           className={footerBtnClass}
         >
@@ -325,25 +322,24 @@ export function QuickNoteSaveCore({
       <>
         {onCancel && (
           <Button
+            icon={<X />}
             type="button"
             variant="outline"
-            size="sm"
             onClick={onCancel}
             disabled={isSaving}
             className={footerBtnClass}
           >
-            <X className="h-3.5 w-3.5" />
             Cancel
           </Button>
         )}
         <Button
+          icon={<Save />}
+          variant="primary"
           type="button"
-          size="sm"
           onClick={handleSaveClick}
           disabled={isSaveDisabled}
           className={footerBtnClass}
         >
-          <Save className="h-3.5 w-3.5" />
           {isSaving
             ? "Saving…"
             : (saveLabel ?? (mode === "create" ? "Save Note" : "Update Note"))}
@@ -623,11 +619,11 @@ export function QuickNoteSaveCore({
         description={`Everything currently in this note is replaced by the text you are saving. The old content is not kept anywhere — there is no version to restore and no Undo. Compare the two first if you are not certain.`}
         content={
           <Button
+            icon={<GitCompareArrows />}
             variant="outline"
             onClick={handlePreviewOverwrite}
-            className="w-full gap-1.5"
+            className="w-full"
           >
-            <GitCompareArrows className="h-4 w-4" />
             Preview changes
           </Button>
         }

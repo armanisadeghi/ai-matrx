@@ -121,9 +121,7 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
           {doors.map((d) => (
             <Button
               key={d.kind}
-              size="sm"
               variant="outline"
-              className="h-11 lg:h-8"
               onClick={() =>
                 list.setScope({ kind: d.kind })
               }
@@ -177,7 +175,7 @@ export function AssessmentHome({ kind }: { kind: AssessmentKind }) {
             <p className="text-sm text-muted-foreground">
               Sign in to see your {config.pluralLabel.toLowerCase()} and create new ones.
             </p>
-            <Button asChild className="mt-4" size="sm">
+            <Button variant="primary" asChild className="mt-4">
               <Link href={loginHref}>Sign in</Link>
             </Button>
           </div>

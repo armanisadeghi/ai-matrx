@@ -42,11 +42,11 @@ export function TryAsCandidateButton({
   return (
     <>
       <Button
+        icon={<FlaskConical />}
         type="button"
-        size="sm"
-        variant="ghost"
+        variant="quiet"
         data-testid="try-as-candidate"
-        className={cn("h-7 gap-1 px-2 text-xs", className)}
+        className={className}
         disabled={disabled}
         title={title}
         onClick={(event) => {
@@ -54,7 +54,6 @@ export function TryAsCandidateButton({
           setOpen(true);
         }}
       >
-        <FlaskConical className="h-3 w-3" />
         {label}
       </Button>
       {open ? (

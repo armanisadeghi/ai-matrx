@@ -50,9 +50,7 @@ export default function AiModelTabBar(props: AiModelTabBarProps) {
             ) : (
               <Button
                 type="button"
-                variant="ghost"
-                size="sm"
-                className={cn("h-8 gap-1 rounded-b-none px-2 text-xs", active && "bg-muted")}
+                variant="quiet"
                 onClick={() => props.onSelectTab(tab.id)}
                 onDoubleClick={() => {
                   setEditingId(tab.id);
@@ -85,9 +83,7 @@ export default function AiModelTabBar(props: AiModelTabBarProps) {
           </div>
         );
       })}
-      <Button type="button" variant="ghost" size="icon-sm" onClick={props.onAddTab} aria-label="Add model view">
-        <Plus className="size-4" />
-      </Button>
+      <Button icon={<Plus />} type="button" variant="quiet" onClick={props.onAddTab} aria-label="Add model view" />
     </div>
   );
 }

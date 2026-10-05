@@ -29,7 +29,7 @@
 
 import { use, useMemo } from "react";
 import Link from "next/link";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import { CaptureRun, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -72,7 +72,7 @@ export default function CrewCaptureRoute({
             The record store did not answer, so nothing was opened. This is not an answer about
             your access. {sheet.why}
           </p>
-          <Button size="sm" variant="outline" onClick={sheet.retry}>
+          <Button variant="outline" onClick={sheet.retry}>
             Try again
           </Button>
         </div>

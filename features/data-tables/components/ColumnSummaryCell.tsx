@@ -9,7 +9,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Check, Sigma } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 
 import {

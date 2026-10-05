@@ -10,7 +10,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@/components/ui/button";
 import {
   alreadyLinked,
   linkReplaces,
@@ -115,10 +115,10 @@ export function LinkRecordOverlay({ target, onClose }: { target: LinkRecordTarge
             <p className="font-medium">{words.title}</p>
             <p className="text-muted-foreground">{words.description}</p>
             <div className="flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={() => settle(false)}>
+              <Button variant="quiet" onClick={() => settle(false)}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={() => settle(true)}>
+              <Button variant="primary" onClick={() => settle(true)}>
                 {words.confirm}
               </Button>
             </div>

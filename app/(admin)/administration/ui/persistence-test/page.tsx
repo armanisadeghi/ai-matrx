@@ -171,44 +171,35 @@ export default function PersistenceTestPage() {
           />
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <Button size="sm" onClick={openTest} className="h-7 gap-1.5 text-xs">
-            <PlayCircle className="h-3 w-3" />
+          <Button icon={<PlayCircle />} variant="primary" onClick={openTest}>
             Open {TEST_OVERLAY_ID}
           </Button>
           <Button
-            size="sm"
+            icon={<Save />}
             variant="outline"
             onClick={saveTest}
-            className="h-7 gap-1.5 text-xs"
           >
-            <Save className="h-3 w-3" />
             Save state
           </Button>
           <Button
-            size="sm"
+            icon={<X />}
             variant="outline"
             onClick={closeTest}
-            className="h-7 gap-1.5 text-xs"
           >
-            <X className="h-3 w-3" />
             Close + remove cache
           </Button>
           <Button
-            size="sm"
+            icon={<RotateCcw />}
             variant="outline"
             onClick={reload}
-            className="h-7 gap-1.5 text-xs"
           >
-            <RotateCcw className="h-3 w-3" />
             Reload page
           </Button>
           <Button
-            size="sm"
-            variant="destructive"
+            icon={<Trash2 />}
+            variant="danger"
             onClick={wipeAll}
-            className="h-7 gap-1.5 text-xs"
           >
-            <Trash2 className="h-3 w-3" />
             Close all preserved
           </Button>
         </div>

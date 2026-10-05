@@ -196,28 +196,27 @@ function DriftDashboard() {
         <div className="flex items-center gap-2">
           <PreferencesUserPicker />
           <Button
+            icon={loading ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <RefreshCw />
+            )}
             variant="outline"
-            size="sm"
             onClick={() => void load()}
             disabled={loading || healing}
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
             Refresh
           </Button>
           <Button
-            size="sm"
+            icon={healing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Wrench />
+            )}
+            variant="primary"
             onClick={() => void heal()}
             disabled={healing || loading || clean === true}
           >
-            {healing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Wrench className="h-4 w-4" />
-            )}
             Heal now
           </Button>
         </div>
@@ -316,7 +315,7 @@ function DriftDashboard() {
           urlState={{ id: "preference-drift-report" }}
           data={report.rows}
           columns={[...(columns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-            <Button size="sm" variant="ghost" asChild className="h-6 text-xs">
+            <Button variant="quiet" asChild>
               <AppLink
                 href={`/administration/users/preferences?user=${row.user_id}`}
               >
@@ -457,12 +456,10 @@ function UserPreferencesView({ userId }: { userId: string }) {
     <div className="flex h-full flex-col gap-3 p-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1"
+          icon={<ArrowLeft />}
+          variant="quiet"
           onClick={() => pushAppHref(router, "/administration/users/preferences")}
-        >
-          <ArrowLeft className="h-4 w-4" /> Drift overview
+        > Drift overview
         </Button>
         <h2 className="flex items-center gap-1.5 text-sm font-semibold">
           Preferences for <AdminUserRef userId={userId} />
@@ -474,12 +471,11 @@ function UserPreferencesView({ userId }: { userId: string }) {
           </span>
         ) : null}
         <Button
-          size="sm"
-          variant="ghost"
-          className="ml-auto h-7 gap-1 px-2 text-xs"
+          icon={<X />}
+          variant="quiet"
+          className="ml-auto"
           onClick={() => pushAppHref(router, "/administration/users")}
-        >
-          <X className="h-3 w-3" /> Back to Accounts
+        > Back to Accounts
         </Button>
       </div>
 

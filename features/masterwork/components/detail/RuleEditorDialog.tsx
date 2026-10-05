@@ -536,22 +536,22 @@ function RuleEditorForm({
               </GatedActionButton>
               {!isNew && onImproveInstead ? (
                 <Button
-                  variant="ghost"
+                  icon={<Zap />}
+                  variant="quiet"
                   onClick={onImproveInstead}
                   disabled={saving || cleanupRun.isRunning}
                   title="Dictate what should change and the AI rewrites the rule for your approval."
                 >
-                  <Zap className="h-4 w-4" />
                   Have the AI apply my notes instead
                 </Button>
               ) : null}
               {beforeTidy ? (
                 <Button
-                  variant="ghost"
+                  icon={<RotateCcw />}
+                  variant="quiet"
                   onClick={undoCleanup}
                   disabled={saving || cleanupRun.isRunning}
                 >
-                  <RotateCcw className="h-4 w-4" />
                   Undo AI cleanup
                 </Button>
               ) : null}

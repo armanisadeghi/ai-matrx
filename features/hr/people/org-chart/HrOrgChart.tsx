@@ -292,9 +292,7 @@ export function HrOrgChart() {
                 <Button
                   key={chip.label}
                   type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="min-h-11 text-xs lg:min-h-8"
+                  variant="quiet"
                   onClick={() => setAsOf(chip.value)}
                 >
                   {chip.label}
@@ -322,35 +320,27 @@ export function HrOrgChart() {
 
             <div className="inline-flex items-center rounded-md border border-border">
               <Button
+                icon={<Minus aria-hidden />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 aria-label="Zoom out"
-                className="h-11 w-11 lg:h-8 lg:w-8"
                 onClick={() => setZoom((z) => Math.max(0.4, z - 0.15))}
-              >
-                <Minus className="h-3.5 w-3.5" aria-hidden />
-              </Button>
+              />
               <span className="w-11 text-center text-xs text-muted-foreground">
                 {Math.round(zoom * 100)}%
               </span>
               <Button
+                icon={<Plus aria-hidden />}
                 type="button"
-                variant="ghost"
-                size="icon"
+                variant="quiet"
                 aria-label="Zoom in"
-                className="h-11 w-11 lg:h-8 lg:w-8"
                 onClick={() => setZoom((z) => Math.min(1.6, z + 0.15))}
-              >
-                <Plus className="h-3.5 w-3.5" aria-hidden />
-              </Button>
+              />
             </div>
 
             <Button
               type="button"
-              size="sm"
               variant="outline"
-              className="min-h-11 lg:min-h-8"
               onClick={() =>
                 setCollapsed(
                   collapsed.size > 0
@@ -369,12 +359,10 @@ export function HrOrgChart() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
+                  icon={<Download aria-hidden />}
                   type="button"
-                  size="sm"
                   variant="outline"
-                  className="min-h-11 lg:min-h-8"
                 >
-                  <Download className="mr-2 h-4 w-4" aria-hidden />
                   Export
                 </Button>
               </DropdownMenuTrigger>
@@ -928,17 +916,14 @@ function NoManagerData({
         <div className="mt-3 flex flex-wrap gap-2">
           <Button
             asChild
-            size="sm"
             variant="outline"
-            className="min-h-11 lg:min-h-9"
           >
             <Link href={hrPeopleHref({ org })}>Open the directory</Link>
           </Button>
           {canFix ? (
             <Button
+              variant="primary"
               type="button"
-              size="sm"
-              className="min-h-11 lg:min-h-9"
               onClick={() =>
                 void announceComingSoon("hr.people.bulk-manager-assignment")
               }
@@ -977,16 +962,14 @@ function NotEmployedOnDate({
           employment dates are on their Job &amp; reporting tab.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button asChild size="sm" className="min-h-11 lg:min-h-9">
+          <Button variant="primary" asChild>
             <Link href={hrEmployeeHref(employeeId, "job", { org })}>
               See their employment dates
             </Link>
           </Button>
           <Button
             asChild
-            size="sm"
             variant="outline"
-            className="min-h-11 lg:min-h-9"
           >
             <Link href={hrOrgChartHref({ org, focus: employeeId })}>
               Show today&apos;s chart

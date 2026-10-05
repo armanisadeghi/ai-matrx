@@ -329,15 +329,13 @@ export default function ErrorInspectorWindow({
       footerRight={
         errors.length > 0 ? (
           <Button
-            size="sm"
-            variant="ghost"
-            className="h-7 text-xs text-destructive hover:text-destructive"
+            icon={<Trash2 />}
+            variant="quiet"
             onClick={() => {
               clearCapturedErrors();
               setSelectedId(null);
             }}
           >
-            <Trash2 className="h-3.5 w-3.5 mr-1" />
             Clear all
           </Button>
         ) : undefined
@@ -502,15 +500,13 @@ export default function ErrorInspectorWindow({
 
             <div className="mt-3 flex justify-end">
               <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-xs text-muted-foreground"
+                icon={<X />}
+                variant="quiet"
                 onClick={() => {
                   dismissCapturedError(selected.id);
                   setSelectedId(null);
                 }}
               >
-                <X className="h-3.5 w-3.5 mr-1" />
                 Dismiss this error
               </Button>
             </div>
