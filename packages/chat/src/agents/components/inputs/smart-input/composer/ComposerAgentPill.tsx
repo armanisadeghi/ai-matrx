@@ -52,7 +52,7 @@ import { composerShows } from "./composer-mode-visibility";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, useEffectiveModelId, type ComposerAgentInfo } from "./useComposerAgent";
 import { useComposerAgentFilter } from "./useComposerAgentFilter";
-import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
+import { presentOrganizationRefusal } from "../../../../../host/org";
 import { ensureOrgId, isOrganizationSelectionCancelled } from "../../../../../host/org";
 
 interface ComposerAgentPillProps {

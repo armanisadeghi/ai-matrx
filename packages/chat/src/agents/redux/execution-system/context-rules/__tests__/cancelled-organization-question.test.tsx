@@ -44,10 +44,6 @@ function table() {
 jest.mock("../../../../../host/db", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
-jest.mock("@host/utils/auth/getUserId", () => ({
-  ...jest.requireActual("@host/utils/auth/getUserId"),
-  requireUserId: () => PERSON,
-}));
 jest.mock("@host/features/organizations/service", () => ({
   getUserOrganizations: () => new Promise(() => {}),
 }));
@@ -55,7 +51,6 @@ jest.mock("@host/features/organizations/service", () => ({
 jest.mock("../../../../../host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({
-  ...jest.requireActual("@host/utils/auth/getUserId"),
   requireUserId: () => PERSON,
 }))(),
   };

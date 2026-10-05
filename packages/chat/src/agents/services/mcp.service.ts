@@ -9,8 +9,7 @@ import type {
   McpServerConfigEntry,
 } from "../types/mcp.types";
 import { runWithSessionRetry } from "../../host/session-retry";
-import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
-import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
+import { requireSelectedOrgId, withOrganizationRefusalShown } from "../../host/org";
 
 // ---------------------------------------------------------------------------
 // Catalog

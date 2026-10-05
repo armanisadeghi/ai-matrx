@@ -20,6 +20,12 @@ export const PRIYA: ChatIdentity = {
   email: "priya.raman@harborlightdental.com",
   displayName: "Priya Raman",
   avatarUrl: null,
+  accessToken: null,
+  authReady: true,
+  fingerprintId: null,
+  name: null,
+  preferredUsername: null,
+  picture: null,
 };
 
 export const HARBOR_LIGHT: ChatOrganization = {

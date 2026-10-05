@@ -97,16 +97,10 @@ jest.mock("../../../../host/db", () => {
   return { supabase: client, createClient: () => client };
 });
 
-jest.mock("@host/utils/auth/getUserId", () => ({
-  ...jest.requireActual("@host/utils/auth/getUserId"),
-  getUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
-  requireUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
-}));
 // The identity seam (P7) carries the names this test stood in for above; the rest stay real.
 jest.mock("../../../../host/identity", () => {
   const standIns: Record<string, unknown> = {
     ...(() => ({
-  ...jest.requireActual("@host/utils/auth/getUserId"),
   getUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
   requireUserId: () => "87a6e699-3622-4869-8843-d0867456c0dd",
 }))(),

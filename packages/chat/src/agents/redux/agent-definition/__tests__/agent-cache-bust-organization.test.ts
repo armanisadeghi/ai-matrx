@@ -47,6 +47,21 @@ function stateWith(overrides: {
     appContext: { organization_id: overrides.organizationId ?? null },
     // The package's own view of the active organization (P7), as the app keeps it.
     chatHost: {
+      // Who is signed in, as the package sees it (P7): the bearer and the guest fingerprint.
+      identity: {
+        userId: null,
+        isAuthenticated: Boolean(overrides.accessToken),
+        adminLevel: null,
+        email: null,
+        displayName: null,
+        avatarUrl: null,
+        accessToken: overrides.accessToken ?? null,
+        authReady: true,
+        fingerprintId: overrides.fingerprintId ?? null,
+        name: null,
+        preferredUsername: null,
+        picture: null,
+      },
       org: overrides.organizationId ? { id: overrides.organizationId, name: null } : null,
     },
   } as unknown as ChatRootState;

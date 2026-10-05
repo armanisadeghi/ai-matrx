@@ -111,7 +111,6 @@ function table() {
 jest.mock("../../../../../host/db", () => ({
   supabase: { schema: () => ({ from: () => table() }) },
 }));
-jest.mock("@host/utils/auth/getUserId", () => ({ requireUserId: () => PERSON_ID }));
 const toastError = jest.fn();
 jest.mock("../../../../../host/notify", () => ({
   toast: { error: (...a: unknown[]) => toastError(...a), warning: jest.fn(), success: jest.fn() },

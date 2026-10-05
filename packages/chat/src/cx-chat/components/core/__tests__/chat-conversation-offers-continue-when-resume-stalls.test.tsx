@@ -35,8 +35,10 @@ jest.mock("../../../../store/hooks", () => ({
 }));
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 jest.mock("@host/lib/redux/hooks", () => jest.requireMock("../../../../store/hooks"));
-jest.mock("@host/lib/redux/slices/userSlice", () => ({
-  selectUserContext: () => ({ isAuthenticated: true, isAdmin: false }),
+jest.mock("../../../../host/identity", () => ({
+  ...jest.requireActual("../../../../host/identity"),
+  selectIsAuthenticated: () => true,
+  selectIsAdmin: () => false,
 }));
 jest.mock("../../../../host/server/api-config", () => ({
   selectActiveServer: () => "local",

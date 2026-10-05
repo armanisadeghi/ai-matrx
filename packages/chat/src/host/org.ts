@@ -58,6 +58,17 @@ export function getActiveOrgId(): string | null {
 }
 
 /**
+ * The explicitly selected organization id, or a refusal BEFORE any I/O. Never
+ * a personal-organization fallback: a transport that quietly substitutes one
+ * files work in an organization the person never chose.
+ */
+export function requireSelectedOrgId(): string {
+  const id = getActiveOrgId();
+  if (typeof id !== "string" || id.trim().length === 0) throw refusal();
+  return id.trim();
+}
+
+/**
  * "The person closed the organization picker" — an ANSWER ("not now"), never a
  * failure: no toast, no error line. Recognised by name, so the host's own
  * cancellation error matches without the package importing it.
@@ -165,4 +176,75 @@ export function ensureOrganizationForRequest(options: {
     interactive: options.interactive ?? !READ_METHODS.has(method),
     prefetchedOrganizations: options.prefetchedOrganizations ?? null,
   });
+}
+
+// ── Refusals a person reads ──────────────────────────────────────────────────
+
+/** The wire code both servers answer a missing organization with. */
+const ORGANIZATION_REQUIRED_WIRE_CODE = "organization_required";
+
+/**
+ * True when `error` is the fail-closed "no organization selected" refusal: the
+ * kernel's typed error, or the server's `organization_required` code (matched by
+ * code, never by message, so a serialized error is still recognised).
+ */
+export function isOrganizationRequiredError(error: unknown): boolean {
+  if (isMissingOrganization(error)) return true;
+  return (
+    error instanceof Error &&
+    (error as { code?: unknown }).code === ORGANIZATION_REQUIRED_WIRE_CODE
+  );
+}
+
+export const ORGANIZATION_REQUIRED_REMEDY =
+  "Every record is filed under one organization, so pick the one you are working in from the avatar menu and try again.";
+
+export interface OrganizationRefusalOptions {
+  /** What did NOT happen, as a past participle ("saved", "created"). Defaults to "saved". */
+  act?: string;
+  /** Names the thing ("This page"); omit and the sentence speaks of "Nothing". */
+  subject?: string;
+}
+
+/** The sentence a person reads. The negation is this helper's job, never the caller's. */
+export function organizationRefusalMessage(options: OrganizationRefusalOptions = {}): string {
+  const act = options.act ?? "saved";
+  const refusal = options.subject ? `${options.subject} was not ${act}` : `Nothing was ${act}`;
+  return `${refusal} because no organization is selected. ${ORGANIZATION_REQUIRED_REMEDY}`;
+}
+
+/**
+ * Show the refusal if that is what `error` is. True when it handled the error
+ * (the caller returns), false when the error is something else.
+ */
+export function presentOrganizationRefusal(
+  error: unknown,
+  options: OrganizationRefusalOptions = {},
+): boolean {
+  if (!isOrganizationRequiredError(error)) return false;
+  const description = organizationRefusalMessage(options);
+  if (isChatHostConfigured()) {
+    getChatHost().notify.error("Choose an organization first", { description });
+  } else {
+    // Nobody to show it: say so on the console rather than swallow the refusal.
+    console.warn(`[chat] Choose an organization first. ${description}`);
+  }
+  return true;
+}
+
+/**
+ * Run `work`; if it refuses for want of an organization, show the person the
+ * refusal and RETHROW — the caller's own failure path must still run.
+ */
+export async function withOrganizationRefusalShown<T>(
+  act: string,
+  work: () => Promise<T>,
+  options: Omit<OrganizationRefusalOptions, "act"> = {},
+): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    presentOrganizationRefusal(error, { ...options, act });
+    throw error;
+  }
 }

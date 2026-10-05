@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useEffect, useCallback, useRef } from "react";
+import React, { useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppSelector, useAppDispatch, useAppStore } from "../../store/hooks";
 import {
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
 } from "@host/features/overlays/callbacks/fullScreenEditor";
-import { selectUser } from "@host/lib/redux/slices/userSlice";
 import { useHtmlPreviewState } from "@host/features/html-pages/hooks/useHtmlPreviewState";
 import HtmlPreviewFullScreenEditor from "@host/features/html-pages/components/HtmlPreviewFullScreenEditor";
 import { fetchArtifactsForMessageThunk } from "@host/lib/redux/thunks/artifactThunks";
@@ -16,8 +15,8 @@ import { updateArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import { registerArtifactThunk } from "@host/lib/redux/thunks/artifactThunks";
 import { selectTaskId } from "@host/lib/redux/slices/appContextSlice";
 import { toast } from "../../host/notify";
-import { presentOrganizationRefusal } from "@host/lib/organizations/organizationRefusalToast";
-import { selectOrganizationId } from "../../host/org";
+import { presentOrganizationRefusal, selectOrganizationId } from "../../host/org";
+import { selectUserId } from "../../host/identity";
 
 interface HtmlPreviewBridgeProps {
   content: string;
@@ -51,7 +50,9 @@ export function HtmlPreviewBridge({
 }: HtmlPreviewBridgeProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
-  const user = useAppSelector(selectUser);
+  const userId = useAppSelector(selectUserId);
+  // The preview hook only reads the id; hand it a stable object that changes with the person.
+  const user = useMemo(() => ({ id: userId }), [userId]);
   // An existing conversation's artifact is filed in the CONVERSATION's own
   // organization; the active one is only the fallback for a conversation that
   // is not persisted yet (active-org law, rule 4).

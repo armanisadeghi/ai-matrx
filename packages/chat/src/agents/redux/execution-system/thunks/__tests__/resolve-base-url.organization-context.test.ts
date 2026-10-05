@@ -10,12 +10,14 @@ jest.mock("../../../../../host/server/api-config", () => ({
   selectResolvedBaseUrl: () => "https://backend.test",
   selectActiveServer: () => "production",
 }));
-jest.mock("@host/lib/redux/slices/userSlice", () => ({
+jest.mock("../../../../../host/identity", () => ({
+  ...jest.requireActual("../../../../../host/identity"),
   selectAccessToken: (state: ChatRootState) =>
     (state as unknown as { token: string | null }).token,
   selectFingerprintId: () => null,
 }));
-jest.mock("@host/lib/redux/slices/appContextSlice", () => ({
+jest.mock("../../../../../host/org", () => ({
+  ...jest.requireActual("../../../../../host/org"),
   selectOrganizationId: (state: ChatRootState) =>
     (state as unknown as { selectedOrganizationId: string | null })
       .selectedOrganizationId,

@@ -20,6 +20,12 @@ export const SIGNED_OUT_IDENTITY: ChatIdentity = Object.freeze({
   email: null,
   displayName: null,
   avatarUrl: null,
+  accessToken: null,
+  authReady: false,
+  fingerprintId: null,
+  name: null,
+  preferredUsername: null,
+  picture: null,
 });
 
 const ADMIN_LEVELS: readonly ChatAdminLevel[] = [
@@ -42,8 +48,9 @@ function metaString(
 function identityFromUser(
   user: User | null | undefined,
   adminLevel: ChatAdminLevel | null,
+  accessToken: string | null = null,
 ): ChatIdentity {
-  if (!user) return SIGNED_OUT_IDENTITY;
+  if (!user) return { ...SIGNED_OUT_IDENTITY, authReady: true };
   const meta = user.user_metadata as Record<string, unknown> | undefined;
   return {
     userId: user.id,
@@ -52,6 +59,12 @@ function identityFromUser(
     email: user.email ?? null,
     displayName: metaString(meta, "full_name", "name", "preferred_username"),
     avatarUrl: metaString(meta, "avatar_url", "picture"),
+    accessToken,
+    authReady: true,
+    fingerprintId: null,
+    name: metaString(meta, "name"),
+    preferredUsername: metaString(meta, "preferred_username"),
+    picture: metaString(meta, "picture"),
   };
 }
 
@@ -71,7 +84,12 @@ export function createDbIdentity(
       prev.adminLevel === next.adminLevel &&
       prev.email === next.email &&
       prev.displayName === next.displayName &&
-      prev.avatarUrl === next.avatarUrl
+      prev.avatarUrl === next.avatarUrl &&
+      prev.accessToken === next.accessToken &&
+      prev.authReady === next.authReady &&
+      prev.name === next.name &&
+      prev.preferredUsername === next.preferredUsername &&
+      prev.picture === next.picture
     ) {
       return;
     }
@@ -103,11 +121,14 @@ export function createDbIdentity(
     }
   }
 
-  async function adopt(user: User | null | undefined): Promise<void> {
-    publish(identityFromUser(user, null));
+  async function adopt(
+    user: User | null | undefined,
+    accessToken: string | null = null,
+  ): Promise<void> {
+    publish(identityFromUser(user, snapshot.userId === user?.id ? snapshot.adminLevel : null, accessToken));
     if (!user) return;
     const level = await readAdminLevel(user.id);
-    if (snapshot.userId === user.id) publish(identityFromUser(user, level));
+    if (snapshot.userId === user.id) publish(identityFromUser(user, level, accessToken));
   }
 
   function start(): void {
@@ -115,7 +136,7 @@ export function createDbIdentity(
     started = true;
     db.auth
       .getSession()
-      .then(({ data }) => adopt(data.session?.user))
+      .then(({ data }) => adopt(data.session?.user, data.session?.access_token ?? null))
       .catch((error: unknown) =>
         diagnostics().capture(error, {
           area: "identity",
@@ -123,7 +144,7 @@ export function createDbIdentity(
         }),
       );
     db.auth.onAuthStateChange((_event, session) => {
-      void adopt(session?.user);
+      void adopt(session?.user, session?.access_token ?? null);
     });
   }
 

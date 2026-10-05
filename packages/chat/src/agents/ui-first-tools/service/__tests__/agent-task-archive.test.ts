@@ -79,7 +79,6 @@ class Query implements PromiseLike<{ data: unknown; error: null }> {
 jest.mock("../supabase-typed", () => ({
   db: { schema: () => ({ from: () => new Query() }) },
 }));
-jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
 // The org seam (P7) carries the names this test stood in for above; the rest stay real.
 jest.mock("../../../../host/org", () => {
   const standIns: Record<string, unknown> = {

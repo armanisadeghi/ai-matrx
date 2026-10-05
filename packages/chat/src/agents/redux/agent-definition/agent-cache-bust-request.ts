@@ -8,10 +8,7 @@
 
 import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
 import { selectResolvedBaseUrl } from "../../../host/server/api-config";
-import {
-  selectAccessToken,
-  selectFingerprintId,
-} from "@host/lib/redux/slices/userSlice";
+import { selectAccessToken, selectFingerprintId } from "../../../host/identity";
 import type { ChatRootState } from "../../../store/root-state";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { selectOrganizationId } from "../../../host/org";

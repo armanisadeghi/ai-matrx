@@ -21,21 +21,12 @@ function builder(result: unknown) {
 jest.mock("../../../host/db", () => ({
   supabase: { schema: (...a: unknown[]) => (builder({ data: [], error: null }).schema as (...x: unknown[]) => unknown)(...a) },
 }));
-jest.mock("@host/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-1" }));
-jest.mock("@host/lib/organizations/organizationRefusalToast", () => ({
+// The org seam (P7): an organization to write in, and the refusal wrapper as a pass-through.
+jest.mock("../../../host/org", () => ({
+  ...jest.requireActual("../../../host/org"),
+  ensureOrgId: async () => "org-1",
   withOrganizationRefusalShown: async (_v: string, fn: () => Promise<string>) => fn(),
 }));
-// The org seam (P7) carries the names this test stood in for above; the rest stay real.
-jest.mock("../../../host/org", () => {
-  const standIns: Record<string, unknown> = {
-    ...(() => ({ ensureOrgId: async () => "org-1" }))(),
-  };
-  const moved = ["selectOrganizationId","selectOrganizationName","ensureOrgId","getActiveOrgId","isOrganizationSelectionCancelled","ensureOrganizationContext","ensureOrganizationForRequest"];
-  return {
-    ...jest.requireActual("../../../host/org"),
-    ...Object.fromEntries(Object.entries(standIns).filter(([name]) => moved.includes(name))),
-  };
-});
 
 import { surfaceUserStateService } from "../service";
 

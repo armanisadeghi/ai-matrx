@@ -56,6 +56,17 @@ export interface ChatIdentity {
   email: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  /** The session's bearer token, or null. A sync read for transports that build headers. */
+  accessToken: string | null;
+  /** Has the host finished reading its session? False while the first read is in flight. */
+  authReady: boolean;
+  /** The guest fingerprint a signed-out visitor is known by, or null. */
+  fingerprintId: string | null;
+  /** Profile `name` as the person set it (display fallbacks compose from it). */
+  name: string | null;
+  preferredUsername: string | null;
+  /** Profile picture URL, or null. */
+  picture: string | null;
 }
 
 export interface ChatOrganization {

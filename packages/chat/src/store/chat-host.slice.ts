@@ -97,7 +97,13 @@ function sameIdentity(a: ChatIdentity, b: ChatIdentity): boolean {
     a.adminLevel === b.adminLevel &&
     a.email === b.email &&
     a.displayName === b.displayName &&
-    a.avatarUrl === b.avatarUrl
+    a.avatarUrl === b.avatarUrl &&
+    a.accessToken === b.accessToken &&
+    a.authReady === b.authReady &&
+    a.fingerprintId === b.fingerprintId &&
+    a.name === b.name &&
+    a.preferredUsername === b.preferredUsername &&
+    a.picture === b.picture
   );
 }
 

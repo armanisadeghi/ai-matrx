@@ -4,10 +4,7 @@ import {
   selectResolvedBaseUrl,
   selectActiveServer,
 } from "../../../../host/server/api-config";
-import {
-  selectAccessToken,
-  selectFingerprintId,
-} from "@host/lib/redux/slices/userSlice";
+import { selectAccessToken, selectFingerprintId } from "../../../../host/identity";
 import {
   resolveAgentSandboxRef,
   getEffectiveSandboxRef,

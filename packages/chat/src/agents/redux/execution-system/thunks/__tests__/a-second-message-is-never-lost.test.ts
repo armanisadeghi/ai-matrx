@@ -42,10 +42,6 @@ jest.mock("../../utils/required-organization", () => ({
   executionOrganizationForRequest: jest.fn(() => "org-test"),
   requireExecutionOrganizationId: jest.fn(() => "org-test"),
 }));
-jest.mock("@host/lib/organization/organization-gate", () => ({
-  isOrganizationSelectionCancelled: (error: unknown) =>
-    Boolean((error as { __cancelled?: boolean })?.__cancelled),
-}));
 
 const thunkResolving = (value: unknown) => () => {
   const p = Promise.resolve(value);

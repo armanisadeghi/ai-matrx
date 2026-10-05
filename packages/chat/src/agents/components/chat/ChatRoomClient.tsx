@@ -11,7 +11,6 @@ import { useAppDispatch, useAppSelector, useAppStore } from "../../../store/hook
 import { selectAgentExecutionPayload } from "../../redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "../../redux/agent-definition/thunks";
 import { smartExecute } from "../../redux/execution-system/thunks/smart-execute.thunk";
-import { selectAuthReady } from "@host/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { useConversationResume } from "../../hooks/useConversationResume";
 import { useCreatorOwnershipSync } from "../../hooks/useCreatorOwnershipSync";
@@ -73,6 +72,7 @@ import type { SourceFeature } from "@ai-matrx/agents/generated/source-attributio
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { selectUserId, isNotAuthenticatedError } from "../../../host/identity";
 import { selectOrganizationId } from "../../../host/org";
+import { selectAuthReady } from "../../../host/identity";
 
 interface ChatRoomClientProps {
   agentId: string;

@@ -45,6 +45,30 @@ export const selectIsAdmin = (state: unknown): boolean => identityOf(state).admi
 export const selectIsSuperAdmin = (state: unknown): boolean =>
   identityOf(state).adminLevel === "super_admin";
 
+/** The session's bearer token (or null) — for transports that build their own headers. */
+export const selectAccessToken = (state: unknown): string | null => identityOf(state).accessToken;
+
+/** Has the host finished reading its session? */
+export const selectAuthReady = (state: unknown): boolean => identityOf(state).authReady;
+
+/** The guest fingerprint a signed-out visitor is known by. */
+export const selectFingerprintId = (state: unknown): string | null =>
+  identityOf(state).fingerprintId;
+
+/** Profile name as the app showed it before: name, then full name, then preferred username. */
+export const selectActiveUserName = (state: unknown): string | null => {
+  const id = identityOf(state);
+  return id.name || id.displayName || id.preferredUsername;
+};
+
+/** A label that is always something: name, full name, the email's local part, else "User". */
+export const selectDisplayName = (state: unknown): string => {
+  const id = identityOf(state);
+  return id.name || id.displayName || (id.email ? id.email.split("@")[0] : null) || "User";
+};
+
+export const selectProfilePhoto = (state: unknown): string | null => identityOf(state).picture;
+
 // ── Outside React ────────────────────────────────────────────────────────────
 
 /** The signed-in person's id from the chat store, or null (signed out, or no store yet). */

@@ -3,10 +3,10 @@
 import { Link } from "../../../host/navigation";
 import { useSelector } from "react-redux";
 import {
-  selectUser,
+  selectUserId,
   selectDisplayName,
   selectProfilePhoto,
-} from "@host/lib/redux/slices/userSlice";
+} from "../../../host/identity";
 import { Avatar, AvatarFallback, AvatarImage } from "@ai-matrx/design-system";
 import { LogIn, UserPlus, ChevronRight } from "lucide-react";
 import { useLoginHref } from "@host/hooks/auth/useLoginHref";
@@ -23,10 +23,10 @@ import { getInitials } from "@ai-matrx/kit/format";
 export function SidebarUserFooter() {
   const loginHref = useLoginHref();
   const signUpHref = useLoginHref("/sign-up");
-  const user = useSelector(selectUser);
+  const userId = useSelector(selectUserId);
   const displayName = useSelector(selectDisplayName);
   const profilePhoto = useSelector(selectProfilePhoto);
-  const isAuthenticated = !!user?.id;
+  const isAuthenticated = !!userId;
 
   // Get initials for avatar fallback
   const initials = getInitials(displayName);

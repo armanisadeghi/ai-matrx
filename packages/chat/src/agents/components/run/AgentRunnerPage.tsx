@@ -19,7 +19,7 @@ import {
   selectAgentExecutionPayload,
   selectAgentName,
 } from "../../redux/agent-definition/selectors";
-import { selectAuthReady } from "@host/lib/redux/selectors/userSelectors";
+import { selectAuthReady } from "../../../host/identity";
 import { useAgentLauncher } from "../../hooks/useAgentLauncher";
 import { useCreatorOwnershipSync } from "../../hooks/useCreatorOwnershipSync";
 import { useConversationRoutePromotion } from "../../hooks/useConversationRoutePromotion";

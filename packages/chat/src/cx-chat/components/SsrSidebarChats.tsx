@@ -22,7 +22,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useSelector } from "react-redux";
-import { selectUser } from "@host/lib/redux/slices/userSlice";
+import { selectUserId } from "../../host/identity";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -389,8 +389,7 @@ export function SsrSidebarChats({
   onCloseSidebar,
 }: SsrSidebarChatsProps) {
   const dispatch = useAppDispatch();
-  const user = useSelector(selectUser);
-  const isAuthenticated = !!user?.id;
+  const isAuthenticated = !!useSelector(selectUserId);
 
   // ── Redux state ─────────────────────────────────────────────────────────────
   const conversations = useAppSelector(selectSidebarConversations);

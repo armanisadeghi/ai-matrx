@@ -32,8 +32,7 @@ import type {
 import { selectCategoryById } from "./selectors";
 import { resolveShortcutWriteScope } from "@host/features/agent-shortcuts/resolveShortcutWriteScope";
 import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
-import { requireSelectedOrgId } from "@host/lib/organizations/activeOrg";
-import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
+import { requireSelectedOrgId, withOrganizationRefusalShown } from "../../../host/org";
 import { selectUserId } from "../../../host/identity";
 
 type ThunkApi = { dispatch: ChatDispatch; state: ChatRootState };

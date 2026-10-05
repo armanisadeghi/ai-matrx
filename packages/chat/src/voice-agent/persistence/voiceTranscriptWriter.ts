@@ -19,7 +19,7 @@ import { getClaimsUser } from "../../host/db";
 import {
   presentOrganizationRefusal,
   organizationRefusalMessage,
-} from "@host/lib/organizations/organizationRefusalToast";
+} from "../../host/org";
 import type { Database, Json } from "../../host/db-types";
 import {
   PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,

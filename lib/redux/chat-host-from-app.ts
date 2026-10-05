@@ -24,8 +24,14 @@ import {
 } from "@ai-matrx/chat/store/chat-host.slice";
 import { DEFAULT_CHAT_PREFERENCES } from "@ai-matrx/chat/host/defaults/prefs";
 import {
+  selectAccessToken,
   selectAdminLevel,
+  selectAuthReady,
+  selectFingerprintId,
   selectIsAuthenticated,
+  selectUserName,
+  selectUserPicture,
+  selectUserPreferredUsername,
   selectUserAvatarUrl,
   selectUserEmail,
   selectUserFullName,
@@ -57,6 +63,12 @@ export function readAppChatIdentity(state: RootState): ChatIdentity {
     email: selectUserEmail(state),
     displayName: selectUserFullName(state) || null,
     avatarUrl: selectUserAvatarUrl(state) || null,
+    accessToken: selectAccessToken(state),
+    authReady: selectAuthReady(state),
+    fingerprintId: selectFingerprintId(state),
+    name: selectUserName(state) || null,
+    preferredUsername: selectUserPreferredUsername(state) || null,
+    picture: selectUserPicture(state) || null,
   };
 }
 
@@ -130,7 +142,13 @@ export function sameChatIdentity(a: ChatIdentity, b: ChatIdentity): boolean {
     a.adminLevel === b.adminLevel &&
     a.email === b.email &&
     a.displayName === b.displayName &&
-    a.avatarUrl === b.avatarUrl
+    a.avatarUrl === b.avatarUrl &&
+    a.accessToken === b.accessToken &&
+    a.authReady === b.authReady &&
+    a.fingerprintId === b.fingerprintId &&
+    a.name === b.name &&
+    a.preferredUsername === b.preferredUsername &&
+    a.picture === b.picture
   );
 }
 

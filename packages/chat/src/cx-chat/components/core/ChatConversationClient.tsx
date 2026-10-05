@@ -12,7 +12,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useRouter } from "../../../host/navigation";
 import { AgentPickerSheet } from "../../../next/lazy/AgentPickerSheet";
 import { useAppSelector } from "../../../store/hooks";
-import { selectUserContext } from "@host/lib/redux/slices/userSlice";
+import { selectIsAdmin, selectIsAuthenticated } from "../../../host/identity";
 import { useDebugContext } from "../../../host/prefs-react";
 import {
   selectActiveServer,
@@ -49,7 +49,8 @@ export default function ChatConversationClient({
 }: ChatConversationClientProps) {
   const router = useRouter();
   const { mode: composerMode } = useComposerMode();
-  const { isAuthenticated, isAdmin } = useAppSelector(selectUserContext);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const isAdmin = useAppSelector(selectIsAdmin);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollDown, setShowScrollDown] = useState(false);

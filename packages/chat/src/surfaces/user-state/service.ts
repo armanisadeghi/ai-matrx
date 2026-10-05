@@ -12,7 +12,7 @@
 
 import { mergeJsonColumn } from "@ai-matrx/data/db";
 import { supabase } from "../../host/db";
-import { withOrganizationRefusalShown } from "@host/lib/organizations/organizationRefusalToast";
+import { withOrganizationRefusalShown } from "../../host/org";
 import { ensureOrgId } from "../../host/org";
 
 /** A surface_key → state map for one (user, feature). '_default' is the global. */
