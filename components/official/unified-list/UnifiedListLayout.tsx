@@ -366,7 +366,8 @@ export function UnifiedListLayout<T extends BaseListItem>({
     return (
         <>
             {/* Desktop Action Bar (search, filter, actions) */}
-            {!isMobile && (
+            {/* CSS picks it (never on phones), so the first paint is right (SSR ZERO LAYOUT SHIFT). */}
+            <div className="hidden md:contents">
                 <UnifiedActionBar
                     mode="desktop"
                     config={config}
@@ -375,7 +376,7 @@ export function UnifiedListLayout<T extends BaseListItem>({
                     onFilterClick={() => setIsFilterModalOpen(true)}
                     showFilterBadge={hasActiveFilters}
                 />
-            )}
+            </div>
 
             {/* Header Content (custom) */}
             {headerContent}

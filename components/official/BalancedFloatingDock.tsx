@@ -16,7 +16,6 @@ import {
   useTransform,
 } from "motion/react";
 import Link from "next/link";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 export interface BalancedFloatingDockProps {
   items: { label: string; icon: React.ReactNode; href: string }[];
@@ -67,25 +66,22 @@ function BalancedFloatingDockInner({
   growthFactor: number;
   labelPosition: "side" | "bottom";
 }) {
-  const isMobile = useIsMobile();
-
+  // Both render; CSS picks (mobile `md:hidden`, desktop `hidden md:flex`) so the
+  // server's first paint is right at every width (SSR ZERO LAYOUT SHIFT).
   return (
     <>
-      {isMobile ? (
-        <BalancedFloatingDockMobile
-          items={items}
-          bgColor={bgColor}
-          iconBgColor={iconBgColor}
-        />
-      ) : (
-        <BalancedFloatingDockDesktop
-          items={items}
-          bgColor={bgColor}
-          iconBgColor={iconBgColor}
-          growthFactor={growthFactor}
-          labelPosition={labelPosition}
-        />
-      )}
+      <BalancedFloatingDockMobile
+        items={items}
+        bgColor={bgColor}
+        iconBgColor={iconBgColor}
+      />
+      <BalancedFloatingDockDesktop
+        items={items}
+        bgColor={bgColor}
+        iconBgColor={iconBgColor}
+        growthFactor={growthFactor}
+        labelPosition={labelPosition}
+      />
     </>
   );
 }

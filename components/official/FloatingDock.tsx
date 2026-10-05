@@ -14,7 +14,6 @@ import {
   useTransform,
 } from "motion/react";
 import Link from "next/link";
-import { useIsMobile } from "@ai-matrx/kit/media-query";
 
 export interface FloatingDockWrapperProps {
   items: { label: string; icon: React.ReactNode; href: string }[];
@@ -56,23 +55,20 @@ function FloatingDockInner({
   bgColor: string;
   iconBgColor: string;
 }) {
-  const isMobile = useIsMobile();
-
+  // Both render; CSS picks (mobile `md:hidden`, desktop `hidden md:flex`) so the
+  // server's first paint is right at every width (SSR ZERO LAYOUT SHIFT).
   return (
     <>
-      {isMobile ? (
-        <FloatingDockMobile
-          items={items}
-          bgColor={bgColor}
-          iconBgColor={iconBgColor}
-        />
-      ) : (
-        <FloatingDockDesktop
-          items={items}
-          bgColor={bgColor}
-          iconBgColor={iconBgColor}
-        />
-      )}
+      <FloatingDockMobile
+        items={items}
+        bgColor={bgColor}
+        iconBgColor={iconBgColor}
+      />
+      <FloatingDockDesktop
+        items={items}
+        bgColor={bgColor}
+        iconBgColor={iconBgColor}
+      />
     </>
   );
 }

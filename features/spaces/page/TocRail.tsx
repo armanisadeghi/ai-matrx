@@ -77,19 +77,19 @@ export function TocRail({ blocks, scrollerRef, anchorRef }: { blocks: SpaceBlock
   const go = (id: string) => blockEl(id)?.scrollIntoView({ block: "start", behavior: "smooth" });
 
   return (
-    <div className="spaces-toc">
-      <nav className="spaces-toc-sticky" style={{ top }} aria-label="Table of contents">
-        <div className="spaces-toc-rail">
+    <div className="spaces-tocrail">
+      <nav className="spaces-tocrail-sticky" style={{ top }} aria-label="Table of contents">
+        <div className="spaces-tocrail-rail">
           {headings.map((h, i) => (
-            <span key={h.id} className="spaces-toc-dash" data-active={i === active ? "true" : undefined} data-level={h.level} />
+            <span key={h.id} className="spaces-tocrail-dash" data-active={i === active ? "true" : undefined} data-level={h.level} />
           ))}
         </div>
-        <div className="spaces-toc-panel">
+        <div className="spaces-tocrail-panel">
           {headings.map((h, i) => (
             <button
               key={h.id}
               type="button"
-              className="spaces-toc-item"
+              className="spaces-tocrail-item"
               data-level={h.level}
               data-active={i === active ? "true" : undefined}
               onClick={() => go(h.id)}
