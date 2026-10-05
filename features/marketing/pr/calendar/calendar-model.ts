@@ -221,3 +221,22 @@ export function draftAnglesAsk(moment: PlannedMoment, row: PrMomentRow | undefin
   if (moment.proofNeeded.length) parts.push(`Proof it still needs: ${moment.proofNeeded.join("; ")}.`);
   return parts.join(" ");
 }
+
+/** The URL parameter that holds the open calendar moment (shareable, reload-safe). */
+export const MOMENT_PARAM = "moment";
+
+/** This calendar with `moment` open, keeping every other parameter. */
+export function momentHref(pathname: string, search: string, momentId: string | null): string {
+  const params = new URLSearchParams(search);
+  if (momentId) params.set(MOMENT_PARAM, momentId);
+  else params.delete(MOMENT_PARAM);
+  const query = params.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+/** The month a page opens on: the linked moment's month, else the month of `today`. */
+export function openingMonth(plan: CalendarPlan | null, momentId: string | null, today: Date): Date {
+  const linked = momentId ? plan?.moments.find((m) => m.momentId === momentId) : undefined;
+  const day = (linked && parseDay(linked.startsOn)) || today;
+  return new Date(day.getFullYear(), day.getMonth(), 1);
+}

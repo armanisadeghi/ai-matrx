@@ -256,9 +256,13 @@ export default function PressRoomWorkspace({
             document.getElementById("press-requests"))
           : document.querySelector(`[data-coverage-id="${focus.id}"]`);
     if (!anchor) return; // not rendered yet; the next render tries again
-    landedOn.current = focusKey;
-    anchor.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [focus, focusKey, rowsReady, viewId]);
+    // Instant, never smooth: a smooth scroll is cancelled by the layout shifts of the panels
+    // still loading around it (seen on reload, 2026-10-05). Marked landed only once the
+    // record is actually on screen, so a later render retries until it is.
+    anchor.scrollIntoView({ block: "nearest" });
+    const box = anchor.getBoundingClientRect();
+    if (box.top < window.innerHeight && box.bottom > 0) landedOn.current = focusKey;
+  });
 
   /**
    * The door every other panel uses to reach an angle. Widening the filter is

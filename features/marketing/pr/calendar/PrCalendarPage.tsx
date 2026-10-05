@@ -11,8 +11,9 @@
 // Every date here was computed by code on the server from a sourced moment; this screen
 // arranges them and never writes one.
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -43,6 +44,9 @@ import {
   PITCH_STATUS_LABEL,
   dayKey,
   draftAnglesAsk,
+  MOMENT_PARAM,
+  momentHref,
+  openingMonth,
   monthGrid,
   momentsByDay,
   parseDay,
@@ -84,11 +88,22 @@ export function PrCalendarPage() {
     [read.data?.feed],
   );
 
-  const [month, setMonth] = useState<Date>(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // THE OPEN MOMENT IS URL STATE (`?moment=`): a shared link or a reload opens it, in its
+  // own month. Selecting one replaces the entry — browsing chips is not a trail for Back.
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const selectedId = searchParams.get(MOMENT_PARAM);
+  const setSelectedId = (id: string | null) =>
+    router.replace(momentHref(pathname, searchParams.toString(), id), { scroll: false });
+  const [month, setMonth] = useState<Date>(() => openingMonth(null, null, new Date()));
+  // Once the plan has loaded, a linked moment brings its month into view (once per link).
+  const [monthFollowed, setMonthFollowed] = useState<string | null>(null);
+  useEffect(() => {
+    if (!plan || !selectedId || monthFollowed === selectedId) return;
+    setMonthFollowed(selectedId);
+    setMonth(openingMonth(plan, selectedId, new Date()));
+  }, [plan, selectedId, monthFollowed]);
   const [research, setResearch] = useState(true);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<string[]>([]);
