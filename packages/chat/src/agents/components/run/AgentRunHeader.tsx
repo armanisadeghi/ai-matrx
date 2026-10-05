@@ -41,15 +41,19 @@ export function AgentRunHeader({
     <div className="@container/agent-header hidden lg:flex items-center justify-between w-full gap-2 shrink-0">
       <div className="flex items-center">
         <ChevronLeftTapButton variant="transparent" href={backHref} aria-label="Back to Agents" />
-        <AgentSelectorIsland
-          agentId={agentId}
-          initialName={agentName}
-          basePath={basePath}
-          showNewRunButton={true}
-          showBackButton={true}
-          showVersion={false}
-          showBuiltin={true}
-        />
+        {/* The selector is text beside Back: it adds the half-gap on the
+            side facing the button (tap placement rule 3). */}
+        <div className="flex min-w-0 items-center ps-[calc(var(--matrx-tap-gap)/2)]">
+          <AgentSelectorIsland
+            agentId={agentId}
+            initialName={agentName}
+            basePath={basePath}
+            showNewRunButton={true}
+            showBackButton={true}
+            showVersion={false}
+            showBuiltin={true}
+          />
+        </div>
         {/* The agent name is text beside a tap button: it adds the half-gap
             on the side facing the button (tap placement rule 3); the button's
             own box carries the other half. Never padding around the button. */}

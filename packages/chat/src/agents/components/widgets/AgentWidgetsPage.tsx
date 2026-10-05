@@ -422,7 +422,9 @@ export function AgentWidgetsPage({
             currentPath={currentPath}
           />
         </div>
-        <div className="flex items-center gap-1.5 pt-0.5 shrink-0">
+        {/* Tap buttons space themselves (no row gap); the save status is text
+            between two of them, so it adds the half-gap on both sides. */}
+        <div className="flex items-center pt-0.5 shrink-0">
           <CopyButtons
             size="icon"
             label={`Widget tester — ${initialAgentName}`}
@@ -506,7 +508,9 @@ export function AgentWidgetsPage({
               ],
             }}
           />
-          <AgentSaveStatus agentId={agentId} />
+          <div className="px-[calc(var(--matrx-tap-gap)/2)]">
+            <AgentSaveStatus agentId={agentId} />
+          </div>
           <AgentOptionsMenu agentId={agentId} basePath={basePath} />
         </div>
       </div>
