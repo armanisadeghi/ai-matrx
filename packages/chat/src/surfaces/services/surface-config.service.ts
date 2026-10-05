@@ -25,7 +25,7 @@ import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates"
 import { createClient } from "../../host/db";
 import { writeOne } from "@ai-matrx/data/db";
 import { getClaimsUser } from "../../host/db";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 import type { Database } from "../../host/db-types";
 import { fetchMandatePins } from "../../mandates/service";
 import type { SurfaceAgentRole } from "../types";

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import isEqual from "lodash/isEqual";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 import type {
   AgentDefinition,
   AgentDefinitionRecord,

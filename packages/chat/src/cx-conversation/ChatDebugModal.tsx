@@ -19,7 +19,7 @@ import {
   DialogDescription,
 } from "@ai-matrx/design-system";
 import { Label } from "@ai-matrx/design-system";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { Separator } from "@ai-matrx/design-system";
 import { Badge } from "@ai-matrx/design-system";
 import { EntityRef } from "@host/components/official/entity-ref/EntityRef";

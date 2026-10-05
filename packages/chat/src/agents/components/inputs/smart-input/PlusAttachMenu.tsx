@@ -29,7 +29,7 @@ import {
   PopoverTrigger,
   PopoverContent,
 } from "@ai-matrx/design-system";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import { ResourcePickerMenu } from "../../../../host/ui-slots";
 import type { ResourcePickerViewId } from "@ai-matrx/chat/agents/resources/picker-view-id";

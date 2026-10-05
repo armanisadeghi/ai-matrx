@@ -43,7 +43,7 @@ import { cn } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { Badge, Button, Chip } from "@ai-matrx/design-system/controls";
 import { Textarea } from "@ai-matrx/design-system";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-matrx/chat/ui/tabs";
 import { InlineCopyButton } from "@host/components/matrx/buttons/InlineCopyButton";
 import { RichContent } from "@ai-matrx/chat/host/ui-slots";
 import { SystemItemsLine } from "./SystemItemsLine";

@@ -40,7 +40,7 @@ import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { SkillConfig } from "@host/features/skills/types";
 import { parseUiGates } from "../agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "../../types/matrx-directives.types";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 import type {
   AgentDefinition,
   AgentDefinitionDataIssue,

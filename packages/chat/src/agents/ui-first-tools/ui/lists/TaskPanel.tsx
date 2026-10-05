@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";
 import {

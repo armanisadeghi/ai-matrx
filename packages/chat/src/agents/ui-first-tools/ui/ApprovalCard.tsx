@@ -40,7 +40,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Textarea } from "@ai-matrx/design-system";
 import { ChangeDiff } from "@ai-matrx/chat/host/ui-slots";
 import KindInstanceRender from "@host/features/content-ir/studio/components/KindInstanceRender";

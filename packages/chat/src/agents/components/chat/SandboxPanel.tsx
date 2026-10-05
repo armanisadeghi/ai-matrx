@@ -36,7 +36,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { toast } from "../../../host/notify";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { setPreference, selectSandboxBySurface } from "../../../host/prefs";
 import {

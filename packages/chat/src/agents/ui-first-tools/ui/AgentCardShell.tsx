@@ -35,7 +35,7 @@ import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
-import { useScrollFade } from "@host/components/ui/scroll-fade";
+import { useScrollFade } from "@ai-matrx/chat/ui/scroll-fade";
 
 export type AccentTone =
   "neutral" | "primary" | "info" | "success" | "warning" | "danger" | "violet";

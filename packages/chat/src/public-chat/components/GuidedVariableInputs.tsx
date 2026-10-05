@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
 import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system/controls";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Minus, Plus } from "lucide-react";
 import { variableRunLabel } from "@ai-matrx/agents";
 import type { VariableDefinition as PromptVariable } from "../../agents/types/agent-definition.types";

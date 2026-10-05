@@ -24,7 +24,7 @@ import { AttachedResourcesSection } from "../../../../../host/ui-slots";
 import { useEffect, useState } from "react";
 import { Loader2, Paperclip } from "lucide-react";
 import { PickerSearchField } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { ConnectorMark } from "@ai-matrx/chat/host/ui-slots";
 import { connectorDefinitionFromMcp } from "@ai-matrx/chat/host/ui-slots";
 import { useAppDispatch, useAppSelector } from "../../../../../store/hooks";

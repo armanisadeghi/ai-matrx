@@ -20,7 +20,7 @@
 import { useState, type ComponentType, type ReactNode } from "react";
 import { Check, X } from "lucide-react";
 import { cn, SegmentedControl, Skeleton } from "@ai-matrx/design-system";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import {
   PickerEmpty,
   PickerRow,

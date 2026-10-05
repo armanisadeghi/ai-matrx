@@ -73,7 +73,7 @@ import type { ControlDefinition } from "../../redux/agent-settings/types";
 import { SettingControlInput } from "@host/features/agents/components/settings-management/controls/SettingControlInput";
 import { Label } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@host/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ai-matrx/chat/ui/tabs";
 import { Textarea } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@host/features/ai-models/components/lab/ModelListDropdown";
 import { parseRequestOverrides } from "../../redux/execution-system/utils/request-overrides";

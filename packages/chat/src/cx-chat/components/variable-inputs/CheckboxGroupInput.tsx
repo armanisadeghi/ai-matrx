@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Label } from '@ai-matrx/design-system';
-import { Checkbox } from '@host/components/ui/checkbox';
+import { Checkbox } from '@ai-matrx/chat/ui/checkbox';
 import { Textarea } from '@ai-matrx/design-system';
 
 interface CheckboxGroupInputProps {

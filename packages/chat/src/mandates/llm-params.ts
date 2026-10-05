@@ -6,7 +6,7 @@
  * are dropped LOUDLY (the server's apply_overrides stays the authority).
  */
 
-import type { JsonObject } from "@host/types/json";
+import type { JsonObject } from "@ai-matrx/chat/utils/json";
 import type { FeLlmParams } from "../agents/types/agent-api-types";
 import {
   REASONING_EFFORT_OPTIONS,

@@ -6,7 +6,7 @@
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { Label } from "@ai-matrx/design-system";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { selectVoiceTools } from "../../state/selectors";
 import { updateConfig } from "../../state/voiceAgentSlice";
 import type { BuiltinToolName, ResolvedRealtimeTool } from "../../types";

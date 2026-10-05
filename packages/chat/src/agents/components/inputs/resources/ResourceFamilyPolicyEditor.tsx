@@ -3,7 +3,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Loader2, Plus, X } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Label } from "@ai-matrx/design-system";
 import {
   Select,

@@ -17,7 +17,7 @@
  */
 
 import { createClient } from "../host/db";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 import { hasBrowserSession } from "../host/identity";
 
 /**

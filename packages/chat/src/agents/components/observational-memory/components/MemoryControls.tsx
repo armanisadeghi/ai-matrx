@@ -27,7 +27,7 @@ import { Badge } from "@ai-matrx/design-system/controls";
 import React, { useCallback } from "react";
 import { Beaker } from "lucide-react";
 import { Label } from "@ai-matrx/design-system";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { Separator } from "@ai-matrx/design-system";
 import { cn } from "@ai-matrx/design-system";
 import { useAppDispatch, useAppSelector } from "../../../../store/hooks";

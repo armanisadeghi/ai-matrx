@@ -7,7 +7,7 @@ import {
   honestProgressSummary,
   type RunShape,
 } from "@ai-matrx/kit/progress";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 
 export type LiveRunProgressStatus =
   "waiting" | "running" | "completed" | "failed";

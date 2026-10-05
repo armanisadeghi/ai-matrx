@@ -1,5 +1,5 @@
 import React from "react";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { calcCols } from "./useContainerColumns";
 import { ProTextarea } from "@host/components/official/ProTextarea";
 import { focusWithoutScroll } from "./focusWithoutScroll";

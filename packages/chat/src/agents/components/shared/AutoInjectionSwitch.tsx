@@ -20,7 +20,7 @@
  */
 
 import type { ReactNode } from "react";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { cn } from "@ai-matrx/design-system";
 
 interface AutoInjectionSwitchProps {

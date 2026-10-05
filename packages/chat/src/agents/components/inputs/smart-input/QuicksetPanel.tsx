@@ -9,7 +9,7 @@
 import { useComputeTargets } from "../../../../compute/targets";
 import { useEffect, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import { Separator } from "@ai-matrx/design-system";
 import {
   Popover,

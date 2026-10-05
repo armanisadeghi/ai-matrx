@@ -9,7 +9,7 @@ import type { ModelClassControls } from "../../host/model-class";
 import { LLM_PARAMS_KEYS } from "@ai-matrx/agents/generated/llm-enums";
 import { UI_GATE_KEYS } from "../redux/agent-settings/ui-gates";
 import type { AIModelRecord } from "../redux/model-registry";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 import { outputFormatControlKey } from "@ai-matrx/agents/models";
 
 export interface ControlDefinition {

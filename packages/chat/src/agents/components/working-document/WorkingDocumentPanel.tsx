@@ -12,7 +12,7 @@
 
 import { useEffect, useState } from "react";
 import { FileText, Link2, Loader2, Lock, Maximize2, X } from "lucide-react";
-import { Switch } from "@host/components/ui/switch";
+import { Switch } from "@ai-matrx/chat/ui/switch";
 import {
   AlertDialog,
   AlertDialogContent,

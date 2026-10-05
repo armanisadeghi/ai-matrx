@@ -16,8 +16,8 @@ import { selectShowVariablePanel } from "../../../redux/execution-system/instanc
 import { toggleVariablePanel } from "../../../redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Label } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
-import { Switch } from "@host/components/ui/switch";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Switch } from "@ai-matrx/chat/ui/switch";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@ai-matrx/design-system";
 import {
   Select,

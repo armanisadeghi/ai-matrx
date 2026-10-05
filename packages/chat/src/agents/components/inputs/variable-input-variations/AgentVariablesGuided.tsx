@@ -4,7 +4,7 @@ import { variableValueToInputText } from "../../../utils/variable-utils";
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, Check } from "lucide-react";
-import { Checkbox } from "@host/components/ui/checkbox";
+import { Checkbox } from "@ai-matrx/chat/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
 import { Minus, Plus } from "lucide-react";

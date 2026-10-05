@@ -15,7 +15,7 @@ import type {
   ContextPolicyPersist,
 } from "../../types/agent-api-types";
 import { captureError } from "../../../host/diagnostics";
-import type { JsonValue } from "@host/types/json";
+import type { JsonValue } from "@ai-matrx/chat/utils/json";
 
 interface ParseContext {
   agentId?: string;

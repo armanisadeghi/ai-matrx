@@ -1,6 +1,6 @@
 import React from 'react';
 import { Label } from '@ai-matrx/design-system';
-import { Switch } from '@host/components/ui/switch';
+import { Switch } from '@ai-matrx/chat/ui/switch';
 
 interface ToggleInputProps {
   value: string;

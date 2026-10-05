@@ -57,7 +57,7 @@
 
 import { createClient } from "../host/db";
 import { getClaimsUser } from "../host/db";
-import { isJsonObject } from "@host/types/json";
+import { isJsonObject } from "@ai-matrx/chat/utils/json";
 import { recordUnavailable } from "../host/diagnostics";
 import type { FeLlmParams } from "../agents/types/agent-api-types";
 import { apiGet, buildPath } from "../host/server/typed-client";
@@ -80,7 +80,7 @@ import {
   parseMandateWave1,
   type MandateWave1Fields,
 } from "@host/features/mandates/provision-shapes";
-import type { JsonObject } from "@host/types/json";
+import type { JsonObject } from "@ai-matrx/chat/utils/json";
 import {
   MANDATE_HOLDER_COLUMNS,
   MANDATE_STORAGE_LABEL,
