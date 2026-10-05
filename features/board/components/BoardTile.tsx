@@ -298,7 +298,23 @@ export function BoardTile({
       });
     };
 
+    // A click that no press led to (assistive tech, a script, a keyboard
+    // activation) selects from the click's OWN modifier flags — the same
+    // Shift / ⌘ rule a press follows. A press already did its work.
+    let pressedAt = 0;
+    const click = (e: MouseEvent) => {
+      const pressed = pressedAt > 0 && Date.now() - pressedAt < 10_000;
+      pressedAt = 0;
+      if (pressed || e.button !== 0 || e.ctrlKey || store.getFocused() === id) return;
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-board-resize]") || target.closest(INTERACTIVE_SELECTOR)) return;
+      if (e.shiftKey || e.metaKey) store.toggleSelected(id);
+      else store.select(id);
+    };
+    tile.addEventListener("click", click, true);
+
     const down = (e: PointerEvent) => {
+      if (e.button === 0) pressedAt = Date.now();
       // ctrl+click is the macOS right-click: the menu's, never a drag.
       if (e.button !== 0 || e.ctrlKey || store.getFocused() === id) return;
       const target = e.target as HTMLElement;
@@ -374,6 +390,7 @@ export function BoardTile({
     tile.addEventListener("pointerdown", down, true);
     return () => {
       tile.removeEventListener("pointerdown", down, true);
+      tile.removeEventListener("click", click, true);
       gesture?.();
     };
   // The card keeps its elements through full screen (it is moved, not

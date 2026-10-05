@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 // features/unified-data/components/EntityCustomFields.tsx
 //
 // THE ONE LINE A STANDARD ENTITY PAGE ADDS (SCR-12 / REC-40 / REC-34).
@@ -41,14 +41,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { Button } from "@/components/ui/button";
-import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
-import { NewTableDialog } from "@/features/make/MakeMount";
 import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
-import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useCustomFieldsHost } from "@/features/unified-data/components/useCustomFieldsHost";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
@@ -57,10 +53,8 @@ import {
   CUSTOM_FIELDS_VALUE_NAME,
   customFieldsScopeValue,
   providerOwnsCustomFields,
-  registerCustomFieldsDoor,
 } from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
 import {
-  useSurfaceDormant,
   useSurfaceRuntime,
   useSurfaceScopeContribution,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -232,27 +226,11 @@ export function EntityCustomFields({
   organizationId: pageOrganizationId,
 }: EntityCustomFieldsProps) {
   const { home, retry: retryHome } = useRecordHome(entityToken, recordId, pageOrganizationId ?? null);
-  // T1.2 (Doctrine R8): a person who may not change this table makes her own, in the ONE New table
-  // dialog both data homes open (features/make/MakeMount.tsx), right here on the record page.
-  const [makingTable, setMakingTable] = useState(false);
-  // THE WORD THIS APP ALREADY USES FOR THE TOKEN ("People & Companies", "Deals"): the entity
-  // registry's plural label, read once here for every page — never a per-page prop. The store's
-  // own label is the registry row's (`Party`), a machine word on screen.
-  const entityLabel = tryGetEntityInfo(entityToken)?.labelPlural || undefined;
   const userId = useAppSelector(selectUserId);
-  // org-filter: write-target "Make your own table" saves the new table in the RECORD's organization
-  const activeOrganizationId = useAppSelector(selectOrganizationId);
-  const dispatch = useAppDispatch();
-  // Her organizations as the shell already holds them (no request of its own on every record page).
-  const { organizations: myOrganizations } = useScopeTree();
-  // A dormant copy (a board tile that is not live) keeps its door registered
-  // but out of the page's agent offer.
-  const dormant = useSurfaceDormant();
-  const liveRef = useRef(!dormant);
-  // Registration is consumed during the same render transition; an effect is
-  // one paint late and briefly offers a dormant field door as live.
-  // eslint-disable-next-line react-hooks/refs
-  liveRef.current = !dormant;
+  // The record's organization is known only once the home door answers; the host wiring (own-table
+  // offer, registry word, dormant-aware agent door) is the ONE hook every record page shares.
+  const hostOrganizationId = home.state === "home" ? home.organizationId : null;
+  const { custom: hostCustom, dialog } = useCustomFieldsHost({ entityToken, organizationId: hostOrganizationId });
   // WHAT THE AGENT SEES: the fields and this record's values, contributed as the
   // `custom_fields` value of the surface this page is on — when that surface
   // declares it (`pickBaseline("custom_fields")`); a surface that does not keeps
@@ -341,21 +319,10 @@ export function EntityCustomFields({
         recordId={recordId}
         title={title}
         className={className}
-        entityLabel={entityLabel}
-        onMakeOwnTable={() => {
-          // T1.2: her own table starts in the organization this record belongs to — the place new
-          // things are saved is set to it (the dialog shows it and she can change it), never asked
-          // again from a list of every organization she is in.
-          const home = myOrganizations.find((org) => org.id === organizationId);
-          if (home && activeOrganizationId !== organizationId) {
-            void dispatch(chooseActiveOrganization({ id: home.id, name: home.name }));
-          }
-          setMakingTable(true);
-        }}
-        agentDoor={(door) => registerCustomFieldsDoor({ ...door, isLive: () => liveRef.current })}
+        {...hostCustom}
       />
       </div>
-      <NewTableDialog what={makingTable ? "create" : null} onClose={() => setMakingTable(false)} />
+      {dialog}
     </RecordsMount>
   );
 }

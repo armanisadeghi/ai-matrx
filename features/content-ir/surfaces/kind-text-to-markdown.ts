@@ -22,6 +22,7 @@ import { humanizeKind, plainValueMarkdown } from "@/features/content-ir/kinds/ki
 import {
   findBrokenKindJsonRegions,
   findKindCarryingJsonValues,
+  frontMatterEnd,
 } from "./embedded-kind-json";
 import { firstKindSlug, hasKindKey, isKindJsonText, valueCarriesKind } from "./json-kind-signal";
 
@@ -44,6 +45,109 @@ function isKindObject(value: unknown): value is Record<string, unknown> {
  */
 export function unfinishedKindLabel(kind: string | null): string {
   return kind ? `${humanizeKind(kind)} did not finish` : "Result did not finish";
+}
+
+/** The one-line note for structured output whose `__kind` cannot name a kind. */
+export const UNREADABLE_KIND_NOTE = "Structured output could not be read";
+
+/** A slug the kind loader may name: letters, digits and `_.:-` only. */
+const KIND_SLUG_TEXT = /^[A-Za-z0-9_.:-]+$/;
+
+/** Does this parsed value hold an object whose `__kind` is not a readable slug, at any depth? */
+function carriesBrokenKind(value: unknown, depth = 0): boolean {
+  if (depth > 64 || value === null || typeof value !== "object") return false;
+  if (Array.isArray(value)) return value.some((item) => carriesBrokenKind(item, depth + 1));
+  const record = value as Record<string, unknown>;
+  if (Object.prototype.hasOwnProperty.call(record, "__kind")) {
+    const kind = record.__kind;
+    if (typeof kind !== "string" || !KIND_SLUG_TEXT.test(kind)) return true;
+  }
+  return Object.values(record).some((item) => carriesBrokenKind(item, depth + 1));
+}
+
+/** The end (exclusive) of the string-aware balanced JSON value opening at `start`, or null. */
+function balancedEnd(text: string, start: number): number | null {
+  const stack: string[] = [];
+  let inString = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]!;
+    if (inString) {
+      if (ch === "\\") i++;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') inString = true;
+    else if (ch === "{" || ch === "[") stack.push(ch === "{" ? "}" : "]");
+    else if (ch === "}" || ch === "]") {
+      if (stack.pop() !== ch) return null;
+      if (stack.length === 0) return i + 1;
+    }
+  }
+  return null;
+}
+
+/** Ranges whose text is quoted SOURCE (inline code, non-JSON fences) — never converted. */
+function quotedCodeRanges(text: string): Array<[number, number]> {
+  return findCodeRanges(text)
+    .filter((range) => {
+      if (range.kind !== "fence") return true;
+      const parts = fenceParts(text.slice(range.start, range.end));
+      return !parts || !JSON_FENCE_LANGS.has(parts.opener.lang.toLowerCase());
+    })
+    .map((range): [number, number] => [range.start, range.end]);
+}
+
+/**
+ * Complete JSON values holding a `__kind` that cannot name a kind (a number,
+ * null, empty, a non-slug) — broken structured output — become the one-line
+ * unreadable note. A JSON fence that held only such a value goes with it.
+ */
+function noteUnreadableKinds(text: string): string {
+  if (!hasKindKey(text)) return text;
+  const quoted = quotedCodeRanges(text);
+  const fences = findCodeRanges(text).filter((range) => range.kind === "fence");
+  const spans: Array<[number, number]> = [];
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch !== "{" && ch !== "[") continue;
+    const range = quoted.find(([a, b]) => i >= a && i < b);
+    if (range) {
+      i = range[1] - 1;
+      continue;
+    }
+    const end = balancedEnd(text, i);
+    if (end === null) continue;
+    let value: unknown;
+    try {
+      value = JSON.parse(text.slice(i, end));
+    } catch {
+      continue;
+    }
+    if (carriesBrokenKind(value)) spans.push([i, end]);
+    i = end - 1;
+  }
+  let out = text;
+  for (let k = spans.length - 1; k >= 0; k--) {
+    let [start, end] = spans[k]!;
+    const fence = fences.find((range) => start >= range.start && end <= range.end);
+    if (fence) {
+      const parts = fenceParts(text.slice(fence.start, fence.end));
+      const inner = parts
+        ? text
+            .slice(fence.start, fence.end)
+            .split("\n")
+            .slice(1, parts.closed ? -1 : undefined)
+            .join("\n")
+            .trim()
+        : "";
+      if (parts && inner === text.slice(start, end).trim()) {
+        start = fence.start;
+        end = fence.end;
+      }
+    }
+    out = closeBefore(out.slice(0, start)) + UNREADABLE_KIND_NOTE + openAfter(out.slice(end));
+  }
+  return out;
 }
 
 /** A string field whose text is kind JSON → its parsed value (so it converts too). */
@@ -228,6 +332,9 @@ function convertKindFences(text: string, options: ConvertOptions): string {
 }
 
 function convertKindText(text: string, options: ConvertOptions): string {
+  // 0. Front matter holding a kind, and kinds that cannot name themselves.
+  text = noteUnreadableKinds(convertFrontMatterKind(text, options));
+
   // 1. The whole text is a value carrying kinds (a structured answer's stored JSON).
   const whole = jsonKindValueMarkdown(text);
   if (whole !== null) return whole;
@@ -238,7 +345,76 @@ function convertKindText(text: string, options: ConvertOptions): string {
   // 3. Bare kind values in prose (code fences and spans stay quoted source).
   if (!hasKindKey(out)) return out;
   out = convertRegions(out, true, options) ?? out;
+
+  // 4. HTML comments are literal to the region finder, but a person reading
+  //    plain text sees what is inside them.
+  out = convertCommentKinds(out, options);
+
+  // 5. A cut-off kind whose key is written escaped (`"\u005f_kind"`).
+  return noteEscapedCutOffKind(out, options);
+}
+
+/** Front matter (`---` … `---`) whose body holds a kind → that kind's markdown. */
+function convertFrontMatterKind(text: string, options: ConvertOptions): string {
+  const end = frontMatterEnd(text);
+  if (end === 0 || !hasKindKey(text.slice(0, end))) return text;
+  const block = text.slice(0, end);
+  const lines = block.split("\n");
+  const body = lines.slice(1, -1).join("\n").replace(/\r$/, "");
+  const md = convertRegions(body, false, options, (piece) =>
+    /^[\s,[\]{}]*$/.test(piece) ? "" : piece.trim(),
+  );
+  if (md === null) return text;
+  return md + openAfter(text.slice(end));
+}
+
+/** HTML comments (outside code) holding a kind → the kind's markdown; other comment text stays a comment. */
+function convertCommentKinds(text: string, options: ConvertOptions): string {
+  const quoted = quotedCodeRanges(text);
+  const comments = [...text.matchAll(/<!--[\s\S]*?(?:-->|$)/g)].filter(
+    (m) =>
+      hasKindKey(m[0]) && !quoted.some(([a, b]) => m.index! >= a && m.index! < b),
+  );
+  let out = text;
+  for (let i = comments.length - 1; i >= 0; i--) {
+    const m = comments[i]!;
+    const body = m[0].replace(/^<!--/, "").replace(/-->$/, "");
+    const md = convertRegions(body, false, options, (piece) =>
+      piece.trim() ? `<!-- ${piece.trim()} -->` : "",
+    );
+    if (md === null) continue;
+    const start = m.index!;
+    const end = start + m[0].length;
+    out = closeBefore(out.slice(0, start)) + md + openAfter(out.slice(end));
+  }
   return out;
+}
+
+const KIND_KEY_PLAIN = /(?<!\\)"__kind"\s*:/;
+
+/** An unclosed JSON value at the tail whose `__kind` key is written escaped → its one-line note. */
+function noteEscapedCutOffKind(text: string, options: ConvertOptions): string {
+  if (options.broken !== "note" || !hasKindKey(text) || KIND_KEY_PLAIN.test(text)) return text;
+  const quoted = quotedCodeRanges(text);
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch !== "{" && ch !== "[") continue;
+    const range = quoted.find(([a, b]) => i >= a && i < b);
+    if (range) {
+      i = range[1] - 1;
+      continue;
+    }
+    const end = balancedEnd(text, i);
+    if (end !== null) {
+      i = end - 1;
+      continue;
+    }
+    const tail = text.slice(i);
+    if (/^[{[]\s*["{[]/.test(tail) && hasKindKey(tail)) {
+      return closeBefore(text.slice(0, i)).trimEnd() + (i > 0 ? "\n\n" : "") + unfinishedKindLabel(firstKindSlug(tail));
+    }
+  }
+  return text;
 }
 
 /**
@@ -284,6 +460,26 @@ function owningObjectStart(text: string, keyIndex: number): number {
 }
 
 /**
+ * Where the first `__kind` KEY starts (its opening quote), or -1 — found with
+ * the shared detector (`hasKindKey`, which also sees the `\u005f_kind` spelling):
+ * the shortest prefix the detector accepts ends at the key's colon.
+ */
+function kindKeyIndex(text: string): number {
+  if (!hasKindKey(text)) return -1;
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (hasKindKey(text.slice(0, mid))) hi = mid;
+    else lo = mid + 1;
+  }
+  let i = lo - 1; // the colon
+  while (i > 0 && /\s/.test(text[i - 1]!)) i--;
+  const closing = i - 1; // the key's closing quote
+  return text.lastIndexOf('"', closing - 1);
+}
+
+/**
  * A COMPACT, possibly still-streaming preview of answer text (a toast, a
  * hover card, a list row): complete kinds read as their markdown; a kind
  * still arriving is cut from the text and named in `pendingKind` so the
@@ -292,7 +488,7 @@ function owningObjectStart(text: string, keyIndex: number): number {
 export function kindTextPreview(text: string | null | undefined): KindTextPreview {
   // An arriving kind is the caller's loader, not a note: keep it to cut below.
   const md = !text ? "" : hasKindKey(text) ? convertKindText(text, { broken: "keep" }) : text;
-  const keyIndex = md.search(/(?<!\\)"__kind"\s*:/);
+  const keyIndex = kindKeyIndex(md);
   if (keyIndex < 0) return { text: md, pendingKind: null, pendingUnnamed: false };
   const start = owningObjectStart(md, keyIndex);
   const cutAt = start < 0 ? keyIndex : start;

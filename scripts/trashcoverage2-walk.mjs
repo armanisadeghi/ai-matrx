@@ -153,10 +153,11 @@ await restoreFromTrash({ chip: "Folder", text: `2026 Q3 (in ${PARENT})`, shotNam
 await restoreFromTrash({ chip: "War Room", text: WR_TITLE, shotName: "c-war-room",
   back: () => live("workspace", "war_rooms", warRoomId) });
 await restoreFromTrash({ chip: "Context Item", text: `Crew size (in ${ST_PLURAL})`, shotName: "d-field-in-scope-type",
-  back: async () => (await live("context", "scope_types", scopeTypeId)) && (await live("context", "context_items", fieldId)) });
+  back: async () => (await live("custom", "record", scopeTypeId)) && (await live("custom", "record", fieldId)) });
 {
-  const { data } = await sb.schema("context").from("context_items").select("is_active").eq("id", fieldId).maybeSingle();
-  check("the Field came back in use (is_active)", data?.is_active === true, JSON.stringify(data));
+  // The scope store (the old scope tables were retired 2026-10-05): a Field is a record, and "in use" is "not archived".
+  const { data } = await sb.schema("custom").from("record").select("deleted_at").eq("id", fieldId).maybeSingle();
+  check("the Field came back in use (not archived)", !!data && data.deleted_at === null, JSON.stringify(data));
 }
 
 // ── Organization Trash: a child folder comes back through its parent ────────────────────────

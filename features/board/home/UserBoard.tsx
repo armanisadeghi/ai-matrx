@@ -62,7 +62,7 @@ import {
   type StoredBasics,
 } from "../tools/item-surfaces";
 import { BOARD_ITEM_TYPES, itemTypeFor } from "../items/catalog";
-import { startNewEntries, type BoardItemType, type PickerProps, type PlacedItem, type StartNewEntry } from "../items/types";
+import { startNewEntries, type BoardItemType, type ItemBasicValues, type PickerProps, type PlacedItem, type StartNewEntry } from "../items/types";
 import { filesToBoardItems } from "../items/file-drop";
 import { noteSeedEdit } from "../items/work-sources";
 import { intakeText } from "./board-intake";
@@ -471,6 +471,21 @@ export function UserBoard({
     const undo = board.parkTile(id);
     toast(`Parked "${tileOf(id)?.title ?? "tile"}"`, { action: { label: "Undo", onClick: undo } });
   };
+  // A selection goes as ONE undoable step (the menu's multi-selection items).
+  const parkMany = (ids: string[]) => {
+    const tiles = ids.filter((id) => tileOf(id));
+    if (tiles.length === 0) return;
+    board.batch(() => tiles.forEach((id) => board.parkTile(id)));
+    toast(`Parked ${tiles.length} tiles`, { action: { label: "Undo", onClick: board.undo } });
+  };
+  const takeOffMany = (ids: string[]) => {
+    const tiles = ids.filter((id) => tileOf(id));
+    if (tiles.length === 0) return;
+    board.batch(() => tiles.forEach((id) => board.removeTile(id)));
+    toast(`Took ${tiles.length} tiles off the board — they still exist where they live`, {
+      action: { label: "Undo", onClick: board.undo },
+    });
+  };
   const unpark = (id: string) => {
     board.unparkTile(id);
     requestAnimationFrame(() => requestAnimationFrame(() => store?.fitItem(id)));
@@ -600,7 +615,8 @@ export function UserBoard({
     <BoardSurface host={agentHost}>
       <BoardMenu
         store={store}
-        actions={{ park, remove: takeOff, removeLabel: "Take off this board" }}
+        tilesOf={(ids) => ids.filter((id) => tileOf(id))}
+        actions={{ park, remove: takeOff, parkMany, removeMany: takeOffMany, removeLabel: "Take off this board" }}
         frameActions={{ remove: deleteFrame, removeWithContents: deleteFrameWithContents }}
         parked={parkedTiles.map((t) => ({ id: t.id, title: t.title }))}
         onUnpark={unpark}
@@ -753,25 +769,27 @@ function typeFrameTitle(label: string | undefined): string {
 }
 
 /** The tile's status chip: the type's `status.useStatus` hook, in its own leaf (a tick never re-renders the body). */
-function statusRenderer(key: string, door: ItemStatusDoor, source: NodeSource) {
+function statusRenderer(key: string, door: ItemStatusDoor, source: NodeSource, basics?: ItemBasicValues | null) {
   if (!("useStatus" in door)) return undefined;
   return (variant: "header" | "face", animate: boolean) => (
-    <ItemStatusLeaf key={key} useStatus={door.useStatus} source={source} variant={variant} animate={animate} />
+    <ItemStatusLeaf key={key} useStatus={door.useStatus} source={source} basics={basics} variant={variant} animate={animate} />
   );
 }
 
 function ItemStatusLeaf({
   useStatus,
   source,
+  basics,
   variant,
   animate,
 }: {
-  useStatus: (source: NodeSource) => ItemStatus | null;
+  useStatus: (source: NodeSource, basics?: ItemBasicValues | null) => ItemStatus | null;
   source: NodeSource;
+  basics?: ItemBasicValues | null;
   variant: "header" | "face";
   animate: boolean;
 }) {
-  const status = useStatus(source);
+  const status = useStatus(source, basics);
   return status ? <StatusChip status={status} variant={variant} animate={animate} /> : null;
 }
 
@@ -858,7 +876,7 @@ function BoardItemTile({
         icon={type?.icon}
         accent={type?.accent}
         typeLabel={type?.label ?? "Unavailable"}
-        renderStatus={type ? statusRenderer(type.key, type.status, source) : undefined}
+        renderStatus={type ? statusRenderer(type.key, type.status, source, tile.basics?.values) : undefined}
         onMove={board.moveTile}
         onResize={board.resizeTile}
         onThrow={onThrow}

@@ -57,6 +57,8 @@ import {
 import type { Rect } from "./SelectionToolbarFrame";
 // The common pair (copy, save to notes) declares itself on load.
 import "./common-actions";
+// The formatting buttons for every engine (no Tiptap in this chunk).
+import "@/components/rich-editor/format/format-actions";
 import { liveSelectionShapeText } from "./selection-shape";
 
 /**

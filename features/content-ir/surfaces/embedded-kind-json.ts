@@ -13,8 +13,8 @@
  */
 
 import { readXmlTag } from "@/components/mardown-display/blocks/xml/readXmlTag";
-import { findCodeRanges } from "@ai-matrx/content-ir/source";
-import { quotedSourceRanges } from "./json-kind-signal";
+import { fenceOpenerOf, findCodeRanges } from "@ai-matrx/content-ir/source";
+import { isJsonFenceLanguage, quotedSourceRanges } from "./json-kind-signal";
 
 export interface EmbeddedKindJsonRegion {
   start: number;
@@ -213,9 +213,16 @@ function declaredKind(candidate: string): string | null {
  * source; an unpaired backtick is text, never "literal to the end"), HTML
  * comments, CDATA and XML tags.
  */
-function literalRanges(source: string): Array<[number, number]> {
+function literalRanges(
+  source: string,
+  liftJsonFences = false,
+): Array<[number, number]> {
   const ranges: Array<[number, number]> = [];
-  const code = findCodeRanges(source);
+  // A JSON-family fence inside an XML TAG is data, not an example (ruling (b),
+  // round 3): its body is searched; its fence lines become chrome around a kind.
+  const code = liftJsonFences
+    ? findCodeRanges(source).filter((range) => !isJsonFenceRange(source, range))
+    : findCodeRanges(source);
   let next = 0;
   let cursor = 0;
   while (cursor < source.length) {
@@ -255,6 +262,43 @@ function literalRanges(source: string): Array<[number, number]> {
   return ranges;
 }
 
+/** Whether a code range is a fence whose language makes its body JSON (unlabelled included). */
+function isJsonFenceRange(
+  source: string,
+  range: { start: number; end: number; kind: string },
+): boolean {
+  if (range.kind !== "fence") return false;
+  const raw = source.slice(range.start, range.end);
+  const newline = raw.indexOf("\n");
+  const opener = fenceOpenerOf((newline === -1 ? raw : raw.slice(0, newline)).trimStart());
+  return opener !== null && isJsonFenceLanguage(opener.lang);
+}
+
+/**
+ * The fence lines around a kind that is the WHOLE body of a JSON-family fence
+ * (`liftJsonFences`): opener through the object, and the object through the
+ * closer, as chrome spans — never rendered, kept so the partition is lossless.
+ */
+function jsonFenceChromeSpans(
+  source: string,
+  regions: EmbeddedKindJsonRegion[],
+): Array<[number, number]> {
+  const spans: Array<[number, number]> = [];
+  for (const range of findCodeRanges(source)) {
+    if (!isJsonFenceRange(source, range)) continue;
+    const inside = regions.filter((r) => r.start >= range.start && r.end <= range.end);
+    if (inside.length !== 1) continue;
+    const region = inside[0]!;
+    const head = source.slice(range.start, region.start);
+    const tail = source.slice(region.end, range.end);
+    // Opener line, then only whitespace; only whitespace, then the closer (or nothing yet).
+    if (!/^[^\n]*\n\s*$/.test(head) || !/^\s*(?:[`~]{3,}[ \t]*)?$/.test(tail)) continue;
+    spans.push([range.start, region.start]);
+    if (region.end < range.end) spans.push([region.end, range.end]);
+  }
+  return spans;
+}
+
 /** Outermost complete self-described objects, in source order. */
 /**
  * Where the front matter that opens `source` ends (0 when none): an optional
@@ -284,6 +328,13 @@ export interface EmbeddedKindSearchOptions {
   /** Generic XML: code, comments, CDATA and tags are literal (the XML card shows them). */
   excludeLiteralContexts?: boolean;
   /**
+   * With `excludeLiteralContexts` (an XML TAG — structure, ruling (b) round 3):
+   * a ```json / ```jsonc / ```json5 / unlabelled fence is NOT literal. A kind
+   * that is its whole body leaves with the fence's own lines as chrome, so
+   * the XML pieces around it hold no orphan fence marker.
+   */
+  liftJsonFences?: boolean;
+  /**
    * Markdown: inline code spans and non-JSON fences are the model quoting
    * source (`quotedSourceRanges`, the owner's ruling 2026-09-30) — never lifted.
    */
@@ -296,7 +347,9 @@ export function findEmbeddedKindJsonRegions(
 ): EmbeddedKindJsonRegion[] {
   const regions: EmbeddedKindJsonRegion[] = [];
   const excluded = [
-    ...(options.excludeLiteralContexts ? literalRanges(source) : []),
+    ...(options.excludeLiteralContexts
+      ? literalRanges(source, options.liftJsonFences === true)
+      : []),
     ...(options.excludeQuotedSource ? quotedSourceRanges(source) : []),
   ].sort((a, b) => a[0] - b[0]);
   const jsonStrings: Array<[number, number]> = [];
@@ -502,7 +555,12 @@ export function splitAroundEmbeddedKindJson(
     )
   > = [
     ...regions.map((r) => ({ start: r.start, end: r.end, type: "kind" as const, kind: r.kind })),
-    ...kindArrayChromeSpans(source, regions).map(([start, end]) => ({
+    ...[
+      ...kindArrayChromeSpans(source, regions),
+      ...(options.excludeLiteralContexts && options.liftJsonFences
+        ? jsonFenceChromeSpans(source, regions)
+        : []),
+    ].map(([start, end]) => ({
       start,
       end,
       type: "chrome" as const,

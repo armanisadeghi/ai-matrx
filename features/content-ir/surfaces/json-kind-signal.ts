@@ -266,6 +266,20 @@ export function quotedSourceRanges(text: string): Array<[number, number]> {
 }
 
 /**
+ * Whether an XML card SHOWS SOURCE (the owner's rulings, round 3): a ```xml
+ * FENCE is the model quoting source — a kind inside it stays as written (a).
+ * An XML TAG the model wraps content in (`<answer>`, `<output>`, any generic
+ * tag, closed or not) is STRUCTURE (b): the splitter and the accumulator mark
+ * every piece of it `genericXmlContainer`, and a kind inside its prose renders
+ * as the kind. THE one answer — XmlBlock's callers and the frame judge read it.
+ */
+export function isQuotedSourceXmlBlock(block: {
+  metadata?: Record<string, unknown> | null;
+}): boolean {
+  return block.metadata?.genericXmlContainer !== true;
+}
+
+/**
  * The MARKDOWN form: does this prose hold a kind REGION — a `__kind` key
  * anywhere outside quoted source (see `quotedSourceRanges`)? A leaf that
  * answers yes hands the text to the pipeline (`MarkdownStream`), which lifts

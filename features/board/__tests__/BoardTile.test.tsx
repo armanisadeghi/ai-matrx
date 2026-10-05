@@ -387,3 +387,45 @@ describe("BoardTile crash isolation", () => {
     el.remove();
   });
 });
+
+describe("BoardTile click selection (no press: assistive tech, scripts)", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  beforeEach(() => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+  });
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+  });
+
+  it("a Shift or ⌘ click event adds to the selection and takes out; a plain one selects", () => {
+    const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
+    store.registerItem("other", { x: 400, y: 0, w: 100, h: 100 });
+    act(() => root.render(<TileHarness store={store} onMove={jest.fn()} />));
+    store.select("other");
+    const header = container.querySelector<HTMLElement>("[data-board-card] > div")!;
+    const click = (init: MouseEventInit) => act(() => void header.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0, ...init })));
+    click({ shiftKey: true });
+    expect([...store.getSelection()].sort()).toEqual(["other", "tile"]);
+    click({ metaKey: true });
+    expect([...store.getSelection()]).toEqual(["other"]);
+    click({});
+    expect([...store.getSelection()]).toEqual(["tile"]);
+  });
+
+  it("a real press-and-click is not applied twice", () => {
+    const store = new BoardCameraStore({ x: 0, y: 0, z: 1 });
+    act(() => root.render(<TileHarness store={store} onMove={jest.fn()} />));
+    const header = container.querySelector<HTMLElement>("[data-board-card] > div")!;
+    act(() => {
+      header.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, button: 0, shiftKey: true }));
+      header.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, button: 0, shiftKey: true }));
+      header.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0, shiftKey: true }));
+    });
+    expect([...store.getSelection()]).toEqual(["tile"]);
+  });
+});

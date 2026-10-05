@@ -12,13 +12,18 @@
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/rootReducer";
 import type { NodeSource } from "../board/document";
-import type { ItemStatus } from "./types";
+import type { ItemBasicValues, ItemStatus } from "./types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
 import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { CLOSED_TASK_STATUSES, TASK_STATUS_META, normalizeTaskStatus } from "@/features/tasks/constants/status";
 import { selectFileById } from "@/features/files/redux/selectors";
 import { selectMeetingEntry } from "@/features/meet/redux/meetingsSlice";
 import { RUN_STATUS_LABEL } from "@/features/workflow-runtime/run-status";
+
+function basicText(basics: ItemBasicValues | null | undefined, key: string): string | undefined {
+  const v = basics?.[key];
+  return typeof v === "string" && v ? v : undefined;
+}
 
 function idOf(source: NodeSource): string | null {
   return source.kind === "entity" ? (source.id ?? null) : null;
@@ -53,11 +58,14 @@ export function useNoteStatus(source: NodeSource): ItemStatus | null {
 }
 
 /** Task: its lifecycle status, and Overdue when an open task is past its due date. */
-export function useTaskStatus(source: NodeSource): ItemStatus | null {
+export function useTaskStatus(source: NodeSource, basics?: ItemBasicValues | null): ItemStatus | null {
   const id = idOf(source);
-  const raw = useAppSelector((s: RootState) => (id ? selectTaskById(s, id)?.status : undefined));
-  const due = useAppSelector((s: RootState) => (id ? selectTaskById(s, id)?.due_date : undefined));
+  const live = useAppSelector((s: RootState) => (id ? selectTaskById(s, id)?.status : undefined));
+  const liveDue = useAppSelector((s: RootState) => (id ? selectTaskById(s, id)?.due_date : undefined));
   if (!id) return { tone: "attention", label: "Unsaved" };
+  // Not in the store (an overview the tile has not mounted for): the saved basics.
+  const raw = live ?? basicText(basics, "active_task_status");
+  const due = live !== undefined ? liveDue : basicText(basics, "active_task_due_date");
   if (raw === undefined) return null;
   const status = normalizeTaskStatus(raw);
   const open = !CLOSED_TASK_STATUSES.includes(status);
@@ -69,12 +77,13 @@ export function useTaskStatus(source: NodeSource): ItemStatus | null {
 }
 
 /** Workflow run: working, needs input, needs attention, done, stopped. */
-export function useWorkflowRunStatus(source: NodeSource): ItemStatus | null {
+export function useWorkflowRunStatus(source: NodeSource, basics?: ItemBasicValues | null): ItemStatus | null {
   const id = idOf(source);
-  const status = useAppSelector((s: RootState) => {
+  const liveStatus = useAppSelector((s: RootState) => {
     const run = id ? s.workflowRuns?.byRunId[id] : undefined;
     return run?.statusKnown ? run.status : undefined;
   });
+  const status = liveStatus ?? basicText(basics, "run_status");
   if (!status) return null;
   const label = RUN_STATUS_LABEL[status] ?? status;
   switch (status) {
@@ -97,9 +106,9 @@ export function useWorkflowRunStatus(source: NodeSource): ItemStatus | null {
 }
 
 /** Meeting: live, scheduled, ended (from the record `MeetingKeep` keeps current). */
-export function useMeetingStatus(source: NodeSource): ItemStatus | null {
+export function useMeetingStatus(source: NodeSource, basics?: ItemBasicValues | null): ItemStatus | null {
   const id = idOf(source);
-  const phase = useAppSelector((s: RootState) => {
+  const livePhase = useAppSelector((s: RootState) => {
     const m = id ? selectMeetingEntry(s, id)?.loaded?.meeting : undefined;
     if (!m) return "";
     if (m.endedAt) return "ended";
@@ -107,6 +116,8 @@ export function useMeetingStatus(source: NodeSource): ItemStatus | null {
     if (m.scheduledFor) return "scheduled";
     return "";
   });
+  // Not loaded (the meeting record is read by the tile's own mount): the saved basics.
+  const phase = livePhase || basicText(basics, "meeting_status") || "";
   if (phase === "live") return { tone: "active", label: "Live" };
   if (phase === "scheduled") return { tone: "neutral", label: "Scheduled" };
   if (phase === "ended") return { tone: "neutral", label: "Ended" };

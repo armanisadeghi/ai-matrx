@@ -89,8 +89,14 @@ export interface ItemStatus {
  * already holds (Redux, kept answers) — never a network read per tile. Return
  * null when the item is at rest and there is nothing to say (a saved note, an
  * idle chat). A type with no state of its own says why in `none`.
+ * `basics` are the tile's saved values: a type whose live state is not loaded
+ * at overview (the store is filled by the tile's own mount) falls back to them
+ * instead of showing nothing.
  */
-export type ItemStatusDoor = { useStatus: (source: NodeSource) => ItemStatus | null } | { none: string };
+export type ItemStatusDoor = { useStatus: (source: NodeSource, basics?: ItemBasicValues | null) => ItemStatus | null } | { none: string };
+
+/** The tile's saved `basics.values` (`BoardNode.basics`): what the item last said about itself, kept per node. */
+export type ItemBasicValues = Readonly<Record<string, unknown>>;
 
 /**
  * The feature's OWN agent surface for the record in a tile — the same values,

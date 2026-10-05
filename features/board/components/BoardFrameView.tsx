@@ -70,7 +70,19 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize }: Bo
     [store, key, rect],
   );
 
+  // A click no press led to (assistive tech, a script) selects from its own Shift / ⌘ flags.
+  const pressedAt = useRef(0);
+  const clicked = (e: React.MouseEvent<HTMLElement>) => {
+    const pressed = pressedAt.current > 0 && Date.now() - pressedAt.current < 10_000;
+    pressedAt.current = 0;
+    if (pressed || e.button !== 0 || e.ctrlKey) return;
+    if ((e.target as HTMLElement).closest("[data-board-frame-action]")) return;
+    if (e.shiftKey || e.metaKey) store.toggleSelected(id);
+    else store.select(id);
+  };
+
   const press = (e: React.PointerEvent<HTMLElement>, flyOnClick: boolean) => {
+    if (e.button === 0) pressedAt.current = Date.now();
     if (e.button !== 0 || e.ctrlKey) return; // ctrl+click is the macOS right-click (the menu)
     const target = e.target as HTMLElement;
     if (target.closest("[data-board-frame-action]")) return; // its own buttons
@@ -135,6 +147,7 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize }: Bo
           data-board-frame-border={edge}
           aria-hidden
           onPointerDown={(e) => press(e, false)}
+          onClick={clicked}
           className="pointer-events-auto absolute max-w-none cursor-grab touch-none active:cursor-grabbing"
           style={border[edge]}
         />
@@ -142,6 +155,7 @@ export function BoardFrameView({ id, rect, title, note, onRemove, onResize }: Bo
       <div
         data-board-frame-strip
         onPointerDown={(e) => press(e, true)}
+        onClick={clicked}
         className="pointer-events-auto absolute bottom-full left-0 flex max-w-none cursor-grab touch-none items-center gap-2 pb-3 active:cursor-grabbing"
         title={`Drag to move ${title} with its tiles · click to fly there`}
       >

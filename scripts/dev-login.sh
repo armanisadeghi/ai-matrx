@@ -22,16 +22,23 @@ source "$REPO_ROOT/scripts/agent-harness/preview-session.sh"
 # shellcheck source=scripts/agent-harness/shared-servers.sh
 source "$REPO_ROOT/scripts/agent-harness/shared-servers.sh"
 
-# `pnpm dev-login [/next/path]` — signs in on THE one server (port 3001), whatever its
+# `pnpm dev-login [--member] [/next/path]` — signs in on THE one server (port 3001), whatever its
 # database mode; `pnpm preview:status` names the mode. `--clone` / `--live` pick no server —
 # they only assert the running mode, and a mismatch is refused rather than signing you in
 # against a database you did not ask for.
+#
+# `--member` signs in as the designated non-admin test account test@test.com (user id
+# 4060701e-706a-4c76-b3ca-0bbc69fa5a14) instead of the admin, so a walk can be made from a
+# plain member's seat. The route's closed list decides who may be signed in; this only asks.
 NEXT_PATH=/dashboard
 WANT_MODE=""
+AS_SUFFIX=""
+WHO="admin"
 for arg in "$@"; do
   case "$arg" in
     --clone) WANT_MODE=clone ;;
     --live) WANT_MODE=live ;;
+    --member) AS_SUFFIX="&as=test@test.com"; WHO="member (test@test.com)" ;;
     *) NEXT_PATH="$arg" ;;
   esac
 done
@@ -57,4 +64,5 @@ chmod 600 "$NONCE_FILE" 2>/dev/null || true
 
 echo "[dev-login] host   : $HOST  (your session's own cookie jar; server mode: ${RUNNING_MODE:-not running})"
 echo "[dev-login] nonce  : $(basename "$NONCE_FILE")  (single use, consumed on any presentation)"
-echo "[dev-login] OPEN   : http://$HOST:$PORT/api/dev-login?nonce=$NONCE&next=$NEXT_PATH"
+echo "[dev-login] as     : $WHO"
+echo "[dev-login] OPEN   : http://$HOST:$PORT/api/dev-login?nonce=$NONCE&next=$NEXT_PATH$AS_SUFFIX"

@@ -50,6 +50,9 @@ export interface TileMenuActions {
   park?: (id: string) => void;
   saveAndClose?: (id: string) => void;
   remove?: (id: string) => void;
+  /** The same two for a selection of several tiles (one undo step); without them each tile is done in turn. */
+  parkMany?: (ids: string[]) => void;
+  removeMany?: (ids: string[]) => void;
   /** Label for `remove` — say what is actually deleted. Default "Delete from board…". */
   removeLabel?: string;
 }
@@ -82,12 +85,15 @@ export function BoardMenu({
   onWheelMode,
   onArrange,
   frameActions,
+  tilesOf,
   children,
 }: {
   store: BoardCameraStore | null;
   actions: TileMenuActions;
   /** A frame's own actions (right-click on its title strip or border). */
   frameActions?: FrameMenuActions;
+  /** Which of these selected ids are tiles (a selection can hold frames too). Default: all of them. */
+  tilesOf?: (ids: string[]) => string[];
   parked: { id: string; title: string }[];
   onUnpark: (id: string) => void;
   wheelMode: WheelMode;
@@ -98,7 +104,8 @@ export function BoardMenu({
 }) {
   const [target, setTarget] = useState<{ id: string; title: string; frame: boolean } | null>(null);
   // How many are selected when the menu opens: Arrange acts on 2+ selected, else the board.
-  const [selectedCount, setSelectedCount] = useState(0);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const selectedCount = selectedIds.length;
 
   const sections: ContextMenuExtraSection[] = [];
   if (target?.frame) {
@@ -121,6 +128,30 @@ export function BoardMenu({
       });
     }
     sections.push({ id: "board-frame", label: target.title, icon: Frame, primary: true, anchor: "after-clipboard", items });
+  } else if (target && selectedIds.length > 1 && selectedIds.includes(target.id) && (tilesOf ? tilesOf(selectedIds) : selectedIds).length > 1) {
+    // Right-click inside a multi-selection acts on the selection (Figma, tldraw).
+    const ids = tilesOf ? tilesOf(selectedIds) : selectedIds;
+    const n = ids.length;
+    const items: ContextMenuExtraSection["items"] = [];
+    const { park, parkMany, remove, removeMany, removeLabel } = actions;
+    if (parkMany || park)
+      items.push({
+        kind: "item",
+        id: "park-selection",
+        label: `Park ${n} tiles`,
+        icon: PanelRightOpen,
+        onSelect: () => (parkMany ? parkMany(ids) : ids.forEach((id) => park?.(id))),
+      });
+    if (removeMany || remove)
+      items.push({
+        kind: "item",
+        id: "delete-selection",
+        label: `${removeLabel?.startsWith("Take off") ? "Take off" : "Delete from board"} ${n} tiles`,
+        icon: Trash2,
+        destructive: true,
+        onSelect: () => (removeMany ? removeMany(ids) : ids.forEach((id) => remove?.(id))),
+      });
+    sections.push({ id: "board-selection", label: `${n} tiles selected`, primary: true, anchor: "after-clipboard", items });
   } else if (target) {
     sections.push({
       id: "board-tile",
@@ -187,7 +218,7 @@ export function BoardMenu({
         // Right-click inside the selection keeps it (Figma); elsewhere it selects what was clicked.
         const pick = (id: string) => {
           if (!store?.isSelected(id)) store?.select(id);
-          setSelectedCount(store?.getSelection().length ?? 0);
+          setSelectedIds([...(store?.getSelection() ?? [])]);
         };
         if (frame?.dataset.boardFrame) {
           const id = frame.dataset.boardFrame;
@@ -198,7 +229,7 @@ export function BoardMenu({
         const id = tile?.dataset.boardCard ?? tile?.dataset.boardTile ?? null;
         if (!tile || !id) {
           setTarget(null);
-          setSelectedCount(store?.getSelection().length ?? 0);
+          setSelectedIds([...(store?.getSelection() ?? [])]);
           return null;
         }
         const title = tile.dataset.boardTitle ?? "Tile";

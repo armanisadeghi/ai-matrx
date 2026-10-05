@@ -41,7 +41,7 @@ import {
 import { SectionCard } from "./SectionCard";
 import { RecordsMount, StandardRecordForm, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import type { StandardColumn } from "@ai-matrx/records-ui";
-import { registerCustomFieldsDoor } from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
+import { useCustomFieldsHost } from "@/features/unified-data/components/useCustomFieldsHost";
 import { createClient } from "@/utils/supabase/client";
 
 interface Props {
@@ -70,6 +70,12 @@ const FIELDS: FieldSpec[] = [
 
 export function PartyIdentityCard({ party, onChanged }: Props) {
   const userId = useAppSelector(selectUserId);
+  // "Contact" is the CRM's word for a party; own-table offer + dormant-aware agent door are the shared host's.
+  const { custom: customHost, dialog: customDialog } = useCustomFieldsHost({
+    entityToken: "party",
+    organizationId: party.organization_id,
+    entityLabel: "Contact",
+  });
   const { categories: lifecycleStages } = useCategories({
     dimension: CATEGORY_DIMENSIONS.crmLifecycleStage,
   });
@@ -287,10 +293,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
           recordId={party.id}
           columns={columns}
           onSaved={() => void onChanged()}
-          custom={{
-            entityLabel: "Contact",
-            agentDoor: (door) => registerCustomFieldsDoor({ ...door, isLive: () => true }),
-          }}
+          custom={customHost}
         >
         {/* Classification — the CRM stance on this record. */}
         <div className="mt-1.5 space-y-1.5 border-t border-border pt-2">
@@ -367,6 +370,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
           </div>
         </label>
         </StandardRecordForm>
+        {customDialog}
       </RecordsMount>
     </SectionCard>
   );

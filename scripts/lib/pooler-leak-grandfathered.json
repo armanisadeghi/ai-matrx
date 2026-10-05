@@ -10,7 +10,6 @@
     "scripts/check-offering-resolver-equivalence.ts": 1,
     "scripts/check-offering-tenancy.ts": 1,
     "scripts/check-trash-doors.ts": 1,
-    "scripts/cutover-census/scopes-writers.ts": 1,
     "scripts/hr/hrb007_cross_org_proof.py": 1,
     "scripts/hr/hrb011_proof.py": 1
   },

@@ -241,12 +241,10 @@ export function recoverEmbeddedKindJsonBlocksWith(
       block.type === "artifact" ||
       block.type === "matrx" ||
       block.type === "matrx_file" ||
-      // Incomplete generic XML owns all nested bytes until a matching root
-      // close confirms a recoverable container. Do not extract a directive or
-      // kind from malformed/in-flight XML through a later adapter pass.
-      (block.type === "code" &&
-        block.language === "xml" &&
-        block.metadata?.isComplete === false) ||
+      // An XML TAG — closed or never closed — is STRUCTURE, not quoted
+      // source (the owner's ruling (b), round 3): a kind inside it is data
+      // and leaves the card below, exactly as the live stream lifts it. A
+      // ```xml FENCE stays quoted source (`isQuotedSourceFenceBlock`).
       blockHasResolvedRootKind(block) ||
       // A fence of another language (```ts, ```xml, ```markdown …) is the
       // model QUOTING SOURCE: a kind inside it stays as written (the owner's
@@ -260,6 +258,7 @@ export function recoverEmbeddedKindJsonBlocksWith(
     const genericXml = block.metadata?.genericXmlContainer === true;
     const pieces = splitAroundEmbeddedKindJson(block.content, {
       excludeLiteralContexts: genericXml,
+      liftJsonFences: genericXml,
       // Prose, tables and sections: an inline code span is quoted source.
       // A JSON fence's body is JSON — a backtick inside a string is no span.
       excludeQuotedSource: !genericXml && !isJsonFenceBlock(block),
@@ -320,7 +319,9 @@ export function recoverEmbeddedKindJsonBlocksWith(
       recovered.push({
         ...block,
         content,
-        metadata: undefined,
+        // An XML piece stays STRUCTURE (`isQuotedSourceXmlBlock`) — the card
+        // draws whatever kind it still holds as the kind.
+        metadata: genericXml ? { genericXmlContainer: true } : undefined,
       });
     }
   }

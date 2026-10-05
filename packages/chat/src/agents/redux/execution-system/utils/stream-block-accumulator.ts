@@ -34,6 +34,7 @@ import {
 import {
   classifyInnerFenceLine,
   fenceNestsInnerFences,
+  fenceOpenerOf,
   FenceReader,
   trimFenceLine,
 } from "@ai-matrx/content-ir/source";
@@ -158,6 +159,22 @@ function firstCompleteRootObjectEnd(
 }
 
 type XmlTagSubState = Extract<BlockSubState, { kind: "xml_tag" }>;
+type GenericXmlSubState = Extract<BlockSubState, { kind: "generic_xml" }>;
+/** A container a kind region was split out of; closing the region resumes it (A8, X1). */
+type ResumableXmlSubState = XmlTagSubState | GenericXmlSubState;
+
+/**
+ * A JSON object, or a JSON-family fence, that started on a line of a generic
+ * XML container and has not shown a `__kind` key yet (X1). `fence` is the
+ * fence opener when the candidate is fenced (its first line is the opener).
+ */
+interface GenericXmlKindCandidate {
+  contentLen: number;
+  lineCount: number;
+  lines: string[];
+  depth: number;
+  fence: { char: string; ticks: number } | null;
+}
 
 type BlockSubState =
   | { kind: "none" }
@@ -181,6 +198,8 @@ type BlockSubState =
       nestedFences: number;
       /** Set to true once we've found the JSON root key and upgraded the block type. */
       earlyTypeResolved: boolean;
+      /** The XML container this kind fence was split out of (X1) — closing the fence resumes it. */
+      resumeXml?: ResumableXmlSubState;
     }
   | {
       kind: "xml_tag";
@@ -224,7 +243,16 @@ type BlockSubState =
   | { kind: "directive"; tracker: DirectiveContainerTracker }
   /** Front matter (`---` / `+++` on the first line) until its closing fence — plain text, never parsed. */
   | { kind: "frontmatter"; fence: string }
-  | { kind: "generic_xml"; tracker: UnrecognizedXmlContainerTracker }
+  | {
+      kind: "generic_xml";
+      tracker: UnrecognizedXmlContainerTracker;
+      /**
+       * An XML TAG is structure, not quoted source (ruling (b), round 3): a
+       * JSON object or JSON fence inside it that shows `__kind` leaves the
+       * card as its own region the moment the key is visible (X1).
+       */
+      kindCandidate?: GenericXmlKindCandidate | null;
+    }
   | {
       kind: "bare_json";
       /** Running count of `{` characters seen so far — including the opening line. */
@@ -240,8 +268,8 @@ type BlockSubState =
       earlyTypeResolved: boolean;
       /** This object is one element of an array of kinds (A6) — closing it returns to the array. */
       inArray?: boolean;
-      /** The simple XML section this kind was split out of (A8) — closing it resumes the section. */
-      resumeXml?: XmlTagSubState;
+      /** The XML section or tag this kind was split out of (A8, X1) — closing it resumes it. */
+      resumeXml?: ResumableXmlSubState;
     }
   /**
    * Inside a bare ARRAY OF KINDS (`[{"__kind":…},{"__kind":…}]`, A6). Each
@@ -330,6 +358,17 @@ function isParseableJsonObject(text: string): boolean {
  * text until finalize. Prose almost never opens a line with `{"…":`, and a
  * false positive degrades gracefully to a JSON code block, so this is safe.
  */
+/** The text a generic-XML kind candidate shows so far — a fence's body without its opener (X1). */
+function genericCandidateBody(candidate: GenericXmlKindCandidate): string {
+  return (candidate.fence ? candidate.lines.slice(1) : candidate.lines).join("\n");
+}
+
+/** A bare closing run for a fence opened with `fence` (same char, at least as long). */
+function isFenceCloserLine(line: string, fence: { char: string; ticks: number }): boolean {
+  const trimmed = trimFenceLine(line);
+  return trimmed.length >= fence.ticks && [...trimmed].every((ch) => ch === fence.char);
+}
+
 const BARE_JSON_OPEN_RE = /^\{\s*"[^"]*"\s*:/;
 
 /**
@@ -659,6 +698,7 @@ export class StreamBlockAccumulator {
     this.maybeSplitProseBeforeKindFragment(dispatch);
     this.maybeEnterKindArrayFromFragment(dispatch);
     this.maybeSplitKindFromXmlFragment(dispatch);
+    this.maybeSplitKindFromGenericXmlFragment(dispatch);
 
     // A newline-less minified JSON object never completes a line during the
     // stream, so processLine never opens its region — it would project as raw
@@ -750,13 +790,9 @@ export class StreamBlockAccumulator {
     ) {
       this.reportUnclosedReasoningRegion(this.subState.tagName);
     }
-    // A truncated generic XML container remains XML code rather than falling
-    // back to text, because downstream text expansion may otherwise promote
-    // directive/kind-looking JSON from an incomplete container. Its bytes stay
-    // intact and embedded-kind recovery stays explicitly suppressed.
-    if (this.subState.kind === "generic_xml") {
-      this.genericXmlRecoverySuppressed = true;
-    }
+    // A truncated generic XML container remains XML code — but an XML TAG is
+    // structure, not quoted source (ruling (b), round 3): a kind inside it is
+    // recovered below exactly as the static splitter recovers it (X1).
     // If the stream ended while still inside a bare JSON block (unbalanced braces),
     // run a final type detection pass so we at least get the right block type.
     if (this.subState.kind === "bare_json") {
@@ -1162,7 +1198,9 @@ export class StreamBlockAccumulator {
               : null,
           nestedFences: 0,
           earlyTypeResolved: false,
+          resumeXml: this.nextBareJsonResumeXml ?? undefined,
         };
+        this.nextBareJsonResumeXml = null;
         // JSON fences also feed the kind parser (fence lines are chrome, not
         // content — the region starts on the next line).
         if (normalizedLang === "json") {
@@ -1392,7 +1430,9 @@ export class StreamBlockAccumulator {
   /** Set while the next bare-JSON region opens as an array element (A6). */
   private nextBareJsonInArray = false;
   /** Set while the next bare-JSON region is a kind split out of a section (A8). */
-  private nextBareJsonResumeXml: XmlTagSubState | null = null;
+  private nextBareJsonResumeXml: ResumableXmlSubState | null = null;
+  /** True while a split kind's earlier lines replay into its region (the XML tracker already saw them). */
+  private replayingSplitKind = false;
 
   /**
    * Track a JSON object inside a simple XML section; split it out the moment
@@ -1465,10 +1505,126 @@ export class StreamBlockAccumulator {
   }
 
   /** The section a kind was split out of continues in a fresh block (A8). */
-  private resumeXmlSection(section: XmlTagSubState, dispatch: DispatchFn): void {
+  private resumeXmlSection(section: ResumableXmlSubState, dispatch: DispatchFn): void {
+    if (section.kind === "generic_xml") {
+      // The XML after the kind continues as a fresh card. Its first line joins
+      // with a line break, as the reload's piece starts with one (`\n</output>`).
+      this.openBlock("code", dispatch);
+      this.subState = { ...section, kindCandidate: null };
+      this.currentBlockLineCount = 1;
+      this.suppressEmptyTrailingSlot = true;
+      return;
+    }
     this.openBlock(mapXmlTagToBlockType(section.tagName), dispatch);
     this.subState = { ...section, jsonCandidate: null, resumedAfterKind: true };
     this.suppressEmptyTrailingSlot = true;
+  }
+
+  /**
+   * Track a JSON object or JSON-family fence inside a generic XML container
+   * (an XML TAG — structure, ruling (b), round 3); split it out the moment its
+   * text carries a `__kind` key (X1). Returns true when the line was consumed.
+   */
+  private trackGenericXmlKindCandidate(line: string, dispatch: DispatchFn): boolean {
+    if (this.subState.kind !== "generic_xml") return false;
+    let candidate = this.subState.kindCandidate ?? null;
+    if (!candidate) {
+      const trimmed = line.trimStart();
+      const opener = /^ {0,3}[`~]/.test(line) ? fenceOpenerOf(trimmed) : null;
+      const fence = opener && isJsonFenceLanguage(opener.lang) ? opener : null;
+      if (!fence && !trimmed.startsWith("{")) return false;
+      candidate = {
+        contentLen: this.currentBlockContent.length,
+        lineCount: this.currentBlockLineCount,
+        lines: [],
+        depth: 0,
+        fence: fence ? { char: fence.char, ticks: fence.ticks } : null,
+      };
+      if (fence) {
+        candidate.lines.push(line);
+        this.subState.kindCandidate = candidate;
+        return false;
+      }
+    } else if (candidate.fence && isFenceCloserLine(line, candidate.fence)) {
+      this.subState.kindCandidate = null;
+      return false;
+    }
+    candidate.lines.push(line);
+    if (!candidate.fence) {
+      const { opens, closes } = countStructuralObjectBraces(line);
+      candidate.depth += opens - closes;
+    }
+    if (hasKindKey(genericCandidateBody(candidate))) {
+      this.splitKindOutOfGenericXml(candidate, dispatch);
+      return true;
+    }
+    this.subState.kindCandidate = candidate.fence || candidate.depth > 0 ? candidate : null;
+    return false;
+  }
+
+  /**
+   * Close the XML card's part before the kind, then replay the kind's lines
+   * so far as its own region (bare JSON or the JSON fence) that resumes the
+   * container when it closes (X1). The reload's recovery splits the same bytes.
+   */
+  private splitKindOutOfGenericXml(
+    candidate: GenericXmlKindCandidate,
+    dispatch: DispatchFn,
+  ): void {
+    if (this.subState.kind !== "generic_xml") return;
+    const container: GenericXmlSubState = { ...this.subState, kindCandidate: null };
+    const before = this.currentBlockContent.slice(0, candidate.contentLen);
+    this.currentBlockContent = before.trim() ? `${before}\n` : "";
+    this.currentBlockLineCount = before.trim() ? candidate.lineCount : 0;
+    this.closeCurrentBlock(dispatch);
+    this.subState = { kind: "none" };
+    this.openBlock("text", dispatch);
+    this.suppressEmptyTrailingSlot = true;
+    this.nextBareJsonResumeXml = container;
+    this.replayingSplitKind = true;
+    try {
+      const [first, ...rest] = candidate.lines;
+      if (first !== undefined) {
+        const trimmedFirst = first.trimStart();
+        const end = candidate.fence ? null : firstCompleteRootObjectEnd(trimmedFirst);
+        if (rest.length === 0 && end !== null && trimmedFirst.slice(end).trim()) {
+          // `{…kind…}</output>` or `{…kind…} more` on one line.
+          this.processLineNow(trimmedFirst.slice(0, end), dispatch);
+          this.replayingSplitKind = false;
+          this.processLine(trimmedFirst.slice(end), dispatch);
+          return;
+        }
+        this.processLineNow(candidate.fence ? first : trimmedFirst, dispatch);
+      }
+      for (const line of rest) this.processLineNow(line, dispatch);
+    } finally {
+      this.replayingSplitKind = false;
+    }
+  }
+
+  /** The fragment twin of the generic-XML split (X1): `<output>\n{"__kind":…` with no newline yet. */
+  private maybeSplitKindFromGenericXmlFragment(dispatch: DispatchFn): void {
+    if (this.subState.kind !== "generic_xml") return;
+    const fragment = this.pendingLineFragment;
+    if (fragment.includes(`</${this.subState.tracker.rootTag}`)) return;
+    const candidate = this.subState.kindCandidate ?? null;
+    if (!candidate && !BARE_JSON_OPEN_RE.test(fragment.trimStart())) return;
+    const text = candidate
+      ? genericCandidateBody({ ...candidate, lines: [...candidate.lines, fragment] })
+      : fragment;
+    if (!hasKindKey(text)) return;
+    this.splitKindOutOfGenericXml(
+      candidate ?? {
+        contentLen: this.currentBlockContent.length,
+        lineCount: this.currentBlockLineCount,
+        lines: [],
+        depth: 0,
+        fence: null,
+      },
+      dispatch,
+    );
+    // With no lines replayed, the fragment opens the region itself.
+    if (!candidate) this.pendingLineFragment = fragment.trimStart();
   }
 
   /**
@@ -1711,6 +1867,11 @@ export class StreamBlockAccumulator {
         return;
       }
       case "code_fence": {
+        // A kind fence split out of an XML tag (X1): the container's tracker
+        // still owns fence state, so it sees every fence line it has not seen.
+        if (this.subState.resumeXml?.kind === "generic_xml" && !this.replayingSplitKind) {
+          this.subState.resumeXml.tracker.consumeLine(rawLine);
+        }
         // The shared rule's whitespace, never String#trim (verify-RC-B3 residual R4).
         // A ~~~ fence closes by FenceReader alone (a backtick line inside it is content).
         const fenceLine = this.subState.tildeReader
@@ -1738,7 +1899,12 @@ export class StreamBlockAccumulator {
           // region COMPLETE (a stream-death finalize never sets this flag), so
           // the fence hook fires exclusively on genuinely completed regions.
           this.fenceClosedCleanly = true;
+          const resumeXml = this.subState.resumeXml;
           this.closeCurrentBlock(dispatch);
+          if (resumeXml) {
+            this.resumeXmlSection(resumeXml, dispatch);
+            return;
+          }
           this.subState = { kind: "none" };
           this.openBlock("text", dispatch);
         } else {
@@ -1852,9 +2018,11 @@ export class StreamBlockAccumulator {
       case "generic_xml": {
         const rootEnd = this.subState.tracker.consumeLine(rawLine);
         if (rootEnd === null) {
+          if (this.trackGenericXmlKindCandidate(rawLine, dispatch)) return;
           this.appendToCurrentBlock(rawLine);
           return;
         }
+        this.subState.kindCandidate = null;
         this.appendToCurrentBlock(rawLine.slice(0, rootEnd));
         this.closeCurrentBlock(dispatch);
         this.subState = { kind: "none" };
@@ -2350,9 +2518,7 @@ export class StreamBlockAccumulator {
       (this.currentBlockType === "text" &&
         this.currentBlockContent
           .split("\n")
-          .some(isUnclosedGenericXmlOpening)) ||
-      (this.subState.kind === "generic_xml" &&
-        !isCompleteUnrecognizedXmlContainer(this.currentBlockContent))
+          .some(isUnclosedGenericXmlOpening)) 
     ) {
       return false;
     }
@@ -2374,6 +2540,7 @@ export class StreamBlockAccumulator {
     const genericXml = this.subState.kind === "generic_xml";
     const pieces = splitAroundEmbeddedKindJson(recoverySource, {
       excludeLiteralContexts: genericXml,
+      liftJsonFences: genericXml,
       // Prose, tables and sections: an inline code span is quoted source.
       // A JSON fence's body is JSON — a backtick inside a string is no span.
       excludeQuotedSource: !genericXml && !(fence && isJsonFenceLanguage(fence.language)),
@@ -2389,6 +2556,9 @@ export class StreamBlockAccumulator {
     const containerData = recoveredXmlContainer
       ? { language: "xml" }
       : this.buildBlockData();
+    // An XML piece stays STRUCTURE (`isQuotedSourceXmlBlock`, X1).
+    const containerMetadata =
+      genericXml || recoveredXmlContainer ? { genericXmlContainer: true } : undefined;
     let emitted = 0;
     let followsKind = false;
     for (const piece of pieces) {
@@ -2414,7 +2584,7 @@ export class StreamBlockAccumulator {
         status: "complete",
         content,
         data: asJson ? { language: "json" } : containerData,
-        metadata: asJson ? withIrEnvelope(content, undefined) : undefined,
+        metadata: asJson ? withIrEnvelope(content, undefined) : containerMetadata,
       };
       dispatch(this.upsertAction({ requestId: this.requestId, block }));
       emitted++;
@@ -2552,7 +2722,11 @@ export class StreamBlockAccumulator {
     status: "streaming" | "complete",
     emittedContent: string,
   ): Record<string, unknown> | undefined {
-    const base = this.buildXmlBlockMetadata(status, emittedContent);
+    const base =
+      this.subState.kind === "generic_xml"
+        ? // An XML TAG is structure (ruling (b), round 3): its card draws kinds as kinds.
+          { genericXmlContainer: true }
+        : this.buildXmlBlockMetadata(status, emittedContent);
 
     // content-ir: attach the (dark) envelope — the live one while the region
     // streams, the final one on the complete emit. Rendering does not read

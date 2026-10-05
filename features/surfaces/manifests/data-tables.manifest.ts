@@ -131,6 +131,18 @@ const surfaceSpecific: SurfaceValue[] = [
 
   // ── Brief (board listing; on demand, never auto-context) ──────────────
   {
+    name: "not_loaded_yet",
+    label: "Not loaded yet",
+    description:
+      "True while the table's content has not loaded (a Board tile asleep or still reading): its row count, columns and permissions are then unknown, not zero or read-only. Absent once loaded.",
+    valueType: "boolean",
+    alwaysAvailable: false,
+    autoContext: false,
+    typicalCharCount: 4,
+    group: "table_identity",
+    sortOrder: 317,
+  },
+  {
     name: "brief_columns",
     label: "Column names (brief)",
     description:
@@ -538,6 +550,7 @@ export function createDataTablesScope(values: {
   column_list?: DataTableColumnEntry[];
   row_actions?: { id: string; name: string; kind: "update" | "agent"; description: string }[];
   row_count?: number;
+  not_loaded_yet?: boolean;
   brief_columns?: string;
   brief_first_rows?: string;
   current_cell_value?: string;
