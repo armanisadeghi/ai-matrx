@@ -400,3 +400,34 @@ accumulator), read through `isQuotedSourceXmlBlock` (`json-kind-signal.ts`) by X
       kind's words, never its JSON. `REINDEX INDEX CONCURRENTLY chat.cx_message_search_tsv_idx` (180 s, no lock;
       178→158 MB). Verified: index-backed search for a kind's word returns a clean headline. NOTE: the old body
       lives in aidream migrations 1373/1401 — never re-apply those files (they would revert this).
+## R5. Round 5 — hardening the class guards (2026-10-05)
+
+- [x] H1. `valueCarriesKind` read a string as kind-carrying only when it started with `{`/`[`; prose before a ```json kind
+      fence (or inline kind JSON) passed as plain, so the JSON viewers (`KindDataGate`), `ResultValue`'s inline
+      ResultJson hand-off and every other caller drew the key raw. The string check is now `textCarriesKind`: whole kind
+      JSON, or a kind region by `markdownCarriesKind` (outside quoted source, markdown-escaped key too). `isKindJsonText`
+      keeps its meaning (the gate before a whole-text `JSON.parse`). Guards `value-carries-kind.test.ts` (5 failed before)
+      + `structured-value/__tests__/kind-data-gate-embedded-region.test.tsx` (3 failed before).
+- [x] H2. Leak sentinel: only what changed is read (added node / changed text's element + ~64 chars of sibling context,
+      never the parent it landed in); work runs in idle slices (`requestIdleCallback`, else `setTimeout`) of
+      `maxCharsPerSlice`; unfinished work (the initial full-page scan, a huge addition) carries forward, nothing is
+      dropped. Guards `kind-leak-sentinel.test.ts` H2a ×2 + H2b (3 failed before) + a cost guard (appending to a 2,500-row
+      list reads < 2,000 chars) + split-token guard.
+- [x] H3. DOM frame judge: (a) an EMPTY frame fails (`verdict.failed = raw || empty`) — it found a live header-only
+      table drawing nothing (`StreamingTableRenderer` now draws its `RegionSkeleton`) and a matrix stand-in component
+      returning null; (b) `frameHoldsKind` reads `\_\_kind`; (c) the matrix judges EVERY kind frame; midstream judges
+      every kind frame of the historically broken variants (one-line ```json, same-line A5, P8 escaped, A6 array) and
+      the transition sampler (`transitionKindFrames`: every renderer-branch change + the frame after, first/last, every
+      4th) over all 56 streams. Every frame of all 56 streams (30,795 frames) was run once and passes, but takes ~9 min —
+      over the suite budget, so G2 stays sampled; (d) IntersectionObserver / matchMedia / TooltipProvider so CodeBlock
+      draws; SELF-TEST `dom-frame-judge-self-test.test.tsx` plants a raw ```json kind card (CodeBlock mid-stream) and an
+      empty frame and proves the judge FAILS on both (the card failed to draw before the fix). Heap: one shared container
+      + unlinked frames (jsdom's nwsapi cache kept every frame alive, ~1 MB/frame → OOM).
+- [x] H4. `JsonBlock` passes `showSource` only when its content is kindless by the detector (or the surface shows kind JSON
+      on purpose, `allowConvertToShape={false}`), so a kind routed into the card is reported, not whitelisted. Guard
+      `JsonBlock.kind-route.test.tsx` (2 failed before).
+- [x] H5. Pinned / read-only served fields (`ServedFieldControl`) and list-change `update` diffs draw a kind-carrying value
+      through `KindValueFrontDoor` at inline density. Guards `served-form/__tests__/read-only-kind-value-never-raw.test.tsx`
+      (4 failed before) + `list-change-proposals/__tests__/proposed-value-kind-never-raw.test.tsx` (failed before). The
+      approval card's `formatPlain` only receives values the detector cleared — closed by H1; guard: a prose-before-fence
+      context string in `interrupt-context-kind-door.test.tsx` (failed with the pre-H1 check).
