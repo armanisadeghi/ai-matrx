@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-05T07:39:14.971Z",
+  "generated_at": "2026-10-05T07:55:32.406Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -3068,6 +3068,12 @@
       "checksum": "def7ee3f2bed49c6ed49eb1cfca30e964641c2b98e8225d43171022d8de823df",
       "applied_at": "2026-10-05 04:42:29.554504+00"
     },
+    "migrations/campaign/fts5c_a_a_contacts_birth_date_and_tax_id_save_from_the_one_form.sql": {
+      "source": "matrx-frontend",
+      "filename": "fts5c_a_a_contacts_birth_date_and_tax_id_save_from_the_one_form.sql",
+      "checksum": "f9764f56889fc4f40692cf419f59fe4dc1bd174bf1c3bd90181351da36e3bd78",
+      "applied_at": "2026-10-05 07:55:31.514266+00"
+    },
     "migrations/campaign/g0a_has_permission_for_declares_its_door.sql": {
       "source": "matrx-frontend",
       "filename": "g0a_has_permission_for_declares_its_door.sql",
@@ -5407,6 +5413,12 @@
       "filename": "scopesfts1g_the_scope_switches_are_retired_with_their_instruments.sql",
       "checksum": "2c9a73b3c7e5fd483a44eeaa6ae0843cd6a4f149dc1a0c65b1c409c92ff6d0e9",
       "applied_at": "2026-10-05 07:21:03.622748+00"
+    },
+    "migrations/campaign/scopesfts1h_the_scope_door_register_forgets_the_dropped_doors.sql": {
+      "source": "matrx-frontend",
+      "filename": "scopesfts1h_the_scope_door_register_forgets_the_dropped_doors.sql",
+      "checksum": "805d1ba8593975e330ec70bbf6755a626c4d1d8d00cd1830d229d99fba624f12",
+      "applied_at": "2026-10-05 07:53:20.736934+00"
     },
     "migrations/campaign/scopesg_the_agent_handoff_reads_each_tables_fields_by_its_own_key.sql": {
       "source": "matrx-frontend",
