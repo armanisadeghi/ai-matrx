@@ -231,7 +231,8 @@ export function buildConsentPlan({
   // that would replace the credential backing the person's picked files.
   // Use a separate canonical connection for YouTube, even for the same Google
   // identity. Never silently discard another product selected in this press.
-  const youtubeWanted = wanted.some(({ product }) => product.key === "youtube");
+  const isolatedProduct = wanted.find(({ product }) => product.key === "youtube")?.product;
+  const youtubeWanted = isolatedProduct !== undefined;
   if (youtubeWanted && wanted.length > 1) {
     return {
       request: null,
@@ -239,7 +240,7 @@ export function buildConsentPlan({
         productKey: product.key,
         productName: product.name,
         reason:
-          "Connect YouTube separately from the other selected Google products. Your existing connections are unchanged.",
+          `Connect ${isolatedProduct.name} separately from the other selected Google products. Your existing connections are unchanged.`,
       })),
       alreadyGranted,
       empty: true,

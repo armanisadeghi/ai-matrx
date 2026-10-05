@@ -119,7 +119,10 @@ export function consentRequestSentence(
   request: ConsentRequest,
 ): string {
   if (request.connectionPurpose === "youtube_isolated") {
-    return "Google will ask only for YouTube channel and analytics access in a separate connection for this account. Your other Google connections stay as they are.";
+    // The product's name is the provider's own declaration, never typed here.
+    const isolated =
+      request.products.map((product) => product.name).join(", ") || "this product";
+    return `Google will ask only for ${isolated} access in a separate connection for this account. Your other Google connections stay as they are.`;
   }
   const label =
     request.products.length === 1
