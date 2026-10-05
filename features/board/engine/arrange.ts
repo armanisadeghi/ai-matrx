@@ -214,8 +214,11 @@ export interface TypeBlock {
  * Arrange by type: items of one group sit together, groups in `order` (frames
  * first, unknown groups last by name), each group in rows of a shared column
  * width so every block lines up, in the reading order people already see.
- * `groupGap` is the space between blocks (room for a frame label when the
- * blocks will be framed).
+ * Blocks flow like words on shelves: a block goes beside the previous one when
+ * it fits the shelf (`columns` cells wide), else starts the next shelf — so a
+ * board of many single-item types reads as a few rows, never one tall column
+ * of singletons. Frames stay a shelf of their own. `groupGap` is the space
+ * between blocks (room for a frame label when the blocks will be framed).
  */
 export function arrangeByType(
   items: readonly TypedPlaced[],
@@ -236,27 +239,48 @@ export function arrangeByType(
   const keys = [...groups.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
   const columns = Math.max(1, Math.round(opts.columns ?? Math.ceil(Math.sqrt(items.length))));
   const cellW = Math.max(...items.filter((i) => i.group !== FRAME_GROUP).map((i) => i.rect.w), 0);
+  // A shelf holds `columns` single-cell blocks side by side.
+  const shelfW = columns * cellW + (columns - 1) * groupGap;
 
-  const placed: Placed[] = [];
-  const blocks: TypeBlock[] = [];
-  let y = start.y;
-  for (const key of keys) {
+  // Each block laid out at (0, 0) first: its size decides where it goes.
+  const laid = keys.map((key) => {
     const list = groups.get(key)!;
-    const top = y;
-    let right = start.x;
+    const at: Placed[] = [];
+    let y = 0;
+    let w = 0;
     for (let r = 0; r * columns < list.length; r++) {
       const row = list.slice(r * columns, r * columns + columns);
-      let x = start.x;
+      let x = 0;
       for (const i of row) {
-        placed.push({ id: i.id, rect: { ...i.rect, x, y } });
+        at.push({ id: i.id, rect: { ...i.rect, x, y } });
         // Frames keep their own width; tiles share one column width.
         x += (key === FRAME_GROUP ? i.rect.w : cellW) + gap;
-        right = Math.max(right, x - gap);
+        w = Math.max(w, x - gap);
       }
       y += Math.max(...row.map((i) => i.rect.h)) + gap;
     }
-    blocks.push({ group: key, ids: list.map((i) => i.id), rect: { x: start.x, y: top, w: right - start.x, h: y - gap - top } });
-    y += groupGap - gap;
+    return { key, ids: list.map((i) => i.id), at, w, h: y - gap };
+  });
+
+  const placed: Placed[] = [];
+  const blocks: TypeBlock[] = [];
+  let x = start.x;
+  let y = start.y;
+  let shelfH = 0;
+  let prevFrames = false;
+  for (const b of laid) {
+    const isFrames = b.key === FRAME_GROUP;
+    const used = x > start.x;
+    if (used && (isFrames || prevFrames || x - start.x + b.w > shelfW)) {
+      x = start.x;
+      y += shelfH + groupGap;
+      shelfH = 0;
+    }
+    for (const p of b.at) placed.push({ id: p.id, rect: { ...p.rect, x: p.rect.x + x, y: p.rect.y + y } });
+    blocks.push({ group: b.key, ids: b.ids, rect: { x, y, w: b.w, h: b.h } });
+    x += b.w + groupGap;
+    shelfH = Math.max(shelfH, b.h);
+    prevFrames = isFrames;
   }
   return { placed, blocks };
 }
@@ -267,6 +291,20 @@ export type ArrangeCommand =
   | { kind: "distribute"; axis: DistributeAxis }
   | { kind: "by-type" }
   | { kind: "frames-by-type" };
+
+/**
+ * The part of a board a selection arrangement works on: the selected frames,
+ * every tile inside one of them (it rides along), and the selected tiles.
+ */
+export function selectionScene<T extends Placed>(
+  scene: { tiles: readonly T[]; frames: readonly Placed[] },
+  only: readonly string[],
+): { tiles: T[]; frames: Placed[] } {
+  const chosen = new Set(only);
+  const frames = scene.frames.filter((f) => chosen.has(f.id));
+  const tiles = scene.tiles.filter((t) => chosen.has(t.id) || (frames.length > 0 && frameOf(t.rect, frames) !== null));
+  return { tiles, frames };
+}
 
 /** Padding a type frame keeps around its tiles, and the space between framed blocks (label included). */
 const TYPE_FRAME_PADDING = 64;
@@ -282,7 +320,10 @@ export function planArrange(
   scene: { tiles: readonly TypedPlaced[]; frames: readonly Placed[] },
   command: ArrangeCommand,
   order: readonly string[] = [],
+  /** Arrange only these (a multi-selection): selected frames still carry the tiles inside them. */
+  only?: readonly string[],
 ): { moves: { id: string; x: number; y: number }[]; frames: { group: string; rect: Rect }[] } {
+  if (only) scene = selectionScene(scene, only);
   const { units, members } = boardUnits(scene);
   if (units.length === 0) return { moves: [], frames: [] };
   const groupOf = new Map(scene.tiles.map((t) => [t.id, t.group]));

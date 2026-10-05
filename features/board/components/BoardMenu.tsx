@@ -54,6 +54,14 @@ export interface TileMenuActions {
   removeLabel?: string;
 }
 
+/** What the host can do to a frame. */
+export interface FrameMenuActions {
+  /** Delete the frame only; its tiles stay. */
+  remove?: (id: string) => void;
+  /** Delete the frame and every tile inside it. */
+  removeWithContents?: (id: string) => void;
+}
+
 function optionalItems(id: string, actions: TileMenuActions): ContextMenuExtraSection["items"] {
   const items: ContextMenuExtraSection["items"] = [];
   const { park, saveAndClose, remove, removeLabel = "Delete from board…" } = actions;
@@ -73,10 +81,13 @@ export function BoardMenu({
   wheelMode,
   onWheelMode,
   onArrange,
+  frameActions,
   children,
 }: {
   store: BoardCameraStore | null;
   actions: TileMenuActions;
+  /** A frame's own actions (right-click on its title strip or border). */
+  frameActions?: FrameMenuActions;
   parked: { id: string; title: string }[];
   onUnpark: (id: string) => void;
   wheelMode: WheelMode;
@@ -85,10 +96,32 @@ export function BoardMenu({
   onArrange?: (command: ArrangeCommand) => void;
   children: ReactNode;
 }) {
-  const [target, setTarget] = useState<{ id: string; title: string } | null>(null);
+  const [target, setTarget] = useState<{ id: string; title: string; frame: boolean } | null>(null);
+  // How many are selected when the menu opens: Arrange acts on 2+ selected, else the board.
+  const [selectedCount, setSelectedCount] = useState(0);
 
   const sections: ContextMenuExtraSection[] = [];
-  if (target) {
+  if (target?.frame) {
+    const items: ContextMenuExtraSection["items"] = [
+      { kind: "item", id: "frame-fly", label: "Fly to", icon: Crosshair, onSelect: () => store?.fitItem(`frame:${target.id}`) },
+    ];
+    if (frameActions?.remove) {
+      const remove = frameActions.remove;
+      items.push({ kind: "item", id: "frame-delete", label: "Delete frame", icon: Trash2, onSelect: () => remove(target.id) });
+    }
+    if (frameActions?.removeWithContents) {
+      const removeAll = frameActions.removeWithContents;
+      items.push({
+        kind: "item",
+        id: "frame-delete-all",
+        label: "Delete with contents",
+        icon: Trash2,
+        destructive: true,
+        onSelect: () => removeAll(target.id),
+      });
+    }
+    sections.push({ id: "board-frame", label: target.title, icon: Frame, primary: true, anchor: "after-clipboard", items });
+  } else if (target) {
     sections.push({
       id: "board-tile",
       label: target.title,
@@ -114,7 +147,7 @@ export function BoardMenu({
     items: [
       { kind: "item", id: "fit", label: "Fit everything", icon: Maximize, hint: "⇧1", onSelect: () => store?.fitAll() },
       { kind: "item", id: "zoom-100", label: "Zoom to 100%", icon: ScanSearch, hint: "⇧0", onSelect: () => zoomTo(1) },
-      ...(onArrange ? [arrangeMenu(onArrange)] : []),
+      ...(onArrange ? [arrangeMenu(onArrange, selectedCount)] : []),
       {
         kind: "submenu",
         id: "wheel",
@@ -149,15 +182,28 @@ export function BoardMenu({
       sourceFeature="ai-results"
       extraSections={sections}
       resolveContextOnOpen={(el) => {
+        const frame = el?.closest<HTMLElement>("[data-board-frame-strip], [data-board-frame-border]")?.closest<HTMLElement>("[data-board-frame]");
         const tile = el?.closest<HTMLElement>("[data-board-card], [data-board-tile]");
+        // Right-click inside the selection keeps it (Figma); elsewhere it selects what was clicked.
+        const pick = (id: string) => {
+          if (!store?.isSelected(id)) store?.select(id);
+          setSelectedCount(store?.getSelection().length ?? 0);
+        };
+        if (frame?.dataset.boardFrame) {
+          const id = frame.dataset.boardFrame;
+          setTarget({ id, title: frame.dataset.boardTitle ?? "Frame", frame: true });
+          pick(id);
+          return { content: "", title: frame.dataset.boardTitle ?? "Frame" };
+        }
         const id = tile?.dataset.boardCard ?? tile?.dataset.boardTile ?? null;
         if (!tile || !id) {
           setTarget(null);
+          setSelectedCount(store?.getSelection().length ?? 0);
           return null;
         }
         const title = tile.dataset.boardTitle ?? "Tile";
-        setTarget({ id, title });
-        store?.select(id);
+        setTarget({ id, title, frame: false });
+        pick(id);
         const body = tile.querySelector<HTMLElement>("[data-board-body]");
         return { content: body?.innerText ?? "", title };
       }}
@@ -168,7 +214,7 @@ export function BoardMenu({
 }
 
 /** Board → Arrange: the arrange engine's commands, with their shortcuts. */
-function arrangeMenu(run: (command: ArrangeCommand) => void): ContextMenuExtraSection["items"][number] {
+function arrangeMenu(run: (command: ArrangeCommand) => void, selectedCount: number): ContextMenuExtraSection["items"][number] {
   const item = (
     id: string,
     label: string,
@@ -179,7 +225,8 @@ function arrangeMenu(run: (command: ArrangeCommand) => void): ContextMenuExtraSe
   return {
     kind: "submenu",
     id: "arrange",
-    label: "Arrange",
+    // Says what it acts on: 2+ selected → the selection, otherwise the whole board.
+    label: selectedCount > 1 ? `Arrange selection (${selectedCount})` : "Arrange board",
     icon: LayoutGrid,
     children: [
       item("tidy", "Tidy up", LayoutGrid, { kind: "layout", layout: "tidy" }, ARRANGE_SHORTCUT.tidy),

@@ -44,7 +44,10 @@ export function BoardSurface<T extends BoardTileBase & { title: string }>({
         // whose feature surface is registered for the agent right now. The selected tile may be a
         // different one (the person works in another): it is marked `selected` and carries its
         // full values in `board_items`.
+        // With SEVERAL selected none is live by selection alone: each is marked `selected`, and only
+        // a lone selected tile carries its full values (`boardItemsOverview`).
         const selectedId = host.store?.getSelected() ?? null;
+        const selection = new Set(host.store?.getSelection() ?? []);
         const liveId = host.store?.getFocused() ?? host.store?.getEditing() ?? selectedId;
         const rows = all.map((t) => {
           const described = host.describe(t);
@@ -55,7 +58,7 @@ export function BoardSurface<T extends BoardTileBase & { title: string }>({
             surface: described.surface ?? null,
             live: t.id === liveId,
             stored_basics: host.storedBasics?.(t) ?? null,
-            ...(t.id === selectedId ? { selected: true } : {}),
+            ...(selection.has(t.id) ? { selected: true } : {}),
             ...(parked.has(t.id) ? { parked: true } : {}),
             ...(removed.has(t.id) ? { removed: true } : {}),
           };

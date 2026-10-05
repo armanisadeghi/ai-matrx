@@ -83,6 +83,7 @@ export class BoardCameraStore {
   private tierListeners = new Set<Listener>();
   private visibleListeners = new Map<string, Set<Listener>>();
   private selectionListeners = new Set<Listener>();
+  private itemListeners = new Set<Listener>();
   private focusListeners = new Set<Listener>();
   private focused: string | null = null;
   /** The camera to return to when focus mode exits. */
@@ -222,7 +223,14 @@ export class BoardCameraStore {
     if (!this.items.has(id)) return;
     this.items.set(id, rect);
     this.scheduleCoarse();
+    for (const l of this.itemListeners) l();
   }
+
+  /** Any item's rect changed, or one came or went. For ONE leaf (the selection box), never per tile. */
+  subscribeItems = (l: Listener): (() => void) => {
+    this.itemListeners.add(l);
+    return () => this.itemListeners.delete(l);
+  };
 
   registerItem(id: string, rect: Rect): () => void {
     this.items.set(id, rect);
@@ -231,8 +239,10 @@ export class BoardCameraStore {
       this.lastNeededAt.set(id, performance.now());
     }
     this.scheduleCoarse();
+    for (const l of this.itemListeners) l();
     return () => {
       this.items.delete(id);
+      for (const l of this.itemListeners) l();
       this.visible.delete(id);
       this.life.delete(id);
       this.lastNeededAt.delete(id);

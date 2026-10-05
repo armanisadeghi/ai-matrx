@@ -573,6 +573,10 @@ export function BoardDemo({
     toast("Deleted", { action: { label: "Undo", onClick: tiles.undo } });
   };
 
+  // Group gestures (multi-selection drag, frame with its tiles, nudges): one undo step each.
+  const dragMany = tiles.dragMany;
+  useEffect(() => store?.registerMover({ dragMany }), [store, dragMany]);
+
   useBoardKeys({
     undo: tiles.undo,
     redo: tiles.redo,

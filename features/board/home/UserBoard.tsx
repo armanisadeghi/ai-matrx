@@ -72,6 +72,7 @@ import { AddMenu, StartPanel } from "./AddMenu";
 import { UnavailableItemBody } from "./UnavailableItemBody";
 import { StatusChip } from "../components/TileFace";
 import { runArrange } from "../board/arrange-board";
+import { groupMoveSet } from "../engine/selection";
 import type { ArrangeCommand } from "../engine/arrange";
 import type { ItemStatus, ItemStatusDoor } from "../items/types";
 
@@ -500,23 +501,56 @@ export function UserBoard({
     if (store?.getSelected() === id) store.select(null);
     toast(`Deleted frame "${frame.title}" — its tiles stay`, { action: { label: "Undo", onClick: board.undo } });
   };
-  const deleteSelected = () => {
-    const id = store?.getSelected();
-    if (!id) return;
-    if (board.shapes.some((sh) => sh.id === id)) board.removeShape(id);
-    else if (board.frames.some((f) => f.id === id)) deleteFrame(id);
-    else if (tileOf(id)) takeOff(id);
+  // "Delete with contents" (a frame's menu): the frame and every tile inside it, one undo step.
+  const deleteFrameWithContents = (id: string) => {
+    const frame = board.frames.find((f) => f.id === id);
+    if (!frame) return;
+    const inside = groupMoveSet([id], store?.getItems() ?? new Map()).keys();
+    const tiles = [...inside].filter((x) => tileOf(x));
+    board.removeMany([...tiles, id]);
+    store?.select(null);
+    toast(`Deleted frame "${frame.title}" and ${tiles.length === 1 ? "its tile" : `its ${tiles.length} tiles`}`, {
+      action: { label: "Undo", onClick: board.undo },
+    });
   };
-  // Arrange (Board menu → Arrange, and its keys): frames move with their tiles, one undo step.
+  // Delete / Backspace: everything selected, ONE undo step. A frame goes alone — its tiles
+  // stay unless they were selected too ("Delete with contents" is in the frame's menu).
+  const deleteSelected = () => {
+    const ids = store?.getSelection() ?? [];
+    if (ids.length === 0) return;
+    if (ids.length === 1) {
+      const id = ids[0];
+      if (board.shapes.some((sh) => sh.id === id)) board.removeShape(id);
+      else if (board.frames.some((f) => f.id === id)) deleteFrame(id);
+      else if (tileOf(id)) takeOff(id);
+      return;
+    }
+    const tiles = ids.filter((id) => tileOf(id));
+    const frames = ids.filter((id) => board.frames.some((f) => f.id === id));
+    board.removeMany(ids);
+    store?.select(null);
+    const parts = [
+      tiles.length ? `${tiles.length} ${tiles.length === 1 ? "tile" : "tiles"}` : "",
+      frames.length ? `${frames.length} ${frames.length === 1 ? "frame" : "frames"}` : "",
+    ].filter(Boolean);
+    toast(`Took ${parts.join(" and ")} off the board`, { action: { label: "Undo", onClick: board.undo } });
+  };
+  // Arrange (Board menu → Arrange, and its keys): 2+ selected → the selection, else the whole
+  // board; frames move with their tiles, one undo step.
   const arrangeBoard = (command: ArrangeCommand) => {
+    const selection = store?.getSelection() ?? [];
     const moved = runArrange(board, command, {
       groupOf: (t) => itemTypeFor(t.source)?.key ?? "unavailable",
       order: BOARD_ITEM_TYPES.map((t) => t.key),
       frameTitle: (group) => typeFrameTitle(BOARD_ITEM_TYPES.find((t) => t.key === group)?.label),
       root: rootRef.current,
+      ...(selection.length > 1 ? { only: selection } : {}),
     });
     if (moved === 0) toast("Already arranged that way");
   };
+  // Group gestures (a multi-selection drag, a frame carrying its tiles, arrow nudges) move
+  // through the board model as one undo step.
+  useEffect(() => store?.registerMover({ dragMany: board.dragMany }), [store, board]);
   useBoardKeys({
     undo: board.undo,
     redo: board.redo,
@@ -567,6 +601,7 @@ export function UserBoard({
       <BoardMenu
         store={store}
         actions={{ park, remove: takeOff, removeLabel: "Take off this board" }}
+        frameActions={{ remove: deleteFrame, removeWithContents: deleteFrameWithContents }}
         parked={parkedTiles.map((t) => ({ id: t.id, title: t.title }))}
         onUnpark={unpark}
         wheelMode={wheelMode}
@@ -639,7 +674,7 @@ export function UserBoard({
             }
           >
             {layout.frames.map((f) => (
-              <BoardFrameView key={f.id} {...f} onRemove={deleteFrame} />
+              <BoardFrameView key={f.id} {...f} onRemove={deleteFrame} onResize={board.resizeTile} />
             ))}
             <ShapesLayer shapes={layout.shapes} />
             {layout.connections.map((c) =>
@@ -831,7 +866,7 @@ function BoardItemTile({
         sleeps={type?.sleeps ?? false}
         actions={
           <>
-            <TileCommentDoor type={type} source={source} title={title} boardRecord={boardRecord} />
+            <TileCommentDoor tileId={id} type={type} source={source} title={title} boardRecord={boardRecord} />
             {href ? (
             <a
               href={href}
@@ -867,16 +902,19 @@ function BoardItemTile({
 /**
  * The tile's ONE comment door. A record tile opens its record's own thread —
  * the same thread its page shows. Board-only content (a write-up, an image, a
- * web page) and record types with no thread of their own post on the BOARD's
- * thread, and the popover says so; the remark names the tile. A record that
- * does not exist yet (a draft) has nothing to comment on: no door.
+ * web page) and record types with no thread of their own comment on the board
+ * record, anchored to the tile (`part_anchor` `tile:<tile id>`): the tile's
+ * thread shows only that tile's comments, and the remark names the tile. A
+ * record that does not exist yet (a draft) has nothing to comment on: no door.
  */
 function TileCommentDoor({
+  tileId,
   type,
   source,
   title,
   boardRecord,
 }: {
+  tileId: string;
   type: BoardItemType | null;
   source: NodeSource;
   title: string;
@@ -893,7 +931,7 @@ function TileCommentDoor({
       token={BOARD_TOKEN}
       id={boardRecord.id}
       title={`${boardRecord.title} — tile “${title}”`}
-      note="Posted on the board"
+      part={{ key: `tile:${tileId}`, label: title }}
       showCount={false}
       className="h-7"
     />

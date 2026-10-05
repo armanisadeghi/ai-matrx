@@ -259,6 +259,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
     const parkedIds = new Set(now.parked.map((t) => t.id));
     const removedIds = new Set((now.removed ?? []).map((t) => t.id));
     const selected = store?.getSelected() ?? null;
+    const selection = new Set(store?.getSelection() ?? []);
     const focused = store?.getFocused() ?? null;
     const raw: RawBoardTile[] = allTiles().map((t) => {
       const d = host.describe(t);
@@ -269,7 +270,7 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
         status: d.status ?? null,
         text: withText ? tileText(t.id) : "",
         inView: !!view && !parkedIds.has(t.id) && !removedIds.has(t.id) && rectsIntersect(view, t.rect),
-        selected: selected === t.id,
+        selected: selection.has(t.id),
         focused: focused === t.id,
       };
     });
@@ -620,7 +621,22 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   /** Let a reached tile sleep again a moment after the call, once its result is read. */
   const releaseLater = (release: () => void) => setTimeout(release, AGENT_HOLD_MS);
 
+  /** The tile's "Agent working" chip while this call acts on it (`beginAgentWork`). */
+  const working = (id: unknown): (() => void) => {
+    const tile = find(id);
+    return tile && store ? store.beginAgentWork(tile.id) : () => {};
+  };
+
   const openItem = async (input: unknown, call?: SurfaceToolCall) => {
+    const done = working(record(input).id);
+    try {
+      return await openItemNow(input, call);
+    } finally {
+      done();
+    }
+  };
+
+  const openItemNow = async (input: unknown, call?: SurfaceToolCall) => {
     const reached = await reachItem(record(input).id, true);
     if (isFailure(reached)) return reached;
     try {
@@ -643,6 +659,15 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
   };
 
   const itemAct = async (input: unknown, call?: SurfaceToolCall) => {
+    const done = working(record(input).id);
+    try {
+      return await itemActNow(input, call);
+    } finally {
+      done();
+    }
+  };
+
+  const itemActNow = async (input: unknown, call?: SurfaceToolCall) => {
     const a = record(input);
     const reached = await reachItem(a.id, false);
     if (isFailure(reached)) return reached;
@@ -744,7 +769,17 @@ export function useBoardAgentTools<T extends BoardTileBase & { title: string }>(
             runtime &&
             (!query.surfaceName || runtime.surfaceName === query.surfaceName) &&
             listAgentWritableTargets(capture).some((entry) => entry.target.name === query.targetName);
-          if (capture && fits) return { source: capture, release: () => releaseLater(release) };
+          if (capture && fits) {
+            // apply_surface_write on a handed item: its chip says the agent is on it until the write lands.
+            const done = store.beginAgentWork(id);
+            return {
+              source: capture,
+              release: () => {
+                done();
+                releaseLater(release);
+              },
+            };
+          }
           release();
           console.warn("[board] a handed item did not take the agent's write", {
             id,

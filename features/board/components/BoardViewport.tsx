@@ -6,13 +6,15 @@
  *
  * Input (engine/wheel-input.ts decides what a scroll means):
  *   mouse wheel ................... zoom at cursor   pinch / ⌘-ctrl + scroll ... zoom
- *   trackpad two-finger swipe ..... pan              drag empty space ......... pan
+ *   trackpad two-finger swipe ..... pan              drag empty space ......... marquee-select (a finger pans)
+ *   shift/⌘-click a tile .......... add / remove     ⌘A ....................... select all
  *   space + drag, middle drag ..... pan anywhere     shift+1 / shift+2 ........ fit all / selection
  *   shift+0 ....................... 100%             + / - .................... zoom
  *   enter ......................... focus selected   esc ...................... leave focus / tool, then deselect
  *   V H T F N P R O L ⇧L .......... tools (engine/tools.ts)   ⇧G ........... layout guides
  *   ⌘' / Ctrl+' ................... snap to grid      hold ⌘ / Ctrl / Alt while dragging ... no snapping
- *   arrows ........................ nudge the view (in focus: previous / next tile)
+ *   arrows ........................ nudge the selection (shift ×10); nothing selected: move the view
+ *                                   (in focus: previous / next tile)
  * Scroll over a TILE never moves the board (engine/wheel-input.ts `routeWheel`):
  * content that can scroll scrolls, content that can't doesn't. Pinch and
  * ctrl/⌘+scroll zoom the board everywhere, tiles included (Figma).
@@ -32,6 +34,7 @@ import {
   cameraFromHash,
   cameraToHash,
   panBy,
+  screenToWorld,
   wheelZoomFactor,
   zoomAt,
 } from "../engine/camera";
@@ -44,6 +47,8 @@ import { type ScreenRect, clipToVisible, panToReveal, shouldReveal } from "../en
 import { FocusHostContext, BoardCameraStoreContext } from "../engine/react";
 import { FocusLayer } from "./FocusLayer";
 import { SnapGuidesLayer } from "./SnapGuidesLayer";
+import { SelectionBox } from "./SelectionBox";
+import { allSelectable, groupMoveSet, marqueeHits, rectFromCorners, shiftMoves } from "../engine/selection";
 import { GRID_SIZE } from "../engine/snapping";
 import { loadSnapSettings, saveSnapSettings } from "../engine/snap-preference";
 
@@ -52,6 +57,10 @@ const HASH_THROTTLE_MS = 400;
 const REVEAL_MARGIN_PX = 24;
 const REVEAL_MS = 140;
 const REVEAL_SETTLE_MS = 700;
+/** World px an arrow key nudges the selection (shift: ×10); with snap to grid, one grid cell. */
+const NUDGE_PX = 8;
+/** Screen px a press must travel before it is a marquee rather than a click. */
+const MARQUEE_SLOP_PX = 3;
 
 interface BoardViewportProps {
   initialCamera?: Camera;
@@ -106,6 +115,7 @@ export function BoardViewport({
   const worldRef = useRef<HTMLDivElement>(null);
   const zoomVarRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
+  const marqueeRef = useRef<HTMLDivElement>(null);
 
   // ── frame listener: camera → DOM ─────────────────────────────────────────
   useEffect(() => {
@@ -378,6 +388,20 @@ export function BoardViewport({
     let panning = false;
     let pinchDist = 0;
     let spaceDown = false;
+    // A select-tool drag on empty board draws a marquee (Figma / tldraw); a finger still pans.
+    let marquee: {
+      pointerId: number;
+      sx: number;
+      sy: number;
+      start: { x: number; y: number };
+      base: readonly string[];
+      drawn: boolean;
+    } | null = null;
+    const endMarquee = () => {
+      marquee = null;
+      const el = marqueeRef.current;
+      if (el) el.style.display = "none";
+    };
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && boardOwnsKey(e.target)) {
@@ -398,18 +422,49 @@ export function BoardViewport({
       // Only the bare plane starts a pan. Tiles, chrome and any control keep
       // their own pointer input — capturing it here would swallow their clicks.
       const onBackground = !(e.target as HTMLElement).closest(
-        "[data-board-tile], [data-board-chrome], button, a, input, textarea, select, canvas",
+        "[data-board-tile], [data-board-chrome], [data-board-frame-strip], [data-board-frame-border], [data-board-resize], button, a, input, textarea, select, canvas",
       );
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
         pinchDist = Math.hypot(a.x - b.x, a.y - b.y);
         panning = false;
+        endMarquee();
         return;
       }
       const onChrome = !!(e.target as HTMLElement).closest("[data-board-chrome]");
       const handTool = store.getTool() === "hand";
       // A creation tool owns a left-press on the board (the capture layer).
       const creating = isCreationTool(store.getTool()) && e.button === 0 && !spaceDown;
+      const selectTool = store.getTool() === "select";
+      if (
+        !onChrome &&
+        !creating &&
+        onBackground &&
+        selectTool &&
+        e.button === 0 &&
+        !spaceDown &&
+        e.pointerType !== "touch" &&
+        pointers.size === 1
+      ) {
+        const additive = e.shiftKey || e.metaKey;
+        if (!additive) store.select(null);
+        const active = document.activeElement;
+        if (active instanceof HTMLElement && active.closest("[data-board-tile], [data-board-card]")) active.blur();
+        const bounds = root.getBoundingClientRect();
+        const sx = e.clientX - bounds.left;
+        const sy = e.clientY - bounds.top;
+        marquee = {
+          pointerId: e.pointerId,
+          sx,
+          sy,
+          start: screenToWorld(store.getCamera(), sx, sy),
+          base: additive ? store.getSelection() : [],
+          drawn: false,
+        };
+        root.setPointerCapture(e.pointerId);
+        e.preventDefault();
+        return;
+      }
       if (
         !onChrome &&
         !creating &&
@@ -454,10 +509,30 @@ export function BoardViewport({
         pinchDist = dist;
         return;
       }
+      if (marquee && marquee.pointerId === e.pointerId) {
+        const bounds = root.getBoundingClientRect();
+        const sx = next.x - bounds.left;
+        const sy = next.y - bounds.top;
+        if (!marquee.drawn && Math.hypot(sx - marquee.sx, sy - marquee.sy) < MARQUEE_SLOP_PX) return;
+        marquee.drawn = true;
+        const el = marqueeRef.current;
+        if (el) {
+          el.style.display = "";
+          el.style.left = `${Math.min(sx, marquee.sx)}px`;
+          el.style.top = `${Math.min(sy, marquee.sy)}px`;
+          el.style.width = `${Math.abs(sx - marquee.sx)}px`;
+          el.style.height = `${Math.abs(sy - marquee.sy)}px`;
+        }
+        const area = rectFromCorners(marquee.start, screenToWorld(store.getCamera(), sx, sy));
+        const hits = marqueeHits(area, store.getItems(), marquee.start);
+        store.setSelection(marquee.base.length ? [...marquee.base, ...hits] : hits);
+        return;
+      }
       if (panning) store.setCamera(panBy(store.getCamera(), next.x - prev.x, next.y - prev.y));
     };
     const onUp = (e: PointerEvent) => {
       pointers.delete(e.pointerId);
+      if (marquee && marquee.pointerId === e.pointerId) endMarquee();
       if (pointers.size < 2) pinchDist = 0;
       if (panning && pointers.size === 0) {
         panning = false;
@@ -468,6 +543,7 @@ export function BoardViewport({
     // The window losing focus mid-press ends every press (its release goes elsewhere).
     const onBlur = () => {
       pointers.clear();
+      endMarquee();
       pinchDist = 0;
       if (panning) {
         panning = false;
@@ -520,6 +596,13 @@ export function BoardViewport({
       // A key inside a tile's content (a grid cell, an editor, a control)
       // belongs to that content: Enter there never opens full screen.
       if (e.key !== "Escape" && !boardOwnsKey(e.target)) return;
+      // ⌘A / Ctrl+A — select every tile and frame on the board.
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === "KeyA" && !isTyping(e.target)) {
+        if (store.getEditing() && !store.getFocused()) return; // the tile's content owns ⌘A
+        e.preventDefault();
+        store.setSelection(allSelectable(store.getItems()));
+        return;
+      }
       // ⌘' / Ctrl+' — snap to grid (tldraw's grid shortcut; ⇧G is Layout guides).
       if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.code === "Quote" && !isTyping(e.target)) {
         e.preventDefault();
@@ -567,7 +650,16 @@ export function BoardViewport({
         if (store.getTool() !== "select") store.setTool("select");
         else store.select(null);
       }
-      else if (e.key.startsWith("Arrow")) {
+      else if (e.key.startsWith("Arrow") && store.getSelection().length > 0 && store.getMover()) {
+        // Nudge the selection (Figma): one step, shift ×10; one grid cell with snap to grid.
+        // Successive nudges are one undo step (`dragMany` coalesces like a drag).
+        const unit = (store.getSnapSettings().grid ? GRID_SIZE : NUDGE_PX) * (e.shiftKey ? 10 : 1);
+        const d = { ArrowLeft: [-unit, 0], ArrowRight: [unit, 0], ArrowUp: [0, -unit], ArrowDown: [0, unit] }[e.key];
+        if (!d) return;
+        const set = groupMoveSet(store.getSelection(), store.getItems());
+        if (set.size === 0) return;
+        store.getMover()!.dragMany(shiftMoves(set, d[0], d[1]));
+      } else if (e.key.startsWith("Arrow")) {
         const step = e.shiftKey ? 320 : 80;
         const d = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[
           e.key
@@ -604,9 +696,17 @@ export function BoardViewport({
         <div ref={worldRef} className="absolute left-0 top-0 max-w-none origin-top-left">
           <div ref={zoomVarRef} className="max-w-none">
             {children}
+            <SelectionBox />
             <SnapGuidesLayer />
           </div>
         </div>
+        <div
+          ref={marqueeRef}
+          data-board-marquee
+          aria-hidden
+          className="pointer-events-none absolute z-20 rounded-sm border border-primary bg-primary/10"
+          style={{ display: "none" }}
+        />
         {overlay}
         <FocusLayer onHost={setFocusHost} />
       </div>

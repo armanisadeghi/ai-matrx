@@ -500,6 +500,31 @@ export class BoardStore<T extends BoardTileBase> {
       );
   };
 
+  /**
+   * Remove several things at once — a multi-selection's Delete — as ONE undo
+   * step: tiles (with their connections), frames (never the tiles inside one
+   * unless those are named too) and shapes.
+   */
+  removeMany = (ids: readonly string[]): void =>
+    this.change((s) => {
+      const drop = new Set(ids);
+      const tiles = ids.filter((id) => s.byId[id]);
+      const frames = s.frames.filter((f) => !drop.has(f.id));
+      const shapes = s.shapes.filter((x) => !drop.has(x.id));
+      if (tiles.length === 0 && frames.length === s.frames.length && shapes.length === s.shapes.length) return s;
+      const byId = { ...s.byId };
+      for (const id of tiles) delete byId[id];
+      return {
+        ...s,
+        order: s.order.filter((id) => !drop.has(id)),
+        byId,
+        parked: s.parked.filter((id) => !drop.has(id)),
+        frames,
+        shapes,
+        connections: s.connections.filter((c) => !drop.has(c.from) && !drop.has(c.to)),
+      };
+    });
+
   parkTile = (id: string): (() => void) => {
     this.change((s) => (s.parked.includes(id) ? s : { ...s, parked: [...s.parked, id] }));
     return () => this.unparkTile(id);

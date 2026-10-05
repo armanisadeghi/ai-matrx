@@ -40,11 +40,14 @@ import {
 } from "../engine/tile-gestures";
 import type { PaceTier } from "../engine/lod";
 import { beginSnap } from "../engine/snap-gesture";
+import { boundsOf, groupMoveSet, shiftMoves } from "../engine/selection";
 import {
   FocusHostContext,
+  useIsAgentWorking,
   useIsEditing,
   useIsFocused,
   useIsSelected,
+  useIsSoleSelected,
   usePaceTier,
   useBoardCameraStore,
   useTileLife,
@@ -64,7 +67,7 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Button } from "@/components/ui/button";
 import { type StatusFrom, type TileStatus, useTileStatus } from "../streams/useSourceStatus";
 import type { BoardAccent } from "../items/types";
-import { OverviewCard } from "./TileFace";
+import { OverviewCard, StatusChip } from "./TileFace";
 
 const IDLE_STATUS: StatusFrom = { kind: "static", value: { status: "idle", progress: null } };
 
@@ -179,7 +182,9 @@ export function BoardTile({
 }: BoardTileProps) {
   const store = useBoardCameraStore();
   const paceTier = usePaceTier(id);
+  // In the selection (alone or with others); `sole` = the only one (resize, the live tile).
   const selected = useIsSelected(id);
+  const sole = useIsSoleSelected(id);
   const focused = useIsFocused(id);
   // Content receives input natively only while interacting (or focused).
   const interacting = useIsEditing(id) || focused;
@@ -264,6 +269,35 @@ export function BoardTile({
       } else done();
     };
 
+    // A multi-selection drag: everything selected moves together, a selected
+    // frame carrying its contents; the smart guides snap the group's bounds.
+    // ONE undo step (`dragMany` coalesces); Esc puts it all back; a press that
+    // never moves narrows the selection to this tile (unless it just joined).
+    const groupDrag = (e: PointerEvent, mover: NonNullable<ReturnType<typeof store.getMover>>, keepOnClick: boolean) => {
+      const set = groupMoveSet(store.getSelection(), store.getItems());
+      const box = boundsOf(set.values());
+      if (!box) return null;
+      const px = e.clientX;
+      const py = e.clientY;
+      let moved = false;
+      const snap = beginSnap(store, new Set(set.keys()));
+      return startPointerGesture(e, tile, {
+        onMove: (m) => {
+          if (!moved && Math.hypot(m.clientX - px, m.clientY - py) < 3) return;
+          moved = true;
+          const z = store.getCamera().z;
+          const at = snap.move({ ...box, x: box.x + (m.clientX - px) / z, y: box.y + (m.clientY - py) / z }, m);
+          mover.dragMany(shiftMoves(set, at.x - box.x, at.y - box.y));
+        },
+        onEnd: (how) => {
+          gesture = null;
+          snap.end();
+          if (how === "escape" && moved) mover.dragMany(shiftMoves(set, 0, 0));
+          else if (how === "up" && !moved && !keepOnClick) store.select(id);
+        },
+      });
+    };
+
     const down = (e: PointerEvent) => {
       // ctrl+click is the macOS right-click: the menu's, never a drag.
       if (e.button !== 0 || e.ctrlKey || store.getFocused() === id) return;
@@ -284,9 +318,29 @@ export function BoardTile({
         return; // the control handles its own press
       }
       if (press === "native") return; // native inside
-      store.select(id);
+      // Shift / ⌘-click adds the tile to the selection or takes it out (Figma);
+      // a press on a tile already in a multi-selection keeps it, so the drag
+      // moves them all, and a click there without moving narrows to this one.
+      const additive = (e.shiftKey || e.metaKey) && press !== "select-native";
+      const inGroup = store.isSelected(id) && store.getSelection().length > 1;
+      if (additive) {
+        store.toggleSelected(id);
+        if (!store.isSelected(id)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      } else if (!inGroup) store.select(id);
       if (press === "select-native") return; // a finger scrolls the content
       if (!canMove) return;
+      const mover = store.getMover();
+      if (store.getSelection().length > 1 && mover) {
+        e.preventDefault();
+        e.stopPropagation();
+        gesture?.();
+        gesture = groupDrag(e, mover, additive || !inGroup);
+        return;
+      }
       const from = { px: e.clientX, py: e.clientY, x: rectRef.current.x, y: rectRef.current.y };
       tracker.reset({ x: e.clientX, y: e.clientY, t: e.timeStamp });
       e.preventDefault(); // a move never starts a text selection
@@ -429,7 +483,7 @@ export function BoardTile({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-foreground">{title}</p>
         </div>
-        {!overview && renderStatus?.("header", tier === "read")}
+        {!overview && <TileStatus id={id} variant="header" animate={tier === "read"} renderStatus={renderStatus} />}
         {subtitle && (
           <span className="hidden shrink-0 truncate text-[11px] text-muted-foreground sm:inline">
             {subtitle}
@@ -508,7 +562,7 @@ export function BoardTile({
           accent={accent}
           selected={selected}
           from={statusFrom}
-          status={renderStatus?.("face", false)}
+          status={<TileStatus id={id} variant="face" animate={false} renderStatus={renderStatus} />}
         />
       )}
     </div>
@@ -568,11 +622,36 @@ export function BoardTile({
       {/* At far zoom a tile is a few px on screen and the handles would cover
           it, so a drag would resize instead of move: there, only the
           selected tile shows them (Figma). */}
-      {onResize && !focused && (selected || interacting || tier === "read" || tier === "glance") && (
-        <ResizeHandles id={id} rect={rect} selected={selected || interacting} onResize={onResize} />
+      {/* Resizing is one tile at a time: a tile in a multi-selection shows none. */}
+      {onResize && !focused && (sole || interacting || (!selected && (tier === "read" || tier === "glance"))) && (
+        <ResizeHandles id={id} rect={rect} selected={sole || interacting} onResize={onResize} />
       )}
     </div>
   );
+}
+
+/** What the agent is doing to this item right now. */
+const AGENT_WORKING_STATUS = { tone: "active", label: "Agent working" } as const;
+
+/**
+ * The tile's status chip — a leaf, so a status tick never re-renders the body.
+ * While an agent's tool call acts on this item (`beginAgentWork`) that says so
+ * first; otherwise the item's own status (`BoardItemType.status`).
+ */
+function TileStatus({
+  id,
+  variant,
+  animate,
+  renderStatus,
+}: {
+  id: string;
+  variant: "header" | "face";
+  animate: boolean;
+  renderStatus?: (variant: "header" | "face", animate: boolean) => ReactNode;
+}) {
+  const working = useIsAgentWorking(id);
+  if (working) return <StatusChip status={AGENT_WORKING_STATUS} variant={variant} animate={animate} />;
+  return <>{renderStatus?.(variant, animate)}</>;
 }
 
 /**
@@ -582,7 +661,7 @@ export function BoardTile({
  * and lays a shield over the whole page, so an iframe or editor inside the
  * tile can never steal it.
  */
-function ResizeHandles({
+export function ResizeHandles({
   id,
   rect,
   selected,

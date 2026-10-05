@@ -85,6 +85,8 @@ export interface Board<T extends BoardTileBase> {
   dropTiles: (ids: string[]) => void;
   /** Remove a tile; returns a function that puts it back. */
   removeTile: (id: string) => () => void;
+  /** Remove tiles, frames and shapes together as ONE undoable step (a multi-selection's Delete). */
+  removeMany: (ids: readonly string[]) => void;
   parkTile: (id: string) => () => void;
   unparkTile: (id: string) => void;
   addFrame: (frame: BoardFrame) => void;
@@ -159,6 +161,7 @@ export function useBoard<T extends BoardTileBase>(
     updateTile: store.updateTile,
     dropTiles: store.dropTiles,
     removeTile: store.removeTile,
+    removeMany: store.removeMany,
     parkTile: store.parkTile,
     unparkTile: store.unparkTile,
     addFrame: store.addFrame,

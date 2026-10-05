@@ -331,6 +331,43 @@ describe("the bridge — every board item in two requests", () => {
     expect((tool as { output: Record<string, unknown> }).output).toMatchObject({ ok: true, output: { words: 8 } });
   });
 
+  it("the item's chip says the agent is working while board_item_act acts on it, and clears after", async () => {
+    let during: boolean | null = null;
+    const requestApproval = jest.fn(async () => {
+      during = store.isAgentWorking("colors");
+      return { kind: "approved" as const };
+    });
+    const call: SurfaceToolCall = {
+      conversationId: "conv-1",
+      callId: "call-2",
+      toolName: "board_item_act",
+      agentWrite: { origin: "agent", actorLabel: "Designer", requestApproval },
+      approvedByUser: () => true,
+    };
+    await executeSurfaceClientTool("board_item_act", { id: "colors", target: "note_title_set", value: "Palette" }, { call });
+    expect(during).toBe(true);
+    expect(store.isAgentWorking("colors")).toBe(false);
+    expect(store.isAgentWorking("site")).toBe(false);
+  });
+
+  it("with several selected none is live by selection alone: each is marked selected, none carries full values", async () => {
+    act(() => store.setSelection(["site", "colors"]));
+    await flush();
+    const scope = await getSurfaceRuntimeForName(BOARD_SURFACE_NAME)?.getScope();
+    const overview = scope?.board_items as {
+      live_item_ids: string[];
+      items: Array<{ id: string; selected?: boolean; full_values?: unknown; basics?: unknown }>;
+    };
+    expect(overview.live_item_ids).toEqual([]);
+    for (const id of ["site", "colors"]) {
+      const item = overview.items.find((i) => i.id === id);
+      expect(item?.selected).toBe(true);
+      expect(item?.full_values).toBeUndefined();
+      expect(item?.basics).toBeDefined();
+    }
+    expect(scope?.selected_tile).toBeNull();
+  });
+
   /**
    * THE HANDED ITEM STAYS WRITABLE (real test, 2026-10-02): the agent opened a
    * note, then in one turn sent two `apply_surface_write` edits to it beside a

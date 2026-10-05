@@ -69,6 +69,8 @@ export function runArrange<T extends ArrangeTile>(
     frameTitle: (group: string) => string;
     /** Where the board's tiles are in the DOM (the animation finds them there). */
     root?: ParentNode | null;
+    /** Arrange only these (2+ selected): selected frames carry their tiles. Absent = the whole board. */
+    only?: readonly string[];
   },
 ): number {
   const now = board.read();
@@ -76,7 +78,7 @@ export function runArrange<T extends ArrangeTile>(
     tiles: now.tiles.map((t) => ({ id: t.id, rect: t.rect, group: opts.groupOf(t) })),
     frames: now.frames.map((f) => ({ id: f.id, rect: f.rect })),
   };
-  const plan = planArrange(scene, command, opts.order);
+  const plan = planArrange(scene, command, opts.order, opts.only);
   if (plan.moves.length === 0 && plan.frames.length === 0) return 0;
   const before = new Map<string, Rect>([...scene.tiles, ...scene.frames].map((p) => [p.id, p.rect]));
   const addFrames: BoardFrame[] = plan.frames.map((f) => ({
