@@ -58,6 +58,8 @@ import {
 import { loadKindSources, valueTypeFromJsonSchema } from "./kind-source";
 
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
+import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /** Stable identity for "this surface declares nothing", so effects settle. */
 export const EMPTY_SERVED_INPUTS: ServedInput[] = [];
@@ -332,9 +334,16 @@ export function ServedFieldControl({
         <div>
           <div className="flex items-start gap-1.5 rounded-md border border-border bg-muted/40 px-2 py-1.5">
             <Lock className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
-            <span className="text-xs text-foreground">
-              {formatReadOnly(shown)}
-            </span>
+            {valueCarriesKind(shown) ? (
+              // H5: a pinned kind is drawn as its kind (compact), never as JSON text.
+              <div className="min-w-0 flex-1 text-xs text-foreground">
+                <KindValueFrontDoor value={shown} density="inline" />
+              </div>
+            ) : (
+              <span className="text-xs text-foreground">
+                {formatReadOnly(shown)}
+              </span>
+            )}
           </div>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
             {provenanceLabel(input)}
