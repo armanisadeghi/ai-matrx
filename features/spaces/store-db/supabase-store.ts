@@ -15,8 +15,16 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
+import { defineChannelNamespace, subscribeToRealtimeManager } from "@ai-matrx/realtime";
 import type { Database, Json } from "@/types/database.types";
 import type { SpaceBlock, SpaceDoc, SpaceId, SpaceMedia, SpaceSummary, SpacesStore } from "../contract";
+
+/** One open Space's stored row (content.document UPDATE): a save from another tab, person or page. */
+const spacesDocumentChannel = defineChannelNamespace({
+  namespace: "spaces-document",
+  parts: ["spaceId"],
+  description: "One open Space's stored document row: re-read when another tab, person or page saves it.",
+});
 
 type Db = SupabaseClient<Database>;
 type DocumentRow = Database["content"]["Tables"]["document"]["Row"];
@@ -494,16 +502,29 @@ export class SupabaseSpacesStore implements SpacesStore {
   }
 
   subscribe(id: SpaceId, onChange: (doc: SpaceDoc) => void): () => void {
-    const channel = this.db
-      .channel(`spaces:document:${id}:${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "content", table: "document", filter: `id=eq.${id}` }, () => {
-        void this.get(id).then((doc) => {
+    // On the app's one realtime manager (supabase-realtime skill): a namespace-built topic, reconnect and
+    // tab-wake handled by the package, and a backfill that re-reads the page so a save made while the
+    // socket was down still arrives. The row carries ids only; the page is always re-read through `get`.
+    const reread = () =>
+      void this.get(id).then(
+        (doc) => {
           if (doc) onChange(doc);
-        });
-      })
-      .subscribe();
-    return () => {
-      void this.db.removeChannel(channel);
-    };
+        },
+        () => undefined,
+      );
+    return subscribeToRealtimeManager(() => ({
+      topic: spacesDocumentChannel.topic({ spaceId: id }),
+      postgresChanges: [
+        {
+          event: "UPDATE",
+          schema: "content",
+          table: "document",
+          filter: `id=eq.${id}`,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          onChange: reread,
+        },
+      ],
+      onBackfill: reread,
+    }));
   }
 }
