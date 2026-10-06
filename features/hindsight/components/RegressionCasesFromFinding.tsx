@@ -21,12 +21,12 @@
  *     never offered twice for the same snapshot and the panel answers "did the
  *     check pass?" rather than "a case exists".
  */
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
@@ -175,7 +175,7 @@ export function RegressionCasesFromFinding({ finding }: { finding: Finding }) {
               <span className="font-mono text-xs text-muted-foreground">
                 {snapshotId.slice(0, 8)}
               </span>
-              <CopyButton content={snapshotId} size="xs" tooltip="Copy snapshot id" />
+              <TapTargetCopyButton value={snapshotId} variant="transparent" ariaLabel="Copy snapshot id" />
             </div>
           ))}
         </div>

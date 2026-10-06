@@ -22,6 +22,7 @@
  * reports what was measured, and names who has not been measured yet.
  */
 
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CircleCheck, CircleDot, Loader2, RefreshCw } from "lucide-react";
@@ -29,7 +30,6 @@ import { AlertTriangle, CircleCheck, CircleDot, Loader2, RefreshCw } from "lucid
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { InfoHint } from "@/components/official/InfoHint";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useServerOrganizationId } from "@/lib/api/useServerOrganizationId";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
@@ -137,11 +137,7 @@ function FindingRow({ finding }: { finding: MandateReferenceFinding }) {
         <span className="shrink-0 type-secondary text-muted-foreground">
           {finding.mandate_key}
         </span>
-        <CopyButton
-          content={finding.location}
-          label="Copy finding location"
-          size="sm"
-        />
+        <TapTargetCopyButton value={finding.location} variant="transparent" ariaLabel="Copy finding location" />
       </div>
       {isOpen && finding.sentence ? (
         <p className="mt-1 type-secondary text-destructive">
@@ -708,11 +704,7 @@ export function MandateReferenceBoardView() {
                     <span className="shrink-0 type-secondary text-muted-foreground">
                       {row.mandate_key}
                     </span>
-                    <CopyButton
-                      content={row.location}
-                      label="Copy conversion location"
-                      size="sm"
-                    />
+                    <TapTargetCopyButton value={row.location} variant="transparent" ariaLabel="Copy conversion location" />
                   </div>
                 ))
               ) : (

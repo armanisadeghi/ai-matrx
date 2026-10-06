@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useClipboard } from '@/hooks/useClipboard';
+import { useClipboard } from '@ai-matrx/kit/clipboard';
+import { toast } from '@/lib/toast';
 import useDownloadImage from '@/hooks/images/useDownloadImage';
 
 export interface ImageDimensions {
@@ -36,7 +37,10 @@ interface UseImageResult {
 export const useImage = (src: string, alt: string, sizeKey: keyof typeof DEFAULT_IMAGE_SIZES = 'thumbnail-medium', customDimensions?: Partial<ImageDimensions>): UseImageResult => {
     const [isFullscreen, setIsFullscreen] = useState(false);
     const imageRef = useRef<HTMLImageElement>(null);
-    const { copyImage, copyLink } = useClipboard();
+    const { copyImage, copyLink } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
     const downloadImage = useDownloadImage(src, alt);
     const [zoom, setZoom] = useState(1);
     const [dimensions, setDimensions] = useState<ImageDimensions>({

@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import React, { useState, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { Copy, Check, Code2 } from "lucide-react";
@@ -11,7 +12,6 @@ import {
 import { InstanceUIStateList } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateList";
 import { InstanceUIStateCore } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/components/InstanceUIStateCore";
 import { formatJson } from "@ai-matrx/kit/json-format";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 
 // ─── Copy helper ──────────────────────────────────────────────────────────────
 
@@ -93,7 +93,7 @@ export function InstanceUIStateSliceViewer({
         <span className="text-[11px] text-muted-foreground">
           {Object.keys(sliceState.byConversationId).length} instances
         </span>
-        <CopyButton content={fullJson} size="sm" className="shrink-0" />
+        <CopyButtons label="Content" human={fullJson} size="sm" className="shrink-0" />
         <button
           type="button"
           onClick={() => setShowFullSlice((v) => !v)}

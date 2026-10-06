@@ -11,9 +11,9 @@
  * component must never draw its own title or repeat that summary.
  */
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AlertTriangle, CheckCircle, FileText } from "lucide-react";
 
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { cn } from "@ai-matrx/design-system";
 import { SerpResult } from "@/features/marketing/seo/serp/SerpResult";
 import { SerpFieldChips } from "@/features/marketing/seo/serp/SerpValidation";
@@ -107,14 +107,10 @@ export function SerpToolInline({
                   description={entry.description}
                 />
                 {entry.title ? (
-                  <CopyButton content={entry.title} size="icon" tooltip="Copy title" />
+                  <CopyButtons label="Copy title" human={entry.title} size="icon" />
                 ) : null}
                 {entry.description ? (
-                  <CopyButton
-                    content={entry.description}
-                    size="icon"
-                    tooltip="Copy description"
-                  />
+                  <CopyButtons label="Copy description" human={entry.description} size="icon" />
                 ) : null}
               </div>
             </div>

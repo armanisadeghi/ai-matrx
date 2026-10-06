@@ -1,5 +1,6 @@
 "use client";
 
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { useState } from "react";
 import {
   MatrxDataTable,
@@ -17,7 +18,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import type { AiApi, AiEndpoint, AiModel, AiOffering } from "../../types";
 import type { ReadOutcome } from "@/components/read-state/ReadGate";
@@ -44,7 +44,7 @@ function ProviderModelIdCell({ value }: { value: string }) {
   return (
     <span className="inline-flex min-w-0 items-center">
       <code className="min-w-0 truncate font-mono text-xs">{value}</code>
-      <CopyButton content={value} size="xs" tooltip="Copy provider model ID" />
+      <TapTargetCopyButton value={value} variant="transparent" ariaLabel="Copy provider model ID" />
     </span>
   );
 }

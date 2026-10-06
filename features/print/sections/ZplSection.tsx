@@ -16,7 +16,8 @@ import { Copy, Terminal } from "lucide-react";
 import { LABEL_TEMPLATES, type LabelTemplate } from "@ai-matrx/print/labels";
 import { DEFAULT_ZPL_DPI, assertZplScannable, labelsToZpl, type ZplDpi } from "@ai-matrx/print/zpl";
 import { Button } from "@/components/ui/button";
-import { useClipboard } from "@/hooks/useClipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Field, SectionShell, StatusChip, byteLength, controlClass } from "@/features/print/components/shared";
 import { SAMPLE_ZPL_LABELS } from "./sample-data";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -32,7 +33,10 @@ export function ZplSection() {
     const [badge, setBadge] = useState(SAMPLE_ZPL_LABELS[0].badge ?? "");
     const [detail, setDetail] = useState((SAMPLE_ZPL_LABELS[0].lines ?? []).join(" | "));
 
-    const { copyText } = useClipboard();
+    const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
 
     const template = ROLL_TEMPLATES.find((t) => t.id === templateId) ?? ROLL_TEMPLATES[0];
 

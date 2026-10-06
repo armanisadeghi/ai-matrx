@@ -12,10 +12,10 @@
  * over-tightening, which is itself a defect.
  */
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useCallback, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
@@ -212,17 +212,12 @@ export function useGuardedRebind({
           )}
           {pending.impact.breaking.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
-              <CopyButton
-                content={buildRebindFixBrief({
+              <CopyButtons label="A paste-ready brief naming the mismatch and every call site to update" human={buildRebindFixBrief({
                   mandateKey: storedMandateKey(mandate.mandate_key),
                   candidateName: pending.request.agentName,
                   impact: pending.impact,
                   codeTruth: codeTruth ?? undefined,
-                })}
-                label="Copy fix brief for AI"
-                tooltip="A paste-ready brief naming the mismatch and every call site to update"
-                size="sm"
-              />
+                })} size="sm" />
             </div>
           )}
         </div>

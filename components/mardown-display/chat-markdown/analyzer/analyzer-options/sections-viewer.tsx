@@ -1,5 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Copy, Check, FileText, Hash, Type, List, Minus } from 'lucide-react';
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 
@@ -45,11 +47,15 @@ const isValidContentData = (data: unknown): data is ContentSection[] => {
 // JSON Fallback Component
 const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) => {
   const [copied, setCopied] = useState(false);
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   
   const handleCopy = async () => {
     try {
       const jsonString = JSON.stringify(data, null, 2);
-      await navigator.clipboard.writeText(jsonString);
+      await copyText(jsonString);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       onCopy();
@@ -266,6 +272,10 @@ const extractSummaryFromSection = (section: ContentSection): string => {
 const SectionsViewer = ({ data }: { data: unknown }) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const [copiedData, setCopiedData] = useState<boolean>(false);
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
 
   // Safety check: if data is not in expected format, show JSON fallback
   if (!isValidContentData(data)) {
@@ -290,7 +300,7 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
         .join('\n');
       
       if (textContent.trim()) {
-        await navigator.clipboard.writeText(textContent);
+        await copyText(textContent);
         setCopiedData(true);
         setTimeout(() => setCopiedData(false), 2000);
       }

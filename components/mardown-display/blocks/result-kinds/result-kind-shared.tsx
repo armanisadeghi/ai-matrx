@@ -36,7 +36,8 @@ import { Braces, Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
 import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
-import { useClipboard } from "@/hooks/useClipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -350,7 +351,10 @@ export const CopyValueButton: React.FC<{ text: string; what: string }> = ({
   text,
   what,
 }) => {
-  const { copyText } = useClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = React.useState(false);
   return (
     <Button variant="quiet" icon={copied ? (

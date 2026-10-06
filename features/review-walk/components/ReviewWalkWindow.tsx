@@ -16,6 +16,7 @@
  * 404/403 stops are ANSWERS, rendered honestly in place.
  */
 
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   AlertTriangle,
@@ -34,7 +35,6 @@ import {
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { reviewWalkUrlId } from "@/features/review-walk/address";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -706,7 +706,7 @@ function TechnicalDetails({ out }: { out: DescendOut }) {
   const mono = (id: string, tooltip: string) => (
     <>
       <span className="truncate font-mono">{id}</span>
-      <CopyButton content={id} size="xs" tooltip={tooltip} />
+      <TapTargetCopyButton value={id} variant="transparent" ariaLabel={tooltip} />
     </>
   );
 
@@ -756,11 +756,7 @@ function TechnicalDetails({ out }: { out: DescendOut }) {
                   Open in a new tab
                   <ExternalLink className="h-3 w-3" aria-hidden />
                 </a>
-                <CopyButton
-                  content={out.unit.conversation_id}
-                  size="xs"
-                  tooltip="Copy conversation id"
-                />
+                <TapTargetCopyButton value={out.unit.conversation_id} variant="transparent" ariaLabel="Copy conversation id" />
               </>,
             )}
           {producer &&
@@ -1025,11 +1021,7 @@ function ReceiptPanel({
           <span className="font-mono">
             finding {receipt.finding_id.slice(0, 8)}…
           </span>
-          <CopyButton
-            content={receipt.finding_id}
-            size="xs"
-            tooltip="Copy finding id"
-          />
+          <TapTargetCopyButton value={receipt.finding_id} variant="transparent" ariaLabel="Copy finding id" />
         </span>
       </div>
       <Button

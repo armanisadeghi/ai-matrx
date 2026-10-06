@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Copy, Check, Braces } from 'lucide-react';
 import { 
   JsonFallback, 
@@ -6,7 +8,6 @@ import {
   getSectionTypeLabel, 
   isValidBaseSectionArray,
   isValidContentItem,
-  useCopyToClipboard,
   extractTextFromHTML,
   countValidItems
 } from './viewer-utilities';
@@ -137,7 +138,17 @@ const extractSummaryFromSection = (section: ContentSection): string => {
 const SectionViewerWithSidebar = ({ data }: { data: unknown }) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const [showJsonExplorer, setShowJsonExplorer] = useState<boolean>(false);
-  const { copied, copy } = useCopyToClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = useState(false);
+  const copy = async (text: string): Promise<boolean> => {
+    await copyText(text, "Copied");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    return true;
+  };
   
   // Determine if we should show the sidebar (only hide for JsonFallback when not in explorer mode)
   const shouldShowSidebar = isValidBaseSectionArray(data);

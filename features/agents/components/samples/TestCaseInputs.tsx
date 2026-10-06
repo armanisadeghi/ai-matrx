@@ -35,12 +35,12 @@
  * opinion about which values a person may see.
  */
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { formatCount } from "@ai-matrx/kit/format";
 import { cn } from "@/lib/utils";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { buildVariableDisplayLines } from "@ai-matrx/chat/agents/utils/variable-display-lines";
 import { MessageAttachmentStrip } from "@ai-matrx/chat/agents/components/messages-display/MessageAttachmentStrip";
@@ -228,11 +228,7 @@ function PartRow({
             </p>
           ) : null}
           <div className="absolute right-3 top-0 z-10">
-            <CopyButton
-              content={part.text}
-              size="xs"
-              tooltip={`${part.label} value`}
-            />
+            <CopyButtons label={`${part.label} value`} human={part.text} size="xs" />
           </div>
           <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words rounded bg-muted/60 p-2 pr-8 type-meta leading-relaxed text-foreground scrollbar-thin">
             {prettyValue(part.text)}

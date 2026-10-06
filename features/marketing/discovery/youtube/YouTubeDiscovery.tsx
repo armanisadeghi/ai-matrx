@@ -1,5 +1,6 @@
 "use client";
 
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useEffect, useState, type ComponentProps } from "react";
@@ -24,7 +25,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Chip, Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import {
@@ -1044,12 +1044,7 @@ function VideoCard({
               <ExternalLink className="h-4 w-4" />
             </a>
           </Button>
-          <CopyButton
-            content={youTubeWatchUrl(video.video_id)}
-            tooltip="Copy YouTube link"
-            size="icon"
-            className="h-10 w-10 rounded-xl border border-border bg-transparent px-0 dark:border-white/10"
-          />
+          <TapTargetCopyButton value={youTubeWatchUrl(video.video_id)} variant="transparent" ariaLabel="Copy YouTube link" />
         </div>
         <YouTubeResearchActions
           videoId={video.video_id}

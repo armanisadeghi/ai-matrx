@@ -1,5 +1,7 @@
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import {
   Copy, Check, FileText, Code, Table, List, Hash, Type, BookOpen,
   CheckSquare, Braces, Minus, Archive, Link, Quote, Image,
@@ -361,19 +363,6 @@ export const getSectionTypeIcon = (sectionType: string, size: number = 16) => {
 // COPY UTILITIES
 // ==========================================
 
-export const copyTextToClipboard = async (text: string): Promise<boolean> => {
-  try {
-    if (!text || !text.trim()) {
-      return false;
-    }
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch (err) {
-    console.error('Failed to copy to clipboard:', err);
-    return false;
-  }
-};
-
 export const extractTextFromHTML = (htmlString: string): string => {
   return htmlString.replace(/<[^>]*>/g, '').trim();
 };
@@ -402,17 +391,18 @@ export const JsonFallback: React.FC<JsonFallbackProps> = ({
   className = ""
 }) => {
   const [copied, setCopied] = useState(false);
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   
   const handleCopy = async () => {
     try {
       const jsonString = JSON.stringify(data, null, 2);
-      const success = await copyTextToClipboard(jsonString);
-      
-      if (success) {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-        onCopy?.();
-      }
+      await copyText(jsonString);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      onCopy?.();
     } catch (err) {
       console.error('Failed to copy JSON:', err);
     }
@@ -539,21 +529,6 @@ export const countValidItems = (items: unknown[]): number => {
 // ==========================================
 // COMMON HOOKS
 // ==========================================
-
-export const useCopyToClipboard = () => {
-  const [copied, setCopied] = useState(false);
-  
-  const copy = async (text: string): Promise<boolean> => {
-    const success = await copyTextToClipboard(text);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-    return success;
-  };
-  
-  return { copied, copy };
-};
 
 export const useSelectedIndex = (maxIndex: number) => {
   const [selectedIndex, setSelectedIndex] = useState<number>(0);

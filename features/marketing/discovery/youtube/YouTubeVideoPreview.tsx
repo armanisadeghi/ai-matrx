@@ -1,5 +1,7 @@
 "use client";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import {
@@ -11,7 +13,6 @@ import {
   ThumbsUp,
   Users,
 } from "lucide-react";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { Button } from "@/components/ui/button";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
@@ -59,12 +60,7 @@ export function YouTubeVideoPreviewContent({
           <p /* rich-content-exempt: YouTube descriptions are plain text */ className="min-w-0 flex-1 whitespace-pre-line text-sm leading-6 text-muted-foreground dark:text-zinc-400">
             {video.description || "No description supplied."}
           </p>
-          <CopyButton
-            content={video.description || "No description supplied."}
-            tooltip="Copy description"
-            size="icon"
-            className="h-8 w-8 shrink-0 rounded-lg border border-border px-0 dark:border-white/10"
-          />
+          <CopyButtons label="Copy description" human={video.description || "No description supplied."} size="icon" className="h-8 w-8 shrink-0 rounded-lg border border-border px-0 dark:border-white/10" />
         </div>
         <div className="mt-5 flex flex-wrap gap-3 text-xs text-muted-foreground dark:text-zinc-400">
           <span>
@@ -111,13 +107,7 @@ export function YouTubeVideoPreviewContent({
               Open on YouTube
             </a>
           </Button>
-          <CopyButton
-            content={youTubeWatchUrl(video.video_id)}
-            tooltip="Copy YouTube link"
-            label="Copy link"
-            size="sm"
-            className="rounded-xl"
-          />
+          <TapTargetCopyButton value={youTubeWatchUrl(video.video_id)} variant="transparent" ariaLabel="Copy YouTube link" tooltip="Copy YouTube link" />
         </div>
         <YouTubeResearchActions
           videoId={video.video_id}

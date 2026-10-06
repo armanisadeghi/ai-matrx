@@ -119,7 +119,8 @@ import {
 import { rowsToMarkdownTable } from "@ai-matrx/design-system/data-table/copy-helpers";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
-import { useClipboard } from "@/hooks/useClipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 import { readSearchKindValue, text } from "../search-kinds/search-kind-data";
@@ -203,7 +204,10 @@ function compareCells(a: unknown, b: unknown): number {
 
 export function DataTableBlock({ serverData, className }: DataTableBlockProps) {
   const { value, isComplete } = readSearchKindValue<"data_table">(serverData);
-  const { copyText } = useClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const openTableWindow = useOpenTableViewerWindow();
   const openSaveToTable = useOpenSaveToTable();
   // THE FETCH-MORE SEAM (LAW 3). Null when the host cannot re-read — the

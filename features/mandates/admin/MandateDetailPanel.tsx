@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
@@ -56,7 +57,6 @@ import {
   type ProvisionOffer,
 } from "@/features/mandates/provisions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import {
   agentDefaultHolder,
   parseMandateContract,
@@ -513,17 +513,12 @@ function DriftPanel({
               </ul>
               ) : null}
               {versionImpact.impact ? (
-              <CopyButton
-                content={buildRebindFixBrief({
+              <CopyButtons label="A paste-ready brief naming the mismatch and every call site to update" human={buildRebindFixBrief({
                   mandateKey: row.mandateKey,
                   candidateName: `${row.agentName} v${latestSaved?.versionNumber}`,
                   impact: versionImpact.impact,
                   codeTruth: row.codeTruth ?? undefined,
-                })}
-                label="Copy fix brief for AI"
-                tooltip="A paste-ready brief naming the mismatch and every call site to update"
-                size="sm"
-              />
+                })} size="sm" />
               ) : null}
             </div>
           }
@@ -840,19 +835,11 @@ function CodeAgentDriftPanel({
       <PropertyRow label="Default in use" value={usesDefault ? "Yes" : "No"} />
       <div className="flex flex-wrap items-center gap-2">
         {agentVariables.length > 0 ? (
-          <CopyButton
-            content={`${brief}\n\nPREFERRED OPTION: map the code value to one of the existing agent variables (${agentVariables.join(", ")}). Confirm meaning before choosing; do not guess from the name alone.`}
-            label="Copy mapping fix"
-            size="sm"
-          />
+          <CopyButtons label="Copy mapping fix" human={`${brief}\n\nPREFERRED OPTION: map the code value to one of the existing agent variables (${agentVariables.join(", ")}). Confirm meaning before choosing; do not guess from the name alone.`} size="sm" />
         ) : (
           <PropertyRow label="Existing mapping target" value="None" />
         )}
-        <CopyButton
-          content={`${brief}\n\nPREFERRED OPTION: deliver the unconsumed code value through a named variable or a declared context slot. Keep user_input exclusively for human-authored text. Update every discovered call site.`}
-          label="Copy fix"
-          size="sm"
-        />
+        <CopyButtons label="Copy fix" human={`${brief}\n\nPREFERRED OPTION: deliver the unconsumed code value through a named variable or a declared context slot. Keep user_input exclusively for human-authored text. Update every discovered call site.`} size="sm" />
         {agentEditHref ? (
           <Button asChild variant="outline">
             <a href={agentEditHref} target="_blank" rel="noopener noreferrer">
@@ -862,11 +849,7 @@ function CodeAgentDriftPanel({
         ) : (
           <PropertyRow label="Agent builder" value="Unavailable" />
         )}
-        <CopyButton
-          content={brief}
-          label="Copy full code-fix brief"
-          size="sm"
-        />
+        <CopyButtons label="Copy full code-fix brief" human={brief} size="sm" />
         <Button variant="outline" onClick={onOpenRebind}>
           Open Mandate Holder mapping
         </Button>
@@ -954,11 +937,7 @@ function StatusBanner({
               </div>
             </div>
           </div>
-          <CopyButton
-            content={`Fix the code-truth import failure for mandate "${row.mandateKey}".\n\nRead /Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md first.\n\nImport failure: ${row.codeTruth?.import_error ?? "unknown"}\n\nRestore the declaring module so GET /mandates/code-truth reports code_declaration_found, then verify every variable and call site. Do not change the mandate pin or contract to hide the import failure.`}
-            label="Copy import-fix brief"
-            size="sm"
-          />
+          <CopyButtons label="Copy import-fix brief" human={`Fix the code-truth import failure for mandate "${row.mandateKey}".\n\nRead /Users/armanisadeghi/code/common-docs/systems/agent-variable-binding/FEATURE.md first.\n\nImport failure: ${row.codeTruth?.import_error ?? "unknown"}\n\nRestore the declaring module so GET /mandates/code-truth reports code_declaration_found, then verify every variable and call site. Do not change the mandate pin or contract to hide the import failure.`} size="sm" />
         </div>
       );
     case "code ↔ contract drift":
@@ -991,16 +970,12 @@ function StatusBanner({
             </div>
           </div>
           {row.codeTruth && (
-            <CopyButton
-              content={buildRebindFixBrief({
+            <CopyButtons label="Copy contract-fix brief" human={buildRebindFixBrief({
                 mandateKey: row.mandateKey,
                 candidateName: row.agentName,
                 impact: codeTruthRebindImpact(row.codeTruth),
                 codeTruth: row.codeTruth,
-              })}
-              label="Copy contract-fix brief"
-              size="sm"
-            />
+              })} size="sm" />
           )}
         </div>
       );

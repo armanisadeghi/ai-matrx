@@ -2,7 +2,7 @@
 
 import React, { useCallback } from "react";
 import { useTextCleaner } from "../hooks/useTextCleaner";
-import { useClipboard } from "@/hooks/useClipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { textContext } from "@/app/(admin)/administration/utilities/utils/text-cleaner/configs";
 import AnimatedSelect from "@/components/matrx/AnimatedForm/AnimatedSelect";
 import { FormField } from "@/types/AnimatedFormTypes";
@@ -69,7 +69,10 @@ export const TextCleanerComponent: React.FC = () => {
     clearErrors,
   } = useTextCleaner();
 
-  const { copyText } = useClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      toast(kind === "error" ? { title: message, variant: "destructive" } : { title: message }),
+  });
 
   const handleRefresh = useCallback(() => {
     processText(inputText);

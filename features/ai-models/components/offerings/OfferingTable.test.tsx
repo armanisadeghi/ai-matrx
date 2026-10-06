@@ -42,9 +42,9 @@ jest.mock("@ai-matrx/tap-target/buttons", () => ({
   }) => <button aria-label={ariaLabel} onClick={onClick}>Delete</button>,
 }));
 
-jest.mock("@/components/matrx/buttons/CopyButton", () => ({
-  CopyButton: ({ content }: { content: string }) => (
-    <button data-copy-content={content}>Copy</button>
+jest.mock("@ai-matrx/tap-target", () => ({
+  TapTargetCopyButton: ({ value }: { value: string }) => (
+    <button data-copy-content={value}>Copy</button>
   ),
 }));
 

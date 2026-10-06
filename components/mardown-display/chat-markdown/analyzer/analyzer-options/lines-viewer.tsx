@@ -1,6 +1,8 @@
 import { Badge } from "@ai-matrx/design-system/controls";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from 'react';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Copy, Check, FileText, Hash, Type, List, Minus, Quote, Link, CornerDownLeft, Square, SquareCheckBig } from 'lucide-react';
 import { addUtmSource } from '@/utils/url-utm';
 
@@ -256,13 +258,17 @@ const renderLineItem = (item: LineItem) => {
 const LinesViewer = ({ data }: { data: LineItem[] }) => {
   const [selectedLineIndex, setSelectedLineIndex] = useState<number>(0);
   const [copiedData, setCopiedData] = useState<boolean>(false);
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   
   const selectedLine = data[selectedLineIndex];
   
   const copyToClipboard = async () => {
     try {
       const textContent = selectedLine.content.replace(/<[^>]*>/g, '');
-      await navigator.clipboard.writeText(textContent);
+      await copyText(textContent);
       setCopiedData(true);
       setTimeout(() => setCopiedData(false), 2000);
     } catch (err) {

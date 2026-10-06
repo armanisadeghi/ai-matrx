@@ -62,7 +62,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ShortId } from "@ai-matrx/chat/tool-call-visualization/result-fields/ShortId";
-import { useClipboard } from "@/hooks/useClipboard";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import { useOpenStructuredValueWindow } from "@/features/overlays/openers/structuredValueWindow";
 import {
@@ -331,7 +332,10 @@ const BINARY_PREVIEW_CHARS = 24;
 
 const BinaryCell: React.FC<{ value: string }> = ({ value }) => {
   const [open, setOpen] = React.useState(false);
-  const { copyText } = useClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const truncated = value.length > BINARY_PREVIEW_CHARS;
   return (
     <span className="inline-flex min-w-0 items-center gap-1">

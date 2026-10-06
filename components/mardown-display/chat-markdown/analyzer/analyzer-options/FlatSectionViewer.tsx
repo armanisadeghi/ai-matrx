@@ -1,10 +1,11 @@
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Copy, Check, FileText, Eye, EyeOff } from "lucide-react";
 import { 
   getSectionTypeIcon, 
   getSectionTypeLabel, 
-  useCopyToClipboard,
   normalizeDynamicKey,
   preprocessContentForLineBreaks
 } from "./viewer-utilities";
@@ -30,7 +31,17 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
   const [selectedSectionIndex, setSelectedSectionIndex] = useState<number>(0);
   const [showRawContent, setShowRawContent] = useState<boolean>(false);
   const [bookmarkCopied, setBookmarkCopied] = useState<boolean>(false);
-  const { copy, copied } = useCopyToClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = useState(false);
+  const copy = async (text: string): Promise<boolean> => {
+    await copyText(text, "Copied");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    return true;
+  };
 
   // Process flat section data with custom logic
   const processedSections: ProcessedFlatSection[] = React.useMemo(() => {
@@ -76,7 +87,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
     if (!selectedSection?.bookmarkPath) return;
     
     try {
-      await navigator.clipboard.writeText(selectedSection.bookmarkPath);
+      await copyText(selectedSection.bookmarkPath);
       setBookmarkCopied(true);
       setTimeout(() => setBookmarkCopied(false), 2000);
     } catch (err) {

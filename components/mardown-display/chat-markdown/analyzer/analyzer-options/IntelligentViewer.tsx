@@ -1,11 +1,12 @@
 import { Button, Badge, Chip, Tile } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { AlertTriangle, Lightbulb, Eye, FileJson, Copy, Check } from "lucide-react";
 import {
     JsonFallback,
     getSectionTypeIcon,
     getSectionTypeLabel,
-    useCopyToClipboard,
     extractSummaryFromContent,
     isValidString,
     isValidStringArray,
@@ -262,7 +263,17 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
     const [showRecommendation, setShowRecommendation] = useState<boolean>(false);
     const [recommendation, setRecommendation] = useState<ViewerRecommendation | null>(null);
     const [showJsonExplorer, setShowJsonExplorer] = useState<boolean>(false);
-    const { copy, copied } = useCopyToClipboard();
+    const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = useState(false);
+  const copy = async (text: string): Promise<boolean> => {
+    await copyText(text, "Copied");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    return true;
+  };
     const [bookmarkCopied, setBookmarkCopied] = useState<boolean>(false);
 
     // Function to analyze data and get recommendation
@@ -321,7 +332,7 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
         if (!selectedSection?.bookmarkPath) return;
 
         try {
-            await navigator.clipboard.writeText(selectedSection.bookmarkPath);
+            await copyText(selectedSection.bookmarkPath);
             setBookmarkCopied(true);
             setTimeout(() => setBookmarkCopied(false), 2000);
         } catch (err) {
@@ -497,7 +508,7 @@ const IntelligentViewer = ({ data, bookmark }: IntelligentViewerProps) => {
                                                 <Button variant="quiet" icon={<Copy
                                                         size={12}
                                                        
-                                                    />} onClick={() => navigator.clipboard.writeText(bookmark)} title="Copy root bookmark path" aria-label="Copy root bookmark path" />
+                                                    />} onClick={() => copyText(bookmark)} title="Copy root bookmark path" aria-label="Copy root bookmark path" />
                                             </div>
                                         </div>
                                     )}

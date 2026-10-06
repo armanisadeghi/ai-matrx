@@ -1,11 +1,11 @@
 "use client";
+import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import React, { useState, ReactNode, useRef } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, Save, RefreshCw, Maximize, Minimize, CheckCircle2 } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import FullScreenOverlay, { TabDefinition } from "@/components/official/FullScreenOverlay";
 import { cn } from "@/lib/utils";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import ActionFeedbackButton from "@/components/official/ActionFeedbackButton";
 
 interface AdvancedCollapsibleProps {
@@ -148,12 +148,7 @@ const AdvancedCollapsible: React.FC<AdvancedCollapsibleProps> = ({
         />
       )}
       
-      <CopyButton
-        content={getContentForCopy()}
-        className="text-gray-500 dark:text-gray-400"
-        label=""
-        size="sm"
-      />
+      <CopyButtons label="Content" human={getContentForCopy()} size="sm" className="text-gray-500 dark:text-gray-400" />
       
       <IconButton
         icon={<Maximize className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />}
@@ -190,12 +185,7 @@ const AdvancedCollapsible: React.FC<AdvancedCollapsibleProps> = ({
         />
       )}
       
-      <CopyButton
-        content={getContentForCopy()}
-        className="text-gray-500 dark:text-gray-400"
-        label=""
-        size="sm"
-      />
+      <CopyButtons label="Content" human={getContentForCopy()} size="sm" className="text-gray-500 dark:text-gray-400" />
       
       <IconButton
         icon={<Minimize className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />}

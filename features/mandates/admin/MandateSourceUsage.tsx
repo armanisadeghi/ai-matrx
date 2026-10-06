@@ -1,5 +1,6 @@
 "use client";
 
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
@@ -32,7 +33,6 @@ import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, Loader2, OctagonAlert } from "lucide-react";
 
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -117,7 +117,7 @@ function RowLine({
         <span className="shrink-0 type-secondary text-muted-foreground max-sm:order-last max-sm:w-full">
           {referenceTypeWords(row.reference_type)}
         </span>
-        <CopyButton content={row.location} label={copyLabel} size="sm" />
+        <TapTargetCopyButton value={row.location} variant="transparent" ariaLabel={copyLabel} />
       </div>
       {row.flag_sentence ? (
         <p className="mt-1 type-secondary text-destructive">
@@ -270,11 +270,7 @@ export function MandateSourceUsage({
             <div className="px-3 py-2">
               <div className="flex items-center gap-3">
                 <LocationText location={fallback.declaration ?? ""} />
-                <CopyButton
-                  content={fallback.declaration ?? ""}
-                  label="Copy declaration location"
-                  size="sm"
-                />
+                <TapTargetCopyButton value={fallback.declaration ?? ""} variant="transparent" ariaLabel="Copy declaration location" />
               </div>
               <p className="mt-1 type-secondary text-muted-foreground">
                 Not confirmed by a code scan yet

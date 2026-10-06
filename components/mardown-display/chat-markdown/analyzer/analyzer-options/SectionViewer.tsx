@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Copy, Check, FileText, CheckSquare } from 'lucide-react';
 import { 
   JsonFallback, 
   getSectionTypeIcon, 
   getSectionTypeLabel, 
-  useCopyToClipboard 
 } from './viewer-utilities';
 import { Button } from "@ai-matrx/design-system/controls";
 
@@ -141,7 +142,17 @@ const renderContent = (section: ClassifiedSection) => {
 
 const SectionViewer = ({ data }: { data: unknown }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
-  const { copied, copy } = useCopyToClipboard();
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
+  const [copied, setCopied] = useState(false);
+  const copy = async (text: string): Promise<boolean> => {
+    await copyText(text, "Copied");
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    return true;
+  };
 
   // Safety check: if data is not in expected format, show JSON fallback
   if (!isValidClassifiedData(data)) {

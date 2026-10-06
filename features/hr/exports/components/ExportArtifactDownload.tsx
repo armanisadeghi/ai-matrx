@@ -32,13 +32,13 @@
  * truthful description of what it does.
  */
 
+import { TapTargetCopyButton } from "@ai-matrx/tap-target";
 import { useState } from "react";
 import { Download, ExternalLink, Loader2, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { downloadBlob } from "@/lib/python-client";
 import { toast } from "@/lib/toast";
-import { CopyButton } from "@/components/matrx/buttons/CopyButton";
 import type { ExportEnvelope } from "../types";
 
 export function ExportArtifactDownload({
@@ -109,7 +109,7 @@ export function ExportArtifactDownload({
           <span className="truncate font-mono text-foreground" title={envelope.sha256}>
             {envelope.sha256}
           </span>
-          <CopyButton content={envelope.sha256} label="checksum" size="xs" />
+          <TapTargetCopyButton value={envelope.sha256} variant="transparent" ariaLabel="Copy checksum" />
         </dd>
 
         <dt className="text-muted-foreground">File ID</dt>
@@ -121,7 +121,7 @@ export function ExportArtifactDownload({
             showIcon={false}
             className="min-w-0 truncate font-mono text-foreground"
           />
-          <CopyButton content={envelope.file_id} label="file ID" size="xs" />
+          <TapTargetCopyButton value={envelope.file_id} variant="transparent" ariaLabel="Copy file ID" />
         </dd>
       </dl>
 
