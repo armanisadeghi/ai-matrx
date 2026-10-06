@@ -6,7 +6,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input } from "@ai-matrx/design-system/controls";
 import { Copy, Trash2, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { SpaceDbView } from "./sources";
 
@@ -120,10 +120,43 @@ export function shownSorts(view: SpaceDbView, choice: SortChoice): ViewSort[] {
   return choice ? [choice] : [];
 }
 
+/** A viewer's own filters for one view: `undefined` follows the saved filters. */
+export type FilterChoice = SpaceDbView["filters"] | undefined;
+type Filters = NonNullable<SpaceDbView["filters"]>;
+
+/** The filters a view is drawn with: the viewer's own when they changed them, else the view's saved ones. */
+export function shownFilters(view: SpaceDbView, choice: FilterChoice): Filters {
+  return choice === undefined ? (view.filters ?? {}) : choice;
+}
+
+/** True when the viewer's filters differ from the view's saved ones. */
+export function filtersDiffer(view: SpaceDbView, choice: FilterChoice): boolean {
+  return choice !== undefined && JSON.stringify(choice) !== JSON.stringify(view.filters ?? {});
+}
+
+/**
+ * Notion's footer under a changed filter or sort: "Reset" for everyone, "Save for everyone" for a person
+ * who may edit the view. Until then the change is the viewer's alone.
+ */
+export function ViewerSaveBar({ canSave, onReset, onSave }: { canSave: boolean; onReset: () => void; onSave: () => void }) {
+  return (
+    <div className="flex items-center justify-end gap-1 border-t border-border p-1">
+      <Button variant="quiet" onClick={onReset}>
+        Reset
+      </Button>
+      {canSave ? (
+        <Button variant="primary" onClick={onSave}>
+          Save for everyone
+        </Button>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * The toolbar sort (Notion): anyone may sort, it applies at once, and it is that viewer's alone — never
- * written to the view. A person who may edit the view sees "Save to view" and "Reset" once their sort
- * differs from the saved one; everyone else sees "Reset".
+ * written to the view. A person who may edit the view sees "Save for everyone" and "Reset" once their sort
+ * differs from the saved one; everyone else sees "Reset". The toolbar filter behaves the same way.
  */
 export function ViewerSortButton({
   view,
@@ -163,24 +196,50 @@ export function ViewerSortButton({
           <FieldList fields={fields} onPick={(key) => onChoice({ field: key, direction: "asc" })} />
         )}
         {differs ? (
-          <div className="flex items-center justify-end gap-1 border-t border-border p-1">
-            <Button variant="quiet" onClick={() => onChoice(undefined)}>
-              Reset
-            </Button>
-            {canSave ? (
-              <Button
-                variant="primary"
-                onClick={() => {
-                  onSave(choice ? [choice] : []);
-                  onChoice(undefined);
-                }}
-              >
-                Save to view
-              </Button>
-            ) : null}
-          </div>
+          <ViewerSaveBar
+            canSave={canSave}
+            onReset={() => onChoice(undefined)}
+            onSave={() => {
+              onSave(choice ? [choice] : []);
+              onChoice(undefined);
+            }}
+          />
         ) : null}
       </PopoverContent>
     </Popover>
+  );
+}
+
+/** An open menu, popover or dialog owns Esc first (Radix closes it); the peek waits for the next Esc. */
+function layerOpen(): boolean {
+  return Boolean(document.querySelector('[data-radix-popper-content-wrapper], [role="dialog"][data-state="open"], [role="menu"], [role="listbox"]'));
+}
+
+/**
+ * Notion's side peek: a panel on the right with a close button; Esc closes it. The database host stops
+ * key events from reaching the page natively, so Esc is heard on the window in the capture phase.
+ */
+export function SidePeek({ onClose, children }: { onClose: () => void; children: ReactNode }) {
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented || layerOpen()) return;
+      e.preventDefault();
+      e.stopPropagation();
+      close.current();
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, []);
+  return (
+    <aside className="spaces-peek-side" aria-label="Side peek">
+      <div className="spaces-peek-bar">
+        <Button variant="quiet" icon={<X size={16} />} aria-label="Close" onClick={onClose} />
+      </div>
+      <div className="spaces-peek-body">{children}</div>
+    </aside>
   );
 }

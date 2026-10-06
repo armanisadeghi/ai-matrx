@@ -48,7 +48,7 @@ import { toast } from "@/lib/toast";
 
 import { DataMount } from "./DataMount";
 import { EntityDatabase } from "./EntityDatabase";
-import { FieldList, MenuRow, ViewerSortButton, ViewTab, shownSorts, type SortChoice } from "./menu-parts";
+import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
@@ -140,7 +140,9 @@ function DatabaseFrame({
   // grid as `sortOverride` (null = the view's saved sort); charts and boards read it from the spec.
   const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
   const choice = sortChoices[active.id];
-  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, choice) };
+  // The toolbar filter is the viewer's own the same way, until an editor saves it for everyone.
+  const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
+  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, choice), filters: shownFilters(active, filterChoices[active.id]) };
   const sortOverride = choice ?? null;
 
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
@@ -218,7 +220,14 @@ function DatabaseFrame({
         </div>
         {!isChart ? (
           <div className="spaces-db-tools">
-            <FilterButton view={active} fields={fields} onView={saveView} editable={editable} />
+            <FilterButton
+              view={active}
+              fields={fields}
+              choice={filterChoices[active.id]}
+              onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
+              canSave={editable}
+              onSave={(filters) => saveView({ filters })}
+            />
             <ViewerSortButton
               view={active}
               fields={fields}
@@ -321,10 +330,26 @@ function DatabaseBody({
   );
 }
 
-function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; fields: Field[]; onView: (p: Partial<SpaceDbView>) => void; editable: boolean }) {
+/** The toolbar filter (Notion): anyone may filter for themselves; an editor may save it for everyone. */
+function FilterButton({
+  view,
+  fields,
+  choice,
+  onChoice,
+  canSave,
+  onSave,
+}: {
+  view: SpaceDbView;
+  fields: Field[];
+  choice: FilterChoice;
+  onChoice: (next: FilterChoice) => void;
+  canSave: boolean;
+  onSave: (filters: NonNullable<SpaceDbView["filters"]>) => void;
+}) {
   const [field, setField] = useState<string | null>(null);
   const [value, setValue] = useState("");
-  const filters = view.filters ?? {};
+  const filters = shownFilters(view, choice);
+  const onView = (p: { filters: NonNullable<SpaceDbView["filters"]> }) => onChoice(p.filters);
   const count = Object.keys(filters).length;
   return (
     <Popover>
@@ -336,15 +361,14 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
           <MenuRow
             key={k}
             label={`${fields.find((f) => f.key === k)?.label ?? k} is ${String(v)}`}
-            end={editable ? <X size={14} /> : undefined}
+            end={<X size={14} />}
             onClick={() => {
-              if (!editable) return;
               const { [k]: _gone, ...rest } = filters;
               onView({ filters: rest });
             }}
           />
         ))}
-        {editable ? (
+        {(
           field && choicesOfField(fields.find((f) => f.key === field)).length ? (
             <div className="flex flex-col p-1">
               <span className="px-1 pb-1 type-secondary text-muted-foreground">{fields.find((f) => f.key === field)?.label} is</span>
@@ -380,6 +404,16 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
           ) : (
             <FieldList fields={fields} onPick={setField} />
           )
+        )}
+        {filtersDiffer(view, choice) ? (
+          <ViewerSaveBar
+            canSave={canSave}
+            onReset={() => onChoice(undefined)}
+            onSave={() => {
+              onSave(filters);
+              onChoice(undefined);
+            }}
+          />
         ) : null}
       </PopoverContent>
     </Popover>
@@ -535,14 +569,9 @@ function ViewSettings({
 function RecordOpen({ tableId, recordId, as, onClose }: { tableId: string; recordId: string; as: "side" | "center" | "page"; onClose: () => void }) {
   if (as === "side") {
     return (
-      <aside className="spaces-peek-side" aria-label="Side peek">
-        <div className="spaces-peek-bar">
-          <Button variant="quiet" icon={<X size={16} />} aria-label="Close" onClick={onClose} />
-        </div>
-        <div className="spaces-peek-body">
-          <Peek tableId={tableId} recordId={recordId} onClose={onClose} />
-        </div>
-      </aside>
+      <SidePeek onClose={onClose}>
+        <Peek tableId={tableId} recordId={recordId} onClose={onClose} />
+      </SidePeek>
     );
   }
   return (
