@@ -85,6 +85,7 @@ function render(
     reducer: {
       messages: () => ({ byConversationId: { [CONVERSATION]: { orderedIds: Object.keys(byId), byId } } }),
       // The receipts read is already answered (the zone at the foot reads it once).
+      userAuth: () => ({ id: "11111111-1111-1111-1111-111111111111" }), // a signed-in reader: signed-out issues no ledger/message reads
       storeReads: () => ({
         byKey: { [`chat.directive-receipts:${CONVERSATION}`]: { status: "ready", data: receipts, hasData: true, error: null, at: Date.now() } },
       }),
