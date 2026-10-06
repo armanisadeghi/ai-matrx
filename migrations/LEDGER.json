@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-06T03:58:56.714Z",
+  "generated_at": "2026-10-06T06:58:51.653Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -487,6 +487,12 @@
       "filename": "chair_pb_a_view_or_a_page_gets_a_public_address.sql",
       "checksum": "3ddbf5902647dcd9830b029960834f6d6d527b3702ea1676026bccf668e03607",
       "applied_at": "2026-10-02 19:02:32.416309+00"
+    },
+    "migrations/campaign/chair_template_upgrade_one_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_template_upgrade_one_door.sql",
+      "checksum": "8cd64958fb68621fe6910470141034cf57a9507fd357eb29d480b682c6922cb3",
+      "applied_at": "2026-10-06 06:58:49.35895+00"
     },
     "migrations/campaign/chair_tf_one_template_family_one_install_door.sql": {
       "source": "matrx-frontend",
