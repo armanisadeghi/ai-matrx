@@ -18,7 +18,7 @@
 
 import type { ConversationTransferRow } from "./conversation-transfer-rows";
 import type { Coverage, Payload, Section, Source } from "@ai-matrx/alchemy/operate";
-import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
+import type { FormatAdapter } from "@ai-matrx/alchemy/operate";
 import type { ChatDispatch, ChatRootState } from "../../store/root-state";
 import { toast } from "../../host/notify";
 import { unwrapKindEnvelopes } from "@ai-matrx/content-ir/source";
@@ -189,8 +189,13 @@ export function conversationJsonFormat(read: Capture): FormatAdapter {
   return {
     id: "json",
     label: "JSON",
+    extension: "json",
+    mime: "application/json;charset=utf-8",
+    modes: ["copy", "download"],
+    runsOn: "client",
     supports: (payload) => payload.kind === "markdown" || payload.kind === "text",
-    build: async (draft, signal) => {
+    // The contract's lazy adapter (`@ai-matrx/alchemy/operate`): the engine is this closure.
+    load: async () => ({ build: async (draft, _options, signal) => {
       const c = await read();
       signal.throwIfAborted();
       const onlyCut =
@@ -220,7 +225,7 @@ export function conversationJsonFormat(read: Capture): FormatAdapter {
         file: { filename: `${c.fileBase}.json`, mime: "application/json;charset=utf-8", bytes: new TextEncoder().encode(json) },
         omissions: draft.omissions.map((o) => ({ ...o })),
       });
-    },
+    } }),
   };
 }
 
