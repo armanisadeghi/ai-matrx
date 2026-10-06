@@ -686,7 +686,14 @@ function MonitorSetupEditorBody({
       );
       setProposal(result);
       setDraft((current) =>
-        current ? applyProposal(current, result.proposal, people) : current,
+        current
+          ? applyProposal(
+              current,
+              result.proposal,
+              people,
+              result.held_person_names ?? [],
+            )
+          : current,
       );
       const dropped = result.proposal.dropped_without_basis?.length ?? 0;
       toast.success(

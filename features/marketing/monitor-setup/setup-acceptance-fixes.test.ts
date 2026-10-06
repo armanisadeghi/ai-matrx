@@ -249,3 +249,40 @@ describe("D — a schedule over the ceiling is warned about, with a cheaper choi
     ).toBeNull();
   });
 });
+
+describe("A2 — a person nobody put on file (the CEO picked off a website)", () => {
+  it("offers every name the server's guard held, and adds none of them", () => {
+    const basis = { kind: "site_page", ref: "page:1" } as const;
+    const next = applyProposal(
+      allGreen(),
+      { search_terms: [{ text: "hard drive shredding", basis }] },
+      PEOPLE,
+      [
+        {
+          text: "Kelvin Okafor",
+          target: "searchTerms",
+          basis,
+          person: "Kelvin Okafor",
+          reason: "name_shape",
+        },
+      ],
+    );
+    expect(next.searchTerms.map((t) => t.text)).toEqual([
+      "hard drive shredding",
+    ]);
+    expect(next.personOffers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          text: "Kelvin Okafor",
+          target: "searchTerms",
+          why: "person",
+        }),
+      ]),
+    );
+    const accepted = acceptPersonOffer(
+      next,
+      next.personOffers.find((o) => o.text === "Kelvin Okafor")!,
+    );
+    expect(accepted.searchTerms.map((t) => t.text)).toContain("Kelvin Okafor");
+  });
+});
