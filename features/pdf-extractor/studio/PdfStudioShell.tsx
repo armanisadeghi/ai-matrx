@@ -38,6 +38,8 @@ import { Input } from "@ai-matrx/design-system/controls";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
+import { useProcessedDocSync } from "../hooks/useProcessedDocSync";
+import { useAutoCleanOnOpen } from "../hooks/useAutoCleanOnOpen";
 import {
   usePdfStudioDocs,
   type StudioDocSummary,
@@ -245,23 +247,17 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
     enabled: !!activeDoc,
   });
 
-  // A batch-uploaded doc finished its FULL server pipeline (extract + clean +
-  // chunk + embed + NER) — the hook already refetched the row into its tab;
-  // sync the shell's own copies (active doc, page rows, sidebar list).
-  const processedDocSignal = extractor.processedDocSignal;
-  const activeDocIdRef = useRef<string | null>(null);
-  activeDocIdRef.current = activeDoc?.id ?? null;
-  useEffect(() => {
-    if (!processedDocSignal) return;
-    docsState.refresh();
-    if (processedDocSignal.docId === activeDocIdRef.current) {
-      void extractor.fetchDocument(processedDocSignal.docId).then((fresh) => { // org-filter: server-call the extractor's server calls carry the organization in auth headers; this read is by document id and user
-        if (fresh && activeDocIdRef.current === fresh.id) setActiveDoc(fresh);
-      });
-      refreshPages();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- fire once per signal
-  }, [processedDocSignal]);
+  // A doc's row has new truth (clean text landed, or the full server
+  // pipeline finished) — sync the shell's own copies (active doc, page rows,
+  // sidebar list). One shared effect for desktop + mobile.
+  useProcessedDocSync({
+    signal: extractor.processedDocSignal,
+    activeDocId: activeDoc?.id ?? null,
+    fetchDocument: extractor.fetchDocument, // org-filter: server-call the extractor's server calls carry the organization in auth headers; this read is by document id and user
+    setActiveDoc,
+    refreshPages,
+    refreshDocs: docsState.refresh,
+  });
 
   // Live status for the active doc's post-extraction pipeline (batch upload).
   const activeProcessingStatus = activeDoc
@@ -547,7 +543,7 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       if (!openTab) {
         extractor.openDocument(activeDoc);
       }
-      await extractor.cleanContent(activeDoc.id, {
+      const cleaned = await extractor.cleanContent(activeDoc.id, {
         onProgress: setLiveStatus,
         onTextDelta: setStreamingCleanText,
       });
@@ -558,7 +554,11 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       if (fresh) setActiveDoc(fresh);
       refreshPages();
       docsState.refresh();
-      toast.success("AI cleanup complete");
+      if (cleaned.status === "queued") {
+        toast.info("Cleaning queued");
+      } else {
+        toast.success("AI cleanup complete");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI cleanup failed");
     } finally {
@@ -567,6 +567,24 @@ export function PdfStudioShell({ initialDocumentId }: PdfStudioShellProps) {
       setStreamingCleanText(null);
     }
   }, [activeDoc, extractor, docsState, refreshPages, toast]);
+
+  // A doc opened with extracted text but no clean text runs the AI clean once.
+  const activeTabForDoc = activeDoc
+    ? extractor.tabs.find((t) => t.id === activeDoc.id)
+    : undefined;
+  useAutoCleanOnOpen({
+    doc: activeDoc,
+    busy:
+      aiCleanRunning ||
+      pipelineRunning ||
+      extractor.batchStatus !== "idle" ||
+      activeProcessingStatus != null ||
+      activeTabForDoc?.status === "cleaning" ||
+      Boolean(activeTabForDoc?.error),
+    pagesSettled: !pagesLoading && !pagesError,
+    pagesHaveCleanText: pages.some((p) => p.cleanedText.trim().length > 0),
+    run: () => void handleRunAiClean(),
+  });
 
   const handleRefresh = useCallback(async () => {
     if (!activeDoc) return;

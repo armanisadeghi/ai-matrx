@@ -75,3 +75,24 @@ export async function pollForCleanContent(
   }
   return null;
 }
+
+/**
+ * The Clean pane shows per-page cleaned text, except when the doc-level
+ * `clean_content` is the fuller truth: every page empty, or the aggregate
+ * carries clearly more text than the pages do (a whole-doc clean landed while
+ * some page rows were never filled). A doc with a few genuinely blank pages
+ * keeps its per-page view — there the aggregate is no longer than the pages.
+ */
+export function preferAggregateClean(
+  pageCleanedTexts: readonly string[],
+  docCleanContent: string | null | undefined,
+): boolean {
+  if (pageCleanedTexts.length === 0) return false;
+  const empty = pageCleanedTexts.filter((t) => !t.trim()).length;
+  if (empty === pageCleanedTexts.length) return true;
+  if (empty === 0) return false;
+  const aggregate = (docCleanContent ?? "").trim().length;
+  if (aggregate === 0) return false;
+  const pagesChars = pageCleanedTexts.reduce((n, t) => n + t.trim().length, 0);
+  return aggregate > pagesChars * 1.1;
+}

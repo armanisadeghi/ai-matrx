@@ -47,6 +47,8 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { usePdfExtractor, type PdfDocument } from "../hooks/usePdfExtractor";
 import { useProcessedDocumentPages } from "../hooks/useProcessedDocumentPages";
+import { useProcessedDocSync } from "../hooks/useProcessedDocSync";
+import { useAutoCleanOnOpen } from "../hooks/useAutoCleanOnOpen";
 import { PdfAiContent } from "../components/PdfAiContent";
 import { usePdfStudioDocs } from "./hooks/usePdfStudioDocs";
 import { PdfStudioSidebar } from "./PdfStudioSidebar";
@@ -97,6 +99,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
 
   const {
     pages,
+    loading: pagesLoading,
     error: pagesError,
     refresh: refreshPages,
   } = useProcessedDocumentPages({
@@ -113,6 +116,16 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       setActivePage(pages[0].pageNumber);
     }
   }, [activeDoc, pages, activePage]);
+
+  // Clean text landed / pipeline finished — same shared effect as desktop.
+  useProcessedDocSync({
+    signal: extractor.processedDocSignal,
+    activeDocId: activeDoc?.id ?? null,
+    fetchDocument: extractor.fetchDocument, // org-filter: server-call the extractor's server calls carry the organization in auth headers; this read is by document id and user
+    setActiveDoc,
+    refreshPages,
+    refreshDocs: docsState.refresh,
+  });
 
   const selectDocById = useCallback(
     async (id: string) => {
@@ -180,9 +193,11 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       if (!activeDoc && newDocIds[0]) {
         router.push(`/tools/pdf-extractor?doc=${encodeURIComponent(newDocIds[0])}`);
         void selectDocById(newDocIds[0]);
+      } else if (activeDoc) {
+        refreshPages();
       }
     },
-    [docsState, activeDoc, router, selectDocById],
+    [docsState, activeDoc, router, selectDocById, refreshPages],
   );
 
   const handleRunPipeline = useCallback(async () => {
@@ -245,7 +260,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
     try {
       const openTab = extractor.tabs.find((t) => t.id === activeDoc.id);
       if (!openTab) extractor.openDocument(activeDoc);
-      await extractor.cleanContent(activeDoc.id, {
+      const cleaned = await extractor.cleanContent(activeDoc.id, {
         onProgress: setLiveStatus,
         onTextDelta: setStreamingCleanText,
       });
@@ -253,7 +268,11 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       if (fresh) setActiveDoc(fresh);
       refreshPages();
       docsState.refresh();
-      toast.success("AI cleanup complete");
+      if (cleaned.status === "queued") {
+        toast.info("Cleaning queued");
+      } else {
+        toast.success("AI cleanup complete");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "AI cleanup failed");
     } finally {
@@ -262,6 +281,24 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
       setStreamingCleanText(null);
     }
   }, [activeDoc, extractor, docsState, refreshPages, toast]);
+
+  // A doc opened with extracted text but no clean text runs the AI clean once.
+  const activeTabForDoc = activeDoc
+    ? extractor.tabs.find((t) => t.id === activeDoc.id)
+    : undefined;
+  useAutoCleanOnOpen({
+    doc: activeDoc,
+    busy:
+      aiCleanRunning ||
+      pipelineRunning ||
+      extractor.batchStatus !== "idle" ||
+      (activeDoc ? extractor.processingStatus[activeDoc.id] != null : false) ||
+      activeTabForDoc?.status === "cleaning" ||
+      Boolean(activeTabForDoc?.error),
+    pagesSettled: !pagesLoading && !pagesError,
+    pagesHaveCleanText: pages.some((p) => p.cleanedText.trim().length > 0),
+    run: () => void handleRunAiClean(),
+  });
 
   const handleRunShortcut = useCallback(
     async (shortcutId: string) => {

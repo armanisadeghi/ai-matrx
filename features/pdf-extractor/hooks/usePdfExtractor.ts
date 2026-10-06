@@ -16,6 +16,7 @@ import { docprocDb, PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docproc
 import { parseHttpError } from "@/lib/api/errors";
 import { getAccessTokenOrNull, requestRaw } from "@/lib/python-client";
 import { invalidateProcessedDocumentPages } from "./useProcessedDocumentPages";
+import { markAutoCleanHandled } from "./useAutoCleanOnOpen";
 import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
 import {
   appendBatchExtractDebugLine,
@@ -807,6 +808,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               // below (which can momentarily miss) is what stranded the user
               // on the upload screen after a successful extraction.
               completedDocIds.push(docId);
+              // The upload stream owns this doc's clean — never auto-run one.
+              markAutoCleanHandled(docId);
               if (!firstDocIdFired) {
                 firstDocIdFired = true;
                 opts.onFirstDocId?.(docId);
