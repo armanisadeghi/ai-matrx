@@ -23,7 +23,7 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
-import { ExamplesField, emptyExamples } from "@/features/agents/factory/components/ExamplesField";
+import { ExamplesField, ProofCount, emptyExamples, filledExamples } from "@/features/agents/factory/components/ExamplesField";
 import { useFactoryDoor } from "@/features/agents/factory/door";
 import {
   FROM_CHAT_STEPS,
@@ -88,6 +88,8 @@ function AgentFromChatWindowInner({
   const [result, setResult] = useState<FromChatResult | null>(null);
   // AF-D door #4 on `pipeline`: the Agent Factory build the server started for this chat.
   const [buildId, setBuildId] = useState<string | null>(null);
+  // R55: what the started build really proves on, as the server counted it.
+  const [proof, setProof] = useState<{ cases: number | null; says: string } | null>(null);
   const [tab, setTab] = useState<ResultTab>("compare");
   // R52: on the factory path the person may add examples; the chat's own request is case 1.
   const pipelineMode = useFactoryDoor("from_chat") === "pipeline";
@@ -123,12 +125,14 @@ function AgentFromChatWindowInner({
     setFailure(null);
     setResult(null);
     setBuildId(null);
+    setProof(null);
     const answer = await makeAgentFromChat(dispatch, conversationId, (step, line) => {
       setReached(step);
       setSays(line);
     }, pipelineMode ? examples : []);
     if (answer.ok && "buildId" in answer) {
       setBuildId(answer.buildId);
+      setProof({ cases: answer.proofCases, says: answer.says });
       setPhase("building");
     } else if (answer.ok) {
       setResult(answer.result);
@@ -263,6 +267,15 @@ function AgentFromChatWindowInner({
 
         {phase === "running" || phase === "failed" ? <LiveRunProgress progress={progress} /> : null}
 
+        {phase === "building" && buildId && proof && proof.cases !== null ? (
+          <div className="space-y-1 text-xs text-muted-foreground" data-testid="from-chat-proof-cases">
+            <p>
+              <ProofCount count={proof.cases} />
+            </p>
+            {/* Fewer cases than the person gave (chat + examples): the server's line says which and why. */}
+            {proof.cases < filledExamples(examples).length + 1 ? <p>{proof.says}</p> : null}
+          </div>
+        ) : null}
         {phase === "building" && buildId ? <BuildProgress buildId={buildId} onRebuilt={setBuildId} /> : null}
 
         {phase === "failed" && failure ? (

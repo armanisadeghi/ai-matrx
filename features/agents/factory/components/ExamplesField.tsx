@@ -21,6 +21,15 @@ export function filledExamples(examples: string[]): string[] {
   return examples.map((e) => e.trim()).filter(Boolean);
 }
 
+/** "N of 3 to prove it" — the ONE counter, used by the field and by a door that learns the real count (R55). */
+export function ProofCount({ count }: { count: number }) {
+  return (
+    <span className="type-secondary text-muted-foreground tabular-nums">
+      {count} of {EXAMPLES_TO_PROVE} to prove it
+    </span>
+  );
+}
+
 interface ExamplesFieldProps {
   examples: string[];
   onChange: (examples: string[]) => void;
@@ -35,9 +44,7 @@ export function ExamplesField({ examples, onChange, disabled, supplied = 0 }: Ex
     <div className="space-y-2" data-testid="generator-examples">
       <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
         Examples
-        <span className="type-secondary text-muted-foreground tabular-nums">
-          {count} of {EXAMPLES_TO_PROVE} to prove it
-        </span>
+        <ProofCount count={count} />
       </Label>
       {examples.map((value, index) => (
         <VoiceTextarea

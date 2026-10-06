@@ -36,8 +36,12 @@ export const FROM_CHAT_STEPS: readonly { step: FromChatStep; label: string }[] =
 
 export type FromChatAnswer =
   | { ok: true; result: FromChatResult }
-  /** AF-D door #4 on `pipeline`: the server started an Agent Factory build; the window follows it. */
-  | { ok: true; buildId: string }
+  /**
+   * AF-D door #4 on `pipeline`: the server started an Agent Factory build; the window follows it.
+   * `proofCases` = the cases the build really starts with (R55: the chat's request plus every
+   * example that maps onto the agent's inputs); `says` names any example left out.
+   */
+  | { ok: true; buildId: string; proofCases: number | null; says: string }
   | { ok: false; says: string; failedAt: FromChatStep | null };
 
 /**
@@ -48,6 +52,12 @@ export type FromChatAnswer =
 export function progressBuildId(d: AgentStudioFromChatProgressData): string | null {
   const id = (d as { build_id?: unknown }).build_id;
   return typeof id === "string" && id.trim() !== "" ? id : null;
+}
+
+/** The proof cases the started build really has (`proof_cases` on the `building` event, R55). */
+export function progressProofCases(d: AgentStudioFromChatProgressData): number | null {
+  const n = (d as { proof_cases?: unknown }).proof_cases;
+  return typeof n === "number" && Number.isFinite(n) ? n : null;
 }
 
 function isProgress(d: unknown): d is AgentStudioFromChatProgressData {
@@ -72,13 +82,19 @@ export async function makeAgentFromChat(
   let refusal: string | null = null;
   let lastStep: FromChatStep | null = null;
   let buildId: string | null = null;
+  let proofCases: number | null = null;
+  let buildSays = "";
 
   const onStreamEvent = (event: TypedStreamEvent) => {
     if (event.event === "data") {
       const d = event.data as unknown;
       if (isProgress(d)) {
         lastStep = d.step;
-        buildId = progressBuildId(d) ?? buildId;
+        if (progressBuildId(d)) {
+          buildId = progressBuildId(d);
+          proofCases = progressProofCases(d);
+          buildSays = d.says;
+        }
         onStep(d.step, d.says);
       } else if (isResult(d)) {
         result = d;
@@ -118,7 +134,7 @@ export async function makeAgentFromChat(
   }
   if (refusal) return { ok: false, says: refusal, failedAt: lastStep };
   const done = result as AgentStudioFromChatResultData | null;
-  if (!done && buildId) return { ok: true, buildId };
+  if (!done && buildId) return { ok: true, buildId, proofCases, says: buildSays };
   if (!done) {
     return { ok: false, says: "The run ended without the new agent. Check your agents list.", failedAt: lastStep };
   }

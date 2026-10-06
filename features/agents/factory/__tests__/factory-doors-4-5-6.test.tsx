@@ -131,7 +131,14 @@ describe("door #4 — make an agent from this chat", () => {
   it("pipeline: a building event naming a build is the answer — the window follows that build", async () => {
     streamed = [progress("reading"), progress("briefing"), progress("building", { build_id: "build-4" })];
     const { answer } = await runFromChat();
-    expect(answer).toEqual({ ok: true, buildId: "build-4" });
+    expect(answer).toEqual({ ok: true, buildId: "build-4", proofCases: null, says: "building" });
+  });
+
+  it("R55: the build's real proof-case count and the server's line ride the answer", async () => {
+    const says = "Building “W”, proving it on 2 cases. 1 example left out (example 1: it does not name the inputs).";
+    streamed = [progress("building", { build_id: "build-5", proof_cases: 2, says })];
+    const { answer } = await runFromChat();
+    expect(answer).toEqual({ ok: true, buildId: "build-5", proofCases: 2, says });
   });
 
   it("a refusal stays a refusal even after a build was named", async () => {
