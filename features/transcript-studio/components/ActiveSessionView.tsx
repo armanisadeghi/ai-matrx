@@ -201,7 +201,7 @@ export function ActiveSessionView({
             title="Move session to Trash"
             className={cn(
               "inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors",
-              "text-muted-foreground hover:bg-destructive/15 hover:text-destructive",
+              "text-muted-foreground hover:bg-destructive/15 hover:text-destructive-ink",
             )}
           >
             <Trash2 className="h-4 w-4" />

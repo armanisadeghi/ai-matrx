@@ -217,7 +217,7 @@ export function AddMcpServerDialog({
               {refreshError && (
                 <>
                   {" "}— but the refresh hit an error:{" "}
-                  <code className="bg-destructive/10 text-destructive px-1 rounded">
+                  <code className="bg-destructive/10 text-destructive-ink px-1 rounded">
                     {refreshError}
                     <ErrorAlchemyMenu error={refreshError} />
                   </code>

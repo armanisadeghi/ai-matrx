@@ -240,7 +240,7 @@ function BundlesAdminPageInner() {
               </div>
             </div>
             {error && (
-              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {error}
                 <ErrorAlchemyMenu error={error} />

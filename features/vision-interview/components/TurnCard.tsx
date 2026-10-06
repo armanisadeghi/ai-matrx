@@ -139,7 +139,7 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-1.5 py-px text-[10px] font-medium",
                 showAudio
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "border-primary/40 bg-primary/10 text-primary-ink"
                   : "border-border bg-muted text-muted-foreground hover:text-foreground",
               )}
             >

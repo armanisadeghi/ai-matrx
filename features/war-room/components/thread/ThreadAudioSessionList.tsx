@@ -99,7 +99,7 @@ export function ThreadAudioSessionList({ threadId }: { threadId: string }) {
                     <span className="tabular-nums">#{i + 1}</span>
                     {when ? <span>{when}</span> : null}
                     {active ? (
-                      <span className="rounded bg-primary/15 px-1 py-px font-medium text-primary">
+                      <span className="rounded bg-primary/15 px-1 py-px font-medium text-primary-ink">
                         Active
                       </span>
                     ) : null}

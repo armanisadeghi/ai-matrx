@@ -424,7 +424,7 @@ export function McpServersAdminPage() {
               </div>
             </div>
             {error && (
-              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink flex items-center gap-2">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {error}
                 <ErrorAlchemyMenu error={error} />
@@ -543,17 +543,17 @@ function FreshnessBadge({
     fresh: {
       Icon: CheckCircle2,
       label: "fresh",
-      className: "bg-success/10 text-success border-success/30",
+      className: "bg-success/10 text-success-ink border-success/30",
     },
     stale: {
       Icon: Clock,
       label: "stale",
-      className: "bg-warning/10 text-warning border-warning/30",
+      className: "bg-warning/10 text-warning-ink border-warning/30",
     },
     errored: {
       Icon: XCircle,
       label: "error",
-      className: "bg-destructive/10 text-destructive border-destructive/30",
+      className: "bg-destructive/10 text-destructive-ink border-destructive/30",
     },
     never: {
       Icon: Clock,
@@ -764,7 +764,7 @@ function ServerDetail({
           </div>
         </div>
         {fresh.state === "errored" && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
             <strong>Sync error:</strong> {fresh.lastError}
             <ErrorAlchemyMenu error={fresh.lastError} />
           </div>
@@ -1644,7 +1644,7 @@ function InlineLoading() {
 
 function ErrorBox({ msg }: { msg: string }) {
   return (
-    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink flex items-center gap-2">
       <AlertCircle className="h-3.5 w-3.5" />
       {msg}
       <ErrorAlchemyMenu error={msg} />
@@ -1675,7 +1675,7 @@ function TestFreshnessBadge({ testFresh }: { testFresh: TestFreshness }) {
   if (testFresh.state === "ok") {
     return (
       <span
-        className={`inline-flex items-center gap-1 rounded border border-success/30 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success`}
+        className={`inline-flex items-center gap-1 rounded border border-success/30 bg-success/10 px-1.5 py-0.5 text-[10px] font-medium text-success-ink`}
         title={`Endpoint reachable as of ${formatRelativeAge(testFresh.ageSec)} — HTTP ${testFresh.statusCode}, ${testFresh.latencyMs}ms`}
       >
         <PlugZap className="h-3 w-3" />
@@ -1686,7 +1686,7 @@ function TestFreshnessBadge({ testFresh }: { testFresh: TestFreshness }) {
   }
   return (
     <span
-      className="inline-flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+      className="inline-flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive-ink"
       title={
         testFresh.error
           ? `${formatRelativeAge(testFresh.ageSec)}: ${testFresh.error}`
@@ -1704,8 +1704,8 @@ function TestFreshnessBadge({ testFresh }: { testFresh: TestFreshness }) {
 
 function TestResultPanel({ result }: { result: McpTestResult }) {
   const tone = result.ok
-    ? "border-success/30 bg-success/5 text-success"
-    : "border-destructive/40 bg-destructive/5 text-destructive";
+    ? "border-success/30 bg-success/5 text-success-ink"
+    : "border-destructive/40 bg-destructive/5 text-destructive-ink";
   const Icon = result.ok ? CheckCircle2 : XCircle;
   return (
     <div

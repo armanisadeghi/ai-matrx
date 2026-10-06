@@ -44,7 +44,7 @@ export function RoleAvatar({
 }: RoleAvatarProps) {
   const meta = role ? ROLES[role] : null;
   const Icon = meta?.icon ?? User;
-  const avatarAccent = meta?.accent.avatar ?? "bg-primary/15 text-primary";
+  const avatarAccent = meta?.accent.avatar ?? "bg-primary/15 text-primary-ink";
   const ringAccent = meta?.accent.ring ?? "ring-primary/60";
 
   return (

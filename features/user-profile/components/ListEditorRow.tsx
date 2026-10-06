@@ -47,7 +47,7 @@ export function ListEditorRow({
             className={cn(
               "inline-flex h-6 w-6 items-center justify-center rounded-md border text-xs transition",
               primary.value
-                ? "border-warning/40 bg-warning/10 text-warning"
+                ? "border-warning/40 bg-warning/10 text-warning-ink"
                 : "border-border/40 text-muted-foreground hover:bg-accent",
             )}
             title={primary.title ?? "Mark primary"}
@@ -65,7 +65,7 @@ export function ListEditorRow({
         type="button"
         onClick={onRemove}
         className={cn(
-          "self-start rounded-md border border-border/40 p-1.5 text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive",
+          "self-start rounded-md border border-border/40 p-1.5 text-muted-foreground transition hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive-ink",
         )}
         title="Remove"
         aria-label="Remove"

@@ -141,7 +141,7 @@ export function RoomIdentityEditor({
                   "grid place-items-center aspect-square rounded-md border transition-colors",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   active
-                    ? "border-primary/70 bg-primary/10 text-primary"
+                    ? "border-primary/70 bg-primary/10 text-primary-ink"
                     : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >

@@ -302,7 +302,7 @@ function MandateWindowInner({
               className={cn(
                 "block w-full min-w-0 rounded-md px-2 py-1 text-left transition-colors",
                 active
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "text-foreground hover:bg-accent",
               )}
             >
@@ -400,7 +400,7 @@ function MandateWindowInner({
 
         <div className="min-h-0 flex-1 overflow-y-auto p-3">
           {loadError ? (
-            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
               {loadError}
               <ErrorAlchemyMenu error={loadError} />
             </p>
@@ -471,7 +471,7 @@ function PaneTab({
       className={cn(
         "flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors",
         active
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "text-muted-foreground hover:bg-accent hover:text-foreground",
       )}
     >

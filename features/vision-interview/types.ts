@@ -377,7 +377,7 @@ export const ROLES: Record<RoleKey, RoleMeta> = {
     opening:
       "I keep the written record of this interview. Everything said in these rooms ends up here. Ask me to write something down, change how it reads, or read the document back to you.",
     accent: {
-      avatar: "bg-primary/15 text-primary",
+      avatar: "bg-primary/15 text-primary-ink",
       text: "text-primary",
       ring: "ring-primary/60",
     },

@@ -38,7 +38,7 @@ export function WindowSidebar<T extends string = string>({
               className={cn(
                 "w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors",
                 isActive
-                  ? "bg-primary/10 text-primary border-r-2 border-primary"
+                  ? "bg-primary/10 text-primary-ink border-r-2 border-primary"
                   : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
               )}
             >

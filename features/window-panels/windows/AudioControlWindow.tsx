@@ -692,7 +692,7 @@ function StatusChip({ status }: { status: AudioSessionStatus }) {
     },
     error: {
       label: "Error",
-      className: "border-destructive/30 bg-destructive/10 text-destructive",
+      className: "border-destructive/30 bg-destructive/10 text-destructive-ink",
     },
   };
   const chip = map[status];
@@ -734,7 +734,7 @@ function TransportButton({
         "flex flex-1 items-center justify-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
         "[&_svg]:h-3.5 [&_svg]:w-3.5",
         variant === "destructive"
-          ? "border-border bg-background text-muted-foreground hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+          ? "border-border bg-background text-muted-foreground hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive-ink"
           : "border-border bg-background text-foreground hover:bg-accent",
       )}
     >

@@ -248,7 +248,7 @@ export function DetailShowcase() {
                   <Icon className="h-4 w-4 text-primary" />
                   <h3 className="text-sm font-medium text-foreground">{label}</h3>
                   {setting.value === value ? (
-                    <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
+                    <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-ink">
                       your default
                     </span>
                   ) : null}

@@ -55,12 +55,12 @@ const STATUS_META: Record<
   },
   pending: {
     label: "Pending",
-    chip: "border-primary/40 bg-primary/10 text-primary",
+    chip: "border-primary/40 bg-primary/10 text-primary-ink",
     rail: "bg-primary",
   },
   answered: {
     label: "Answered",
-    chip: "border-success/40 bg-success/10 text-success",
+    chip: "border-success/40 bg-success/10 text-success-ink",
     rail: "bg-success",
   },
   dismissed: {

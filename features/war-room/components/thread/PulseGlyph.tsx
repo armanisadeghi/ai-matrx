@@ -36,7 +36,7 @@ export function PulseGlyph({
       return (
         <span
           className={cn(
-            "grid place-items-center rounded-full bg-success/15 text-success",
+            "grid place-items-center rounded-full bg-success/15 text-success-ink",
             className,
           )}
           style={{ width: size, height: size }}
@@ -72,7 +72,7 @@ export function PulseGlyph({
     return (
       <span
         className={cn(
-          "grid place-items-center rounded-full bg-info/12 text-info",
+          "grid place-items-center rounded-full bg-info/12 text-info-ink",
           className,
         )}
         style={{ width: size, height: size }}
@@ -88,7 +88,7 @@ export function PulseGlyph({
     return (
       <span
         className={cn(
-          "grid place-items-center rounded-full bg-warning/12 text-warning",
+          "grid place-items-center rounded-full bg-warning/12 text-warning-ink",
           className,
         )}
         style={{ width: size, height: size }}

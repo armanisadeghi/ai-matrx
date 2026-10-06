@@ -27,7 +27,7 @@ export function DeprecationBanner({
   return (
     <div
       className={cn(
-        "shrink-0 flex items-start gap-2 px-2 py-1 border-b border-destructive/40 bg-destructive/10 text-destructive text-[11px] leading-tight",
+        "shrink-0 flex items-start gap-2 px-2 py-1 border-b border-destructive/40 bg-destructive/10 text-destructive-ink text-[11px] leading-tight",
         className,
       )}
     >

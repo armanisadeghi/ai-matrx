@@ -130,7 +130,7 @@ export function ConnectDatabasePage() {
               </form>
 
               {error ? (
-                <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive" data-connect-database-error="">
+                <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink" data-connect-database-error="">
                   {error}
                 </p>
               ) : null}

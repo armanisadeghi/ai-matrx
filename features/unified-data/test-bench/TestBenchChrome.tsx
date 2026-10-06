@@ -288,7 +288,7 @@ export function StatusFact({
 /** The store's or the platform's own refusal, shown to the person as a sentence. */
 export function Refusal({ children }: { children: ReactNode }) {
     return (
-        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink">
             {children}
         </p>
     );

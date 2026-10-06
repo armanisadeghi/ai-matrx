@@ -41,7 +41,7 @@ export function TranscriptsSurfaceGuide() {
               href={href}
               className="group flex min-h-11 items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/40"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                 <Icon className="h-4 w-4" />
               </span>
               <span className="min-w-0 flex-1">

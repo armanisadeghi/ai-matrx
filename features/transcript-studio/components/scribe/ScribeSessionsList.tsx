@@ -211,7 +211,7 @@ export function ScribeSessionsList({
                     onClick={() => onOpenSession(s.id)}
                     className="flex min-w-0 flex-1 items-center gap-3 p-3 text-left"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
                       <Mic className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">

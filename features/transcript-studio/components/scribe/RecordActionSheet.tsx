@@ -56,7 +56,7 @@ const CHOICES: Choice[] = [
     label: "Send to agent",
     description: "Submit it as a turn now",
     icon: Webhook,
-    tile: "bg-primary/15 text-primary",
+    tile: "bg-primary/15 text-primary-ink",
   },
   {
     key: "save",

@@ -216,7 +216,7 @@ function ViewToggle({ state }: { state: InstanceUIState }) {
       className={cn(
         "flex items-center gap-1 h-6 px-2 rounded text-xs transition-colors [&_svg]:h-3 [&_svg]:w-3",
         state.showFullSlice
-          ? "bg-primary/10 text-primary border border-primary/20"
+          ? "bg-primary/10 text-primary-ink border border-primary/20"
           : "text-muted-foreground hover:text-foreground hover:bg-accent",
       )}
     >

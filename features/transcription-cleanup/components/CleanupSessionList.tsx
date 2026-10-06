@@ -58,7 +58,7 @@ export function CleanupSessionsToolbar({
               className={cn(
                 "rounded px-1.5 py-0.5 text-[10px] font-medium capitalize transition-colors",
                 scope === s
-                  ? "bg-primary/15 text-primary"
+                  ? "bg-primary/15 text-primary-ink"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >

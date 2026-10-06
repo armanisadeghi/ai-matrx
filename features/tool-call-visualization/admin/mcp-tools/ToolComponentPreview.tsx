@@ -669,7 +669,7 @@ export function ToolComponentPreview({
           </div>
 
           {agent.error && (
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive-ink">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               {agent.error}
               <ErrorAlchemyMenu error={agent.error} />

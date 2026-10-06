@@ -500,8 +500,8 @@ function AssetInspector({
             className={cn(
               "rounded-lg border px-2.5 py-2 text-[11px]",
               standardCheck.matches
-                ? "border-success/30 bg-success/5 text-success"
-                : "border-warning/30 bg-warning/5 text-warning",
+                ? "border-success/30 bg-success/5 text-success-ink"
+                : "border-warning/30 bg-warning/5 text-warning-ink",
             )}
           >
             {standardCheck.matches ? (

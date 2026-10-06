@@ -234,21 +234,21 @@ function ConvertToShapeWindowContent({
         </label>
 
         {!analysis.isValidJson && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
             This sample is not valid JSON: {analysis.errorMessage}
             <ErrorAlchemyMenu error={analysis.errorMessage} />
           </div>
         )}
 
         {readinessError && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
             Shape readiness could not be checked: {readinessError}
             <ErrorAlchemyMenu error={readinessError} />
           </div>
         )}
 
         {!mandateLoading && !agentId && (
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
             The Shape Creator mandate could not resolve
             {mandateError ? `: ${mandateError}` : "."}
             <ErrorAlchemyMenu />

@@ -250,7 +250,7 @@ export function ScribeCaptureScreen({ sessionId }: ScribeCaptureScreenProps) {
             disabled={!hasRecordings}
             aria-label="View all clean transcripts"
             className={cn(
-              "flex h-14 w-14 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary transition active:bg-primary/20",
+              "flex h-14 w-14 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary-ink transition active:bg-primary/20",
               !hasRecordings && "pointer-events-none opacity-40",
             )}
           >

@@ -96,8 +96,8 @@ function isLive(q: InterviewQuestionRow): boolean {
 // ── Holes ───────────────────────────────────────────────────────────────────
 
 const CLASSIFICATION_CHIP: Record<HoleClassification, string> = {
-  fatal: "border-destructive/50 bg-destructive/10 text-destructive",
-  unknown: "border-primary/40 bg-primary/10 text-primary",
+  fatal: "border-destructive/50 bg-destructive/10 text-destructive-ink",
+  unknown: "border-primary/40 bg-primary/10 text-primary-ink",
   undecided: "border-border bg-muted text-muted-foreground",
 };
 
@@ -253,7 +253,7 @@ function Count({ value, tone }: { value: number; tone: "open" | "pending" }) {
       className={cn(
         "rounded-full px-1.5 py-px text-[10px] font-semibold",
         tone === "pending"
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "bg-muted text-muted-foreground",
       )}
     >

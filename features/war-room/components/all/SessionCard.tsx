@@ -122,7 +122,7 @@ export function SessionCard({ session }: { session: WarRoomSession }) {
           <button
             type="button"
             onClick={handleDelete}
-            className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all"
+            className="grid place-items-center size-7 rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-destructive/10 hover:text-destructive-ink transition-all"
             aria-label="Delete War Room"
           >
             {deleting ? (

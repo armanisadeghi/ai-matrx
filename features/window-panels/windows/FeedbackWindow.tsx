@@ -1344,7 +1344,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
                 key={value}
                 value={value}
                 aria-label={label}
-                className="gap-1.5 px-2.5 text-xs pointer-coarse:min-h-11 [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                className="gap-1.5 px-2.5 text-xs pointer-coarse:min-h-11 [&_svg]:h-3.5 [&_svg]:w-3.5 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink"
               >
                 <Icon />
                 {label}
@@ -1471,7 +1471,7 @@ function FeedbackWindowBody({ form }: { form: FeedbackFormState }) {
               >
                 Admin options
                 {(categoryId !== "none" || assigneeId !== "none") && (
-                  <span className="ml-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                  <span className="ml-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary-ink">
                     {(categoryId !== "none" ? 1 : 0) +
                       (assigneeId !== "none" ? 1 : 0)}{" "}
                     set

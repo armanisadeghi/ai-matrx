@@ -94,7 +94,7 @@ function AgentSkillsWindowInner({
           <Lightbulb className="h-3.5 w-3.5 text-primary" />
           Agent Skills
           {totalConfigured > 0 && (
-            <span className="rounded-sm bg-primary/15 px-1 text-[10px] font-medium tabular-nums text-primary">
+            <span className="rounded-sm bg-primary/15 px-1 text-[10px] font-medium tabular-nums text-primary-ink">
               {totalConfigured}
             </span>
           )}

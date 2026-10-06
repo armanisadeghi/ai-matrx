@@ -87,7 +87,7 @@ export function PromoteToStudioButton({
         "inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-xs font-medium transition-colors",
         busy
           ? "bg-muted text-muted-foreground cursor-wait"
-          : "bg-primary/10 text-primary hover:bg-primary/15",
+          : "bg-primary/10 text-primary-ink hover:bg-primary/15",
         className,
       )}
     >
