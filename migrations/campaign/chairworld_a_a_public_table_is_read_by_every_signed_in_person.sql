@@ -1,12 +1,14 @@
 -- additive: yes
 -- lane: CHAIR-WORLD-LANE
+-- chair-step: its only REVOKEs take EXECUTE from PUBLIC, anon and authenticated on the four helpers this file creates (internal, asked only inside the store doors); no existing function loses a grant.
 -- based-on: custom.assert_client_may_reach(uuid, text) 4928729e8a1030094245e7e14b30772991b39a5b028b7d758770b9a279b1a06d
 -- based-on: custom.assert_may_know_table(uuid, uuid, text) 015aaff38bd7787e4bea71bf747fa4cf00712aed414c0072ca763b50c4b3cf25
 -- based-on: custom.assert_client_may_open(uuid, uuid, text, permission_level, text) 64d9275e83df3ab5f003b328f4bedf88faa64fcece376535e7e43fdeef2923e3
 -- based-on: custom.views(uuid, uuid) bfb8730153837de6c4052c9a0e6d9133ed29349f1a82c11e0e149c392654b750
 -- based-on: custom.read_record(uuid, uuid, boolean) a9cecbdaa90dc2925e3e488b141195669da505b2157364ed652042c48d56ee24
--- LOCKS: three new functions (EXECUTE revoked from PUBLIC, anon and authenticated: they are asked only
--- inside the store's doors, like custom.assert_client_may_reach itself) and five function bodies
+-- based-on: custom.table_list_everywhere(uuid) ae8154ac56f4d015a19075d7bbb44c922345679d95c9930882efe682ea9bf8ae
+-- LOCKS: four new functions (EXECUTE revoked from PUBLIC, anon and authenticated: they are asked only
+-- inside the store's doors, like custom.assert_client_may_reach itself) and six function bodies
 -- (CREATE OR REPLACE keeps their grants). No table, row, trigger, grant or policy is touched.
 --
 -- A PUBLIC TABLE IS READ BY EVERY SIGNED-IN PERSON (chair ruling 2026-10-05, CHAIR-WORLD-LANE). The access
@@ -35,6 +37,8 @@
 --    the read door calls on its way (custom.query_visible_ids, custom.table_type_field, …) pass the wall in
 --    that statement (memo 'w:pubt') — and only in that statement. For everybody else it returns at once.
 -- 5. The wall, assert_may_know_table, assert_client_may_open, views and read_record ask it.
+-- 6. custom.table_list_everywhere(uuid) answered `is_public: false` for every Table; it now carries the Table's
+--    own mark (published to the web), so a list shows Public where the Table is.
 -- Inverse: migrations/inverse/chairworld_a_a_public_table_is_read_by_every_signed_in_person_down.sql.
 
 set local lock_timeout = '3s';
@@ -127,6 +131,20 @@ begin
   perform custom._not_a_member_refusal(p_door);
 end
 $function$;
+
+insert into platform.client_callable_door (schema_name, function_name, identity_args, identity_argtypes, reason, declared_by, non_client_lane, signed_in_callers, anonymous_callers)
+values
+ ('custom', 'organization_has_a_public_table', pg_get_function_identity_arguments('custom.organization_has_a_public_table(uuid)'::regprocedure),
+  ARRAY['uuid'::regtype]::oid[],
+  'p_organization_id is an organization id; the answer is one boolean (does it hold a live Table published to the web, and is it unarchived) and names no Table. NULL answers false.',
+  'campaign chairworld_a_a_public_table_is_read_by_every_signed_in_person.sql',
+  'server_only: asked only inside custom.assert_client_may_reach, the organization wall every store door runs as its owner; no client ever calls it.', false, false),
+ ('custom', 'assert_public_reader_names_a_public_table', pg_get_function_identity_arguments('custom.assert_public_reader_names_a_public_table(uuid,uuid,text)'::regprocedure),
+  ARRAY['uuid'::regtype, 'uuid'::regtype, 'text'::regtype]::oid[],
+  'p_organization_id is an organization id and p_table_id a Table id inside it; it returns nothing or raises the wall''s refusal, and decides only for a seat the wall admitted through the world lane in this statement. NULL p_table_id refuses that seat.',
+  'campaign chairworld_a_a_public_table_is_read_by_every_signed_in_person.sql',
+  'server_only: asked only inside custom.assert_may_know_table, custom.assert_client_may_open, custom.views and custom.read_record, right after the wall; no client ever calls it.', false, false)
+on conflict do nothing;
 
 revoke execute on function custom.door_reads_only(text) from public, anon, authenticated;
 revoke execute on function custom.organization_has_a_public_table(uuid) from public, anon, authenticated;
@@ -414,10 +432,10 @@ begin
 
   -- REC-21 / T5. THE ID A MERGE SENT SOMEWHERE ELSE — a redirect, never a silent substitution.
   v_now := custom.resolve_id(p_organization_id, p_record_id);
-  -- CHAIR-WORLD-LANE: a person admitted only through the world lane reads a row of a Public Table and no other.
+  -- CHAIR-WORLD-LANE: a person admitted only through the world lane reads a row of a Public Table and no other
+  -- (the Table the row lives in; a Table record itself lives in the kernel Table, which is never Public).
   perform custom.assert_public_reader_names_a_public_table(p_organization_id,
-    (select case when r.table_id = custom.table_kernel_id() then r.id else r.table_id end
-       from custom.record r
+    (select r.table_id from custom.record r
       where r.organization_id = p_organization_id and r.id = v_now),
     'custom.read_record');
 
@@ -443,4 +461,161 @@ begin
                      's', true, 'l', custom.effective_level(v_me, null, v_now))),
                    '{}'::jsonb) w);
 end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.table_list_everywhere(p_organization_id uuid DEFAULT NULL::uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_me     uuid := custom.query_principal();
+  v_kernel uuid := custom.table_kernel_id();
+  v_field  uuid := custom.field_kernel_id();
+  v_orgs   uuid[] := '{}'::uuid[];
+  v_org    uuid;
+  v_tables jsonb;
+begin
+  -- NO ORGANIZATION NAMED = the optional organization FILTER left off (org-filter sweep, 2026-09-29;
+  -- access-belongs-to-the-person): the Tables the caller may open in EVERY organization she belongs
+  -- to. Each organization still meets its own wall (custom.assert_client_may_reach, this door's name)
+  -- and its own ladder (custom.query_visible_ids) below; an organization whose wall refuses (42501)
+  -- contributes nothing. No permission is changed by this branch.
+  --
+  -- TABLE-LIST-PERF (2026-10-03, lane data-tables-grid-overhaul; shipped by CHAIR-GRID): ONE STATEMENT
+  -- FOR EVERY ORGANIZATION. This branch used to call this same door once per organization, and each
+  -- call counted rows, Fields and latest activity Table by Table and asked custom.table_placement (a
+  -- scan of the organization's whole Field graph) once per Table: ~25-40 s for admin@admin.com (48
+  -- organizations, ~600 Tables) against an 8 s statement limit. Now the walls are asked first, the one
+  -- ladder is primed once for all admitted organizations (custom.tables_seen_once_per_group, as
+  -- custom.data_home_tables does), and the counts, the Field graph and the placement are read once,
+  -- set-based. Same rows, same shape, same order.
+  if p_organization_id is null then
+    if v_me is null then
+      return jsonb_build_object('success', true, 'tables', '[]'::jsonb);
+    end if;
+    for v_org in
+      select m.organization_id
+        from iam.organization_member m
+        join iam.organizations o on o.id = m.organization_id and o.archived_at is null
+       where m.user_id = v_me
+    loop
+      begin
+        perform custom.assert_client_may_reach(v_org, 'custom.table_list_everywhere');
+        v_orgs := v_orgs || v_org;
+      exception when insufficient_privilege then
+        continue;
+      end;
+    end loop;
+  else
+    perform custom.assert_client_may_reach(p_organization_id, 'custom.table_list_everywhere');
+    v_orgs := array[p_organization_id];
+  end if;
+
+  if cardinality(v_orgs) = 0 then
+    return jsonb_build_object('success', true, 'tables', '[]'::jsonb);
+  end if;
+
+  -- STORE-READ-PERF-3/4: the one ladder's Table answer for every admitted organization at once; the
+  -- answer waits in this statement's memo and each custom.query_visible_ids below reads its own
+  -- organization's part. It decides nothing: without it every answer is the same, only slower.
+  if v_me is not null then
+    perform count(*) from custom.tables_seen_once_per_group(v_me, v_orgs);
+  end if;
+
+  with visible as materialized (
+    select o.org, v.v as id
+      from unnest(v_orgs) as o(org)
+      cross join lateral custom.query_visible_ids(o.org, v_kernel) v
+  ),
+  tbl as materialized (
+    select t.*
+      from custom.record t
+      join visible v on v.org = t.organization_id and v.id = t.id
+     where t.table_id = v_kernel
+       and t.data_class = 'table'
+       and t.deleted_at is null
+  ),
+  activity as materialized (
+    -- rows and latest activity of every listed Table, one grouped read
+    select r.organization_id, r.table_id,
+           max(r.updated_at) as last_updated,
+           count(*) filter (where r.data_class = 'record' and r.deleted_at is null) as row_count
+      from (select distinct organization_id, id from tbl) k
+      join custom.record r on r.organization_id = k.organization_id and r.table_id = k.id
+     group by 1, 2
+  ),
+  field_counts as materialized (
+    -- the Field graph of the admitted organizations, read once: live Fields per Table ...
+    select f.organization_id, f.data ->> 'entity_definition_id' as entity_id, count(*) as field_count
+      from custom.record f
+     where f.organization_id = any (v_orgs)
+       and f.table_id = v_field
+       and f.data_class = 'field'
+       and f.deleted_at is null
+     group by 1, 2
+  ),
+  options_tables as materialized (
+    -- ... and which Tables a list Field takes its choices from (custom.table_placement's one
+    -- Field-graph question, asked once for every organization instead of once per Table)
+    select distinct f.organization_id, f.data -> 'config' ->> 'options_table_id' as id
+      from custom.record f
+     where f.organization_id = any (v_orgs)
+       and f.table_id = v_field
+       and f.deleted_at is null
+       and f.data ->> 'type' = 'list'
+       and f.data -> 'config' ->> 'options_table_id' is not null
+  ),
+  store as materialized (
+    select jsonb_build_object(
+             'id', t.id,
+             'table_name', coalesce(nullif(t.data ->> 'name', ''), '(unnamed table)'),
+             'description', t.data ->> 'description',
+             'version', t.version,
+             'user_id', t.created_by,
+             -- CHAIR-WORLD-LANE: the list's Public mark is the Table's own (published to the web).
+             'is_public', t.published_to_web,
+             'visibility', t.visibility::text,
+             'organization_id', t.organization_id,
+             'created_at', t.created_at,
+             'updated_at', t.updated_at,
+             'last_activity_at', greatest(t.updated_at, a.last_updated),
+             'row_count', coalesce(a.row_count, 0),
+             'field_count', coalesce(fc.field_count, 0),
+             'store', 'records')
+           -- SC-1 PLACEMENT: custom.table_placement(t.organization_id, t.id, t.data, false), word for
+           -- word, with its one Field-graph question answered from `options_tables` above instead of per Table.
+           || (select jsonb_build_object(
+                        'kept_by_the_app', d.kept,
+                        'kept_for', case when d.kept then coalesce(nullif(btrim(t.data ->> 'kept_for'), ''), d.word, 'app') end,
+                        'offered_as_context',
+                          case when jsonb_typeof(t.data -> 'offered_as_context') = 'boolean'
+                               then (t.data ->> 'offered_as_context')::boolean else false end)
+                 from (select w.word,
+                              (w.word is not null
+                               or coalesce(t.data ->> 'kept_by_the_app', '') = 'true'
+                               or coalesce(btrim(t.data ->> 'kept_for'), '') <> '') as kept
+                         from (select custom.table_kept_for_derived(
+                                        t.data, false,
+                                        ot.id is not null) as word) w) d) as doc
+      from tbl t
+      left join activity a on a.organization_id = t.organization_id and a.table_id = t.id
+      left join field_counts fc on fc.organization_id = t.organization_id and fc.entity_id = t.id::text
+      left join options_tables ot on ot.organization_id = t.organization_id and ot.id = t.id::text
+  )
+  -- The order keys are the door's own (latest activity, then creation, newest first); the Table's id
+  -- closes a tie so two calls page the same way (CHAIR-GRID).
+  select coalesce(jsonb_agg(x.doc order by (x.doc ->> 'last_activity_at') desc nulls last,
+                                           (x.doc ->> 'created_at') desc,
+                                           (x.doc ->> 'id')), '[]'::jsonb)
+    into v_tables
+    -- APP TABLES WAIT BEHIND ONE SWITCH (lane CHAIR-DOORS-2, v6 N-C8): a Table the app keeps out of every
+    -- default list (custom.table_kept_out_of_lists on its placement word) only with p_include_app_tables.
+    from (select s.doc from store s
+           where current_setting('custom.include_app_tables', true) is not distinct from 'on'
+              or not custom.table_kept_out_of_lists(s.doc ->> 'kept_for')) x;
+
+  return jsonb_build_object('success', true, 'tables', v_tables);
+end
 $function$;
