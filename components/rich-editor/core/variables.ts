@@ -84,7 +84,7 @@ export const VARIABLE_STATE_CLASS: Record<VariableState, string> = {
   undeclared:
     "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800",
   literal: "bg-muted text-muted-foreground border-border",
-  unbound: "bg-primary/10 text-primary border-primary/30",
+  unbound: "bg-primary/10 text-primary-ink border-primary/30",
 };
 
 /** A typed name for a new variable: letters, digits and underscores. */

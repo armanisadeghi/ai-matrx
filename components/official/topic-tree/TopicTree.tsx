@@ -273,7 +273,7 @@ function RootDropStrip() {
     <div
       ref={setNodeRef}
       className={cn(
-        "flex h-7 shrink-0 items-center justify-center border-b border-primary/30 bg-primary/5 px-2 type-meta font-medium text-primary",
+        "flex h-7 shrink-0 items-center justify-center border-b border-primary/30 bg-primary/5 px-2 type-meta font-medium text-primary-ink",
         isOver && "bg-primary/15",
       )}
     >

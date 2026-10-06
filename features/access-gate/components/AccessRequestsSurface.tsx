@@ -90,10 +90,10 @@ const STATUS_LABEL: Record<AccessRequestStatus, string> = {
 
 const STATUS_TONE: Record<AccessRequestStatus, string> = {
   pending: "bg-muted text-muted-foreground",
-  granted: "bg-primary/10 text-primary",
+  granted: "bg-primary/10 text-primary-ink",
   declined: "bg-muted text-muted-foreground",
   withdrawn: "bg-muted text-muted-foreground",
-  reported: "bg-destructive/10 text-destructive",
+  reported: "bg-destructive/10 text-destructive-ink",
 };
 
 function statusLabel(row: AccessRequestRow): string {
@@ -400,7 +400,7 @@ export function AccessRequestsSurface() {
 
       <div>
           {error && (
-            <div className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <div className="mb-3 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>

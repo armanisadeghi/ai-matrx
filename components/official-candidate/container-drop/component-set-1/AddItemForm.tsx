@@ -79,7 +79,7 @@ export function AddItemForm({ className, buttonLabel }: AddItemFormProps) {
                 onClick={() => setIconName(name)}
                 className={`rounded-md p-1.5 transition-colors ${
                   iconName === name
-                    ? "bg-primary/10 text-primary ring-1 ring-primary/30"
+                    ? "bg-primary/10 text-primary-ink ring-1 ring-primary/30"
                     : "text-muted-foreground hover:bg-muted"
                 }`}
               >

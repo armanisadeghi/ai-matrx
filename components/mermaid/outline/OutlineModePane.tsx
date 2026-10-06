@@ -189,7 +189,7 @@ function IconAction({
         onClick={onClick}
         className={cn(
           "rounded p-1.5 opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100",
-          destructive ? "text-destructive hover:bg-destructive/10" : "text-muted-foreground hover:bg-muted",
+          destructive ? "text-destructive-ink hover:bg-destructive/10" : "text-muted-foreground hover:bg-muted",
           hidden && "invisible",
         )}
       >
@@ -441,7 +441,7 @@ function SequenceOutline({ doc, apply }: { doc: SequenceDoc; apply: Apply }) {
                 type="button"
                 aria-label={`Delete ${p.alias ?? p.id}`}
                 onClick={() => apply({ type: "deleteParticipant", id: p.id })}
-                className="rounded-full p-0.5 text-muted-foreground opacity-100 hover:bg-destructive/10 hover:text-destructive sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover/chip:opacity-100 focus-visible:opacity-100"
+                className="rounded-full p-0.5 text-muted-foreground opacity-100 hover:bg-destructive/10 hover:text-destructive-ink sm:[@media(hover:hover)]:opacity-0 sm:[@media(hover:hover)]:group-hover/chip:opacity-100 focus-visible:opacity-100"
               >
                 <Trash2 className="h-3 w-3" />
               </button>

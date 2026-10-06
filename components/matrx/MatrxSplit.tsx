@@ -407,7 +407,7 @@ export function MatrxSplit({
             className={cn(
               "flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
               mobileView === "edit"
-                ? "text-primary border-b-2 border-primary bg-primary/5"
+                ? "text-primary-ink border-b-2 border-primary bg-primary/5"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -421,7 +421,7 @@ export function MatrxSplit({
             className={cn(
               "flex flex-1 items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors",
               mobileView === "preview"
-                ? "text-primary border-b-2 border-primary bg-primary/5"
+                ? "text-primary-ink border-b-2 border-primary bg-primary/5"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

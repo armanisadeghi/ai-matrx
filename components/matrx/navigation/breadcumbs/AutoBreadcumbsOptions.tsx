@@ -47,7 +47,7 @@ const variantStyles: Record<BreadcrumbVariant, BreadcrumbStyles> = {
     filled: {
         list: "gap-1",
         separator: <ChevronRight className="w-4 h-4 text-primary/60"/>,
-        item: "px-3 py-1 rounded-full data-[current=true]:bg-primary/10 data-[current=true]:text-primary",
+        item: "px-3 py-1 rounded-full data-[current=true]:bg-primary/10 data-[current=true]:text-primary-ink",
         icon: Component,
     },
     custom: {

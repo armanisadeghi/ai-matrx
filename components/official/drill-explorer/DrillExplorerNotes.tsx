@@ -46,7 +46,7 @@ export function tipWords(text: string, budget = 140): string {
 const TONE: Record<NonNullable<DrillNoteChip["tone"]>, string> = {
   muted: "bg-muted text-muted-foreground",
   warn: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  error: "bg-destructive/10 text-destructive",
+  error: "bg-destructive/10 text-destructive-ink",
 };
 
 export function DrillExplorerNotes({ chips, notes }: { chips: readonly DrillNoteChip[]; notes: readonly string[] }) {

@@ -382,7 +382,7 @@ function NodeActions(props: {
               className={cn(
                 "flex h-8 w-8 items-center justify-center rounded border text-sm",
                 props.shape === choice.shape
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:bg-muted",
               )}
             >
@@ -481,7 +481,7 @@ function EdgeActions(props: {
             className={cn(
               "flex-1 rounded border px-2 py-1.5 text-xs",
               props.style === choice.style
-                ? "border-primary bg-primary/10 text-primary"
+                ? "border-primary bg-primary/10 text-primary-ink"
                 : "border-border text-muted-foreground hover:bg-muted",
             )}
           >

@@ -397,7 +397,7 @@ function PreviewBar({
           type="button"
           onClick={onClear}
           title="Remove image"
-          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive-ink transition-colors"
         >
           <Trash2 className="h-4 w-4" />
         </button>
@@ -1123,7 +1123,7 @@ export function ImageAssetUploader({
                 type="button"
                 onClick={remove}
                 title="Remove image"
-                className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive-ink transition-colors"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -1294,7 +1294,7 @@ export function ImageAssetUploader({
             {populatedLegacyEntries.map(({ key, label: vLabel }) => (
               <span
                 key={key}
-                className="type-secondary px-2 py-0.5 rounded-full border border-success/40 text-success bg-success/5"
+                className="type-secondary px-2 py-0.5 rounded-full border border-success/40 text-success-ink bg-success/5"
                 title={vLabel}
               >
                 {vLabel}

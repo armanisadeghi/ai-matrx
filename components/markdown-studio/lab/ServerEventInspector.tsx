@@ -419,7 +419,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
           </div>
 
           {error && (
-            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
+            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive-ink">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>

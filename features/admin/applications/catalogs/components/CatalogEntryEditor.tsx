@@ -772,7 +772,7 @@ export function CatalogEntryEditor({
             className={cn(
               "rounded-md border px-3 py-2 text-xs",
               isActive
-                ? "border-destructive/50 bg-destructive/10 text-destructive"
+                ? "border-destructive/50 bg-destructive/10 text-destructive-ink"
                 : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
             )}
           >

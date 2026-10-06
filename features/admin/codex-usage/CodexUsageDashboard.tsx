@@ -517,7 +517,7 @@ export function CodexUsageDashboard() {
       {error ? (
         <div
           role="alert"
-          className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive"
+          className="flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-ink"
         >
           <CircleAlert className="mt-0.5 h-5 w-5 shrink-0" aria-hidden />
           <div>

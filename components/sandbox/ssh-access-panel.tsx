@@ -120,7 +120,7 @@ export function SshAccessPanel({
             sandbox.
           </p>
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-2 mb-3">
+            <div className="text-sm text-destructive-ink bg-destructive/10 border border-destructive/20 rounded-md p-2 mb-3">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>

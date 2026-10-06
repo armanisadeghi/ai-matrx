@@ -474,7 +474,7 @@ export default function AgentReviewWorkspace({
                 : {})}
             />
           ) : (
-            <div className="m-4 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+            <div className="m-4 rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-ink">
               This review has no discussion thread. Return to the queue and ask
               the filing agent to repair the review record.
             </div>
@@ -565,7 +565,7 @@ export default function AgentReviewWorkspace({
                 </AppLink>
               </div>
             ) : raiseOutcome.status === "approved_not_raised" ? (
-              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
                 <p className="font-medium">
                   Approved — but your note was NOT raised.
                 </p>
@@ -584,7 +584,7 @@ export default function AgentReviewWorkspace({
                 </Button>
               </div>
             ) : (
-              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
                 <p className="font-medium">
                   Nothing was approved and nothing was raised.
                 </p>
@@ -618,7 +618,7 @@ export default function AgentReviewWorkspace({
           ) : null}
 
           {raisedError ? (
-            <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+            <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
               Notes raised from this review could not be read: {raisedError}
               <ErrorAlchemyMenu error={raisedError} />
             </div>

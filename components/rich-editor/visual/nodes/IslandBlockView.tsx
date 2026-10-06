@@ -105,7 +105,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
           {!readOnly && (
             <button
               type="button"
-              className="rounded p-1 hover:bg-destructive/10 hover:text-destructive pointer-coarse:flex pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:items-center pointer-coarse:justify-center"
+              className="rounded p-1 hover:bg-destructive/10 hover:text-destructive-ink pointer-coarse:flex pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:items-center pointer-coarse:justify-center"
               onClick={remove}
               title={`Remove this ${meta.label.toLowerCase()} (Undo brings it back)`}
             >
@@ -184,7 +184,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
               </button>
               <button
                 type="button"
-                className="rounded p-1 hover:bg-destructive/10 hover:text-destructive pointer-coarse:flex pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:items-center pointer-coarse:justify-center"
+                className="rounded p-1 hover:bg-destructive/10 hover:text-destructive-ink pointer-coarse:flex pointer-coarse:h-11 pointer-coarse:w-11 pointer-coarse:items-center pointer-coarse:justify-center"
                 onClick={remove}
                 title="Remove this block from the document (Undo brings it back)"
               >

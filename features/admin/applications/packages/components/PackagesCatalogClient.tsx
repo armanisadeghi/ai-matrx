@@ -156,7 +156,7 @@ export function PackagesCatalogClient({ rows, error }: PackagesCatalogClientProp
         </div>
 
         {error ? (
-          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
             The npm registry inventory could not be loaded. No cached or invented package status is being shown. {error}
             <ErrorAlchemyMenu className="ml-auto" />
           </div>

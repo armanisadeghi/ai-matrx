@@ -79,7 +79,7 @@ export default function ExpandableSectionsDisplay({ data }: RouteDisplayProps) {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-foreground">{label}</span>
                   {hasChildren && (
-                    <span className="text-[10px] font-mono text-primary/70 bg-primary/10 px-1.5 py-0.5 rounded">
+                    <span className="text-[10px] font-mono text-primary-ink/70 bg-primary/10 px-1.5 py-0.5 rounded">
                       {items.length} sub
                     </span>
                   )}

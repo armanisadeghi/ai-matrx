@@ -288,7 +288,7 @@ export function TranscriptionCleanupContextPanel({
 
             {/* Note badge — shown when linked */}
             {block.noteId && (
-              <span className="shrink-0 flex items-center gap-0.5 text-[9px] text-primary/70 font-medium rounded px-1 py-0.5 bg-primary/5 border border-primary/20">
+              <span className="shrink-0 flex items-center gap-0.5 text-[9px] text-primary-ink/70 font-medium rounded px-1 py-0.5 bg-primary/5 border border-primary/20">
                 <BookOpen className="h-2.5 w-2.5" />
                 {block.noteLabel ?? "Note"}
               </span>

@@ -349,7 +349,7 @@ export function InvitationsPanel({
                                   <AvatarImage
                                     src={contact.avatar_url || undefined}
                                   />
-                                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary-ink">
                                     {getInitials(contact.display_name ?? contact.email)}
                                   </AvatarFallback>
                                 </Avatar>
@@ -383,7 +383,7 @@ export function InvitationsPanel({
               <div className="flex items-center gap-2 p-2 rounded-md bg-primary/5 border border-primary/20">
                 <Avatar className="w-6 h-6 flex-shrink-0">
                   <AvatarImage src={selectedContact.avatar_url || undefined} />
-                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                  <AvatarFallback className="text-[10px] bg-primary/10 text-primary-ink">
                     {getInitials(
                       selectedContact.display_name ?? selectedContact.email,
                     )}

@@ -67,7 +67,7 @@ export function RadioSelect<T extends string>({
           className={cn(
             "flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors",
             value === opt.value
-              ? "bg-primary/10 font-medium text-primary"
+              ? "bg-primary/10 font-medium text-primary-ink"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >
@@ -184,7 +184,7 @@ export function FacetChips({
                 "inline-flex max-w-full items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
                 opt.value === NONE_SENTINEL && "italic",
                 isSelected
-                  ? "border-primary/30 bg-primary/15 text-primary"
+                  ? "border-primary/30 bg-primary/15 text-primary-ink"
                   : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground",
               )}
               title={`${opt.label} (${opt.count})`}
