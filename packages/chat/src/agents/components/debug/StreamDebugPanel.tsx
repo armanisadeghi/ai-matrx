@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Chip, type ChipTone, Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
@@ -77,9 +79,13 @@ function DebugTabScroll({ children }: { children: React.ReactNode }) {
 // =============================================================================
 
 function useCopy() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState<string | null>(null);
   const copy = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
+    copyText(text);
     setCopied(id);
     setTimeout(() => setCopied(null), 1500);
   };

@@ -13,6 +13,8 @@
  * will see the full row.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import {
@@ -342,6 +344,10 @@ function BufferedObservationCard({
   cycle: BufferedObservationCycle;
   defaultOpen: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [open, setOpen] = useState(defaultOpen);
   const [copied, setCopied] = useState(false);
 
@@ -350,7 +356,7 @@ function BufferedObservationCard({
 
   const handleCopy = useCallback(() => {
     if (!hasText) return;
-    navigator.clipboard.writeText(text);
+    copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [text, hasText]);
@@ -668,12 +674,16 @@ function TextPayload({
   text: string | null | undefined;
   maxHeightClass?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const hasText = typeof text === "string" && text.length > 0;
 
   const handleCopy = useCallback(() => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
+    copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [text]);

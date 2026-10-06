@@ -15,6 +15,8 @@
  * dialog tomorrow — with zero chrome assumptions.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { Loader2, Copy, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -31,6 +33,10 @@ interface PromptPreviewContentProps {
 export function PromptPreviewContent({
   conversationId,
 }: PromptPreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const store = useAppStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +68,7 @@ export function PromptPreviewContent({
 
   const copy = async (label: string, text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       toast.success(`${label} copied`);
     } catch {
       toast.error("Couldn't copy");
