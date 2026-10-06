@@ -419,12 +419,12 @@ const nextConfig = {
       // appended in v0.4.2884 out of that global graph, but retain the same
       // synchronous module for every non-demos profile. The demos route layout
       // imports the full registry before any demo client surface renders.
-      "@/providers/chatUiRegistrationProfile": path.join(
-        __dirname,
+      // Turbopack resolves an alias VALUE as a module specifier from the project
+      // root — an absolute path made every (core) route 500 with "Module not found".
+      "@/providers/chatUiRegistrationProfile":
         MATRX_PROFILE === "demos"
-          ? "providers/chatUiRegistrationBase.ts"
-          : "providers/chatUiRegistration.ts",
-      ),
+          ? "./providers/chatUiRegistrationBase.ts"
+          : "./providers/chatUiRegistration.ts",
       ...sidemenuStubAliases(),
     },
   },
