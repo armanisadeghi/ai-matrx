@@ -41,6 +41,7 @@ import {
   type HeadlessAgentJsonResult,
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { selectRenderBlocksByType } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
+import { selectConversationOrganizationId } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type {
   KindActionContext,
@@ -106,8 +107,14 @@ export interface KindActionRunnerOptions {
  */
 type RenderBlocksState = Parameters<ReturnType<typeof selectRenderBlocksByType>>[0];
 
-export function imagesOfRequest(state: RenderBlocksState, requestId: string | undefined): KindImageRef[] {
+export function imagesOfRequest(
+  state: RenderBlocksState,
+  requestId: string | undefined,
+  conversationId?: string,
+): KindImageRef[] {
   if (!requestId) return [];
+  // The file lives in the run's own organization (frozen on the conversation).
+  const organizationId = conversationId ? selectConversationOrganizationId(conversationId)(state) : null;
   const blocks = selectRenderBlocksByType(requestId, "image_output")(state) ?? [];
   const out: KindImageRef[] = [];
   for (const block of blocks) {
@@ -119,6 +126,7 @@ export function imagesOfRequest(state: RenderBlocksState, requestId: string | un
       mime_type: typeof data.mimeType === "string" ? data.mimeType : null,
       width: typeof data.width === "number" ? data.width : null,
       height: typeof data.height === "number" ? data.height : null,
+      organization_id: organizationId,
     });
   }
   return out;
@@ -190,7 +198,7 @@ export function useKindActionRunner(
           const live = liveWindow.start(request.label ?? "Working on it");
           const toResult = (r: HeadlessAgentJsonResult): KindShortcutRunResult => {
             if (request.expect === "image") {
-              const [image] = imagesOfRequest(store.getState(), r.requestId);
+              const [image] = imagesOfRequest(store.getState(), r.requestId, r.conversationId);
               return image
                 ? { ok: true, data: image }
                 : { ok: false, data: null, error: r.error ?? "The shortcut finished without an image." };

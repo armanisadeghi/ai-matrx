@@ -105,7 +105,7 @@ describe("save_item_state", () => {
 });
 
 describe("saved images get a displayable src", () => {
-  const ref = { file_id: "f1", mime_type: "image/png", width: 10, height: 10 };
+  const ref = { file_id: "f1", mime_type: "image/png", width: 10, height: 10, organization_id: null };
   const state = { idea_3_image: ref, nested: { list: [{ ...ref, file_id: "f2" }] }, note: "keep" };
 
   it("finds every image ref, nested", () => {

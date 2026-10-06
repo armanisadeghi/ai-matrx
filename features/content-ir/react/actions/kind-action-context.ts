@@ -30,6 +30,8 @@ export interface KindImageRef {
   mime_type: string | null;
   width: number | null;
   height: number | null;
+  /** The organization the file lives in (the run's own) — named on every byte read. */
+  organization_id: string | null;
 }
 
 /** What a shortcut run produced: the extracted JSON value, the answer text, or a `KindImageRef`. */

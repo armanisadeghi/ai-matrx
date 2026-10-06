@@ -36,6 +36,7 @@ import type { SandboxBodyPayload } from "../transform/transform-kind-body";
 import { executeKindBody } from "./execute-kind-body";
 import { installHostActionDispatcher } from "./host-action-relay";
 import { installPointerExit } from "./pointer-exit";
+import { installVisibleColumn } from "./visible-column";
 
 export interface FrameMountApi {
     (
@@ -200,6 +201,9 @@ function startInstance(
             return false;
         }
         container.style.width = `${width}px`;
+        // Overlays flip, shift and centre inside the column the reader SEES,
+        // not the reader-wide window (visible-column.ts).
+        installVisibleColumn().setWidth(width);
         // `main` carries `max-width: 100vw` unlayered in the app's own sheet;
         // an allotted width narrower than the viewport must survive it.
         container.style.maxWidth = "none";

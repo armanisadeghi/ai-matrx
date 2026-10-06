@@ -19,6 +19,7 @@
 
 import { useEffect, useState } from "react";
 import { downloadFile } from "@/features/files/api/files";
+import { rememberFileOrganization } from "@/features/files/api/fileOrganization";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 type State = Record<string, unknown>;
@@ -26,7 +27,9 @@ type State = Record<string, unknown>;
 /** How deep a saved value may nest an image ref (`idea_3.image`, `images[0]`). */
 const MAX_DEPTH = 3;
 
-function isImageRef(value: unknown): value is { file_id: string; mime_type?: unknown } {
+function isImageRef(
+  value: unknown,
+): value is { file_id: string; mime_type?: unknown; organization_id?: unknown } {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const ref = value as Record<string, unknown>;
   if (typeof ref.file_id !== "string" || !ref.file_id) return false;
@@ -38,6 +41,10 @@ export function imageFileIdsOf(state: unknown, depth = 0, out: string[] = []): s
   if (depth > MAX_DEPTH || !state || typeof state !== "object") return out;
   if (isImageRef(state)) {
     if (!out.includes(state.file_id)) out.push(state.file_id);
+    // Byte reads name the file's own organization (never a guess).
+    if (typeof state.organization_id === "string" && state.organization_id) {
+      rememberFileOrganization(state.file_id, state.organization_id);
+    }
     return out;
   }
   for (const value of Array.isArray(state) ? state : Object.values(state)) {

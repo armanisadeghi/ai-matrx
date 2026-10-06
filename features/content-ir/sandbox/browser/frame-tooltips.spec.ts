@@ -34,6 +34,8 @@ const WITNESS = "/__kind-sandbox-parity.html";
 const ROWS = 40;
 /** How far a tooltip may sit from its trigger and still be "at" it. */
 const MAX_GAP_PX = 16;
+/** The width the host allots the component — the only part of the frame the reader sees. */
+const COLUMN_PX = 720;
 
 const BODY = `
 import React from "react";
@@ -52,6 +54,14 @@ export default function TooltipProbe({ data }) {
           size="sm"
           copy={{ label: "Source ranking probe", human: () => "probe", agent: () => ({ kind: "probe", data }) }}
         />
+        <div className="flex justify-end">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span data-probe-edge="" className="rounded bg-muted px-2 py-1 text-xs">Tier</span>
+            </TooltipTrigger>
+            <TooltipContent side="top">Authority tier: high, three independent sources agree</TooltipContent>
+          </Tooltip>
+        </div>
         {rows.map((i) => (
           <div key={i} data-probe-row={i} className="flex items-center gap-3 rounded border p-2">
             <Tooltip>
@@ -91,7 +101,7 @@ async function mountProbe(page: Page): Promise<Frame> {
     await page.waitForFunction(() => (window as never as { __READY__?: boolean }).__READY__ === true);
 
     await page.evaluate(
-        ({ payload: body, version }) => {
+        ({ payload: body, version, COLUMN }) => {
             const host = document.getElementById("cases") as HTMLElement;
             host.innerHTML = "";
             // Host content ABOVE the frame, so the frame starts below the fold
@@ -101,7 +111,7 @@ async function mountProbe(page: Page): Promise<Frame> {
             host.appendChild(spacer);
             const clip = document.createElement("div");
             clip.className = "clip";
-            clip.style.width = "720px";
+            clip.style.width = COLUMN + "px";
             // Host page to the LEFT of the frame too, so a pointer can leave
             // the frame sideways onto the host.
             clip.style.marginLeft = "300px";
@@ -147,14 +157,14 @@ async function mountProbe(page: Page): Promise<Frame> {
                         themeTokens: w.rootTokens(),
                         colorScheme: "light",
                         readerViewportWidth: document.documentElement.clientWidth,
-                        contentWidth: 720,
+                        contentWidth: COLUMN,
                     },
                     "*",
                     [channel.port2],
                 );
             });
         },
-        { payload, version: SANDBOX_PROTOCOL_VERSION },
+        { payload, version: SANDBOX_PROTOCOL_VERSION, COLUMN: COLUMN_PX },
     );
 
     await page.waitForFunction(
@@ -271,6 +281,7 @@ test.describe("tooltips inside the Shape sandbox frame", () => {
         const deep = Math.floor(ROWS * 0.75);
         const cases: Array<{ name: string; selector: string; expectScrolledFrame: boolean }> = [
             { name: "KindHeaderBar copy button", selector: '[aria-label^="Copy, transform or export Source ranking probe"]', expectScrolledFrame: false },
+            { name: "Radix tooltip, right edge of the column", selector: "[data-probe-edge]", expectScrolledFrame: false },
             { name: "Radix tooltip, first row", selector: '[data-probe-chip="0"]', expectScrolledFrame: false },
             { name: "Radix tooltip, deep row", selector: `[data-probe-chip="${deep}"]`, expectScrolledFrame: true },
             { name: "CopyButtons, first row", selector: '[aria-label^="Copy, transform or export Source 0"]', expectScrolledFrame: false },
@@ -298,6 +309,15 @@ test.describe("tooltips inside the Shape sandbox frame", () => {
             }
             if (m.position !== "fixed" && m.position !== "absolute") {
                 failures.push(`${c.name}: tooltip is position:${m.position} — it flows into the page instead of floating at its trigger`);
+            }
+            // THE CLIP: the frame is as wide as the reader's window, but the
+            // host shows only the first COLUMN_PX of it. A tooltip past that
+            // edge is cut off where the reader cannot see it.
+            const tipRight = m.tooltip.x + m.tooltip.width;
+            if (m.tooltip.x < 0 || tipRight > COLUMN_PX) {
+                failures.push(
+                    `${c.name}: tooltip spans x ${Math.round(m.tooltip.x)}..${Math.round(tipRight)}, past the visible column 0..${COLUMN_PX}`,
+                );
             }
             if (distance > MAX_GAP_PX) {
                 failures.push(`${c.name}: tooltip is ${distance.toFixed(0)}px from its trigger (max ${MAX_GAP_PX})`);
