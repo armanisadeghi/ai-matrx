@@ -283,15 +283,21 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
         <div>
           <p className="text-xs font-medium text-foreground">Sources this run</p>
           <ul className="mt-1 flex flex-col gap-0.5">
-            {health.map((h) => (
-              <li key={str(h.source_kind)} className="flex flex-wrap items-center gap-x-2 text-xs">
-                <Pill tone={statusTone(str(h.status))}>{humanizeIdentifier(str(h.source_kind))}</Pill>
-                <span className="text-muted-foreground">
-                  {humanizeIdentifier(str(h.status))} · {num(h.items)} item{num(h.items) === 1 ? "" : "s"}
-                </span>
-                {str(h.error) ? <span className="text-muted-foreground">— {str(h.error)}</span> : null}
-              </li>
-            ))}
+            {/* Sources that failed for the same reason (X and X News share one token) say it once. */}
+            {[...Map.groupBy(health, (h) => `${str(h.status)}|${num(h.items)}|${str(h.error)}`).values()].map((group) => {
+              const h = group[0];
+              return (
+                <li key={group.map((g) => str(g.source_kind)).join(",")} className="flex flex-wrap items-center gap-x-2 text-xs">
+                  {group.map((g) => (
+                    <Pill key={str(g.source_kind)} tone={statusTone(str(h.status))}>{humanizeIdentifier(str(g.source_kind))}</Pill>
+                  ))}
+                  <span className="text-muted-foreground">
+                    {humanizeIdentifier(str(h.status))} · {num(h.items)} item{num(h.items) === 1 ? "" : "s"}
+                  </span>
+                  {str(h.error) ? <span className="text-muted-foreground">— {str(h.error)}</span> : null}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
