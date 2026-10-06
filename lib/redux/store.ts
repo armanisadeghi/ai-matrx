@@ -26,6 +26,8 @@ import { codeFilesAutoSaveMiddleware } from "@/features/code-files/redux/autoSav
 // react-icons/fa6). The store is built under Providers for every route, so the
 // barrel put ~261 modules / 1.75 MB of UI into every route's graph to obtain two
 // middlewares. Never import the barrel from here.
+// The files engine (@ai-matrx/media/files/engine) is wired to this app before any store exists.
+import "@/features/files/files-host";
 import { cloudFilesRealtimeMiddleware } from "@/features/files/redux/realtime-middleware";
 import { cloudFilesMutationToastMiddleware } from "@/features/files/redux/mutation-toast-middleware";
 import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio/redux/realtimeMiddleware";

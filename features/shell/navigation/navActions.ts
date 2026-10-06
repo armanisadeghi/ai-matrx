@@ -45,7 +45,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { useOpenCreateProjectWindow } from "@/features/overlays/openers/createProjectWindow";
-import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenPickListManagerWindow } from "@/features/overlays/openers/pickListManagerWindow";
 import { useOpenFavoritesManagerWindow } from "@/features/overlays/openers/favoritesManagerWindow";
 import { useOpenCrmCreatePartyWindow } from "@/features/overlays/openers/crmCreatePartyWindow";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -60,7 +60,7 @@ export function useNavActions(): ShellNavActionHandlers {
   const organizationId = useAppSelector(selectOrganizationId);
   const router = useRouter();
   const openCreateProject = useOpenCreateProjectWindow();
-  const openPicklistManager = useOpenStructuredListManagerV2Window();
+  const openPickListManager = useOpenPickListManagerWindow();
   const openFavoritesManager = useOpenFavoritesManagerWindow();
   const openCrmCreateParty = useOpenCrmCreatePartyWindow();
 
@@ -156,10 +156,10 @@ export function useNavActions(): ShellNavActionHandlers {
         router.push(`/workbooks/${res.data.id}`);
       })();
     },
-    "create-picklist": () => {
+    "create-pick-list": () => {
       // Opens the canonical Pick List manager (browse view) where lists are
       // created and edited.
-      openPicklistManager({});
+      openPickListManager({});
     },
     "create-crm-person": () => {
       openCrmCreateParty({ initialKind: "person" });

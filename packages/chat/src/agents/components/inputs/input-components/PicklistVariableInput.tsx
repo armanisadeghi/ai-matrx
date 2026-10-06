@@ -12,7 +12,7 @@ import {
   buildPicklistItemFence,
   readPicklistSelection,
 } from "@ai-matrx/agents/envelope";
-import { useStructuredListForSelection } from "@ai-matrx/chat/host/ui-slots";
+import { usePickListForSelection } from "@ai-matrx/chat/host/ui-slots";
 import { ReadFailure } from "@ai-matrx/chat/host/ui-slots";
 
 interface PicklistVariableInputProps {
@@ -53,7 +53,7 @@ export function PicklistVariableInput({
   // unbound case. Below the guard it was a conditional hook
   // (react-hooks/rules-of-hooks): a variable that gained a picklist binding
   // after mount went from 0 hooks to N and React throws.
-  const { items, loading, unavailable, error, retry } = useStructuredListForSelection(
+  const { items, loading, unavailable, error, retry } = usePickListForSelection(
     binding?.listId ?? null,
     binding?.groupName,
   );

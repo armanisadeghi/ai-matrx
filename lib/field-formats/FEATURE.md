@@ -108,7 +108,7 @@ The binding shape is **not ours to invent**: `{ listId, groupName, multiple }`
 is aidream's `PicklistBinding`, already written by the agent-variable system as
 `customComponent.structured_list`. A column and an agent variable must speak ONE
 option vocabulary. Loading is not reimplemented either — it goes through
-`features/user-lists`' cached, group-ordered, label-only hook (an item's secret
+`features/data-tables/pick-lists`' cached, group-ordered, label-only hook (an item's secret
 `description` never reaches the client).
 
 ### Tiering, free
@@ -250,7 +250,7 @@ unknown format id degrades to the plain storage type by design.
   layer, hydrated inline or from a shared pick list (which supplies grouping,
   and therefore tiers, for free). Added dependent columns (`groupFromField`),
   where a column's options narrow to the group another column's cell names.
-  Reused aidream's `PicklistBinding` shape and `features/user-lists`' loading
+  Reused aidream's `PicklistBinding` shape and `features/data-tables/pick-lists`' loading
   hook rather than forking either. `column_list` now tells agents a column's
   format and options.
 - **2026-08-16** — Added the opt-in embedded layout contract so Table Settings

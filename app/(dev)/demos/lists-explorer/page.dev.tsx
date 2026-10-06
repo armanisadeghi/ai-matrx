@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 const ROUTES = [
   {
-    href: "/lists",
+    href: "/pick-lists",
     label: "Split / Tree View (New)",
     description:
       "Side-by-side split panel (resizable) and tree navigation. Toggle between layouts. All CRUD on the detail page.",
@@ -86,7 +86,7 @@ export default function ListsExplorerPage() {
               the resizable side-by-side panel and the tree navigation. Both share
               the same detail page at{" "}
               <code className="font-mono text-[10px] bg-muted px-1 rounded">
-                /lists/[id]
+                /pick-lists/[id]
               </code>
               .
             </p>

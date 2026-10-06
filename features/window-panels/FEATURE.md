@@ -181,7 +181,7 @@ A record type registers ONE `DetailRecordType`; the wrapper yields the `detailWi
   read back; typeKey is now the stable `notes` with the instance in
   `urlSyncId`, and the hydrator honors it (`?panels=notes:<instanceId>`).
   Added the four missing hydrators the dev integrity check found once it could
-  finally run (`creator_hub`, `mandate`, `structuredListManagerV1`/`V2` — the V1 window retired 2026-10-02 and its
+  finally run (`creator_hub`, `mandate`, `pickListManager`/`V2` — the V1 window retired 2026-10-02 and its
   address now opens V2) and
   the three missing registry `urlSync.key`s (`vault`, `voice-advanced`,
   `transcription-cleanup`). Verified live on the dev server: open → canonicalize

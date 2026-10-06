@@ -731,7 +731,7 @@
  "features/overlays/openers/smartCodeEditorWindow.tsx",
  "features/overlays/openers/sourceInspectorWindow.tsx",
  "features/overlays/openers/storageSourcePicker.tsx",
- "features/overlays/openers/structuredListManagerV2Window.tsx",
+ "features/overlays/openers/pickListManagerWindow.tsx",
  "features/overlays/openers/structuredValueWindow.tsx",
  "features/overlays/openers/tableViewerWindow.tsx",
  "features/overlays/openers/taskEditorWindow.tsx",

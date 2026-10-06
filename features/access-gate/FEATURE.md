@@ -249,7 +249,7 @@ surface means importing them too, never reimplementing the RPC call.
   win that race, and a module-global would risk naming one user's record to
   another. Deleted the same day it was written. The record-specific surface on
   a server route is `return <AccessGate token id/>` from the page itself
-  (`app/(core)/lists/[id]/page.tsx` is the live example).
+  (`app/(core)/pick-lists/[id]/page.tsx` is the live example).
 - **Standalone-project tokens need an explicit resolver.** CMS registers
   `client_site` / `client_page` in `features/cms/accessGateTokens.ts`; the
   access-context service delegates only those tokens to the authenticated
@@ -476,7 +476,7 @@ surface means importing them too, never reimplementing the RPC call.
   handoff module was deleted rather than shipped inert. On the client, all 46
   `app/(core)` findings are gone: 15 organization surfaces collapsed onto ONE
   `useResolvedOrganization` + `<OrganizationAccessGate>` (they each carried
-  their own copy of the same two guesses), `/lists/[id]` and the research-topic
+  their own copy of the same two guesses), `/pick-lists/[id]` and the research-topic
   layout stopped calling `notFound()` on an empty record read, `/data/[id]`'s
   "doesn't exist or you don't have permission" hedge became the gate, and every
   `"… Not Found"` page title went neutral. Two checker blind spots fixed:

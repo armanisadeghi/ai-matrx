@@ -25,6 +25,7 @@
  * WHAT IS DELIBERATELY ABSENT: `parent`, `window.top`, and any network API.
  * The build audits the served bytes for all of them and fails.
  */
+import { makeBlobUrlMapper } from "./blob-urls";
 import {
     IN_FLIGHT_ACTION_CAPACITY,
     SANDBOX_PROTOCOL_VERSION,
@@ -35,6 +36,8 @@ import {
 import type { SandboxBodyPayload } from "../transform/transform-kind-body";
 import { executeKindBody } from "./execute-kind-body";
 import { installHostActionDispatcher } from "./host-action-relay";
+import { installPointerExit } from "./pointer-exit";
+import { installVisibleColumn } from "./visible-column";
 
 export interface FrameMountApi {
     (
@@ -184,6 +187,9 @@ function startInstance(
         return;
     }
 
+    // ── the pointer leaving the frame closes what it opened (pointer-exit.ts)
+    installPointerExit();
+
     // ── the reader's viewport, not the frame's box (S5b) ──────────────────
     //
     // The whole reasoning lives once, in `protocol.ts` § THE READER'S VIEWPORT.
@@ -196,6 +202,9 @@ function startInstance(
             return false;
         }
         container.style.width = `${width}px`;
+        // Overlays flip, shift and centre inside the column the reader SEES,
+        // not the reader-wide window (visible-column.ts).
+        installVisibleColumn().setWidth(width);
         // `main` carries `max-width: 100vw` unlayered in the app's own sheet;
         // an allotted width narrower than the viewport must survive it.
         container.style.maxWidth = "none";
@@ -354,10 +363,14 @@ function startInstance(
         }
     };
 
+    // Saved images arrive as their BYTES; each becomes a frame-local blob: URL.
+    const withBlobUrls = makeBlobUrlMapper();
+
     const withHostProps = (
         props: Record<string, unknown>,
     ): Record<string, unknown> => ({
         ...transformed(props),
+        itemState: withBlobUrls(props.itemState ?? {}),
         runAction,
         onResolve,
     });

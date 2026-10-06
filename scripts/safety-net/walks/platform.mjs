@@ -14,7 +14,7 @@ const TABLE = process.env.SN_PLATFORM_TABLE ?? "6d3b427c-f272-4118-8f14-3f431c78
 const BUDGET = { P07: 1000, P08: 3000, P09: 3000 };
 
 const ctx = await openWalk("platform");
-const appPages = ["/data", `/data/${TABLE}`, "/lists/v3", "/trash", "/scopes", "/notes", "/tasks", "/chat", "/schedules"];
+const appPages = ["/data", `/data/${TABLE}`, "/pick-lists", "/trash", "/scopes", "/notes", "/tasks", "/chat", "/schedules"];
 const adminPages = ["/administration/usage", "/administration/database/switch-presses"];
 
 async function visit(page, path, origin = ctx.origin) {

@@ -13,9 +13,9 @@ import {
 import { ExternalLink } from "lucide-react";
 import {
   getAccessibleLists,
-  getStructuredListForSelection,
-} from "@/features/user-lists/service";
-import type { UserList } from "@/features/user-lists/types";
+  getPickListForSelection,
+} from "@/features/data-tables/pick-lists/service";
+import type { UserList } from "@/features/data-tables/pick-lists/types";
 import type { StructuredListBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 interface StructuredListBindingEditorProps {
@@ -82,7 +82,7 @@ export function StructuredListBindingEditor({
   useEffect(() => {
     if (!binding?.listId) return undefined;
     let cancelled = false;
-    getStructuredListForSelection(binding.listId)
+    getPickListForSelection(binding.listId)
       .then((data) => {
         if (cancelled) return;
         const keys = Object.keys(data?.items_grouped ?? {}).filter(
@@ -133,7 +133,7 @@ export function StructuredListBindingEditor({
               <Label className="text-xs text-muted-foreground">List</Label>
               {binding.listId && (
                 <a
-                  href={`/lists/${binding.listId}`}
+                  href={`/pick-lists/${binding.listId}`}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 type-secondary font-medium text-primary "

@@ -3093,7 +3093,7 @@
       "detail": "secondary slot: 148 chars, budget 60"
     },
     {
-      "file": "app/(core)/lists/[id]/page.tsx",
+      "file": "app/(core)/pick-lists/[id]/page.tsx",
       "line": 75,
       "rule": "over-budget",
       "severity": 2,
@@ -3103,7 +3103,7 @@
       "detail": "secondary slot: 132 chars, budget 60"
     },
     {
-      "file": "app/(core)/lists/[id]/page.tsx",
+      "file": "app/(core)/pick-lists/[id]/page.tsx",
       "line": 75,
       "rule": "multi-sentence",
       "severity": 2,
@@ -82013,7 +82013,7 @@
       "detail": "2 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 22,
       "rule": "over-budget",
       "severity": 2,
@@ -82023,7 +82023,7 @@
       "detail": "secondary slot: 108 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 28,
       "rule": "over-budget",
       "severity": 2,
@@ -82033,7 +82033,7 @@
       "detail": "secondary slot: 115 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 34,
       "rule": "over-budget",
       "severity": 2,
@@ -82043,7 +82043,7 @@
       "detail": "secondary slot: 120 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 40,
       "rule": "over-budget",
       "severity": 2,
@@ -82053,7 +82053,7 @@
       "detail": "secondary slot: 104 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 46,
       "rule": "over-budget",
       "severity": 1,
@@ -82063,7 +82063,7 @@
       "detail": "secondary slot: 89 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 46,
       "rule": "multi-sentence",
       "severity": 1,
@@ -82073,7 +82073,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 68,
       "rule": "page-description",
       "severity": 1,
@@ -82083,7 +82083,7 @@
       "detail": "sentence under <h1>"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 68,
       "rule": "over-budget",
       "severity": 2,
@@ -82093,7 +82093,7 @@
       "detail": "secondary slot: 152 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 90,
       "rule": "page-description",
       "severity": 1,
@@ -82103,7 +82103,7 @@
       "detail": "sentence under <h2>"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 90,
       "rule": "over-budget",
       "severity": 1,
@@ -82113,7 +82113,7 @@
       "detail": "secondary slot: 214 chars, budget 60"
     },
     {
-      "file": "features/structured-lists/StructuredListLanding.tsx",
+      "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
       "line": 90,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84253,7 +84253,7 @@
       "detail": "secondary slot: 98 chars, budget 60"
     },
     {
-      "file": "features/user-lists/components/ListManagerFloatingWorkspace.tsx",
+      "file": "features/data-tables/pick-lists/components/ListManagerFloatingWorkspace.tsx",
       "line": 218,
       "rule": "over-budget",
       "severity": 2,
@@ -84263,7 +84263,7 @@
       "detail": "secondary slot: 84 chars, budget 60"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 71,
       "rule": "over-budget",
       "severity": 1,
@@ -84273,7 +84273,7 @@
       "detail": "secondary slot: 186 chars, budget 60"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 71,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84283,7 +84283,7 @@
       "detail": "3 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 83,
       "rule": "over-budget",
       "severity": 1,
@@ -84293,7 +84293,7 @@
       "detail": "secondary slot: 301 chars, budget 60"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 83,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84303,7 +84303,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 83,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84313,7 +84313,7 @@
       "detail": "snake_case identifier"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 95,
       "rule": "over-budget",
       "severity": 1,
@@ -84323,7 +84323,7 @@
       "detail": "secondary slot: 632 chars, budget 60"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 95,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84333,7 +84333,7 @@
       "detail": "4 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 95,
       "rule": "implementation-leak",
       "severity": 1,
@@ -84343,7 +84343,7 @@
       "detail": "backticks"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 107,
       "rule": "over-budget",
       "severity": 1,
@@ -84353,7 +84353,7 @@
       "detail": "secondary slot: 762 chars, budget 60"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 107,
       "rule": "multi-sentence",
       "severity": 1,
@@ -84363,7 +84363,7 @@
       "detail": "6 sentences in one secondary slot (max 1)"
     },
     {
-      "file": "features/user-lists/surface-write-targets.ts",
+      "file": "features/data-tables/pick-lists/surface-write-targets.ts",
       "line": 107,
       "rule": "implementation-leak",
       "severity": 1,

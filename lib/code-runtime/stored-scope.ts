@@ -43,6 +43,7 @@ export function provideStoredComponentScopeModules(): void {
     "@/components/kind-kit/KindPanelGrid": kindKit,
     "@/components/kind-kit/KindPanel": kindKit,
     "@/components/kind-kit/KindHeaderBar": kindKit,
+    "@/components/kind-kit/KindActionButton": kindKit,
     "@/components/kind-kit/StreamingSkeleton": kindKit,
     "@/components/kind-kit/TagList": kindKit,
     "@/applets": () => require("@/features/agent-apps/embed/AppletParts"),

@@ -33,6 +33,7 @@ import type {
   SourceFeature,
   RequestInitiation,
 } from "../../../types/instance.types";
+import type { ApplicationScope } from "../../../types/scope.types";
 import { extractFirstJson } from "@ai-matrx/kit/json-extract";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
@@ -46,6 +47,7 @@ import {
   selectJsonExtractionComplete,
   selectRequestError,
   selectRequestStatus,
+  selectRenderBlocksByType,
 } from "../active-requests/active-requests.selectors";
 import {
   selectLatestAnswerText,
@@ -67,10 +69,18 @@ import {
 import { executeInstance } from "./execute-instance.thunk";
 
 export interface HeadlessAgentJsonOptions {
-  /** Exact agent to run. Mutually exclusive with mandateKey. */
+  /** Exact agent to run. Mutually exclusive with mandateKey and shortcutId. */
   agentId?: string;
   /** Swappable mandate to resolve inside the canonical launcher, preserving config_overrides. */
   mandateKey?: AnyMandateKey;
+  /**
+   * A saved shortcut to run: the launcher resolves its agent, config and scope
+   * mappings exactly as a menu click would. Mutually exclusive with agentId and
+   * mandateKey. Pair with `applicationScope` for the shortcut's mapped values.
+   */
+  shortcutId?: string;
+  /** UI-captured scope values a shortcut's scopeMappings read (selection, content, …). */
+  applicationScope?: ApplicationScope;
   /** Stable surface key for telemetry + the focus registry. */
   surfaceKey: string;
   /** UI feature that triggered the run. */
@@ -132,9 +142,12 @@ export interface HeadlessAgentJsonOptions {
    *
    * A markdown agent asked for "json" fails with "produced no structured
    * JSON" even though it answered perfectly — which is the whole reason this
-   * option exists rather than a second primitive.
+   * option exists rather than a second primitive. `"media"` — the run's
+   * finished media blocks are the product (an image/audio/video model answers
+   * with a media block, never text); `data` is the array of unified media
+   * blocks (`fileId`, `mimeType`, `width`, `height`, …).
    */
-  expect?: "json" | "text";
+  expect?: "json" | "text" | "media";
   /** Let the extractor fuzzy-parse at finalize. Default true. */
   fuzzyOnFinalize?: boolean;
   /**
@@ -218,6 +231,8 @@ export interface HeadlessAgentJsonOptions {
     noJson?: string;
     /** `expect: "text"` run finished but produced no answer text. */
     noText?: string;
+    /** `expect: "media"` run finished but produced no media. */
+    noMedia?: string;
     /** Ceiling elapsed. */
     timeout?: string;
   };
@@ -320,6 +335,7 @@ const DEFAULT_MESSAGES = {
   streamError: "The agent failed before returning a result.",
   noJson: "The agent finished but produced no structured JSON.",
   noText: "The agent finished but produced no text.",
+  noMedia: "The agent finished but produced no image, audio or video.",
   timeout:
     "The AI response timed out. If you switched browser tabs during this " +
     "process, the connection may have been suspended — keep this tab active " +
@@ -329,6 +345,26 @@ const DEFAULT_MESSAGES = {
 const TERMINAL_STATUSES = new Set(["complete", "error", "timeout", "cancelled"]);
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const MEDIA_BLOCK_TYPES = ["image_output", "audio_output", "video_output"] as const;
+
+/**
+ * Every finished media block of one request, in stream order — each block's
+ * `data` is the unified media block (`fileId`, `mimeType`, `width`, …).
+ */
+function completedMediaOf(
+  getState: () => ChatRootState,
+  requestId: string,
+): Record<string, unknown>[] {
+  const state = getState();
+  const out: Record<string, unknown>[] = [];
+  for (const type of MEDIA_BLOCK_TYPES) {
+    for (const block of selectRenderBlocksByType(requestId, type)(state) ?? []) {
+      if (block.status === "complete" && block.data) out.push(block.data as Record<string, unknown>);
+    }
+  }
+  return out;
+}
 
 /**
  * Hand the resolved result to the caller's persistence seam. This is the ONE
@@ -441,7 +477,7 @@ export async function failWarnedOutputMissingKeys(
   opts: Pick<HeadlessAgentJsonOptions, "mandateKey" | "surfaceKey" | "expect">,
   result: HeadlessAgentJsonResult,
 ): Promise<HeadlessAgentJsonResult> {
-  if (!opts.mandateKey || (opts.expect ?? "json") === "text") return result;
+  if (!opts.mandateKey || (opts.expect ?? "json") !== "json") return result;
   const mandateKey: AnyMandateKey = opts.mandateKey;
   const data = result.data;
   const isRecord = typeof data === "object" && data !== null && !Array.isArray(data);
@@ -543,7 +579,7 @@ export async function runHeadlessAgentJson(
     {
       onResult: opts.onResult,
       surfaceKey: opts.surfaceKey,
-      agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
+      agentRef: opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
     },
     result,
   );
@@ -573,7 +609,7 @@ export interface AdoptedAgentJsonOptions {
   /** Bounded settle window after a terminal stream state. Default 6s. */
   settleMs?: number;
   /** See `expect` on `HeadlessAgentJsonOptions`. Default "json". */
-  expect?: "json" | "text";
+  expect?: "json" | "text" | "media";
   /**
    * Keep the conversation/instance alive after the run. Default false — the
    * instance is destroyed on settle, matching the launched path. A caller
@@ -682,21 +718,22 @@ async function launchAndWait(
   try {
     let executionIdentity:
       | { agentId: string }
-      | { mandateKey: AnyMandateKey };
+      | { mandateKey: AnyMandateKey }
+      | { shortcutId: string };
+    const identities = [opts.agentId, opts.mandateKey, opts.shortcutId].filter((v) => v !== undefined);
+    if (identities.length !== 1) {
+      throw new Error("runHeadlessAgentJson requires exactly one of agentId, mandateKey or shortcutId");
+    }
     if (opts.mandateKey !== undefined) {
-      if (opts.agentId !== undefined) {
-        throw new Error("runHeadlessAgentJson accepts agentId or mandateKey, never both");
-      }
       executionIdentity = { mandateKey: opts.mandateKey };
+    } else if (opts.shortcutId !== undefined) {
+      executionIdentity = { shortcutId: opts.shortcutId };
     } else {
-      if (opts.agentId === undefined) {
-        throw new Error("runHeadlessAgentJson requires agentId or mandateKey");
-      }
-      executionIdentity = { agentId: opts.agentId };
+      executionIdentity = { agentId: opts.agentId as string };
     }
     screamIfDeclaredFlattening(
       opts,
-      opts.agentId ?? opts.mandateKey ?? "unknown",
+      opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
     );
     const launch = await dispatch(
       launchAgentExecution({
@@ -730,6 +767,7 @@ async function launchAndWait(
           ...(opts.surfaceName !== undefined ? { surfaceName: opts.surfaceName } : {}),
           ...(opts.variables ? { variables: opts.variables } : {}),
           ...(opts.userInput !== undefined ? { userInput: opts.userInput } : {}),
+          ...(opts.applicationScope ? { applicationScope: opts.applicationScope } : {}),
         },
         // `callerExecutes` is the deliberate half of `autoRun: !twoStep`. A
         // headless launch normally IGNORES autoRun (no interface = nothing to
@@ -788,7 +826,7 @@ async function launchAndWait(
       pollMs,
       settleMs,
       surfaceKey: opts.surfaceKey,
-      agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
+      agentRef: opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
       msgs,
       expect: opts.expect ?? "json",
       ...(opts.signal ? { signal: opts.signal } : {}),
@@ -831,7 +869,7 @@ async function launchAndWait(
       conversationId: conversationId ?? undefined,
       raw: {
         surfaceKey: opts.surfaceKey,
-        agent: opts.agentId ?? opts.mandateKey ?? "unknown",
+        agent: opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
         detail,
         // Only when nothing readable came out: the raw shape, so a throw this
         // helper cannot read is a bug report rather than a shrug.
@@ -952,17 +990,19 @@ async function waitForExtraction(
       streamError: string;
       noJson: string;
       noText: string;
+      noMedia: string;
       timeout: string;
     };
-    /** See `expect` on the options — "text" resolves with the answer text. */
-    expect: "json" | "text";
+    /** See `expect` on the options — "text" resolves with the answer text, "media" with media blocks. */
+    expect: "json" | "text" | "media";
     /** Stop waiting and settle from whatever landed (see `signal` on the options). */
     signal?: AbortSignal;
     deferNoJsonCapture: boolean;
   },
 ): Promise<HeadlessAgentJsonResult> {
   const { conversationId, requestId, msgs } = args;
-  const noResultMsg = args.expect === "text" ? msgs.noText : msgs.noJson;
+  const noResultMsg =
+    args.expect === "text" ? msgs.noText : args.expect === "media" ? msgs.noMedia : msgs.noJson;
   const start = Date.now();
   let terminalAt: number | null = null;
 
@@ -987,6 +1027,25 @@ async function waitForExtraction(
     // A text run's product IS the answer text — there is nothing to extract,
     // so asking `resolveRunData` for an object would fail a run that answered
     // perfectly. Same settle/report/abort machinery, different product.
+    if (args.expect === "media") {
+      // A media model's product is its media blocks (image/audio/video), never
+      // answer text — so a run that delivered one succeeded, caption or not.
+      const b = base();
+      const media = completedMediaOf(getState, requestId);
+      if (media.length > 0) return { success: true, data: media, ...b };
+      if (reason === "aborted") return { success: false, data: null, error: message, ...b };
+      if (!args.deferNoJsonCapture || reason === "timeout") {
+        reportNoResult(getState, {
+          requestId,
+          conversationId,
+          surfaceKey: args.surfaceKey,
+          agentRef: args.agentRef,
+          reason,
+          message,
+        });
+      }
+      return { success: false, data: null, error: message, ...b };
+    }
     if (args.expect === "text") {
       const b = base();
       if (b.fullResponse.trim()) {
@@ -1106,6 +1165,10 @@ async function waitForExtraction(
       // window, then resolve from whatever the run actually produced instead
       // of burning the full timeout.
       if (status !== undefined && TERMINAL_STATUSES.has(status)) {
+        // Media lands before the stream ends; nothing more is coming.
+        if (args.expect === "media" && completedMediaOf(getState, requestId).length > 0) {
+          return settle("stream-ended", noResultMsg);
+        }
         terminalAt ??= Date.now();
         if (Date.now() - terminalAt > args.settleMs) {
           return settle("stream-ended", noResultMsg);

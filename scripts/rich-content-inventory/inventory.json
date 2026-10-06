@@ -4273,7 +4273,7 @@
      "detail": "<p>{step.body}"
     },
     {
-     "file": "features/structured-lists/StructuredListLanding.tsx",
+     "file": "features/data-tables/pick-lists/components/PickListsLanding.tsx",
      "line": 112,
      "detail": "<p>{f.description}"
     },
@@ -4478,17 +4478,17 @@
      "detail": "<p>{activeTranscript.description}"
     },
     {
-     "file": "features/user-lists/components/ListCard.tsx",
+     "file": "features/data-tables/pick-lists/components/ListCard.tsx",
      "line": 129,
      "detail": "<p>{list.description}"
     },
     {
-     "file": "features/user-lists/components/ListItem.tsx",
+     "file": "features/data-tables/pick-lists/components/ListItem.tsx",
      "line": 68,
      "detail": "<p>{item.description || item.help_text}"
     },
     {
-     "file": "features/user-lists/components/PicklistsIndex.tsx",
+     "file": "features/data-tables/pick-lists/components/PickListsIndex.tsx",
      "line": 223,
      "detail": "<span>{list.description}"
     },
@@ -4828,7 +4828,7 @@
   "overlay sourceInspectorWindow (Source inspector)",
   "overlay storageSourcePicker (Import from cloud storage)",
   "overlay streamDebugHistoryWindow (Stream History)",
-  "overlay structuredListManagerV2Window (Picklists — v2)",
+  "overlay pickListManagerWindow (Pick lists)",
   "overlay structuredValueWindow (Details)",
   "overlay surfaceAgentBindWindow (Add Agent to Surface)",
   "overlay surfaceContextInspector (Surface Context Admin)",
@@ -5466,8 +5466,8 @@
   "route /legal/ca-wc/utilities/weeks",
   "route /libraries",
   "route /libraries/[id]",
-  "route /lists",
-  "route /lists/[id]",
+  "route /pick-lists",
+  "route /pick-lists/[id]",
   "route /make",
   "route /make/templates/[id]",
   "route /mandates",
@@ -6562,7 +6562,7 @@
   "features/skills/components/SkillDetailView.tsx": {"shared":false,"surfaces":[69]},
   "features/skills/components/SkillsBrowser.tsx": {"shared":false,"surfaces":[59,250,450]},
   "features/source-onboarding/components/SourceGuidePage.tsx": {"shared":false,"surfaces":[803]},
-  "features/structured-lists/StructuredListLanding.tsx": {"shared":false,"surfaces":[839]},
+  "features/data-tables/pick-lists/components/PickListsLanding.tsx": {"shared":false,"surfaces":[839]},
   "features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx": {"shared":false,"surfaces":[204,402]},
   "features/surfaces/admin/columns/AgentColumn.tsx": {"shared":false,"surfaces":[264,466]},
   "features/surfaces/admin/columns/BindingColumn.tsx": {"shared":false,"surfaces":[264,265,466,467]},
@@ -6595,9 +6595,9 @@
   "features/transcripts/components/TranscriptViewer.tsx": {"shared":false,"surfaces":[820,826,1242]},
   "features/transcripts/components/TranscriptsSidebar.tsx": {"shared":false,"surfaces":[1242]},
   "features/unified-data/test-bench/TryEverythingScreen.tsx": {"shared":false,"surfaces":[592]},
-  "features/user-lists/components/ListCard.tsx": {"shared":false,"surfaces":[146]},
-  "features/user-lists/components/ListItem.tsx": {"shared":false,"surfaces":[]},
-  "features/user-lists/components/PicklistsIndex.tsx": {"shared":false,"surfaces":[201,839]},
+  "features/data-tables/pick-lists/components/ListCard.tsx": {"shared":false,"surfaces":[146]},
+  "features/data-tables/pick-lists/components/ListItem.tsx": {"shared":false,"surfaces":[]},
+  "features/data-tables/pick-lists/components/PickListsIndex.tsx": {"shared":false,"surfaces":[201,839]},
   "features/vision-interview/components/DeliverablePane.tsx": {"shared":false,"surfaces":[1039]},
   "features/vision-interview/components/DocumentPane.tsx": {"shared":false,"surfaces":[1039]},
   "features/vision-interview/components/LiveTurnCard.tsx": {"shared":false,"surfaces":[1039]},

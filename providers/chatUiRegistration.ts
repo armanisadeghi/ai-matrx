@@ -36,7 +36,7 @@ import { useCanvasOpenGuard } from "@/features/canvas/hooks/useCanvasOpenGuard";
 import { useRegisterChatAttachTarget } from "@/features/knowledge/command-bar/useKnowledgeAttachTarget";
 import { useSkills } from "@/features/skills/hooks/useSkills";
 import { useAutoLabel, generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
-import { useStructuredListForSelection } from "@/features/user-lists/hooks/useStructuredListForSelection";
+import { usePickListForSelection } from "@/features/data-tables/pick-lists/hooks/usePickListForSelection";
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { useOutputFeedback } from "@/lib/output-feedback/useOutputFeedback";
 import { saveOutputFeedback } from "@/lib/output-feedback/service";
@@ -98,7 +98,7 @@ registerChatUi({
   useSkills,
   useAutoLabel,
   generateLabelFromContent,
-  useStructuredListForSelection,
+  usePickListForSelection,
   useGitHubConnection,
   useOutputFeedback,
   saveOutputFeedback,

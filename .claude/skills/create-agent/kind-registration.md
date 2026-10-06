@@ -35,3 +35,6 @@ timestamp: 2026-09-10T00:00:00Z
   structured details in chunks. A component that waits for the complete object is broken
   by definition. Expect to iterate with the builder agent several times — first output is
   never the final component.
+- A component that needs a button which runs another agent on a piece of its data, or
+  that shows a result back on the item (a brief, a generated image): the `kind-actions`
+  skill (`runAction("run_shortcut", …)`, `itemState`, `KindActionButton`).

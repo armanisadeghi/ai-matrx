@@ -8,13 +8,12 @@
  * deliberately omitting page-level mandate disclosure; the host page owns
  * that disclosure outside the sandbox.
  */
-import { useId } from "react";
-import {
-  MatrxCopyMenu,
-  type AlchemyCopyVariant,
-} from "@ai-matrx/alchemy/react/workspace";
+import { createElement, useState } from "react";
 import { cn } from "@/lib/utils";
-import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
+import {
+  buildAgentPayload,
+  type AgentPayloadInput,
+} from "@/components/agent-copy/buildAgentPayload";
 
 type Resolvable<T> = T | (() => T | Promise<T>);
 
@@ -37,34 +36,52 @@ export function CopyForAiButton({
   disabled = false,
   className,
   showLabel: _showLabel = true,
-  icon: _icon,
+  icon,
   compact = false,
 }: CopyForAiButtonProps) {
-  const sourceId = useId();
-  const directAiCopy: AlchemyCopyVariant = {
-    id: "direct-ai-copy",
-    label: "Copy for AI",
-    hint: `Copy ${label} with full context, formatted for an AI agent`,
-    ariaLabel: `Copy ${label} for AI`,
-    successMessage: `${label} copied for AI`,
-    build: async () =>
-      typeof agent === "function"
-        ? await (
-            agent as () =>
-              AgentPayloadInput | string | Promise<AgentPayloadInput | string>
-          )()
-        : agent,
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
+  const copyForAi = async () => {
+    try {
+      const value =
+        typeof agent === "function"
+          ? await (
+              agent as () =>
+                AgentPayloadInput | string | Promise<AgentPayloadInput | string>
+            )()
+          : agent;
+      await navigator.clipboard.writeText(
+        typeof value === "string" ? value : buildAgentPayload(value),
+      );
+      setStatus("copied");
+    } catch {
+      setStatus("error");
+    }
   };
 
   return (
-    <MatrxCopyMenu
-      sourceId={`direct-ai:${sourceId}`}
-      label={label}
-      aiVariants={[directAiCopy]}
-      hide={["copy", "export"]}
+    <button
+      type="button"
+      aria-label={`Copy ${label} for AI`}
+      title={status === "error" ? "Could not copy" : `Copy ${label} for AI`}
+      onClick={() => void copyForAi()}
       disabled={disabled}
-      size={compact ? "xs" : size}
-      className={cn(compact && "matrx-alchemy-compact", className)}
-    />
+      className={cn(
+        "inline-flex items-center justify-center rounded-md border border-border bg-background text-sm font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50",
+        compact
+          ? "h-6 px-2 text-xs"
+          : size === "icon"
+            ? "h-8 w-8"
+            : "h-8 px-3",
+        className,
+      )}
+    >
+      {showLabel && size !== "icon" ? (
+        status === "copied" ? "Copied" : "Copy for AI"
+      ) : icon ? (
+        createElement(icon, { className: "h-4 w-4" })
+      ) : (
+        "AI"
+      )}
+    </button>
   );
 }

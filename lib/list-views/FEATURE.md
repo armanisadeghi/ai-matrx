@@ -15,7 +15,7 @@ Five hand-rolled `localStorage` blocks, each with its own key and its own locall
 
 **No hand-rolled list-style copy is left. A new one is a defect** — a `localStorage` key holding a view mode, density, sort, page size, or column selection is this hook's job.
 
-Two survivors are deliberately NOT list style and stay where they are: `features/marketing/components/pages/WorkspaceViewToggle.tsx` (Current / Plan / Studio) and `features/user-lists/components/LayoutToggle.tsx` (split / tree). Both choose **which panes are on screen**, not how one list's rows are presented — a different axis with no `view`/`density` meaning.
+Two survivors are deliberately NOT list style and stay where they are: `features/marketing/components/pages/WorkspaceViewToggle.tsx` (Current / Plan / Studio) and `features/data-tables/pick-lists/components/LayoutToggle.tsx` (split / tree). Both choose **which panes are on screen**, not how one list's rows are presented — a different axis with no `view`/`density` meaning.
 
 ## Mapping a surface whose toggle isn't `table` / `cards` / `rows`
 

@@ -133,7 +133,7 @@ import { useOpenPromptPreviewWindow } from "@/features/overlays/openers/promptPr
 import { useOpenRunControlsWindow } from "@/features/overlays/openers/runControlsWindow";
 import { useOpenSaveTemplateDialog } from "@/features/overlays/openers/saveTemplateDialog";
 import { useOpenScraperWindow } from "@/features/overlays/openers/scraperWindow";
-import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenPickListManagerWindow } from "@/features/overlays/openers/pickListManagerWindow";
 import { useOpenSurfaceContextInspector } from "@/features/overlays/openers/surfaceContextInspector";
 import { useOpenSurfaceContextWindow } from "@/features/overlays/openers/surfaceContextWindow";
 import { useOpenSystemInstructionWindow } from "@/features/overlays/openers/systemInstructionWindow";
@@ -429,7 +429,7 @@ function useAppWindowOpeners(): ChatWindowOpeners {
     openSaveTemplateDialog: useOpenSaveTemplateDialog(),
     openScraperWindow: useOpenScraperWindow(),
     openScratchpadPanel: useOpenScratchpadPanel(),
-    openStructuredListManagerV2Window: useOpenStructuredListManagerV2Window(),
+    openPickListManagerWindow: useOpenPickListManagerWindow(),
     openSurfaceContextInspector: useOpenSurfaceContextInspector(),
     openSurfaceContextWindow: useOpenSurfaceContextWindow(),
     openSystemInstructionWindow: useOpenSystemInstructionWindow(),

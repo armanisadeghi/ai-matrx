@@ -20,6 +20,8 @@ import { invokedActionProvider } from "./invoked-actions";
 import { triggerAgentAction } from "./handlers/trigger-agent";
 import { applySurfaceWriteAction } from "./handlers/apply-surface-write";
 import { listSurfaceWriteTargetsAction } from "./handlers/list-surface-write-targets";
+import { runShortcutAction } from "./handlers/run-shortcut";
+import { saveItemStateAction } from "./handlers/save-item-state";
 
 export const KIND_ACTIONS_PROVIDER_ID = "content-ir.kind-actions";
 
@@ -28,6 +30,8 @@ export const KIND_ACTIONS: readonly KindActionDefinition[] = [
   triggerAgentAction,
   applySurfaceWriteAction,
   listSurfaceWriteTargetsAction,
+  runShortcutAction,
+  saveItemStateAction,
 ];
 
 /** The registry id of the action a component names by `key`. */

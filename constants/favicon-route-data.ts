@@ -224,7 +224,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/ai/cockpit", favicon: { color: "#7c3aed", letter: "Ac" } },
   { href: "/ai/recipes", favicon: { color: "#c026d3", letter: "Rc" } },
   { href: "/legacy/workflows", favicon: { color: WORKFLOWS_COLOR, letter: "LW" } },
-  { href: "/lists", favicon: { color: "#1d4ed8", letter: "Li" } },
+  { href: "/pick-lists", favicon: { color: "#1d4ed8", letter: "Li" } },
   { href: "/registered-results", favicon: { color: "#831843", letter: "Rr" } },
   { href: "/legacy/entity-admin", favicon: { color: "#854d0e", letter: "EA" } },
   { href: "/administration" },

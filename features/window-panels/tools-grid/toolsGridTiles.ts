@@ -739,7 +739,7 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
     icon: ListFilter,
     category: "dupes",
     gate: "admin",
-    overlayId: "structuredListManagerV2Window",
+    overlayId: "pickListManagerWindow",
   },
   {
     // Route tile for EVERYONE (lane MAKE-HOME): the data system's one home for making things.

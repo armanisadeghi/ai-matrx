@@ -204,7 +204,7 @@ export interface OrgResourceEntry {
   /**
    * THE RECORD STORE HOLDS THIS KIND (lane MOVER-DELETIONS, 2026-09-26). `"pick_lists"`: the
    * org's pick lists are Tables of choices in the record store, read from
-   * `custom.organization_pick_lists` (features/user-lists/where-lists-live.ts), counted and listed
+   * `custom.organization_pick_lists` (features/data-tables/pick-lists/where-lists-live.ts), counted and listed
    * once per id.
    */
   alsoInTheNewSystem?: "pick_lists";

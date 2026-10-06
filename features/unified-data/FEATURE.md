@@ -34,7 +34,7 @@ live in the custom-data node (`STATE.md`, `HANDOFF.md`, `DECISIONS.md`, `VISION.
 | `__tests__/` | Behaviour tests for the host code |
 
 Routes outside this directory: `app/(core)/data/`, `app/(core)/data/page.tsx` (redirects to `/data`),
-`app/(core)/lists/` with `features/user-lists/`.
+`app/(core)/pick-lists/` with `features/data-tables/pick-lists/`.
 
 ## Mechanics
 

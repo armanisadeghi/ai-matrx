@@ -859,7 +859,7 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 ### overlay listManagerWindow (List Manager)
 
-- [ ] `features/user-lists/components/ListCard.tsx:129` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
+- [ ] `features/data-tables/pick-lists/components/ListCard.tsx:129` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{list.description}`
 
 ### overlay liveIntegrationsWindow (Live Integrations)
 
@@ -940,9 +940,9 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 - [ ] `features/pdf-extractor/studio/PdfStudioReader.tsx:2161` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<pre>{doc.content ?? "(no extracted text)"}`
 - [ ] `features/rag/components/source-inspector/SourceInspectorPane.tsx:45` — **BasicMarkdownContent** (tracked) — `@/components/mardown-display/chat-markdown/BasicMarkdownContent`
 
-### overlay structuredListManagerV2Window (Picklists — v2)
+### overlay pickListManagerWindow (Pick lists)
 
-- [ ] `features/user-lists/components/PicklistsIndex.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
+- [ ] `features/data-tables/pick-lists/components/PickListsIndex.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
 
 ### overlay surfaceAgentBindWindow (Add Agent to Surface)
 
@@ -2347,10 +2347,10 @@ Each surface lists the legacy sites it reaches, EXCLUDING the shared files above
 
 - [ ] `app/(core)/legal/ca-wc/utilities/page.tsx:85` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{util.description}`
 
-### route /lists
+### route /pick-lists
 
-- [ ] `features/structured-lists/StructuredListLanding.tsx:112` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{f.description}`
-- [ ] `features/user-lists/components/PicklistsIndex.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
+- [ ] `features/data-tables/pick-lists/components/PickListsLanding.tsx:112` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{f.description}`
+- [ ] `features/data-tables/pick-lists/components/PickListsIndex.tsx:223` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<span>{list.description}`
 
 ### route /mandates
 
@@ -3798,4 +3798,4 @@ No route, overlay or opener imports these (dead code, test-only, or loaded by a 
 - [ ] `features/surfaces/components/ValueMappingEditor.tsx:523` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{selected.description}`
 - [ ] `features/surfaces/components/ValueMappingEditor.tsx:652` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{offered.description}`
 - [ ] `features/text-diff/components/DiffHistory.tsx:292` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<div>{version.content}`
-- [ ] `features/user-lists/components/ListItem.tsx:68` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description || item.help_text}`
+- [ ] `features/data-tables/pick-lists/components/ListItem.tsx:68` — **{x.content|body|description|prompt|reasoning|transcript…} inside <p>/<pre>/<span>/<div>/<li>/<td>** (review) — `<p>{item.description || item.help_text}`

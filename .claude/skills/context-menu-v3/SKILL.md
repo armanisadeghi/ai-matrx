@@ -35,7 +35,7 @@ A menu item is a **short verb phrase**: `Edit rule…`, `See its keywords`, `Rev
 
 ## ONE MENU PER PANE — delegate per row, never nest
 
-A list, table, or grid gets **one** wrapper around the whole pane, not one per row. Nesting Radix triggers opens two menus and appears nowhere in this repo. Per-row context comes from **`resolveContextOnOpen(target)`**: the shell calls it with the right-clicked element before opening, and the returned object is merged over `contextData`, so the same single menu can say `Edit "China"` on a row and show list-level rows on empty space. Worked reference: `features/user-lists/components/ListDetailClient.tsx` + its `dom-anchors.ts` (read the clicked row/group off `data-*` attributes).
+A list, table, or grid gets **one** wrapper around the whole pane, not one per row. Nesting Radix triggers opens two menus and appears nowhere in this repo. Per-row context comes from **`resolveContextOnOpen(target)`**: the shell calls it with the right-clicked element before opening, and the returned object is merged over `contextData`, so the same single menu can say `Edit "China"` on a row and show list-level rows on empty space. Worked reference: `features/data-tables/pick-lists/components/ListDetailClient.tsx` + its `dom-anchors.ts` (read the clicked row/group off `data-*` attributes).
 
 ⚠️ **`className` on the wrapper styles the menu POPUP, not the trigger.** Layout classes there silently break the popup instead of the pane — style the child element you wrap.
 

@@ -1,6 +1,6 @@
 "use client";
 
-// context-menu: covered-by features/user-lists/components/ListDetailClient.tsx
+// context-menu: covered-by features/data-tables/pick-lists/components/ListDetailClient.tsx
 // ListManagerFloatingWorkspace -> ListDetailClient, which mounts the canonical per-row list menu. Verified 2026-09-08; the census walks one hop and cannot see it.
 
 import React, { useCallback } from "react";
@@ -11,7 +11,7 @@ import {
   type WindowPanelProps,
 } from "@/features/window-panels/WindowPanel";
 import { ListFilter } from "lucide-react";
-import { ListManagerFloatingWorkspace } from "@/features/user-lists/components/ListManagerFloatingWorkspace";
+import { ListManagerFloatingWorkspace } from "@/features/data-tables/pick-lists/components/ListManagerFloatingWorkspace";
 
 export interface ListManagerWindowProps extends Omit<
   WindowPanelProps,

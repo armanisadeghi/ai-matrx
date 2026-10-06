@@ -26,7 +26,7 @@ import { toast } from "@/components/ui/use-toast";
 import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindow";
 import { useOpenNotesWindow } from "@/features/overlays/openers/notesWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
-import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenPickListManagerWindow } from "@/features/overlays/openers/pickListManagerWindow";
 import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
 import { useOpenTaskEditorWindow } from "@/features/overlays/openers/taskEditorWindow";
 import { useOpenDetail } from "@ai-matrx/detail/react";
@@ -44,7 +44,7 @@ export function useOpenItemPresentation() {
   const openAgent = useOpenAgentRunWindow();
   const openNote = useOpenNotesWindow();
   const openFile = useOpenFilePreviewWindow();
-  const openPicklist = useOpenStructuredListManagerV2Window();
+  const openPicklist = useOpenPickListManagerWindow();
   const openSite = useOpenSiteQuickViewWindow();
   const openTask = useOpenTaskEditorWindow();
   const openDetail = useOpenDetail();

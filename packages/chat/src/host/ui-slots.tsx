@@ -251,7 +251,7 @@ export interface ChatUiSlots {
   useSkills: () => { skills: SkillRow[]; grouped: Record<string, SkillRow[]>; count: number; loading: boolean; error: string | null; reload: () => Promise<void> };
   useAutoLabel: AnyFn;
   generateLabelFromContent: AnyFn;
-  useStructuredListForSelection: (listId: string | null | undefined, groupName?: string) => { items: PicklistItem[]; groups: unknown[]; loading: boolean; unavailable: boolean; error: unknown; retry: () => void };
+  usePickListForSelection: (listId: string | null | undefined, groupName?: string) => { items: PicklistItem[]; groups: unknown[]; loading: boolean; unavailable: boolean; error: unknown; retry: () => void };
   useGitHubConnection: AnyFn;
   useOutputFeedback: AnyFn;
   saveOutputFeedback: AnyFn;
@@ -610,7 +610,7 @@ const STAND_INS: Partial<Record<keyof ChatUiSlots, AnyFn>> = {
   beginPlaybackSession: () => ({ id: "", update: () => undefined, end: () => undefined }),
   useCanvasOpenGuard: () => ({ ensureCanvasReachable: async () => true }),
   useSkills: () => ({ skills: NONE, grouped: {}, count: 0, loading: false, error: null, reload: async () => undefined }),
-  useStructuredListForSelection: () => ({ items: NONE, groups: NONE, loading: false, unavailable: true, error: null, retry: () => undefined }),
+  usePickListForSelection: () => ({ items: NONE, groups: NONE, loading: false, unavailable: true, error: null, retry: () => undefined }),
   useOutputFeedback: () => ({ verdict: null, isLoaded: true }),
 };
 
@@ -927,7 +927,7 @@ export const useRegisterChatAttachTarget = slotFn("useRegisterChatAttachTarget",
 export const useSkills = slotFn("useSkills");
 export const useAutoLabel = slotFn("useAutoLabel", () => undefined);
 export const generateLabelFromContent = slotFn("generateLabelFromContent");
-export const useStructuredListForSelection = slotFn("useStructuredListForSelection");
+export const usePickListForSelection = slotFn("usePickListForSelection");
 export const useGitHubConnection = slotFn("useGitHubConnection");
 export const useOutputFeedback = slotFn("useOutputFeedback");
 export const saveOutputFeedback = slotFn("saveOutputFeedback");

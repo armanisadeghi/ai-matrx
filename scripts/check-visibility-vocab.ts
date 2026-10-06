@@ -238,7 +238,7 @@ function isHonestEnumeration(line: string): boolean {
  *   export type ListVisibility = (typeof LIST_VISIBILITY_VALUES)[number];
  *
  * This shape is IDENTICAL in effect to the union and is the modern way to
- * write one, but the line-based scan cannot see it — `features/user-lists`
+ * write one, but the line-based scan cannot see it — `features/data-tables/pick-lists`
  * refactored into it and its live retired `'private'` silently stopped being
  * reported. A detector that only sees one spelling of a vocabulary is a
  * detector that goes blind the day someone modernizes.

@@ -118,7 +118,7 @@ Every context policy declares whether the agent may CHANGE its value or only REA
 
 1. The Edit Variable modal writes each field directly to `agentDefinition` Redux.
 2. Help Text is a `ProTextarea` on `matrx-user/agent-builder`; its live scope includes the full agent snapshot plus the focused variable (`variable_name`, `variable_help_text`, `variable_json`, and editable-target metadata).
-3. Static option variables can be converted into a user picklist: existing option text seeds both the public label and the hidden injected text, the variable is immediately rebound to the new picklist, and the picklist editor link opens `/lists/{id}` for refinement.
+3. Static option variables can be converted into a user picklist: existing option text seeds both the public label and the hidden injected text, the variable is immediately rebound to the new picklist, and the picklist editor link opens `/pick-lists/{id}` for refinement.
 4. A variable with static options or a Structured List may enable **Allow random assignment**. This persists `customComponent.assignment.random=true`; it does not choose a value while authoring. The Default Value input and every Smart Agent Input surface can then store/send `{type:"auto_assign",strategy:"random"}`. Manual runs include the live unsaved `variable_definitions` alongside values so the server resolves against exactly what Builder displays.
 
 ---

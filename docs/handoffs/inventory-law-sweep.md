@@ -947,7 +947,7 @@ campaign itself. Template: `lib/list-scope/FEATURE.md`. Apply the migration
 live via the Supabase MCP and regenerate types — a `.sql` file alone changes
 nothing (CLAUDE.md § Database migrations).
 
-Also: `features/user-lists/` declares `ActionConfig<T>[]` and
+Also: `features/data-tables/pick-lists/` declares `ActionConfig<T>[]` and
 `packages/chat/src/tool-call-visualization/renderers/**` declares `EntityAction[]` —
 **parallel action schemas**, worse than a hand-rolled dropdown.
 

@@ -41,8 +41,8 @@ jest.mock("@/features/overlays/openers/filePreviewWindow", () => ({
 jest.mock("@/features/overlays/openers/taskEditorWindow", () => ({
   useOpenTaskEditorWindow: () => jest.fn(),
 }));
-jest.mock("@/features/overlays/openers/structuredListManagerV2Window", () => ({
-  useOpenStructuredListManagerV2Window: () => jest.fn(),
+jest.mock("@/features/overlays/openers/pickListManagerWindow", () => ({
+  useOpenPickListManagerWindow: () => jest.fn(),
 }));
 
 import { useOpenItemPresentation } from "../useOpenItemPresentation";

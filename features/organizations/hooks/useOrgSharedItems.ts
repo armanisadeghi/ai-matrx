@@ -13,7 +13,7 @@ import React from "react";
 import { supabase } from "@/utils/supabase/client";
 import { listOrgShareGrants } from "@/utils/permissions/orgModeration";
 import type { OrgResourceEntry } from "../resource-catalogue";
-import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
+import { organizationPickListsInTheNewSystem } from "@/features/data-tables/pick-lists/where-lists-live";
 
 /**
  * No `href` here on purpose: the route for a record comes from the entity

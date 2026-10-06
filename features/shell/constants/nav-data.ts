@@ -72,7 +72,7 @@ export type ShellNavActionId =
   | "create-note"
   | "create-document"
   | "create-workbook"
-  | "create-picklist"
+  | "create-pick-list"
   | "create-crm-person"
   | "create-crm-company"
   | "manage-favorites";
@@ -567,7 +567,7 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
   },
   {
     label: "Pick Lists",
-    href: "/lists",
+    href: "/pick-lists",
     iconName: "ListChecks",
     description: "Reusable option lists for forms, fields, and data",
     color: "teal",
@@ -576,7 +576,7 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
   },
   {
     label: "Pick Lists Window",
-    href: "/lists",
+    href: "/pick-lists",
     iconName: NAV_WINDOW_PANEL_ICON,
     panelAction: "open-pick-lists-panel",
   },
@@ -590,9 +590,9 @@ export const DATA_NAV_CHILDREN: ShellNavChild[] = [
   {
     // Opens the Pick List manager (create + edit) in place.
     label: "New Pick List",
-    href: "/lists",
+    href: "/pick-lists",
     iconName: "Plus",
-    action: "create-picklist",
+    action: "create-pick-list",
   },
 ];
 
@@ -833,7 +833,7 @@ export const primaryNavItems: ShellNavItem[] = [
           { label: "Document", href: "/board?add=udt_document", iconName: "FileText", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Table", href: "/board?add=data-table", iconName: "Database", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Record", href: "/board?add=record", iconName: "Rows3", group: "Add to your board", actionItem: true, guestHidden: true },
-          { label: "Picklist", href: "/board?add=list", iconName: "ListChecks", group: "Add to your board", actionItem: true, guestHidden: true },
+          { label: "Pick list", href: "/board?add=list", iconName: "ListChecks", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Task", href: "/board?add=task", iconName: "ListTodo", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "War Room", href: "/board?add=war-room", iconName: "UsersRound", group: "Add to your board", actionItem: true, guestHidden: true },
           { label: "Meeting", href: "/board?add=meeting", iconName: "Video", group: "Add to your board", actionItem: true, guestHidden: true },

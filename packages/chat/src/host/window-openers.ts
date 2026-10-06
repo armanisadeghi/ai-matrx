@@ -156,7 +156,7 @@ export interface OpenScraperWindowOptions {
   url?: string;
   mode?: ScraperWindowMode;
 }
-export interface OpenStructuredListManagerV2WindowOptions {
+export interface OpenPickListManagerWindowOptions {
   title?: string;
   forcedListId?: string | null;
 }
@@ -322,7 +322,7 @@ export interface ChatWindowOpeners {
   openSaveTemplateDialog: (opts?: OpenSaveTemplateDialogOptions) => void;
   openScraperWindow: (opts?: OpenScraperWindowOptions) => ChatWindowHandle;
   openScratchpadPanel: (opts?: OpenScratchpadPanelOptions) => ChatWindowHandle;
-  openStructuredListManagerV2Window: (opts?: OpenStructuredListManagerV2WindowOptions) => ChatWindowHandle;
+  openPickListManagerWindow: (opts?: OpenPickListManagerWindowOptions) => ChatWindowHandle;
   openSurfaceContextInspector: (opts: OpenSurfaceContextInspectorOptions) => ChatWindowHandle;
   openSurfaceContextWindow: (opts: OpenSurfaceContextWindowOptions) => void;
   openSystemInstructionWindow: (opts: OpenSystemInstructionWindowOptions) => ChatWindowHandle;
@@ -388,7 +388,7 @@ export const UNHOSTED_WINDOW_OPENERS: ChatWindowOpeners = {
   openSaveTemplateDialog: unhosted("openSaveTemplateDialog"),
   openScraperWindow: unhosted("openScraperWindow"),
   openScratchpadPanel: unhosted("openScratchpadPanel"),
-  openStructuredListManagerV2Window: unhosted("openStructuredListManagerV2Window"),
+  openPickListManagerWindow: unhosted("openPickListManagerWindow"),
   openSurfaceContextInspector: unhosted("openSurfaceContextInspector"),
   openSurfaceContextWindow: unhosted("openSurfaceContextWindow"),
   openSystemInstructionWindow: unhosted("openSystemInstructionWindow"),
@@ -532,8 +532,8 @@ export function useOpenSaveTemplateDialog() {
 export function useOpenScraperWindow() {
   return useOpener("openScraperWindow");
 }
-export function useOpenStructuredListManagerV2Window() {
-  return useOpener("openStructuredListManagerV2Window");
+export function useOpenPickListManagerWindow() {
+  return useOpener("openPickListManagerWindow");
 }
 export function useOpenSurfaceContextInspector() {
   return useOpener("openSurfaceContextInspector");

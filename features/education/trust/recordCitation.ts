@@ -147,7 +147,7 @@ export function recordCitationHref(
     }
     case "table":
     case "pick_list": {
-      const base = kind === "table" ? `/data/${id}` : `/lists/${id}`;
+      const base = kind === "table" ? `/data/${id}` : `/pick-lists/${id}`;
       if (kind === "pick_list") {
         const name = choiceNameOfExcerpt(excerpt);
         return name ? `${base}?filter=${encodeURIComponent(JSON.stringify({ name }))}` : base;

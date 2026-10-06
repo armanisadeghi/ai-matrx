@@ -111,7 +111,7 @@ rg -n "value=\{JSON\.stringify\((bookmark|reference|generate\w*Reference)"
 
 ## Next target (NOT yet done — start here)
 
-`features/user-lists/components/BookmarkCopyButton.tsx:29` — the single shared list-side copy button. One fix covers every list/group/item copy in the app:
+`features/data-tables/pick-lists/components/BookmarkCopyButton.tsx:29` — the single shared list-side copy button. One fix covers every list/group/item copy in the app:
 
 ```diff
 - await navigator.clipboard.writeText(JSON.stringify(bookmark, null, 2));

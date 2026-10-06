@@ -2758,8 +2758,8 @@ html[data-board-embed] .shell-main {
     .shell-mobile-nav-item[data-nav-href="/data"],
   .shell-root[data-pathname^="/workbooks"]
     .shell-mobile-nav-item[data-nav-href="/workbooks"],
-  .shell-root[data-pathname^="/lists"]
-    .shell-mobile-nav-item[data-nav-href="/lists"],
+  .shell-root[data-pathname^="/pick-lists"]
+    .shell-mobile-nav-item[data-nav-href="/pick-lists"],
   .shell-root[data-pathname^="/code"]
     .shell-mobile-nav-item[data-nav-href="/code"],
   .shell-root[data-pathname^="/sandbox"]

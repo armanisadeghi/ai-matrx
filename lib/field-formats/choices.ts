@@ -23,8 +23,8 @@
  * option vocabulary across columns and variables, or the same list means two
  * different things depending on who reads it.
  *
- * Loading is NOT reimplemented here: `useStructuredListForSelection`
- * (`features/user-lists/`) already does the fetch, the session cache, the
+ * Loading is NOT reimplemented here: `usePickListForSelection`
+ * (`features/data-tables/pick-lists/`) already does the fetch, the session cache, the
  * group ordering, the group filter, and the label-only projection that keeps an
  * item's secret description server-side. This module adapts its output to
  * `FieldChoice` and nothing more.
@@ -34,10 +34,10 @@ import { useMemo } from "react";
 import { STYLE_COLOR_LABELS } from "@ai-matrx/design-system/data-table/table-style";
 
 import {
-  useStructuredListForSelection,
+  usePickListForSelection,
   useStructuredListsForSelection,
-} from "@/features/user-lists/hooks/useStructuredListForSelection";
-import type { PicklistSelectionItem } from "@/features/user-lists/types";
+} from "@/features/data-tables/pick-lists/hooks/usePickListForSelection";
+import type { PickListSelectionItem } from "@/features/data-tables/pick-lists/types";
 
 import type {
   FieldChoice,
@@ -220,7 +220,7 @@ export function groupChoices(choices: FieldChoice[]): FieldChoiceGroup[] {
   return [...byGroup.entries()]
     .sort(([a], [b]) => {
       // The ungrouped bucket renders last so named tiers lead — same ordering
-      // rule `useStructuredListForSelection` applies to "Ungrouped".
+      // rule `usePickListForSelection` applies to "Ungrouped".
       if (a === "") return 1;
       if (b === "") return -1;
       return a.localeCompare(b);
@@ -228,7 +228,7 @@ export function groupChoices(choices: FieldChoice[]): FieldChoiceGroup[] {
     .map(([group, groupChoicesList]) => ({ group, choices: groupChoicesList }));
 }
 
-function itemToChoice(item: PicklistSelectionItem): FieldChoice {
+function itemToChoice(item: PickListSelectionItem): FieldChoice {
   // The cell stores the LABEL, not the item id — raw data stays readable and an
   // existing column can adopt a list without a single value being rewritten.
   return {
@@ -258,7 +258,7 @@ export function useFieldChoices(
   const binding = isChoice ? format?.options?.structuredList : undefined;
   const listId = binding?.listId ?? null;
 
-  const list = useStructuredListForSelection(listId, binding?.groupName);
+  const list = usePickListForSelection(listId, binding?.groupName);
 
   const inline = useMemo(
     () => (isChoice ? inlineChoices(format?.options) : EMPTY),

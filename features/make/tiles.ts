@@ -119,7 +119,7 @@ export const MAKE_TILES: readonly MakeTile[] = [
     kind: "list",
     champion: "Airtable single select, Notion select options",
     asksForTable: false,
-    href: "/lists",
+    href: "/pick-lists",
   },
   {
     id: "database",

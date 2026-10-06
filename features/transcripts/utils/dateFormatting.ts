@@ -14,7 +14,7 @@ import { parseTimestamp } from "@/utils/datetime";
  * uniform elapsed-time voice — `1d ago` / `1 day ago`. This list answers it the
  * way a person browsing their own recordings reads it, which means "Yesterday"
  * is a word and not a number. Same distinction, same session, as
- * `features/user-lists/calendar-age.ts`. The PARSING is still the package's,
+ * `features/data-tables/pick-lists/calendar-age.ts`. The PARSING is still the package's,
  * through `@/utils/datetime`.
  */
 export function formatTranscriptAge(dateString: string): string {

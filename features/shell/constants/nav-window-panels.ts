@@ -245,7 +245,7 @@ export const NAV_WINDOW_PANEL_ACTIONS: Record<
     tileId: "tile.pick-lists",
     label: "Pick Lists Window",
     iconName: NAV_WINDOW_PANEL_ICON,
-    href: "/lists",
+    href: "/pick-lists",
   },
   "open-preferences-panel": {
     tileId: "tile.preferences",

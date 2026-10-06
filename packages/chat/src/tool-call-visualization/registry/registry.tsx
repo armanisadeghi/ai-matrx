@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   FileSearch,
   ListChecks,
-  List,
   SquareCheckBig,
   ListTodo,
   FileText,
@@ -1211,14 +1210,13 @@ export const APP_FEATURE_TOOL_NAMES: ReadonlySet<string> = new Set([
   "seo_check_meta_descriptions",
   "seo_get_keyword_data",
   "topical_map",
-  "picklist",
+  "pick_list",
   "task",
   "tasks",
   "user_todos",
   "document",
   "dataset",
   "usertable_create",
-  "get_user_lists",
   "knowledge_search",
   "document_search",
   "knowledge_browse",
@@ -1392,13 +1390,12 @@ const RESULT_IS_PURPOSE_TOOLS = new Set<string>([
   "document_search", // same retrieval family as knowledge_search — sources ARE the deliverable
   "knowledge_browse", // the inventory / passage / store / entity map IS the answer
   "document_content", // the fetched pages/text ARE the answer
-  "get_user_lists",
   "seo", // the analyzed SERP previews / keyword table ARE the deliverable
   "seo_check_meta_tags_batch",
   "seo_check_meta_titles",
   "seo_check_meta_descriptions",
   "seo_get_keyword_data",
-  "picklist", // the created/loaded list is the deliverable
+  "pick_list", // the created/loaded list is the deliverable
   "document",
   "dataset",
   "workbook",
@@ -1452,8 +1449,7 @@ interface ToolGlyphSpec {
 
 const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   // entity tools
-  picklist: { icon: ListChecks, accent: "violet" },
-  get_user_lists: { icon: List, accent: "violet" },
+  pick_list: { icon: ListChecks, accent: "violet" },
   task: { icon: SquareCheckBig, accent: "blue" },
   tasks: { icon: ListTodo, accent: "blue" },
   user_todos: { icon: ListTodo, accent: "blue" },

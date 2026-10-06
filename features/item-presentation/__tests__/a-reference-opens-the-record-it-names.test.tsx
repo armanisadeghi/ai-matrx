@@ -35,8 +35,8 @@ jest.mock("@/features/overlays/openers/agentRunWindow", () => ({
 jest.mock("@/features/overlays/openers/filePreviewWindow", () => ({
   useOpenFilePreviewWindow: () => openFile,
 }));
-jest.mock("@/features/overlays/openers/structuredListManagerV2Window", () => ({
-  useOpenStructuredListManagerV2Window: () => jest.fn(),
+jest.mock("@/features/overlays/openers/pickListManagerWindow", () => ({
+  useOpenPickListManagerWindow: () => jest.fn(),
 }));
 jest.mock("@/features/overlays/openers/siteQuickViewWindow", () => ({
   useOpenSiteQuickViewWindow: () => jest.fn(),

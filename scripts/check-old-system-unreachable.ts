@@ -43,7 +43,7 @@
  *
  * THE DATABASE HALF. Code is not the only caller: a database function a signed-in person can call is a door, and
  * after step two a door whose body still names one of the six moved tables answers its caller with a raw
- * "relation workbench.udt_… does not exist" (42P01). `get_structured_list_for_selection` was the one door file c never
+ * "relation workbench.udt_… does not exist" (42P01). `get_pick_list_for_selection` was the one door file c never
  * turned into its people sentence, and five more of its kind were found the same day. `--db` lists every function
  * outside the deprecated schema that a client role (anon / authenticated) may EXECUTE, that is not a trigger or event-trigger
  * function, and whose code (comments stripped) names one of the six tables — and that does not answer file c's
@@ -459,19 +459,19 @@ function selfTest(): number {
     //    templates reader are not; an owned baseline entry is GREEN, an owner-less one RED, a retired one STALE.
     const door = (sig: string, o: Partial<DbDoor> = {}): DbDoor => ({ sig, rettype: "jsonb", clientCallable: true, namesMovedTable: true, answersMoved: false, ...o });
     const plantedDoors: DbDoor[] = [
-      door("get_structured_list_for_selection(uuid)"),
+      door("get_pick_list_for_selection(uuid)"),
       door("get_user_tables()", { answersMoved: true }),
       door("workbench._moved_older_table_takes_no_writes()", { rettype: "trigger" }),
       door("platform._ddl_guard()", { rettype: "event_trigger" }),
       door("platform._final_switch_orphan_lists()", { clientCallable: false }),
     ];
     const dbRed = judgeDb(plantedDoors, {});
-    if (dbRed.newDoors.join() !== "get_structured_list_for_selection(uuid)") throw new Error(`db: never-retired door expected RED, got ${dbRed.newDoors}`);
-    const dbOwned = judgeDb(plantedDoors, { "get_structured_list_for_selection(uuid)": "FINAL-SWITCH: planted" });
+    if (dbRed.newDoors.join() !== "get_pick_list_for_selection(uuid)") throw new Error(`db: never-retired door expected RED, got ${dbRed.newDoors}`);
+    const dbOwned = judgeDb(plantedDoors, { "get_pick_list_for_selection(uuid)": "FINAL-SWITCH: planted" });
     if (dbOwned.newDoors.length || dbOwned.stale.length || dbOwned.ownerless.length) throw new Error("db: an owned door must be GREEN");
-    if (judgeDb(plantedDoors, { "get_structured_list_for_selection(uuid)": "" }).ownerless.length !== 1) throw new Error("db: an owner-less entry must be RED");
-    const retired = judgeDb([door("get_structured_list_for_selection(uuid)", { answersMoved: true })], { "get_structured_list_for_selection(uuid)": "FINAL-SWITCH: planted" });
-    if (retired.stale.join() !== "get_structured_list_for_selection(uuid)" || retired.open.length) throw new Error("db: a retired door's baseline entry must be STALE");
+    if (judgeDb(plantedDoors, { "get_pick_list_for_selection(uuid)": "" }).ownerless.length !== 1) throw new Error("db: an owner-less entry must be RED");
+    const retired = judgeDb([door("get_pick_list_for_selection(uuid)", { answersMoved: true })], { "get_pick_list_for_selection(uuid)": "FINAL-SWITCH: planted" });
+    if (retired.stale.join() !== "get_pick_list_for_selection(uuid)" || retired.open.length) throw new Error("db: a retired door's baseline entry must be STALE");
     if (!DB_DOORS_SQL.includes("udt_structured_list_items") || !DB_DOORS_SQL.includes(MOVED_SENTENCE)) throw new Error("db: the census must name every moved table and the sentence");
     console.log(
       "✓ self-test: an older door, module, table read, realtime filter, ORM model and the older list maker are RED; a store door, comments, docstrings, the templates table and campaign proofs are not; a glob string hides nothing; line numbers survive block comments; an owned baseline is GREEN, an owner-less entry RED, a removed read STALE; old scope-table web reads RED; the press's list is read from the campaign file; a never-retired database door is RED (a refusal, trigger, event trigger and server-only function are not), owned GREEN, retired STALE",

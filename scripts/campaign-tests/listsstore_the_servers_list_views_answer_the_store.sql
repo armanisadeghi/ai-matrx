@@ -13,7 +13,7 @@
 --   2. the items view answers exactly its four choices;
 --   3. a choice archived in the store leaves the items view (three remain);
 --   4. custom.where_lists_live says the list lives in the store;
---   5. get_user_list_with_items answers the three remaining choices.
+--   5. get_pick_list_with_items answers the three remaining choices.
 -- RUN IT (clone; always rolled back):
 --   psql "<clone DSN>" -v ON_ERROR_STOP=1 -f scripts/campaign-tests/listsstore_the_servers_list_views_answer_the_store.sql
 -- ITS RED: plant `lists-view-store-half-dropped` (the items view loses its store half) fails at 2.
@@ -80,13 +80,13 @@ begin
   end if;
   raise notice '4 passed: where_lists_live says the store';
 
-  v_list := public.get_user_list_with_items(v_id);
+  v_list := public.get_pick_list_with_items(v_id);
   v_answered := v_list::text;
   if v_answered not like '%Recall cleaning%' or v_answered not like '%New patient exam%'
      or v_answered not like '%Periodontal maintenance%' or v_answered like '%Emergency visit%' then
-    raise exception '5 FAILED: get_user_list_with_items answered %', left(v_answered, 600);
+    raise exception '5 FAILED: get_pick_list_with_items answered %', left(v_answered, 600);
   end if;
-  raise notice '5 passed: get_user_list_with_items answers the three remaining choices';
+  raise notice '5 passed: get_pick_list_with_items answers the three remaining choices';
 end $$;
 rollback;
 \echo 'LISTS STORE GREEN'

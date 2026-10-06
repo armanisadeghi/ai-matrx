@@ -32,7 +32,7 @@
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { supabase } from "@/utils/supabase/client";
 import { ORG_RESOURCE_CATALOGUE } from "../resource-catalogue";
-import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
+import { organizationPickListsInTheNewSystem } from "@/features/data-tables/pick-lists/where-lists-live";
 import { listableTokens } from "@/features/scopes/registry/entityRegistry";
 import { fetchKindCounts } from "@/features/scopes/service/kindInventory";
 import { countSavedSources } from "@/features/resource-manager/source-input/savedWebPages";

@@ -124,7 +124,7 @@ if $STRICT; then
         "Untracked-import breakage|bash scripts/check-untracked-imports.sh"
         "Parked route groups (a group deleted from main)|pnpm check:parked-routes:strict"
         # A feature importing a route's page module dies only in a PARKED Vercel build (manage parks
-        # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PicklistWindowBody).
+        # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PickListWindowBody).
         "Route pages imported only by routes (a parked build cannot resolve them)|pnpm check:page-imports"
         "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
         "Demos chat UI routes register required host slots|pnpm check:demos-chat-registration"

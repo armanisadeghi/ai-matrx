@@ -2,7 +2,7 @@
 /**
  * check-page-imports — ONLY A ROUTE MAY IMPORT A ROUTE'S PAGE.
  *
- * WHAT HAPPENED (2026-10-01). `features/user-lists/components/PicklistWindowBody.tsx` imported
+ * WHAT HAPPENED (2026-10-01). `features/data-tables/pick-lists/components/PickListWindowBody.tsx` imported
  * `@/app/(core)/data/[tableId]/page` to mount the table page inside a window. The admin build
  * (Vercel `ai-matrx-manage`, MATRX_PROFILE=admin) PARKS app/(core) out of the tree, and the window
  * is reachable from the root layout (OverlayController), so manage.aimatrx.com failed to build on

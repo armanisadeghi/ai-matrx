@@ -5,7 +5,7 @@
 -- organizations; she belongs to several organizations, so her membership cannot say where it lives. A
 -- column "Brand" on her organization's "Water Heater Installs" table chooses from it. The final switch
 -- archives a list it cannot place "with no owner organization", with no copy in the store, and after
--- the press the column's picker reads nothing (public.get_structured_list_for_selection answers null).
+-- the press the column's picker reads nothing (public.get_pick_list_for_selection answers null).
 --
 -- RED on the body before pressatsize_a_list_something_chooses_from_goes_where_it_is_chosen.sql:
 --   P1 the planted list resolves 'no_owner' although one organization's column chooses from it;

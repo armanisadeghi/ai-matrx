@@ -4179,7 +4179,7 @@ export type Database = {
     Tables: {
       definition: {
         Row: {
-          agent_id: string
+          agent_id: string | null
           agent_version_id: string | null
           allowed_imports: Json | null
           app_kind: string
@@ -4245,7 +4245,7 @@ export type Database = {
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          agent_id: string
+          agent_id?: string | null
           agent_version_id?: string | null
           allowed_imports?: Json | null
           app_kind?: string
@@ -4311,7 +4311,7 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          agent_id?: string
+          agent_id?: string | null
           agent_version_id?: string | null
           allowed_imports?: Json | null
           app_kind?: string
@@ -4402,12 +4402,23 @@ export type Database = {
           custom_fields: Json
           deleted_at: string | null
           description: string | null
+          entry: string | null
+          files: Json | null
           id: string
           layout_config: Json | null
+          mandate_id: string | null
+          mandates: Json | null
           metadata: Json
           name: string | null
           organization_id: string
+          pages: Json | null
+          parent_applet_id: string | null
           pinned_version: number | null
+          shell_config: Json | null
+          shell_kind: string | null
+          slot_code: Json | null
+          slot_overrides: Json | null
+          sources: Json | null
           status: string | null
           styling_config: Json | null
           tagline: string | null
@@ -4433,12 +4444,23 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           description?: string | null
+          entry?: string | null
+          files?: Json | null
           id?: string
           layout_config?: Json | null
+          mandate_id?: string | null
+          mandates?: Json | null
           metadata?: Json
           name?: string | null
           organization_id: string
+          pages?: Json | null
+          parent_applet_id?: string | null
           pinned_version?: number | null
+          shell_config?: Json | null
+          shell_kind?: string | null
+          slot_code?: Json | null
+          slot_overrides?: Json | null
+          sources?: Json | null
           status?: string | null
           styling_config?: Json | null
           tagline?: string | null
@@ -4464,12 +4486,23 @@ export type Database = {
           custom_fields?: Json
           deleted_at?: string | null
           description?: string | null
+          entry?: string | null
+          files?: Json | null
           id?: string
           layout_config?: Json | null
+          mandate_id?: string | null
+          mandates?: Json | null
           metadata?: Json
           name?: string | null
           organization_id?: string
+          pages?: Json | null
+          parent_applet_id?: string | null
           pinned_version?: number | null
+          shell_config?: Json | null
+          shell_kind?: string | null
+          slot_code?: Json | null
+          slot_overrides?: Json | null
+          sources?: Json | null
           status?: string | null
           styling_config?: Json | null
           tagline?: string | null
@@ -28680,6 +28713,14 @@ export type Database = {
       }
       name_key: { Args: { p_name: string }; Returns: string }
       normalize_phone_e164: { Args: { p_phone: string }; Returns: string }
+      person_display_name: {
+        Args: { p_first: string; p_last: string; p_preferred: string }
+        Returns: string
+      }
+      person_sort_name: {
+        Args: { p_first: string; p_last: string }
+        Returns: string
+      }
       resolve_recipient_jurisdiction: {
         Args: { p_medium_id: string }
         Returns: {
@@ -89756,6 +89797,63 @@ export type Database = {
         Args: { p_definition_id: string }
         Returns: boolean
       }
+      _entity_cursor_decode: { Args: { p: string }; Returns: Json }
+      _entity_cursor_encode: { Args: { p: Json }; Returns: string }
+      _entity_identifier: {
+        Args: { p_cols: Json; p_name: string }
+        Returns: string
+      }
+      _entity_org_notice: {
+        Args: {
+          p_ids: Json
+          p_op: string
+          p_organization_id: string
+          p_token: string
+        }
+        Returns: undefined
+      }
+      _entity_refuse: {
+        Args: { p_code: string; p_detail?: Json; p_message: string }
+        Returns: undefined
+      }
+      _entity_reraise: {
+        Args: {
+          p_detail: string
+          p_hint: string
+          p_message: string
+          p_state: string
+        }
+        Returns: undefined
+      }
+      _entity_trash_or_restore: {
+        Args: { p_entity_type: string; p_ids: string[]; p_trash: boolean }
+        Returns: Json
+      }
+      _entity_wire_rows: {
+        Args: { p_columns: Json; p_rows: Json; p_token: string }
+        Returns: Json
+      }
+      _entity_write_refusal: {
+        Args: {
+          p_column?: string
+          p_constraint?: string
+          p_detail: string
+          p_extra?: Json
+          p_hint: string
+          p_message: string
+          p_state: string
+        }
+        Returns: undefined
+      }
+      _entity_write_values: {
+        Args: {
+          p_insert: boolean
+          p_org: string
+          p_token: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       _final_switch_is_on: { Args: never; Returns: boolean }
       _final_switch_last: {
         Args: never
@@ -91110,6 +91208,10 @@ export type Database = {
         }
         Returns: string
       }
+      entity_archive: {
+        Args: { p_entity_type: string; p_ids: string[] }
+        Returns: Json
+      }
       entity_columns: {
         Args: { p_organization_id: string; p_token: string }
         Returns: Json
@@ -91119,8 +91221,38 @@ export type Database = {
         Args: { p_token: string }
         Returns: Database["platform"]["Enums"]["visibility"]
       }
+      entity_get: {
+        Args: { p_entity_type: string; p_ids: string[]; p_include?: Json }
+        Returns: Json
+      }
+      entity_insert: {
+        Args: { p_entity_type: string; p_organization_id: string; p_rows: Json }
+        Returns: Json
+      }
       entity_is_org_scoped: { Args: { p_token: string }; Returns: boolean }
       entity_link_shareable: { Args: { p_token: string }; Returns: boolean }
+      entity_list_scoped: {
+        Args: {
+          p_after?: string
+          p_archived?: string
+          p_deep?: boolean
+          p_entity_type: string
+          p_favorites_first?: boolean
+          p_filter?: Json
+          p_include?: Json
+          p_page?: number
+          p_page_size?: number
+          p_scope?: Json
+          p_search?: string
+          p_search_columns?: string[]
+          p_search_match?: string
+          p_sort?: Json
+          p_trash?: boolean
+          p_with_total?: boolean
+        }
+        Returns: Json
+      }
+      entity_org_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       entity_organization_id: {
         Args: { p_id: string; p_token: string }
         Returns: string
@@ -91140,6 +91272,19 @@ export type Database = {
       entity_type_has_shareable_ancestor: {
         Args: { p_type: string }
         Returns: boolean
+      }
+      entity_unarchive: {
+        Args: { p_entity_type: string; p_ids: string[] }
+        Returns: Json
+      }
+      entity_update: {
+        Args: {
+          p_base_version?: number
+          p_entity_type: string
+          p_id: string
+          p_patch?: Json
+        }
+        Returns: Json
       }
       extensibility_knob: {
         Args: {
@@ -95638,7 +95783,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      _d31_impl_get_user_list_with_items: {
+      _d31_impl_get_pick_list_with_items: {
         Args: { p_list_id: string }
         Returns: Json
       }
@@ -95678,7 +95823,7 @@ export type Database = {
         }
         Returns: Json
       }
-      _d31_impl_update_user_list: {
+      _d31_impl_update_pick_list: {
         Args: {
           p_authenticated_read?: boolean
           p_description?: string
@@ -100850,7 +100995,7 @@ export type Database = {
         Args: { p_bucket_id: string; p_name: string }
         Returns: Json
       }
-      get_structured_list_for_selection: {
+      get_pick_list_for_selection: {
         Args: { p_list_id: string }
         Returns: Json
       }
@@ -100947,8 +101092,8 @@ export type Database = {
         Args: { p_is_guest?: boolean; p_user_id: string }
         Returns: Json
       }
-      get_user_list_with_items: { Args: { p_list_id: string }; Returns: Json }
-      get_user_lists_summary: { Args: { p_user_id: string }; Returns: Json }
+      get_pick_list_with_items: { Args: { p_list_id: string }; Returns: Json }
+      get_pick_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_messages: {
         Args: { p_feedback_id: string }
         Returns: Database["users"]["Tables"]["feedback_user_messages"]["Row"][]
@@ -104954,7 +105099,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_user_list: {
+      update_pick_list: {
         Args: {
           p_authenticated_read?: boolean
           p_description?: string

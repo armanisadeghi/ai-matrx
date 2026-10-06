@@ -21,7 +21,7 @@ import { supabase } from "@/utils/supabase/client";
 import { recordsDataSource } from "@ai-matrx/records-ui";
 import { dataHomeTables } from "@/features/unified-data/hub/doors";
 import { postgrestError } from "@/lib/failure/postgrestError";
-import { readPickListIndexOrThrow } from "@/features/user-lists/pick-list-index";
+import { readPickListIndexOrThrow } from "@/features/data-tables/pick-lists/pick-list-index";
 import { RECORD_STORE_NOUNS } from "@ai-matrx/associations";
 import type { KindItem, KindScope } from "@/features/scopes/service/kindInventory";
 
