@@ -129,7 +129,7 @@ export function TypeRail({
       {opts.icon}
       <span className="min-w-0 flex-1 truncate text-left">{opts.label}</span>
       {opts.picked ? (
-        <span className="shrink-0 rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary">
+        <span className="shrink-0 rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary-ink">
           {opts.picked}
         </span>
       ) : null}

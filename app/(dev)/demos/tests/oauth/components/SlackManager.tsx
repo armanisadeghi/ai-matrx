@@ -269,7 +269,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                     <div
                         key={channel.id}
                         className={`px-4 py-2 hover:bg-accent cursor-pointer ${
-                            isSelected ? 'bg-primary/10 text-primary font-medium' : 'text-foreground'
+                            isSelected ? 'bg-primary/10 text-primary-ink font-medium' : 'text-foreground'
                         }`}
                     >
                       <div className="flex justify-between items-center">
@@ -288,7 +288,7 @@ const SlackManager: React.FC<SlackManagerProps> = ({ tokenData }) => {
                         </div>
                         {canJoin && (
                             <button
-                                className="text-xs bg-primary/10 text-primary hover:bg-primary/20 px-2 py-1 rounded"
+                                className="text-xs bg-primary/10 text-primary-ink hover:bg-primary/20 px-2 py-1 rounded"
                                 onClick={() => handleJoinChannel(channel.id)}
                                 disabled={isJoining}
                             >

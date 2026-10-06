@@ -111,7 +111,7 @@ function VariantCard({
       <div className="flex flex-wrap items-start justify-between gap-2 pb-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary-ink">
               {no}
             </span>
             <h2 className="text-sm font-semibold text-foreground">{title}</h2>
@@ -150,7 +150,7 @@ function TriggerCard({
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border bg-card/60 p-3">
       <div className="flex items-center gap-2">
-        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-primary-ink">
           {no}
         </span>
         <span className="text-xs font-semibold text-foreground">{title}</span>

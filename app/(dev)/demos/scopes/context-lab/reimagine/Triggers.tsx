@@ -214,7 +214,7 @@ export function FilterControl({ nodes, onClick, buttonRef }: TriggerProps) {
       className={cn(
         "inline-flex h-7 items-center gap-1.5 rounded-md border px-2 text-xs",
         nodes.length > 0
-          ? "border-primary/40 bg-primary/5 text-primary"
+          ? "border-primary/40 bg-primary/5 text-primary-ink"
           : "border-border text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >

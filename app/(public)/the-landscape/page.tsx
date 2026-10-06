@@ -436,7 +436,7 @@ export default function TheLandscapePage() {
                 >
                   <div className="flex flex-col gap-2">
                     <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                         <Icon
                           className="h-4.5 w-4.5"
                           strokeWidth={2}
@@ -531,7 +531,7 @@ export default function TheLandscapePage() {
                   key={question}
                   className="flex items-start gap-3 rounded-xl border border-border/60 bg-background/40 p-4"
                 >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-sm font-semibold text-primary-ink">
                     {idx + 1}
                   </span>
                   <p className="text-pretty text-sm leading-relaxed text-foreground">
@@ -658,7 +658,7 @@ export default function TheLandscapePage() {
                 key={name}
                 className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-5"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                   <Icon className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
                 </span>
                 <h3 className="text-balance text-base font-semibold tracking-tight">

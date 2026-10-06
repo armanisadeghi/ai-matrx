@@ -149,7 +149,7 @@ export default function ColumnMapper({ columns, previewData, onConfirm, onCancel
                   key={col}
                   className={`px-2 py-1 text-xs rounded-md border ${
                     col === zipColumn || col === countColumn
-                      ? 'bg-primary/10 border-primary text-primary'
+                      ? 'bg-primary/10 border-primary text-primary-ink'
                       : 'bg-muted border-border'
                   }`}
                 >

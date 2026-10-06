@@ -226,7 +226,7 @@ function StartHereSection() {
         href="/education/start"
         className="group flex cursor-pointer items-center gap-3 rounded-lg border border-primary/30 bg-gradient-to-r from-primary/[0.08] to-transparent py-2 pl-3 pr-[9px] transition-colors hover:border-primary/60"
       >
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
           <FilePlus2 className="size-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
@@ -308,7 +308,7 @@ function StudyTodaySection({ snapshot }: { snapshot: EducationSnapshot }) {
             const Icon = action.icon;
             return (
               <div key={action.key} className="hover:bg-accent/50 flex min-h-11 items-center gap-3 py-1 pl-3 pr-[9px]">
-                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
                   <Icon className="size-4" aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -348,7 +348,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
   return (
     <article className="flex min-w-0 flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
       <Link href={href} className="group flex items-center gap-2.5 py-2 pl-3 pr-2">
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
           <Package className="size-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
@@ -418,7 +418,7 @@ function DueSection({ snapshot }: { snapshot: EducationSnapshot }) {
   const chip = (href: string | null, tone: "warning" | "destructive", icon: ReactNode, label: string) => {
     const cls = cn(
       "inline-flex h-6 items-center gap-1 rounded-md border px-1.5 text-[0.6875rem] font-medium",
-      tone === "warning" ? "border-warning/60 bg-warning/15 text-foreground" : "border-destructive/40 bg-destructive/10 text-destructive",
+      tone === "warning" ? "border-warning/60 bg-warning/15 text-foreground" : "border-destructive/40 bg-destructive/10 text-destructive-ink",
     );
     // A count is a door (THE DOOR LAW); a mode with no review surface stays honest text.
     return href ? (

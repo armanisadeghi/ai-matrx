@@ -348,7 +348,7 @@ function Members({ members, loading, error }: { members: ProjectMemberWithUser[]
               const name = m.user?.displayName || m.user?.email || m.userId;
               return (
                 <div key={m.id} className="hover:bg-accent/50 flex min-h-9 items-center gap-2 pl-3 pr-[9px]">
-                  <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.6875rem] font-semibold uppercase text-primary">
+                  <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.6875rem] font-semibold uppercase text-primary-ink">
                     {name.slice(0, 1)}
                   </div>
                   <div className="min-w-0 flex-1 py-1.5">

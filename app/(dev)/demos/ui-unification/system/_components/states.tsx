@@ -23,7 +23,7 @@ function ErrorState({ size }: { size: "inline" | "block" }) {
     <div role="alert" className={cn("flex flex-col items-center text-center", block ? "gap-2 py-8" : "gap-1.5 py-4")}>
       <div
         className={cn(
-          "flex items-center justify-center rounded-full bg-destructive/10 text-destructive",
+          "flex items-center justify-center rounded-full bg-destructive/10 text-destructive-ink",
           block ? "size-10" : "size-8",
         )}
       >

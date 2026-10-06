@@ -265,7 +265,7 @@ export default function FileUpload({ onDataUpload, onLoadingChange }: FileUpload
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive">
+          <div className="flex items-start gap-2 p-3 rounded-md bg-destructive/10 text-destructive-ink">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <p className="text-xs">{error}</p>
             <ErrorAlchemyMenu error={error} />

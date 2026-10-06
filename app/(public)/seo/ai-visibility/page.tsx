@@ -25,7 +25,7 @@ export default function PublicAiVisibilityPage() {
         })}
       />
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-border bg-card/95 px-6 py-3 backdrop-blur">
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
           <MessageSquareQuote className="h-4 w-4" />
         </span>
         <div>

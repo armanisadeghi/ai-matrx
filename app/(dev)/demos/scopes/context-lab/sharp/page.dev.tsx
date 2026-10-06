@@ -63,7 +63,7 @@ function DemoCard({
     >
       <div className="border-b border-border px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary">
+          <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-primary-ink">
             {code}
           </span>
           <span className="text-sm font-semibold">{title}</span>

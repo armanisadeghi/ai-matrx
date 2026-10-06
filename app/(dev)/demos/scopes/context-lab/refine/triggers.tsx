@@ -196,7 +196,7 @@ export const MicroCountTrigger = forwardRef<
         "flex h-5 w-9 shrink-0 items-center justify-center gap-0.5 rounded border text-[10px] font-semibold transition-colors",
         n > 0
           ? "border-border text-muted-foreground hover:bg-muted"
-          : "border-warning/50 text-warning hover:bg-warning/10",
+          : "border-warning/50 text-warning-ink hover:bg-warning/10",
         open && "bg-muted",
       )}
     >
@@ -283,7 +283,7 @@ export const CommandTrigger = forwardRef<HTMLButtonElement, TriggerProps>(
         <Search className="h-3.5 w-3.5 shrink-0" />
         <span>Search context…</span>
         {n > 0 && (
-          <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+          <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary-ink">
             {n}
           </span>
         )}

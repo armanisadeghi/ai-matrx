@@ -25,7 +25,7 @@ export default function SocialCardPreviewPage() {
       />
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-3">
         <div className="flex items-center gap-3">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             <Share2 className="h-4 w-4" />
           </span>
           <div>

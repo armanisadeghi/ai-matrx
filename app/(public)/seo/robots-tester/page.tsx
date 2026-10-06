@@ -35,7 +35,7 @@ export default function RobotsTesterPage() {
       />
       <main className="mx-auto max-w-5xl px-4 py-10 pb-16 sm:px-6 sm:py-14">
         <section className="mx-auto mb-8 max-w-4xl">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
             <ShieldAlert className="h-5 w-5" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
