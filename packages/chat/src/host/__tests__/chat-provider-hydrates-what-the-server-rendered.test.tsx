@@ -26,7 +26,7 @@ jest.mock("../../store/chat-host-sync", () => ({ useChatHostSync: () => undefine
 import { ChatProvider } from "../react";
 import { _resetChatHostForTests } from "../index";
 import { useAppSelector } from "../../store/hooks";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 
 const appContext = createSlice({
   name: "appContext",

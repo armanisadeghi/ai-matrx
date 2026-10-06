@@ -13,7 +13,7 @@ import {
   resolveChatHost,
   type ChatHost,
 } from "../index";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 
 afterEach(() => _resetChatHostForTests());
 

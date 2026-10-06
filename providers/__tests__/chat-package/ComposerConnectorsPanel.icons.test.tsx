@@ -39,10 +39,11 @@ test("a failed catalog image leaves visible provider identity instead of a broke
 });
 test("chat walks the same provider artwork chain and ends with visible identity", async () => {
   await render([entry({ name: "Datadog", websiteUrl: "https://www.datadoghq.com/" })]);
-  expect(container.querySelector("img")?.getAttribute("src")).toBe("https://www.datadoghq.com/favicon.ico");
-  failImage(); expect(container.querySelector("img")?.getAttribute("src")).toBe("https://cdn.simpleicons.org/datadog");
-  failImage(); expect(container.querySelector("img")?.getAttribute("src")).toBe("/missing.svg");
+  // 8a12f2f1ac: brand glyph, Google's 128px site icon, catalogue art, then the raw favicon last.
+  expect(container.querySelector("img")?.getAttribute("src")).toBe("https://cdn.simpleicons.org/datadog");
   failImage(); expect(container.querySelector("img")?.getAttribute("src")).toContain("google.com/s2/favicons");
+  failImage(); expect(container.querySelector("img")?.getAttribute("src")).toBe("/missing.svg");
+  failImage(); expect(container.querySelector("img")?.getAttribute("src")).toBe("https://www.datadoghq.com/favicon.ico");
   failImage(); expect(container.querySelector("img")).toBeNull();
   expect(container.querySelector('span[aria-hidden]')?.textContent).toBe("D");
 });

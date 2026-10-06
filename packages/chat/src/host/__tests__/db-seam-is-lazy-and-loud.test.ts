@@ -13,7 +13,7 @@ import {
 } from "../index";
 import type { ChatDb } from "../contract";
 import { createClient, getClaimsUser, schedulerDb, supabase } from "../db";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 
 afterEach(() => _resetChatHostForTests());
 

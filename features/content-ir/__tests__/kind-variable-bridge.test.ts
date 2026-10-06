@@ -311,6 +311,10 @@ describe("variableDefinitionsToKindFields", () => {
     video: { type: "string", loss: false },
     youtube: { type: "string", loss: false },
     document: { type: "string", loss: false },
+    // 733702be2f added the table / tables variable inputs; @ai-matrx/content-ir's bridge does not map it
+    // yet, so it falls back to a string AND reports the loss (honest, never silent).
+    table: { type: "string", loss: true },
+    tables: { type: "string", loss: true },
   };
 
   it("maps every VARIABLE_COMPONENT_TYPES member (bare component, no options)", () => {

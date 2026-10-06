@@ -27,7 +27,7 @@ import { ChatProvider } from "../react";
 import { useChatCanvasOpeners, useChatCanvasTab, useChatCanvasView } from "../canvas";
 import { CONVERSATION_CONTEXT_KIND } from "../canvas-tabs";
 import { _resetAnnouncements } from "../errors";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 
 Object.defineProperty(globalThis, "IS_REACT_ACT_ENVIRONMENT", {
   configurable: true,

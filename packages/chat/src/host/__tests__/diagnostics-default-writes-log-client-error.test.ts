@@ -12,7 +12,7 @@ import {
   resolveChatHost,
 } from "../index";
 import { _resetAnnouncements } from "../errors";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 
 let error: jest.SpyInstance;
 let info: jest.SpyInstance;

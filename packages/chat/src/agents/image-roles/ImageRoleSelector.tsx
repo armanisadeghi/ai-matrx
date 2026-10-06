@@ -63,7 +63,7 @@ export function ImageRoleSelector({
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <SegmentedControl aria-label="Reference image role" value={value} onValueChange={(role) => onChange(value === role ? null : role)} data={roles.map((role) => { const meta = IMAGE_ROLE_META[role]; const verdict = limits ? imageRoleVerdict(role, limits, modelLabel) : null; const refused = verdict?.verdict === "refused"; return { value: role, label: meta.label, title: refused && verdict ? verdict.reason : meta.explanation }; })} />
+      <SegmentedControl aria-label="Reference image role" value={value} onValueChange={(role) => onChange(value === role ? null : role)} data={roles.map((role) => { const meta = IMAGE_ROLE_META[role]; const verdict = limits ? imageRoleVerdict(role, limits, modelLabel) : null; const refused = verdict?.verdict === "refused"; return { value: role, label: refused ? <span data-refused="true" className="line-through decoration-muted-foreground/60 opacity-40">{meta.label}</span> : meta.label, title: refused && verdict ? verdict.reason : meta.explanation }; })} />
       <p
         className={cn(
           "text-[11px] leading-snug",
