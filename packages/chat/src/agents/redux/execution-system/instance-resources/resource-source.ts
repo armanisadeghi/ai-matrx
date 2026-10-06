@@ -20,11 +20,10 @@
  * through `@/features/files/handler/*`.
  */
 
+import { normalize, toMediaRef } from "@ai-matrx/media/files/engine";
 import type { ResourceBlockType } from "../../../types/instance.types";
 import type { FileSource, NormalizedFile } from "@ai-matrx/chat/ui/file-source";
 import type { MediaRef } from "@ai-matrx/media/files";
-import { normalize } from "@ai-matrx/chat/host/ui-slots";
-import { toMediaRef } from "@ai-matrx/chat/host/ui-slots";
 
 const MEDIA_BLOCK_TYPES = new Set<ResourceBlockType>([
   "image",

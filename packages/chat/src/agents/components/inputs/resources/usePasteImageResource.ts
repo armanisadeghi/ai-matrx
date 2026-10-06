@@ -17,12 +17,12 @@
  * disabled })` on whatever textarea the composer owns.
  */
 
+import { useFileUpload } from "@ai-matrx/media/files/engine/handler/hooks/useFileUpload";
+import { normalize } from "@ai-matrx/media/files/engine";
 import { useEffect, useRef } from "react";
 import { toast } from "../../../../host/notify";
 import { useAppDispatch, useAppStore } from "../../../../store/hooks";
-import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
 import { composeUploadFolderPath } from "@ai-matrx/media/files";
-import { normalize } from "@ai-matrx/chat/host/ui-slots";
 import {
   addResource,
   removeResource,

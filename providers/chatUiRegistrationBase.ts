@@ -184,14 +184,10 @@ import {
   SearchGroup,
   SearchGroupTrigger,
 } from "@/components/icons/SearchToolbar";
-import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
-import { useFile } from "@/features/files/handler/hooks/useFile";
 import { useFileDocument } from "@/features/files/hooks/useFileDocument";
 import { useFileResourceFamily } from "@/features/files/hooks/useFileResourceFamily";
 import { useFileActions } from "@/features/files/components/core/FileActions/useFileActions";
 import { useRecordAndTranscribe } from "@/features/audio/hooks/useRecordAndTranscribe";
-import { fileHandler } from "@/features/files/handler/handler";
-import { renameFile } from "@/features/files/redux/thunks";
 import { requestScribeAudioSeek } from "@/features/transcript-studio/state/scribeAudioBus";
 import { readListRpc } from "@/lib/entity-list/readListRpc";
 
@@ -206,15 +202,10 @@ registerChatUi({
   ChangeDiff,
   SearchGroup,
   SearchGroupTrigger,
-  useFileUpload,
-  useFile,
   useFileDocument,
   useFileResourceFamily,
   useFileActions,
   useRecordAndTranscribe,
-  resolveFile: (source: Parameters<typeof fileHandler.resolve>[0]) =>
-    fileHandler.resolve(source),
-  renameFile,
   requestScribeAudioSeek,
   resolvePdfSurfaceIds,
   readListRpc,

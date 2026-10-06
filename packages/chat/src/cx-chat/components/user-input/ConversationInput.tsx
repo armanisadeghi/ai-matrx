@@ -1,5 +1,6 @@
 "use client";
 
+import { useFileUpload } from "@ai-matrx/media/files/engine/handler/hooks/useFileUpload";
 import React, {
   useState,
   useRef,
@@ -46,7 +47,6 @@ import { selectIsDebugMode } from "../../../host/prefs";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
 import { ResourceChips } from "../../../agents/resources/ResourceChips";
 import { useClipboardPaste } from "@ai-matrx/chat/host/ui-slots";
-import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
 import { composeUploadFolderPath } from "@ai-matrx/media/files";
 import { RunControlsMenu } from "../../../agents/components/inputs/smart-input/RunControlsMenu";
 import { PlusAttachMenu } from "../../../agents/components/inputs/smart-input/PlusAttachMenu";

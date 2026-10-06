@@ -11,7 +11,7 @@
  * If no candidates are found → the line is guaranteed to be plain text.
  */
 
-import { ourFileUrlMarkers } from "@ai-matrx/chat/host/ui-slots";
+import { OUR_FILE_URL_MARKERS } from "@ai-matrx/media/files/engine";
 
 // ============================================================================
 // CANDIDATE CATEGORIES
@@ -61,7 +61,7 @@ function isStandaloneAudioLink(trimmed: string): boolean {
  * splitter/accumulator confirm with the full recognizer.
  */
 function mightBeOurFile(trimmed: string): boolean {
-  const markers: readonly string[] = ourFileUrlMarkers();
+  const markers: readonly string[] = OUR_FILE_URL_MARKERS;
   for (let mi = 0; mi < markers.length; mi++) {
     if (trimmed.includes(markers[mi])) return true;
   }

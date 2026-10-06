@@ -190,9 +190,11 @@ export interface ChatUiSlots {
   useOverlaySurfaceRenderAck: AnyFn;
   disposeFullScreenEditorCallbackGroup: AnyFn;
   emitFullScreenEditorSave: AnyFn;
-  // Files, audio, PDF and list doors the app owns (P16 / P16f): its upload pipeline, file
-  // store, recorder, PDF surfaces and list reads. A bare host draws a labelled stand-in or
-  // nothing, and a hook answers "nothing here" — each reported once.
+  // File UI, audio, PDF and list doors the app still owns (P16 / P16f): file chips and
+  // previews, recorder, PDF surfaces and list reads. A bare host draws a labelled stand-in or
+  // nothing, and a hook answers "nothing here" — each reported once. The file ENGINE (upload,
+  // file store, resolve, normalize, rename, our-file URLs) is @ai-matrx/media/files/engine,
+  // which chat imports directly — never a slot.
   FileRagBadge: AnyComponent;
   MediaAttachmentThumbnail: AnyComponent;
   UnifiedImageBlockRenderer: AnyComponent;
@@ -203,19 +205,11 @@ export interface ChatUiSlots {
   ChangeDiff: AnyComponent;
   SearchGroup: AnyComponent;
   SearchGroupTrigger: AnyComponent;
-  /** The host's upload hook: `{ upload, uploadMany, uploading, progress, result, error, reset }`. */
-  useFileUpload: AnyFn;
-  /** One file from the host's file store by source: `{ file }`. */
-  useFile: AnyFn;
   useFileDocument: AnyFn;
   useFileResourceFamily: AnyFn;
   useFileActions: AnyFn;
   /** The host's record-then-transcribe hook (`isRecording`, `startRecording`, ...). */
   useRecordAndTranscribe: AnyFn;
-  /** Resolves a file source to its stored file (the host's file handler). */
-  resolveFile: AnyFn;
-  /** The host's rename-file thunk creator (`dispatch(renameFile({ fileId, newName })).unwrap()`). */
-  renameFile: AnyFn;
   requestScribeAudioSeek: AnyFn;
   resolvePdfSurfaceIds: AnyFn;
   /** The host's list RPC reader (`{ data, error }`). */
@@ -275,13 +269,11 @@ export interface ChatUiSlots {
   dispatchWarRoomMasterTool: AnyFn;
   resolveGmailSendConnection: AnyFn;
   voiceDisplayName: AnyFn;
-  recognizeOurFileUrl: AnyFn;
   canvasGetVersionHistory: (canvasId: string) => Promise<CanvasItemRow[]>;
   canvasGetById: (canvasId: string) => Promise<CanvasItemRow | null>;
   createSandboxFilesystemAdapter: AnyFn;
   notesGetById: AnyFn;
   isLiveConversationVoice: AnyFn;
-  ourFileUrlMarkers: AnyFn;
   createHtmlPage: AnyFn;
   convertMarkdownToHtml: AnyFn;
   sklActions: Record<string, AnyFn>;
@@ -340,8 +332,6 @@ export interface ChatUiSlots {
   pushAppHref: AnyFn;
   replaceAppHref: AnyFn;
   announceComingSoon: AnyFn;
-  normalize: AnyFn;
-  toMediaRef: AnyFn;
   peekSystemOrgId: AnyFn;
   toGlobalOwnershipRecord: AnyFn;
   fromGlobalOwnershipRecord: AnyFn;
@@ -488,7 +478,7 @@ function slotHook<K extends keyof ChatUiSlots>(name: K, fallback?: AnyFn): ChatU
 //   useFileActions, useFileResourceFamily, useRecordAndTranscribe, useHtmlPreviewState,
 //   useOrganizationRequired, useAgentChangeReach, useAccess, useGitHubConnection (rich host objects
 //   callers read members of), requireAuthenticatedSupabaseSession, ensureOrgAvailability (auth/org
-//   gates: continuing without them would skip the check), normalize, toMediaRef, resolveFile,
+//   gates: continuing without them would skip the check),
 //   toGlobalOwnershipRecord, fromGlobalOwnershipRecord, publishedToWebPatch (data transforms whose
 //   wrong output would corrupt a write), dispatchWarRoomTool, dispatchWarRoomMasterTool (a delegated
 //   tool call has no honest local result), useTablesEverywhere-style readers are listed below.
@@ -536,7 +526,6 @@ const STAND_INS: Partial<Record<keyof ChatUiSlots, AnyFn>> = {
   fetchArtifactsForMessageThunk: noopThunk,
   updateArtifactThunk: failingThunk("updateArtifactThunk"),
   registerArtifactThunk: failingThunk("registerArtifactThunk"),
-  renameFile: failingThunk("renameFile"),
   refreshNoteContent: failingThunk("refreshNoteContent"),
   saveNoteField: failingThunk("saveNoteField"),
   fetchNotesList: noopThunk,
@@ -796,23 +785,10 @@ export const SearchGroup = slotComponent("SearchGroup", ({ children, className }
 );
 export const SearchGroupTrigger = slotComponent("SearchGroupTrigger");
 
-const noUploadHere = () => Promise.reject(new Error("This host has no file upload (registerChatUi useFileUpload)"));
-export const useFileUpload = slotFn("useFileUpload", () => ({
-  upload: noUploadHere,
-  uploadMany: noUploadHere,
-  uploading: false,
-  progress: null,
-  result: null,
-  error: null,
-  reset: () => undefined,
-}));
-export const useFile = slotFn("useFile", () => ({ file: null }));
 export const useFileDocument = slotFn("useFileDocument");
 export const useFileResourceFamily = slotFn("useFileResourceFamily");
 export const useFileActions = slotFn("useFileActions");
 export const useRecordAndTranscribe = slotFn("useRecordAndTranscribe");
-export const resolveFile = slotFn("resolveFile");
-export const renameFile = slotFn("renameFile");
 /** A host with no transcript studio has no audio to seek; the request is a reported no-op. */
 export const requestScribeAudioSeek = slotFn("requestScribeAudioSeek", () => undefined);
 export const resolvePdfSurfaceIds = slotFn("resolvePdfSurfaceIds");
@@ -951,13 +927,11 @@ export const dispatchWarRoomTool = slotFn("dispatchWarRoomTool");
 export const dispatchWarRoomMasterTool = slotFn("dispatchWarRoomMasterTool");
 export const resolveGmailSendConnection = slotFn("resolveGmailSendConnection");
 export const voiceDisplayName = slotFn("voiceDisplayName", (_set: string, id: string) => id);
-export const recognizeOurFileUrl = slotFn("recognizeOurFileUrl", () => null);
 export const canvasGetVersionHistory = slotFn("canvasGetVersionHistory");
 export const canvasGetById = slotFn("canvasGetById");
 export const createSandboxFilesystemAdapter = slotFn("createSandboxFilesystemAdapter");
 export const notesGetById = slotFn("notesGetById");
 export const isLiveConversationVoice = slotFn("isLiveConversationVoice", () => false);
-export const ourFileUrlMarkers = slotFn("ourFileUrlMarkers", () => []);
 export const createHtmlPage = slotFn("createHtmlPage");
 export const convertMarkdownToHtml = slotFn("convertMarkdownToHtml");
 /** The host's skill-library action creators (`sklActions.x(...)`); resolved at call time, a bare host throws naming the slot. */
@@ -982,10 +956,6 @@ export const pushAppHref = slotFn("pushAppHref");
 export const replaceAppHref = slotFn("replaceAppHref");
 
 export const announceComingSoon = slotFn("announceComingSoon");
-
-export const normalize = slotFn("normalize");
-
-export const toMediaRef = slotFn("toMediaRef");
 
 export const peekSystemOrgId = slotFn("peekSystemOrgId");
 

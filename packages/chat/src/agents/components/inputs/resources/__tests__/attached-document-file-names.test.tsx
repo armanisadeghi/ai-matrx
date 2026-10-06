@@ -6,7 +6,6 @@
  */
 
 import { act } from "react";
-import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 import { createRoot } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -26,8 +25,13 @@ async function settledNames(fileIds: string[]): Promise<Record<string, string>> 
 }
 
 const resolve = jest.fn();
-// The host registers its file resolver and file hook (P16f slots); this test registers doubles.
-registerChatUi({ resolveFile: (...a: unknown[]) => resolve(...a), useFile: () => ({ file: null }) });
+// The file resolver and file hook are the files engine's own (P16f); this test replaces them.
+jest.mock("@ai-matrx/media/files/engine", () => ({
+  fileHandler: { resolve: (...a: unknown[]) => resolve(...a) },
+}));
+jest.mock("@ai-matrx/media/files/engine/handler/hooks/useFile", () => ({
+  useFile: () => ({ file: null }),
+}));
 
 import {
   attachedDocumentFileId,
