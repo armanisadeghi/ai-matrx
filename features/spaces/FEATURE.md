@@ -85,3 +85,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   (`editor/stored-blocks.tsx` `DatabaseHost`) stops mouse / key events natively — ProseMirror listens on the editor element,
   so React's stopPropagation came too late and a row click became a block selection. Page history (A13,
   `page/PageHistory.tsx`, `store.history`), code block language picker (C10).
+- 2026-10-05 — builder round 6: `editor/rubber-band.ts` (B11 — drag from the margin draws a box, touched blocks turn
+  blue and become the editor's selection; Backspace/Delete/Cmd+D act on all), block-menu search + "Turn into page in"
+  (B9, `SpacePage` creates the page under the picked one through `store.create`), `editor/PasteUrlMenu.tsx` (B12 — a
+  lone pasted URL becomes a link with Link / Mention (Space addresses) / Bookmark / Embed beside it; Markdown and HTML
+  keep BlockNote's conversion), `editor/code-block.ts` (C10 — Copy, Wrap, Caption over BlockNote's code block; any DOM
+  change inside a block makes ProseMirror redraw it, so the empty caption is folded by CSS and opened by focus),
+  table header row/column + cell colors (C14, `props.cellStyles`), word count in ••• (A14). `SpacePage` resets on a
+  new id during render (no setState in an effect). records-ui 0.101.18 hides back-link columns; its `TablePage`
+  embedded presentation is not in the published package (NEEDS).
