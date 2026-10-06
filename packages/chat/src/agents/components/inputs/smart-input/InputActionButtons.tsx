@@ -48,6 +48,7 @@ import {
   smartExecute,
   cancelExecution,
 } from "../../../redux/execution-system/thunks/smart-execute.thunk";
+import { isMacLike } from "../../../hooks/useAgentUndoRedo";
 import { MicDeviceMenu } from "@ai-matrx/chat/host/ui-slots";
 import type { ComposerMode, ComposerSize } from "./composer/composer-types";
 import { Button, SplitButton } from "@ai-matrx/design-system/controls";
@@ -341,8 +342,6 @@ function ComposerSendSlot({
   return <>{children(hasSomethingToSend)}</>;
 }
 
-const IS_MAC =
-  typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 
 function Keys({ keys }: { keys: string[] }) {
   return (
@@ -376,7 +375,7 @@ function ComposerSendButton({
   disabled: boolean;
   onSend: () => void;
 }) {
-  const mod = IS_MAC ? "⌘" : "Ctrl";
+  const mod = isMacLike() ? "⌘" : "Ctrl";
   const rows: { label: string; keys: string[] }[] = isExecuting
     ? [
         { label: "Queue for when it finishes", keys: submitOnEnter ? ["↵"] : [mod, "↵"] },
