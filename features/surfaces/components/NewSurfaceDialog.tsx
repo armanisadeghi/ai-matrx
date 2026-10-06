@@ -1,5 +1,6 @@
 "use client";
 
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import React, { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -137,6 +138,8 @@ export function NewSurfaceDialog({
       await createSurface({
         name: fullName,
         client_name: client,
+        // A surface registered here is a platform (code) surface; the platform owns it.
+        organization_id: SYSTEM_ORGANIZATION_ID,
         description: description,
         sort_order: tierEntry.min + 50,
         is_active: true,

@@ -1,5 +1,6 @@
 "use client";
 
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import React, {
   useEffect,
   useEffectEvent,
@@ -357,7 +358,8 @@ export function SurfacesContainer() {
         create: {
           parse: (value) => parseCreateSurfacesValue(value, writeContext()),
           run: reloadAfter(async (plan: ReturnType<typeof parseCreateSurfacesValue>[number]) => {
-            const row = await createSurface(plan);
+            // A surface registered here is a platform (code) surface; the platform owns it.
+            const row = await createSurface({ ...plan, organization_id: SYSTEM_ORGANIZATION_ID });
             return { id: row.name, name: row.label ?? row.name };
           }),
           nameOf: (plan) => plan.name,
