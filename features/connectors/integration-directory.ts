@@ -22,6 +22,12 @@ export interface IntegrationDirectoryItem {
   status: string;
   attention: boolean;
   accountSummary?: string;
+  /**
+   * Organizations that share an account of this kind with the viewer. Never
+   * makes the item `saved`/`connected` — those describe the viewer's OWN
+   * accounts (`connection-ownership.ts`).
+   */
+  sharedBy?: readonly string[];
   server?: McpCatalogEntry;
 }
 
@@ -46,7 +52,8 @@ export function filterDirectory(
 ) {
   return items
     .filter((item) => {
-      if (filters.view === "yours" && !item.saved) return false;
+      if (filters.view === "yours" && !item.saved && !item.sharedBy?.length)
+        return false;
       if (filters.category !== "all" && item.category !== filters.category)
         return false;
       if (filters.status === "connected" && !item.connected) return false;

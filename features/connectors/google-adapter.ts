@@ -252,6 +252,7 @@ export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
     id: row.id,
     label: `${row.account_email || row.account_name || "Google account"}${isolatedYouTube ? " — YouTube" : ""}`,
     ownerKind: row.owner_type === "organization" ? "organization" : "person",
+    ownerUserId: row.owner_user_id,
     organizationId: row.organization_id,
     providerSubject: row.provider_subject,
     grantedScopes: row.scopes,

@@ -127,6 +127,12 @@ it("does not offer Gmail changes on an organization-owned account in Settings", 
   const root = createRoot(container);
   try {
     await act(async () => root.render(<ConnectorsSettingsPanel />));
+    // An organization's account is SHARED, not the viewer's own: it sits
+    // collapsed under "Shared with you" until opened on purpose.
+    expect(container.textContent).toContain("Shared with you");
+    const sharedRow = container.querySelector<HTMLButtonElement>('button[aria-expanded="false"]');
+    expect(sharedRow?.textContent).toContain("Connected by");
+    await act(async () => sharedRow?.click());
     expect(container.textContent).toContain("Gmail changes are available only on personal Google connections");
     const modifyRow = [...container.querySelectorAll("li")].find((node) =>
       (node.textContent ?? "").includes("Gmail changes"),

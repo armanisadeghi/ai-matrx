@@ -117,6 +117,9 @@ import { getConnector } from "@/features/connectors/registry";
 import { GOOGLE_CONNECTOR_PROVIDER } from "@/features/connectors/provider-config";
 import { MICROSOFT_CAMPAIGN_DESCRIPTORS } from "@/features/microsoft-integration/campaigns";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
+import { splitConnectionsByOwnership } from "@/features/connectors/connection-ownership";
+import { useConnectionViewer } from "@/features/connectors/useConnectionViewer";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -244,6 +247,8 @@ export function IntegrationsWorkspace({
   const availabilityStatus = useAppSelector((state) =>
     selectMcpAvailabilityStatusForOrganization(state, organizationId),
   );
+  const connectionViewer = useConnectionViewer();
+  const organizations = useAppSelector(selectOrganizationsList);
   const github = useGitHubConnection();
   const googleInventory = useGoogleConnectionInventory();
   const githubStatus = github.loading
@@ -351,8 +356,30 @@ export function IntegrationsWorkspace({
     if (selectedDetail && !id) refresh();
     setSelectedDetail(id);
   };
+  // Only the viewer's OWN Google accounts make Google "yours"; an
+  // organization's shared account is named as shared, never counted as theirs
+  // (`features/connectors/connection-ownership.ts`, Arman 2026-10-05).
+  const { mine: myGoogleConnections, shared: sharedGoogleConnections } =
+    splitConnectionsByOwnership(
+      (googleInventory.data?.connections ?? []).map((row) => ({
+        ...row,
+        ownerKind: row.owner_type === "organization" ? ("organization" as const) : ("person" as const),
+        ownerUserId: row.owner_user_id,
+        organizationId: row.organization_id,
+      })),
+      connectionViewer,
+    );
+  const googleSharedBy = [
+    ...new Set(
+      sharedGoogleConnections.map(
+        (row) =>
+          organizations.find((org) => org.id === row.organization_id)?.name ??
+          "Your organization",
+      ),
+    ),
+  ];
   const google = savedAccountSummary(
-    (googleInventory.data?.connections ?? []).map((account) => ({
+    myGoogleConnections.map((account) => ({
       identity:
         account.account_email ?? account.account_name ?? "Google account",
       status: account.health,
@@ -411,6 +438,7 @@ export function IntegrationsWorkspace({
     featured: ["google", "microsoft", "github"].includes(id),
     comingSoon: false,
     ...summary,
+    sharedBy: id === "google" ? googleSharedBy : undefined,
   });
   const items: IntegrationDirectoryItem[] = [
     nativeItem(

@@ -72,6 +72,12 @@ export interface ConnectorAccount {
   /** What the person calls this account — an email, or a display name. */
   label: string;
   ownerKind: "person" | "organization";
+  /**
+   * The person who connected a personal account; null for an organization's.
+   * Absent when an adapter cannot report it — its read is then trusted to
+   * return only the viewer's own personal rows (`connection-ownership.ts`).
+   */
+  ownerUserId?: string | null;
   /** Set only for an organization-owned account. */
   organizationId: string | null;
   /** The provider identity behind it; two rows may share one. */

@@ -342,6 +342,10 @@ export async function listGoogleConnectionInventory(
           .from("integration_connections")
           .select(CONNECTION_SELECT, { count: "exact" })
           .eq("provider", "google")
+          // The viewer's own accounts and their organizations' — never another
+          // person's personal account, which only a platform admin's row
+          // security reaches (`features/connectors/connection-ownership.ts`).
+          .or(`owner_user_id.eq.${session.user.id},owner_type.eq.organization`)
           .is("deleted_at", null)
           .order("updated_at", { ascending: false })
           // A stable total order, required by the pager: `updated_at` is not
