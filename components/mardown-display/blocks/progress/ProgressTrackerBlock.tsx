@@ -2,7 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
-import { Button, Badge } from "@ai-matrx/design-system/controls";
+import { Button, Badge, Tile } from "@ai-matrx/design-system/controls";
 import type {
   ProgressCategory,
   ProgressItem,
@@ -561,39 +561,21 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                       <div className="p-4">
                         {/* Category Header */}
                         <div className="flex items-center justify-between mb-4">
-                          <button
+                          <Tile
+                            wrapTitle
+                            variant="quiet"
                             onClick={() => toggleCategory(category.id)}
-                            className="flex items-center gap-3 flex-1 text-left hover:opacity-80 transition-opacity"
-                          >
-                            <div
-                              className={`p-2 bg-gradient-to-br ${gradientColor} rounded-lg shadow-md`}
-                            >
-                              <IconComponent className="h-5 w-5 text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                {category.name}
-                              </h2>
-                              {category.description && (
-                                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                  {category.description}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                                {category.completedCount}/{category.totalCount}
-                              </span>
-                              <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                                {category.percentage}%
-                              </div>
-                              {isExpanded ? (
-                                <ChevronDown className="h-5 w-5 text-gray-400" />
-                              ) : (
-                                <ChevronRight className="h-5 w-5 text-gray-400" />
-                              )}
-                            </div>
-                          </button>
+                            icon={<IconComponent />}
+                            title={category.name}
+                            line={category.description || undefined}
+                            end={
+                              <>
+                                <span>{category.completedCount}/{category.totalCount}</span>
+                                <span className="font-semibold text-foreground">{category.percentage}%</span>
+                                {isExpanded ? <ChevronDown /> : <ChevronRight />}
+                              </>
+                            }
+                          />
                         </div>
 
                         {/* Category Progress Bar */}
@@ -620,54 +602,14 @@ const ProgressTrackerBlock: React.FC<ProgressTrackerBlockProps> = ({
                             {category.steps.map((item) => {
                               const isCompleted = completed_items.has(item.id);
                               return (
-                                <button
-                                  key={item.id}
+                                <Tile
+                                  wrapTitle
+                                  selected={isCompleted}
                                   onClick={() => toggleItem(item.id)}
-                                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
-                                    isCompleted
-                                      ? "bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-950/30"
-                                      : "bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800/50"
-                                  }`}
-                                >
-                                  <div className="flex-shrink-0">
-                                    {isCompleted ? (
-                                      <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400" />
-                                    ) : (
-                                      <Circle className="h-5 w-5 text-gray-400 dark:text-gray-600 group-hover:text-gray-600 dark:group-hover:text-gray-400" />
-                                    )}
-                                  </div>
-
-                                  <div className="flex-1 min-w-0">
-                                    <span
-                                      className={`text-sm font-medium ${
-                                        isCompleted
-                                          ? "line-through text-green-700 dark:text-green-300"
-                                          : "text-gray-900 dark:text-gray-100"
-                                      }`}
-                                    >
-                                      {item.text}
-                                    </span>
-
-                                    <div className="flex items-center gap-2 mt-1">
-                                      {item.priority && (
-                                        <span
-                                          className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(item.priority)}`}
-                                        >
-                                          {item.priority}
-                                        </span>
-                                      )}
-                                      {item.optional && (
-                                        <Badge tone="info">optional</Badge>
-                                      )}
-                                      {item.estimated_hours && (
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                                          <Clock className="h-3 w-3" />
-                                          {item.estimated_hours}h
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </button>
+                                  icon={isCompleted ? <CheckCircle2 className="text-success-ink" /> : <Circle />}
+                                  title={<span className={isCompleted ? "line-through" : undefined}>{item.text}</span>}
+                                  line={[item.priority, item.optional ? "optional" : null, item.estimated_hours ? `${item.estimated_hours}h` : null].filter(Boolean).join(" · ") || undefined}
+                                />
                               );
                             })}
                           </div>

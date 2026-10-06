@@ -1,5 +1,6 @@
 "use client";
 
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -186,32 +187,26 @@ export default function ResearchYouTubePage() {
     <div className="min-h-full bg-background">
       <div className="sticky top-0 z-20 border-b border-border/60 bg-background/90 px-4 py-3 backdrop-blur-xl sm:px-6">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-3">
-          <div className="flex rounded-xl border border-border bg-muted/30 p-1">
-            <Button
-              icon={<Search />}
-              type="button"
-              variant={view === "discover" ? "primary" : "quiet"}
-              onClick={() => setView("discover")}
-            >
-              Discover
-            </Button>
-            <Button
-              icon={<Library />}
-              type="button"
-              variant={view === "library" ? "primary" : "quiet"}
-              onClick={() => {
-                setLoading(true);
-                setView("library");
-              }}
-            >
-              Topic library
-              {videos.length > 0 && (
-                <span className="ml-2 rounded-full bg-background/70 px-2 py-0.5 text-[10px]">
-                  <UntrustedCount value={videos.length} trustworthy={libraryError == null || videos.length > 0} label="Videos" />
-                </span>
-              )}
-            </Button>
-          </div>
+          <SegmentedControl
+            aria-label="Research view"
+            value={view}
+            onValueChange={(next) => {
+              if (next === "library") setLoading(true);
+              setView(next);
+            }}
+            data={[
+              { value: "discover", label: <span className="inline-flex items-center gap-1.5"><Search className="size-3.5" />Discover</span> },
+              {
+                value: "library",
+                label: (
+                  <span className="inline-flex items-center gap-1.5">
+                    <Library className="size-3.5" />Topic library
+                    {videos.length > 0 && <UntrustedCount value={videos.length} trustworthy={libraryError == null || videos.length > 0} label="Videos" />}
+                  </span>
+                ),
+              },
+            ]}
+          />
           {view === "library" && selected.size > 0 && (
             <Button
               icon={processing ? (

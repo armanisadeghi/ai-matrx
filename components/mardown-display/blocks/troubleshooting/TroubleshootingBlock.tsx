@@ -2,7 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
-import { Button, Chip } from "@ai-matrx/design-system/controls";
+import { Button, Chip, Tile } from "@ai-matrx/design-system/controls";
 import type {
   TroubleshootingStep,
   TroubleshootingSolution,
@@ -470,47 +470,15 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                       className={`bg-textured rounded-xl shadow-lg border-2 ${severityColor.split(" ").slice(2).join(" ")} overflow-hidden`}
                     >
                       {/* Issue Header */}
-                      <button
+                      <Tile
+                        wrapTitle
+                        variant="quiet"
                         onClick={() => toggleIssue(issue.id)}
-                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors text-left"
-                      >
-                        <div className="flex items-start gap-4 flex-1">
-                          <div
-                            className={`p-2 rounded-lg border ${severityColor}`}
-                          >
-                            {severityIcon}
-                          </div>
-                          <div className="flex-1">
-                            <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">
-                              {issue.symptom}
-                            </h2>
-                            {issue.description && (
-                              <p className="text-sm text-gray-600 dark:text-gray-400">
-                                {issue.description}
-                              </p>
-                            )}
-                            <div className="flex items-center gap-3 mt-2">
-                              <span
-                                className={`px-2 py-1 text-xs font-medium rounded-full ${severityColor}`}
-                              >
-                                {issue.severity || "unknown"}
-                              </span>
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {issue.solutions.length} solution
-                                {issue.solutions.length !== 1 ? "s" : ""}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 ml-4">
-                          {isExpanded ? (
-                            <ChevronDown className="h-5 w-5 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
-                      </button>
+                        icon={severityIcon}
+                        title={issue.symptom}
+                        line={[issue.description, issue.severity || "unknown", `${issue.solutions.length} solution${issue.solutions.length !== 1 ? "s" : ""}`].filter(Boolean).join(" · ")}
+                        end={isExpanded ? <ChevronDown /> : <ChevronRight />}
+                      />
 
                       {/* Issue Content */}
                       {isExpanded && (
@@ -557,54 +525,15 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
                                     key={solution.id}
                                     className="bg-gray-50 dark:bg-gray-900/50 rounded-lg border-border"
                                   >
-                                    <button
-                                      onClick={() =>
-                                        toggleSolution(solution.id)
-                                      }
-                                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors text-left rounded-t-lg"
-                                    >
-                                      <div className="flex items-center gap-3 flex-1">
-                                        <Lightbulb className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                                        <div className="flex-1">
-                                          <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-                                            {solution.title}
-                                          </h4>
-                                          {solution.description && (
-                                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                                              {solution.description}
-                                            </p>
-                                          )}
-                                          <div className="flex items-center gap-2 mt-2">
-                                            {solution.priority && (
-                                              <span
-                                                className={`px-2 py-0.5 text-xs font-medium rounded-full ${priorityColor}`}
-                                              >
-                                                {solution.priority} priority
-                                              </span>
-                                            )}
-                                            {solution.successRate && (
-                                              <div className="flex items-center gap-1">
-                                                {renderSuccessRate(
-                                                  solution.successRate,
-                                                )}
-                                              </div>
-                                            )}
-                                            <span className="text-xs text-gray-500 dark:text-gray-400">
-                                              {solution.steps.length} step
-                                              {solution.steps.length !== 1
-                                                ? "s"
-                                                : ""}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      {isSolutionExpanded ? (
-                                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                                      ) : (
-                                        <ChevronRight className="h-4 w-4 text-gray-400" />
-                                      )}
-                                    </button>
+                                    <Tile
+                                      wrapTitle
+                                      variant="quiet"
+                                      onClick={() => toggleSolution(solution.id)}
+                                      icon={<Lightbulb />}
+                                      title={solution.title}
+                                      line={[solution.description, solution.priority ? `${solution.priority} priority` : null, `${solution.steps.length} step${solution.steps.length !== 1 ? "s" : ""}`].filter(Boolean).join(" · ")}
+                                      end={isSolutionExpanded ? <ChevronDown /> : <ChevronRight />}
+                                    />
 
                                     {/* Solution Steps */}
                                     {isSolutionExpanded && (

@@ -35,6 +35,7 @@ import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifact
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
+import { Tile } from "@ai-matrx/design-system/controls";
 import ChatCollapsibleWrapper from "@/components/mardown-display/blocks/ChatCollapsibleWrapper";
 import type { OriginalQuestion, QuizState } from "./quiz-types";
 import {
@@ -476,25 +477,6 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
     }
   };
 
-  const getOptionStyle = (optionIndex: number) => {
-    const baseStyle = `rounded-lg border cursor-pointer transition-all duration-200 text-left ${
-      isFullScreen ? "p-4 text-base" : "p-3 text-base"
-    }`;
-
-    if (!isAnswered) {
-      return `${baseStyle} bg-textured border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30`;
-    } else {
-      // After answer selected
-      if (optionIndex === currentQuestion.correctAnswerIndex) {
-        return `${baseStyle} bg-green-100 dark:bg-green-950/40 border-green-400 dark:border-green-600 shadow-sm`;
-      }
-      if (selectedAnswer?.selectedOptionIndex === optionIndex && !isCorrect) {
-        return `${baseStyle} bg-red-100 dark:bg-red-950/40 border-red-400 dark:border-red-600 shadow-sm`;
-      }
-      return `${baseStyle} bg-gray-50 dark:bg-gray-800/50 border-gray-200 dark:border-gray-700 opacity-60`;
-    }
-  };
-
   // Get performance icon component
   const getPerformanceIcon = (iconName: string) => {
     const iconProps = { className: "h-5 w-5" };
@@ -702,31 +684,21 @@ const MultipleChoiceQuiz: React.FC<MultipleChoiceQuizProps> = ({
         data-testid="quiz-options"
         data-canvas-fit={narrowPane ? "narrow" : undefined}
       >
-        {currentQuestion.options.map((option, index) => (
-          <div
-            key={index}
-            onClick={() => handleOptionClick(index)}
-            className={getOptionStyle(index)}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="font-medium text-gray-800 dark:text-gray-200 flex-1 leading-snug">
-                <InlineLatexRenderer content={option} />
-              </span>
-              {isAnswered && index === currentQuestion.correctAnswerIndex && (
-                <Check
-                  className={`text-green-600 dark:text-green-400 flex-shrink-0 ${isFullScreen ? "h-6 w-6" : "h-5 w-5"}`}
-                />
-              )}
-              {isAnswered &&
-                selectedAnswer?.selectedOptionIndex === index &&
-                !isCorrect && (
-                  <X
-                    className={`text-red-600 dark:text-red-400 flex-shrink-0 ${isFullScreen ? "h-6 w-6" : "h-5 w-5"}`}
-                  />
-                )}
-            </div>
-          </div>
-        ))}
+        {currentQuestion.options.map((option, index) => {
+          const isRight = isAnswered && index === currentQuestion.correctAnswerIndex;
+          const isWrongPick = isAnswered && selectedAnswer?.selectedOptionIndex === index && !isCorrect;
+          return (
+            <Tile
+              key={index}
+              wrapTitle
+              selected={isRight ? true : undefined}
+              danger={isWrongPick}
+              onClick={() => handleOptionClick(index)}
+              title={<InlineLatexRenderer content={option} />}
+              end={isRight ? <Check className="text-success-ink" aria-label="Correct answer" /> : isWrongPick ? <X className="text-destructive-ink" aria-label="Your answer" /> : undefined}
+            />
+          );
+        })}
       </div>
 
       {/* Explanation */}
