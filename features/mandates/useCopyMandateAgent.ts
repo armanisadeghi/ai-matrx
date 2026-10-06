@@ -29,9 +29,6 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
-import {
-  duplicateAgentVersion,
-} from "@/features/agents/redux/builder-tier.thunks";
 
 export interface CopyMandateAgentSource {
   /** The caller's current override agent (fork THIS master when set). */
@@ -78,7 +75,8 @@ export async function duplicateMandateAgent(
   }
   if (source.defaultAgentVersionId != null) {
     return dispatch(
-      duplicateAgentVersion({
+      duplicateAgent({
+        // The exact pinned snapshot the server runs, never the drifted master.
         versionId: source.defaultAgentVersionId,
         asSystem: false,
         organizationId: source.organizationId ?? undefined,
