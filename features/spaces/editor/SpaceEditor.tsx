@@ -47,6 +47,7 @@ import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { useRubberBand } from "./rubber-band";
 import { spacesSchema, type SpacesEditor } from "./schema";
 import { slashItems, type SlashContext } from "./slash-items";
+import { columnDropper } from "./column-drop";
 
 const PLACEHOLDERS = {
   ...en.placeholders,
@@ -182,6 +183,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   // H3: with a room, BlockNote's own Yjs binding drives the body (sync, cursors, Yjs undo) — exactly what
   // @blocknote/core/yjs `withCollaboration` adds: the extension, ProseMirror history off, and its fixed-id
   // placeholder first block (the fragment's content replaces it).
+  // C16: a block dropped on another's left / right edge makes columns (a vertical guide, not a line).
+  const [columnDrop] = useState(columnDropper);
   const room = collab
     ? CollaborationExtension({ fragment: collab.fragment, provider: collab.provider, user: collab.user, showCursorLabels: "activity" })
     : null;
@@ -208,6 +211,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       dictionary: { ...en, placeholders: PLACEHOLDERS },
       extensions: room ? [notionKeys(), room] : [notionKeys()],
       tabBehavior: "prefer-indent",
+      dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
       trailingBlock: false,
     },
@@ -227,6 +231,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
     else commentOnBlock(first.id);
   };
   const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu, comment: (id) => commentOnBlock(id) }));
+  useEffect(() => columnDrop.attach(), [columnDrop]);
   const [widths, setWidths] = useState(() => columnCss(editor.document as unknown as EngineBlock[]));
   // With a room the body arrives through the Yjs binding (the first sync, a peer's edit), which
   // BlockNoteView's onChange never reports — so a page opened in a room drew its columns 50/50. The
@@ -356,7 +361,11 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         sideMenu={(props) => (
           <SideMenu {...props}>
             <AddBlockButton />
-            <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+            {/* The block menu opens on a click (Notion), never on the press that starts a drag: the
+                menu trigger opens on mousedown, so the press is kept from it and the click opens it. */}
+            <span className="spaces-drag-handle" onPointerDownCapture={(e) => e.stopPropagation()} onMouseDownCapture={(e) => e.stopPropagation()}>
+              <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+            </span>
           </SideMenu>
         )}
       />

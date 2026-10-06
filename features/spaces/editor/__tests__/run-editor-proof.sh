@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # Runs round-trip.editor-proof.mts against the real BlockNote editor (bundled: Jest and tsx cannot load
 # BlockNote's ESM from this repo's CJS context). Exit 0 = every stored construct round-trips unchanged.
+# Another proof in this folder: bash run-editor-proof.sh slash-insert (runs slash-insert.editor-proof.mts).
 set -euo pipefail
+proof="${1:-round-trip}"
 cd "$(dirname "$0")/../../../.."
 out="$(mktemp -d)/proof.mjs"
-node_modules/.bin/esbuild features/spaces/editor/__tests__/round-trip.editor-proof.mts --bundle --platform=node --format=esm \
+node_modules/.bin/esbuild "features/spaces/editor/__tests__/${proof}.editor-proof.mts" --bundle --platform=node --format=esm \
   --jsx=automatic --alias:@=. --outfile="$out" --loader:.css=empty --loader:.webp=empty --loader:.png=empty --loader:.jpg=empty --loader:.svg=empty --external:canvas --external:jsdom --log-level=error \
   --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);"
 cp "$out" ./.spaces-editor-proof.mjs

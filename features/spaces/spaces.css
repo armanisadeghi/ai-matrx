@@ -1466,3 +1466,23 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-presence-avatar:first-child { margin-left: 0; }
 .spaces-presence-more { margin-left: 4px; color: var(--spaces-ink-soft); font-size: 12px; }
 .spaces-mention-person { color: var(--spaces-ink-soft); }
+
+/* The drag handle sits in a wrapper that keeps the press from the block menu (C16 / round 17). */
+.spaces-drag-handle {
+  display: inline-flex;
+}
+
+/* Nested blocks (a to-do's sub-to-dos, a list's children) carry no vertical rule beside them (Notion). */
+.spaces-editor .bn-block-group .bn-block-group > .bn-block-outer::before {
+  display: none;
+}
+
+/* Toggle triangles at Notion's size and weight: a ~6 × 8 px triangle in the body ink. */
+.spaces-editor .bn-toggle-button {
+  padding: 5px;
+  color: var(--spaces-ink, currentColor);
+}
+.spaces-editor .bn-toggle-button > svg {
+  width: 13px;
+  height: 13px;
+}

@@ -5,7 +5,6 @@
 // Only blocks that work today are listed. Media from a file or link (image, video, audio, file, PDF,
 // bookmark, embed) render when stored (imports) but have no insert flow yet.
 
-import { insertOrUpdateBlockForSlashMenu } from "@blocknote/core";
 import type { DefaultReactSuggestionItem } from "@blocknote/react";
 import {
   ChevronRight,
@@ -36,6 +35,7 @@ import {
 import type { PickedSource } from "../data/SourcePicker";
 import { newViewId, type SpaceDbView } from "../data/sources";
 import type { SpacesEditor } from "./schema";
+import { insertAtSlash, slashTarget } from "./slash-insert";
 
 const ICON = 18;
 
@@ -76,16 +76,18 @@ function columns(count: number): SpacesPartialBlock {
 }
 
 export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReactSuggestionItem[] {
+  // Every item lands where its "/" was typed — named at the click, inserted by id (slash-insert.ts).
   const set = (block: SpacesPartialBlock) => () => {
-    insertOrUpdateBlockForSlashMenu(editor, block);
+    insertAtSlash(editor, slashTarget(editor), block);
   };
   const basic = "Basic blocks";
   const advanced = "Advanced blocks";
   const media = "Media";
   const database = "Database";
   const withSource = (make: (src: PickedSource) => SpacesPartialBlock) => () => {
+    const at = slashTarget(editor);
     void ctx.pickSource().then((src) => {
-      if (src) insertOrUpdateBlockForSlashMenu(editor, make(src));
+      if (src) insertAtSlash(editor, at, make(src));
     });
   };
   return [
@@ -104,8 +106,9 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
       group: basic,
       icon: <FileText size={ICON} />,
       onItemClick: () => {
+        const at = slashTarget(editor);
         void ctx.createSubpage().then((spaceId) => {
-          if (spaceId) insertOrUpdateBlockForSlashMenu(editor, { type: "page", props: { spaceId } });
+          if (spaceId) insertAtSlash(editor, at, { type: "page", props: { spaceId } });
         });
       },
     },
@@ -126,8 +129,9 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
       group: basic,
       icon: <Link2 size={ICON} />,
       onItemClick: () => {
+        const at = slashTarget(editor);
         void ctx.pickPage().then((spaceId) => {
-          if (spaceId) insertOrUpdateBlockForSlashMenu(editor, { type: "linkToPage", props: { spaceId } });
+          if (spaceId) insertAtSlash(editor, at, { type: "linkToPage", props: { spaceId } });
         });
       },
     },
