@@ -149,6 +149,13 @@ export type CapturedErrorSource =
    */
   | "agent-catalog"
   /**
+   * `@ai-matrx/agents/models`' errorSink fired — the ONE model picker's catalog
+   * read (user or admin variant) or a model-favorite write failed. Bound once
+   * in `lib/ai-models/modelCatalog.ts`; without this port the picker's failures
+   * would only reach the console.
+   */
+  | "model-catalog"
+  /**
    * The model's chain-of-thought (`<thinking>`/`<reasoning>`) leaked into the
    * ANSWER text — i.e. it survived the render-block type-split and reached the
    * canonical JSON-extraction / answer-text path. This firing means the stream

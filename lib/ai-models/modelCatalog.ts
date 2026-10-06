@@ -44,7 +44,8 @@ const sink = (event: { code: string; message: string; context?: object }) => {
 function bindDiagnostics(): void {
   setModelDiagnosticsSink((entry) => {
     captureError({
-      source: entry.source,
+      // The parser reports vocabulary drift as a "data-shape" contract violation.
+      source: entry.source === "data-shape" ? "data-shape" : "model-catalog",
       ...(entry.relation ? { relation: entry.relation } : {}),
       message: entry.message,
       ...(entry.details ? { details: entry.details } : {}),

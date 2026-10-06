@@ -29,7 +29,7 @@ export function resolvePreferredModelChoice(
       client: () => createClient() as unknown as ModelCatalogClient,
       resolveKnob: (fullKey) => resolveSessionKnob(fullKey),
       classKnobFor: (knob) => modelClassKnobFor(knob),
-      classPinOf: (value) => classPinOf(value),
+      classPinOf: (value) => classPinOf(value) ?? null,
     },
     modelKnob,
     tag,
