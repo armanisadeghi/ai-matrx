@@ -258,7 +258,9 @@ describe("marketing site sub-view registry", () => {
     // routed Research workbench under seo keywords). Sub-views 49 + 1 = 50.
     // 2026-09-25 — SHARE-PEOPLE-ONLY: "Organization access" retired (a share names a
     // person, never an organization). Sub-views 50 - 1 = 49.
-    expect(MARKETING_SITE_SECTIONS.length).toBe(24);
+    // 2026-10-05 — OpenSEO Wave 3 item 4: the seo branch gained `reports`
+    // (saved SEO reports + templates). Sections 24 + 1 = 25; destinations 73 + 1 = 74.
+    expect(MARKETING_SITE_SECTIONS.length).toBe(25);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
@@ -266,7 +268,7 @@ describe("marketing site sub-view registry", () => {
       ),
     ).toBe(49);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      73,
+      74,
     );
   });
 });

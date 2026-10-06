@@ -19,6 +19,7 @@ import {
   BadgeCheck,
   CircleDollarSign,
   ClipboardCheck,
+  FileChartColumn,
   FileText,
   FlaskConical,
   Gauge,
@@ -78,6 +79,7 @@ export const MARKETING_SEO_SECTION_ICONS: Record<
   valuation: CircleDollarSign,
   "ai-visibility": Radar,
   "growth-loop": RefreshCw,
+  reports: FileChartColumn,
   automations: Workflow,
   capabilities: Wrench,
 };

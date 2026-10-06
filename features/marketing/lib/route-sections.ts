@@ -261,6 +261,15 @@ export const MARKETING_SEO_SECTIONS = [
     group: "Programs",
   },
   {
+    slug: "reports",
+    name: "Reports",
+    titlePrefix: "SEO Reports",
+    description:
+      "Saved SEO reports for this site, their versions, and the report template in use.",
+    letter: "Rs",
+    group: "Programs",
+  },
+  {
     slug: "automations",
     name: "Automations",
     titlePrefix: "Automations",

@@ -108,6 +108,7 @@ export const MARKETING_SITE_SECTION_HOMES: Record<
   authority: { branch: "seo", slug: "authority" },
   "growth-loop": { branch: "seo", slug: "growth-loop" },
   automations: { branch: "seo", slug: "automations" },
+  reports: { branch: "seo", slug: "reports" },
 };
 
 /**
@@ -286,6 +287,8 @@ export const marketingRoutes = {
     `/marketing/${brandId}/seo/${siteId}/search-console`,
   siteCapabilities: (brandId: string, siteId: string) =>
     `/marketing/${brandId}/seo/${siteId}/capabilities`,
+  siteReports: (brandId: string, siteId: string) =>
+    `/marketing/${brandId}/seo/${siteId}/reports`,
 
   /**
    * Compatibility site base — the pre-restructure workhorse (79 call sites).

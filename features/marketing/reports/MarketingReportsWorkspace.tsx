@@ -71,6 +71,8 @@ import {
   reportPlacementSentence,
 } from "./report-presentation";
 import { pushAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
+import { SavedSeoReportsSection } from "./saved/SavedSeoReportsSection";
+import { buildSearchReportDraft } from "./saved/search-report-draft";
 
 const SURFACE_NAME = "matrx-user/marketing-reports";
 
@@ -241,6 +243,24 @@ export function MarketingReportsWorkspace() {
       ]),
     ],
   });
+
+  // The live report, saveable as a versioned SEO report (Generate button).
+  const reportDraft =
+    selectedSite && summaryRow
+      ? buildSearchReportDraft({
+          siteId: selectedSite.id,
+          siteLabel: selectedSiteName ?? "Site",
+          periods,
+          windowLabel: formatGscWindow(periods.current),
+          summary: summaryRow,
+          findings,
+        })
+      : null;
+  const reportDraftReason = isLoading
+    ? "Loading Search Console data."
+    : !selectedSite
+      ? "Connect Search Console on a site to build a report."
+      : "No Search Console data for this site in the last 28 days.";
 
   const selectSite = (siteId: string) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -579,6 +599,10 @@ export function MarketingReportsWorkspace() {
                 </footer>
               </div>
             )}
+            <SavedSeoReportsSection
+              draft={reportDraft}
+              unavailableReason={reportDraftReason}
+            />
           </main>
         </div>
       </div>
