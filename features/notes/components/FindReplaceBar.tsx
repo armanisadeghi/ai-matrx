@@ -150,7 +150,7 @@ export function FindReplaceBar({ noteId, textareaRef }: FindReplaceBarProps) {
     cn(
       "flex items-center justify-center w-6 h-6 rounded transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5",
       active
-        ? "bg-primary/20 text-primary"
+        ? "bg-primary/20 text-primary-ink"
         : "text-muted-foreground hover:text-foreground hover:bg-muted",
     );
 

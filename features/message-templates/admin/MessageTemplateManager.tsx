@@ -1103,7 +1103,7 @@ export function MessageTemplateManager({
                               </p>
                             )}
                             {processError && (
-                              <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive">
+                              <div className="p-2 rounded bg-destructive/10 border border-destructive/20 text-xs text-destructive-ink">
                                 {processError}
                                 <ErrorAlchemyMenu error={processError} />
                               </div>

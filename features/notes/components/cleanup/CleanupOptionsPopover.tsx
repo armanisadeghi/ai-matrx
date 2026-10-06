@@ -128,7 +128,7 @@ export function CleanupOptionsPopover({
                 className={cn(
                   "rounded-md border px-1.5 py-1 text-[0.6875rem] font-medium transition-colors",
                   regionOp === null
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary-ink"
                     : "border-border text-muted-foreground hover:bg-accent/50",
                 )}
               >
@@ -146,7 +146,7 @@ export function CleanupOptionsPopover({
                     className={cn(
                       "rounded-md border px-1.5 py-1 text-[0.6875rem] font-medium transition-colors",
                       active
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-primary bg-primary/10 text-primary-ink"
                         : "border-border text-muted-foreground hover:bg-accent/50",
                     )}
                   >
@@ -195,7 +195,7 @@ export function CleanupOptionsPopover({
                             {m.label}
                           </span>
                           {on && n > 0 && (
-                            <span className="rounded bg-primary/10 px-1 text-[0.5625rem] font-medium tabular-nums text-primary">
+                            <span className="rounded bg-primary/10 px-1 text-[0.5625rem] font-medium tabular-nums text-primary-ink">
                               {n}
                             </span>
                           )}

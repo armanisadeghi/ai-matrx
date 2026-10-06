@@ -129,7 +129,7 @@ export function MoveNoteDialog({
         type="button"
         onClick={openCreateFolder}
         disabled={busy}
-        className="flex w-full items-center gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+        className="flex w-full items-center gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2.5 text-left text-sm font-medium text-primary-ink transition-colors hover:bg-primary/10 disabled:opacity-50"
       >
         <FolderPlus className="h-4 w-4" />
         New folder…

@@ -167,7 +167,7 @@ export function CaptureLibrary({ refreshToken = 0 }: CaptureLibraryProps) {
             className={cn(
               "rounded-md border px-2 py-0.5 text-[11px] font-medium tabular-nums transition-colors",
               filter === f.key
-                ? "border-primary/40 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/10 text-primary-ink"
                 : "border-border bg-card text-muted-foreground hover:text-foreground",
             )}
           >

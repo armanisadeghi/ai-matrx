@@ -1010,7 +1010,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
                       className={cn(
                         "flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer transition-colors",
                         groupBy === m.mode
-                          ? "bg-primary/10 text-primary font-medium"
+                          ? "bg-primary/10 text-primary-ink font-medium"
                           : "text-foreground hover:bg-accent",
                       )}
                       onClick={() => {
@@ -1068,7 +1068,7 @@ export function NoteSidebar({ instanceId, onNoteOpened }: NoteSidebarProps) {
             className={cn(
               "flex shrink-0 items-center justify-center h-6 w-6 rounded-md cursor-pointer transition-colors [&_svg]:w-3.5 [&_svg]:h-3.5",
               selectionMode
-                ? "text-primary bg-primary/10"
+                ? "text-primary-ink bg-primary/10"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >

@@ -137,7 +137,7 @@ export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
           <button
             type="button"
             onClick={handleCopy}
-            className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive-ink transition-colors hover:bg-destructive/15 cursor-pointer"
           >
             <Copy className="h-3.5 w-3.5" />
             Copy text
@@ -145,7 +145,7 @@ export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
           <button
             type="button"
             onClick={handleDownload}
-            className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-md border border-destructive/40 px-2.5 py-1 text-xs font-medium text-destructive-ink transition-colors hover:bg-destructive/15 cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             Download

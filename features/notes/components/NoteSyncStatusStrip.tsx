@@ -108,7 +108,7 @@ export function NoteSyncStatusStrip({
       <button
         type="button"
         onClick={() => (onReload ? onReload() : window.location.reload())}
-        className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-destructive/40 px-2 py-0.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/15"
+        className="inline-flex cursor-pointer items-center gap-1 rounded-md border border-destructive/40 px-2 py-0.5 text-xs font-medium text-destructive-ink transition-colors hover:bg-destructive/15"
       >
         <RotateCw className="h-3 w-3" aria-hidden="true" />
         Reload

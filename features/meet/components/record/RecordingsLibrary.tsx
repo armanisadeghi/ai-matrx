@@ -80,7 +80,7 @@ const STATE: Record<
     tone: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
   },
   expired: { label: "Expired", tone: "bg-muted text-muted-foreground" },
-  failed: { label: "Failed", tone: "bg-destructive/10 text-destructive" },
+  failed: { label: "Failed", tone: "bg-destructive/10 text-destructive-ink" },
 };
 
 function nameOf(r: LibraryRecording): string {

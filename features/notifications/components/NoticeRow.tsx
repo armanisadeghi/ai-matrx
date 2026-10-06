@@ -104,7 +104,7 @@ function Lead({ group }: { group: NoticeGroup }) {
       className={cn(
         "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
         group.bucket === "needs_you"
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "bg-muted text-muted-foreground",
       )}
     >
@@ -273,7 +273,7 @@ export function NoticeRow({
           aria-hidden
           className={cn(
             "absolute inset-0 flex items-center rounded-lg px-4 text-xs font-medium",
-            dx < 0 ? "justify-end bg-primary/15 text-primary" : "justify-start bg-muted text-foreground",
+            dx < 0 ? "justify-end bg-primary/15 text-primary-ink" : "justify-start bg-muted text-foreground",
           )}
         >
           {dx < 0 ? (triage ? "Done" : "") : unread ? "Mark read" : "Mark unread"}

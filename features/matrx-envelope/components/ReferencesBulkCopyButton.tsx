@@ -114,7 +114,7 @@ export function ReferencesBulkCopyButton({
       className={cn(
         "inline-flex items-center justify-center rounded-md",
         "transition-all duration-150",
-        "text-muted-foreground hover:text-primary hover:bg-primary/10",
+        "text-muted-foreground hover:text-primary-ink hover:bg-primary/10",
         copied && "text-primary",
         size === "sm"
           ? "h-11 w-11 shrink-0 lg:h-6 lg:w-6"

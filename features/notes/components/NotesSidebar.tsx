@@ -509,7 +509,7 @@ export function NotesSidebar({
                                                             size="sm"
                                                             className={cn(
                                                                 "h-5 px-1 flex-1 justify-start text-xs rounded-none text-foreground cursor-move min-w-0 font-normal transition-colors",
-                                                                isActive && "bg-primary/10 text-primary font-medium border-b border-primary",
+                                                                isActive && "bg-primary/10 text-primary-ink font-medium border-b border-primary",
                                                                 isDragging && "opacity-50"
                                                             )}
                                                             onClick={() => onSelectNote(note)}

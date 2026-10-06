@@ -204,7 +204,7 @@ export function OrgEmailTab({
               />
               <Avatar className="h-7 w-7 flex-shrink-0">
                 <AvatarImage src={member.user?.avatarUrl || undefined} />
-                <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                <AvatarFallback className="text-[10px] bg-primary/10 text-primary-ink">
                   {getInitials(member.user?.displayName ?? member.user?.email)}
                 </AvatarFallback>
               </Avatar>

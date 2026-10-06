@@ -31,7 +31,7 @@ import type { DecodedDirective } from "@ai-matrx/content-ir";
 import type { PlanTreeDirectiveItem, PlanTreeNodeSpec } from "./types";
 
 const TYPE_STYLES: Record<string, string> = {
-  home: "bg-primary/10 text-primary",
+  home: "bg-primary/10 text-primary-ink",
   pillar: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   cluster: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
   article: "bg-muted text-muted-foreground",

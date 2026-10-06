@@ -377,7 +377,7 @@ export function NoteSidebarBulkBar({
             disabled={actionsDisabled}
             className={cn(
               btn,
-              "text-destructive hover:bg-destructive/10 hover:text-destructive disabled:hover:bg-transparent",
+              "text-destructive-ink hover:bg-destructive/10 hover:text-destructive-ink disabled:hover:bg-transparent",
             )}
           >
             {busyKind === "delete" ? (

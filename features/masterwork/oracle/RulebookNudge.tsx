@@ -105,7 +105,7 @@ export function RulebookNudge({
             initialQuestion: question ?? null,
           });
         }}
-        className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-primary hover:bg-primary/10"
+        className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 font-medium text-primary-ink hover:bg-primary/10"
       >
         <BookOpen className="h-3 w-3" aria-hidden />
         Add to a Rulebook

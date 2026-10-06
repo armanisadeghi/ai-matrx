@@ -407,7 +407,7 @@ export function NoteEditorDock({
                     className={cn(
                       "flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors disabled:opacity-50",
                       action.destructive
-                        ? "text-destructive hover:bg-destructive/10"
+                        ? "text-destructive-ink hover:bg-destructive/10"
                         : "text-foreground hover:bg-accent",
                     )}
                   >

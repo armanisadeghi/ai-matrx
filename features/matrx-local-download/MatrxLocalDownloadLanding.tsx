@@ -67,7 +67,7 @@ function DownloadButton({
 function Step({ number, children }: { number: number; children: ReactNode }) {
   return (
     <li className="flex gap-3 text-sm leading-6 text-muted-foreground">
-      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary-ink">
         {number}
       </span>
       <span>{children}</span>
@@ -111,7 +111,7 @@ function PlatformCard({
         </span>
       )}
       <div className="flex items-center gap-4">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
           {icon}
         </div>
         <div>

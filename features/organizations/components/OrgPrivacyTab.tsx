@@ -351,7 +351,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
           )}
 
           {pref.error && (
-            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
               <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               <span>{pref.error}</span>
               <ErrorAlchemyMenu error={pref.error} />

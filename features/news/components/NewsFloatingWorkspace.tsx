@@ -94,7 +94,7 @@ export function NewsFloatingWorkspace() {
               className={cn(
                 "w-full text-left px-2 py-1.5 rounded-md text-[11px] transition-colors font-medium",
                 country === c.code
-                  ? "bg-primary/20 text-primary hover:bg-primary/30"
+                  ? "bg-primary/20 text-primary-ink hover:bg-primary/30"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )}
             >

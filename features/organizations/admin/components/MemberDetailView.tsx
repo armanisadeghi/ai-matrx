@@ -69,7 +69,7 @@ export function MemberDetailView({ orgId, organization, userId }: Props) {
   if (error || !member) {
     return (
       <div className="p-4 md:p-6">
-        <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive">
+        <Card className="mx-auto max-w-lg border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-destructive-ink">
           {error ?? recordUnavailableMessage("member", "unknown")}
           <ErrorAlchemyMenu error={error} />
         </Card>

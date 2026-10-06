@@ -466,7 +466,7 @@ function SchemaResultsBody({
                   )}
                 {(mergedCountById.get(r.id) ?? 0) > 0 && (
                   <span
-                    className="ml-1 px-1 py-px rounded bg-primary/10 text-primary text-[8px] font-medium align-middle"
+                    className="ml-1 px-1 py-px rounded bg-primary/10 text-primary-ink text-[8px] font-medium align-middle"
                     title={`${mergedCountById.get(r.id)} duplicate row(s) merged into this entry`}
                   >
                     +{mergedCountById.get(r.id)} merged

@@ -294,7 +294,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
           <div className="absolute left-3 right-3 top-full z-50 mt-1 max-h-[200px] overflow-auto py-1 bg-card/95 backdrop-blur-2xl border border-border rounded-lg shadow-lg">
             <button
               type="button"
-              className="flex w-full items-center gap-2 border-b border-border/60 px-3 py-2 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+              className="flex w-full items-center gap-2 border-b border-border/60 px-3 py-2 text-left text-xs font-medium text-primary-ink transition-colors hover:bg-primary/10"
               onClick={() => {
                 setFolderOpen(false);
                 setCreateFolderOpen(true);
@@ -311,7 +311,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
                 className={cn(
                   "w-full text-left px-3 py-1.5 text-xs cursor-pointer transition-colors",
                   f.id === note.folder_id
-                    ? "bg-primary/10 text-primary font-medium"
+                    ? "bg-primary/10 text-primary-ink font-medium"
                     : "text-foreground hover:bg-accent",
                 )}
                 onClick={() => handleFolderChange(f)}

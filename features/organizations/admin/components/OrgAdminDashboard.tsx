@@ -129,7 +129,7 @@ export function OrgAdminDashboard({ orgId, organization, role }: Props) {
       </div>
 
       {error && (
-        <Card className="border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+        <Card className="border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </Card>

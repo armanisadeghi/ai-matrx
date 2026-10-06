@@ -703,7 +703,7 @@ export function PredictionLedgerDialog({
           {run.error ? (
             // The server's own sentence, verbatim. The "not enough outcomes"
             // refusal is a real, useful instruction — never a generic failure.
-            <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-sm text-destructive">
+            <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 p-2.5 text-sm text-destructive-ink">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{run.error}</span>
               <ErrorAlchemyMenu error={run.error} />

@@ -1051,7 +1051,7 @@ function TemplateEditor({
                 className={
                   "flex-1 h-7 rounded-md border text-[11px] capitalize transition-colors " +
                   (draft.kind === k
-                    ? "border-primary bg-primary/10 text-primary font-medium"
+                    ? "border-primary bg-primary/10 text-primary-ink font-medium"
                     : "border-border bg-card text-muted-foreground hover:bg-accent/40")
                 }
               >

@@ -254,7 +254,7 @@ export function NoteDraftRecoveryBanner({
           <button
             type="button"
             onClick={handleView}
-            className="inline-flex items-center gap-1 rounded-md border border-primary/40 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-md border border-primary/40 px-2.5 py-1 text-xs font-medium text-primary-ink transition-colors hover:bg-primary/15 cursor-pointer"
           >
             <Eye className="h-3.5 w-3.5" />
             Compare
@@ -271,7 +271,7 @@ export function NoteDraftRecoveryBanner({
             type="button"
             onClick={handleCopy}
             title="Copy the recovered text to the clipboard"
-            className="inline-flex items-center gap-1 rounded-md border border-primary/40 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/15 cursor-pointer"
+            className="inline-flex items-center gap-1 rounded-md border border-primary/40 px-2.5 py-1 text-xs font-medium text-primary-ink transition-colors hover:bg-primary/15 cursor-pointer"
           >
             <Copy className="h-3.5 w-3.5" />
             Copy text

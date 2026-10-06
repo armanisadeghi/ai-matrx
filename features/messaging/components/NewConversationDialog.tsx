@@ -522,7 +522,7 @@ function UserListItem({
           src={user.avatar_url || undefined}
           alt={user.display_name || user.email || ""}
         />
-        <AvatarFallback className="bg-primary/10 text-primary text-sm">
+        <AvatarFallback className="bg-primary/10 text-primary-ink text-sm">
           {getInitials(user)}
         </AvatarFallback>
       </Avatar>

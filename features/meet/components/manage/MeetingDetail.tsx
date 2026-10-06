@@ -125,7 +125,7 @@ function StatusPill({
   const [label, tone] = meeting.deletedAt
     ? ["Archived", "bg-muted text-muted-foreground"]
     : meeting.cancelledAt
-      ? ["Cancelled", "bg-destructive/10 text-destructive"]
+      ? ["Cancelled", "bg-destructive/10 text-destructive-ink"]
       : live
         ? ["Live", "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"]
         : meeting.endedAt !== null && !meeting.recurrenceRule

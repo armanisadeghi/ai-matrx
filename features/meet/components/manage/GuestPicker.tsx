@@ -225,7 +225,7 @@ export function GuestPicker({
                 <div className="flex items-center gap-1.5">
                   <span className="truncate text-sm">{guestName(guest)}</span>
                   {guest.cohost ? (
-                    <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-[10px] font-medium text-primary">
+                    <span className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-[10px] font-medium text-primary-ink">
                       <Crown className="h-3 w-3" aria-hidden="true" />
                       Co-host
                     </span>

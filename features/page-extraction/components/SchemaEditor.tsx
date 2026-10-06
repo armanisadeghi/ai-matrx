@@ -131,7 +131,7 @@ export function SchemaEditor({
           className={cn(
             "flex-1 h-7 rounded-md border text-[11px] font-medium transition-colors",
             mode !== "text"
-              ? "border-primary bg-primary/10 text-primary"
+              ? "border-primary bg-primary/10 text-primary-ink"
               : "border-border bg-card text-muted-foreground hover:text-foreground",
           )}
           title="Parse the response as structured data (JSON → table rows). If a chunk isn't JSON, its text is stored anyway, anchored to its pages."
@@ -144,7 +144,7 @@ export function SchemaEditor({
           className={cn(
             "flex-1 h-7 rounded-md border text-[11px] font-medium transition-colors",
             mode === "text"
-              ? "border-primary bg-primary/10 text-primary"
+              ? "border-primary bg-primary/10 text-primary-ink"
               : "border-border bg-card text-muted-foreground hover:text-foreground",
           )}
           title="Store the agent's full response as one text row per chunk, anchored to its pages. No JSON parsing."

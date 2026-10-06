@@ -185,7 +185,7 @@ export function TakeOverAccountDialog({
         </AlertDialogHeader>
 
         {optionsError ? (
-          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
             {optionsError}
           </p>
         ) : !mode ? (
@@ -313,7 +313,7 @@ export function TakeOverAccountDialog({
               </div>
             )}
             {refusal ? (
-              <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+              <p className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
                 {refusal}
               </p>
             ) : null}

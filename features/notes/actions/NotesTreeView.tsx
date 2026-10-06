@@ -256,7 +256,7 @@ export function NotesTreeView({
                     onOpen={() => handleNoteClick(note)}
                     className={cn(
                       "flex items-center gap-1 w-full pl-5 pr-1.5 py-[3px] hover:bg-accent/40 transition-colors",
-                      note.id === activeNoteId && "bg-primary/10 text-primary",
+                      note.id === activeNoteId && "bg-primary/10 text-primary-ink",
                     )}
                     labelClassName="flex min-w-0 items-center gap-1"
                   >

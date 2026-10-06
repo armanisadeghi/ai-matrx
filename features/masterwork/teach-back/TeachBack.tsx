@@ -560,7 +560,7 @@ export function TeachBack({
       ) : null}
 
       {run.error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
           <p className="flex items-start gap-2">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" />
             <span>{run.error}</span>
@@ -585,7 +585,7 @@ export function TeachBack({
       ) : null}
 
       {signatureProblem ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
           {signatureProblem}
           <ErrorAlchemyMenu error={signatureProblem} />
         </p>

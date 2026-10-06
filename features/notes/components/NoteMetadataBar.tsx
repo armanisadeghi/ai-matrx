@@ -251,7 +251,7 @@ export function NoteMetadataBar({
           className={cn(
             "flex shrink-0 cursor-pointer items-center gap-1 rounded-full px-1.5 py-0 text-xs transition-colors",
             noteOrgId || noteProjId || noteTaskId
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/10 text-primary-ink"
               : "border border-dashed border-border text-muted-foreground hover:text-primary",
           )}
           title="Set scopes for this note"
@@ -416,7 +416,7 @@ export function NoteMetadataBar({
           >
             <button
               type="button"
-              className="flex w-full cursor-pointer items-center gap-2 border-b border-border/60 px-3 py-2 text-left text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+              className="flex w-full cursor-pointer items-center gap-2 border-b border-border/60 px-3 py-2 text-left text-xs font-medium text-primary-ink transition-colors hover:bg-primary/10"
               onClick={() => {
                 setFolderOpen(false);
                 setCreateFolderOpen(true);
@@ -434,7 +434,7 @@ export function NoteMetadataBar({
                 className={cn(
                   "w-full cursor-pointer px-3 py-1.5 text-left text-xs transition-colors",
                   f.id === note?.folder_id
-                    ? "bg-primary/10 font-medium text-primary"
+                    ? "bg-primary/10 font-medium text-primary-ink"
                     : "text-foreground hover:bg-accent",
                 )}
                 onClick={() => handleFolderChange(f)}
