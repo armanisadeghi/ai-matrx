@@ -18,7 +18,7 @@ import { toast } from "@/lib/toast";
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { installAgencySample, pageOrganizationId } from "../data/agency-install";
-import { addTravelingSmmSample, SAMPLE_TITLE } from "../store/sample";
+import { addTravelingSmmSample, findSamplePage } from "../store/sample";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
@@ -275,7 +275,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (sampleProgress) return;
     setSampleProgress("0");
     try {
-      const existed = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived)?.id ?? null;
+      const existed = (await findSamplePage(store))?.id ?? null;
       // The page and its tables share one organization: an existing sample page's own organization;
       // a new page and its tables go to the write organization (asked for when none is chosen).
       const root = await addTravelingSmmSample(

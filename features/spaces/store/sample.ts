@@ -176,12 +176,25 @@ export interface SampleTargets {
  *  (no second "The Traveling SMM™ OS"), with the tables installed into THAT page's organization.
  *  Otherwise the page and its tables are both made in the write organization; `onProgress(done, total)`
  *  after each page. The page's data blocks point at the installed tables. */
+/**
+ * The person's sample page: the FIRST top-level page made with the sample's title. "Use template" copies
+ * carry the same title (Notion keeps it), so the oldest one is the sample — never a later copy, whose
+ * organization would get a second install.
+ */
+export async function findSamplePage(store: SpacesStore): Promise<{ id: string } | null> {
+  const named = (await store.list()).filter((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
+  if (named.length <= 1) return named[0] ?? null;
+  const docs = (await Promise.all(named.map((s) => store.get(s.id).catch(() => null)))).filter((d): d is SpaceDoc => Boolean(d));
+  docs.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return docs[0] ?? named[0];
+}
+
 export async function addTravelingSmmSample(
   store: SpacesStore,
   targets: SampleTargets,
   onProgress?: (done: number, total: number) => void,
 ): Promise<SpaceDoc> {
-  const existing = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
+  const existing = await findSamplePage(store);
   if (existing) {
     const doc = await store.get(existing.id);
     if (doc) {
