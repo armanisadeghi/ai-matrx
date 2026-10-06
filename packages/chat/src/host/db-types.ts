@@ -25277,6 +25277,63 @@ export type ChatDatabase = {
         Args: { p_definition_id: string }
         Returns: boolean
       }
+      _entity_cursor_decode: { Args: { p: string }; Returns: Json }
+      _entity_cursor_encode: { Args: { p: Json }; Returns: string }
+      _entity_identifier: {
+        Args: { p_cols: Json; p_name: string }
+        Returns: string
+      }
+      _entity_org_notice: {
+        Args: {
+          p_ids: Json
+          p_op: string
+          p_organization_id: string
+          p_token: string
+        }
+        Returns: undefined
+      }
+      _entity_refuse: {
+        Args: { p_code: string; p_detail?: Json; p_message: string }
+        Returns: undefined
+      }
+      _entity_reraise: {
+        Args: {
+          p_detail: string
+          p_hint: string
+          p_message: string
+          p_state: string
+        }
+        Returns: undefined
+      }
+      _entity_trash_or_restore: {
+        Args: { p_entity_type: string; p_ids: string[]; p_trash: boolean }
+        Returns: Json
+      }
+      _entity_wire_rows: {
+        Args: { p_columns: Json; p_rows: Json; p_token: string }
+        Returns: Json
+      }
+      _entity_write_refusal: {
+        Args: {
+          p_column?: string
+          p_constraint?: string
+          p_detail: string
+          p_extra?: Json
+          p_hint: string
+          p_message: string
+          p_state: string
+        }
+        Returns: undefined
+      }
+      _entity_write_values: {
+        Args: {
+          p_insert: boolean
+          p_org: string
+          p_token: string
+          p_values: Json
+        }
+        Returns: Json
+      }
       _final_switch_is_on: { Args: never; Returns: boolean }
       _final_switch_last: {
         Args: never
@@ -26631,6 +26688,10 @@ export type ChatDatabase = {
         }
         Returns: string
       }
+      entity_archive: {
+        Args: { p_entity_type: string; p_ids: string[] }
+        Returns: Json
+      }
       entity_columns: {
         Args: { p_organization_id: string; p_token: string }
         Returns: Json
@@ -26640,8 +26701,38 @@ export type ChatDatabase = {
         Args: { p_token: string }
         Returns: Database["platform"]["Enums"]["visibility"]
       }
+      entity_get: {
+        Args: { p_entity_type: string; p_ids: string[]; p_include?: Json }
+        Returns: Json
+      }
+      entity_insert: {
+        Args: { p_entity_type: string; p_organization_id: string; p_rows: Json }
+        Returns: Json
+      }
       entity_is_org_scoped: { Args: { p_token: string }; Returns: boolean }
       entity_link_shareable: { Args: { p_token: string }; Returns: boolean }
+      entity_list_scoped: {
+        Args: {
+          p_after?: string
+          p_archived?: string
+          p_deep?: boolean
+          p_entity_type: string
+          p_favorites_first?: boolean
+          p_filter?: Json
+          p_include?: Json
+          p_page?: number
+          p_page_size?: number
+          p_scope?: Json
+          p_search?: string
+          p_search_columns?: string[]
+          p_search_match?: string
+          p_sort?: Json
+          p_trash?: boolean
+          p_with_total?: boolean
+        }
+        Returns: Json
+      }
+      entity_org_topic_admits: { Args: { p_topic: string }; Returns: boolean }
       entity_organization_id: {
         Args: { p_id: string; p_token: string }
         Returns: string
@@ -26661,6 +26752,19 @@ export type ChatDatabase = {
       entity_type_has_shareable_ancestor: {
         Args: { p_type: string }
         Returns: boolean
+      }
+      entity_unarchive: {
+        Args: { p_entity_type: string; p_ids: string[] }
+        Returns: Json
+      }
+      entity_update: {
+        Args: {
+          p_base_version?: number
+          p_entity_type: string
+          p_id: string
+          p_patch?: Json
+        }
+        Returns: Json
       }
       extensibility_knob: {
         Args: {
