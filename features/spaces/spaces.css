@@ -821,7 +821,16 @@
   text-decoration-color: currentColor;
 }
 /* Notion's rhythm, measured on the reference at 2000px: a link-to-page row sits 32.5px from the next
-   (in a callout box or not), a to-do 29px; a plain paragraph keeps the 29.5px rhythm. */
+   (in a callout box or not), a to-do 29px, a plain paragraph 40px — an empty one too (screenshot 3:
+   "The Quote Pages" → "The reporting system" → "Claude Skills" 40px apart, four lines to "Auto
+   posting"); toggle headings 59px apart. */
+.spaces-editor .bn-block-content[data-content-type="paragraph"] {
+  padding-top: 8.25px;
+  padding-bottom: 8.25px;
+}
+.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-is-toggleable="true"]) + .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-is-toggleable="true"]) {
+  margin-top: 23px;
+}
 .spaces-editor .bn-block-content[data-content-type="page"] {
   padding-top: 5px;
   padding-bottom: 5px;

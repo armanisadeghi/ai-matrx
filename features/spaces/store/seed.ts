@@ -88,6 +88,18 @@ export function sampleRings(tables: AgencyTables): SpaceBlock {
     );
 }
 
+/** Empty lines the reference leaves after two blocks of the plan column (screenshot 2/3 at Notion's 40px
+ *  paragraph rhythm: four after the last to-do of the first list, three after "Claude Skills"). `anchor`
+ *  is the block's text start; sample.ts tops an older page up to `lines` with the same rule. */
+export const SAMPLE_GAP_RULES = [
+  { anchor: "Put the shot list system into Cora", lines: 4 },
+  { anchor: "Claude Skills - ", lines: 3 },
+] as const;
+export const SAMPLE_GAPS = {
+  afterShotList: () => Array.from({ length: SAMPLE_GAP_RULES[0].lines }, () => b.text("")),
+  afterClaudeSkills: () => Array.from({ length: SAMPLE_GAP_RULES[1].lines }, () => b.text("")),
+};
+
 /** The screenshot's client database shows five properties; the reverse links (surveys, wins, tasks) are hidden.
  *  The installed store keys a reverse column by its inverse key (the linking table's name); the gallery's
  *  in-memory preview keys it `<token>__<field>` — both are listed so either world hides them. */
@@ -356,9 +368,7 @@ export function seedSpaces(tables: AgencyTables): SpaceDoc[] {
     b.todo("Get Metricool set up for Jonathon"),
     b.todo("Cora's content"),
     b.todo("Put the shot list system into Cora's notion"),
-    b.text(""),
-    b.text(""),
-    b.text(""),
+    ...SAMPLE_GAPS.afterShotList(),
     b.todo("Reviewing Cora's posts"),
     b.todo("Update Darlene's daily winning formula trainings"),
     b.text(""),
@@ -367,8 +377,7 @@ export function seedSpaces(tables: AgencyTables): SpaceDoc[] {
     b.text("The Quote Pages (Cora, JetQuest, Viva)"),
     b.text("The reporting system (finish it for organic - monthly and quarterly)"),
     b.text([t("Claude Skills - "), t("https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills", { link: "https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills" })]),
-    b.text(""),
-    b.text(""),
+    ...SAMPLE_GAPS.afterClaudeSkills(),
     b.text([t("Auto posting for social media: "), t("https://www.instagram.com/creators/", { link: "https://www.instagram.com/creators/" })]),
     b.text(""),
     b.toggleH3("Other To Dos", [b.todo("Renew the Metricool plan"), b.todo("Update the Offers page pricing")]),

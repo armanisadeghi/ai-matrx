@@ -13,12 +13,11 @@ import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/ac
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
-import { installAgencySample } from "../data/agency-install";
+import { installAgencySample, pageOrganizationId } from "../data/agency-install";
 import { addTravelingSmmSample } from "../store/sample";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
@@ -281,9 +280,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         store,
         {
           orgOf: async (id) => {
-            const { data, error } = await createClient().schema("content").from("document").select("organization_id").eq("id", id).maybeSingle();
-            if (error || !data) throw new Error(`We couldn't read the sample page's organization${error ? `: ${error.message}` : "."}`);
-            return data.organization_id;
+            const org = await pageOrganizationId(id);
+            if (!org) throw new Error("We couldn't read the sample page's organization.");
+            return org;
           },
           // org-filter: write-target a new sample page and its tables are filed in the active organization
           writeOrg: () => ensureOrgId(orgRef.current),

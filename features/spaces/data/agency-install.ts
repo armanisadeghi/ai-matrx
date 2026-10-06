@@ -17,6 +17,7 @@ import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } f
 import { templateKnob } from "@/features/templates/knobs";
 import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
 import type { AppDispatch } from "@/lib/redux/store";
+import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
 
 import { AGENCY_SPEC } from "./agency-spec";
@@ -105,9 +106,21 @@ export async function installAgencySample(organizationId: string, dispatch: AppD
     const refusal = done.answer?.refusal as { message?: string } | null | undefined;
     throw new Error(`The sample's tables were not made: ${refusal?.message ?? done.error?.message ?? "the install stopped before it finished."}`);
   }
+  // An organization installed before the spec's current version keeps its old tables: the template
+  // system has no upgrade door yet (NEEDS), so say so instead of drawing the old shape silently.
+  const newer = (done.answer as { already?: boolean; newer_version?: number | null }).newer_version;
+  if (newer) toast.info(`Sample tables predate version ${newer}; upgrading them isn't available yet.`);
   const tables = agencyTablesFrom(done.answer);
   await runHostSteps(done.answer, organizationId, dispatch);
   return tables;
+}
+
+/** The organization a saved page is filed in — the sample's tables are installed beside the page that
+ *  shows them ("Add the sample" and the source picker's sample both ask this). Null: no saved page. */
+export async function pageOrganizationId(spaceId: string): Promise<string | null> {
+  const { data, error } = await createClient().schema("content").from("document").select("organization_id").eq("id", spaceId).maybeSingle();
+  if (error) throw new Error(`We couldn't read the page's organization: ${error.message}`);
+  return data?.organization_id ?? null;
 }
 
 /** The table a sample block named, by its title (the preview's table names are the spec's). */

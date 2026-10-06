@@ -41,7 +41,7 @@ function BodyEditor({ spaceId, readOnly, fallback }: { spaceId: string; readOnly
   const { store, createSpace } = useSpaces();
   const [doc, setDoc] = useState<SpaceDoc | null | undefined>(undefined);
   const [round, setRound] = useState(0);
-  const [sourcePicker, pickSource] = useSourcePicker();
+  const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   const editorRef = useRef<SpacesEditor | null>(null);
   const docRef = useRef<SpaceDoc | null>(null);
   const base = useRef(0);

@@ -168,7 +168,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   }, []);
 
   const refused = useRef<string | null>(null);
-  const [sourcePicker, pickSource] = useSourcePicker();
+  const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   const flush = async (): Promise<void> => {
     timer.current = null;
     refused.current = null;

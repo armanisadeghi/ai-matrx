@@ -11,13 +11,20 @@ import type { TemplateSpec } from "@ai-matrx/records/templates";
 
 export const AGENCY_SAMPLE_ID = "spaces-agency-sample";
 
-const OFFERS = ["Book a Call Funnel™", "Content Engine Pro™ - 7x per week", "VSL + Webinar Funnel™", "Momentum Campaign™"];
+/** The agency's offers — its own table, so a client's Offer Bought is a link to the offer's page
+ *  (screenshot 1 draws it as the offer's page chip), not a free-text pill. */
+const OFFERS = [
+  { key: "o-book-a-call", name: "Book a Call Funnel™", price: 2500 },
+  { key: "o-content-engine", name: "Content Engine Pro™ - 7x per week", price: 3200 },
+  { key: "o-vsl-webinar", name: "VSL + Webinar Funnel™", price: 4800 },
+  { key: "o-momentum", name: "Momentum Campaign™", price: 1800 },
+];
 
 const CLIENTS = [
-  { key: "c-cora", name: "Cora | The Traveling SMM™", offer: OFFERS[0], started: "2026-01-01", status: "Active" },
-  { key: "c-jetquest", name: "Jonathon | JetQuest", offer: OFFERS[1], started: "2026-06-09", status: "Active" },
-  { key: "c-viva", name: "Viva España | Mario + Meli", offer: OFFERS[2], started: "2026-06-26", status: "Active" },
-  { key: "c-pipe", name: "Pipe | Fitness Coaching", offer: OFFERS[1], started: "2026-09-15", status: "Onboarding" },
+  { key: "c-cora", name: "Cora | The Traveling SMM™", offer: OFFERS[0].key, started: "2026-01-01", status: "Active" },
+  { key: "c-jetquest", name: "Jonathon | JetQuest", offer: OFFERS[1].key, started: "2026-06-09", status: "Active" },
+  { key: "c-viva", name: "Viva España | Mario + Meli", offer: OFFERS[2].key, started: "2026-06-26", status: "Active" },
+  { key: "c-pipe", name: "Pipe | Fitness Coaching", offer: OFFERS[1].key, started: "2026-09-15", status: "Onboarding" },
 ];
 
 const NPS = [
@@ -107,7 +114,7 @@ export const AGENCY_SPEC = {
       subject: "thing",
       fields: [
         { key: "client_name", label: "Client Name", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
-        { key: "offer", label: "Offer Bought", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: OFFERS },
+        { key: "offer", label: "Offer Bought", parityType: "relation", sensitivity: "internal", contextPolicy: "include", relationTarget: "offer", relationMax: 1 },
         { key: "date_started", label: "Date Started", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
         { key: "end_date", label: "End Date", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
         {
@@ -121,6 +128,25 @@ export const AGENCY_SPEC = {
         },
       ],
       rows: CLIENTS.map((c) => ({ key: c.key, values: { client_name: c.name, offer: c.offer, date_started: c.started, status: c.status } })),
+    },
+    {
+      token: "offer",
+      name: "Offers",
+      labelSingular: "Offer",
+      labelPlural: "Offers",
+      type: "entity",
+      display: "grid",
+      weight: "light",
+      ordered: false,
+      icon: "package",
+      titleField: "offer_name",
+      describes: "What the agency sells, and the monthly price.",
+      subject: "thing",
+      fields: [
+        { key: "offer_name", label: "Offer", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
+        { key: "monthly_price", label: "Monthly price", parityType: "number", sensitivity: "internal", contextPolicy: "include", rules: [{ kind: "min", value: 0 }, { kind: "max", value: 50000 }] },
+      ],
+      rows: OFFERS.map((o) => ({ key: o.key, values: { offer_name: o.name, monthly_price: o.price } })),
     },
     {
       token: "nps_survey",
@@ -199,6 +225,7 @@ export const AGENCY_SPEC = {
     },
   ],
   relationships: [
+    { describes: "A client bought one offer.", fromTable: "client", fromField: "offer", toTable: "offer", flavor: "referenced", cardinality: "one", onDelete: "restrict", inverseKey: "clients" },
     { describes: "A survey is one client's score.", fromTable: "nps_survey", fromField: "client", toTable: "client", flavor: "referenced", cardinality: "one", onDelete: "restrict", inverseKey: "surveys" },
     { describes: "A win was delivered for one client.", fromTable: "client_win", fromField: "client", toTable: "client", flavor: "referenced", cardinality: "one", onDelete: "restrict", inverseKey: "wins" },
     { describes: "A task was done for one client.", fromTable: "task", fromField: "client", toTable: "client", flavor: "referenced", cardinality: "one", onDelete: "restrict", inverseKey: "tasks" },
@@ -210,6 +237,7 @@ export const AGENCY_SPEC = {
     { token: "all_wins", name: "All", table: "client_win", kind: "grid", isDefault: true },
     { token: "all_surveys", name: "All", table: "nps_survey", kind: "grid", isDefault: true },
     { token: "all_tasks", name: "All", table: "task", kind: "grid", isDefault: true },
+    { token: "all_offers", name: "All", table: "offer", kind: "grid", isDefault: true },
   ],
   forms: [],
   dimensions: [],
@@ -247,7 +275,8 @@ export const AGENCY_SPEC = {
     fictionalDomains: ["travelingsmm.net"],
     fictionalStreets: ["Driftwood Row"],
   },
-  version: 1,
+  // 2: Offers became their own table and a client's Offer Bought a link to it (was a select).
+  version: 2,
 } as const satisfies TemplateSpec;
 
 export const AGENCY_TABLES = {

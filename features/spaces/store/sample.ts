@@ -4,7 +4,7 @@
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
 import { agencyTokenByName, type AgencyTables } from "../data/agency-install";
 import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
-import { RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
+import { b, RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_GAP_RULES, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -24,11 +24,35 @@ function remap(blocks: SpaceBlock[], ids: Map<string, SpaceId>): SpaceBlock[] {
   });
 }
 
+const plain = (blk: SpaceBlock) => (blk.text ?? []).map((x) => x.text).join("");
+const isEmptyLine = (blk: SpaceBlock) => blk.type === "text" && !blk.children?.length && plain(blk) === "";
+
+/** Round 13: the plan column's gaps match the reference's empty lines (SAMPLE_GAP_RULES) — an older
+ *  page with fewer is topped up after the same block; never shortened. */
+function topUpGaps(list: SpaceBlock[]): { list: SpaceBlock[]; changed: boolean } {
+  let changed = false;
+  const out: SpaceBlock[] = [];
+  for (let i = 0; i < list.length; i++) {
+    out.push(list[i]);
+    const rule = SAMPLE_GAP_RULES.find((r) => plain(list[i]).startsWith(r.anchor));
+    if (!rule) continue;
+    let n = 0;
+    while (i + 1 + n < list.length && isEmptyLine(list[i + 1 + n])) n++;
+    for (let k = n; k < rule.lines; k++) {
+      out.push(b.text(""));
+      changed = true;
+    }
+  }
+  return { list: out, changed };
+}
+
 /** The phase-1 sample held `slot` placeholders where the data blocks now sit; swap them in place. */
 function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: SpaceBlock[]; changed: boolean } {
   let changed = false;
-  const walk = (list: SpaceBlock[]): SpaceBlock[] =>
-    list.map((blk): SpaceBlock | null => {
+  const walk = (all: SpaceBlock[]): SpaceBlock[] => {
+    const gaps = topUpGaps(all);
+    if (gaps.changed) changed = true;
+    return gaps.list.map((blk): SpaceBlock | null => {
       const label = typeof blk.props?.label === "string" ? blk.props.label : "";
       if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings(tables));
       if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase(tables));
@@ -93,6 +117,7 @@ function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: Spa
       }
       return blk.children ? { ...blk, children: walk(blk.children) } : blk;
     }).filter((blk): blk is SpaceBlock => blk !== null);
+  };
   return { blocks: walk(blocks), changed };
 }
 
