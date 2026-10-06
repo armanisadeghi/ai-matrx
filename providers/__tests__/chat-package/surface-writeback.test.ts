@@ -1,5 +1,6 @@
 const mockToastError = jest.fn();
 const mockToastSuccess = jest.fn();
+const mockToastWarning = jest.fn();
 const mockCaptureError = jest.fn();
 const mockGetManifest = jest.fn();
 
@@ -7,6 +8,7 @@ jest.mock("@ai-matrx/chat/host/notify", () => ({
   toast: {
     error: mockToastError,
     success: mockToastSuccess,
+    warning: mockToastWarning,
   },
 }));
 
@@ -250,36 +252,38 @@ describe("surface writeback value contract", () => {
     expect(handled).toEqual([CONFORMING_VALUE]);
   });
 
-  it("refuses a value that fails the kind's schema, before the handler runs", async () => {
+  // Plan rule 10 (Alchemy): a person's kind mismatch is applied with the
+  // door's warning and fix; an agent's is refused with the reason.
+  const MALFORMED = {
+    __kind: "word_count_result",
+    characters: 12,
+    characters_no_spaces: 10,
+    words: "two",
+    sentences: 1,
+    paragraphs: 1,
+  };
+
+  it("refuses an AGENT's value that fails the kind's schema, before the handler runs", async () => {
     mockGetKindInputContract.mockResolvedValue({
       schema: null,
       emittedJsonSchema: WORD_COUNT_RESULT_SCHEMA,
     });
 
     // `words` is a string and `lines` is missing — both real ajv failures.
-    const result = await applySurfaceWrite("counts", {
-      __kind: "word_count_result",
-      characters: 12,
-      characters_no_spaces: 10,
-      words: "two",
-      sentences: 1,
-      paragraphs: 1,
-    });
+    const result = await applySurfaceWrite("counts", MALFORMED, { origin: "agent" });
 
     expect(result.ok).toBe(false);
     expect(handled).toEqual([]);
     expect(!result.ok && result.error).toContain("word_count_result");
+    expect(result.receipt).toMatchObject({ status: "refused", reason: "malformed" });
     expect(mockToastError).toHaveBeenCalled();
-    expect(mockCaptureError).toHaveBeenCalledWith(
-      expect.objectContaining({ source: "surface-writeback" }),
-    );
   });
 
-  it("refuses loudly when the contract cannot be checked — a skip is never a pass", async () => {
+  it("refuses an AGENT's write when the contract cannot be checked — a skip is never a pass", async () => {
     // The kind the target names is not in the registry at all.
     mockGetKindInputContract.mockResolvedValue(null);
 
-    const result = await applySurfaceWrite("counts", CONFORMING_VALUE);
+    const result = await applySurfaceWrite("counts", CONFORMING_VALUE, { origin: "agent" });
 
     expect(result.ok).toBe(false);
     expect(handled).toEqual([]);
@@ -287,20 +291,25 @@ describe("surface writeback value contract", () => {
     expect(mockToastError).toHaveBeenCalled();
   });
 
-  it("checks USER-origin writes too — the contract is the contract", async () => {
+  it("a PERSON's mismatched value is applied with the door's warning and fix — never refused", async () => {
     mockGetKindInputContract.mockResolvedValue({
       schema: null,
       emittedJsonSchema: WORD_COUNT_RESULT_SCHEMA,
     });
 
-    const result = await applySurfaceWrite(
-      "counts",
-      { not: "a word count" },
-      { origin: "user" },
-    );
+    const result = await applySurfaceWrite("counts", MALFORMED, { origin: "user" });
 
-    expect(result.ok).toBe(false);
-    expect(handled).toEqual([]);
+    expect(result.ok).toBe(true);
+    expect(handled).toEqual([MALFORMED]);
+    expect(result.receipt).toMatchObject({
+      status: "applied",
+      warning: expect.stringContaining("word_count_result"),
+      fix: expect.any(String),
+    });
+    expect(mockToastWarning).toHaveBeenCalledWith(
+      expect.stringContaining("word_count_result"),
+      { description: expect.any(String) },
+    );
   });
 });
 

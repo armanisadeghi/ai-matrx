@@ -9,8 +9,9 @@
 
 const mockToastError = jest.fn();
 const mockToastSuccess = jest.fn();
+const mockToastWarning = jest.fn();
 jest.mock("@ai-matrx/chat/host/notify", () => ({
-  toast: { error: mockToastError, success: mockToastSuccess, info: jest.fn(), warning: jest.fn() },
+  toast: { error: mockToastError, success: mockToastSuccess, info: jest.fn(), warning: mockToastWarning },
 }));
 
 const mockCreateNote = jest.fn();
@@ -84,6 +85,7 @@ beforeEach(() => {
   heldDoorChecks.length = 0;
   mockToastError.mockReset();
   mockToastSuccess.mockReset();
+  mockToastWarning.mockReset();
   mockCreateNote.mockReset();
 });
 
@@ -224,6 +226,39 @@ describe("an approval belongs to the write that asked for it, never to an equal 
       unregister();
     }
   });
+
+  it("a non-seam agent write of the SAME value at the same instant gets its own answer, never the seam write's card", async () => {
+    const { createAlchemyDoorPort } = await import("./alchemy-door");
+    const ruleDraft = jest.fn();
+    const unregister = mountRulebookPage(ruleDraft);
+    const value = { __kind: "masterwork_rule_draft", mode: "new", name: "Same rule" };
+    const card = jest.fn(async () => ({ kind: "approved" as const }));
+    holdDoorChecks = true;
+    try {
+      const seamWrite = applySurfaceWrite("rule_draft", value, {
+        surfaceName: RULEBOOK,
+        origin: "agent",
+        conversationId: "conversation-a",
+        requestApproval: card,
+      });
+      for (let i = 0; i < 50 && heldDoorChecks.length < 1; i += 1) await tick();
+      const outside = createAlchemyDoorPort().write({ surfaceName: RULEBOOK, target: "rule_draft", value, by: "agent" });
+      for (let i = 0; i < 50 && heldDoorChecks.length < 2; i += 1) await tick();
+      expect(heldDoorChecks).toHaveLength(2);
+      // The outside write reaches its approval first, while the seam write waits.
+      heldDoorChecks.pop()?.release();
+      const outsideReceipt = await outside;
+      heldDoorChecks.pop()?.release();
+      const seamResult = await seamWrite;
+
+      expect(outsideReceipt).toMatchObject({ status: "refused", reason: "failed" });
+      expect(card).toHaveBeenCalledTimes(1);
+      expect(seamResult).toMatchObject({ ok: true, receipt: { status: "applied" } });
+      expect(ruleDraft).toHaveBeenCalledTimes(1);
+    } finally {
+      unregister();
+    }
+  });
 });
 
 describe("a mounted page's handler is live on the door for as long as the page is mounted", () => {
@@ -343,11 +378,12 @@ describe("the value contract: what the door's check covers and what it does not"
     }
   });
 
-  it("a person's malformed value only WARNS at the door, so the seam's own refusal for a person stays", async () => {
+  it("rule 10: a person's malformed value is applied with the door's warning and fix, through the door and the seam alike", async () => {
     const { createAlchemyDoorPort } = await import("./alchemy-door");
     const ruleDraft = jest.fn();
     const unregister = mountRulebookPage(ruleDraft);
     const malformed = { __kind: "masterwork_rule_draft", name: "No mode" };
+    const warning = "This value isn't shaped like the \"masterwork_rule_draft\" kind: mode is required";
     try {
       const receipt = await createAlchemyDoorPort().write({
         surfaceName: RULEBOOK,
@@ -355,11 +391,31 @@ describe("the value contract: what the door's check covers and what it does not"
         value: malformed,
         by: "person",
       });
-      expect(receipt).toMatchObject({ status: "applied", warning: "This value isn't shaped like the \"masterwork_rule_draft\" kind: mode is required" });
+      expect(receipt).toMatchObject({ status: "applied", warning, fix: expect.any(String) });
       ruleDraft.mockClear();
 
-      const seam = await applySurfaceWrite("rule_draft", malformed, { surfaceName: RULEBOOK, quiet: true });
-      expect(seam).toMatchObject({ ok: false });
+      const seam = await applySurfaceWrite("rule_draft", malformed, { surfaceName: RULEBOOK });
+      expect(seam).toMatchObject({ ok: true, receipt: { status: "applied", warning, fix: expect.any(String) } });
+      expect(ruleDraft).toHaveBeenCalledWith(malformed);
+      expect(mockToastWarning).toHaveBeenCalledWith(warning, { description: expect.any(String) });
+    } finally {
+      unregister();
+    }
+  });
+
+  it("rule 10: an agent's malformed value through the seam is refused by the door with the reason, before any card", async () => {
+    const ruleDraft = jest.fn();
+    const unregister = mountRulebookPage(ruleDraft);
+    const requestApproval = jest.fn(async () => ({ kind: "approved" as const }));
+    try {
+      const seam = await applySurfaceWrite("rule_draft", { __kind: "masterwork_rule_draft", name: "No mode" }, {
+        surfaceName: RULEBOOK,
+        origin: "agent",
+        conversationId: "conversation-a",
+        requestApproval,
+      });
+      expect(seam).toMatchObject({ ok: false, receipt: { status: "refused", reason: "malformed" } });
+      expect(requestApproval).not.toHaveBeenCalled();
       expect(ruleDraft).not.toHaveBeenCalled();
     } finally {
       unregister();

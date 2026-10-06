@@ -761,12 +761,17 @@ function resolveApplyPolicy(
 // receipt); any other write runs the page's handler with the door's value.
 //
 // AN APPROVAL BELONGS TO THE WRITE THAT ASKED FOR IT. Every seam write mints a
-// run id (its conversation + a per-write number). The door's approval request
-// names only the surface, the target and the value, so per (surface, target)
-// at most ONE seam write is between entering the door and being asked — the
-// next one waits for that question, never for the person's answer — and the
-// door's question is answered by exactly that write's own card. Two
-// conversations writing the same value to the same target each get their own.
+// run id (its conversation + a per-write number) and the door hands that id
+// back on its approval request (`ApprovalRequest.runId`, alchemy 0.12.1), so
+// the door's question is answered by exactly that write's own card — no
+// matching by value, no queue per target. Two conversations writing the same
+// value to the same target each get their own card, and a write from outside
+// this seam is never answered by a seam write's card.
+//
+// THE VALUE CONTRACT IS THE DOOR'S (plan rule 10): a person's kind mismatch is
+// applied with a warning and a fix; an agent's is refused with the reason,
+// before any card. The seam only re-checks a value the door never saw — an
+// agent's anchored edit rebased after approval.
 
 /** Errors this seam already toasted and captured; the door must not capture them twice. */
 const reportedErrors = new WeakSet<object>();
@@ -799,11 +804,6 @@ interface SeamWrite {
 
 const seamWrites = new Map<string, SeamWrite>();
 
-/** Per (surface, target): the ONE seam write the door may be asking about now. */
-const awaitingApproval = new Map<string, string>();
-/** Per (surface, target): the queue of seam writes waiting to be that one. */
-const approvalTurns = new Map<string, Promise<void>>();
-
 let writeSequence = 0;
 
 function mintRunId(conversationId: string | null): string {
@@ -812,23 +812,22 @@ function mintRunId(conversationId: string | null): string {
 }
 
 /**
- * The door's approvals port: answered by the approval flow of the ONE seam
- * write the door is asking about for that surface and target. Nothing waiting
- * (or a different value) means nobody here can approve — said so, never a
- * silent "no".
+ * The door's approvals port: answered by the approval flow of the seam write
+ * whose run id the door names. No run id, no such write, an already-asked
+ * write, or a different value (a sanity check, never the match) means nobody
+ * here can approve — said so, never a silent "no".
  */
 export const surfaceWriteApprovals: ApprovalPort = {
   async ask(request) {
-    const key = doorKey(request.surfaceName, request.action);
-    const runId = awaitingApproval.get(key);
-    const write = runId ? seamWrites.get(runId) : undefined;
-    if (!runId || !write?.approve || write.input !== stableInput(request.input)) {
+    const write = request.runId ? seamWrites.get(request.runId) : undefined;
+    const approve = write?.approve;
+    if (!write || !approve || write.input !== stableInput(request.input)) {
       throw new Error(
         `No one is here to approve "${request.label}". Ask for it again from the conversation or page that should approve it.`,
       );
     }
-    awaitingApproval.delete(key);
-    return write.approve();
+    write.approve = undefined;
+    return approve();
   },
 };
 
@@ -1029,40 +1028,20 @@ async function writeThroughDoor(
   const door = await loadSurfaceWriteDoor();
   const key = doorKey(request.surfaceName, request.target);
   const runId = mintRunId(conversationId);
-  const write: SeamWrite = { conversationId, input: stableInput(request.value), apply };
+  const write: SeamWrite = {
+    conversationId,
+    input: stableInput(request.value),
+    apply,
+    ...(approve ? { approve } : {}),
+  };
   seamWrites.set(runId, write);
   // A write from a dormant copy (a board tile's capture) has no mounted route
   // of its own; it holds one open for exactly its own write.
   const route = openRoute(door, request.surfaceName, request.target);
   route.holds += 1;
-
-  // Wait for this target's turn to be the one the door may ask about.
-  let endTurn: () => void = () => {};
-  if (approve) {
-    const previous = approvalTurns.get(key) ?? Promise.resolve();
-    let open: () => void = () => undefined;
-    const turn = new Promise<void>((resolve) => {
-      open = resolve;
-    });
-    const queued = previous.then(() => turn);
-    approvalTurns.set(key, queued);
-    await previous;
-    awaitingApproval.set(key, runId);
-    endTurn = () => {
-      if (awaitingApproval.get(key) === runId) awaitingApproval.delete(key);
-      if (approvalTurns.get(key) === queued) approvalTurns.delete(key);
-      open();
-    };
-    // Asked: the next write to this target may now reach its own question.
-    write.approve = () => {
-      endTurn();
-      return approve();
-    };
-  }
   try {
     return await door.write({ ...request, runId });
   } finally {
-    endTurn();
     seamWrites.delete(runId);
     route.holds -= 1;
     releaseIfUnused(key, route);
@@ -1322,20 +1301,13 @@ async function agentWriteAllowed(
 }
 
 /**
- * THE VALUE CONTRACT, enforced.
+ * THE VALUE CONTRACT for a value the door never saw.
  *
- * A target that declares `valueKind` has a real contract — the registered
- * kind's `emitted_json_schema` — and this is where it binds. Runs BEFORE the
- * approval gate and before the handler, deliberately:
- *
- *  - Never ask a human to approve a value the platform already knows is
- *    malformed. An approval card for garbage teaches people to click through.
- *  - Never hand a handler a shape it did not declare; the hand-rolled throw
- *    inside a page handler is exactly the per-instance validator this replaces.
- *
- * It applies to USER-origin writes too: the contract is the contract, and a
- * kind-component action button emitting the wrong shape is the same defect as
- * an agent doing it.
+ * The door checks every write's declared `valueKind` (plan rule 10: a
+ * person's mismatch applies with a warning and a fix, an agent's is refused
+ * before any card). This re-check covers only what reaches the handler after
+ * the door's check: an agent's anchored edit rebased onto the live text after
+ * approval, which is agent-origin, so a mismatch is refused.
  *
  * A SKIP IS NEVER A PASS. `kindValidator.validate` (`@ai-matrx/content-ir`'s
  * `createKindValidator` over the app's `SchemaSourcePort`) reports `checked:false` when
@@ -1685,24 +1657,9 @@ async function applySurfaceWriteNow(
     }
     value = typed.value;
 
-    // The declared value contract binds before anything else looks at the
-    // value — no approval card for a malformed payload, no handler asked to
-    // re-validate what the kind already describes.
-    // WHY THIS STAYS BESIDE THE DOOR'S OWN KIND CHECK (rule 10): the door
-    // refuses an agent's malformed value but only WARNS on a person's, and it
-    // checks after this seam has already run the page's `validate`. This
-    // check refuses for every origin and runs before the page's `validate`,
-    // so neither case is covered by the door (components/agent-copy/
-    // alchemy-door.test.ts, "the value contract"). Folding them into one is a
-    // ruling on whether a person's malformed write is refused or warned.
-    const contract = await valueContractHolds(
-      target,
-      runtime.surfaceName,
-      value,
-    );
-    if (contract !== true) {
-      return contract.ok ? contract : { ...contract, phase: "before_approval" };
-    }
+    // The declared value contract is checked by THE DOOR (plan rule 10): an
+    // agent's malformed value is refused there before any card is shown; a
+    // person's is applied with the door's warning and fix (toasted below).
 
     // THE PAGE'S OWN PRE-APPROVAL CHECK (`{ validate, apply }` handlers). Runs
     // for every origin, before the approval card: a throw is the value's
@@ -1877,6 +1834,9 @@ async function applySurfaceWriteNow(
       apply,
       approve,
     );
+    if (receipt.status === "applied" && receipt.warning && !opts?.quiet) {
+      toast.warning(receipt.warning, receipt.fix ? { description: receipt.fix } : undefined);
+    }
     const result: SurfaceWriteResult =
       settled ??
       // The door refused before this seam was asked anything.
