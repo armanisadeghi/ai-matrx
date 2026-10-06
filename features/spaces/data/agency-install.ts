@@ -33,7 +33,8 @@ export interface AgencyTable {
   sample?: string;
 }
 
-export type AgencyTables = Record<AgencyToken, AgencyTable>;
+/** The four tables every install has, plus Offers (version 2 — an older install has none). */
+export type AgencyTables = Record<AgencyToken, AgencyTable> & { offer?: AgencyTable };
 
 const TOKENS: AgencyToken[] = ["client", "nps_survey", "client_win", "task"];
 /** Each table's view the sample's blocks name (the spec's default grid view). */
@@ -48,6 +49,11 @@ export function agencyTablesFrom(answer: TemplateDoorAnswer): AgencyTables {
     if (!table?.id) throw new Error(`The sample's ${token.replace("_", " ")} table was not made.`);
     const view = made.find((m) => m.kind === "view" && m.ref === `views.${VIEW_OF[token]}`);
     out[token] = { tableId: table.id, name: table.title ?? AGENCY_SPEC.tables.find((t) => t.token === token)!.name, viewId: view?.id ?? undefined };
+  }
+  const offer = made.find((m) => m.kind === "table" && m.ref === "tables.offer");
+  if (offer?.id) {
+    const view = made.find((m) => m.kind === "view" && m.ref === "views.all_offers");
+    out.offer = { tableId: offer.id, name: offer.title ?? "Offers", viewId: view?.id ?? undefined };
   }
   return out;
 }
@@ -126,5 +132,5 @@ export async function pageOrganizationId(spaceId: string): Promise<string | null
 /** The table a sample block named, by its title (the preview's table names are the spec's). */
 export function agencyTokenByName(name: string | undefined): AgencyToken | null {
   const t = AGENCY_SPEC.tables.find((x) => x.name === name);
-  return t ? (t.token as AgencyToken) : null;
+  return t && (TOKENS as string[]).includes(t.token) ? (t.token as AgencyToken) : null;
 }

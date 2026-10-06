@@ -42,13 +42,14 @@ function Lists({ query, onPick, spaceId }: { query: string; onPick: (s: PickedSo
   const dispatch = useAppDispatch();
   const [installing, setInstalling] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
-  const pickSample = async (token: AgencyToken) => {
+  const pickSample = async (token: AgencyToken | "offer") => {
     setInstalling(token);
     setFailed(null);
     try {
       // The page and its tables share one organization (the same rule as "Add the sample").
       const orgId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(activeOrg));
       const made = (await installAgencySample(orgId, dispatch))[token];
+      if (!made) throw new Error("This organization's sample has no such table yet.");
       onPick({ tableId: made.tableId, name: made.name });
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) setFailed(err instanceof Error ? err.message : "The sample could not be added.");
@@ -93,7 +94,7 @@ function Lists({ query, onPick, spaceId }: { query: string; onPick: (s: PickedSo
           icon={installing === t.token ? <Loader2 size={15} className="animate-spin" /> : <FlaskConical size={15} />}
           key={t.token}
           disabled={installing !== null}
-          onClick={() => void pickSample(t.token as AgencyToken)}
+          onClick={() => void pickSample(t.token as AgencyToken | "offer")}
         >
           <span className="flex-1 truncate text-left">{t.name}</span>
           <span className="type-secondary text-muted-foreground">{t.rows.length} rows</span>
