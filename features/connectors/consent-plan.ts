@@ -279,10 +279,13 @@ export function buildConsentPlan({
   }
 
   const addedSet = new Set(wanted.flatMap(({ missing }) => missing));
-  // Reduce only new Calendar requirements. Existing literal grants below stay
-  // cumulative, and a read-only choice can never add the event-write scope.
+  // Reduce only new redundant read requirements. Existing literal grants below
+  // stay cumulative, and a read-only choice can never add management access.
   if (addedSet.has(GOOGLE_SCOPE.calendarEventsWrite)) {
     addedSet.delete(GOOGLE_SCOPE.calendarEventsReadonly);
+  }
+  if (addedSet.has(GOOGLE_SCOPE.webmasters)) {
+    addedSet.delete(GOOGLE_SCOPE.webmastersReadonly);
   }
   const added = [...addedSet];
   const isolatedYouTube = youtubeAdds;

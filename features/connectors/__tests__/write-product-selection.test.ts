@@ -172,3 +172,34 @@ it("keeps read-only selection narrow", () => {
     GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsReadonly]));
   expect(plan.request?.scopes).not.toContain(GOOGLE_SCOPE.calendarEventsWrite);
 });
+
+
+describe("Search Console management coverage", () => {
+  const rollout = [...catalog("search_console", true), ...catalog("search_console_write", true)];
+  it("asks only for full access when both Search Console products are newly selected", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: ["search_console", "search_console_write"], account: null, rollout});
+    expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.webmasters]));
+    expect(plan.request?.capabilityKeys).toEqual(["search_console", "search_console_write"]);
+    expect(plan.request?.addedScopes).not.toContain(GOOGLE_SCOPE.webmastersReadonly);
+  });
+  it("preserves held read-only access while adding management", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: ["search_console", "search_console_write"],
+      account: calendarAccount([GOOGLE_SCOPE.webmastersReadonly]), rollout});
+    expect(plan.request?.scopes).toContain(GOOGLE_SCOPE.webmastersReadonly);
+    expect(plan.request?.addedScopes).toEqual([GOOGLE_SCOPE.webmasters]);
+  });
+  it("uses held management access for Search Console reads without another approval", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: ["search_console"], account: calendarAccount([GOOGLE_SCOPE.webmasters]), rollout});
+    expect(plan.request).toBeNull();
+    expect(plan.alreadyGranted.map(product => product.key)).toEqual(["search_console"]);
+  });
+  it("keeps an ordinary read-only selection narrow", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: ["search_console"], account: null, rollout});
+    expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.webmastersReadonly]));
+    expect(plan.request?.scopes).not.toContain(GOOGLE_SCOPE.webmasters);
+  });
+});
