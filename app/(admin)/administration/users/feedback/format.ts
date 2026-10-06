@@ -23,6 +23,7 @@ export const feedbackTypeLabels: Record<FeedbackType, string> = {
   suggestion: "Suggestion",
   other: "Other",
   request: "Access Request",
+  page_story: "Page Story",
 };
 
 /** One line per feedback item — list-level human copy. */

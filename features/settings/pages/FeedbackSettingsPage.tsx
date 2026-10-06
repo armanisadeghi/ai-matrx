@@ -47,6 +47,7 @@ import {
   UserCheck,
   KeyRound,
   type LucideIcon,
+  ScrollText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -398,6 +399,8 @@ function FeedbackTypeIcon({ type }: { type: string }) {
       return <MessageSquare className="h-4 w-4 text-blue-500" />;
     case "request":
       return <KeyRound className="h-4 w-4 text-sky-500" />;
+    case "page_story":
+      return <ScrollText className="h-4 w-4 text-emerald-500" />;
     default:
       return <HelpCircle className="h-4 w-4 text-muted-foreground" />;
   }
@@ -645,6 +648,7 @@ function FeedbackItem({
                     <SelectItem value="suggestion">Suggestion</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                     <SelectItem value="request">Access request</SelectItem>
+                    <SelectItem value="page_story">Page story</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (

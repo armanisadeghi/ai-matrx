@@ -3,8 +3,9 @@
  *
  * One `createWriteDoor` per app: it lives beside the surface writeback seam
  * (`@ai-matrx/chat/surfaces/runtime/surface-writeback` → `loadSurfaceWriteDoor`),
- * which reads the manifest registry and registers each mounted page's handler
- * on it as a LIVE handler for the length of a write. This module hands the same
+ * which reads the manifest registry and keeps each mounted page's handlers
+ * LIVE on it for as long as the page is mounted — so an Action or a destination
+ * writing to an open page reaches that page's own handler. This module hands the same
  * door to the Alchemy host (`door` port) and registers the HEADLESS handlers of
  * the destinations that work with no page open:
  *

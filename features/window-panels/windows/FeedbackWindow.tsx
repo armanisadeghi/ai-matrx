@@ -25,6 +25,7 @@ import {
   Settings2,
   X,
   KeyRound,
+  ScrollText,
 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -46,6 +47,7 @@ import {
   type FeedbackAssignableAdmin,
 } from "@/types/feedback.types";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { useActivePageSurface } from "@ai-matrx/chat/surfaces/runtime/useActivePageSurface";
 import {
   FEEDBACK_SURFACE_NAME,
   createFeedbackScope,
@@ -189,6 +191,11 @@ const FEEDBACK_TYPE_CHIPS: Record<
     icon: KeyRound,
     placeholder:
       "Ask for access: which page, feature or record do you need, and why?",
+  },
+  page_story: {
+    label: "Page story",
+    icon: ScrollText,
+    placeholder: "What is the person doing here? What should AI see in full?",
   },
 };
 
@@ -426,6 +433,13 @@ function useFeedbackForm({
     const settle = window.setTimeout(read, 600);
     return () => window.clearTimeout(settle);
   }, [pathname]);
+  // The page surface the report is about (a page story names it, AP-6). Read from the page,
+  // never the feedback window's own surface, which out-depths it while the window is open.
+  const activeSurface = useActivePageSurface().surfaceName;
+  const [pageSurface, setPageSurface] = useState<string | null>(null);
+  if (activeSurface && activeSurface !== FEEDBACK_SURFACE_NAME && activeSurface !== pageSurface) {
+    setPageSurface(activeSurface);
+  }
   const reduxUser = useAppSelector(selectUser);
   const isAdmin = useAppSelector(selectIsAdmin);
   // The organization the report is filed in — a Server Action carries no
@@ -824,8 +838,15 @@ function useFeedbackForm({
         description: subject
           ? `${describeSubject(subject)}\n\n${description.trim()}`
           : description.trim(),
-        ...(subject
-          ? { metadata: { report_subject: subjectMetadata(subject) } }
+        ...(subject || pageSurface
+          ? {
+              metadata: {
+                ...(subject ? { report_subject: subjectMetadata(subject) } : {}),
+                // Which page surface this is about — what an agent reads to turn a page
+                // story into that surface's situation (AP-6).
+                ...(pageSurface ? { surface_name: pageSurface } : {}),
+              },
+            }
           : {}),
         image_file_ids: imageFileIds.length > 0 ? imageFileIds : undefined,
         // Admin-only fields. Server silently drops these for non-admins, but we
