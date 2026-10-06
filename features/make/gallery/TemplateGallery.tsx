@@ -30,7 +30,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, CircleDashed, ExternalLink, Loader2 } from "lucide-react";
 import { supabaseDataSource } from "@ai-matrx/records/core";
-import { runTemplateDoor, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
+import { runTemplateDoor, templateUpgradeHint, upgradeTemplateInstall, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -276,6 +276,9 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
   // The agent is the host's step of an install; `copying` while it runs, `failed` says why.
   const [agent, setAgent] = useState<AgentStep>({ phase: "idle" });
   const [agentNote, setAgentNote] = useState<string | null>(null);
+  // An install made from an older version: Upgrade runs custom.template_upgrade over it.
+  const [upgrading, setUpgrading] = useState(false);
+  const [upgradeWhy, setUpgradeWhy] = useState<string | null>(null);
 
   const addAgent = async (answer: TemplateDoorAnswer, orgId: string) => {
     if (!hostStepsPending(answer)) return;
@@ -361,6 +364,22 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
   };
   const install = () => void go("template_install", templateId);
 
+  const upgrade = async (installIdNow: string, templateIdNow: string) => {
+    if (!organizationId) return;
+    setUpgrading(true);
+    setUpgradeWhy(null);
+    const done = await upgradeTemplateInstall(supabaseDataSource(createClient()), organizationId, installIdNow, templateIdNow);
+    setUpgrading(false);
+    if (!done.ok || !done.answer) {
+      setUpgradeWhy(refusalLine(done));
+      return;
+    }
+    setAgent({ phase: "idle" });
+    setRun({ phase: "installed", answer: done.answer });
+    await addAgent(done.answer, organizationId);
+    read.reload();
+  };
+
   // The organization asked for on the first press has been chosen: install now (ask, then replay).
   useEffect(() => {
     if (!askOrganization || !organizationId) return;
@@ -398,6 +417,13 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
     (u) => ({ ...u, id: u.table_id }) as MadeObject,
   );
   const made = [...((answerNow?.made ?? []) as MadeObject[]), ...unrecorded];
+  // "Newer version available": the install answer's hint, or the card's own version against the install's.
+  const hint = run.phase === "installed" ? templateUpgradeHint(run.answer) : null;
+  const upgradeFrom =
+    hint ??
+    (run.phase === "idle" && card.installed?.state === "installed" && card.version > card.installed.version
+      ? { install_id: card.installed.install_id, template_id: card.id, to_version: card.version }
+      : null);
 
   return (
     <div className="flex flex-col gap-6" data-make-template-preview={card.catalogue_id}>
@@ -410,9 +436,20 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
           </h2>
           {isInstalled ? (
             <>
-              <Button variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-open="">
+              <Button variant="primary" onClick={install} disabled={run.phase === "running" || upgrading} data-make-template-open="">
                 Show what it made
               </Button>
+              {upgradeFrom ? (
+                <Button
+                  variant="outline"
+                  icon={upgrading ? <Loader2 className="animate-spin" /> : null}
+                  onClick={() => void upgrade(upgradeFrom.install_id, upgradeFrom.template_id)}
+                  disabled={run.phase === "running" || upgrading}
+                  data-make-template-upgrade={upgradeFrom.to_version}
+                >
+                  {`Upgrade to v${upgradeFrom.to_version}`}
+                </Button>
+              ) : null}
             </>
           ) : (
             <Button icon={run.phase === "running" && run.door === "template_install" ? <Loader2 className="animate-spin" /> : null} variant="primary" onClick={install} disabled={run.phase === "running"} data-make-template-install={stuck ? "finish" : ""}>
@@ -444,6 +481,11 @@ export function TemplatePreview({ templateId, bare = false, autoInstall = false 
         ) : null}
 
         {run.phase === "running" ? <Progress run={run} /> : null}
+        {upgradeWhy ? (
+          <p className="text-sm text-destructive" role="alert" data-make-template-upgrade-refused="">
+            {upgradeWhy}
+          </p>
+        ) : null}
         {run.phase === "refused" ? (
           <div className="flex flex-wrap items-center gap-2 text-sm" role="alert" data-make-template-refused="">
             <span className="text-destructive">{run.why}</span>
