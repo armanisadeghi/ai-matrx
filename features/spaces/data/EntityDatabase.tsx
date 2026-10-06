@@ -23,7 +23,7 @@ import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/ac
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
-import { FieldList, MenuRow, ViewTab } from "./menu-parts";
+import { FieldList, MenuRow, ViewerSortButton, ViewTab, shownSorts, type SortChoice } from "./menu-parts";
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 /** The layouts a built-in source draws today. */
@@ -172,7 +172,11 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
   const [limit, setLimit] = useState(PAGE);
-  const entity = useEntityRows(token, active, limit);
+  // The toolbar sort is this viewer's own, per view, never written to the view (Notion); the store is
+  // asked with it, so the page and the count agree.
+  const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
+  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]) };
+  const entity = useEntityRows(token, shown, limit);
   const [open, setOpen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
@@ -180,7 +184,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const known = BUILT_IN_SOURCES.find((b) => b.token === token)?.name;
   const sourceName = props.title || entity.label || known || token;
 
-  const body = <EntityBody entity={entity} view={active} onOpen={setOpen} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />;
+  const body = <EntityBody entity={entity} view={shown} onOpen={setOpen} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />;
 
   return (
     <div className="spaces-db-frame" data-layout={active.layout} data-source="entity">
@@ -232,7 +236,15 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
         </div>
         <div className="spaces-db-tools">
           <EntityFilter view={active} columns={entity.columns} onView={saveView} editable={editable} />
-          <EntitySort view={active} columns={entity.columns} onView={saveView} editable={editable} />
+          <ViewerSortButton
+            view={active}
+            fields={asFields(entity.columns.filter((c) => !c.lookup))}
+            choice={sortChoices[active.id]}
+            onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
+            canSave={editable}
+            onSave={(sorts) => saveView({ sorts })}
+            icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
+          />
           <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
           <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={editable} />
         </div>
@@ -431,32 +443,6 @@ function EntityFilter({ view, columns, onView, editable }: { view: SpaceDbView; 
           </div>
         ) : (
           <FieldList fields={asFields(columns.filter((c) => !c.lookup))} onPick={setField} />
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function EntitySort({ view, columns, onView, editable }: { view: SpaceDbView; columns: EntityColumn[]; onView: (p: Partial<SpaceDbView>) => void; editable: boolean }) {
-  const sort = view.sorts?.[0];
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="quiet" icon={<ArrowDownUp size={15} strokeWidth={1.8} />} aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined} />
-      </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" width="md" padding="xs">
-        {sort ? (
-          <div className="flex items-center gap-1 p-1 type-body">
-            <span className="flex-1 truncate">{columns.find((c) => c.api_name === sort.field)?.name ?? sort.field}</span>
-            <Button variant="outline" disabled={!editable} onClick={() => onView({ sorts: [{ field: sort.field, direction: sort.direction === "asc" ? "desc" : "asc" }] })}>
-              {sort.direction === "asc" ? "Ascending" : "Descending"}
-            </Button>
-            {editable ? <Button variant="quiet" icon={<X size={14} />} aria-label="Remove sort" onClick={() => onView({ sorts: [] })} /> : null}
-          </div>
-        ) : editable ? (
-          <FieldList fields={asFields(columns.filter((c) => !c.lookup))} onPick={(key) => onView({ sorts: [{ field: key, direction: "asc" }] })} />
-        ) : (
-          <p className="p-2 type-body text-muted-foreground">No sorts</p>
         )}
       </PopoverContent>
     </Popover>

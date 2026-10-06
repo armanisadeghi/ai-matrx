@@ -5,7 +5,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input } from "@ai-matrx/design-system/controls";
-import { Copy, Trash2 } from "lucide-react";
+import { Copy, Trash2, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import type { SpaceDbView } from "./sources";
@@ -107,5 +107,80 @@ export function FieldList<F extends { key: string; label: string }>({ fields, va
         <MenuRow key={f.key} label={f.label} active={f.key === value} onClick={() => onPick(f.key)} />
       ))}
     </div>
+  );
+}
+
+export type ViewSort = { field: string; direction: "asc" | "desc" };
+/** A viewer's own sort for one view: `undefined` follows the saved sort; `null` = "no sort" for them. */
+export type SortChoice = ViewSort | null | undefined;
+
+/** The sort a view is drawn with: the viewer's choice when they made one, else the view's saved sort. */
+export function shownSorts(view: SpaceDbView, choice: SortChoice): ViewSort[] {
+  if (choice === undefined) return view.sorts ?? [];
+  return choice ? [choice] : [];
+}
+
+/**
+ * The toolbar sort (Notion): anyone may sort, it applies at once, and it is that viewer's alone — never
+ * written to the view. A person who may edit the view sees "Save to view" and "Reset" once their sort
+ * differs from the saved one; everyone else sees "Reset".
+ */
+export function ViewerSortButton({
+  view,
+  fields,
+  choice,
+  onChoice,
+  canSave,
+  onSave,
+  icon,
+}: {
+  view: SpaceDbView;
+  fields: Array<{ key: string; label: string }>;
+  choice: SortChoice;
+  onChoice: (next: SortChoice) => void;
+  canSave: boolean;
+  onSave: (sorts: ViewSort[]) => void;
+  icon: ReactNode;
+}) {
+  const saved = view.sorts?.[0] ?? null;
+  const sort = choice === undefined ? saved : choice;
+  const differs = choice !== undefined && JSON.stringify(choice) !== JSON.stringify(saved);
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="quiet" icon={icon} aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined} />
+      </PopoverTrigger>
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
+        {sort ? (
+          <div className="flex items-center gap-1 p-1 type-body">
+            <span className="flex-1 truncate">{fields.find((f) => f.key === sort.field)?.label ?? sort.field}</span>
+            <Button variant="outline" onClick={() => onChoice({ field: sort.field, direction: sort.direction === "asc" ? "desc" : "asc" })}>
+              {sort.direction === "asc" ? "Ascending" : "Descending"}
+            </Button>
+            <Button variant="quiet" icon={<X size={14} />} aria-label="Remove sort" onClick={() => onChoice(null)} />
+          </div>
+        ) : (
+          <FieldList fields={fields} onPick={(key) => onChoice({ field: key, direction: "asc" })} />
+        )}
+        {differs ? (
+          <div className="flex items-center justify-end gap-1 border-t border-border p-1">
+            <Button variant="quiet" onClick={() => onChoice(undefined)}>
+              Reset
+            </Button>
+            {canSave ? (
+              <Button
+                variant="primary"
+                onClick={() => {
+                  onSave(choice ? [choice] : []);
+                  onChoice(undefined);
+                }}
+              >
+                Save to view
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+      </PopoverContent>
+    </Popover>
   );
 }

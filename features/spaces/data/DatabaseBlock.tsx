@@ -48,7 +48,7 @@ import { toast } from "@/lib/toast";
 
 import { DataMount } from "./DataMount";
 import { EntityDatabase } from "./EntityDatabase";
-import { FieldList, MenuRow, ViewTab } from "./menu-parts";
+import { FieldList, MenuRow, ViewerSortButton, ViewTab, shownSorts, type SortChoice } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
@@ -136,6 +136,10 @@ function DatabaseFrame({
   const [open, setOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  // The toolbar sort is this viewer's own, per view, never written to the view (Notion). Until records-ui
+  // takes `sortOverride` on ViewSwitcher, it rides in the spec the block hands it (NEEDS).
+  const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
+  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]) };
 
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
   const saveView = (patch: Partial<SpaceDbView>) => save({ views: views.map((v) => (v.id === active.id ? { ...v, ...patch } : v)), activeViewId: active.id });
@@ -154,7 +158,7 @@ function DatabaseFrame({
   const body = (
     <DatabaseBody
       tableId={tableId}
-      view={active}
+      view={shown}
       fields={fields}
       onOpenRecord={setOpen}
       onNew={addRow}
@@ -213,7 +217,15 @@ function DatabaseFrame({
         {!isChart ? (
           <div className="spaces-db-tools">
             <FilterButton view={active} fields={fields} onView={saveView} editable={editable} />
-            <SortButton view={active} fields={fields} onView={saveView} editable={editable} />
+            <ViewerSortButton
+              view={active}
+              fields={fields}
+              choice={sortChoices[active.id]}
+              onChoice={(c) => setSortChoices((all) => ({ ...all, [active.id]: c }))}
+              canSave={editable}
+              onSave={(sorts) => saveView({ sorts })}
+              icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
+            />
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
             <NewButton onNew={() => setCreating(true)} />
@@ -234,7 +246,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={active} fields={fields} onOpenRecord={setOpen} onNew={addRow} editable={editable} sample={sample} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} onNew={addRow} editable={editable} sample={sample} />
         </DialogContent>
       </Dialog>
     </div>
@@ -362,34 +374,6 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
             <FieldList fields={fields} onPick={setField} />
           )
         ) : null}
-      </PopoverContent>
-    </Popover>
-  );
-}
-
-function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fields: Field[]; onView: (p: Partial<SpaceDbView>) => void; editable: boolean }) {
-  const sort = view.sorts?.[0];
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="quiet" icon={<ArrowDownUp size={15} strokeWidth={1.8} />} aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined} />
-      </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" width="md" padding="xs">
-        {sort ? (
-          <div className="flex items-center gap-1 p-1 type-body">
-            <span className="flex-1 truncate">{fields.find((f) => f.key === sort.field)?.label ?? sort.field}</span>
-            <Button variant="outline" disabled={!editable} onClick={() => onView({ sorts: [{ field: sort.field, direction: sort.direction === "asc" ? "desc" : "asc" }] })}>
-              {sort.direction === "asc" ? "Ascending" : "Descending"}
-            </Button>
-            {editable ? (
-              <Button variant="quiet" icon={<X size={14} />} aria-label="Remove sort" onClick={() => onView({ sorts: [] })} />
-            ) : null}
-          </div>
-        ) : editable ? (
-          <FieldList fields={fields} onPick={(key) => onView({ sorts: [{ field: key, direction: "asc" }] })} />
-        ) : (
-          <p className="p-2 type-body text-muted-foreground">No sorts</p>
-        )}
       </PopoverContent>
     </Popover>
   );
