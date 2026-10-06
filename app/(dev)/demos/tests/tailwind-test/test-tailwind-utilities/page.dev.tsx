@@ -62,7 +62,7 @@ export default function TestTailwindUtilitiesPage() {
           </div>
           
           {/* Theme Variables */}
-          <div className="p-4 border-4 border-primary bg-white dark:bg-zinc-900 hover:border-primary/80 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary dark:hover:text-primary transition-all cursor-pointer">
+          <div className="p-4 border-4 border-primary bg-white dark:bg-zinc-900 hover:border-primary/80 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary-ink dark:hover:text-primary-ink transition-all cursor-pointer">
             <p className="font-medium">border-primary</p>
             <p className="text-sm text-gray-600 dark:text-gray-400">Should be blue (--primary)</p>
             <p className="text-xs mt-2 opacity-70">Hover: border, bg, text</p>

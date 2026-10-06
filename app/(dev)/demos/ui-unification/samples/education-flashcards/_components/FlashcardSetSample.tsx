@@ -548,13 +548,13 @@ function CardPeek({
         )}
         <div className="ml-auto flex items-center gap-1">
           {kind === CARD_KIND.cloze && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary-ink">
               <Scissors className="h-3 w-3" />
               Cloze
             </span>
           )}
           {kind === CARD_KIND.matching && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary-ink">
               <Grid3x3 className="h-3 w-3" />
               Match · {pairs.length}
             </span>
@@ -562,7 +562,7 @@ function CardPeek({
           {layerCount > 0 && (
             <span
               title={`${layerCount} detail layer${layerCount === 1 ? "" : "s"} — read them under "More on this card" while studying`}
-              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary"
+              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary-ink"
             >
               <Layers className="h-3 w-3" />
               {layerCount}
@@ -1218,7 +1218,7 @@ export function FlashcardSetSample({
                               className="cursor-pointer gap-2.5 py-1.5"
                               onClick={() => navigate(m.key, m.href(setId))}
                             >
-                              <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                              <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                                 <m.icon className="size-4" />
                               </span>
                               <span className="flex min-w-0 flex-col">
@@ -1556,7 +1556,7 @@ export function FlashcardSetSample({
             <div>
               {data.cards.length === 0 ? (
                 <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border px-3 py-10 text-center">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
                     <BookOpen className="size-5" aria-hidden />
                   </div>
                   <div className="text-[0.8125rem] font-semibold">This deck has no cards yet</div>

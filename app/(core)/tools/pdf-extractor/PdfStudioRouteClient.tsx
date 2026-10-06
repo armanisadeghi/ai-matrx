@@ -81,7 +81,7 @@ function ExistingFileExtractionGate({ fileId }: { fileId: string }) {
     <div className="flex h-full min-h-0 items-center justify-center bg-background p-6">
       <div className="w-full max-w-2xl rounded-xl border border-border bg-card p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             {extraction.status === "error" ? (
               <FileText className="size-5" />
             ) : (

@@ -49,7 +49,7 @@ export default function UtilitiesHubPage() {
           className="mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8"
           style={{ paddingTop: "calc(var(--shell-header-h) + 1.5rem)" }}
         >
-          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary mb-4">
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary-ink mb-4">
             <Calculator className="h-3.5 w-3.5" />
             Settlement utilities
           </div>
@@ -71,7 +71,7 @@ export default function UtilitiesHubPage() {
                 href={util.href}
                 className="group relative rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 transition-transform group-hover:scale-110">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4 transition-transform group-hover:scale-110">
                   <Icon className="h-5 w-5" />
                 </div>
                 <h2 className="text-base font-semibold mb-2 flex items-center gap-1.5">

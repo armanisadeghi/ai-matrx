@@ -199,7 +199,7 @@ function TierCard({ tier }: { tier: TierStatus }) {
             </div>
 
             {!tier.ok && tier.error && (
-                <div className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                <div className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive-ink">
                     <AlertCircle className="w-3 h-3 inline mr-1" />
                     {tier.error}
                   <ErrorAlchemyMenu error={tier.error} />
@@ -403,7 +403,7 @@ export default function SandboxInfraPage() {
                         Orchestrator health
                     </h2>
                     {tiersError && (
-                        <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                        <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
                             <AlertCircle className="w-4 h-4 inline mr-1" />
                             Couldn&apos;t load tier status: {tiersError}
                           <ErrorAlchemyMenu error={tiersError} />
@@ -449,7 +449,7 @@ export default function SandboxInfraPage() {
                         </div>
                     )}
                     {runsError && (
-                        <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                        <div className="rounded border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
                             <AlertCircle className="w-4 h-4 inline mr-1" />
                             Couldn&apos;t load deploy runs: {runsError}
                           <ErrorAlchemyMenu error={runsError} />

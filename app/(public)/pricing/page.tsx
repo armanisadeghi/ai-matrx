@@ -107,7 +107,7 @@ export default async function PricingPage() {
           <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {PLEDGE.map(({ icon: Icon, title, body }) => (
               <li key={title} className="flex flex-col gap-1.5">
-                <span className="mb-1 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <span className="mb-1 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                   <Icon className="h-5 w-5" strokeWidth={2} />
                 </span>
                 <span className="text-sm font-medium">{title}</span>

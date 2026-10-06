@@ -96,7 +96,7 @@ export function OneBindingUi() {
               className={cn(
                 "rounded px-2.5 py-1 text-[11px] transition-colors",
                 mode === key
-                  ? "bg-primary/10 font-medium text-primary"
+                  ? "bg-primary/10 font-medium text-primary-ink"
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -240,7 +240,7 @@ function MapOnePlace() {
                 className={cn(
                   "rounded px-2 py-0.5 text-[10px] transition-colors",
                   tab === key
-                    ? "bg-primary/10 font-medium text-primary"
+                    ? "bg-primary/10 font-medium text-primary-ink"
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >

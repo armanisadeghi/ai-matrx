@@ -76,7 +76,7 @@ export default function LibraryPage() {
         {/* Primary CTA card */}
         <section className="rounded-lg md:rounded-2xl border border-border bg-card overflow-hidden">
           <div className="p-4 md:p-6 flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 text-primary-ink flex items-center justify-center shrink-0">
               <FolderOpen className="h-6 w-6" />
             </div>
             <div className="flex-1 min-w-0">
@@ -147,7 +147,7 @@ function StepCard({
 }) {
   return (
     <div className="rounded-lg md:rounded-xl border border-border bg-card p-3 md:p-4 flex items-center gap-3 md:block">
-      <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center md:mb-2 shrink-0">
+      <div className="h-8 w-8 rounded-md bg-primary/10 text-primary-ink flex items-center justify-center md:mb-2 shrink-0">
         {icon}
       </div>
       <div className="min-w-0">

@@ -794,7 +794,7 @@ export default function AgentDemoClient() {
               </div>
 
               {errorMessage && (
-                <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-mono">
+                <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive-ink font-mono">
                   <CircleX className="mr-1 inline size-3.5" aria-hidden="true" />
                   {errorMessage}
                   <ErrorAlchemyMenu error={errorMessage} />

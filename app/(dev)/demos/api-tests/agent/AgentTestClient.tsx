@@ -198,7 +198,7 @@ function RunLogCard({
       {expanded && (
         <div className="border-t border-border bg-muted/20 p-3 space-y-2">
           {log.error && (
-            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
+            <div className="p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive-ink">
               {log.error}
               <ErrorAlchemyMenu error={log.error} />
             </div>

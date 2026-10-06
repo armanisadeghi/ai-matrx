@@ -104,7 +104,7 @@ export default function AttachResourcesDemo() {
                   <button
                     type="button"
                     onClick={() => setOpenProvider(connection.slug)}
-                    className="rounded-full border border-border bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20"
+                    className="rounded-full border border-border bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary-ink hover:bg-primary/20"
                   >
                     {connection.attachedCount > 0
                       ? `${connection.attachedCount} attached · ${label}`

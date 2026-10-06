@@ -420,7 +420,7 @@ export default function TableKindsDemoPage() {
                           {row.column}
                         </td>
                         <td className="px-3 py-1.5">
-                          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary-ink">
                             {row.recoveredType ?? "—"}
                           </span>
                         </td>

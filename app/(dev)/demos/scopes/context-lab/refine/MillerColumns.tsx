@@ -182,7 +182,7 @@ export function MillerColumns({
                         {t.label_plural}
                       </span>
                       {selectedIn > 0 && (
-                        <span className="shrink-0 rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary">
+                        <span className="shrink-0 rounded-full bg-primary/10 px-1 text-[10px] font-semibold text-primary-ink">
                           {selectedIn}
                         </span>
                       )}

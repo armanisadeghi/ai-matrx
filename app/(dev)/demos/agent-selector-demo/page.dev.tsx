@@ -648,7 +648,7 @@ function DetailCardDemo() {
               className={cn(
                 "text-[11px] px-2 py-1 rounded-md border transition-colors shrink-0",
                 selectedAgent?.id === a.id
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-primary-ink"
                   : "border-border hover:bg-muted/50",
               )}
             >

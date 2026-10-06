@@ -144,7 +144,7 @@ export function FeatureGrid({ items }: { items: readonly FeatureItem[] }) {
           )}
         >
           <div className="flex items-start justify-between gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
               <Icon className="h-5 w-5" aria-hidden="true" />
             </span>
             <StatusPill status={status} />
@@ -196,7 +196,7 @@ export function TrustList({
           key={title}
           className="flex gap-4 rounded-3xl border border-border/80 bg-card/90 p-5"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
             <Icon className="h-5 w-5" aria-hidden="true" />
           </span>
           <div>

@@ -110,7 +110,7 @@ function isKindWaitActiveAt(
 const DEPTH_PALETTE = [
   {
     border: "border-l-primary",
-    badge: "bg-primary/15 text-primary",
+    badge: "bg-primary/15 text-primary-ink",
     enter: "text-primary",
     bg: "bg-primary/5",
   },
@@ -128,13 +128,13 @@ const DEPTH_PALETTE = [
   },
   {
     border: "border-l-warning",
-    badge: "bg-warning/15 text-warning",
+    badge: "bg-warning/15 text-warning-ink",
     enter: "text-warning",
     bg: "bg-warning/5",
   },
   {
     border: "border-l-info",
-    badge: "bg-info/15 text-info",
+    badge: "bg-info/15 text-info-ink",
     enter: "text-info",
     bg: "bg-info/5",
   },
@@ -164,9 +164,9 @@ function ValidationSummaryBanner({ report }: { report: ValidationReport }) {
   if (report.status === "idle") return null;
 
   const statusStyles = {
-    valid: "border-success/40 bg-success/10 text-success",
-    partial: "border-warning/50 bg-warning/10 text-warning",
-    failed: "border-destructive/50 bg-destructive/10 text-destructive",
+    valid: "border-success/40 bg-success/10 text-success-ink",
+    partial: "border-warning/50 bg-warning/10 text-warning-ink",
+    failed: "border-destructive/50 bg-destructive/10 text-destructive-ink",
     idle: "",
   } as const;
 
@@ -377,7 +377,7 @@ function KindEventRow({
           className="flex min-h-5 items-center gap-2 rounded border border-info/40 bg-info/5 px-2 py-px text-[11px]"
           style={{ marginLeft: indent }}
         >
-          <span className="shrink-0 rounded bg-info/15 px-1 py-px text-[9px] font-semibold uppercase text-info">
+          <span className="shrink-0 rounded bg-info/15 px-1 py-px text-[9px] font-semibold uppercase text-info-ink">
             optional
           </span>
           <span className="min-w-0 truncate text-muted-foreground">
@@ -415,7 +415,7 @@ function KindEventRow({
         >
           <div className="flex min-w-0 items-center gap-2">
             <CircleAlert className="size-3 shrink-0 text-warning" />
-            <span className="shrink-0 rounded bg-warning/15 px-1 py-px text-[10px] font-semibold uppercase text-warning">
+            <span className="shrink-0 rounded bg-warning/15 px-1 py-px text-[10px] font-semibold uppercase text-warning-ink">
               unvalidated
             </span>
             <span className="min-w-0 truncate text-[11px] font-medium text-foreground">
@@ -438,7 +438,7 @@ function KindEventRow({
           <span
             className={cn(
               badgeCls,
-              event.complete && "bg-success/15 text-success",
+              event.complete && "bg-success/15 text-success-ink",
             )}
           >
             {event.complete ? "snapshot" : "partial"}
@@ -463,7 +463,7 @@ function KindEventRow({
           style={{ marginLeft: indent }}
         >
           <Check className="size-3 shrink-0 text-success" />
-          <span className="shrink-0 rounded bg-success/15 px-1 py-px text-[10px] font-semibold uppercase text-success">
+          <span className="shrink-0 rounded bg-success/15 px-1 py-px text-[10px] font-semibold uppercase text-success-ink">
             validated
           </span>
           <span className="min-w-0 truncate font-semibold text-foreground">
@@ -486,7 +486,7 @@ function KindEventRow({
           className="flex min-h-5 items-center gap-2 truncate py-px text-[11px] text-foreground/80"
           style={{ paddingLeft: indent + 8 }}
         >
-          <span className="shrink-0 rounded bg-success/10 px-1 py-px text-[9px] font-semibold uppercase text-success">
+          <span className="shrink-0 rounded bg-success/10 px-1 py-px text-[9px] font-semibold uppercase text-success-ink">
             schema
           </span>
           <span className="min-w-0 truncate">{preview}</span>
@@ -512,8 +512,8 @@ function KindEventRow({
             className={cn(
               "shrink-0 rounded px-1 py-px text-[10px] font-semibold uppercase",
               hasFallbacks
-                ? "bg-warning/15 text-warning"
-                : "bg-primary/15 text-primary",
+                ? "bg-warning/15 text-warning-ink"
+                : "bg-primary/15 text-primary-ink",
             )}
           >
             complete
@@ -531,7 +531,7 @@ function KindEventRow({
     case "error":
       return (
         <div className="flex min-h-6 items-center gap-2 rounded border border-destructive/50 bg-destructive/10 px-2 py-0.5">
-          <span className="shrink-0 rounded bg-destructive/15 px-1 py-px text-[10px] font-semibold uppercase text-destructive">
+          <span className="shrink-0 rounded bg-destructive/15 px-1 py-px text-[10px] font-semibold uppercase text-destructive-ink">
             error
           </span>
           <span className="min-w-0 truncate text-destructive">

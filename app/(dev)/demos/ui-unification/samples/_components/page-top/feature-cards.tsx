@@ -31,11 +31,11 @@ import { cn } from "@/lib/utils";
 export type FeatureTone = "primary" | "info" | "success" | "warning" | "destructive";
 
 const DISC: Record<FeatureTone, string> = {
-  primary: "bg-primary/10 text-primary",
-  info: "bg-info/10 text-info",
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/15 text-warning",
-  destructive: "bg-destructive/10 text-destructive",
+  primary: "bg-primary/10 text-primary-ink",
+  info: "bg-info/10 text-info-ink",
+  success: "bg-success/10 text-success-ink",
+  warning: "bg-warning/15 text-warning-ink",
+  destructive: "bg-destructive/10 text-destructive-ink",
 };
 
 export interface FeatureCardItem {

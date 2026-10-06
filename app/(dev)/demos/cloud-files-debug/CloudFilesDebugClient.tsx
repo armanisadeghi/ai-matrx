@@ -474,7 +474,7 @@ export function CloudFilesDebugClient() {
       <div className="mx-auto max-w-6xl px-4 py-6 space-y-4">
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
               <Cloud className="h-5 w-5" />
             </div>
             <div>
@@ -536,7 +536,7 @@ export function CloudFilesDebugClient() {
                   const tone = !row.isConfigured
                     ? "border-border text-muted-foreground"
                     : isActive
-                      ? "border-primary bg-primary/10 text-primary"
+                      ? "border-primary bg-primary/10 text-primary-ink"
                       : "border-border hover:bg-accent";
                   return (
                     <button
@@ -876,7 +876,7 @@ function TestButton({
       className={cn(
         "group flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         tone === "destructive"
-          ? "border-destructive/30 text-destructive hover:bg-destructive/10"
+          ? "border-destructive/30 text-destructive-ink hover:bg-destructive/10"
           : "border-border hover:bg-accent",
       )}
     >

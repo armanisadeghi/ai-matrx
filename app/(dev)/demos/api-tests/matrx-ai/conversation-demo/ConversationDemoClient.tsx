@@ -147,7 +147,7 @@ function TurnBubble({ turn }: { turn: ConvTurn }) {
           <p className="text-[10px] text-muted-foreground mb-1">
             {turn.timestamp}
           </p>
-          <div className="bg-destructive/10 border border-destructive/20 rounded p-2 text-xs text-destructive font-mono">
+          <div className="bg-destructive/10 border border-destructive/20 rounded p-2 text-xs text-destructive-ink font-mono">
             {turn.content}
             <ErrorAlchemyMenu />
           </div>

@@ -90,11 +90,11 @@ const accentStyles: Record<
 > = {
   primary: {
     dot: "bg-primary",
-    iconWrap: "border border-border bg-primary/10 text-primary",
+    iconWrap: "border border-border bg-primary/10 text-primary-ink",
     liveChip: "bg-primary text-primary-foreground",
     heading: "text-primary",
-    statsTile: "bg-primary/15 text-primary",
-    pill: "border border-primary/25 bg-primary/10 text-primary",
+    statsTile: "bg-primary/15 text-primary-ink",
+    pill: "border border-primary/25 bg-primary/10 text-primary-ink",
   },
   secondary: {
     dot: "bg-secondary",
@@ -106,19 +106,19 @@ const accentStyles: Record<
   },
   success: {
     dot: "bg-success",
-    iconWrap: "border border-border bg-success/10 text-success",
+    iconWrap: "border border-border bg-success/10 text-success-ink",
     liveChip: "bg-success text-success-foreground",
     heading: "text-success",
-    statsTile: "bg-success/15 text-success",
-    pill: "border border-success/30 bg-success/10 text-success",
+    statsTile: "bg-success/15 text-success-ink",
+    pill: "border border-success/30 bg-success/10 text-success-ink",
   },
   warning: {
     dot: "bg-warning",
-    iconWrap: "border border-border bg-warning/10 text-warning",
+    iconWrap: "border border-border bg-warning/10 text-warning-ink",
     liveChip: "bg-warning text-warning-foreground",
     heading: "text-warning",
-    statsTile: "bg-warning/15 text-warning",
-    pill: "border border-warning/35 bg-warning/10 text-warning",
+    statsTile: "bg-warning/15 text-warning-ink",
+    pill: "border border-warning/35 bg-warning/10 text-warning-ink",
   },
 };
 
@@ -250,7 +250,7 @@ export default function SeoLandingPage() {
 
         <div className="relative mx-auto max-w-[1200px] px-6 py-6 md:py-8 xl:py-9">
           <div className="mb-2 flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-medium text-primary-ink">
               <PartyPopper className="h-3 w-3" />
               AI-Powered SEO Suite
             </span>

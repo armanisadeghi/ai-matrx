@@ -35,7 +35,7 @@ export default function FeaturesIndexPage() {
           className="absolute inset-0 bg-[radial-gradient(40rem_24rem_at_88%_-4rem,hsl(var(--primary)/0.12),transparent_62%)]"
         />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-10 sm:pb-14 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary-ink mb-6">
             <Compass className="h-3.5 w-3.5" />
             Browse the platform
           </div>
@@ -101,7 +101,7 @@ export default function FeaturesIndexPage() {
                       )}
                     >
                       <div className="flex items-start gap-4 mb-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform duration-300">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink group-hover:scale-110 transition-transform duration-300">
                           <Icon className="h-5 w-5" />
                         </div>
                         <h3 className="text-base font-semibold leading-tight pt-1.5">

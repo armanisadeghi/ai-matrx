@@ -72,7 +72,7 @@ export default function HowItWorksPage() {
                   href={href}
                   className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-background/60 p-5 transition-colors hover:border-foreground/30 hover:bg-accent/30"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                     <Icon className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
                   </span>
                   <h3 className="text-balance text-base font-semibold tracking-tight">

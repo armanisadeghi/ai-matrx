@@ -90,7 +90,7 @@ function ScopeItemStrip({
                 className={cn(
                   "inline-flex h-6 items-center gap-1 rounded-md border px-1.5 text-[11px]",
                   on
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary-ink"
                     : "border-border bg-background text-foreground hover:bg-muted",
                 )}
               >

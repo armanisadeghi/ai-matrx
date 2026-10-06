@@ -96,8 +96,8 @@ const STATUS_LABEL: Record<DecisionStatus, string> = {
 
 const STATUS_CLASS: Record<DecisionStatus, string> = {
   open: "border-warning/60 bg-warning/15 text-foreground",
-  combined: "border-primary/40 bg-primary/10 text-primary",
-  rule: "border-success/40 bg-success/10 text-success",
+  combined: "border-primary/40 bg-primary/10 text-primary-ink",
+  rule: "border-success/40 bg-success/10 text-success-ink",
   new: "border-border bg-muted text-muted-foreground",
 };
 

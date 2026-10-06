@@ -63,7 +63,7 @@ export default function GoogleAccessPage() {
         </div>
 
         {!hasClientId && (
-          <div className="w-full max-w-2xl mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="w-full max-w-2xl mb-6 rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive-ink">
             <strong>Missing env:</strong> set{" "}
             <code className="font-mono">NEXT_PUBLIC_GOOGLE_CLIENT_ID</code> in{" "}
             <code className="font-mono">.env.local</code> (Web client from GCP →

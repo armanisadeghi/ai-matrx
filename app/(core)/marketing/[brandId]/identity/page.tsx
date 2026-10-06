@@ -112,7 +112,7 @@ export default async function BrandIdentityPage({
                   href={room.href}
                   className="flex h-full gap-3 rounded-xl p-4 transition-colors hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                     <Icon className="h-4 w-4" aria-hidden />
                   </span>
                   <span className="min-w-0">

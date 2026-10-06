@@ -113,7 +113,7 @@ export const TestInterface: React.FC = () => {
                         <h3 className="text-lg font-semibold mb-4">Results</h3>
 
                         {error && (
-                            <div className="p-4 mb-4 rounded-md bg-destructive/10 text-destructive border border-destructive/20">
+                            <div className="p-4 mb-4 rounded-md bg-destructive/10 text-destructive-ink border border-destructive/20">
                                 Error: {error}
                               <ErrorAlchemyMenu error={error} />
                             </div>

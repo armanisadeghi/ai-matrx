@@ -112,7 +112,7 @@ const HOLDER_META: Record<
 > = {
   agent: {
     label: "Agent",
-    className: "bg-primary/10 text-primary",
+    className: "bg-primary/10 text-primary-ink",
   },
   user_agent: {
     label: "User agent",

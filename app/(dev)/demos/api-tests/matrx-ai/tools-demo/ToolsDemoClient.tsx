@@ -479,7 +479,7 @@ export default function ToolsDemoClient() {
                           onClick={() => handleSelectTool(tool)}
                           className={`w-full text-left px-2 py-1.5 rounded text-xs flex items-center gap-1.5 transition-colors ${
                             selectedTool?.name === tool.name
-                              ? "bg-primary/10 text-primary font-medium"
+                              ? "bg-primary/10 text-primary-ink font-medium"
                               : "hover:bg-muted/80"
                           }`}
                         >
@@ -640,7 +640,7 @@ export default function ToolsDemoClient() {
               </div>
 
               {errorMessage && (
-                <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-mono">
+                <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive-ink font-mono">
                   <CircleX className="mr-1 inline size-3.5" aria-hidden="true" />
                   {errorMessage}
                   <ErrorAlchemyMenu error={errorMessage} />

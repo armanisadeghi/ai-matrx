@@ -164,7 +164,7 @@ function StatusHero({
               {spec.label}
             </h2>
             {spec.tone === "building" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-ink">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
@@ -201,7 +201,7 @@ function ProductionPulse({ state }: { state: PodcastRunState }) {
   return (
     <div className="pcr pcr-sheen relative overflow-hidden rounded-2xl border border-primary/25 bg-primary/[0.04] p-4 shadow-sm">
       <div className="relative z-10 flex items-center gap-2.5">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary-ink">
           <Activity className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">

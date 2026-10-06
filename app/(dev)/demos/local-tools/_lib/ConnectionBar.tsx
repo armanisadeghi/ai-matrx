@@ -211,7 +211,7 @@ export function ConnectionBar({
                     onClick={() => selectEngine(engine.url)}
                     className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-colors flex items-center gap-1.5 ${
                       isActive
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-primary bg-primary/10 text-primary-ink"
                         : "border-border bg-muted/40 text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                     title={`${profile.label} · ${engine.url}${engine.version ? ` · v${engine.version}` : ""}`}
@@ -247,7 +247,7 @@ export function ConnectionBar({
                     onClick={() => selectRemoteInstance(inst)}
                     className={`h-7 px-2 rounded-md border text-[11px] font-medium transition-colors flex items-center gap-1.5 ${
                       isActive
-                        ? "border-primary bg-primary/10 text-primary"
+                        ? "border-primary bg-primary/10 text-primary-ink"
                         : "border-border bg-muted/40 text-muted-foreground hover:bg-accent hover:text-foreground"
                     }`}
                     title={`Remote via tunnel · ${inst.instance_name || inst.hostname || "Unnamed"} · ${url}`}

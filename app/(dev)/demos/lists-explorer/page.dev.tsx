@@ -19,7 +19,7 @@ const ROUTES = [
       "Side-by-side split panel (resizable) and tree navigation. Toggle between layouts. All CRUD on the detail page.",
     icon: Columns2,
     badge: "Recommended",
-    badgeClass: "bg-primary/10 text-primary border-primary/20",
+    badgeClass: "bg-primary/10 text-primary-ink border-primary/20",
   },
 ] as const;
 

@@ -9,6 +9,7 @@
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 import { useClipsGallery } from "./clips-data";
 import { ClipView } from "./ClipView";
@@ -56,6 +57,7 @@ export function ClipsGallery({
           <button type="button" className="underline" onClick={() => void clips.refetch()}>
             Try again
           </button>
+          <ErrorAlchemyMenu error={clips.error instanceof Error ? clips.error.message : String(clips.error)} />
         </div>
       ) : (clips.data ?? []).length === 0 ? (
         <p className="px-3 py-6 text-center text-[11px] text-muted-foreground">

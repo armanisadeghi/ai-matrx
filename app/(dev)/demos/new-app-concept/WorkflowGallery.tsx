@@ -171,7 +171,7 @@ export function WorkflowGallery({ items, activeId, onSelect }: WorkflowGalleryPr
             className={cn(
               "rounded-full border px-3 py-1 text-xs font-medium transition",
               variant === v.id
-                ? "border-primary/50 bg-primary/10 text-primary"
+                ? "border-primary/50 bg-primary/10 text-primary-ink"
                 : "border-border bg-background text-muted-foreground hover:border-primary/40 hover:text-foreground",
             )}
           >

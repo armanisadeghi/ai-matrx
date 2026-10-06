@@ -110,7 +110,7 @@ const ARM_TONE: Record<Arm["tone"], string> = {
   frontier:
     "bg-sky-600/10 text-sky-700 dark:bg-sky-400/10 dark:text-sky-300",
   floor: "bg-muted text-muted-foreground",
-  ours: "bg-primary/10 text-primary",
+  ours: "bg-primary/10 text-primary-ink",
   truth:
     "bg-emerald-600/10 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-300",
 };
@@ -385,7 +385,7 @@ export default function HowWeProveItPage() {
         {/* ── The sentence ─────────────────────────────────────────── */}
         <section className="mt-12 lg:mt-16">
           <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-6 lg:p-8">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
               <Quote className="h-5 w-5" strokeWidth={2} aria-hidden />
             </span>
             <h2 className="text-balance text-xl font-semibold tracking-tight md:text-2xl">

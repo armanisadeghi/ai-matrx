@@ -277,7 +277,7 @@ function CardBody() {
   return (
     <>
       <div className="flex min-h-9 items-center gap-2 border-b border-border pl-3 pr-1">
-        <div className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <div className="flex size-6 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
           <Users className="size-3.5" aria-hidden />
         </div>
         <div className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold">Client onboarding</div>

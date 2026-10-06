@@ -172,7 +172,7 @@ export default function ContactPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="bg-destructive/10 border border-destructive/20 text-destructive rounded-lg px-4 py-3 text-sm">
+              <div className="bg-destructive/10 border border-destructive/20 text-destructive-ink rounded-lg px-4 py-3 text-sm">
                 {error}
                 <ErrorAlchemyMenu error={error} />
               </div>

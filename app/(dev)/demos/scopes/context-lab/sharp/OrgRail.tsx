@@ -64,7 +64,7 @@ export function OrgRail({ data, sel, height = 288, footer }: OrgRailProps) {
       className={cn(
         "relative flex h-8 w-8 items-center justify-center rounded-lg text-[11px] font-semibold transition-colors",
         active
-          ? "bg-primary/15 text-primary ring-1 ring-primary/40"
+          ? "bg-primary/15 text-primary-ink ring-1 ring-primary/40"
           : "bg-muted text-muted-foreground hover:text-foreground",
       )}
     >

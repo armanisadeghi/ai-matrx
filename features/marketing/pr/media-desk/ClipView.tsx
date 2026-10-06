@@ -15,6 +15,21 @@ import { cn } from "@/lib/utils";
 
 import type { MakeClipResult } from "./api";
 
+/**
+ * The article's date as the page states it, in full. A machine date (ISO) is formatted;
+ * a written one ("September 02, 2026") is parsed and formatted the same way; anything
+ * unparseable is shown whole, never cut.
+ */
+export function publishedDate(raw: string): string {
+  const text = raw.trim();
+  const isoDay = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  const parsed = isoDay
+    ? new Date(Number(isoDay[1]), Number(isoDay[2]) - 1, Number(isoDay[3]))
+    : new Date(text);
+  if (Number.isNaN(parsed.getTime())) return text;
+  return parsed.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+}
+
 export function fileViewerHref(fileId: string): string {
   return `/files/f/${encodeURIComponent(fileId)}`;
 }
@@ -65,7 +80,7 @@ export function ClipView({ result, compact = false }: { result: MakeClipResult; 
         <p className="text-muted-foreground">
           {clip.outlet_name ?? new URL(clip.source_url).hostname}
           {clip.byline ? ` · ${clip.byline}` : " · no byline on the page"}
-          {clip.published_at ? ` · ${clip.published_at.slice(0, 10)}` : ""}
+          {clip.published_at ? ` · ${publishedDate(clip.published_at)}` : " · no date on the page"}
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <Link href={fileViewerHref(clip.pdf_file_id)} className="inline-flex items-center gap-1 font-medium text-primary hover:underline">

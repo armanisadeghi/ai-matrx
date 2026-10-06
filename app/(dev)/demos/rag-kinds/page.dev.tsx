@@ -271,7 +271,7 @@ export default function RagKindsDemoPage() {
               <Scale className="mr-1.5 h-4 w-4" />
               What the live citation loses
               {legacy && legacy.lost.length > 0 && (
-                <span className="ml-1.5 rounded-full bg-destructive/15 px-1.5 text-[10px] text-destructive">
+                <span className="ml-1.5 rounded-full bg-destructive/15 px-1.5 text-[10px] text-destructive-ink">
                   {/* read-gate-exempt: figure from a search this page just ran; outcome is set only when the stream returned a result */}
                   {legacy.lost.length}
                 </span>

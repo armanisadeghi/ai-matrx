@@ -27,7 +27,7 @@ export function StreamingResults({ state }: { state: PodcastRunState }) {
       {/* Title + description — the episode identity, the moment it's known. */}
       {hasMeta ? (
         <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary">
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-primary-ink">
             <AGENT_ICON className="h-3 w-3" />
             Episode
           </div>

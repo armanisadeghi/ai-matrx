@@ -57,7 +57,7 @@ export function DesktopMock() {
                 className={cn(
                   "flex flex-col items-center gap-1 rounded-lg px-1 py-1.5 type-meta font-medium",
                   label === "Computer"
-                    ? "bg-primary/12 text-primary"
+                    ? "bg-primary/12 text-primary-ink"
                     : live
                       ? "text-foreground/80"
                       : "text-muted-foreground/60",

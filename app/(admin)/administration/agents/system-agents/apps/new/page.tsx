@@ -164,7 +164,7 @@ export default function AdminNewSystemAppPage() {
       <div className="h-full flex items-center justify-center p-6">
         <Card className="max-w-lg w-full">
           <CardContent className="p-6 flex flex-col items-center text-center space-y-3">
-            <div className="p-3 rounded-full bg-primary/10 text-primary">
+            <div className="p-3 rounded-full bg-primary/10 text-primary-ink">
               <AppWindow className="h-6 w-6" />
             </div>
             <div>

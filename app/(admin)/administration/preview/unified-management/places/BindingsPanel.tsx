@@ -68,7 +68,7 @@ const SOURCE_META: Record<
   },
   unmapped: {
     label: "unmapped",
-    className: "border-destructive/40 bg-destructive/5 text-destructive",
+    className: "border-destructive/40 bg-destructive/5 text-destructive-ink",
     isGap: true,
   },
 };

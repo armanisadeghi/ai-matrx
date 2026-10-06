@@ -141,7 +141,7 @@ function DemoCard({
             {no}
           </span>
           <span className="text-[13px] font-semibold">{title}</span>
-          <span className="ml-auto shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          <span className="ml-auto shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
             {useCase}
           </span>
         </div>

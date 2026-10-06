@@ -40,8 +40,8 @@ export default async function CommerceKindsDemoPage() {
           <span
             className={
               complete
-                ? "inline-flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 text-sm font-medium text-success"
-                : "inline-flex rounded-full bg-warning/10 px-3 py-1 text-sm font-medium text-warning"
+                ? "inline-flex items-center gap-1.5 rounded-full bg-success/10 px-3 py-1 text-sm font-medium text-success-ink"
+                : "inline-flex rounded-full bg-warning/10 px-3 py-1 text-sm font-medium text-warning-ink"
             }
           >
             {complete && <ShieldCheck className="h-4 w-4" />}

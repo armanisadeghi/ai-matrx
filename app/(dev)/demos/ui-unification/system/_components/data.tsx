@@ -187,7 +187,7 @@ function Cards() {
       {CARDS.map((c) => (
         <article key={c.title} className="overflow-hidden rounded-lg border border-border bg-card">
           <div className="flex min-h-9 items-center gap-2 border-b border-border pl-3 pr-[3px]">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
               <c.icon className="size-3.5" aria-hidden />
             </div>
             <h3 className="min-w-0 flex-1 truncate text-[0.8125rem] font-semibold">{c.title}</h3>

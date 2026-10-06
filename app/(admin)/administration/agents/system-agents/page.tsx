@@ -269,7 +269,7 @@ export default function SystemAgentsDashboardPage() {
                   <Card className="h-full hover:border-primary/50 transition-colors">
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="h-9 w-9 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+                        <div className="h-9 w-9 rounded-md bg-primary/10 text-primary-ink flex items-center justify-center">
                           {navigating ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
@@ -314,7 +314,7 @@ export default function SystemAgentsDashboardPage() {
                     disabled={isPending}
                     className="group flex items-start gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                       {navigating ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (

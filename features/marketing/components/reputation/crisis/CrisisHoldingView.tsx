@@ -241,6 +241,8 @@ export function CrisisHoldingView({
 }) {
   const now = useMinuteNow();
   const valid = validity(result.decay.valid_until, now);
+  /** Variants the drafter chose not to write, with why (not errors). */
+  const declinedVariants = result.refusals;
   if (result.gate.stopped && result.stop_block) {
     return <CrisisStopBlock result={result} onDraftAnyway={onDraftAnyway} drafting={drafting} />;
   }
@@ -331,12 +333,12 @@ export function CrisisHoldingView({
           </ul>
         </section>
       ) : null}
-      {result.refusals.length ? (
+      {declinedVariants.length ? (
         <section className="rounded-md border border-border p-3 text-xs">
           <h3 className="font-semibold">Declined</h3>
           <ul className="mt-1 list-disc pl-4 text-muted-foreground">
-            {result.refusals.map((r, i) => (
-              <li key={i}>{str(r)}</li>
+            {declinedVariants.map((variant, i) => (
+              <li key={i}>{str(variant)}</li>
             ))}
           </ul>
         </section>

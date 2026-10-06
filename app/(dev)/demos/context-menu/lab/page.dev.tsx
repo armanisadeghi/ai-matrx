@@ -391,7 +391,7 @@ function Field({
           {label}
         </div>
         {accent && (
-          <span className="text-[9px] uppercase tracking-wide bg-primary/15 text-primary px-1 py-0.5 rounded">
+          <span className="text-[9px] uppercase tracking-wide bg-primary/15 text-primary-ink px-1 py-0.5 rounded">
             {accent}
           </span>
         )}
@@ -1024,7 +1024,7 @@ Select some text first to populate \`selection\`, \`text_before\`, and \`text_af
                       className={cn(
                         "text-[10px] font-mono px-2 py-1 rounded border",
                         placementMode[key] === "show" &&
-                          "bg-primary/10 border-primary/30 text-primary",
+                          "bg-primary/10 border-primary/30 text-primary-ink",
                         placementMode[key] === "hide" &&
                           "bg-muted border-border text-muted-foreground line-through",
                         placementMode[key] === "disable" &&

@@ -145,7 +145,7 @@ export default async function AgentTemplateDetailPage({
                     </p>
                     <Badge
                       variant="secondary"
-                      className="bg-primary/10 text-primary"
+                      className="bg-primary/10 text-primary-ink"
                     >
                       {template.category}
                     </Badge>

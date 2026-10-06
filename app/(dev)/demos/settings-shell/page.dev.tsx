@@ -19,7 +19,7 @@ export default function SettingsShellDemoPage() {
   return (
     <div className="min-h-dvh bg-background">
       <div className="max-w-2xl mx-auto py-16 px-6 text-center">
-        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
           <SettingsIcon className="h-7 w-7" />
         </span>
         <h1 className="mt-4 text-2xl font-bold text-foreground">

@@ -1395,7 +1395,7 @@ function ConceptBlock({
     <div className="overflow-hidden rounded-xl border-2 border-border bg-background">
       <div className="border-b-2 border-border bg-muted/40 px-5 py-4">
         <div className="flex items-start gap-3">
-          <div className="mt-0.5 shrink-0 rounded-lg bg-primary/10 p-2 text-primary">
+          <div className="mt-0.5 shrink-0 rounded-lg bg-primary/10 p-2 text-primary-ink">
             <Icon className="h-5 w-5" />
           </div>
           <div>

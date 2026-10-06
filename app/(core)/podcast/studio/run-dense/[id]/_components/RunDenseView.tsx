@@ -299,8 +299,8 @@ function RawStageTimeline({ state }: { state: PodcastRunState }) {
                     s.status === "done"
                       ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       : s.status === "failed"
-                        ? "bg-destructive/10 text-destructive"
-                        : "bg-primary/10 text-primary",
+                        ? "bg-destructive/10 text-destructive-ink"
+                        : "bg-primary/10 text-primary-ink",
                   )}
                 >
                   {s.status}

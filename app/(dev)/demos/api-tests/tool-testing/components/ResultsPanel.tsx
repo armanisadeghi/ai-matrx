@@ -419,7 +419,7 @@ export function ResultsPanel({
 
       {/* Error banner */}
       {errorMessage && (
-        <div className="flex-shrink-0 mx-3 mt-2 p-2.5 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive">
+        <div className="flex-shrink-0 mx-3 mt-2 p-2.5 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive-ink">
           <span className="font-semibold">Error: </span>
           <span className="font-mono">{errorMessage}</span>
           <ErrorAlchemyMenu error={errorMessage} />

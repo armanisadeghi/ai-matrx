@@ -157,7 +157,7 @@ function FullBleedTop() {
       />
       <div aria-hidden className="absolute left-[18%] top-[42%] h-12 w-24 rounded-lg border border-border bg-card shadow-sm" />
       <div aria-hidden className="absolute left-[52%] top-[58%] h-12 w-28 rounded-lg border border-border bg-card shadow-sm" />
-      <div aria-hidden className="absolute right-[12%] top-[34%] flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div aria-hidden className="absolute right-[12%] top-[34%] flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
         <Shapes className="size-4" />
       </div>
       <div className="absolute inset-x-0 top-0 flex items-center px-[3px] pt-[3px]">

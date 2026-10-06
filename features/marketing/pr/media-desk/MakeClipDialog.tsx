@@ -31,7 +31,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { makePressClip, type MakeClipResult, type Stage } from "./api";
 import { ClipView } from "./ClipView";
 import { StageList } from "./StageList";
-import { forgetRun, rememberRun, useRejoinRun } from "./rejoin";
+import { forgetRun, rememberRun, useOpenIfRemembered, useRejoinRun } from "./rejoin";
 
 function isHttpUrl(value: string): boolean {
   try {
@@ -68,6 +68,7 @@ export function MakeClipDialog({
   const fixedUrl = Boolean(coverageMentionId && defaultUrl);
   const clientName = client.trim() || defaultClientName;
   const runKey = `clip:${siteId}:${coverageMentionId ?? "link"}`;
+  useOpenIfRemembered(runKey, setOpen);
   const rejoin = useRejoinRun<MakeClipResult>(runKey, open && !running && !result);
   const shown = running ? null : (result ?? rejoin.result);
   useEffect(() => {

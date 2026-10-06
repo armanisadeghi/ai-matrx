@@ -5,6 +5,7 @@
  */
 
 import * as React from "react";
+import { useEffect } from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -40,9 +41,12 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-let seen: RejoinHandle<{ ok: boolean }> | null = null;
+const box: { seen: RejoinHandle<{ ok: boolean }> | null } = { seen: null };
 function Probe({ active }: { active: boolean }) {
-  seen = useRejoinRun<{ ok: boolean }>("clip:site:link", active);
+  const handle = useRejoinRun<{ ok: boolean }>("clip:site:link", active);
+  useEffect(() => {
+    box.seen = handle;
+  });
   return null;
 }
 
@@ -65,12 +69,12 @@ it("follows a remembered run until it completes, then shows the stored result an
   rememberRun("clip:site:link", "run-7");
   rows.push({ status: "processing", result: null, error: null }, { status: "completed", result: { ok: true }, error: null });
   act(() => root.render(<Probe active />));
-  expect(seen?.following?.runId).toBe("run-7");
+  expect(box.seen?.following?.runId).toBe("run-7");
   await flush();
-  expect(seen?.result).toBeNull();
+  expect(box.seen?.result).toBeNull();
   await flush();
-  expect(seen?.result).toEqual({ ok: true });
-  expect(seen?.following).toBeNull();
+  expect(box.seen?.result).toEqual({ ok: true });
+  expect(box.seen?.following).toBeNull();
   expect(readRememberedRun("clip:site:link")).toBeNull();
 });
 
@@ -79,16 +83,16 @@ it("says so when the run failed on the server", async () => {
   rows.push({ status: "failed", result: null, error: { message: "The browser could not render it." } });
   act(() => root.render(<Probe active />));
   await flush();
-  expect(seen?.error).toBe("The browser could not render it.");
+  expect(box.seen?.error).toBe("The browser could not render it.");
 });
 
 it("does nothing while inactive or with no remembered run", async () => {
   act(() => root.render(<Probe active={false} />));
   rememberRun("clip:site:link", "run-9");
   await flush();
-  expect(seen?.following).toBeNull();
+  expect(box.seen?.following).toBeNull();
   sessionStorage.clear();
   act(() => root.render(<Probe active />));
   await flush();
-  expect(seen?.following).toBeNull();
+  expect(box.seen?.following).toBeNull();
 });
