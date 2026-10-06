@@ -6,7 +6,7 @@
 // (a marked place where a phase-2 block will sit). Callout bodies and columns hold their content as
 // ordinary block children; spaces.css draws the callout box around them and lays columns side by side.
 
-import { BlockNoteSchema, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps } from "@blocknote/core";
+import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
@@ -17,6 +17,35 @@ import { SpaceIcon } from "../page/SpaceIcon";
 import { IconPicker } from "../page/IconPicker";
 import { equationInline, mentionInline } from "./inline";
 import { storedBlockSpecs } from "./stored-blocks";
+
+/** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
+const CODE_BLOCK = createCodeBlockSpec({
+  defaultLanguage: "text",
+  supportedLanguages: {
+    text: { name: "Plain text", aliases: ["plaintext", "txt"] },
+    bash: { name: "Bash", aliases: ["sh", "shell", "zsh"] },
+    c: { name: "C" },
+    cpp: { name: "C++", aliases: ["c++"] },
+    csharp: { name: "C#", aliases: ["cs"] },
+    css: { name: "CSS" },
+    go: { name: "Go", aliases: ["golang"] },
+    html: { name: "HTML" },
+    java: { name: "Java" },
+    javascript: { name: "JavaScript", aliases: ["js"] },
+    json: { name: "JSON" },
+    kotlin: { name: "Kotlin" },
+    markdown: { name: "Markdown", aliases: ["md"] },
+    mermaid: { name: "Mermaid" },
+    php: { name: "PHP" },
+    python: { name: "Python", aliases: ["py"] },
+    ruby: { name: "Ruby", aliases: ["rb"] },
+    rust: { name: "Rust", aliases: ["rs"] },
+    sql: { name: "SQL" },
+    swift: { name: "Swift" },
+    typescript: { name: "TypeScript", aliases: ["ts"] },
+    yaml: { name: "YAML", aliases: ["yml"] },
+  },
+});
 
 const CalloutBlock = createReactBlockSpec(
   {
@@ -200,7 +229,7 @@ export const spacesSchema = BlockNoteSchema.create({
     toggleListItem: defaultBlockSpecs.toggleListItem,
     quote: defaultBlockSpecs.quote,
     divider: defaultBlockSpecs.divider,
-    codeBlock: defaultBlockSpecs.codeBlock,
+    codeBlock: CODE_BLOCK,
     callout: CalloutBlock(),
     page: PageBlock(),
     linkToPage: LinkToPageBlock(),
