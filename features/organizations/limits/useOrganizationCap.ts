@@ -22,16 +22,17 @@ export interface OrganizationCapState extends OrganizationCapVerdict {
  * The signed-in person's organization cap, from their active memberships, the
  * platform knob and the plans of the organizations they belong to. The plans
  * are only asked once the count reaches the knob default — below it nothing
- * a plan says can change the answer.
+ * a plan says can change the answer. `enabled: false` asks nothing and never
+ * refuses (a creation surface that is not creating an organization).
  */
-export function useOrganizationCap(): OrganizationCapState {
+export function useOrganizationCap(enabled = true): OrganizationCapState {
   const userId = useAppSelector(selectUserId);
   const { organizations, loading } = useUserOrganizations("active");
   // Platform-locked knob: no organization or person rung applies.
   const knobValue = useEffectiveKnob(null, userId, ORGANIZATION_CAP_KNOB);
   const count = organizations.length;
   const base = resolveOrganizationCap(knobValue, []);
-  const needsPlans = !loading && base !== null && count >= base;
+  const needsPlans = enabled && !loading && base !== null && count >= base;
   const orgKey = needsPlans ? organizations.map((org) => org.id).join(",") : "";
 
   const [planLimits, setPlanLimits] = useState<{ key: string; limits: (number | null)[] }>({
@@ -52,6 +53,6 @@ export function useOrganizationCap(): OrganizationCapState {
 
   const plansReady = !needsPlans || planLimits.key === orgKey;
   const cap = plansReady ? resolveOrganizationCap(knobValue, planLimits.key === orgKey ? planLimits.limits : []) : null;
-  const ready = !loading && cap !== null;
+  const ready = enabled && !loading && cap !== null;
   return { ...organizationCapVerdict(count, ready ? cap : null), ready };
 }

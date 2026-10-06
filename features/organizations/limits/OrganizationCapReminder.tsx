@@ -28,7 +28,7 @@ export function OrganizationCapReminder() {
       // Storage unavailable: remind on this load anyway.
     }
     toast.info("Over your organization limit", {
-      description: `You're in ${count}; your plan allows ${cap}. Leave or archive the ones you don't use.`,
+      description: `In ${count}; your plan allows ${cap}. Leave unused ones.`,
       duration: Infinity,
       action: {
         label: "Manage",

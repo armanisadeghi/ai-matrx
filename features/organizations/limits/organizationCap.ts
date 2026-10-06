@@ -73,8 +73,10 @@ export function fetchOrganizationPlanLimit(organizationId: string): Promise<numb
         p_org: organizationId,
       });
     if (error || !data) {
+      // A failed read is not remembered: the next render asks again.
+      planLimitCache.delete(organizationId);
       console.error(
-        `[organization-cap] plan limit for organization ${organizationId} could not be read; its plan does not lift the cap this session.`,
+        `[organization-cap] plan limit for organization ${organizationId} could not be read; it will be asked again on the next check.`,
         error,
       );
       return null;

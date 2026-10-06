@@ -18,7 +18,7 @@ export function OrganizationCapReached({
     <EmptyState
       icon={<Building2 />}
       title="Organization limit reached"
-      line={`You're in ${count}; your plan allows ${cap}. Leave or archive one first.`}
+      line={`In ${count} of ${cap} allowed. Leave or archive one.`}
       action={
         <Button variant="outline" asChild onClick={onNavigate}>
           <Link href="/organizations">Manage organizations</Link>

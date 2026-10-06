@@ -46,7 +46,7 @@ export default function HierarchyCreationWindow({
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   // The organization cap is enforced here, in the interface only.
-  const organizationCap = useOrganizationCap();
+  const organizationCap = useOrganizationCap(entityType === "organization");
   const capReached =
     entityType === "organization" &&
     organizationCap.atCap &&
