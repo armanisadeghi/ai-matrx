@@ -8,6 +8,7 @@ import {
   bubbleFor,
   compareRows,
   gridFromOutcome,
+  gridPoints,
   previewArgs,
   runArgs,
   sourceLine,
@@ -79,37 +80,72 @@ describe("bubbleFor", () => {
 });
 
 describe("compareRows", () => {
-  const A = { name: "Alpha Ortho", cid: "a" };
-  const B = { name: "Beta Braces", cid: "b" };
-  const C = { name: "Cee Smiles", cid: "c" };
-  const D = { name: "Dee Dental", cid: "d" };
-
-  it("ranks the three businesses that won the most points, after us", () => {
-    const rows = compareRows(
-      grid([
-        pt({ rank: 1, top_result: { name: "Bayside Orthodontics", cid: "111" } }),
-        pt({ rank: 4, top_result: B }),
-        pt({ rank: null, top_result: B }),
-        pt({ rank: 6, top_result: A }),
-        pt({ rank: null, top_result: C }),
-        pt({ rank: null, top_result: B }),
-        pt({ rank: null, top_result: A }),
-        pt({ rank: null, top_result: D }),
-        pt({ rank: null, top_result: null, error: "failed: x" }),
-      ]),
-      { name: "Bayside Orthodontics", cid: "111" },
-    );
-    expect(rows.map((r) => r.name)).toEqual(["Bayside Orthodontics", "Beta Braces", "Alpha Ortho", "Cee Smiles"]);
-    expect(rows[0]).toMatchObject({ isUs: true, wins: 1, avgRank: 4.5, found: 3, searched: 9 });
-    expect(rows[1]).toMatchObject({ wins: 3, avgRank: null, found: null });
+  const comp = (name: string, cid: string, won: number, present: number, avg: number | null) => ({
+    name,
+    cid,
+    points_won: won,
+    points_present: present,
+    points_searched: 9,
+    coverage: present / 9,
+    avg_rank: avg,
+    best_rank: 1,
   });
 
-  it("never counts our own #1 as a competitor's win, even matched by name", () => {
-    const rows = compareRows(
-      grid([pt({ rank: null, top_result: { name: "bayside orthodontics", cid: null } }), pt({ rank: 3, top_result: A })]),
-      { name: "Bayside Orthodontics", cid: null },
-    );
-    expect(rows.map((r) => r.name)).toEqual(["Bayside Orthodontics", "Alpha Ortho"]);
+  it("puts us first, then the three most visible competitors with their own rank and coverage", () => {
+    const data = {
+      ...grid([pt({ rank: 1 }), pt({ rank: 4 }), pt({ rank: 6 })]),
+      competitors: [
+        comp("Beta Braces", "b", 3, 8, 1.8),
+        comp("Alpha Ortho", "a", 2, 9, 3.2),
+        comp("Cee Smiles", "c", 1, 4, null),
+        comp("Dee Dental", "d", 0, 2, 7),
+      ],
+    };
+    const rows = compareRows(data, { name: "Bayside Orthodontics", cid: "111" });
+    expect(rows.map((r) => r.name)).toEqual(["Bayside Orthodontics", "Beta Braces", "Alpha Ortho", "Cee Smiles"]);
+    expect(rows[0]).toMatchObject({ isUs: true, wins: 1, avgRank: 4.5, found: 3, searched: 3 });
+    expect(rows[1]).toMatchObject({ wins: 3, avgRank: 1.8, found: 8, searched: 9 });
+    expect(rows[3]).toMatchObject({ avgRank: null, found: 4 });
+  });
+
+  it("never lists our own business as a competitor, and shows only us without a summary", () => {
+    const data = { ...grid([pt({})]), competitors: [comp("Us again", "111", 5, 9, 1), comp("Alpha", "a", 1, 2, 3)] };
+    expect(compareRows(data, { name: "Bayside Orthodontics", cid: "111" }).map((r) => r.name)).toEqual([
+      "Bayside Orthodontics",
+      "Alpha",
+    ]);
+    expect(compareRows(grid([pt({})]), { name: "Bayside Orthodontics", cid: "111" })).toHaveLength(1);
+  });
+});
+
+describe("gridPoints", () => {
+  it("expands a compacted point table: geometry, #1 names by cid, failed and unsent points", () => {
+    const data = {
+      ...grid([]),
+      grid_size: 3,
+      spacing_km: 1,
+      center: { latitude: 40, longitude: -74, source: "argument" },
+      points: undefined,
+      points_compacted: true,
+      point_table: {
+        columns: ["row", "col", "rank", "results_count", "top_cid", "state", "run_id"],
+        rows: [
+          [0, 0, 2, 20, "a", "ok", "r0"],
+          [1, 1, null, 3, "zz", "ok", "r4"],
+          [2, 2, null, null, null, "failed", "r8"],
+          [2, 1, null, null, null, "pending", null],
+        ] as never,
+      },
+      competitors: [{ name: "Alpha", cid: "a", points_won: 1, points_present: 1, points_searched: 3, coverage: 0.33, avg_rank: 1, best_rank: 1 }],
+    };
+    const [nw, mid, failed, pending] = gridPoints(data);
+    // Row 0 is north: one spacing step up and left of the center.
+    expect(nw).toMatchObject({ row: 0, col: 0, lat: 40.0090437, lng: -74.0117266, rank: 2, run_id: "r0" });
+    expect(nw.top_result).toEqual({ cid: "a", name: "Alpha" });
+    expect(mid).toMatchObject({ lat: 40, lng: -74, top_result: { cid: "zz", name: null } });
+    expect(bubbleFor(mid, 20).tone).toBe("sparse");
+    expect(bubbleFor(failed, 20).tone).toBe("failed");
+    expect(bubbleFor(pending, 20).tone).toBe("pending");
   });
 });
 

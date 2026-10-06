@@ -80,6 +80,7 @@ jest.mock("@ai-matrx/chat/host/server/python-client", () => ({
 }));
 
 import { RankGrid } from "../RankGridWorkspace";
+import live from "./fixtures-live-orthodontist-5x5.json";
 import type { BusinessLocation } from "@/features/marketing/types";
 
 type Call = { tool_name: string; arguments: Record<string, unknown> };
@@ -172,6 +173,13 @@ const RESULT = {
   summary: { points_found: 5, points_searched: 9, points_failed: 1, points_pending: 0, avg_rank: 4.6, top3: 3, top10: 4 },
   grid_text: "",
   points: RESULT_POINTS,
+  points_top_omitted: false,
+  competitors: [
+    { name: "Winner Braces", cid: "w", points_won: 3, points_present: 6, points_searched: 8, coverage: 0.75, avg_rank: 1.67, best_rank: 1 },
+    { name: "Third Ortho", cid: "t", points_won: 1, points_present: 4, points_searched: 8, coverage: 0.5, avg_rank: 3.25, best_rank: 1 },
+    { name: "Fourth Ortho", cid: "f", points_won: 1, points_present: 2, points_searched: 8, coverage: 0.25, avg_rank: 4, best_rank: 1 },
+    { name: "Small Smiles", cid: "s", points_won: 1, points_present: 1, points_searched: 8, coverage: 0.13, avg_rank: 1, best_rank: 1 },
+  ],
 };
 
 let root: Root;
@@ -216,6 +224,10 @@ async function submit(label: string) {
   await act(async () => { form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
   await settle();
 }
+const compareTable = () =>
+  [...host.querySelectorAll("[data-testid=rank-grid-compare] tr")].map((r) =>
+    [...r.querySelectorAll("td")].map((c) => c.textContent),
+  );
 const markers = () => [...host.querySelectorAll("[data-testid=markers] li")] as HTMLElement[];
 
 beforeEach(() => requestRaw.mockReset());
@@ -312,12 +324,10 @@ it("previews free, runs only on a click with the confirmed center, then shows th
   expect(text()).toContain("Reused from Oct 6, 2026");
   expect(text()).toContain("4.6");
 
-  // Us, then the winners by points won at #1; a winner's rank is not claimed.
-  const compare = host.querySelector("[data-testid=rank-grid-compare]")!;
-  const rows = [...compare.querySelectorAll("tr")].map((r) => [...r.querySelectorAll("td")].map((c) => c.textContent));
-  expect(rows[0]).toEqual(["Bayside OrthodonticsYou", "1 / 9", "4.6", "5 / 9"]);
-  expect(rows[1]).toEqual(["Winner Braces", "3 / 9", "—", "—"]);
-  expect(rows).toHaveLength(4);
+  // Us, then the three most visible competitors, each with its own rank and coverage.
+  expect(compareTable()[0]).toEqual(["Bayside OrthodonticsYou", "1 / 9", "4.6", "56% · 5 / 9"]);
+  expect(compareTable()[1]).toEqual(["Winner Braces", "3 / 8", "1.67", "75% · 6 / 8"]);
+  expect(compareTable().map((r) => r[0])).toEqual(["Bayside OrthodonticsYou", "Winner Braces", "Third Ortho", "Fourth Ortho"]);
 });
 
 it("drops the preview when the settings change, so a run never uses a stale center", async () => {
@@ -351,4 +361,28 @@ it("shows the server's words when the grid fails, and spends nothing to recover"
   await submit("Keyword");
   expect(text()).toContain("The rank grid stopped after a billing failure.");
   expect(button("Preview again")).toBeDefined();
+});
+
+it("draws a compacted grid (point table, no coordinates) and compares from the live summary", async () => {
+  requestRaw.mockImplementation(async (_p: string, init: { body: string }) => {
+    const { arguments: a } = JSON.parse(init.body) as Call;
+    if (a.action === "find_business") return ok(env(FOUND, { class: "paid", reused: true, reused_run_ids: ["f1"] }));
+    return ok(a.preview ? live.preview : live.run);
+  });
+  await render();
+  await click("Find on Google");
+  await click("Use this");
+  await type("Keyword", "orthodontist");
+  await submit("Keyword");
+  await click("Open stored grid · free");
+
+  expect(markers()).toHaveLength(25);
+  expect(markers().map((m) => m.dataset.bubble).filter((b) => b === "20+")).toHaveLength(22);
+  expect(markers().map((m) => m.dataset.bubble).filter((b) => b === "–")).toHaveLength(3);
+  expect(compareTable()[1]).toEqual([
+    "Newport-Mesa Orthodontics & Family Dentistry",
+    "13 / 25",
+    "1.55",
+    "80% · 20 / 25",
+  ]);
 });

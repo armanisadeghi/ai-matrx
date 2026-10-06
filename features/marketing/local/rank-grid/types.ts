@@ -88,6 +88,8 @@ export interface GridPoint {
   rank: number | null;
   results_count: number | null;
   top_result: { name: string | null; cid: string | null } | null;
+  /** The point's first listings, when the result had room for them. */
+  top?: { rank: number | null; name: string | null; cid: string | null }[];
   error?: string;
   run_id?: string;
   pending?: boolean;
@@ -104,6 +106,30 @@ export interface GridSummary {
   top10: number;
 }
 
+/** One business the target is up against across the whole grid (server-computed, target excluded). */
+export interface GridCompetitor {
+  name: string | null;
+  cid: string | null;
+  points_won: number;
+  points_present: number;
+  points_searched: number;
+  /** points_present / points_searched, 0–1. */
+  coverage: number | null;
+  avg_rank: number | null;
+  best_rank: number | null;
+}
+
+/** `point_table` columns, when the result was compacted to fit. */
+export type PointTableRow = [
+  row: number,
+  col: number,
+  rank: number | null,
+  results_count: number | null,
+  top_cid: string | null,
+  state: "ok" | "failed" | "pending",
+  run_id: string | null,
+];
+
 export interface GridResultData {
   keyword: string;
   grid_size: number;
@@ -115,7 +141,13 @@ export interface GridResultData {
   matched_business: MatchedBusiness | null;
   summary: GridSummary;
   grid_text: string;
-  points: GridPoint[];
+  /** Per-point detail; absent when the result was compacted (`points_compacted`). */
+  points?: GridPoint[];
+  points_top_omitted?: boolean;
+  points_compacted?: boolean;
+  point_table?: { columns: string[]; rows: PointTableRow[] };
+  /** Most visible first; the target business is not in it. */
+  competitors?: GridCompetitor[];
 }
 
 /** The grid settings the person chose; one preview and one run share them. */

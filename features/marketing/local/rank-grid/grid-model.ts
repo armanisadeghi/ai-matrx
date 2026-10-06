@@ -8,9 +8,9 @@
 //    listed), "sparse" (fewer results than the depth and we are not among
 //    them), "outranked" (a full page without us). Three different sentences.
 //  - a failed point is never "not found"; a never-sent point is never either.
-//  - the grid result keeps only each point's #1 listing (`top_result`), so a
-//    winner's average rank and coverage are NOT knowable from it. Those cells
-//    say so instead of inventing a number.
+//  - competitors' average rank and coverage come only from the tool's own
+//    `competitors` summary (computed from every listing at every point); the
+//    screen never derives them from the per-point #1.
 
 import { formatAbsoluteDate, formatUsd } from "@ai-matrx/kit/format";
 import type { ToolActionOutcome } from "@ai-matrx/chat/action-requests/hooks/useToolAction";
@@ -121,7 +121,79 @@ export const LEGEND: { tone: BubbleTone; text: string; label: string }[] = [
   { tone: "failed", text: "x", label: "Search failed" },
 ];
 
-// ── us against the grid's winners ────────────────────────────────────────
+// ── the grid's points, in either shape the tool returns ──────────────────
+
+const KM_PER_DEGREE_LATITUDE = 110.574;
+const KM_PER_DEGREE_LONGITUDE = 111.32;
+const MIN_LONGITUDE_COSINE = 0.01;
+
+const round7 = (v: number) => Math.round(v * 1e7) / 1e7;
+
+/**
+ * A point's coordinate from the grid's geometry — the same formula as
+ * matrx_seo/local_grid.py `build_grid`: row 0 is the north edge, steps are
+ * spacing/110.574 degrees of latitude and spacing/(111.32·max(|cos lat|, 0.01))
+ * of longitude, rounded to 7 decimals.
+ */
+export function gridCoordinate(
+  center: { latitude: number; longitude: number },
+  size: number,
+  spacingKm: number,
+  row: number,
+  col: number,
+): { lat: number; lng: number } {
+  const middle = (size - 1) / 2;
+  const cos = Math.max(Math.abs(Math.cos((center.latitude * Math.PI) / 180)), MIN_LONGITUDE_COSINE);
+  const latStep = spacingKm / KM_PER_DEGREE_LATITUDE;
+  const lngStep = spacingKm / (KM_PER_DEGREE_LONGITUDE * cos);
+  return {
+    lat: round7(center.latitude + (middle - row) * latStep),
+    lng: round7(center.longitude + (col - middle) * lngStep),
+  };
+}
+
+/**
+ * Every point of a grid result. A result that fit carries `points`; a
+ * compacted one (`points_compacted`) carries `point_table` instead — the
+ * coordinates follow from the geometry and the #1's name from `competitors`.
+ */
+export function gridPoints(data: GridResultData): GridPoint[] {
+  if (data.points) return data.points;
+  const table = data.point_table;
+  if (!table) return [];
+  const col = (name: string) => table.columns.indexOf(name);
+  const at = {
+    row: col("row"),
+    col: col("col"),
+    rank: col("rank"),
+    results: col("results_count"),
+    top: col("top_cid"),
+    state: col("state"),
+    run: col("run_id"),
+  };
+  const names = new Map((data.competitors ?? []).filter((c) => c.cid).map((c) => [c.cid as string, c.name]));
+  return table.rows.map((r) => {
+    const row = Number(r[at.row]);
+    const c = Number(r[at.col]);
+    const topCid = (r[at.top] as string | null) ?? null;
+    const state = r[at.state] as string;
+    const point: GridPoint = {
+      row,
+      col: c,
+      ...gridCoordinate(data.center, data.grid_size, data.spacing_km, row, c),
+      rank: (r[at.rank] as number | null) ?? null,
+      results_count: (r[at.results] as number | null) ?? null,
+      top_result: topCid ? { cid: topCid, name: names.get(topCid) ?? null } : null,
+    };
+    const run = r[at.run] as string | null;
+    if (run) point.run_id = run;
+    if (state === "failed") point.error = "failed";
+    if (state === "pending") point.pending = true;
+    return point;
+  });
+}
+
+// ── us against the grid's competitors ────────────────────────────────────
 
 export interface CompareRow {
   key: string;
@@ -129,60 +201,42 @@ export interface CompareRow {
   isUs: boolean;
   /** Points where this business ranked #1. */
   wins: number;
-  /** Average rank where found; null when the grid cannot say. */
+  /** Average rank where found; null when never ranked. */
   avgRank: number | null;
-  /** Points found / points searched; null when the grid cannot say. */
-  found: number | null;
+  /** Points where it is listed within the depth checked. */
+  found: number;
   searched: number;
 }
 
-function sameBusiness(
-  top: { name: string | null; cid: string | null },
-  us: { name: string | null; cid: string | null },
-): boolean {
-  if (top.cid && us.cid) return top.cid === us.cid;
-  return !!top.name && !!us.name && top.name.trim().toLowerCase() === us.name.trim().toLowerCase();
-}
-
 /**
- * Us, then the three businesses that ranked #1 at the most points (ties keep
- * the first seen). A winner's average rank and coverage stay null: the grid
- * keeps only each point's #1 listing.
+ * Us, then the three most visible competitors, from the tool's own
+ * `competitors` summary (computed server-side from every listing at every
+ * point; the target is already excluded). No summary → only our row.
  */
 export function compareRows(result: GridResultData, us: { name: string; cid: string | null }): CompareRow[] {
-  const searched = result.summary.points_searched;
+  const points = gridPoints(result);
   const ours: CompareRow = {
     key: "us",
     name: result.matched_business?.name ?? us.name,
     isUs: true,
-    wins: result.points.filter((p) => p.rank === 1).length,
+    wins: points.filter((p) => p.rank === 1).length,
     avgRank: result.summary.avg_rank,
     found: result.summary.points_found,
-    searched,
+    searched: result.summary.points_searched,
   };
-  const counts = new Map<string, { name: string; wins: number; order: number }>();
-  for (const p of result.points) {
-    const top = p.top_result;
-    if (!top || (!top.name && !top.cid) || p.error || p.pending) continue;
-    if (p.rank === 1 || sameBusiness(top, { name: us.name, cid: us.cid })) continue;
-    const key = top.cid || (top.name ?? "").trim().toLowerCase();
-    const prev = counts.get(key);
-    if (prev) prev.wins += 1;
-    else counts.set(key, { name: top.name ?? "Unnamed listing", wins: 1, order: counts.size });
-  }
-  const winners = [...counts.entries()]
-    .sort((a, b) => b[1].wins - a[1].wins || a[1].order - b[1].order)
+  const others = (result.competitors ?? [])
+    .filter((c) => !(us.cid && c.cid === us.cid))
     .slice(0, 3)
-    .map(([key, w]) => ({
-      key,
-      name: w.name,
+    .map((c, i) => ({
+      key: c.cid ?? `name:${c.name ?? i}`,
+      name: c.name ?? "Unnamed listing",
       isUs: false,
-      wins: w.wins,
-      avgRank: null,
-      found: null,
-      searched,
+      wins: c.points_won,
+      avgRank: c.avg_rank,
+      found: c.points_present,
+      searched: c.points_searched,
     }));
-  return [ours, ...winners];
+  return [ours, ...others];
 }
 
 // ── where the numbers came from ──────────────────────────────────────────
@@ -202,7 +256,7 @@ export function usd(value: number | null | undefined): string {
  * The date is the OLDEST point's collection date — the grid is as old as that.
  */
 export function sourceLine(envelope: ToolEnvelope<GridResultData>): { reused: boolean; text: string } {
-  const points = envelope.data?.points.filter((p) => !p.pending).length ?? 0;
+  const points = envelope.data ? gridPoints(envelope.data).filter((p) => !p.pending).length : 0;
   const reusedIds = envelope.cost?.reused_run_ids ?? [];
   const reusedSet = new Set(reusedIds);
   const dates = (envelope.evidence ?? [])
@@ -246,7 +300,8 @@ function isResult(data: unknown): data is GridResultData {
   return (
     !!data &&
     typeof data === "object" &&
-    Array.isArray((data as { points?: unknown }).points) &&
+    (Array.isArray((data as { points?: unknown }).points) ||
+      typeof (data as { point_table?: unknown }).point_table === "object") &&
     typeof (data as { summary?: unknown }).summary === "object"
   );
 }

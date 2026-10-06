@@ -14,7 +14,8 @@
 //      always asks, in the approve-spend dialog. Points under 24 hours old are
 //      reused free by the tool; "Reused from <date>" says when.
 //   4. Result — rank bubbles coloured by rank, "not found" read against the
-//      result count, and us against the three businesses that won the most points.
+//      result count, and us against the three most visible competitors (the tool's
+//      `competitors` summary).
 //
 // Reopening a past grid is NOT here: a grid is not stored as one record (each
 // point is its own collection run) — deferred until a grid record or group key
@@ -53,6 +54,7 @@ import {
   bubbleFor,
   compareRows,
   gridFromOutcome,
+  gridPoints,
   previewArgs,
   runArgs,
   shortDate,
@@ -501,7 +503,7 @@ function ResultView({
   const data = envelope.data;
   const s = data.summary;
   const source = sourceLine(envelope);
-  const markers: MapMarker[] = data.points.map((p) => {
+  const markers: MapMarker[] = gridPoints(data).map((p) => {
     const b = bubbleFor(p, data.depth);
     return {
       lat: p.lat,
@@ -540,14 +542,17 @@ function ResultView({
         />
       </KpiGrid>
       <RankGridMap markers={markers} showLegend />
-      <CompareTable rows={rows} depth={data.depth} />
+      <CompareTable rows={rows} />
     </div>
   );
 }
 
-const WINNER_UNKNOWN = "The grid keeps only each point's #1 listing";
+function coverage(r: CompareRow): string {
+  if (!r.searched) return "—";
+  return `${Math.round((r.found / r.searched) * 100)}% · ${r.found} / ${r.searched}`;
+}
 
-function CompareTable({ rows, depth }: { rows: CompareRow[]; depth: number }) {
+function CompareTable({ rows }: { rows: CompareRow[] }) {
   const columns: MatrxColumnDef<CompareRow>[] = [
     {
       accessorKey: "name",
@@ -566,20 +571,14 @@ function CompareTable({ rows, depth }: { rows: CompareRow[]; depth: number }) {
       header: "Average rank",
       filter: "number",
       align: "right",
-      cell: (r) =>
-        r.isUs ? (r.avgRank ?? "—") : <span title={WINNER_UNKNOWN} className="text-muted-foreground">—</span>,
+      cell: (r) => (r.avgRank == null ? "—" : r.avgRank),
     },
     {
       accessorKey: "found",
-      header: `In top ${depth}`,
+      header: "Coverage",
       filter: "number",
       align: "right",
-      cell: (r) =>
-        r.found == null ? (
-          <span title={WINNER_UNKNOWN} className="text-muted-foreground">—</span>
-        ) : (
-          `${r.found} / ${r.searched}`
-        ),
+      cell: coverage,
     },
   ];
   return (
