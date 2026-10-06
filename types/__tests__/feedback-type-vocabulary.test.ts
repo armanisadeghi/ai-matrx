@@ -20,7 +20,7 @@ function row(feedback_type: string): Row {
 
 describe("feedback type vocabulary", () => {
   it("matches users.user_feedback_feedback_type_check exactly", () => {
-    expect([...FEEDBACK_TYPES]).toEqual(["bug", "feature", "suggestion", "other", "request"]);
+    expect([...FEEDBACK_TYPES]).toEqual(["bug", "feature", "suggestion", "other", "request", "page_story"]);
   });
 
   it("reads a stored access request instead of throwing on it", () => {

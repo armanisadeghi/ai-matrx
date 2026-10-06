@@ -12,6 +12,7 @@ import type {
   TestingResult,
   UserFeedback,
 } from "@/types/feedback.types";
+import { FEEDBACK_TYPES } from "@/types/feedback.types";
 
 /** Table or RPC rows that share `user_feedback` column shapes (strings from DB). */
 export type UserFeedbackRowLike =
@@ -32,14 +33,9 @@ function isJsonRecord(value: Json): value is Record<string, Json> {
 }
 
 function narrowFeedbackType(raw: string): FeedbackType {
-  if (
-    raw === "bug" ||
-    raw === "feature" ||
-    raw === "suggestion" ||
-    raw === "other" ||
-    raw === "request"
-  ) {
-    return raw;
+  // The ONE vocabulary — a hand-typed copy here threw on every new type (page_story, AP-6).
+  if ((FEEDBACK_TYPES as readonly string[]).includes(raw)) {
+    return raw as FeedbackType;
   }
   throw new Error(`Invalid feedback_type: ${raw}`);
 }
