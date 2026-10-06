@@ -719,10 +719,13 @@ export function surfaceFromPathname(
 
   // Flashcard set detail and editor pages sit beneath the library prefix but
   // have a different live vocabulary. Resolve the editor first, then the
-  // exact detail leaf; study modes remain their own future surfaces rather
-  // than inheriting a deck-detail contract they cannot fully emit.
+  // study modes, then the exact detail leaf.
   if (/^\/education\/flashcards\/[^/]+\/edit(?:\/|$)/.test(stripped)) {
     return "matrx-user/education-flashcard-editor";
+  }
+  // The study modes of one deck (flip, learn, write) share the study surface (AP-6).
+  if (/^\/education\/flashcards\/[^/]+\/(?:study|learn|write)(?:\/|$)/.test(stripped)) {
+    return "matrx-user/education-flashcard-study";
   }
   if (/^\/education\/flashcards\/[^/]+\/sessions(?:\/|$)/.test(stripped)) {
     return "matrx-user/education-sessions";

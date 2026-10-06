@@ -27,6 +27,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
+import { useFlashcardStudySurface } from "./useFlashcardStudySurface";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { gradeTypedAnswer, type TypedGrade } from "../../utils/textSimilarity";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
@@ -141,6 +142,8 @@ export function WriteSurface({ setId }: { setId: string }) {
   const dispatch = useAppDispatch();
   const [typed, setTyped] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  // In write mode the answer shows once the typed answer is submitted.
+  useFlashcardStudySurface({ setId, study, mode: "write the answer", backSeen: submitted || study.isFlipped });
   const [autoGrade, setAutoGrade] = useState<TypedGrade | null>(null);
   // WP3 gap 14 — the grade-on-meaning verdict (flashcards.grade_typed_answer
   // mandate). The Levenshtein suggestion shows instantly; this upgrades it.

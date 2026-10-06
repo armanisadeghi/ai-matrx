@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
+import { useFlashcardStudySurface } from "./useFlashcardStudySurface";
 import { StudyDeck } from "./StudyDeck";
 import { FlashcardStudyWindowDevTrigger } from "./FlashcardStudyWindowDevTrigger";
 import { OfflineDeckButton } from "../set-detail/OfflineDeckButton";
@@ -31,6 +32,7 @@ export function StudySurface({ setId }: { setId: string }) {
     withSession: true,
   });
   const title = study.set?.name ?? "";
+  useFlashcardStudySurface({ setId, study, mode: "flip cards" });
 
   return (
     <>

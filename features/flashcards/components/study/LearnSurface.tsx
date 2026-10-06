@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useFlashcardStudy } from "../../data/useFlashcardStudy";
+import { useFlashcardStudySurface } from "./useFlashcardStudySurface";
 import { StudyDeck } from "./StudyDeck";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import { OfflineDeckButton } from "../set-detail/OfflineDeckButton";
@@ -35,6 +36,7 @@ export function LearnSurface({ setId }: { setId: string }) {
     // notice shows in place instead of the blocking workspace prompt.
   });
   const title = study.set?.name ?? "";
+  useFlashcardStudySurface({ setId, study, mode: "learn" });
 
   return (
     <>
