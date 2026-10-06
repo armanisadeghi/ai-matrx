@@ -22,6 +22,7 @@ import type {
 import { RichContent } from "@/components/rich-content/RichContent";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
 import {
   FROM_CHAT_STEPS,
   latestAgentFromChat,
@@ -78,11 +79,13 @@ function AgentFromChatWindowInner({
   const router = useRouter();
 
   const [lane, setLane] = useState<Lane>("agent");
-  const [phase, setPhase] = useState<"idle" | "running" | "done" | "failed">("idle");
+  const [phase, setPhase] = useState<"idle" | "running" | "building" | "done" | "failed">("idle");
   const [reached, setReached] = useState<FromChatStep | null>(null);
   const [says, setSays] = useState("");
   const [failure, setFailure] = useState<{ says: string; at: FromChatStep | null } | null>(null);
   const [result, setResult] = useState<FromChatResult | null>(null);
+  // AF-D door #4 on `pipeline`: the Agent Factory build the server started for this chat.
+  const [buildId, setBuildId] = useState<string | null>(null);
   const [tab, setTab] = useState<ResultTab>("compare");
   const [startingMasterwork, setStartingMasterwork] = useState(false);
   // ONE INTENT, ONE RULEBOOK: a second press of "Start" lands on the same draft.
@@ -114,11 +117,15 @@ function AgentFromChatWindowInner({
     setSays("");
     setFailure(null);
     setResult(null);
+    setBuildId(null);
     const answer = await makeAgentFromChat(dispatch, conversationId, (step, line) => {
       setReached(step);
       setSays(line);
     });
-    if (answer.ok) {
+    if (answer.ok && "buildId" in answer) {
+      setBuildId(answer.buildId);
+      setPhase("building");
+    } else if (answer.ok) {
       setResult(answer.result);
       setTab("compare");
       setPhase("done");
@@ -181,7 +188,7 @@ function AgentFromChatWindowInner({
       minWidth={420}
       minHeight={220}
       width={phase === "done" ? 960 : 520}
-      height={phase === "done" ? 680 : phase === "idle" ? (previous ? 290 : 240) : 420}
+      height={phase === "done" ? 680 : phase === "idle" ? (previous ? 290 : 240) : phase === "building" ? 320 : 420}
       position="center"
       onClose={onClose}
       overlayId="agentFromChatWindow"
@@ -244,6 +251,8 @@ function AgentFromChatWindowInner({
         ) : null}
 
         {phase === "running" || phase === "failed" ? <LiveRunProgress progress={progress} /> : null}
+
+        {phase === "building" && buildId ? <BuildProgress buildId={buildId} onRebuilt={setBuildId} /> : null}
 
         {phase === "failed" && failure ? (
           <EmptyState

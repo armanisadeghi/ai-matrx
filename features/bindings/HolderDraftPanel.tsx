@@ -111,6 +111,8 @@ export function HolderDraftPanel({
     >
       <AgentGenerator
         mandate={{
+          mandateKey: data.mandate.mandate_key,
+          label: data.mandate.label ?? data.mandate.mandate_key,
           variables,
           owner,
           summary: (
