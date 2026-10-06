@@ -41,13 +41,10 @@ async function saveItemStateHandler(
     return { ok: false, error: "save_item_state: the patch must be plain JSON" };
   }
   if (size > MAX_PATCH_BYTES) {
-    return { ok: false, error: "save_item_state: that's too much to save on one item (64 KB max)" };
+    return { ok: false, error: "Too large to keep on this item (64 KB max)." };
   }
   if (!ctx.itemState?.hosted) {
-    return {
-      ok: false,
-      error: "This item isn't saved anywhere here. Open it from its chat or record to keep changes.",
-    };
+    return { ok: false, error: "Open this from its chat to keep changes." };
   }
   ctx.itemState.patch(patch as Record<string, unknown>);
   return { ok: true, result: { saved: true } };

@@ -32,6 +32,14 @@ jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchAgent: (...a: unknown[]) => mockLaunch(...a) }),
 }));
 jest.mock("../react/kind-interaction", () => ({ emitKindInteraction: jest.fn() }));
+const mockHeadless = jest.fn();
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json", () => ({
+  runHeadlessAgentJson: (...a: unknown[]) => mockHeadless(...a),
+  livePosture: (bind?: unknown) => (bind ? { displayMode: "direct", keepInstance: true, onConversationCreated: bind } : {}),
+}));
+jest.mock("@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors", () => ({
+  selectConversationOrganizationId: () => () => "org-9",
+}));
 jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({
   applySurfaceWrite: jest.fn(),
   listLiveWriteTargets: () => [],
@@ -48,8 +56,11 @@ describe("useKindActionRunner on the one registry", () => {
   let ports: AlchemyHostPorts;
   let runAction: RunKindAction | null;
 
+  const saved: Record<string, unknown> = {};
   function Probe() {
-    runAction = useKindActionRunner();
+    runAction = useKindActionRunner(undefined, {
+      itemState: { hosted: true, read: () => saved, patch: (p) => Object.assign(saved, p) },
+    });
     return null;
   }
 
@@ -147,5 +158,37 @@ describe("useKindActionRunner on the one registry", () => {
     });
     expect(mockLaunch).not.toHaveBeenCalled();
     await act(async () => bareRoot.unmount());
+  });
+
+  it("run_shortcut with saveAs runs the shortcut headless, live, page-free — and saves the image onto the item", async () => {
+    mockHeadless.mockImplementation(async (_d: unknown, _g: unknown, opts: Record<string, any>) => {
+      const result = {
+        success: true,
+        data: [{ kind: "image", fileId: "f9", mimeType: "image/png", width: 8, height: 10 }],
+        fullResponse: "",
+        conversationId: "c9",
+        requestId: "r9",
+      };
+      await opts.onResult?.(result);
+      return result;
+    });
+    const res = await runAction!("run_shortcut", {
+      shortcutId: "sc-1",
+      scope: { selection: "Two Envelopes" },
+      expect: "image",
+      saveAs: "idea_2_image",
+    });
+    const opts = mockHeadless.mock.calls[0][2];
+    expect(opts).toMatchObject({
+      shortcutId: "sc-1",
+      applicationScope: { selection: "Two Envelopes" },
+      expect: "media",
+      surfaceName: null,
+      displayMode: "direct",
+      keepInstance: true,
+    });
+    const image = { file_id: "f9", mime_type: "image/png", width: 8, height: 10, organization_id: "org-9" };
+    expect(res).toEqual({ ok: true, result: { data: image, saved: true } });
+    expect(saved).toEqual({ idea_2_image: image });
   });
 });

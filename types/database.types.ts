@@ -95783,7 +95783,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      _d31_impl_get_user_list_with_items: {
+      _d31_impl_get_pick_list_with_items: {
         Args: { p_list_id: string }
         Returns: Json
       }
@@ -95823,7 +95823,7 @@ export type Database = {
         }
         Returns: Json
       }
-      _d31_impl_update_user_list: {
+      _d31_impl_update_pick_list: {
         Args: {
           p_authenticated_read?: boolean
           p_description?: string
@@ -100995,7 +100995,7 @@ export type Database = {
         Args: { p_bucket_id: string; p_name: string }
         Returns: Json
       }
-      get_structured_list_for_selection: {
+      get_pick_list_for_selection: {
         Args: { p_list_id: string }
         Returns: Json
       }
@@ -101092,8 +101092,8 @@ export type Database = {
         Args: { p_is_guest?: boolean; p_user_id: string }
         Returns: Json
       }
-      get_user_list_with_items: { Args: { p_list_id: string }; Returns: Json }
-      get_user_lists_summary: { Args: { p_user_id: string }; Returns: Json }
+      get_pick_list_with_items: { Args: { p_list_id: string }; Returns: Json }
+      get_pick_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_messages: {
         Args: { p_feedback_id: string }
         Returns: Database["users"]["Tables"]["feedback_user_messages"]["Row"][]
@@ -105099,7 +105099,7 @@ export type Database = {
         }
         Returns: Json
       }
-      update_user_list: {
+      update_pick_list: {
         Args: {
           p_authenticated_read?: boolean
           p_description?: string

@@ -21,7 +21,7 @@ import { Loader2, Play, RotateCcw } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { Button } from "@/components/ui/button";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SmartAgentVariables } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/SmartAgentVariables";
 import { SmartAgentInput } from "@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput";

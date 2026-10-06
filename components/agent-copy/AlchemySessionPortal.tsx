@@ -18,7 +18,7 @@ import {
   createTransferEmailActions,
   useContentTransferCapabilities,
   type ContentTransferController,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import {
   applyTransferLimits,
   capture,

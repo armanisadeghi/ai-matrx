@@ -13,7 +13,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 /**
  * Per-list route — the canonical deep link for a picklist (`/pick-lists/<id>`), the
  * target of every Picklists row and New picklist. Every list lives in the record
- * store as a Table of choices under the same id; `get_user_list_with_items`
+ * store as a Table of choices under the same id; `get_pick_list_with_items`
  * answers it from there, and the page opens it as the store's table page.
  */
 
@@ -29,11 +29,11 @@ const loadList = cache(
         data: { user },
       } = await getClaimsUser(supabase);
       if (!user) return null;
-      const { data, error } = await supabase.rpc("get_user_list_with_items", {
+      const { data, error } = await supabase.rpc("get_pick_list_with_items", {
         p_list_id: listId,
       });
       if (error || !data) return null;
-      // get_user_list_with_items returns Json directly (no row schema in
+      // get_pick_list_with_items returns Json directly (no row schema in
       // database.types.ts to guard against) — this is the sanctioned
       // Json-direct RPC cast per the type-safety skill's supabase-patterns.
       return data as unknown as UserListWithItems;

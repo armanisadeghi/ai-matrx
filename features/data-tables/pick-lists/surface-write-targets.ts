@@ -59,7 +59,7 @@ export const LIST_WRITE_TARGET_NAMES = {
  * Write half of every list-editing surface.
  *
  * There is NO draft layer on a user list: every edit persists at once
- * (`update_user_list`, or a Record of the list's Table of choices). So every target is `mode: "entity"`
+ * (`update_pick_list`, or a Record of the list's Table of choices). So every target is `mode: "entity"`
  * — an applied write is a database commit, not a staged change — and every one
  * is `applyPolicy: "ask"`. `auto` is deliberately absent and must stay absent:
  * there is nothing to review after the fact and no Save bar to undo it.

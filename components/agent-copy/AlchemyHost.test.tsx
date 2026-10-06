@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { AlchemyHost, guardAiPreparation } from "./AlchemyHost";
 import type { AiPreparation } from "@ai-matrx/kit/content-transfer";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { useContentTransferCapabilities } from "@ai-matrx/design-system/content-transfer";
+import { useContentTransferCapabilities } from "@ai-matrx/alchemy/react/workspace";
 
 let identity: { userId: string; organizationId: string | null } = {
   userId: "user-a",
@@ -74,7 +74,7 @@ jest.mock("@ai-matrx/agents/content-transfer/react", () => ({
     }) => void;
   }) => {
     const { ContentTransferCapabilitiesProvider } = jest.requireActual(
-      "@ai-matrx/design-system/content-transfer",
+      "@ai-matrx/alchemy/react/workspace",
     );
     providerProps = props;
     return (

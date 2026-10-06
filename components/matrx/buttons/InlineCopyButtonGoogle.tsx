@@ -3,7 +3,7 @@
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 
 import { useId, type ReactElement } from "react";
-import { ContentTransferMenu } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferMenu } from "@ai-matrx/alchemy/react/workspace";
 import {
   directSource,
   normalizeTransferJson,

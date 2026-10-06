@@ -10,7 +10,7 @@
 // or destination list.
 
 import type { FormatAdapter, Payload, Source } from "@ai-matrx/kit/content-transfer";
-import type { EnvelopeMeta, TransferMenuVariant } from "@ai-matrx/design-system/content-transfer";
+import type { EnvelopeMeta, TransferMenuVariant } from "@ai-matrx/alchemy/react/workspace";
 
 export type AlchemySessionIntent =
   /**

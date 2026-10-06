@@ -3,7 +3,7 @@
 import {
   MatrxCopyMenu,
   type MatrxCopyMenuProps,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import { sendRowsToSheetOutcome } from "@/components/agent-copy/useExportActions";
 
 import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";

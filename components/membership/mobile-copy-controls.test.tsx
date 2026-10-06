@@ -8,7 +8,7 @@
  * This guard used to assert the literal Tailwind string
  * `"h-11 w-11 shrink-0 lg:h-7 lg:w-7"` inside `ExportMenu.tsx`. That stopped
  * being the seam: the menu now delegates to `MatrxCopyMenu` from
- * `@ai-matrx/design-system/content-transfer`, which renders the package's
+ * `@ai-matrx/alchemy/react/workspace`, which renders the package's
  * `TapTargetButton` — an invisible 44px outer target around a 28px pill. The
  * class literal was a change detector on a file that no longer owns the size.
  *

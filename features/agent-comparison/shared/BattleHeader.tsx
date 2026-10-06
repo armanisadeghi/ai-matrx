@@ -18,7 +18,7 @@
  */
 
 import { Fragment, useRef, type ReactNode } from "react";
-import type { ContentTransferController } from "@ai-matrx/design-system/content-transfer";
+import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
 import { Loader2, Play } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import LucideIcon from "@/features/shell/components/header/variants/shared/LucideIcon";

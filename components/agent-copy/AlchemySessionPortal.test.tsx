@@ -19,7 +19,7 @@ jest.mock("@/lib/toast", () => ({
   },
 }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
-jest.mock("@ai-matrx/design-system/content-transfer", () => ({
+jest.mock("@ai-matrx/alchemy/react/workspace", () => ({
   ContentTransferMenu: () => null,
   createTransferEmailActions: () => [],
   useContentTransferCapabilities: () => ({ actions: [] }),

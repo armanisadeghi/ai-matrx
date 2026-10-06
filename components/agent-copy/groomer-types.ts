@@ -9,7 +9,7 @@ export {
   type AlchemyGroomerPreset as GroomerPreset,
   type AlchemyGroomerSection as AgentCopyGroomerSection,
   type AlchemyGroomerConfig as AgentCopyGroomerConfig,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 
 export type GroomerSelection =
-  import("@ai-matrx/design-system/content-transfer").AlchemyDetail | "off";
+  import("@ai-matrx/alchemy/react/workspace").AlchemyDetail | "off";

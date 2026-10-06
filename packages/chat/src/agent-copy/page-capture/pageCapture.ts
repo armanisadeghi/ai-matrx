@@ -20,7 +20,7 @@ import type {
   AlchemyDetail,
   AlchemyGroomerConfig,
   AlchemyGroomerSection,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import { formatCount } from "@ai-matrx/kit/format";
 
 export type PageCaptureKind = "table-page" | "record" | "dialog" | "admin-page";

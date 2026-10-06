@@ -54,7 +54,7 @@ import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { earlyKeysFromValue } from "../loading/kind-loading.types";
 import { correctKindValue, kindCorrectionsOf } from "../../registry/kind-correctors";
 import { KindCorrectionsNotice } from "./KindCorrectionsNotice";
-import { withImageSources, type ImageSources } from "./item-state-media";
+import { stableImageState, type ImageSources } from "./item-state-media";
 
 /**
  * One entry per kind — the resolver's answer and the registry version it was
@@ -107,7 +107,8 @@ export interface DbKindComponentImplProps {
   organizationId?: string | null;
 }
 
-const NO_IMAGES: ImageSources = new Map();
+/** One empty item state, so an unsaved item never looks "changed". */
+const EMPTY_STATE: Record<string, unknown> = Object.freeze({}) as Record<string, unknown>;
 
 const screamedDefects = new Set<string>();
 
@@ -305,7 +306,7 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
         onResolve={onResolve}
         uiOptions={uiOptions}
         // The frame gets the image BYTES (Blob) and mints its own blob: URL.
-        itemState={withImageSources(itemState, itemStateImages ?? NO_IMAGES, "blob")}
+        itemState={stableImageState(itemState, itemStateImages, "blob")}
         className={className}
       />
     );
@@ -334,7 +335,7 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
         runAction={runAction}
         onResolve={onResolve}
         uiOptions={uiOptions}
-        itemState={withImageSources(itemState, itemStateImages ?? NO_IMAGES, "url") ?? {}}
+        itemState={stableImageState(itemState, itemStateImages, "url") ?? EMPTY_STATE}
       />
     </DbKindComponentErrorBoundary>
   );

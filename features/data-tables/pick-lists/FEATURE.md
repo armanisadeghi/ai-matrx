@@ -24,17 +24,17 @@ id. It is edited on its own page, `/pick-lists/<id>` — the store's table page 
 | Operation | Door |
 |---|---|
 | Every list a person may open | `custom.pick_list_index_everywhere()` / `custom.pick_list_index(org)` via `pick-list-index.ts` (`getAccessibleLists`, `organizationPickListsInTheNewSystem`) |
-| One list with its choices (owner/editor sees `description`) | `get_user_list_with_items` (`getListWithItems`) |
-| One list, labels only (consumers, agent runtime) | `get_structured_list_for_selection` (`getPickListForSelection`, `usePickListForSelection`) |
-| Rename / re-describe | `update_user_list` (`updateList`) |
+| One list with its choices (owner/editor sees `description`) | `get_pick_list_with_items` (`getListWithItems`) |
+| One list, labels only (consumers, agent runtime) | `get_pick_list_for_selection` (`getPickListForSelection`, `usePickListForSelection`) |
+| Rename / re-describe | `update_pick_list` (`updateList`) |
 | Add / change a choice | the records client in the list's organization: `recordWrite` / `recordUpdate` on the list's Table (`addChoices`, `updateChoice`) |
 | New pick list | `create_user_list` (`createList`), born in the store |
 
 ### Item `description` is an owner-only secret
 
 A choice's `description` is the payload injected into agent prompts when the list is bound to an agent
-variable. Consumers read through `get_structured_list_for_selection`, which never returns it;
-`get_user_list_with_items` returns it only to an editor. The Python backend resolves it at run time and
+variable. Consumers read through `get_pick_list_for_selection`, which never returns it;
+`get_pick_list_with_items` returns it only to an editor. The Python backend resolves it at run time and
 injects it only into the in-flight provider request. Do NOT add a client read path that returns it.
 
 ## Key components

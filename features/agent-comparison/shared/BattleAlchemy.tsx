@@ -22,7 +22,7 @@ import {
 } from "@/components/agent-copy/export";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { useEffect, type Ref } from "react";
-import type { ContentTransferController } from "@ai-matrx/design-system/content-transfer";
+import type { ContentTransferController } from "@ai-matrx/alchemy/react/workspace";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { fetchModelIdentityById } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { selectActiveBattleColumns } from "./activeBattleColumns";

@@ -31,7 +31,7 @@ import { MatrxContentTransferProvider } from "@ai-matrx/agents/content-transfer/
 import {
   ContentTransferCapabilitiesProvider,
   useContentTransferCapabilities,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import type {
   MatrxContentTransferProgress,
   MatrxContentTransferSupabase,

@@ -17,7 +17,7 @@
 import { Fragment, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useScrollFade } from "@ai-matrx/design-system";
 import { ChevronDown, createLucideIcon } from "lucide-react";
-import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/design-system/content-transfer/icon";
+import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/alchemy/react/workspace/icon";
 import { useMatrxTableRowAlchemy, useMatrxTableRowControls } from "@ai-matrx/design-system/data-table/host";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";

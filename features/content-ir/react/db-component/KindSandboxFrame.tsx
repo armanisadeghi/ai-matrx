@@ -72,6 +72,9 @@ export function sandboxFrameSrc(attempt: number): string {
 /** What an un-measured frame occupies until it reports its own height. */
 const INITIAL_HEIGHT = 320;
 
+/** One empty item state, so an unsaved item never re-posts as "changed". */
+const EMPTY_ITEM_STATE: Record<string, unknown> = Object.freeze({}) as Record<string, unknown>;
+
 /**
  * A frame whose document LOADED but that has said nothing this long never
  * started (a failed bundle, a lost handshake): the reader is told, with a retry
@@ -293,7 +296,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         kind,
         config,
         uiOptions: uiOptions ?? null,
-        itemState: itemState ?? {},
+        itemState: itemState ?? EMPTY_ITEM_STATE,
     };
 
     const latestProps = React.useRef(props);

@@ -3,7 +3,7 @@
 import {
   useContentTransferCapabilities,
   useContentTransferSurface,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";

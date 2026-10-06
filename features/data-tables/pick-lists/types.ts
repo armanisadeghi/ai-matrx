@@ -19,7 +19,7 @@ export interface UserList {
   group_count?: number;
 }
 
-/** Shape returned by get_user_list_with_items RPC */
+/** Shape returned by get_pick_list_with_items RPC */
 export interface UserListWithItems {
   list_id: string;
   list_name: string;
@@ -45,7 +45,7 @@ export interface GroupedItem {
 // ─── Selection (label-only) read path ────────────────────────────────────────
 // The consumer-facing shape: labels/help/groups/icons ONLY. The secret `description`
 // is never present — it is resolved server-side at agent-run time. Returned by the
-// get_structured_list_for_selection RPC (SECURITY DEFINER, no description column selected).
+// get_pick_list_for_selection RPC (SECURITY DEFINER, no description column selected).
 
 export interface PickListSelectionItem {
   id: string;

@@ -3,7 +3,7 @@
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 
 import { useId } from "react";
-import { ContentTransferMenu } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferMenu } from "@ai-matrx/alchemy/react/workspace";
 import { directSource } from "@ai-matrx/alchemy/operate";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { useOpenHtmlPreviewBridge } from "@/features/overlays/openers/htmlPreview";

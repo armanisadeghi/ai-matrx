@@ -79,6 +79,34 @@ export function withImageSources(
   return walk(state, depth) as State;
 }
 
+/**
+ * `withImageSources`, but the SAME object for the same saved state and the same
+ * loaded images. Saved state is plain JSON, so its text is its identity; the
+ * sources map changes only when an image loads. The sandbox frame re-posts its
+ * props whenever this identity changes — a fresh object per render would
+ * re-send (and re-measure) the whole component on every host render.
+ */
+const stableCache = new WeakMap<ImageSources, Map<string, State | null>>();
+const NO_SOURCES: ImageSources = new Map();
+export function stableImageState(
+  state: State | null,
+  sources: ImageSources | undefined,
+  mode: "url" | "blob",
+): State | null {
+  const src = sources ?? NO_SOURCES;
+  let byKey = stableCache.get(src);
+  if (!byKey) {
+    byKey = new Map();
+    stableCache.set(src, byKey);
+  }
+  const key = `${mode}:${JSON.stringify(state ?? null)}`;
+  if (!byKey.has(key)) {
+    if (byKey.size > 64) byKey.clear();
+    byKey.set(key, withImageSources(state, src, mode));
+  }
+  return byKey.get(key) ?? null;
+}
+
 // One object URL per Blob for the page's lifetime (blobs are cached per file id,
 // so this is bounded by the images a person actually saw).
 const objectUrls = new WeakMap<Blob, string>();

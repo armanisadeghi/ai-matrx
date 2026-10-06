@@ -37,6 +37,16 @@ import type {
 /** A key a component may save under: plain, short, never a path or prototype key. */
 const SAVE_KEY = /^[A-Za-z][A-Za-z0-9_.:-]{0,79}$/;
 const FORBIDDEN_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+/** Same ceiling as save_item_state: item state rides every render into the frame. */
+const MAX_SAVED_BYTES = 64 * 1024;
+
+function savedBytes(value: unknown): number {
+  try {
+    return JSON.stringify(value ?? null).length;
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
 
 interface RunShortcutInput extends KindShortcutRequest {
   display: "window" | "background";
@@ -99,18 +109,25 @@ async function runShortcutHandler(
   }
 
   if (saveAs && !ctx.itemState?.hosted) {
-    return {
-      ok: false,
-      error: "This item isn't saved anywhere here, so the result can't be kept. Open it from its chat or record.",
-    };
+    return { ok: false, error: "Open this from its chat to keep results." };
   }
 
   const itemState = ctx.itemState;
+  let tooBig = false;
   const run = await ctx.runShortcut({ ...request, expect }, (result) => {
     // The persistence seam: fires even when the component is gone.
-    if (saveAs && itemState && result.ok) itemState.patch({ [saveAs]: result.data });
+    if (!saveAs || !itemState || !result.ok) return;
+    if (savedBytes(result.data) > MAX_SAVED_BYTES) {
+      tooBig = true;
+      return;
+    }
+    itemState.patch({ [saveAs]: result.data });
   });
   if (!run.ok) return { ok: false, error: run.error ?? "The shortcut didn't return a result." };
+  if (tooBig) {
+    // The product is returned, never silently dropped — only not saved.
+    return { ok: true, result: { data: run.data, saved: false, notSaved: "Too large to keep on this item." } };
+  }
   return { ok: true, result: { data: run.data, saved: Boolean(saveAs) } };
 }
 

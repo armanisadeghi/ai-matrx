@@ -40,7 +40,6 @@ import {
   runHeadlessAgentJson,
   type HeadlessAgentJsonResult,
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
-import { selectRenderBlocksByType } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { selectConversationOrganizationId } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type {
@@ -100,36 +99,28 @@ export interface KindActionRunnerOptions {
 }
 
 /**
- * The generated images of one request, by durable identity. An image model's
- * product is a media block, never answer text, so `expect: "image"` reads it
- * here (the instance is kept alive by the live window, so the block is still
- * in state when the run settles).
+ * The first generated image of a media run, by durable identity. An image
+ * model's product is a media block (`expect: "media"`), never answer text; the
+ * file lives in the run's own organization, named on every later byte read.
  */
-type RenderBlocksState = Parameters<ReturnType<typeof selectRenderBlocksByType>>[0];
-
-export function imagesOfRequest(
-  state: RenderBlocksState,
-  requestId: string | undefined,
-  conversationId?: string,
-): KindImageRef[] {
-  if (!requestId) return [];
-  // The file lives in the run's own organization (frozen on the conversation).
-  const organizationId = conversationId ? selectConversationOrganizationId(conversationId)(state) : null;
-  const blocks = selectRenderBlocksByType(requestId, "image_output")(state) ?? [];
-  const out: KindImageRef[] = [];
-  for (const block of blocks) {
-    const data = (block.data ?? {}) as Record<string, unknown>;
-    const fileId = typeof data.fileId === "string" ? data.fileId : null;
-    if (!fileId || block.status !== "complete") continue;
-    out.push({
+export function imageRefOfMedia(media: unknown, organizationId: string | null): KindImageRef | null {
+  if (!Array.isArray(media)) return null;
+  for (const item of media) {
+    if (!item || typeof item !== "object") continue;
+    const block = item as Record<string, unknown>;
+    const fileId = typeof block.fileId === "string" ? block.fileId : null;
+    const mime = typeof block.mimeType === "string" ? block.mimeType : null;
+    const isImage = block.kind === "image" || (mime?.startsWith("image/") ?? false);
+    if (!fileId || !isImage) continue;
+    return {
       file_id: fileId,
-      mime_type: typeof data.mimeType === "string" ? data.mimeType : null,
-      width: typeof data.width === "number" ? data.width : null,
-      height: typeof data.height === "number" ? data.height : null,
+      mime_type: mime,
+      width: typeof block.width === "number" ? block.width : null,
+      height: typeof block.height === "number" ? block.height : null,
       organization_id: organizationId,
-    });
+    };
   }
-  return out;
+  return null;
 }
 
 /** Every kind-launched shortcut names this surface (telemetry + attribution). */
@@ -198,7 +189,10 @@ export function useKindActionRunner(
           const live = liveWindow.start(request.label ?? "Working on it");
           const toResult = (r: HeadlessAgentJsonResult): KindShortcutRunResult => {
             if (request.expect === "image") {
-              const [image] = imagesOfRequest(store.getState(), r.requestId, r.conversationId);
+              const organizationId = r.conversationId
+                ? selectConversationOrganizationId(r.conversationId)(store.getState())
+                : null;
+              const image = r.success ? imageRefOfMedia(r.data, organizationId) : null;
               return image
                 ? { ok: true, data: image }
                 : { ok: false, data: null, error: r.error ?? "The shortcut finished without an image." };
@@ -217,9 +211,8 @@ export function useKindActionRunner(
             // The component hands the shortcut everything it needs as scope
             // values; the page around it never leaks in.
             surfaceName: null,
-            // An image model answers with a media block, not text: read the
-            // text lane (it may carry a caption) and take the image from state.
-            expect: request.expect === "json" ? "json" : "text",
+            // An image model answers with a media block, never text.
+            expect: request.expect === "image" ? "media" : request.expect,
             ...livePosture(live.bind),
             onResult: (r) => {
               settled = toResult(r);

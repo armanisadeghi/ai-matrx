@@ -22,7 +22,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import { AgentRunner } from "@ai-matrx/chat/agents/components/smart/AgentRunner";
 import { Button } from "@/components/ui/button";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import MarkdownStream from "@/components/MarkdownStream";
 import { SmartAgentVariables } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/SmartAgentVariables";
 import {

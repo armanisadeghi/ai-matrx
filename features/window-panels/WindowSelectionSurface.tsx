@@ -18,7 +18,7 @@
 // here: the surface registry stays out of every window's chunk.
 
 import type { ReactNode } from "react";
-import { useContentTransferSurface } from "@ai-matrx/design-system/content-transfer";
+import { useContentTransferSurface } from "@ai-matrx/alchemy/react/workspace";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 
 export function WindowSelectionSurface({ children }: { children: ReactNode }) {

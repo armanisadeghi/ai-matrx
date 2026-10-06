@@ -4,7 +4,7 @@
  * The ONE implementation behind `LIST_SURFACE_WRITE_TARGETS`, used by the
  * `matrx-user/list-manager` mount (`ListManagerFloatingWorkspace`).
  *
- * Every handler writes where the list lives — `update_user_list` for the list's
+ * Every handler writes where the list lives — `update_pick_list` for the list's
  * name and description, the records client for its choices (one Record each in
  * the list's Table of choices, `./service`) — the same doors the list's own
  * table page writes through, so an agent write and a human write are the same

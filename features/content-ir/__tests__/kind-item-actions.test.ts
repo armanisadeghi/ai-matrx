@@ -14,8 +14,11 @@ import type {
 import { parseRunShortcutInput } from "../react/actions/handlers/run-shortcut";
 import {
   imageFileIdsOf,
+  stableImageState,
   withImageSources,
 } from "../react/db-component/item-state-media";
+import { imageRefOfMedia } from "../react/actions/useKindActionRunner";
+import { makeBlobUrlMapper } from "../sandbox/runtime/blob-urls";
 
 function handler(key: string) {
   const def = KIND_ACTIONS.find((d) => d.key === key);
@@ -63,7 +66,7 @@ describe("run_shortcut", () => {
     const c = ctx({ itemState: { hosted: false, read: () => ({}), patch: () => undefined } });
     const out = await handler("run_shortcut")({ shortcutId: "s1", saveAs: "k" }, c);
     expect(out.ok).toBe(false);
-    if (!out.ok) expect(out.error).toMatch(/isn't saved anywhere/);
+    if (!out.ok) expect(out.error).toMatch(/Open this from its chat/);
   });
 
   it("a failed run saves nothing and returns its reason", async () => {
@@ -124,5 +127,58 @@ describe("saved images get a displayable src", () => {
     expect(out.nested.list[0]).toMatchObject({ src: null, src_error: "This image couldn't be loaded." });
     expect(out.note).toBe("keep");
     expect((withImageSources(state, new Map(), "blob") as any).idea_3_image.src).toBeNull();
+  });
+});
+
+describe("the image and identity seams", () => {
+  it("imageRefOfMedia takes the first image block with the run's organization", () => {
+    const media = [
+      { kind: "audio", fileId: "a1", mimeType: "audio/mpeg" },
+      { kind: "image", fileId: "i1", mimeType: "image/png", width: 1024, height: 1536 },
+    ];
+    expect(imageRefOfMedia(media, "org-1")).toEqual({
+      file_id: "i1",
+      mime_type: "image/png",
+      width: 1024,
+      height: 1536,
+      organization_id: "org-1",
+    });
+    expect(imageRefOfMedia([], "org-1")).toBeNull();
+    expect(imageRefOfMedia("not media", null)).toBeNull();
+  });
+
+  it("a saved product too large for the item is returned, not saved", async () => {
+    const c = ctx({
+      runShortcut: async (_req, onResult) => {
+        const result: KindShortcutRunResult = { ok: true, data: "x".repeat(70_000) };
+        onResult?.(result);
+        return result;
+      },
+    });
+    const out = await handler("run_shortcut")({ shortcutId: "s1", saveAs: "k", expect: "text" }, c);
+    expect(out.ok).toBe(true);
+    if (out.ok) expect(out.result).toMatchObject({ saved: false });
+    expect(c.saved).toEqual({});
+  });
+
+  it("stableImageState keeps one identity for the same state and sources", () => {
+    const sources = new Map();
+    const a = stableImageState({ k: 1 }, sources, "url");
+    const b = stableImageState({ k: 1 }, sources, "url");
+    expect(a).toBe(b);
+    expect(stableImageState({ k: 2 }, sources, "url")).not.toBe(a);
+    expect(stableImageState({ k: 1 }, new Map(), "url")).not.toBe(a);
+  });
+
+  it("the frame turns handed-over Blobs into one blob: URL each", () => {
+    let n = 0;
+    const map = makeBlobUrlMapper(() => `blob:frame/${++n}`);
+    const blob = new Blob(["png"], { type: "image/png" });
+    const state = { idea_3_image: { file_id: "f", src: blob }, list: [{ src: blob }], note: "keep" };
+    const out = map(state) as any;
+    expect(out.idea_3_image.src).toBe("blob:frame/1");
+    expect(out.list[0].src).toBe("blob:frame/1");
+    expect(out.note).toBe("keep");
+    expect((map(state) as any).idea_3_image.src).toBe("blob:frame/1");
   });
 });

@@ -35,7 +35,7 @@ export default function Board({ data, kind, config, runAction, itemState }) { �
 
 | `key` | Use it for | `input` | `result` |
 |---|---|---|---|
-| `run_shortcut` | Run AI on this item (the main one) | `{ shortcutId, scope?, variables?, userInput?, display?, expect?, saveAs?, label? }` | window: `{conversationId}` · background: `{data, saved}` |
+| `run_shortcut` | Run AI on this item (the main one) | `{ shortcutId, scope?, variables?, userInput?, display?, expect?, saveAs?, label? }` | window: `{conversationId}` · background: `{data, saved}` (`saved:false` + `notSaved` when over 64 KB) |
 | `save_item_state` | Keep something the person did or chose | `{ patch: { key: value } }` (`null` removes a key; 64 KB max) | `{saved: true}` |
 | `trigger_agent` | Legacy: open an agent by id | `{ agentId, variables?, displayMode? }` | launch result |
 | `apply_surface_write` | Write a value into the page around the shape (a field, an editor) | `{ target, value, origin?, item? }` | what was written |
@@ -58,7 +58,9 @@ component change.
   chat. `"background"`: runs to completion, streaming into the floating live-run window, and
   returns its product.
 - `expect` — `"json"` (default) returns the extracted structured value; `"text"` returns the
-  answer text.
+  answer text; `"image"` (an image-model shortcut) returns the generated image
+  `{ file_id, mime_type, width, height, organization_id }`, and once saved the component gets it
+  back with a displayable `src` — see [chains.md](chains.md).
 - `saveAs` — a short key (`idea_3_brief`). Implies `"background"`. The HOST saves the product into
   `itemState[saveAs]` — even if the component unmounted mid-run — so the component simply renders
   `itemState.idea_3_brief` when present.

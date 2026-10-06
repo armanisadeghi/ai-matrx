@@ -7,7 +7,7 @@ import {
   type AlchemyCopyVariant,
   type AlchemyCustomSource,
   type MatrxCopyMenuProps,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import type { AgentCopyGroomerConfig } from "@/components/agent-copy/groomer-types";
 import type { ExportItem } from "@/components/agent-copy/export";
 import { sendRowsToSheetOutcome } from "@/components/agent-copy/useExportActions";

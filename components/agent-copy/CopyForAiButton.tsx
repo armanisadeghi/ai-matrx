@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   MatrxCopyMenu,
   type AlchemyCopyVariant,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 

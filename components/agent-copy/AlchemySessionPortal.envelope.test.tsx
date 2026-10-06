@@ -24,7 +24,7 @@ const ask = jest.fn(async () => {
 });
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn(), loading: jest.fn(), success: jest.fn() } }));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
-jest.mock("@ai-matrx/design-system/content-transfer", () => ({
+jest.mock("@ai-matrx/alchemy/react/workspace", () => ({
   ContentTransferMenu: (props: Record<string, unknown>) => {
     menuProps.push(props);
     const R = jest.requireActual("react") as typeof import("react");

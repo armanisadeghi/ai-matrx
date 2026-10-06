@@ -275,7 +275,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.list_id) return undefined;
-      const read = await supabase.rpc("get_structured_list_for_selection", { p_list_id: ref.list_id });
+      const read = await supabase.rpc("get_pick_list_for_selection", { p_list_id: ref.list_id });
       const doc = (read.data ?? null) as { list_name?: string | null; description?: string | null } | null;
       if (read.error || !doc) return undefined;
       return stringify(doc.list_name) ?? stringify(doc.description);
@@ -299,7 +299,7 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     resolveValue: async (supabase, ref) => {
       if (!ref.item_id || !ref.list_id) return undefined;
       // The list door shows a choice's description to an editor.
-      const read = await supabase.rpc("get_user_list_with_items", { p_list_id: ref.list_id });
+      const read = await supabase.rpc("get_pick_list_with_items", { p_list_id: ref.list_id });
       const doc = (read.data ?? null) as {
         items_grouped?: Record<string, Array<{ id: string; label?: string | null; description?: string | null }>> | null;
       } | null;

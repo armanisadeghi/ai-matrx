@@ -5,7 +5,7 @@
 --     with the same rows, marked `moved_to` {moved, address '/data/<id>', says};
 --   · every older write door refuses — a direct table write (what PostgREST and the server's ORM
 --     do), udt_upsert_cell, append_rows_to_user_table, add_column_to_user_table, a list item
---     insert, update_user_list, one Trash restore of a list, update_data_row_in_user_table (which
+--     insert, update_pick_list, one Trash restore of a list, update_data_row_in_user_table (which
 --     used to answer success) — with a sentence naming the copy's address;
 --   · on a live older table a one-cell patch MERGES (update_data_row_in_user_table and
 --     udt_upsert_row used to replace the whole row — VERIFIER-26);
@@ -175,13 +175,13 @@ begin
   end;
 
   -- 2h. the older pick list: reads marked, writes refused, one restore refused
-  v := public.get_structured_list_for_selection(f.lst);
+  v := public.get_pick_list_for_selection(f.lst);
   if v is null or v #>> '{moved_to,address}' is distinct from '/data/' || f.lst then
-    raise exception '2h: get_structured_list_for_selection does not answer the moved list, marked: %', v;
+    raise exception '2h: get_pick_list_for_selection does not answer the moved list, marked: %', v;
   end if;
-  v := public.get_user_list_with_items(f.lst);
+  v := public.get_pick_list_with_items(f.lst);
   if v is null or coalesce((v #>> '{moved_to,moved}')::boolean, false) is not true then
-    raise exception '2h2: get_user_list_with_items does not answer the moved list, marked: %', v;
+    raise exception '2h2: get_pick_list_with_items does not answer the moved list, marked: %', v;
   end if;
   begin
     insert into workbench.udt_structured_list_items (list_id, label, group_name, organization_id, user_id, created_by)
@@ -191,12 +191,12 @@ begin
     get stacked diagnostics v_err = message_text;
     if v_err not like '%This list moved to the new system%' or v_err not like '%/data/' || f.lst || '%' then raise exception '2i2: the refusal says %', v_err; end if;
   end;
-  -- 2j. update_user_list on a moved list writes its COPY (lane LISTS-AFTER-SWITCH, 2026-09-26: a
+  -- 2j. update_pick_list on a moved list writes its COPY (lane LISTS-AFTER-SWITCH, 2026-09-26: a
   -- moved list lives in the store, so the older door writes there); the archived older list is
   -- not touched — the older rows take no writes, from any door.
-  perform public.update_user_list(f.lst, 'Countries by Continent (2026)');
-  if (public.get_user_list_with_items(f.lst) ->> 'list_name') is distinct from 'Countries by Continent (2026)' then
-    raise exception '2j: update_user_list did not rename the moved list where it now lives (its copy)';
+  perform public.update_pick_list(f.lst, 'Countries by Continent (2026)');
+  if (public.get_pick_list_with_items(f.lst) ->> 'list_name') is distinct from 'Countries by Continent (2026)' then
+    raise exception '2j: update_pick_list did not rename the moved list where it now lives (its copy)';
   end if;
   begin
     update workbench.udt_structured_lists set list_name = 'Countries by Continent (2026)' where id = f.lst;
@@ -272,7 +272,7 @@ begin
 
   insert into workbench.udt_structured_list_items (list_id, label, group_name, organization_id, user_id, created_by)
   values (f.lst, 'Portugal', 'Europe', f.ws, f.admin, f.admin);
-  v := public.get_structured_list_for_selection(f.lst);
+  v := public.get_pick_list_for_selection(f.lst);
   if v -> 'moved_to' is distinct from 'null'::jsonb then raise exception '4c: a live older list is still marked moved'; end if;
   raise notice 'olderdoors_green: GREEN';
 end

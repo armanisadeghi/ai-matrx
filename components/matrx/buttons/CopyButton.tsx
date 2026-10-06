@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { ContentTransferMenu } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferMenu } from "@ai-matrx/alchemy/react/workspace";
 import { directSource } from "@ai-matrx/alchemy/operate";
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 import { cn } from "@/lib/utils";
