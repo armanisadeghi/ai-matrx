@@ -10,6 +10,9 @@
  * The `situation` is the moment in words, rendered by the server on every turn from the
  * values below and placed first in what the agent receives.
  *
+ * Inherits the deck page's surface: the whole deck travels as data, exactly as it does on the
+ * deck page; this surface adds the card in view and the session on top.
+ *
  * Emitter: `features/flashcards/components/study/useFlashcardStudySurface.ts`. No write
  * targets: studying changes nothing an agent may write; grades go through the study spine.
  */
@@ -22,6 +25,10 @@ import type {
 } from "@ai-matrx/chat/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
+import type {
+  FlashcardSetSurfaceCard,
+  FlashcardSetSurfaceDetails,
+} from "./education-flashcard-set.manifest";
 
 export const EDUCATION_FLASHCARD_STUDY_SURFACE = "matrx-user/education-flashcard-study";
 
@@ -31,13 +38,12 @@ export const EDUCATION_FLASHCARD_STUDY_SURFACE = "matrx-user/education-flashcard
  */
 export const EDUCATION_FLASHCARD_STUDY_SITUATION =
   "{user.name|The person} is using the education area, studying flashcards in {study_mode} mode. " +
-  "They opened the deck \"{deck_name}\" on the topic {deck_topic|(no topic set)}, which has {card_count} cards. " +
+  "They opened the deck \"{set_details.name}\" on the topic {set_details.topic|(no topic set)}, which has {card_count} cards. " +
   "They are on card {card_number} of {cards_in_round}, a {card_kind} card, looking at the {side_shown}. " +
   "The front says: \"{card_front}\". The back says: \"{card_back}\" — {back_status}. " +
   "{card_history} They have been on this page for {time_on_page}. Score this session: {score}.";
 
 const groups: SurfaceValueGroup[] = [
-  { key: "deck", label: "Deck", sortOrder: 100, description: "The deck being studied." },
   { key: "current_card", label: "Current card", sortOrder: 200, description: "The one card in view." },
   { key: "session", label: "Session", sortOrder: 300, description: "How this study session is going." },
 ];
@@ -63,14 +69,7 @@ const v = (
 });
 
 const surfaceSpecific: SurfaceValue[] = [
-  v("set_id", "Deck ID", "string", "deck", 100, "UUID of the deck being studied. Always present.", {
-    alwaysAvailable: true,
-    typicalCharCount: 36,
-  }),
-  v("deck_name", "Deck name", "string", "deck", 110, "The deck's name as shown in the header."),
-  v("deck_topic", "Deck topic", "string", "deck", 120, "The deck's topic; absent when none is set."),
-  v("card_count", "Card count", "number", "deck", 130, "How many cards the deck has."),
-  v("study_mode", "Study mode", "string", "deck", 140, "How the learner is studying: flip cards, learn (repeats missed cards) or write the answer.", {
+  v("study_mode", "Study mode", "string", "current_card", 190, "How the learner is studying: flip cards, learn (repeats missed cards) or write the answer.", {
     alwaysAvailable: true,
   }),
   v("card_id", "Card ID", "string", "current_card", 200, "UUID of the card in view.", { typicalCharCount: 36 }),
@@ -93,9 +92,6 @@ const surfaceSpecific: SurfaceValue[] = [
   v("cards_graded", "Cards graded", "number", "session", 310, "Distinct cards the learner graded this session."),
   v("cards_correct", "Cards correct", "number", "session", 320, "Distinct cards last graded correct this session."),
   v("score", "Score", "string", "session", 330, "This session's score in words."),
-  v("load_error", "Load error", "string", "deck", 900, "The error shown when the deck could not load. Absent on success.", {
-    typicalCharCount: 160,
-  }),
 ];
 
 export const educationFlashcardStudyManifest: SurfaceManifest = {
@@ -106,6 +102,9 @@ export const educationFlashcardStudyManifest: SurfaceManifest = {
   description: "One flashcard deck being studied, one card at a time.",
   label: "Flashcard study",
   urlPattern: "/education/flashcards/[setId]/study",
+  // The whole deck as data (set_details, card_count, cards, card_mastery …) is the deck
+  // page's vocabulary, inherited — one family, one name per fact. The study page emits it.
+  inheritsFrom: "matrx-user/education-flashcard-set",
   readiness: "partial",
   readinessNote:
     "AP-6 first proof (2026-10-06): every situation value mapped on study, learn, write and the study window. Live agent proof pending.",
@@ -117,15 +116,17 @@ If back_status says they have not seen the back, do not give the answer away unl
   values: mergeBaselineValues(pickBaseline("selection"), surfaceSpecific),
 };
 
+/** The deck page's values (inherited) plus the card in view and the session. */
 export interface FlashcardStudySurfaceValues {
+  set_loaded: boolean;
   set_id: string;
+  set_details?: FlashcardSetSurfaceDetails;
+  card_count?: number;
+  cards?: FlashcardSetSurfaceCard[];
   study_mode: string;
   seconds_on_page: number;
   time_on_page: string;
   selection?: string;
-  deck_name?: string;
-  deck_topic?: string;
-  card_count?: number;
   card_id?: string;
   card_number?: number;
   cards_in_round?: number;
