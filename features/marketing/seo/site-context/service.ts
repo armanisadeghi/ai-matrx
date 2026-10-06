@@ -213,8 +213,8 @@ export async function fetchExpertise(options: {
   const keys = await fetchKnobIndex({
     organizationId: options.organizationId,
     featurePrefix: EXPERTISE_KNOB.feature,
+    // The user rung is its own parameter; knob_index refuses it in p_scopes.
     userId: options.userId,
-    scopes: [{ kind: "user", id: options.userId }],
   });
   return keys.find((k) => k.full_key === `${EXPERTISE_KNOB.feature}.${EXPERTISE_KNOB.key}`) ?? null;
 }
