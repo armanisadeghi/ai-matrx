@@ -3,8 +3,10 @@
   "updated": "2026-10-06",
   "sha": "bc48048f584874a320c8ce65e7672bf4192cbd75",
   "sites": 36894,
-  "count": 0,
-  "ids": [],
+  "count": 1,
+  "ids": [
+    "unclamped-text-pill|features/marketing/local/rank-grid/RankGridMap.tsx"
+  ],
   "counts": {
     "arbitrary-text-size|app/(admin)/administration/_nav/AdminNavTreeMenu.tsx": 2,
     "arbitrary-text-size|app/(admin)/administration/agents/agent-apps/categories/page.tsx": 4,
@@ -11540,5 +11542,12 @@
     "unclamped-text-pill|packages/chat/src/tool-call-visualization/renderers/dictionary/DictEntryList.tsx": 1,
     "unclamped-text-pill|packages/chat/src/tool-call-visualization/renderers/random-wheel/RandomWheelInline.tsx": 1,
     "unclamped-text-pill|packages/chat/src/tool-call-visualization/renderers/search/SearchInline.tsx": 1
+  },
+  "reasons": {
+    "unclamped-text-pill|features/marketing/local/rank-grid/RankGridMap.tsx": {
+      "reason": "Legend swatch: item.text is a fixed constant of at most 3 characters (LEGEND in grid-model.ts), never user data",
+      "accepted_by": "Armani Sadeghi",
+      "date": "2026-10-06"
+    }
   }
 }
