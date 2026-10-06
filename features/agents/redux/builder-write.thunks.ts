@@ -376,21 +376,9 @@ export const duplicateAgent = createAsyncThunk<
   string | DuplicateAgentOptions,
   ThunkApi
 >("agentDefinition/duplicate", async (input, { dispatch, getState }) => {
-  const {
-    agentId,
-    asSystem,
-    organizationId: explicitOrganizationId,
-    followsSource,
-    versionId,
-  } =
+  const { agentId, asSystem, organizationId: explicitOrganizationId, followsSource, versionId } =
     typeof input === "string"
-      ? {
-          agentId: input,
-          asSystem: false,
-          organizationId: undefined,
-          followsSource: false,
-          versionId: undefined,
-        }
+      ? { agentId: input, asSystem: false, organizationId: undefined, followsSource: false, versionId: undefined }
       : input;
 
   // A personal copy lives in the organization the caller named, else the one the
@@ -411,7 +399,8 @@ export const duplicateAgent = createAsyncThunk<
         p_organization_id: organizationId,
       })
     : await supabase.rpc("agx_duplicate_agent", {
-        p_agent_id: agentId,
+        // The options type guarantees an agent id whenever no version is named.
+        p_agent_id: agentId as string,
         p_as_system: Boolean(asSystem),
         p_organization_id: organizationId,
         p_follows_source: Boolean(followsSource),

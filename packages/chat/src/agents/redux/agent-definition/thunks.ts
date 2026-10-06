@@ -696,7 +696,7 @@ export const fetchAgentRunControls = createAsyncThunk<void, string, ThunkApi>(
 // `fetchAgentExecutionFull` (agx_get_execution_full) is builder-tier and lives
 // in the app since P25: features/agents/redux/builder-tier.thunks.ts — with
 // applyOwnedAgentToolDelta, setAgentAutoToolsDisabled/AutoContextDisabled,
-// resetAgentToSource, duplicateAgentVersion, promoteAgentVersion,
+// resetAgentToSource, promoteAgentVersion,
 // updateAgentFromSource and the linked-agent sync thunks.
 
 /**

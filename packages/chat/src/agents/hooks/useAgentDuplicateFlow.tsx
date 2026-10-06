@@ -67,10 +67,13 @@ export function useAgentDuplicateFlow(
   const newAgentPath = newAgentId
     ? (() => {
         const sourceSegment = `${basePath}/${agentId}`;
-        const suffix =
+        const here =
           pathname && pathname.startsWith(sourceSegment)
             ? pathname.slice(sourceSegment.length)
             : fallbackSuffix;
+        // A copy starts at v1: a source page pinned to a version (/v/3)
+        // does not exist on it, so it opens on its default page instead.
+        const suffix = /^\/v(\/|$)/.test(here) ? fallbackSuffix : here;
         return `${basePath}/${newAgentId}${suffix || fallbackSuffix}`;
       })()
     : null;
