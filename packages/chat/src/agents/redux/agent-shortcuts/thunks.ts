@@ -236,6 +236,7 @@ import {
   agentShortcutToUpdate,
   parseValueMappings,
   readShortcutWritePolicies,
+  readShortcutNeverIncludeTools,
   packShortcutMappingColumns,
   shortcutMappingColumnsAreShared,
 } from "./converters";
@@ -337,6 +338,9 @@ export const buildAgentShortcutMenu = createAsyncThunk<
             (item as { value_mappings?: unknown }).value_mappings,
           ),
           writePolicies: readShortcutWritePolicies(
+            item as unknown as Record<string, unknown>,
+          ),
+          neverIncludeTools: readShortcutNeverIncludeTools(
             item as unknown as Record<string, unknown>,
           ),
           contextMappings: parseScopeMappings(item.context_mappings),
@@ -454,6 +458,9 @@ export const fetchShortcutsForContext = createAsyncThunk<
           (row as { value_mappings?: unknown }).value_mappings,
         ),
         writePolicies: readShortcutWritePolicies(
+          row as unknown as Record<string, unknown>,
+        ),
+        neverIncludeTools: readShortcutNeverIncludeTools(
           row as unknown as Record<string, unknown>,
         ),
         contextMappings: parseScopeMappings(row.context_mappings),
@@ -890,6 +897,9 @@ export const syncUserShortcutToSlice = createAsyncThunk<
       writePolicies: readShortcutWritePolicies(
         item as unknown as Record<string, unknown>,
       ),
+      neverIncludeTools: readShortcutNeverIncludeTools(
+        item as unknown as Record<string, unknown>,
+      ),
       contextMappings: item.context_mappings,
       ...menuItemToConfigFields(item),
       isActive: item.is_active,
@@ -964,6 +974,9 @@ export function shortcutRowToFrontend(row: ShortcutApiRow): AgentShortcut {
     scopeMappings: parseScopeMappings(row.scope_mappings),
     valueMappings: parseValueMappings(row.value_mappings),
     writePolicies: readShortcutWritePolicies(
+      row as unknown as Record<string, unknown>,
+    ),
+    neverIncludeTools: readShortcutNeverIncludeTools(
       row as unknown as Record<string, unknown>,
     ),
     contextMappings: parseScopeMappings(row.context_mappings),

@@ -21,6 +21,10 @@ import {
   type WidgetHandle,
 } from "../../../types/widget-handle.types";
 import { selectWidgetHandleIdFor } from "../instance-ui-state/instance-ui-state.selectors";
+import {
+  isToolBlocked,
+  selectBlockedToolPatterns,
+} from "../utils/shortcut-tool-block";
 import { registerClientCapability } from "./registry";
 
 registerClientCapability({
@@ -28,7 +32,11 @@ registerClientCapability({
   selectPayload: (state, conversationId) => {
     const handleId = selectWidgetHandleIdFor(state, conversationId);
     const handle = handleId ? callbackManager.get<WidgetHandle>(handleId) : null;
-    const tools = deriveClientToolsFromHandle(handle);
+    // A show-only shortcut blocks the widget's write tools (never_include_tools).
+    const blocked = selectBlockedToolPatterns(state, conversationId);
+    const tools = deriveClientToolsFromHandle(handle).filter(
+      (name) => !isToolBlocked(name, blocked),
+    );
     return tools.length > 0 ? { tools } : null;
   },
 });

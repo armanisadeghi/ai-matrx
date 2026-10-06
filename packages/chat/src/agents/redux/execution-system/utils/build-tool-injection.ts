@@ -76,6 +76,10 @@ import {
   resolveRunOutputContract,
 } from "./output-contract-guard";
 import type { ToolSpecInline } from "../../../types/tool-injection.types";
+import {
+  isToolBlocked,
+  selectBlockedToolPatterns,
+} from "./shortcut-tool-block";
 
 interface BuildOptions {
   mode?: "additive" | "replace";
@@ -260,13 +264,21 @@ export async function buildToolInjection(
   const widgetHandle = widgetHandleId
     ? callbackManager.get<WidgetHandle>(widgetHandleId)
     : null;
-  const widgetClientTools = deriveClientToolsFromHandle(widgetHandle);
+  // The launching shortcut's tool block list (a show-only shortcut lists the
+  // write tools) — see ./shortcut-tool-block.
+  const blockedTools = selectBlockedToolPatterns(state, conversationId);
+  const widgetClientTools = deriveClientToolsFromHandle(widgetHandle).filter(
+    (name) => !isToolBlocked(name, blockedTools),
+  );
 
   // `delegate: true` is NOT what routes these: the server delegates by executor
   // binding only. Widget tools reach the client because the `widget-handle`
   // capability (./client-capabilities/widget-handle.provider) declares the
   // handle on this same request.
-  const clientToolNames = [...registeredClientTools, ...widgetClientTools];
+  const clientToolNames = [
+    ...registeredClientTools.filter((name) => !isToolBlocked(name, blockedTools)),
+    ...widgetClientTools,
+  ];
   const clientToolSpecs: ToolSpec[] = clientToolNames.map((name) => ({
     kind: "registered",
     name,
@@ -339,11 +351,18 @@ export async function buildToolInjection(
     const allSurfaceTools = listLiveSurfaceClientTools();
     const allWritableTargets = listAgentWritableTargets();
     const liveSurfaceTools = binding.bound
-      ? allSurfaceTools.filter((row) => binding.accepts(row.surfaceName))
+      ? allSurfaceTools.filter(
+          (row) =>
+            binding.accepts(row.surfaceName) &&
+            !isToolBlocked(row.tool.name, blockedTools),
+        )
       : [];
-    const writableTargets = binding.bound
-      ? allWritableTargets.filter((row) => binding.accepts(row.surfaceName))
-      : [];
+    // `apply_surface_write` is one tool over every writable target: blocked,
+    // the run is offered no page write at all.
+    const writableTargets =
+      binding.bound && !isToolBlocked(SURFACE_WRITE_TOOL_NAME, blockedTools)
+        ? allWritableTargets.filter((row) => binding.accepts(row.surfaceName))
+        : [];
     if (!binding.bound) {
       announceUnboundPageTools(conversationId, binding.reason, [
         ...allSurfaceTools.map((row) => row.tool.name),

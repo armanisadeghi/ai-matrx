@@ -94,6 +94,13 @@ export interface AgentShortcut {
    * absent as null.
    */
   writePolicies?: WritePolicyMap | null;
+  /**
+   * Tools this shortcut's run is never offered (names, or `prefix*` groups) —
+   * the show-only shortcuts list `apply_surface_write` + `widget_*`. Stored in
+   * the treatment (`never_include_tools`); see `readShortcutNeverIncludeTools`.
+   * Optional so partial record constructions don't have to name it.
+   */
+  neverIncludeTools?: string[] | null;
   /** UI scope key → agent context-policy key. Parity with scopeMappings. */
   contextMappings: Record<string, string> | null;
 

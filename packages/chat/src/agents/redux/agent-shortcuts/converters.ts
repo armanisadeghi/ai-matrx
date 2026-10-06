@@ -161,6 +161,27 @@ export function readShortcutWritePolicies(
 }
 
 /**
+ * The shortcut's TOOL BLOCK LIST — tool names (or `prefix*` groups) its run is
+ * never offered, however they would otherwise arrive (the live widget handle's
+ * `widget_*` writes, the page's `apply_surface_write`, surface client tools).
+ * Stored in the shortcut's treatment (`mandate.treatment.config
+ * .never_include_tools`), served as the `never_include_tools` column of
+ * `mandate.vw_shortcut` / `mandate.context_menu_view`. A show-only shortcut
+ * (Summarize, Translate…) lists the write tools; a replace/insert shortcut
+ * lists none. Junk entries degrade to absent.
+ */
+export function readShortcutNeverIncludeTools(
+  row: Record<string, unknown>,
+): string[] | null {
+  const raw = row.never_include_tools;
+  if (!Array.isArray(raw)) return null;
+  const names = raw.filter(
+    (v): v is string => typeof v === "string" && v.length > 0,
+  );
+  return names.length > 0 ? names : null;
+}
+
+/**
  * THE write seam — the mapping COLUMNS for an insert/update payload.
  *
  * Post-cutover the two halves are independent columns, so a one-sided patch is
@@ -262,6 +283,7 @@ export function dbRowToAgentShortcut(row: ShortcutRow): AgentShortcut {
     scopeMappings: (row.scope_mappings as Record<string, string>) ?? null,
     valueMappings: parseValueMappings(loose.value_mappings),
     writePolicies: readShortcutWritePolicies(loose),
+    neverIncludeTools: readShortcutNeverIncludeTools(loose),
     contextMappings: rJsonObject<Record<string, string>>(
       loose,
       "context_mappings",
