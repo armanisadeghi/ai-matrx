@@ -155,9 +155,9 @@ describe("applyManifestSync writes only what the package plan declares", () => {
     const tables = baseTables();
     tables["ui.ui_surface_value"] = [
       // Declared screen value — must survive.
-      { surface_name: DECLARED, item_type: "", name: "pickup_address", updated_at: old },
+      { surface_name: DECLARED, item_type: "", name: "pickup_address", updated_at: old, declared_by: "code" },
       // An item value of the same name no declaration carries — stale.
-      { surface_name: DECLARED, item_type: "pickup", name: "pickup_address", updated_at: old },
+      { surface_name: DECLARED, item_type: "pickup", name: "pickup_address", updated_at: old, declared_by: "code" },
     ];
     const { client, calls } = recordingClient(tables);
     const result = await applyManifestSync(client as any, { deleteStale: true });
@@ -174,10 +174,31 @@ describe("applyManifestSync writes only what the package plan declares", () => {
         ["surface_name", DECLARED],
         ["item_type", "pickup"],
         ["name", "pickup_address"],
+        ["declared_by", "code"],
         ["deleted_at", null],
       ],
     ]);
     expect(result.deleted).toEqual([{ surfaceName: DECLARED, valueName: "pickup_address" }]);
+  });
+
+  it("leaves database-declared rows out of a stale sweep", async () => {
+    const old = new Date(Date.now() - 48 * 3_600_000).toISOString();
+    const tables = baseTables();
+    tables["ui.ui_surface_value"] = [
+      {
+        surface_name: DECLARED,
+        item_type: "",
+        name: "database_only_setting",
+        updated_at: old,
+        declared_by: "database",
+      },
+    ];
+    const { client, calls } = recordingClient(tables);
+
+    const result = await applyManifestSync(client as any, { deleteStale: true });
+
+    expect(result.deleted).toEqual([]);
+    expect(calls.some((call) => call.op === "update" && typeof (call.payload as Row | undefined)?.deleted_at === "string")).toBe(false);
   });
 
   it("revives a declared row that sits in Trash instead of inserting a duplicate", async () => {

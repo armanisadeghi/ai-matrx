@@ -1435,7 +1435,8 @@ async function countPicksThatFollowedRole(
  * Archive ONE stale mirror row filtered by EVERY column of its table's plan key
  * (`plan.keys`) — never by (surface_name, name) alone, which would also hit an
  * item row that shares a screen row's name. Delete means archive: the row gets
- * deleted_at; a later sync that finds it declared again revives it.
+ * deleted_at; a later sync that finds it declared again revives it. Restrict
+ * the archive to code-owned rows as a final race-safe ownership guard.
  */
 async function deleteByPlanKey(
   sb: Sb,
@@ -1454,6 +1455,7 @@ async function deleteByPlanKey(
     .from(table)
     .update({ deleted_at: new Date().toISOString() }) as unknown as Filterable;
   for (const column of key) query = query.eq(column, row[column] ?? "");
+  query = query.eq("declared_by", "code");
   const archived = await query.is("deleted_at", null);
   if (archived.error) throw archived.error;
 }
@@ -1620,7 +1622,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_value")
-          .select("surface_name, item_type, name, updated_at", { count: "exact" })
+          .select("surface_name, item_type, name, updated_at, declared_by", { count: "exact" })
           .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
@@ -1656,7 +1658,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_agent_role")
-          .select("surface_name, name, updated_at", { count: "exact" })
+          .select("surface_name, name, updated_at, declared_by", { count: "exact" })
           .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
@@ -1691,7 +1693,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_write_target")
-          .select("surface_name, item_type, name, updated_at", { count: "exact" })
+          .select("surface_name, item_type, name, updated_at, declared_by", { count: "exact" })
           .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })
@@ -1727,7 +1729,7 @@ export async function applyManifestSync(
         sb
           .schema("ui")
           .from("ui_surface_client_tool")
-          .select("surface_name, name, updated_at", { count: "exact" })
+          .select("surface_name, name, updated_at, declared_by", { count: "exact" })
           .is("deleted_at", null)
           .order("surface_name", { ascending: true })
           .order("name", { ascending: true })

@@ -7,7 +7,7 @@
  * `includeRecent` option on `ApplyManifestSyncOptions`.
  *
  * Uses a fixture surface (`cascade-electronics/pickup-intake`, never a real manifest) with two
- * DB-only `ui_surface_value` rows — one written a minute ago, one written 48
+ * code-owned, stale `ui_surface_value` rows — one written a minute ago, one written 48
  * hours ago — to prove:
  *   1. A default sweep (`includeRecent` unset) deletes the OLD row and SKIPS
  *      the RECENT one, reporting it on `skippedRecentRows`.
@@ -68,6 +68,7 @@ const RECENT_ROW = {
   auto_context: true,
   sort_order: 1000,
   group_key: "general",
+  declared_by: "code",
 };
 const OLD_ROW = {
   surface_name: TEST_SURFACE,
@@ -81,6 +82,7 @@ const OLD_ROW = {
   auto_context: true,
   sort_order: 1000,
   group_key: "general",
+  declared_by: "code",
 };
 
 type Row = Record<string, unknown>;
