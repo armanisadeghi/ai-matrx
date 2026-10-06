@@ -36,7 +36,7 @@ import type {
   MatrxContentTransferProgress,
   MatrxContentTransferSupabase,
 } from "@ai-matrx/agents/content-transfer";
-import type { AiPreparation } from "@ai-matrx/kit/content-transfer";
+import type { AiPreparation } from "@ai-matrx/alchemy/operate";
 import {
   requireOrganizationContext,
   type MatrxTransport,

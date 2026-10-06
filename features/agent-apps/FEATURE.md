@@ -191,6 +191,7 @@ and admin/user route families are live. Remaining migration work is tracked in:
 ## Change log
 
 - `2026-10-06` — ALC-16: transfer imports moved off the retired `@ai-matrx/alchemy/core` / `@ai-matrx/kit/content-transfer` onto `@ai-matrx/alchemy/operate` (same functions, same bytes).
+- `2026-10-06` — ALC-16: the copy/transform/export menu imports moved from `@ai-matrx/design-system/content-transfer` (removed in 0.69.0) to `@ai-matrx/alchemy/react/workspace` (0.13.0); same menu, same bytes.
 - `2026-10-06` — **One compiler: `@ai-matrx/code-runtime`.** Deleted `utils/compile-slot.ts` (`compileSlotComponent`), `utils/allowed-imports.ts`, `utils/component-source-gate.{ts,json}` and `utils/patch-scope-identifiers.ts`. One stored body → `compileStoredComponent` (`lib/code-runtime/compile-stored.ts`); scope registry → the package's `listScopeEntries()` plus app modules in `lib/code-runtime/stored-scope.ts`; starting scopes for new rows → `lib/code-runtime/defaults.ts`; source gate → `@ai-matrx/code-runtime/gate`. Multi-file code (relative imports) is supported. Primary UI set for new code is `@ai-matrx/design-system/controls`; `@/components/ui/*` stay as legacy aliases.
 - `2026-10-01` — unresolved sandbox imports announce themselves: visible named stand-in (was a neutral `?` icon that dropped children) + `sandbox-unresolved-import` capture under a now-required `compileSlotComponent({ origin })`; public renderer + template preview collapsed onto `compileSlotComponent`; iframe kind sandbox relays the gaps as a `matrx:sandbox:error`.
 
