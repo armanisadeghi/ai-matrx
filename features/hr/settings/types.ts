@@ -244,24 +244,7 @@ export type HrSettingsStructure = {
   tax_registrations: HrTaxRegistration[];
 };
 
-// ── Route 73 — the custom-field registry (READ ONLY, L14 owns authoring) ────
-
-/** `platform.custom_field_definition`, read directly (the `platform` schema IS exposed). */
-export type HrCustomFieldDefinition = {
-  id: string;
-  target_token: string | null;
-  field_key: string;
-  display_name: string;
-  field_type: string;
-  field_order: number;
-  is_required: boolean;
-  is_multi: boolean;
-  sensitivity_tier: string;
-  ai_exposure: string;
-  reference_target_token: string | null;
-  archived_at: string | null;
-  options: unknown;
-};
+// ── Route 73 — custom-field policy (fields themselves come from the custom store via @ai-matrx/records) ────
 
 /** `platform.custom_field_target` — the per-token ceilings and the enable switch. */
 export type HrCustomFieldTarget = {

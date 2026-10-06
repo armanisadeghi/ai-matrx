@@ -976,23 +976,6 @@ export const COMING_SOON: Record<string, ComingSoonEntry> = {
       "SPEC-UI-IA §3.11. Reporting reads across every pillar, so it is deliberately last: a report over half the pillars would be a number nobody could defend.",
     surfaces: ["/hr/reports", "HR nav — Reports", "HR home — Reports card"],
   },
-  "hr-settings.custom-field-authoring": {
-    id: "hr-settings.custom-field-authoring",
-    label: "Add a custom field",
-    owner: "platform-extensibility",
-    promise:
-      "Create an extra field on an HR record — its type, where it appears, who may see it, and whether AI may read it — and edit or archive the ones that already exist.",
-    stage: "blocked",
-    // HR's fields still live in HR's own registry (`platform.custom_field_definition` /
-    // `custom_field_target`), which route 73 READS today. The platform's one field editor
-    // exists — `FieldEditor` / `CustomFieldsSection` in @ai-matrx/records-ui, declaring into
-    // `custom.field` for custom and standard tables alike — and HR authoring arrives when lane 7
-    // STANDARD-TABLES folds HR's registry into `custom.field` (its wave 4). Building an HR-local
-    // editor meanwhile would be a second editor for one shape.
-    blockedBy:
-      "HR's fields still live in HR's own registry; authoring arrives through the shared field editor (FieldEditor over custom.field) when lane 7 folds HR into it. HR must not fork an editor.",
-    surfaces: ["/hr/settings/fields — Add a custom field"],
-  },
   "commerce.store-connect-oauth": {
     id: "commerce.store-connect-oauth",
     label: "Connect eBay store",

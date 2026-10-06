@@ -2,48 +2,35 @@
 //
 // ROUTE 73 — CUSTOM FIELDS AND CUSTOM TABS.
 //
-// 🚨 THE AUTHORING SURFACE IS NOT BUILT HERE, ON PURPOSE.
-// The PLATFORM's one field editor is `FieldEditor` / `CustomFieldsSection` in
-// @ai-matrx/records-ui, declaring into `custom.field` for custom and standard tables alike.
-// HR's definitions still live in `platform.custom_field_definition`, so this panel cannot use it
-// yet; lane 7 STANDARD-TABLES folds HR into `custom.field` (wave 4) and this panel then mounts
-// that editor. Building a competing editor in `features/hr/` meanwhile would be a second
-// renderer for one shape — the kind that is never removed once two surfaces depend on it.
-//
-// So this panel does the half that is honest today: it READS
-// `platform.custom_field_definition` and `platform.custom_field_target` (both live,
-// both in a PostgREST-exposed schema) and renders the registry as it actually is,
-// with the governance rules stated in words. The authoring half is a registered,
-// countable promise in `lib/coming-soon/registry.ts` (`hr-settings.custom-field-authoring`).
+// FIELDS COME FROM, AND GO TO, THE CUSTOM STORE — never `platform.custom_field_definition`.
+// An organization's custom fields on a platform record type (`hr_employee`, ...) are read with
+// `custom.entity_fields` (`useEntityFields`), declared with `FieldEditor entityToken`
+// (`custom.entity_field_declare`), renamed/retired with `useEntityFieldMutation`
+// (`custom.entity_field_update` / `entity_field_retire`), all from @ai-matrx/records(-ui) — the
+// platform's ONE field editor, never an HR fork. `platform.custom_field_target` (which tokens are on,
+// their ceilings) is still read as policy, read-only.
 //
 // ── THE GOVERNANCE RULES, STATED ON THE PAGE (SPEC-EMPLOYEES §7.4) ─────────
-//  • `field_key`, `field_type` and `reference_target_token` are IMMUTABLE once any
-//    value exists. The admin surface offers archive-and-recreate instead — changing
-//    a type under stored values silently reinterprets every one of them.
-//  • DELETING A DEFINITION NEVER DELETES VALUES. Orphaned keys are reported and
-//    purged only by an explicit, logged action.
-//  • A `restricted`-tier field is NEVER in an AI Provision. `ai_exposure` governs the
-//    other two tiers; restricted is not a setting, it is a ceiling.
+//  • A field's key and type are IMMUTABLE once any value exists: archive and recreate instead.
+//  • DELETING A DEFINITION NEVER DELETES VALUES.
+//  • A `restricted`-tier field is NEVER in an AI Provision.
 
 "use client";
 
 import { useEffect, useState } from "react";
-import { ClipboardList, Info, Lock } from "lucide-react";
+import { ClipboardList } from "lucide-react";
+import { RecordsProvider, useEntityFieldMutation, useEntityFields } from "@ai-matrx/records/react";
+import type { Field } from "@ai-matrx/records";
+import { FieldEditor, RefusalLine } from "@ai-matrx/records-ui";
 
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { announceComingSoon } from "@/lib/coming-soon/announce";
-import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
-import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
 import { useHrContext } from "../../shared/useHrContext";
 import { fetchHrCustomFieldRegistry } from "../service";
 import { HrSettingsShell } from "../HrSettingsShell";
-import type { HrCustomFieldDefinition, HrCustomFieldTarget } from "../types";
-import { ArchivedDisclosure } from "@ai-matrx/design-system";
-import { AGENT_ICON } from "@/components/icons/domain-icons";
+import type { HrCustomFieldTarget } from "../types";
 
 // THE RECORD-TYPE NAMES ARE READ, NOT WRITTEN HERE (DD-097). This file used to
 // carry a seven-entry `TOKEN_LABEL` map that matched a seven-entry token list in
@@ -55,19 +42,12 @@ export function HrFieldsPanel() {
   const { active } = useHrContext();
   const organizationId = active?.organization_id ?? null;
 
-  const [definitions, setDefinitions] = useState<HrCustomFieldDefinition[]>([]);
   const [targets, setTargets] = useState<HrCustomFieldTarget[]>([]);
   const [labels, setLabels] = useState<Record<string, string>>({});
   // Derived, never set synchronously in an effect body (react-hooks/set-state-in-effect).
   const [loadedFor, setLoadedFor] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [reload, setReload] = useState(0);
-  // THE ARCHIVED-ITEMS LAW (../common-docs/policies/archived-items.md): this
-  // table used to render archived and live definitions mixed together with
-  // nothing but a badge to tell them apart. Archived rows are now hidden by
-  // default and one click away — the count is the real number.
-  const [showArchived, setShowArchived] = useState(false);
-
   useEffect(() => {
     if (!organizationId) return;
     let cancelled = false;
@@ -75,7 +55,6 @@ export function HrFieldsPanel() {
       const result = await fetchHrCustomFieldRegistry({ organizationId });
       if (cancelled) return;
       if (result.ok) {
-        setDefinitions(result.data.definitions);
         setTargets(result.data.targets);
         setLabels(result.data.labels);
         setError(null);
@@ -94,91 +73,7 @@ export function HrFieldsPanel() {
   const labelFor = (token: string | null) =>
     token ? (labels[token] ?? token) : "—";
   const enabledTargets = targets.filter((row) => row.is_enabled);
-
-  const liveDefinitions = definitions.filter((row) => !row.archived_at);
-  const archivedDefinitions = definitions.filter((row) => Boolean(row.archived_at));
-  const visibleDefinitions = showArchived ? definitions : liveDefinitions;
-
-  const columns: MatrxColumnDef<HrCustomFieldDefinition>[] = [
-    {
-      id: "display_name",
-      accessorKey: "display_name",
-      header: "Field",
-      cell: (row) => (
-        <span className="min-w-0">
-          <span className="block text-sm font-medium text-foreground">
-            {row.display_name}
-          </span>
-        </span>
-      ),
-    },
-    {
-      id: "target",
-      accessorFn: (row) => labelFor(row.target_token),
-      header: "On which record",
-      filter: "select",
-    },
-    { id: "type", accessorKey: "field_type", header: "Type", filter: "select" },
-    {
-      id: "sensitivity",
-      accessorKey: "sensitivity_tier",
-      header: "Sensitivity",
-      filter: "select",
-      cell: (row) => (
-        <Badge
-          variant={
-            row.sensitivity_tier === "restricted"
-              ? "destructive"
-              : row.sensitivity_tier === "confidential"
-                ? "default"
-                : "secondary"
-          }
-        >
-          {row.sensitivity_tier}
-        </Badge>
-      ),
-    },
-    {
-      id: "ai",
-      accessorFn: (row) =>
-        row.sensitivity_tier === "restricted" ? "never (restricted)" : row.ai_exposure,
-      header: "AI exposure",
-      filter: "select",
-      cell: (row) => (
-        <span className="inline-flex items-center gap-1 text-sm text-foreground">
-          {row.sensitivity_tier === "restricted" ? (
-            <>
-              <Lock className="h-3.5 w-3.5" />
-              never
-            </>
-          ) : (
-            <>
-              <AGENT_ICON className="h-3.5 w-3.5 text-muted-foreground" />
-              {row.ai_exposure}
-            </>
-          )}
-        </span>
-      ),
-    },
-    {
-      id: "required",
-      accessorFn: (row) => (row.is_required ? "Required" : "Optional"),
-      header: "Required",
-      filter: "select",
-      mobileHidden: true,
-    },
-    {
-      id: "state",
-      accessorFn: (row) => (row.archived_at ? "Archived" : "Live"),
-      header: "State",
-      filter: "select",
-      cell: (row) => (
-        <Badge variant={row.archived_at ? "outline" : "secondary"}>
-          {row.archived_at ? "Archived" : "Live"}
-        </Badge>
-      ),
-    },
-  ];
+  const recordsConfig = useAppRecordsConfig(organizationId);
 
   return (
     <HrSettingsShell
@@ -191,32 +86,6 @@ export function HrFieldsPanel() {
       onRetry={() => setReload((n) => n + 1)}
     >
       <div className="space-y-6 p-4 sm:p-6">
-        {/* Who owns the half that is not here */}
-        <section className="flex items-start gap-3 rounded-lg border border-dashed border-border p-4">
-          <Info className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-          <div className="min-w-0 space-y-2">
-            <h2 className="text-sm font-semibold text-foreground">
-              Creating and editing fields is built on the platform, not inside HR
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {enabledTargets.length > 0
-                ? `Custom fields are enabled for ${enabledTargets.length} HR ${enabledTargets.length === 1 ? "record type" : "record types"}, listed below; defining a field is not available yet.`
-                : "Custom fields are not enabled for any HR record type yet, so there is nothing a field could be added to."}{" "}
-              Custom fields are a platform capability shared by every part of the
-              product, so one editor serves all of them rather than each area growing
-              its own. This page shows what is switched on, the fields that exist here
-              and how they are governed; the editor arrives with the platform kit.
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => announceComingSoon("hr-settings.custom-field-authoring")}
-            >
-              Add a custom field
-            </Button>
-          </div>
-        </section>
-
         {/* What each record type allows */}
         <section className="rounded-lg border border-border bg-card">
           <header className="flex items-start gap-3 border-b border-border p-4">
@@ -271,76 +140,24 @@ export function HrFieldsPanel() {
           )}
         </section>
 
-        {/* The registry itself */}
+        {/* The fields themselves — the custom store, one block per switched-on record type */}
         <section className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
-            <ArchivedDisclosure
-              count={archivedDefinitions.length}
-              open={showArchived}
-              onOpenChange={setShowArchived}
-              label="Archived fields"
-              className="w-auto"
-            />
-          </div>
-          <NonEditableContextMenu
-            sourceFeature="internal"
-            contentSource={{ type: "raw" }}
-            contextData={{ content: "" }}
-            resolveContextOnOpen={(target) => {
-              const id = (target as HTMLElement | null)
-                ?.closest("[data-row-id]")
-                ?.getAttribute("data-row-id");
-              const row = (id && visibleDefinitions.find((r) => r.id === id)) || null;
-              if (!row) return null;
-              return {
-                [CONTEXT_MENU_ENTITY_KEY]: {
-                  type: "custom_field_definition",
-                  id: row.id,
-                  title: row.display_name,
-                },
-                content: [
-                  row.display_name,
-                  row.field_key,
-                  row.field_type,
-                  `Sensitivity: ${row.sensitivity_tier}`,
-                ]
-                  .filter(Boolean)
-                  .join("\n"),
-              };
-            }}
-          >
-          <MatrxDataTable
-            data={visibleDefinitions}
-            columns={columns}
-            getRowId={(row) => row.id}
-            pageSize={25}
-            urlState={{ id: "hr-custom-fields" }}
-            toolbar={{ search: true, searchPlaceholder: "Search custom fields" }}
-            emptyState={
-              // THE ARCHIVED-ITEMS LAW, honesty half (row F10 class fix,
-              // 2026-09-10): the table is handed the LIVE half, so "Nothing
-              // has been added" is a claim the live half cannot support. With
-              // every definition archived it printed exactly that, one line
-              // under this section's own "Archived fields (N)" door.
-              !showArchived &&
-              liveDefinitions.length === 0 &&
-              archivedDefinitions.length > 0
-                ? {
-                    title: `All ${archivedDefinitions.length} custom ${archivedDefinitions.length === 1 ? "field is" : "fields are"} archived`,
-                    description:
-                      "Nothing is live on an HR record right now. Open “Archived fields” above to see what was defined.",
-                  }
-                : {
-                    title: "No custom fields on HR records",
-                    description:
-                      enabledTargets.length > 0
-                        ? `Nothing has been added beyond the built-in fields. ${enabledTargets.length === 1 ? "One record type is" : `${enabledTargets.length} record types are`} switched on above and ready for fields; the editor that creates them is not available yet.`
-                        : "Nothing has been added beyond the built-in fields, and no HR record type is switched on to receive any.",
-                  }
-            }
-          />
-          </NonEditableContextMenu>
+          <h2 className="text-sm font-semibold text-foreground">Fields defined here</h2>
+          {enabledTargets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No HR record type is switched on to receive custom fields.
+            </p>
+          ) : (
+            <RecordsProvider config={recordsConfig}>
+              {enabledTargets.map((target) => (
+                <HrTokenFields
+                  key={target.target_token}
+                  token={target.target_token}
+                  label={labelFor(target.target_token)}
+                />
+              ))}
+            </RecordsProvider>
+          )}
         </section>
 
         {/* The rules that are not negotiable */}
@@ -389,5 +206,81 @@ export function HrFieldsPanel() {
         </section>
       </div>
     </HrSettingsShell>
+  );
+}
+
+/** One record type's custom fields, through the custom store's own doors. */
+function HrTokenFields({ token, label }: { token: string; label: string }) {
+  const fields = useEntityFields(token);
+  const mutation = useEntityFieldMutation();
+  const [adding, setAdding] = useState(false);
+  const [confirming, setConfirming] = useState<string | null>(null);
+
+  const retire = async (field: Field) => {
+    const done = await mutation.retire({ field_id: field.id });
+    setConfirming(null);
+    if (done) fields.reload();
+  };
+
+  return (
+    <div className="rounded-lg border border-border bg-card" data-hr-field-token={token}>
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border p-3">
+        <span className="text-sm font-medium text-foreground">{label}</span>
+        {!adding ? (
+          <Button type="button" size="sm" variant="outline" onClick={() => setAdding(true)}>
+            Add a custom field
+          </Button>
+        ) : null}
+      </header>
+      {adding ? (
+        <div className="border-b border-border p-3">
+          <FieldEditor
+            entityToken={token}
+            tableLabel={label}
+            onSaved={() => {
+              setAdding(false);
+              fields.reload();
+            }}
+            onCancel={() => setAdding(false)}
+          />
+        </div>
+      ) : null}
+      {fields.error ? <RefusalLine error={fields.error} className="p-3" /> : null}
+      {mutation.error ? <RefusalLine error={mutation.error} className="p-3" /> : null}
+      {fields.loading && !fields.data ? (
+        <p className="p-3 text-sm text-muted-foreground">Loading…</p>
+      ) : (fields.data ?? []).length === 0 && !fields.error ? (
+        <p className="p-3 text-sm text-muted-foreground">No custom fields on {label} yet.</p>
+      ) : (
+        <ul className="divide-y divide-border">
+          {(fields.data ?? []).map((field) => (
+            <li key={field.id} className="flex flex-wrap items-center gap-2 p-3 text-sm">
+              <span className="min-w-0 flex-1">
+                <span className="block font-medium text-foreground">{field.label}</span>
+                <span className="text-muted-foreground">
+                  {field.key} · {field.type}
+                  {field.required ? " · required" : ""}
+                  {field.sensitivity ? ` · ${field.sensitivity}` : ""}
+                </span>
+              </span>
+              {confirming === field.id ? (
+                <span className="flex items-center gap-2">
+                  <Button type="button" size="sm" variant="destructive" disabled={mutation.saving} onClick={() => retire(field)}>
+                    Archive field
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(null)}>
+                    Keep
+                  </Button>
+                </span>
+              ) : (
+                <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(field.id)}>
+                  Archive
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
