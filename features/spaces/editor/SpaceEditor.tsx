@@ -39,6 +39,7 @@ import { PersonAvatar } from "../collab/CommentsPanel";
 import type { SpaceBlock } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces } from "../state/SpacesProvider";
+import { enterIntoOpenToggle } from "./toggle-enter";
 import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
@@ -283,6 +284,11 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       className="contents"
       onKeyDownCapture={(e) => {
         turnIntoKey(editor, e);
+        // Enter at the end of an open toggle's title writes inside it (Notion); closed: a sibling.
+        if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && enterIntoOpenToggle(editor)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         // M1 — Space on an empty line opens Ask AI (Notion); anywhere else it is a space.
         if (e.key === " " && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && editable && !document.querySelector(".bn-suggestion-menu")) {
           const { from, to } = editor.prosemirrorState.selection;
