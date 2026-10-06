@@ -53,6 +53,8 @@ export function planColumnDrop(
 ): { kind: "wrap"; targetId: string; list: SpacesPartialBlock } | { kind: "addColumn"; listId: string; columns: SpacesPartialBlock[] } | null {
   if (!dragged.length || dragged.some((d) => d.id === target.id)) return null;
   if (target.type === "column" || target.type === "columnList") return null;
+  // Columns never go inside a column: a dragged column list keeps its ordinary above / below drop.
+  if (dragged.some((d) => d.type === "column" || d.type === "columnList")) return null;
   const strip = (b: Blockish): SpacesPartialBlock => ({ ...(b as object) }) as unknown as SpacesPartialBlock;
   if (!parent) {
     const pair = side === "left" ? [dragged, [target]] : [[target], dragged];

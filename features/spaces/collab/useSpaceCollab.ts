@@ -111,6 +111,8 @@ export function useSpaceCollab(args: {
 
   useEffect(() => {
     session?.setCanEdit(canEdit);
+    // Losing edit (the page went to Trash) ends this member's host role now; regaining it re-elects.
+    elect.current();
   }, [session, canEdit]);
 
   // Presence changed (someone joined, left, or the channel dropped): re-run the election.

@@ -46,6 +46,7 @@ import { useSpaceCollab } from "../collab/useSpaceCollab";
 import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 import { trashedByList } from "./trash-state";
+import { attemptSave, deviceStorage, forgetUnsaved, keepUnsaved, readUnsaved } from "./unsaved";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -97,7 +98,8 @@ function Title({
   );
 }
 
-type SaveState = "saved" | "saving" | "failed";
+/** failed = will retry on the cadence; refused = the page as it is cannot be stored (retried on the next edit). */
+type SaveState = "saved" | "saving" | "failed" | "refused";
 
 /** A14 — Notion counts the title and every block's text. */
 function pageCounts(doc: SpaceDoc): { words: number; characters: number } {
@@ -137,8 +139,13 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   // commenter never gets editing affordances, never writes, and sees the room read-only.
   const access = useAccess("document", spaceId);
   const canEdit = access.level === "edit" || access.level === "admin";
+  // A page in Trash (its own row or an ancestor's, by the store's read or the list) takes no edits and no
+  // saves, and this member gives up the room's host role at once; Restore brings both back.
+  const trashedNow = !!doc && (doc.isArchived || trashedByList(doc.id, doc.parentId, spaces.archived, spaces.byId));
+  const trashedRef = useRef(trashedNow);
+  trashedRef.current = trashedNow;
   const canEditRef = useRef(canEdit);
-  canEditRef.current = canEdit;
+  canEditRef.current = canEdit && !trashedNow;
   useSpacesAiDisclosure();
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -184,8 +191,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     snapshot: doc,
     userId: room.me,
     name: fullName || email || "Someone",
-    canEdit,
     room,
+    canEdit: canEdit && !trashedNow,
     onMeta: applyMeta,
     // Only real edits the room holds (pending) are saved on handover — opening a page never writes one.
     onBecameHost: () => {
@@ -244,6 +251,10 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   }, []);
 
   const refused = useRef<string | null>(null);
+  /** A copy of the page is kept on this device (a save did not land): every change refreshes it. */
+  const keptLocally = useRef(false);
+  /** The last save error toasted — a refusal repeating on every edit is said once. */
+  const lastToast = useRef<string | null>(null);
   /**
    * A stored version the room did not write (a block moved here from another page while it is open): the
    * host takes what that writer added or removed into the room (merge-stored.ts), so its next save carries
@@ -265,6 +276,36 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     }
     return fromEngine(editor.document as unknown as EngineBlock[]);
   };
+  /**
+   * A copy of this page kept on the device by a save that did not land (page/unsaved.ts): put it back
+   * when it differs from what is stored — at once when nothing was saved since, else on the person's
+   * word (someone saved a newer version meanwhile). It saves like any edit.
+   */
+  const restoredFor = useRef<string | null>(null);
+  const restoreKept = (editor: SpacesEditor) => {
+    if (restoredFor.current === spaceId) return;
+    restoredFor.current = spaceId;
+    const storage = deviceStorage();
+    const copy = readUnsaved(storage, spaceId);
+    const d = docRef.current;
+    if (!copy || !d) return;
+    if (contentKey(copy.doc) === savedKey.current) {
+      forgetUnsaved(storage, spaceId);
+      return;
+    }
+    if (!canEditRef.current || d.isArchived) return;
+    const apply = () => {
+      editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
+      keptLocally.current = true;
+      update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
+    };
+    if (copy.baseVersion >= d.version) {
+      apply();
+      toast.info("Unsaved changes restored");
+    } else {
+      toast.warning("Unsaved changes from this device", { duration: Infinity, action: { label: "Restore", onClick: () => { apply(); toast.info("Unsaved changes restored"); } } });
+    }
+  };
   const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   /**
    * Write the page to the store — the host only (a member that is not host never writes; the host saves
@@ -275,6 +316,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = null;
     refused.current = null;
+    // In Trash: nothing is written (the database refuses it); what is pending saves after Restore.
+    if (trashedRef.current) return;
     if (inFlight.current || !pending.current || !docRef.current) return;
     // Leaving: the session is already torn down, so the host status of the last render decides.
     if (!(leaving ? hostAtLastRender.current : collab.hostRef.current)) return;
@@ -290,22 +333,38 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     }
     inFlight.current = true;
     setSaveState("saving");
+    const storage = deviceStorage();
+    const attempt = (d: SpaceDoc, base: number) => attemptSave({ spaceId, doc: d, baseVersion: base, storage, save: (x, b) => store.saveFrom(origin, x, b) });
     try {
-      let saved: SpaceDoc;
       let wrote = sent;
-      try {
-        saved = await store.saveFrom(origin, sent, baseVersion.current);
-      } catch (err) {
+      let r = await attempt(sent, baseVersion.current);
+      if (!r.ok && !r.refused) {
         // A version this member had not heard of yet (the last host's final save, a rename from the
         // sidebar, blocks moved here from another page): take what it added or removed into the room,
         // then save the room's copy over the newest version.
         const latest = await store.get(spaceId).catch(() => null);
-        if (!latest || latest.version === baseVersion.current) throw err;
-        const merged = mergeStored(latest);
-        if (merged) wrote = { ...(docRef.current ?? sent), blocks: merged };
-        baseVersion.current = latest.version;
-        saved = await store.saveFrom(origin, wrote, latest.version);
+        if (latest && latest.version !== baseVersion.current) {
+          const merged = mergeStored(latest);
+          if (merged) wrote = { ...(docRef.current ?? sent), blocks: merged };
+          baseVersion.current = latest.version;
+          r = await attempt(wrote, latest.version);
+        }
       }
+      if (!r.ok) {
+        // Refused or failed: the edits stay in the editor and on this device (page/unsaved.ts).
+        keptLocally.current = true;
+        pending.current = true;
+        setSaveError(r.error);
+        setSaveState(r.refused ? "refused" : "failed");
+        // A refusal is refused again until the page changes: say it once, retry on the next edit.
+        refused.current = r.refused ? r.message : null;
+        if (lastToast.current !== r.message) toast.error(r.message);
+        lastToast.current = r.message;
+        return;
+      }
+      const saved = r.saved;
+      keptLocally.current = false;
+      lastToast.current = null;
       baseVersion.current = saved.version;
       savedKey.current = wrote === sent ? key : contentKey(wrote);
       savedIds.current = blockIds(wrote.blocks);
@@ -313,16 +372,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
       setSaveState("saved");
-    } catch (err) {
-      pending.current = true;
-      setSaveError(err);
-      setSaveState("failed");
-      // The database's refusal (22023 "not a valid snapshot: …") can arrive as a plain error object.
-      const raw = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as { message: unknown }).message) : "";
-      const message = raw || "We couldn't save this page.";
-      // A snapshot the database refuses (22023) will be refused again: say it once, retry on the next edit.
-      refused.current = /not a valid snapshot/i.test(message) ? message : null;
-      toast.error(message);
     } finally {
       inFlight.current = false;
       // Changes made while this save was in flight wait for the cadence like any other (never a fixed retry).
@@ -336,6 +385,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const schedule = () => {
     if (!docRef.current || !canEditRef.current) return;
     pending.current = true;
+    if (keptLocally.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
     const now = Date.now();
     dirtySince.current ??= now;
     // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
@@ -406,6 +456,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     const warn = (e: BeforeUnloadEvent) => {
       // Only the host holds unsaved work for everyone; any other member's edits are already in the room.
       if (!hostAtLastRender.current || ((!pending.current || (docRef.current && contentKey(docRef.current) === savedKey.current)) && !inFlight.current)) return;
+      // The save below may not finish before the tab goes: the page waits on this device meanwhile.
+      if (docRef.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
       void flush(true);
       e.preventDefault();
     };
@@ -433,7 +485,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const locked = doc.settings.locked;
   // A person without edit (viewer, commenter) reads the live page; nothing editable is drawn for them.
   // In Trash by the store's read, or by the list (trashed from the sidebar while open, or an ancestor).
-  const inTrash = doc.isArchived || trashedByList(doc.id, doc.parentId, spaces.archived, spaces.byId);
+  const inTrash = trashedNow;
   const editable = canEdit && !locked && !inTrash;
   const path = inTrash ? [] : pathTo(doc.id);
   const isFavorite = favorites.includes(doc.id);
@@ -602,9 +654,9 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         ) : null}
         <PresenceAvatars viewers={room.viewers} me={room.me} />
         {!inTrash ? <AskPageButton page={pageForAi} /> : null}
-        <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
-          {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
-          {collab.isHost && saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
+        <span className="spaces-edited hidden items-center gap-1 sm:inline-flex" data-state={saveState} aria-live="polite">
+          {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : collab.isHost && saveState === "refused" ? "Not saved" : editedAgo(doc.updatedAt, now)}
+          {collab.isHost && (saveState === "failed" || saveState === "refused") ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
         <ShareMenu spaceId={doc.id} title={doc.title} onCopyLink={copyLink} />
         <button
@@ -730,6 +782,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             onChange={(blocks) => update({ blocks })}
             onReady={(editor) => {
               editorRef.current = editor;
+              // After the room's body is in the editor: a copy kept on this device goes back on top.
+              window.setTimeout(() => restoreKept(editor), 0);
             }}
             slash={{
               createSubpage: async () => {

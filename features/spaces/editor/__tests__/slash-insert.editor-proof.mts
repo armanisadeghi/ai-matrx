@@ -59,8 +59,24 @@ async function main() {
     results.columnsKeepTodo = o[1] === "checkListItem:Draft announcement" && o[3] === "columnList" && o.length === 4;
     results.columnsOrder = o;
   }
+  // 4. Round 18: "/2 columns" typed inside a column never nests — the new list lands below the outer one.
+  {
+    const two = (p: string) => ({ type: "columnList", children: [{ type: "column", props: { width: 0.5 }, children: [{ id: `${p}1`, type: "paragraph", content: p === "x" ? "Left column text" : "" }, ...(p === "x" ? [{ id: "x9", type: "paragraph", content: "" }] : [])] }, { type: "column", props: { width: 0.5 }, children: [{ type: "paragraph", content: "Right" }] }] });
+    const e = make();
+    e.insertBlocks([{ id: "L", ...two("x") } as never], "a", "after");
+    e.setTextCursorPosition("x9", "start");
+    insertAtSlash(e, slashTarget(e), two("y") as never);
+    type B = { id: string; type: string; children?: B[] };
+    const inColumn = (bs: B[], under: boolean): boolean => bs.some((b) => (under && b.type === "columnList") || inColumn(b.children ?? [], under || b.type === "column"));
+    const nested = inColumn(e.document as unknown as B[], false);
+    const lists = e.document.filter((b) => b.type === "columnList").map((b) => b.id);
+    const leftKids = (e.getBlock("L")?.children?.[0]?.children ?? []).map((b) => b.id);
+    results.columnsNeverNest = !nested && lists.length === 2 && lists[0] === "L" && e.document[e.document.findIndex((b) => b.id === "L") + 1]?.type === "columnList";
+    results.slashLineGone = JSON.stringify(leftKids) === JSON.stringify(["x1"]);
+    results.nestOrder = order(e);
+  }
   console.log(JSON.stringify(results, null, 1));
-  const ok = results.asyncLandsAtSlash && results.asyncCaretBelow && results.afterTextKept && results.columnsKeepTodo;
+  const ok = results.asyncLandsAtSlash && results.asyncCaretBelow && results.afterTextKept && results.columnsKeepTodo && results.columnsNeverNest && results.slashLineGone;
   process.exit(ok ? 0 : 1);
 }
 
