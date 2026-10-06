@@ -294,6 +294,14 @@ function DimensionDetail({
             View this domain&apos;s links
           </Link>
         ) : null}
+        {isDomain ? (
+          <Link
+            href={marketingRoutes.domainResearch(label, siteId)}
+            className="text-xs font-medium text-primary "
+          >
+            Research this domain
+          </Link>
+        ) : null}
         {row.url ? (
           <a
             href={row.url}

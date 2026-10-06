@@ -11,7 +11,7 @@
  * provider snapshot). Same identity, same menu, on both.
  */
 
-import { ExternalLink, Globe2, Link2, Newspaper, Send } from "lucide-react";
+import { ExternalLink, Globe, Globe2, Link2, Newspaper, Send } from "lucide-react";
 import {
   type ContextMenuEntityRef,
   type ContextMenuExtraSection,
@@ -78,6 +78,14 @@ export function buildReferringDomainMenuSection(opts: {
         icon: ExternalLink,
         href: row?.domain ? `https://${row.domain}` : "#",
         target: "_blank",
+        disabled: !row?.domain,
+      },
+      {
+        kind: "link",
+        id: "rd-research",
+        label: "Research this domain",
+        icon: Globe,
+        href: row?.domain ? marketingRoutes.domainResearch(row.domain, siteId) : "#",
         disabled: !row?.domain,
       },
       {

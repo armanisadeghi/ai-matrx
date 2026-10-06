@@ -1570,8 +1570,17 @@ export default function CompetitorAutopsyWorkspace({
             <MatrxDataTable
               urlState={{ id: "competitors" }}
               data={data?.competitors ?? []}
-              columns={[...(competitorColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) =>
-                // "tracked" is the server's vocabulary (see autopsy-controls);
+              columns={[...(competitorColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
+                <>
+                <Button variant="quiet" asChild>
+                  <Link
+                    href={marketingRoutes.domainResearch(row.normalized_domain, row.site_id)}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    Research
+                  </Link>
+                </Button>
+                {// "tracked" is the server's vocabulary (see autopsy-controls);
                 // this row action sent "tracking" until 2026-08-12, which the
                 // canonical RPC rejects outright.
                 row.tracking_status === "tracked" ? (
@@ -1588,7 +1597,9 @@ export default function CompetitorAutopsyWorkspace({
                   >
                     Track
                   </Button>
-                ) }]}
+                )}
+                </>
+              ) }]}
               getRowId={(row) => row.id}
               isLoading={workspace.isLoading}
               isFetching={workspace.isFetching}

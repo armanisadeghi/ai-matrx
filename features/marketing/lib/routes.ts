@@ -176,6 +176,14 @@ export const marketingRoutes = {
   youtubeDiscovery: () => "/marketing/tools/youtube",
   youtubeVideo: (videoId: string) =>
     `/marketing/tools/youtube/videos/${encodeURIComponent(videoId)}`,
+  /** Research ANY domain (seo_domain): stats, keywords, competitors, and a gap vs one of your sites. */
+  domainResearch: (domain?: string | null, siteId?: string | null) => {
+    const params = new URLSearchParams();
+    if (domain) params.set("d", domain);
+    if (siteId) params.set("site", siteId);
+    const query = params.toString();
+    return `/marketing/tools/domain${query ? `?${query}` : ""}`;
+  },
 
   // ── The client workspace ──────────────────────────────────────────────
   brand: (brandId: string) => `/marketing/${brandId}`,

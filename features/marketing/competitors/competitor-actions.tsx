@@ -16,7 +16,7 @@
  */
 
 import { useState } from "react";
-import { Copy, Eye, EyeOff } from "lucide-react";
+import { Copy, Eye, EyeOff, Globe } from "lucide-react";
 
 import type {
   ContextMenuEntityRef,
@@ -25,6 +25,7 @@ import type {
 } from "@/features/context-menu-v3/types";
 import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { CompetitorRow } from "./data";
 
 export function competitorEntityRef(
@@ -91,6 +92,16 @@ export function useCompetitorMenu(opts: CompetitorMenuOptions): CompetitorMenu {
         void navigator.clipboard.writeText(row.display_domain);
         toast.success("Domain copied");
       },
+    },
+    {
+      kind: "link",
+      id: "competitor-research-domain",
+      label: "Research this domain",
+      icon: Globe,
+      href: row
+        ? marketingRoutes.domainResearch(row.normalized_domain, row.site_id)
+        : "#",
+      disabled: !row,
     },
   ];
   if (opts.onMutateTracking) {

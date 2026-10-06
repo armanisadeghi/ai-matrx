@@ -471,6 +471,7 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
       "Page audit",
       "Social preview",
       "YouTube research",
+      "Domain research",
     ],
     entries: [
       {
@@ -478,6 +479,12 @@ export const MARKETING_PILLARS: readonly MarketingNavPillar[] = [
         href: marketingRoutes.tools(),
         description: "The full analyzer suite in one index.",
         iconName: "Wrench",
+      },
+      {
+        label: "Domain Research",
+        href: marketingRoutes.domainResearch(),
+        description: "Traffic, keywords and competitors for any domain.",
+        iconName: "Globe",
       },
       {
         label: "YouTube Research",
