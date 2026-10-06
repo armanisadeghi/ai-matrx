@@ -249,13 +249,15 @@ export async function readProcessedDocument(
       // Only cache a HIT. A miss (row not yet visible right after the server
       // created it, a transient RLS/replication race) must self-heal on the
       // next read instead of being pinned for the full TTL.
-      if (read.kind === "ok") {
+      // A read whose in-flight entry was evicted by an invalidation started
+      // BEFORE the write it was invalidated for — never cache it.
+      if (read.kind === "ok" && fetchDocInflight.get(key) === promise) {
         fetchDocCache.set(key, { resolvedAt: Date.now(), doc: read.doc });
       }
       return read;
     })
     .finally(() => {
-      fetchDocInflight.delete(key);
+      if (fetchDocInflight.get(key) === promise) fetchDocInflight.delete(key);
     });
 
   fetchDocInflight.set(key, promise);
@@ -282,10 +284,16 @@ async function fetchProcessedDocument(
 export function invalidateProcessedDocumentCache(docId?: string): void {
   if (docId == null) {
     fetchDocCache.clear();
+    fetchDocInflight.clear();
     return;
   }
   for (const key of fetchDocCache.keys()) {
     if (key.endsWith(`:${docId}`)) fetchDocCache.delete(key);
+  }
+  // In-flight reads too: one started before this write would otherwise be
+  // cached for the full TTL without the new text.
+  for (const key of fetchDocInflight.keys()) {
+    if (key.endsWith(`:${docId}`)) fetchDocInflight.delete(key);
   }
 }
 
@@ -1298,6 +1306,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           body,
           signal: watchdog.signal,
           callbacks: {
+            onActivity: () => watchdog.bump(),
             onProgress: (msg) => {
               watchdog.bump();
               options?.onProgress?.(msg);

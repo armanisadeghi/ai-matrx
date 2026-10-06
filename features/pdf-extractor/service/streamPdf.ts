@@ -98,9 +98,26 @@ interface LegacyTransportFields {
   headers?: Record<string, string>;
 }
 
+/**
+ * Thrown when the caller's signal aborted the stream. The shared parser ends
+ * an aborted stream QUIETLY (it returns, never throws), so without this a
+ * stalled-then-aborted run looked like a clean finish with no content.
+ */
+export class StreamAbortedError extends Error {
+  constructor() {
+    super("Stream aborted");
+    this.name = "StreamAbortedError";
+  }
+}
+
 // ─── /pdf/clean-content/{id} ─────────────────────────────────────────────────
 
 export interface StreamPdfCleanCallbacks {
+  /**
+   * Fires for EVERY event the server sends — heartbeat, record_reserved and
+   * anything else included. Callers reset their stall watchdog here.
+   */
+  onActivity?: () => void;
   /** Fires for every `info` event with a `user_message` / `message` string. */
   onProgress?: (message: string) => void;
   /**
@@ -116,8 +133,8 @@ export interface StreamPdfCleanCallbacks {
   onTextDelta?: (accumulated: string) => void;
   /** Fires on the `data` event with the cleaned markdown payload. */
   onCleanContent?: (text: string) => void;
-  /** Server's "row changed, refetch me" signal. */
-  onRecordUpdate?: (recordId: string) => void;
+  /** Server's "row changed, refetch me" signal, with its status. */
+  onRecordUpdate?: (recordId: string, status: string | null) => void;
   /**
    * Fires when the server announces the run mode via the initial
    * `pdf_clean_started` data event. `mode === "per_page"` means the run is
@@ -136,6 +153,8 @@ export interface StreamPdfCleanResult {
   accumulatedText: string;
   /** True if the server emitted a `record_update` for this doc. */
   serverConfirmedUpdate: boolean;
+  /** `status` of the last `record_update` for this doc, if any. */
+  recordStatus: string | null;
 }
 
 export async function streamPdfClean(opts: {
@@ -154,6 +173,7 @@ export async function streamPdfClean(opts: {
 
   let cleanContent: string | null = null;
   let serverConfirmedUpdate = false;
+  let recordStatus: string | null = null;
   let firstErrorMessage: string | null = null;
   // Local accumulator so we can fire `onTextDelta` with the running total
   // on every chunk, not just at the end. `consumeStream` exposes the
@@ -163,6 +183,7 @@ export async function streamPdfClean(opts: {
   const { accumulatedText } = await consumeStream(
     response,
     {
+      onEvent: () => callbacks.onActivity?.(),
       onChunk: (data) => {
         if (typeof data.text === "string" && data.text.length > 0) {
           chunkAccumulator += data.text;
@@ -200,7 +221,8 @@ export async function streamPdfClean(opts: {
       onRecordUpdate: (data: RecordUpdatePayload) => {
         if (data.table === "processed_documents" && data.record_id === docId) {
           serverConfirmedUpdate = true;
-          callbacks.onRecordUpdate?.(data.record_id);
+          recordStatus = typeof data.status === "string" ? data.status : null;
+          callbacks.onRecordUpdate?.(data.record_id, recordStatus);
         }
       },
       onCompletion: (data) => {
@@ -225,8 +247,9 @@ export async function streamPdfClean(opts: {
   );
 
   if (firstErrorMessage) throw new Error(firstErrorMessage);
+  if (signal?.aborted) throw new StreamAbortedError();
 
-  return { cleanContent, accumulatedText, serverConfirmedUpdate };
+  return { cleanContent, accumulatedText, serverConfirmedUpdate, recordStatus };
 }
 
 // ─── /pdf/full-pipeline ──────────────────────────────────────────────────────
@@ -255,6 +278,8 @@ export interface PdfFullPipelineBody {
 }
 
 export interface StreamPdfFullPipelineCallbacks {
+  /** Fires for EVERY event (heartbeat included) — reset the stall watchdog. */
+  onActivity?: () => void;
   onProgress?: (message: string) => void;
   onTextDelta?: (accumulated: string) => void;
   /**
@@ -296,6 +321,7 @@ export async function streamPdfFullPipeline(opts: {
   const { accumulatedText } = await consumeStream(
     response,
     {
+      onEvent: () => callbacks.onActivity?.(),
       onChunk: (data) => {
         if (typeof data.text === "string" && data.text.length > 0) {
           chunkAccumulator += data.text;
@@ -340,6 +366,7 @@ export async function streamPdfFullPipeline(opts: {
   );
 
   if (firstErrorMessage) throw new Error(firstErrorMessage);
+  if (signal?.aborted) throw new StreamAbortedError();
 
   return { childDocId, accumulatedText };
 }
