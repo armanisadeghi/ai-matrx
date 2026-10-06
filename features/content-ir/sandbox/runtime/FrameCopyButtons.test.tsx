@@ -115,4 +115,33 @@ describe("FrameCopyButtons", () => {
     await act(async () => trigger.click());
     expect(container.querySelector('[role="menuitem"]')).toBeNull();
   });
+
+  it("copies pre-serialized agent text and requests the markdown flavor", async () => {
+    const richCopy = jest.fn().mockResolvedValue(true);
+    await act(async () => {
+      root.render(
+        <CopyButtons
+          label="Source"
+          human="**Human copy**"
+          agent="<task>already serialized</task>"
+          contentFlavor="markdown"
+          richCopy={richCopy}
+        />,
+      );
+    });
+    const trigger = container.querySelector('button[aria-expanded]') as HTMLButtonElement;
+    await act(async () => trigger.click());
+    const markdownAction = Array.from(container.querySelectorAll('[role="menuitem"]')).find(
+      (item) => item.textContent === "Copy markdown",
+    ) as HTMLButtonElement;
+    await act(async () => markdownAction.click());
+    expect(richCopy).toHaveBeenCalledWith("**Human copy**", "markdown");
+
+    await act(async () => trigger.click());
+    const agentAction = Array.from(container.querySelectorAll('[role="menuitem"]')).find(
+      (item) => item.textContent === "Copy for AI",
+    ) as HTMLButtonElement;
+    await act(async () => agentAction.click());
+    expect(writeText).toHaveBeenCalledWith("<task>already serialized</task>");
+  });
 });

@@ -139,7 +139,7 @@ export function CopyButtons({
             <button
               type="button"
               role="menuitem"
-              onClick={menuAction(() => copyHuman("default"))}
+              onClick={menuAction(() => copyHuman(contentFlavor === "markdown" ? "markdown" : "default"))}
             >
               {contentFlavor === "markdown" ? "Copy markdown" : "Copy"}
             </button>
@@ -162,13 +162,12 @@ export function CopyButtons({
               role="menuitem"
               onClick={menuAction(
                 () =>
-                  void action(async () =>
-                    serializeFrameAgentPayload(
-                      (await resolve(agent)) as Parameters<
-                        typeof serializeFrameAgentPayload
-                      >[0],
-                    ),
-                  ),
+                  void action(async () => {
+                    const payload = await resolve(agent);
+                    return typeof payload === "string"
+                      ? payload
+                      : serializeFrameAgentPayload(payload as Parameters<typeof serializeFrameAgentPayload>[0]);
+                  }),
               )}
             >
               Copy for AI

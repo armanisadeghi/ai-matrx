@@ -8,6 +8,14 @@ const environment = {
 };
 
 describe("FrameAgentPayload", () => {
+  it("uses the browser URL and route when the environment omits them", () => {
+    const input = { kind: "task", location: "frame", description: "Source", data: { id: 1 } };
+    const browserEnvironment = { capturedAt: environment.capturedAt };
+    expect(serializeFrameAgentPayload(input, browserEnvironment)).toBe(
+      buildAgentPayload(input, browserEnvironment),
+    );
+  });
+
   it("matches Alchemy for hostile delimiters, summary placement, and long fences", () => {
     const input = {
       kind: "task",

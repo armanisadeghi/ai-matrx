@@ -55,8 +55,8 @@ export function serializeFrameAgentPayload(
   environment: FrameAgentPayloadEnvironment = {},
 ): string {
   const kind = xmlName(input.kind);
-  const url = environment.url ?? "";
-  const route = environment.route ?? "";
+  const url = environment.url ?? (typeof window === "undefined" ? "" : window.location.href);
+  const route = environment.route ?? (typeof window === "undefined" ? "" : window.location.pathname);
   const attrs = presentEntries(input.attributes)
     .map(([key, value]) => ` ${xmlName(key)}="${escapeXml(String(value))}"`)
     .join("");
