@@ -26,7 +26,8 @@ import {
 
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { cn } from "@/lib/utils";
-import { KindHeaderBar } from "@/components/kind-kit/KindHeaderBar";
+import "@/lib/code-runtime/kind-kit-host";
+import { KindHeaderBar } from "@ai-matrx/content-ir-react/kind-kit";
 import {
   LeftoverFields,
   RawRegion,

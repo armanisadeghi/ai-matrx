@@ -12,7 +12,8 @@ import { createRoot, type Root } from "react-dom/client";
 
 type Copy = { human: () => string; json: () => unknown };
 const copies: Copy[] = [];
-jest.mock("@/components/kind-kit/KindHeaderBar", () => ({
+jest.mock("@ai-matrx/content-ir-react/kind-kit", () => ({
+  ...jest.requireActual("@ai-matrx/content-ir-react/kind-kit"),
   KindHeaderBar: ({ copy }: { copy: Copy }) => {
     copies.push(copy);
     return null;
