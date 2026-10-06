@@ -40,7 +40,7 @@ export function RailButton({
         "flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-left text-xs font-medium transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-50",
         active
-          ? "border-primary/40 bg-primary/10 text-primary"
+          ? "border-primary/40 bg-primary/10 text-primary-ink"
           : "border-transparent text-foreground hover:bg-accent",
       )}
     >
@@ -118,7 +118,7 @@ export function RailToggle({
       className={cn(
         "flex w-full items-center justify-between rounded-md border px-2 py-1.5 text-left text-xs font-medium transition-colors",
         active
-          ? "border-primary/40 bg-primary/10 text-primary"
+          ? "border-primary/40 bg-primary/10 text-primary-ink"
           : "border-border/60 bg-background text-foreground hover:bg-accent",
       )}
     >

@@ -254,7 +254,7 @@ export function OtherContactsReview() {
         </CardContent>
       </Card>
 
-      {error ? <p className="flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
+      {error ? <p className="flex items-center gap-1 rounded border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive-ink">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       {done ? (() => {
         const outcome = done.results[0];
         const wrote = Boolean(

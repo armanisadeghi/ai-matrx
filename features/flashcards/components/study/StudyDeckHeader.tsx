@@ -26,7 +26,7 @@ export function StudyDeckHeader({
         onClick={onBack}
       />
       {mode ? (
-        <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+        <span className="ml-2 shrink-0 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary-ink">
           {mode}
         </span>
       ) : null}

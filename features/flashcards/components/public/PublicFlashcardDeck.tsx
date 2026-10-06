@@ -183,7 +183,7 @@ export function PublicFlashcardDeck({
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center lg:gap-10">
         <div className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-primary-ink">
               <Layers className="h-3.5 w-3.5" />
               {label}
             </span>

@@ -47,7 +47,7 @@ function StageCard({ stage, step, Icon, capabilities }: StageCardModel) {
     return (
         <li className="relative flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                     <Icon className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
                 </span>
                 <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -142,7 +142,7 @@ export function GrowthLoopStory() {
                                 key={capability}
                                 className="flex items-center gap-3 rounded-2xl border border-border bg-card p-4"
                             >
-                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                                     <Icon className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
                                 </span>
                                 <span className="text-sm font-medium">{PUBLIC_CAPABILITY[capability].label}</span>
@@ -170,7 +170,7 @@ export function GrowthLoopStory() {
                 </ol>
 
                 <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-card/60 p-4 sm:p-5">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                         <RotateCw className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
                     </span>
                     <p className="text-pretty text-sm leading-relaxed text-muted-foreground">

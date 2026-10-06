@@ -1056,7 +1056,7 @@ export function StudyDeck(props: StudyDeckProps) {
     return (
       <Shell>
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-border bg-card px-6 py-10 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
             <Trophy className="h-7 w-7" />
           </div>
           <div>

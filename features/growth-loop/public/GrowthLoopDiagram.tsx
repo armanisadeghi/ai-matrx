@@ -31,7 +31,7 @@ const LANES: StageCardModel[][] = [
 function Node({ card }: { card: StageCardModel }) {
     return (
         <div className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-border bg-card px-3 py-2.5">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                 <card.Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
             </span>
             <span className="min-w-0">

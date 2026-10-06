@@ -970,7 +970,7 @@ export function GoogleWorkspaceReviewWorkspace({
                                   href={link}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary-ink hover:bg-primary/10"
                                   aria-label={`Open ${resource.display_name} in Google`}
                                 >
                                   Open in Google

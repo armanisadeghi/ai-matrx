@@ -226,7 +226,7 @@ function CodeInlinePreview({ adapterId, id, fieldId, name }: Props) {
         </div>
       </div>
       {saveError ? (
-        <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <div className="border-b border-destructive/30 bg-destructive/10 px-3 py-1.5 text-xs text-destructive-ink">
           {saveError}
           <ErrorAlchemyMenu error={saveError} />
         </div>

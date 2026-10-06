@@ -359,7 +359,7 @@ export function GitHubConnectionCard({
                 />
               ))
             ) : (
-              <p className="rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-xs text-destructive">
+              <p className="rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-xs text-destructive-ink">
                 AI Matrx is authorized but not installed on any account, so no
                 repository is reachable yet. Add one below.
               </p>

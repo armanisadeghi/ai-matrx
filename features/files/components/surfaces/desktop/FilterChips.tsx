@@ -58,7 +58,7 @@ export function FilterChips({ active, onToggle, className }: FilterChipsProps) {
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors",
               isActive
-                ? "border-primary/30 bg-primary/10 text-primary"
+                ? "border-primary/30 bg-primary/10 text-primary-ink"
                 : "border-border bg-background text-foreground hover:bg-accent",
             )}
           >

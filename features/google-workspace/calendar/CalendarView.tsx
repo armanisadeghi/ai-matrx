@@ -108,7 +108,7 @@ function CalendarGrid({ days, segments, timeZone, today }: { days: string[]; seg
     <section aria-label="Calendar schedule" className="min-w-[560px]" data-calendar-grid>
       <div className="grid" style={{ gridTemplateColumns: `48px repeat(${days.length}, minmax(0, 1fr))` }}>
         <div />
-        {days.map((day) => <div key={day} className={cn("border-b border-l border-border px-1.5 py-1 text-center text-xs font-medium", day === today && "bg-primary/10 text-primary")}><span className="sm:hidden">{calendarDayLabel(day, true)}</span><span className="hidden sm:inline">{calendarDayLabel(day)}</span></div>)}
+        {days.map((day) => <div key={day} className={cn("border-b border-l border-border px-1.5 py-1 text-center text-xs font-medium", day === today && "bg-primary/10 text-primary-ink")}><span className="sm:hidden">{calendarDayLabel(day, true)}</span><span className="hidden sm:inline">{calendarDayLabel(day)}</span></div>)}
         <div className="border-b border-border px-1 text-xs text-muted-foreground">All-day</div>
         {days.map((day) => <div key={day} className="min-h-8 border-b border-l border-border p-0.5">{(allDay.get(day) ?? []).map((segment) => <CalendarEventButton key={`${segment.event.id}:${day}`} event={segment.event} day={day} compact onClick={() => open(segment.event)} timeZone={timeZone} />)}</div>)}
         <div className="relative border-r border-border" style={{ height: timelineHeight }}>{axes.sharedDay ? <CalendarHourLabels day={axes.sharedDay} timeZone={timeZone} /> : null}</div>

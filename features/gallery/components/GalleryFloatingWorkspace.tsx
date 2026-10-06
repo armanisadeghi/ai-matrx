@@ -534,7 +534,7 @@ export function GalleryFloatingWorkspace() {
                   className={cn(
                     "px-2 py-0.5 max-sm:px-3 max-sm:py-2 text-[10px] max-sm:text-sm rounded-full border transition-colors",
                     activeQuery?.toLowerCase() === topic.toLowerCase()
-                      ? "border-primary/40 bg-primary/10 text-primary"
+                      ? "border-primary/40 bg-primary/10 text-primary-ink"
                       : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
                   )}
                 >
@@ -565,7 +565,7 @@ export function GalleryFloatingWorkspace() {
                 className={cn(
                   "px-1.5 py-0.5 max-sm:px-3 max-sm:py-2 text-[9px] max-sm:text-sm rounded transition-colors",
                   orientationFilter === value
-                    ? "bg-primary/15 text-primary font-medium"
+                    ? "bg-primary/15 text-primary-ink font-medium"
                     : "text-muted-foreground/60 hover:text-foreground hover:bg-accent",
                 )}
               >

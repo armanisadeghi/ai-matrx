@@ -416,7 +416,7 @@ export function FileTable({
         </div>
       ) : null}
       {capped ? (
-        <div className="flex items-center gap-2 border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-xs text-warning shrink-0">
+        <div className="flex items-center gap-2 border-b border-warning/30 bg-warning/10 px-4 py-1.5 text-xs text-warning-ink shrink-0">
           <span>
             {/* read-gate-exempt: rows come from the whole-tree read; PageShell shows FilesTreeErrorState on treeStatus error and never mounts this view then */}
             Showing the {rows.length.toLocaleString()} most-recent of{" "}

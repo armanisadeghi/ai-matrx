@@ -546,13 +546,13 @@ function CardPeek({
         )}
         <div className="ml-auto flex items-center gap-1">
           {kind === CARD_KIND.cloze && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary-ink">
               <Scissors className="h-3 w-3" />
               Cloze
             </span>
           )}
           {kind === CARD_KIND.matching && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary">
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary-ink">
               <Grid3x3 className="h-3 w-3" />
               Match · {pairs.length}
             </span>
@@ -560,7 +560,7 @@ function CardPeek({
           {layerCount > 0 && (
             <span
               title={`${layerCount} detail layer${layerCount === 1 ? "" : "s"} — read them under "More on this card" while studying`}
-              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary"
+              className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-xs font-medium text-primary-ink"
             >
               <Layers className="h-3 w-3" />
               {layerCount}
@@ -1245,7 +1245,7 @@ export function SetDetailView({
                               className="gap-3 py-2"
                               onClick={() => navigate(m.key, m.href(setId))}
                             >
-                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                                 <m.icon className="h-4 w-4" />
                               </span>
                               <span className="flex min-w-0 flex-col">

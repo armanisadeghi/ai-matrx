@@ -67,7 +67,7 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
           type="button"
           onClick={() => void refresh()}
           disabled={loading}
-          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-60"
+          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-destructive-ink hover:bg-destructive/10 disabled:opacity-60"
         >
           <RefreshCw
             className={cn("h-3 w-3", loading && "animate-spin")}
@@ -266,7 +266,7 @@ function QuotaTooltipBody({
         />
       ) : null}
       {blockedReason ? (
-        <div className="mt-1 flex flex-col gap-1 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive">
+        <div className="mt-1 flex flex-col gap-1 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive-ink">
           <span>{blockedReason}</span>
           <Link
             href={PLAN_PAGE_HREF}

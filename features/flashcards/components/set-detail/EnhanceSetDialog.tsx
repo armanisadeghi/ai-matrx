@@ -315,7 +315,7 @@ export function EnhanceSetDialog({
               className={cn(
                 "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
                 depth === tier.value
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:bg-muted",
               )}
             >

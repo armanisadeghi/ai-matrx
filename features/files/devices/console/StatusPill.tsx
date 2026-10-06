@@ -20,7 +20,7 @@ export function StatusPill({ pill, label, className }: { pill: ConsolePill; labe
         pill === "live" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
         pill === "reconnecting" && "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
         pill === "offline" && "border-border bg-muted text-muted-foreground",
-        pill === "refused" && "border-destructive/30 bg-destructive/10 text-destructive",
+        pill === "refused" && "border-destructive/30 bg-destructive/10 text-destructive-ink",
         className,
       )}
     >

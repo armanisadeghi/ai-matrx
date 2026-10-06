@@ -161,7 +161,7 @@ export function RoundComplete({
   const value = roundSizeValue(dealt, deckSize);
   return (
     <div className="mx-auto flex w-full max-w-md flex-col items-center gap-5 rounded-2xl border border-border bg-card px-5 py-8 text-center shadow-sm sm:px-8">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary-ink">
         <Trophy className="h-7 w-7" />
       </div>
       <h2 className="text-lg font-semibold text-foreground">{title}</h2>

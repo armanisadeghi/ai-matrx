@@ -195,7 +195,7 @@ export function ActiveColumnFilters({ className }: ActiveColumnFiltersProps) {
           key={chip.key}
           type="button"
           onClick={chip.onClear}
-          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/20"
+          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-ink hover:bg-primary/20"
         >
           {chip.label}
           <X className="h-3 w-3" aria-hidden="true" />

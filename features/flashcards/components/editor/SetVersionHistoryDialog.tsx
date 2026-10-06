@@ -135,7 +135,7 @@ export function SetVersionHistoryDialog({
                             Version {v.versionNumber}
                           </span>
                           {i === 0 && (
-                            <span className="rounded bg-primary/10 px-1.5 py-0 text-[10px] font-medium text-primary">
+                            <span className="rounded bg-primary/10 px-1.5 py-0 text-[10px] font-medium text-primary-ink">
                               Current
                             </span>
                           )}

@@ -735,7 +735,7 @@ function CardEditor({
         <span className="flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
           Card {index + 1}
           {kind !== CARD_KIND.basic && (
-            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-primary">
+            <span className="inline-flex items-center gap-0.5 rounded border border-primary/40 bg-primary/10 px-1 py-0 text-primary-ink">
               {kind === CARD_KIND.cloze ? (
                 <Scissors className="h-2.5 w-2.5" />
               ) : kind === CARD_KIND.formula ? (

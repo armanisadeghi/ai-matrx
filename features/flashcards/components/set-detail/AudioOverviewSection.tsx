@@ -327,7 +327,7 @@ export function AudioOverviewSection({
 
   if (state.status === "error") {
     return (
-      <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+      <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
         <span className="min-w-0 flex-1 truncate">
           {state.error ?? "Couldn't generate the audio overview"}

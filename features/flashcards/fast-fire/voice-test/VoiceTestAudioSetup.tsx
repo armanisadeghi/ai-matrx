@@ -97,7 +97,7 @@ export function VoiceTestAudioSetup({
       </div>
 
       {startError && (
-        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
           <AlertCircle className="h-4 w-4 shrink-0" />
           {startError}
           <ErrorAlchemyMenu error={startError} />

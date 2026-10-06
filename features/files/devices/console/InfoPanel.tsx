@@ -114,7 +114,7 @@ export function InfoPanel({
       <button
         type="button"
         disabled={removing}
-        className="mb-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-border bg-card text-[15px] font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
+        className="mb-6 flex h-11 w-full items-center justify-center gap-2 rounded-[10px] border border-border bg-card text-[15px] font-medium text-destructive-ink hover:bg-destructive/5 disabled:opacity-50"
         onClick={async () => {
           const ok = await confirm({
             title: "Remove this computer?",

@@ -127,7 +127,7 @@ function StatusChip({
 }) {
   if (card.status === "failed") {
     return (
-      <Chip className="border-destructive/30 bg-destructive/10 text-destructive">
+      <Chip className="border-destructive/30 bg-destructive/10 text-destructive-ink">
         <AlertTriangle className="h-3 w-3" /> Failed
         <ErrorAlchemyMenu />
       </Chip>
@@ -135,7 +135,7 @@ function StatusChip({
   }
   if (card.status === "enriched") {
     return (
-      <Chip className="border-primary/30 bg-primary/10 text-primary">
+      <Chip className="border-primary/30 bg-primary/10 text-primary-ink">
         <Check className="h-3 w-3" /> {card.layers.length} new layer
         {card.layers.length === 1 ? "" : "s"}
         {card.reEnriched ? " (you picked this one)" : ""}
@@ -151,7 +151,7 @@ function StatusChip({
   }
   if (card.status === "running") {
     return (
-      <Chip className="border-primary/30 bg-primary/10 text-primary">
+      <Chip className="border-primary/30 bg-primary/10 text-primary-ink">
         <PenLine className="h-3 w-3" />
         {shown > 0
           ? `Writing layer ${shown + 1}…`

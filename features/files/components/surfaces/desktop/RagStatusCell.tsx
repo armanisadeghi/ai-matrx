@@ -58,7 +58,7 @@ export function RagStatusCell({ fileId, className }: RagStatusCellProps) {
     return (
       <span
         className={cn(
-          "inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary",
+          "inline-flex items-center gap-1 rounded-sm bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary-ink",
           className,
         )}
         title="Indexed for Knowledge search"

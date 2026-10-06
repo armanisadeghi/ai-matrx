@@ -208,7 +208,7 @@ export function FastFireLiveCard({
               adaptation.count > 0 &&
               index < cards.length - 1 &&
               index < adaptation.atIndex + 3 && (
-              <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+              <span className="inline-flex min-w-0 items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary-ink">
                 <Zap className="h-2.5 w-2.5 shrink-0" />
                 <span className="truncate">
                   {adaptation.focusTopic

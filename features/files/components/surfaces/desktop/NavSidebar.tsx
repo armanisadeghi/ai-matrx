@@ -144,7 +144,7 @@ export function NavSidebar({ section, onCollapse }: NavSidebarProps) {
                     className={cn(
                       "flex items-center justify-between rounded-md px-2 py-1.5 text-sm transition-colors",
                       active
-                        ? "bg-primary/10 text-primary font-semibold"
+                        ? "bg-primary/10 text-primary-ink font-semibold"
                         : "text-foreground/80 hover:bg-accent/60",
                     )}
                   >
@@ -237,7 +237,7 @@ function QuickAccessGroup({
       className={cn(
         "group flex items-center gap-2 rounded-md px-2 py-1 text-sm transition-colors",
         active
-          ? "bg-primary/10 text-primary font-semibold"
+          ? "bg-primary/10 text-primary-ink font-semibold"
           : "text-foreground/80 hover:bg-accent/60",
       )}
     >

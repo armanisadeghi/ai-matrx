@@ -739,7 +739,7 @@ function OverviewError({
 }) {
   return (
     <section
-      className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
+      className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-ink"
       role="alert"
     >
       <p>{message}</p>
@@ -762,7 +762,7 @@ function UnavailableRequestedAccount({
 }) {
   return (
     <section
-      className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
+      className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-ink"
       role="alert"
     >
       <p>

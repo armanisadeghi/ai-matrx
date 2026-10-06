@@ -418,7 +418,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
       </button>
 
       {transientNote ? (
-        <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] text-warning whitespace-nowrap">
+        <div className="absolute -top-9 left-1/2 -translate-x-1/2 flex items-center gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2 py-1 text-[11px] text-warning-ink whitespace-nowrap">
           <AlertCircle className="h-3 w-3" />
           {transientNote}
         </div>
@@ -484,7 +484,7 @@ function BulkActionButton({
         "flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
         "disabled:cursor-not-allowed disabled:opacity-50",
         tone === "destructive"
-          ? "text-destructive hover:bg-destructive/10"
+          ? "text-destructive-ink hover:bg-destructive/10"
           : "text-foreground hover:bg-accent",
       )}
     >

@@ -84,7 +84,7 @@ export function IconRail({ section, onExpand, className }: IconRailProps) {
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition",
               "hover:bg-accent hover:text-foreground",
-              active && "bg-primary/10 text-primary ring-1 ring-primary/20",
+              active && "bg-primary/10 text-primary-ink ring-1 ring-primary/20",
               item.disabled && "pointer-events-none opacity-40",
             )}
           >

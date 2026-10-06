@@ -90,7 +90,7 @@ export function DeviceCard({
         </p>
       ) : null}
       {needsSignIn ? (
-        <p className="border-t border-destructive/30 bg-destructive/5 px-3 py-1.5 text-[11px] font-medium text-destructive">
+        <p className="border-t border-destructive/30 bg-destructive/5 px-3 py-1.5 text-[11px] font-medium text-destructive-ink">
           This device needs to sign in again before it can sync. Open AI Matrx
           on {name} and sign in.
         </p>

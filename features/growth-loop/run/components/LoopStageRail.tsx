@@ -52,7 +52,7 @@ const STATE_BADGE: Record<
   },
   current: {
     label: "Working on it",
-    className: "border-primary/40 bg-primary/10 text-primary",
+    className: "border-primary/40 bg-primary/10 text-primary-ink",
   },
   blocked: {
     label: "Needs you",
@@ -107,7 +107,7 @@ export function LoopStageRail({
               <span
                 className={cn(
                   "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
-                  isCurrent ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                  isCurrent ? "bg-primary/10 text-primary-ink" : "bg-muted text-muted-foreground",
                 )}
               >
                 <card.Icon className="h-4 w-4" strokeWidth={2} aria-hidden />

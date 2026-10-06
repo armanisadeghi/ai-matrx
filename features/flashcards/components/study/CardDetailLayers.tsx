@@ -175,7 +175,7 @@ export function CardDetailLayers({
         >
           Explain
           {count > 0 && (
-            <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary">
+            <span className="rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary-ink">
               {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
               {count}
             </span>
@@ -244,7 +244,7 @@ export function CardDetailLayers({
             <span className="min-w-0 flex-1 truncate font-medium text-foreground">
               More on this card
             </span>
-            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
               {/* read-gate-exempt: layers are the card prop's own details plus those this session's enrichment wrote; no read happens here */}
               {count}
             </span>
