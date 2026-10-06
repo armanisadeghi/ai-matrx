@@ -33,6 +33,8 @@ import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
+import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
+import { useRubberBand } from "./rubber-band";
 import { spacesSchema, type SpacesEditor } from "./schema";
 import { slashItems, type SlashContext } from "./slash-items";
 
@@ -149,8 +151,24 @@ function columnCss(blocks: EngineBlock[]): string {
 
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady }: SpaceEditorProps) {
   const dark = useDarkMode();
+  const [pasted, setPasted] = useState<PastedUrl | null>(null);
   const editor = useCreateBlockNote(
     {
+      // B12: a lone URL goes in as a link and the Link / Mention / Bookmark / Embed choice opens beside
+      // it; anything else (Markdown, HTML, blocks) takes BlockNote's own conversion.
+      pasteHandler: ({ event, editor: ed, defaultPasteHandler }) => {
+        const url = pastedUrl(event);
+        const where = ed.getTextCursorPosition().block;
+        if (!url || where.type === "codeBlock") return defaultPasteHandler();
+        ed.insertInlineContent([{ type: "link", href: url, content: url }] as never);
+        const block = ed.getTextCursorPosition().block;
+        const content = (Array.isArray(block.content) ? block.content : []) as Array<{ type: string; text?: string }>;
+        const alone = content.length === 1 && content[0].type === "link";
+        const rect = window.getSelection()?.getRangeAt(0)?.getBoundingClientRect();
+        setPasted({ url, blockId: block.id, alone, at: { left: rect?.left ?? 0, top: (rect?.bottom ?? 0) + 6 } });
+        return true;
+      },
+      tables: { headers: true, splitCells: false, cellBackgroundColor: true, cellTextColor: true },
       schema: spacesSchema,
       initialContent: initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
       dictionary: { ...en, placeholders: PLACEHOLDERS },
@@ -167,6 +185,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   useEffect(() => {
     onReady?.(editor);
   }, [editor, onReady]);
+
+  useRubberBand(editor, editable);
 
   // Deep link to a block (#block-<id>): scroll to it and flash it (E2). Polls until the block renders.
   useEffect(() => {
@@ -258,6 +278,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       />
       ) : null}
     </BlockNoteView>
+    {pasted ? <PasteUrlMenu editor={editor} pasted={pasted} onClose={() => setPasted(null)} /> : null}
     </div>
   );
 }

@@ -89,4 +89,30 @@ describe("every stored block type survives the editor", () => {
     const odd: SpaceBlock[] = [{ id: "b-x", type: "syncedBlock", props: { from: "x" }, children: [{ id: "b-y", type: "text", text: [{ text: "kept" }] }] }];
     expect(throughEditor(odd)).toEqual(odd);
   });
+
+  it("a code block keeps its caption spans and wrap (C10)", () => {
+    const code: SpaceBlock[] = [
+      { id: "b-c", type: "code", text: [{ text: "SELECT 1;" }], props: { language: "sql", caption: [{ text: "The ", bold: true }, { text: "check" }], wrap: true } },
+      { id: "b-d", type: "code", text: [{ text: "plain" }], props: { language: "text" } },
+    ];
+    expect(throughEditor(code)).toEqual(code);
+    expect(validateSnapshot({ v: 1, settings: DEFAULT_PAGE_SETTINGS, icon: null, cover: null, blocks: throughEditor(code) })).toEqual([]);
+  });
+
+  it("a simple table keeps its header toggles and cell colors (C14)", () => {
+    const table: SpaceBlock[] = [
+      {
+        id: "b-t",
+        type: "table",
+        props: {
+          headerRow: true,
+          headerColumn: true,
+          rows: [{ cells: [[{ text: "Client" }], [{ text: "Status" }]] }, { cells: [[{ text: "Cora" }], [{ text: "Active" }]] }],
+          cellStyles: [[null, { background: "green" }], [{ color: "orange" }, null]],
+        },
+      },
+    ];
+    expect(throughEditor(table)).toEqual(table);
+    expect(validateSnapshot({ v: 1, settings: DEFAULT_PAGE_SETTINGS, icon: null, cover: null, blocks: throughEditor(table) })).toEqual([]);
+  });
 });

@@ -15,11 +15,12 @@ import { useRef } from "react";
 import { useSpaces } from "../state/SpacesProvider";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { IconPicker } from "../page/IconPicker";
+import { notionCodeBlock } from "./code-block";
 import { equationInline, mentionInline } from "./inline";
 import { storedBlockSpecs } from "./stored-blocks";
 
 /** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
-const CODE_BLOCK = createCodeBlockSpec({
+const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
   defaultLanguage: "text",
   supportedLanguages: {
     text: { name: "Plain text", aliases: ["plaintext", "txt"] },
@@ -45,7 +46,7 @@ const CODE_BLOCK = createCodeBlockSpec({
     typescript: { name: "TypeScript", aliases: ["ts"] },
     yaml: { name: "YAML", aliases: ["yml"] },
   },
-});
+}));
 
 const CalloutBlock = createReactBlockSpec(
   {

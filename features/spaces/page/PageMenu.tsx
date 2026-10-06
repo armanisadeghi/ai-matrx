@@ -52,6 +52,7 @@ export function PageMenu({
   onUndo,
   onHistory,
   updatedLabel,
+  counts,
 }: {
   settings: Settings;
   onSettings: (patch: Partial<Settings>) => void;
@@ -62,6 +63,8 @@ export function PageMenu({
   onUndo: () => void;
   onHistory: () => void;
   updatedLabel: string;
+  /** A14 — the page's words and characters, Notion's "Word count" line. */
+  counts: { words: number; characters: number };
 }) {
   const [open, setOpen] = useState(false);
   const act = (fn: () => void) => () => {
@@ -102,7 +105,10 @@ export function PageMenu({
         <div className="my-1 border-t border-border" />
         <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
         <Row icon={<History size={16} />} label="Page history" onClick={act(onHistory)} />
-        <p className="px-2 pb-1.5 pt-2 type-secondary text-muted-foreground">{updatedLabel}</p>
+        <p className="px-2 pt-2 type-secondary text-muted-foreground" title={`${counts.characters.toLocaleString()} characters`}>
+          Word count: {counts.words.toLocaleString()} {counts.words === 1 ? "word" : "words"}
+        </p>
+        <p className="px-2 pb-1.5 pt-0.5 type-secondary text-muted-foreground">{updatedLabel}</p>
       </PopoverContent>
     </Popover>
   );

@@ -74,7 +74,25 @@ async function main() {
   const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
   const problems = validateSnapshot({ v: 1, settings: DEFAULT_PAGE_SETTINGS, icon: null, cover: null, blocks: once });
   const odd: SpaceBlock[] = [{ id: "b-x", type: "syncedBlock", props: { from: "x" }, children: [{ id: "b-y", type: "text", text: [{ text: "kept" }] }] }];
+  // C10 code caption + wrap, C14 header toggles + cell colors: through the real editor's attributes.
+  const extras: SpaceBlock[] = [
+    { id: "b-c", type: "code", text: [{ text: "SELECT 1;" }], props: { language: "sql", caption: [{ text: "The ", bold: true }, { text: "check" }], wrap: true } },
+    {
+      id: "b-t",
+      type: "table",
+      props: {
+        headerRow: true,
+        headerColumn: true,
+        rows: [{ cells: [[{ text: "Client" }], [{ text: "Status" }]] }, { cells: [[{ text: "Cora" }], [{ text: "Active" }]] }],
+        cellStyles: [[null, { background: "green" }], [{ color: "orange" }, null]],
+      },
+    },
+  ];
+  const extrasBack = through(extras);
+  const sorted = (v: unknown): unknown =>
+    Array.isArray(v) ? v.map(sorted) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => a.localeCompare(b)).map(([k, x]) => [k, sorted(x)])) : v;
   const results = {
+    codeAndTableKept: same(sorted(extrasBack), sorted(extras)),
     blocks: blocks.length,
     types: [...new Set(blocks.map((b) => b.type))].join(","),
     roundTripIdentical: same(once, blocks),
@@ -88,7 +106,8 @@ async function main() {
       if (!same(b, once[i])) console.log("DIFF", JSON.stringify(b), "\n  =>", JSON.stringify(once[i]));
     });
   }
-  if (!results.roundTripIdentical || !results.secondSaveIdentical || !results.unknownTypeKept || problems.length) process.exit(1);
+  if (!results.codeAndTableKept) console.log("EXTRAS", JSON.stringify(extrasBack));
+  if (!results.codeAndTableKept || !results.roundTripIdentical || !results.secondSaveIdentical || !results.unknownTypeKept || problems.length) process.exit(1);
 }
 
 void main();

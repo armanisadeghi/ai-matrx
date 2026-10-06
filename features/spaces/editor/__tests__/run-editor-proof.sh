@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../../.."
 out="$(mktemp -d)/proof.mjs"
 node_modules/.bin/esbuild features/spaces/editor/__tests__/round-trip.editor-proof.mts --bundle --platform=node --format=esm \
-  --jsx=automatic --alias:@=. --outfile="$out" --loader:.css=empty --external:canvas --external:jsdom --log-level=error \
+  --jsx=automatic --alias:@=. --outfile="$out" --loader:.css=empty --loader:.webp=empty --loader:.png=empty --loader:.jpg=empty --loader:.svg=empty --external:canvas --external:jsdom --log-level=error \
   --banner:js="import{createRequire as __cr}from'module';const require=__cr(import.meta.url);"
 cp "$out" ./.spaces-editor-proof.mjs
 trap 'rm -f ./.spaces-editor-proof.mjs' EXIT

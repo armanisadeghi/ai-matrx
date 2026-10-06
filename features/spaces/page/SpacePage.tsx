@@ -16,7 +16,7 @@ import { useSourcePicker } from "../data/SourcePicker";
 import { PageHistory } from "./PageHistory";
 
 import type { SpaceBlock, SpaceDoc } from "../contract";
-import { fromEngine, type EngineBlock } from "../editor/convert";
+import { fromEngine, plainText, type EngineBlock } from "../editor/convert";
 import type { SpacesEditor } from "../editor/schema";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
@@ -78,6 +78,13 @@ function Title({
 }
 
 type SaveState = "saved" | "saving" | "failed";
+
+/** A14 — Notion counts the title and every block's text. */
+function pageCounts(doc: SpaceDoc): { words: number; characters: number } {
+  const text = `${doc.title}\n${plainText(doc.blocks)}`;
+  const words = text.split(/\s+/).filter(Boolean).length;
+  return { words, characters: text.replace(/\s/g, "").length };
+}
 
 const sameBlocks = (a: SpaceDoc["blocks"], b: SpaceDoc["blocks"]) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -298,6 +305,30 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     });
   };
 
+  // B9 "Turn into page in": the first block's text names a new page inside the picked page; its
+  // children and the other picked blocks become that page's content. Picking this page leaves a
+  // page block where the blocks were (Notion); another page takes them away from here.
+  const turnIntoPageIn = (ids: string[]) => {
+    openQuickFind("pick", (targetId) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const engine = ids.map((id) => editor.getBlock(id)).filter(Boolean) as unknown as EngineBlock[];
+      const [first, ...rest] = fromEngine(engine);
+      if (!first) return;
+      const title = (first.text ?? []).map((s) => s.text).join("").trim();
+      const blocks: SpaceBlock[] = [...(first.text ? (first.children ?? []) : [first]), ...rest];
+      void (async () => {
+        const made = await store.create({ parentId: targetId, title, blocks });
+        if (targetId === doc.id) {
+          editor.replaceBlocks(ids, [{ type: "page", props: { spaceId: made.id } } as never]);
+        } else {
+          editor.removeBlocks(ids);
+        }
+        toast.success(`Turned into ${title || "Untitled"}`);
+      })().catch((e: unknown) => toast.error(e instanceof Error ? e.message : "Could not turn this into a page"));
+    });
+  };
+
   const copyLink = () => {
     void navigator.clipboard.writeText(`${window.location.origin}/spaces/${doc.id}`).then(
       () => toast.success("Copied link"),
@@ -385,6 +416,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
           onUndo={() => editorRef.current?.undo()}
           onHistory={() => setHistoryOpen(true)}
           updatedLabel={editedAgo(doc.updatedAt, now)}
+          counts={pageCounts(doc)}
         />
       </header>
 
@@ -458,7 +490,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
               pickPage: () => new Promise((resolve) => openQuickFind("pick", (id) => resolve(id))),
               pickSource,
             }}
-            menu={{ moveBlocksTo, askAi: () => toast.info("AI is not connected yet") }}
+            menu={{ moveBlocksTo, turnIntoPageIn, askAi: () => toast.info("AI is not connected yet") }}
           />
           {sourcePicker}
           <PageHistory

@@ -11,6 +11,7 @@ import {
   Code,
   Copy,
   CornerUpRight,
+  FileInput,
   Heading1,
   Heading2,
   Heading3,
@@ -25,6 +26,7 @@ import {
   Trash2,
   Type,
 } from "lucide-react";
+import { useState } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { toast } from "@/lib/toast";
@@ -61,6 +63,8 @@ function closeMenus() {
 export interface BlockMenuActions {
   spaceId: string;
   moveBlocksTo: (blockIds: string[]) => void;
+  /** "Turn into page in": the blocks become a new page inside the page the person picks. */
+  turnIntoPageIn: (blockIds: string[]) => void;
   askAi: () => void;
 }
 
@@ -70,22 +74,61 @@ export function makeBlockMenu(actions: BlockMenuActions) {
     const editor = useBlockNoteEditor() as unknown as SpacesEditor;
     const portal = usePortalElement();
     const block = useExtensionState(SideMenuExtension, { editor, selector: (s) => s?.block });
+    const [query, setQuery] = useState("");
     if (!block) return null;
     const targets = () => selectedOrCurrent(editor, block.id);
     const hasText = Array.isArray(block.content);
+    // B9 "Search actions": the menu narrows to the actions (and Turn into targets) whose name matches.
+    const q = query.trim().toLowerCase();
+    const shows = (label: string) => !q || label.toLowerCase().includes(q);
+    const turnMatches = q ? TURN_INTO.filter((t) => shows(t.label) || shows("turn into")) : TURN_INTO;
+    const none = q && !["Ask AI", "Delete", "Duplicate", "Turn into", "Turn into page in", "Copy link to block", "Move to", "Color"].some(shows) && !turnMatches.length;
     return (
       <C.Generic.Menu.Dropdown className="bn-menu-dropdown bn-drag-handle-menu spaces-block-menu">
-        <C.Generic.Menu.Item className="bn-menu-item" icon={<AGENT_ICON size={I} />} onClick={actions.askAi}>
-          Ask AI
-        </C.Generic.Menu.Item>
-        <C.Generic.Menu.Divider />
-        <C.Generic.Menu.Item className="bn-menu-item" icon={<Trash2 size={I} />} onClick={() => editor.removeBlocks(targets())}>
-          Delete
-        </C.Generic.Menu.Item>
-        <C.Generic.Menu.Item className="bn-menu-item" icon={<Copy size={I} />} onClick={() => duplicateBlocks(editor, targets())}>
-          Duplicate
-        </C.Generic.Menu.Item>
-        {hasText ? (
+        <div className="spaces-block-menu-search" onKeyDown={(e) => e.key !== "Escape" && e.key !== "ArrowDown" && e.stopPropagation()}>
+          <input
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search actions…"
+            aria-label="Search actions"
+          />
+        </div>
+        {none ? <p className="spaces-block-menu-empty">No results</p> : null}
+        {shows("Ask AI") ? (
+          <C.Generic.Menu.Item className="bn-menu-item" icon={<AGENT_ICON size={I} />} onClick={actions.askAi}>
+            Ask AI
+          </C.Generic.Menu.Item>
+        ) : null}
+        {!q ? <C.Generic.Menu.Divider /> : null}
+        {shows("Delete") ? (
+          <C.Generic.Menu.Item className="bn-menu-item" icon={<Trash2 size={I} />} onClick={() => editor.removeBlocks(targets())}>
+            Delete
+          </C.Generic.Menu.Item>
+        ) : null}
+        {shows("Duplicate") ? (
+          <C.Generic.Menu.Item className="bn-menu-item" icon={<Copy size={I} />} onClick={() => duplicateBlocks(editor, targets())}>
+            Duplicate
+          </C.Generic.Menu.Item>
+        ) : null}
+        {hasText && q && turnMatches.length && !shows("turn into")
+          ? turnMatches.map((item) => (
+              <C.Generic.Menu.Item
+                key={item.label}
+                className="bn-menu-item"
+                icon={item.icon}
+                onClick={() => {
+                  editor.transact(() => {
+                    for (const id of targets()) editor.updateBlock(id, { type: item.type, props: item.props } as never);
+                  });
+                  closeMenus();
+                }}
+              >
+                Turn into {item.label}
+              </C.Generic.Menu.Item>
+            ))
+          : null}
+        {hasText && (!q || shows("turn into")) ? (
           <C.Generic.Menu.Root position="right" sub portalElement={portal}>
             <C.Generic.Menu.Trigger sub>
               <C.Generic.Menu.Item className="bn-menu-item" subTrigger icon={<ArrowRightLeft size={I} />}>
@@ -112,6 +155,19 @@ export function makeBlockMenu(actions: BlockMenuActions) {
             </C.Generic.Menu.Dropdown>
           </C.Generic.Menu.Root>
         ) : null}
+        {shows("Turn into page in") ? (
+          <C.Generic.Menu.Item
+            className="bn-menu-item"
+            icon={<FileInput size={I} />}
+            onClick={() => {
+              closeMenus();
+              actions.turnIntoPageIn(targets());
+            }}
+          >
+            Turn into page in
+          </C.Generic.Menu.Item>
+        ) : null}
+        {shows("Copy link to block") ? (
         <C.Generic.Menu.Item
           className="bn-menu-item"
           icon={<Link size={I} />}
@@ -128,18 +184,23 @@ export function makeBlockMenu(actions: BlockMenuActions) {
         >
           Copy link to block
         </C.Generic.Menu.Item>
-        <C.Generic.Menu.Item className="bn-menu-item" icon={<CornerUpRight size={I} />} onClick={() => {
-            closeMenus();
-            actions.moveBlocksTo(targets());
-          }}>
-          Move to
-        </C.Generic.Menu.Item>
-        <BlockColorsItem>
-          <span className="spaces-menu-label">
-            <Palette size={I} />
-            Color
-          </span>
-        </BlockColorsItem>
+        ) : null}
+        {shows("Move to") ? (
+          <C.Generic.Menu.Item className="bn-menu-item" icon={<CornerUpRight size={I} />} onClick={() => {
+              closeMenus();
+              actions.moveBlocksTo(targets());
+            }}>
+            Move to
+          </C.Generic.Menu.Item>
+        ) : null}
+        {shows("Color") ? (
+          <BlockColorsItem>
+            <span className="spaces-menu-label">
+              <Palette size={I} />
+              Color
+            </span>
+          </BlockColorsItem>
+        ) : null}
       </C.Generic.Menu.Dropdown>
     );
   };

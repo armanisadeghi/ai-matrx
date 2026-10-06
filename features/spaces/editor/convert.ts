@@ -149,6 +149,8 @@ function tableToEngine(block: SpaceBlock): EngineBlock {
   const rows = (Array.isArray(p.rows) ? p.rows : []) as Array<{ cells?: RichSpan[][] }>;
   const width = Math.max(1, ...rows.map((r) => r.cells?.length ?? 0));
   const widths = Array.isArray(p.columnWidths) ? (p.columnWidths as Array<number | null>) : [];
+  /** C14 cell colors: `cellStyles[row][col] = { color?, background? } | null` (an extra table prop). */
+  const styles = (Array.isArray(p.cellStyles) ? p.cellStyles : []) as Array<Array<{ color?: unknown; background?: unknown } | null> | null>;
   const props: Record<string, unknown> = {};
   if (isColor(block.color)) props.textColor = block.color;
   return {
@@ -160,7 +162,17 @@ function tableToEngine(block: SpaceBlock): EngineBlock {
       columnWidths: Array.from({ length: width }, (_, i) => (typeof widths[i] === "number" ? widths[i] : undefined)),
       headerRows: p.headerRow ? 1 : undefined,
       headerCols: p.headerColumn ? 1 : undefined,
-      rows: rows.map((r) => ({ cells: Array.from({ length: width }, (_, i) => spansToEngine(r.cells?.[i] ?? [])) })),
+      rows: rows.map((r, ri) => ({
+        cells: Array.from({ length: width }, (_, i) => {
+          const content = spansToEngine(r.cells?.[i] ?? []);
+          const look = styles[ri]?.[i];
+          if (!look) return content;
+          const cellProps: Record<string, unknown> = {};
+          if (isColor(look.color)) cellProps.textColor = look.color;
+          if (isColor(look.background)) cellProps.backgroundColor = look.background;
+          return { type: "tableCell", props: cellProps, content };
+        }),
+      })),
     },
     children: [],
   };
@@ -172,6 +184,19 @@ function tableFromEngine(block: EngineBlock): SpaceBlock {
     cells: (r.cells ?? []).map((cell) => engineToSpans(Array.isArray(cell) ? cell : (cell as TableCellOut)?.content)),
   }));
   const props: Record<string, unknown> = { headerRow: Boolean(c.headerRows), headerColumn: Boolean(c.headerCols), rows };
+  let styled = false;
+  const cellStyles = (c.rows ?? []).map((r) =>
+    (r.cells ?? []).map((cell) => {
+      const cp = (cell && !Array.isArray(cell) ? (cell as TableCellOut).props : undefined) ?? {};
+      const look: { color?: SpaceColor; background?: SpaceColor } = {};
+      if (isColor(cp.textColor)) look.color = cp.textColor;
+      if (isColor(cp.backgroundColor)) look.background = cp.backgroundColor;
+      if (!look.color && !look.background) return null;
+      styled = true;
+      return look;
+    }),
+  );
+  if (styled) props.cellStyles = cellStyles;
   if ((c.columnWidths ?? []).some((w) => typeof w === "number")) props.columnWidths = (c.columnWidths ?? []).map((w) => (typeof w === "number" ? w : null));
   const out: SpaceBlock = { id: block.id, type: "table", props };
   const color = block.props?.textColor;
@@ -201,6 +226,11 @@ export function toEngine(blocks: SpaceBlock[]): EngineBlock[] {
       props.isToggleable = true;
     }
     delete props.toggleable;
+    if (block.type === "code") {
+      // C10: the caption (RichSpan[]) rides the engine as a JSON string; wrap as a boolean.
+      props.caption = Array.isArray(props.caption) && props.caption.length ? JSON.stringify(props.caption) : "";
+      props.wrap = props.wrap === true;
+    }
     if (isColor(block.color)) props.textColor = block.color;
     if (isColor(block.background)) props.backgroundColor = block.background;
     const out: EngineBlock = { id: block.id, type, props, children: toEngine(block.children ?? []) };
@@ -232,6 +262,17 @@ export function fromEngine(blocks: EngineBlock[]): SpaceBlock[] {
     const { textColor, backgroundColor, isToggleable, textAlignment, ...rest } = block.props ?? {};
     const props: Record<string, unknown> = { ...rest };
     if (isToggleable) props.toggleable = true;
+    if (block.type === "codeBlock") {
+      let caption: unknown = null;
+      try {
+        caption = typeof props.caption === "string" && props.caption ? JSON.parse(props.caption) : null;
+      } catch {
+        caption = null;
+      }
+      if (Array.isArray(caption) && caption.length) props.caption = caption;
+      else delete props.caption;
+      if (props.wrap !== true) delete props.wrap;
+    }
     if (textAlignment && textAlignment !== "left") props.textAlignment = textAlignment;
     const out: SpaceBlock = { id: block.id, type };
     const text = engineToSpans(block.content);

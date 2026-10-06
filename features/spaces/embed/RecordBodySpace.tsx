@@ -182,6 +182,7 @@ function BodyEditor({ spaceId, readOnly }: { spaceId: string; readOnly: boolean 
         }}
         menu={{
           moveBlocksTo: () => toast.info("Open this page in Spaces to move blocks to another page."),
+          turnIntoPageIn: () => toast.info("Open this page in Spaces to turn blocks into a page."),
           askAi: () => toast.info("AI is not connected yet"),
         }}
       />
