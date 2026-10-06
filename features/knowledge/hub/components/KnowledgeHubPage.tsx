@@ -1515,7 +1515,7 @@ export function KnowledgeHubPage({
   };
 
   const onKey = (e: KeyboardEvent) => {
-    if (fileUnderFor || filtersOpen || saveDialog || tagFor || helpOpen) return;
+    if (fileUnderFor || filtersOpen || mobileToolsOpen || saveDialog || tagFor || helpOpen) return;
     // A container group lists links, not results: the result keys do not apply there.
     if (state.view.kind === "group") return;
     if (document.querySelector("[role=dialog][data-state=open], [role=alertdialog][data-state=open]")) return;
