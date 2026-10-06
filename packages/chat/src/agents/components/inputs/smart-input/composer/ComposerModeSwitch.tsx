@@ -34,7 +34,7 @@ import {
   type ComposerMode,
 } from "./composer-types";
 import { useComposerMode } from "./useComposerMode";
-import { Button } from "@ai-matrx/design-system/controls";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface ComposerModeSwitchProps {
   /** Server-read "last mode used" cookie, for a first paint with no flash. */
@@ -57,28 +57,18 @@ export function ComposerModeSwitch({
   // False in the server HTML and during hydration; the layout effect has
   // measured before the first client paint after that.
   const measured = useSyncExternalStore(noopSubscribe, () => true, () => false);
+  // THE canonical capsule toggle (one UI system, 2026-10-06): a hand-built
+  // muted track holding pressed Buttons drew a second pill and ring inside it.
   const renderSegments = (interactive: boolean) => (
-    <div
-      role={interactive ? "tablist" : undefined}
-      aria-label={interactive ? "Composer mode" : undefined}
-      className={cn(
-        "shrink-0 items-center gap-0.5 rounded-lg bg-muted p-0.5",
-        panel || !interactive
-          ? "inline-flex rounded-lg"
-          : measured
-            ? "inline-flex rounded-[10px]"
-            : "hidden rounded-[10px] sm:inline-flex",
-        !interactive && "w-max max-w-none",
-        className,
-      )}
-    >
-      {COMPOSER_MODES.map((value) => {
-        const on = value === mode;
-        return (
-          <Button variant="quiet" pressed={!!(on)} key={value} role={interactive ? "tab" : undefined} aria-selected={interactive ? on : undefined} aria-pressed={interactive ? undefined : on} tabIndex={interactive ? undefined : -1} onClick={interactive ? () => setMode(value) : undefined}>{COMPOSER_MODE_LABELS[value]}</Button>
-        );
-      })}
-    </div>
+    <SegmentedControl
+      aria-label="Composer mode"
+      value={mode}
+      onValueChange={(value: ComposerMode) => {
+        if (interactive) setMode(value);
+      }}
+      data={COMPOSER_MODES.map((value) => ({ value, label: COMPOSER_MODE_LABELS[value] }))}
+      className={cn("shrink-0", !interactive && "w-max max-w-none", className)}
+    />
   );
   if (panel) return renderSegments(true);
   const triggerClass =
@@ -99,7 +89,7 @@ export function ComposerModeSwitch({
     >
       {/* Hidden measurers at natural width (`w-max max-w-none`: the global
           `* { max-width: 100% }` would cap them at this cell). */}
-      <div aria-hidden className="pointer-events-none invisible absolute left-0 top-0">
+      <div aria-hidden inert className="pointer-events-none invisible absolute left-0 top-0">
         <div ref={fullRef} className="w-max max-w-none">
           {renderSegments(false)}
         </div>
