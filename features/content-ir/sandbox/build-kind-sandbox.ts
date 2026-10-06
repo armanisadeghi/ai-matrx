@@ -66,6 +66,10 @@ const ALIAS: Record<string, string> = {
     __dirname,
     "runtime/FrameCopyForAiButton.tsx",
   ),
+  "@/components/agent-copy/CopyButtons": resolve(
+    __dirname,
+    "runtime/FrameCopyButtons.tsx",
+  ),
   "@/components/agent-copy/useAlchemyDisclosure": resolve(
     __dirname,
     "runtime/FrameAlchemyDisclosure.ts",
