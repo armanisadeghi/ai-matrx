@@ -32,6 +32,7 @@ import {
   AlertTriangle,
   CalendarClock,
   ClipboardList,
+  MessageSquareQuote,
   RefreshCw,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +59,7 @@ import {
 import { DesignPanelForm } from "./DesignPanelForm";
 import { PanelDesignSection, usePanelDesign } from "./PanelDesignSection";
 import { PanelMetricsSection } from "./PanelMetricsSection";
+import { TryOnePrompt } from "../try-prompt/TryOnePrompt";
 import { panelStatusInfo } from "./format";
 import { panelQueryKeys } from "./panel-api";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -175,6 +177,7 @@ function PanelCard({
     ? "runs on the next weekly pass while the AI-visibility schedule is on"
     : "paused — nothing runs this panel";
   const blindReviewOpen = Boolean(design.data?.open_gate?.blind);
+  const [trying, setTrying] = useState(false);
   return (
     <SectionCard
       title={row.name}
@@ -258,9 +261,28 @@ function PanelCard({
       </div>
 
       <div className="border-t border-border/60">
-        <p className="px-3 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Questions
-        </p>
+        <div className="flex items-center justify-between gap-2 px-3 pt-2">
+          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Questions
+          </p>
+          {/* Hidden while a blind review is open: fresh answers would unblind it. */}
+          {!trying && !blindReviewOpen ? (
+            <Button
+              variant="quiet"
+              icon={<MessageSquareQuote className="h-3.5 w-3.5" />}
+              onClick={() => setTrying(true)}
+            >
+              Try one prompt
+            </Button>
+          ) : null}
+        </div>
+        {trying && !blindReviewOpen ? (
+          <TryOnePrompt
+            siteId={siteId}
+            questions={prompts.map((p) => p.text.trim()).filter(Boolean)}
+            onClose={() => setTrying(false)}
+          />
+        ) : null}
         <div className="flex flex-col divide-y divide-border/60">
           {trend.prompts.map((standing) => (
             <PromptRow

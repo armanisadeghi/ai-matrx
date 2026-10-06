@@ -9,10 +9,6 @@
 // the other.
 
 import { normalizeDomainInput } from "../../domain-research/data";
-import { SEO_AI_VISIBILITY_TOOL } from "./types";
-
-export { SEO_AI_VISIBILITY_TOOL };
-
 /** Comma- or newline-separated names/domains → trimmed, de-duplicated (case-insensitive). */
 export function parseNameList(text: string): string[] {
   const seen = new Set<string>();

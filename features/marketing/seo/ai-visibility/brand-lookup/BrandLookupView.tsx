@@ -434,7 +434,14 @@ export function BrandLookupView({ site, brandId }: { site: MarketingSite; brandI
       </SectionCard>
 
       <SectionCard title="Share of voice" anchor="ai_brand_share_of_voice">
-        {sovArgs === null && !sovWaiting ? (
+        {competitorsQuery.isError && committed.competitors === null ? (
+          <ErrorNotice
+            title="Could not read confirmed competitors"
+            error={competitorsQuery.error}
+            operation="Read seo.competitor for this site"
+            actions={<Button onClick={() => void competitorsQuery.refetch()}>Try again</Button>}
+          />
+        ) : sovArgs === null && !sovWaiting ? (
           <EmptyState
             icon={<Swords />}
             title="No competitors to compare"
