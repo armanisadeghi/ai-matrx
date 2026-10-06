@@ -513,7 +513,7 @@ export function MeetingDetail({
           {/* The organization's own fields on this meeting (lane 7 W5). */}
           {section === "details" ? <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} className="mt-6" /> : null}
           {/* Everything linked to this meeting, both ways (W1.4). */}
-          {section === "details" ? <LinkedRecordsSection token="meet_meeting" id={meeting.id} title={meeting.title} className="mt-6 flex flex-col gap-1.5" /> : null}
+          {section === "details" ? <LinkedRecordsSection backLinksShownElsewhere token="meet_meeting" id={meeting.id} title={meeting.title} className="mt-6 flex flex-col gap-1.5" /> : null}
 
           {section === "guests" ? (
             <MeetingGuests

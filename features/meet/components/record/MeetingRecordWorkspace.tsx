@@ -433,7 +433,7 @@ function Workspace({
               ended meeting lands on, in its info column. */}
           <EntityCustomFields entityToken="meet_meeting" recordId={meeting.id} organizationId={meeting.organizationId} />
           {/* Everything linked to this meeting, both ways (W1.4). */}
-          <LinkedRecordsSection token="meet_meeting" id={meeting.id} title={meeting.title} />
+          <LinkedRecordsSection backLinksShownElsewhere token="meet_meeting" id={meeting.id} title={meeting.title} />
         </div>
 
         <aside

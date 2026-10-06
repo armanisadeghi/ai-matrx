@@ -222,7 +222,7 @@ export function NoteMetadataBar({
             className="py-2"
           />
           {/* Everything linked to this note, both ways (W1.4). */}
-          <LinkedRecordsSection token="note" id={noteId} title={note?.label ?? ""} className="flex flex-col gap-1.5 pb-2" />
+          <LinkedRecordsSection backLinksShownElsewhere token="note" id={noteId} title={note?.label ?? ""} className="flex flex-col gap-1.5 pb-2" />
         </div>
       )}
 

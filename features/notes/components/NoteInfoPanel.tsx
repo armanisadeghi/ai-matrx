@@ -336,7 +336,7 @@ export function NoteInfoPanel({ noteId, className }: NoteInfoPanelProps) {
 
       {/* ── Everything linked to this note, both ways (W1.4) ─────────── */}
       <div className="px-1">
-        <LinkedRecordsSection token="note" id={noteId} title={note?.label ?? ""} />
+        <LinkedRecordsSection backLinksShownElsewhere token="note" id={noteId} title={note?.label ?? ""} />
       </div>
 
       {/* ── Sharing — who can see this note, and why ──────────────────── */}

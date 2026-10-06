@@ -235,6 +235,7 @@ function ProfileBody({
               <div className="p-3 sm:p-4">
                 <LinkedRecordsSection
                   token="hr_employee"
+                  backLinksShownElsewhere
                   id={employeeId}
                   title={profile.header.display_name ?? ""}
                 />

@@ -87,7 +87,7 @@ function BackLinksSection({ entityToken, recordId, organizationId, className }: 
       {links.items.length === 0 ? (
         <EmptyState icon={<Link2 className="h-5 w-5" />} title="Nothing links here" />
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 text-sm">
           {groupBackLinksByTable(links.items).map((group) => (
             <div key={group.tableId} data-back-links-table={group.tableId} className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">{group.tableLabel ?? "Table"}</span>
@@ -99,6 +99,7 @@ function BackLinksSection({ entityToken, recordId, organizationId, className }: 
                   name={item.record.label}
                   href={recordPageHref(item.table_id, item.record.id)}
                   showIcon={false}
+                  labelClassName="font-medium text-primary underline"
                   disablePeek
                 />
               ))}

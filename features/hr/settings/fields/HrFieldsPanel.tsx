@@ -27,6 +27,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 
+import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { useHrContext } from "../../shared/useHrContext";
 import { fetchHrCustomFieldRegistry } from "../service";
 import { HrSettingsShell } from "../HrSettingsShell";
@@ -68,10 +69,10 @@ export function HrFieldsPanel() {
     };
   }, [organizationId, reload]);
 
-  // A token with no registry label renders as the token itself — the true
-  // identifier, never a prettified guess at what it means.
+  // The record type's own name: the live registry label, else the entity registry's. A token is an
+  // identifier, never a name a person reads — one with neither says so, plainly.
   const labelFor = (token: string | null) =>
-    token ? (labels[token] ?? token) : "—";
+    token ? (labels[token] ?? tryGetEntityInfo(token)?.label ?? "Unnamed record type") : "—";
   const enabledTargets = targets.filter((row) => row.is_enabled);
   const recordsConfig = useAppRecordsConfig(organizationId);
 
@@ -127,12 +128,19 @@ export function HrFieldsPanel() {
                         {isOwnRow ? "Set by this employer" : "Platform default"}
                       </Badge>
                     </span>
-                    <span className="text-muted-foreground">
-                      up to {target.max_fields ?? "unlimited"} fields · sensitivity
-                      ceiling {target.sensitivity_ceiling} · AI ceiling{" "}
-                      {target.ai_exposure_ceiling} · validation{" "}
-                      {target.validation_mode}
-                    </span>
+                    <dl className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+                      {[
+                        ["Field limit", target.max_fields == null ? "Unlimited" : String(target.max_fields)],
+                        ["Sensitivity ceiling", target.sensitivity_ceiling],
+                        ["AI ceiling", target.ai_exposure_ceiling],
+                        ["Validation", target.validation_mode],
+                      ].map(([term, value]) => (
+                        <div key={term} className="flex gap-1">
+                          <dt>{term}</dt>
+                          <dd className="font-medium text-foreground">{value}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   </li>
                 );
               })}

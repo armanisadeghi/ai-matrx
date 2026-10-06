@@ -54,12 +54,30 @@ export interface LinkedRecordsSectionProps {
   /** The record's own name — titles the picker ("Link to …"). */
   title: string;
   className?: string;
+  /**
+   * The page also mounts "Linked records" (`EntityBackLinks`), which already lists the custom rows
+   * whose own link field points here, with their titles. Those store-reference edges are then left
+   * out so a custom row is listed ONCE. Direct links ("Link a record…") still list here.
+   */
+  backLinksShownElsewhere?: boolean;
 }
 
-export function LinkedRecordsSection({ token, id, title, className }: LinkedRecordsSectionProps) {
+/** An edge a record's own link field wrote, seen from the record it points at. */
+export function isStoreReferenceBackEdge(selfType: string, edge: LinkEdgeLike): boolean {
+  return (
+    selfType !== STORE_RECORD &&
+    edge.direction === "incoming" &&
+    edge.otherType === STORE_RECORD &&
+    edge.role !== ANCHORED_TO
+  );
+}
+
+export function LinkedRecordsSection({ token, id, title, className, backLinksShownElsewhere }: LinkedRecordsSectionProps) {
   const { edges, status, error } = useAssociations({ type: token, id });
   const openLinkSheet = useOpenLinkRecordSheet();
-  const links = edges.filter((e) => isLinkEdge(token, e));
+  const links = edges.filter(
+    (e) => isLinkEdge(token, e) && !(backLinksShownElsewhere && isStoreReferenceBackEdge(token, e)),
+  );
   const [titles, setTitles] = useState<Map<string, string>>(new Map());
   const [busy, setBusy] = useState<string | null>(null);
 
