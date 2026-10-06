@@ -384,9 +384,18 @@ function isDeliberateKey(event: KeyboardEvent): boolean {
   return target instanceof Element && target.closest(ACTIVATABLE) !== null;
 }
 
-function isTextEntry(target: EventTarget | null): boolean {
+// A control pressed INSIDE an editable surface (a button, link or menu item in a
+// page editor's block, a non-editable island) is a deliberate act, not typing:
+// the editable root is only "text entry" when no control sits between it and
+// the press (Spaces review 4: a table's "New" inside a page never asked).
+const CONTROL = 'button, a[href], [role="button"], [role="menuitem"], [role="option"], [role="tab"], [contenteditable="false"]';
+
+export function isTextEntry(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) return false;
-  if (target.closest('[contenteditable=""], [contenteditable="true"], textarea, select')) return true;
+  const editable = target.closest('[contenteditable=""], [contenteditable="true"]');
+  const control = target.closest(CONTROL);
+  if (control && (!editable || editable.contains(control))) return false;
+  if (editable || target.closest("textarea, select")) return true;
   const input = target.closest("input");
   return input !== null && !["button", "submit", "reset", "checkbox", "radio", "file", "image", "range", "color"].includes(input.type);
 }
