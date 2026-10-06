@@ -1313,7 +1313,7 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-code-action { font-size: 12px; line-height: 20px; padding: 0 6px; border-radius: 4px; color: var(--muted-foreground); background: var(--background); border: 1px solid var(--border); }
 .spaces-code-action:hover { color: var(--foreground); background: var(--accent); }
 .spaces-code-caption { flex-basis: 100%; width: 100%; padding: 6px 2px 0; }
-.spaces-code-caption[hidden] { display: none; }
+.spaces-code-caption[data-empty="true"]:not(:focus-within) { height: 0; padding: 0; overflow: hidden; }
 .spaces-code-caption input { width: 100%; background: transparent; border: 0; outline: none; font-size: 14px; color: var(--muted-foreground); }
 .spaces-code-caption input::placeholder { color: var(--muted-foreground); opacity: 0.6; }
 

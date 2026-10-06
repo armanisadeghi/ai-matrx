@@ -7,6 +7,8 @@
 
 import { createCodeBlockSpec } from "@blocknote/core";
 
+import { toast } from "@/lib/toast";
+
 import type { RichSpan } from "../contract";
 
 type CodeSpec = ReturnType<typeof createCodeBlockSpec>;
@@ -22,7 +24,7 @@ export function captionText(raw: unknown): string {
 
 /** Keys and clicks inside our controls never reach ProseMirror (it listens on the editor root). */
 function isolate(el: HTMLElement) {
-  for (const type of ["keydown", "keypress", "beforeinput", "input", "paste", "mousedown", "compositionstart", "compositionend"]) {
+  for (const type of ["keydown", "keypress", "keyup", "beforeinput", "input", "paste", "mousedown", "mouseup", "pointerdown", "pointerup", "click", "compositionstart", "compositionend", "dragstart"]) {
     el.addEventListener(type, (e) => e.stopPropagation());
   }
 }
@@ -58,12 +60,10 @@ export function notionCodeBlock(base: CodeSpec): CodeSpec {
     isolate(bar);
     const copy = button("Copy", () => {
       const text = (view.contentDOM as HTMLElement | undefined)?.textContent ?? "";
+      // A toast, never a label change: any DOM change here makes ProseMirror redraw the block.
       void navigator.clipboard.writeText(text).then(
-        () => {
-          copy.textContent = "Copied";
-          window.setTimeout(() => (copy.textContent = "Copy"), 1200);
-        },
-        () => (copy.textContent = "Copy failed"),
+        () => toast.success("Copied code"),
+        () => toast.error("Could not copy the code"),
       );
     });
     bar.append(copy);
@@ -71,10 +71,9 @@ export function notionCodeBlock(base: CodeSpec): CodeSpec {
       bar.append(button(wrap ? "Unwrap" : "Wrap", () => editor.updateBlock(block, { props: { wrap: !wrap } } as never)));
       if (!caption) {
         bar.append(
-          button("Caption", () => {
-            line.hidden = false;
-            input.focus();
-          }),
+          // Focus only: the empty caption line is folded by CSS until it holds focus, because any DOM
+          // change inside this block (an attribute, a label) makes ProseMirror redraw it.
+          button("Caption", () => window.requestAnimationFrame(() => input.focus())),
         );
       }
     }
@@ -83,7 +82,7 @@ export function notionCodeBlock(base: CodeSpec): CodeSpec {
     const line = document.createElement("div");
     line.className = "spaces-code-caption";
     line.contentEditable = "false";
-    line.hidden = !caption;
+    line.dataset.empty = caption ? "false" : "true";
     isolate(line);
     const input = document.createElement("input");
     input.type = "text";
@@ -93,10 +92,7 @@ export function notionCodeBlock(base: CodeSpec): CodeSpec {
     input.setAttribute("aria-label", "Code caption");
     const commit = () => {
       const next = input.value.trim();
-      if (next === caption) {
-        if (!next) line.hidden = true;
-        return;
-      }
+      if (next === caption) return;
       editor.updateBlock(block, { props: { caption: next ? JSON.stringify([{ text: next }]) : "" } } as never);
     };
     input.addEventListener("blur", commit);
