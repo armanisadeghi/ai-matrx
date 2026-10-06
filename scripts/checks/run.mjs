@@ -103,6 +103,8 @@ export const EXTRA_ROWS = [
   "Release-commit staging primitive can still fail (self-test)|pnpm check:ship-stage:self-test",
   "Release-outcome banner can still fail (self-test)|pnpm check:release-outcome:self-test",
   "The Ignored Build Step sees releases behind a merge commit|pnpm test:vercel-ignore",
+  "Demos chat UI routes register required host slots|pnpm check:demos-chat-registration",
+  "The demos chat registration guard can still fail|pnpm check:demos-chat-registration:self-test",
 ];
 
 // Ordered: first match wins. Categories are the dispatcher's lanes; a lane it

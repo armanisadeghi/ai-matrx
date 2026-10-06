@@ -5,8 +5,9 @@
  * so each such demo route must mount DemosChatUiRegistrations in its own
  * layout instead of pulling the profile into the shared demos layout.
  */
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
+import { tmpdir } from "node:os";
 import * as ts from "typescript";
 
 const ROOT = process.cwd();
@@ -20,6 +21,7 @@ const UI_IMPORTS = [
   "@ai-matrx/chat/cx-chat/components/",
   "@ai-matrx/chat/surfaces/runtime/",
   "@ai-matrx/chat/tool-call-visualization/components/",
+  "@ai-matrx/chat/tool-call-visualization/registry/",
   "@ai-matrx/chat/tool-call-visualization/renderers/",
   "@ai-matrx/chat/tool-call-visualization/result-fields/",
 ];
@@ -44,21 +46,42 @@ function uiImports(file: string): string[] {
   return imports;
 }
 
-function registrationLayout(file: string): string | null {
+function registrationLayout(file: string, demos: string): string | null {
   let dir = dirname(file);
-  while (dir.startsWith(DEMOS)) {
+  while (dir.startsWith(demos)) {
     const layout = join(dir, "layout.dev.tsx");
     if (existsSync(layout) && readFileSync(layout, "utf8").includes("<DemosChatUiRegistrations")) return layout;
-    if (dir === DEMOS) break;
+    if (dir === demos) break;
     dir = dirname(dir);
   }
   return null;
 }
 
-const missing = files(DEMOS)
-  .map((file) => ({ file, imports: uiImports(file) }))
-  .filter(({ imports }) => imports.length > 0)
-  .filter(({ file }) => !registrationLayout(file));
+function missingRegistrations(demos: string) {
+  return files(demos)
+    .map((file) => ({ file, imports: uiImports(file) }))
+    .filter(({ imports }) => imports.length > 0)
+    .filter(({ file }) => !registrationLayout(file, demos));
+}
+
+if (process.argv.includes("--self-test")) {
+  const root = mkdtempSync(join(tmpdir(), "demos-chat-registration-"));
+  try {
+    const demos = join(root, "app", "(dev)", "demos");
+    const route = join(demos, "uncovered");
+    mkdirSync(route, { recursive: true });
+    writeFileSync(join(route, "page.dev.tsx"), 'import { GenericRenderer } from "@ai-matrx/chat/tool-call-visualization/registry/GenericRenderer";\nexport default GenericRenderer;\n');
+    if (missingRegistrations(demos).length !== 1) throw new Error("uncovered registry UI import was not rejected");
+    writeFileSync(join(route, "layout.dev.tsx"), 'import { DemosChatUiRegistrations } from "@/providers/DemosChatUiRegistrations";\nexport default function Layout({ children }: { children: React.ReactNode }) { return <><DemosChatUiRegistrations />{children}</>; }\n');
+    if (missingRegistrations(demos).length !== 0) throw new Error("covered registry UI import was rejected");
+    console.log("✓ check:demos-chat-registration:self-test — uncovered route fails; covered route passes.");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+  process.exit(0);
+}
+
+const missing = missingRegistrations(DEMOS);
 
 if (missing.length) {
   console.error("Direct chat UI imports without a route-scoped DemosChatUiRegistrations boundary:");

@@ -127,6 +127,8 @@ if $STRICT; then
         # app/(core)); nothing local parks, so no local build sees it (2026-10-01, PicklistWindowBody).
         "Route pages imported only by routes (a parked build cannot resolve them)|pnpm check:page-imports"
         "The page-imports guard can still fail (planted in a temp dir)|pnpm check:page-imports:self-test"
+        "Demos chat UI routes register required host slots|pnpm check:demos-chat-registration"
+        "The demos chat registration guard can still fail|pnpm check:demos-chat-registration:self-test"
         # Never list every table to find one: tableFind / ensureTable / defineAppTable are the doors.
         "No hand-written find-or-create of a table (list all, search by slug)|pnpm check:hand-written-find-or-create"
         "The find-or-create guard can still fail (planted in a temp dir)|pnpm check:hand-written-find-or-create:self-test"
