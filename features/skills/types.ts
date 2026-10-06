@@ -1,2 +1,2 @@
-/** Moved into @ai-matrx/chat (package-local); this path stays as a shim for app importers. */
-export * from "@ai-matrx/chat/ui/skills-types";
+/** Moved into @ai-matrx/agents/skills (agent core A2); this path stays as a shim for app importers. */
+export type * from "@ai-matrx/agents/skills";

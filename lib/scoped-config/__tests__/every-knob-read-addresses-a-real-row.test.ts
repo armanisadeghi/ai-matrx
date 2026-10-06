@@ -277,6 +277,9 @@ function readSites(): ReadSite[] {
  * cannot quietly absorb a new unaddressable read.
  */
 const COMPUTED_REFS: Record<string, string> = {
+  "app/(dev)/demos/composer/ComposerPlayground.tsx":
+    "dev demo: reads `COMPOSER_KNOBS.compactInputMaxHeightPct`, a member access on the composer's " +
+    "own declared COMPOSER_KNOBS table; the same knob the composer itself reads",
   "features/audio/limits.ts":
     "reads one address per limit out of its own declared AUDIO_LIMITS table; every entry is a pair in that file",
   "features/masterwork/capture-plan/useCapturePlanSettings.ts":

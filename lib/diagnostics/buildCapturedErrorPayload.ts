@@ -92,6 +92,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "agent-catalog":
     "Agent catalogue failure (@ai-matrx/agents/catalog errorSink)",
   "model-catalog": "Model catalogue failure (@ai-matrx/agents/models errorSink)",
+  "skill-catalog": "Skill catalogue failure (@ai-matrx/agents/skills errorSink)",
   "reasoning-leak": "Reasoning leaked into answer text",
   "data-shape": "Data-shape contract violation",
   "url-panel-unopened": "Deep-linked window never opened",

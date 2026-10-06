@@ -2,17 +2,18 @@
  * features/skills/service/skillsStreamHandler.ts
  *
  * Bridges `RESOURCE_CHANGED` stream events with `kind` starting in `skill`
- * into the skills slice. Called from the central stream pump
+ * into the skill catalog (`@ai-matrx/agents/skills`), which the skills slice
+ * mirrors. Called from the central stream pump
  * (`features/agents/redux/execution-system/thunks/process-stream.ts`).
  *
- * The slice doesn't refetch — useSkills() owns that side effect by
+ * The catalog doesn't refetch — useSkills() owns that side effect by
  * subscribing to `lastIngestAt`. Keeping the dispatch surface tiny here
  * makes it safe to wire from multiple stream-receiver sites.
  */
 
 import type { Action } from "redux";
 
-import { skillsActions } from "../redux/skillsSlice";
+import { getSkillCatalog } from "@/lib/skills/skillCatalog";
 
 /** Minimal dispatch shape — accepts any thunk dispatch the central stream
  * pump might pass in. Avoids tight coupling to the full RootState type. */
@@ -31,10 +32,11 @@ export function isSkillStreamEvent(kind: string | undefined): boolean {
   return kind.startsWith("skill");
 }
 
-/** Dispatch a slice action for a `resource_changed` event whose `kind`
- * matches `isSkillStreamEvent`. No-op otherwise. */
+/** Hand a `resource_changed` event whose `kind` matches `isSkillStreamEvent`
+ * to the skill catalog. No-op otherwise. `dispatch` stays in the signature
+ * for the stream pump's call shape; the catalog needs none. */
 export function applySkillStreamEvent(
-  dispatch: DispatchLike,
+  _dispatch: DispatchLike,
   payload: ResourceChangedPayload,
 ): void {
   const kind = payload.kind;
@@ -45,12 +47,10 @@ export function applySkillStreamEvent(
     | "modified"
     | "deleted"
     | "invalidated";
-  dispatch(
-    skillsActions.streamEventReceived({
-      kind: kind as string,
-      action,
-      resourceId: payload.resource_id ?? "",
-      metadata: payload.metadata ?? {},
-    }),
-  );
+  getSkillCatalog().applyStreamEvent({
+    kind: kind as string,
+    action,
+    resourceId: payload.resource_id ?? "",
+    metadata: payload.metadata ?? {},
+  });
 }

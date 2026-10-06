@@ -179,10 +179,12 @@ const config: Config = {
     //   ./matrx     the shared matrx client
     //   ./catalog   the ONE agent picker (+ ./catalog/react)
     //   ./mandates  the published mandate-key vocabulary (0.10.0)
-    "^@ai-matrx/agents/(matrx|catalog|mandates|content-transfer)$":
+    "^@ai-matrx/agents/(matrx|catalog|mandates|content-transfer|skills)$":
       "<rootDir>/node_modules/@ai-matrx/agents/dist/$1/index.js",
     "^@ai-matrx/agents/catalog/react$":
       "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/react/index.js",
+    "^@ai-matrx/agents/skills/react$":
+      "<rootDir>/node_modules/@ai-matrx/agents/dist/skills/react/index.js",
     "^@ai-matrx/agents/content-transfer/react$":
       "<rootDir>/node_modules/@ai-matrx/agents/dist/content-transfer/react/index.js",
     // @ai-matrx/associations subpaths are DIRECTORIES too

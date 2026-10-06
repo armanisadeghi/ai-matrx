@@ -155,6 +155,8 @@ export type CapturedErrorSource =
    * would only reach the console.
    */
   | "model-catalog"
+  /** `@ai-matrx/agents/skills`' errorSink fired — a skill list / skill / category read failed. Bound in `lib/skills/skillCatalog.ts`. */
+  | "skill-catalog"
   /**
    * The model's chain-of-thought (`<thinking>`/`<reasoning>`) leaked into the
    * ANSWER text — i.e. it survived the render-block type-split and reached the

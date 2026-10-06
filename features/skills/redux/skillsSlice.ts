@@ -1,10 +1,14 @@
 /**
  * features/skills/redux/skillsSlice.ts
  *
- * Single source of truth for skills + categories + ingest state on the
- * frontend. Replaces the read-only Supabase-backed slice that used to
- * live at `features/agent-connections/redux/skl/`. All reads + writes go
- * through `/api/skills` (the Python backend).
+ * The Redux BINDING over the skill catalog. The skill list rows, the
+ * categories and the stream signal are held by `createSkillCatalog`
+ * (`@ai-matrx/agents/skills`, wired in `lib/skills/skillCatalog.ts`) and
+ * mirrored here by `catalogSynced`, so selectors, the chat `loadedSkills`
+ * slot and the editors keep reading Redux. The slice itself owns only what
+ * the catalog does not: the open skill (`activeId`), the ingest report from
+ * the editors' ingest action, and per-skill resources.
+ * Never write `skills` / `categories` here directly — go through the catalog.
  *
  * State shape:
  *   skills:
@@ -26,6 +30,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
+import type { SkillCatalogState } from "@ai-matrx/agents/skills";
 import type {
   AsyncStatus,
   CategoryRow,
@@ -34,17 +39,7 @@ import type {
   SkillRow,
 } from "../types";
 
-function indexById<T extends { id: string }>(
-  rows: T[],
-): { byId: Record<string, T>; allIds: string[] } {
-  const byId: Record<string, T> = {};
-  const allIds: string[] = [];
-  for (const row of rows) {
-    byId[row.id] = row;
-    allIds.push(row.id);
-  }
-  return { byId, allIds };
-}
+export type { SkillStreamEventPayload } from "@ai-matrx/agents/skills";
 
 export interface SkillsState {
   skills: {
@@ -111,116 +106,35 @@ const initialState: SkillsState = {
   },
 };
 
-/** Payload of the stream-bus signal — see process-stream.ts case for
- * `resource_changed` events with kind=skills.* */
-export interface SkillStreamEventPayload {
-  kind: string; // "skills.ingested" | "skill.created" | "skill.modified" | "skill.deleted"
-  action: "created" | "modified" | "deleted" | "invalidated";
-  resourceId: string;
-  metadata: Record<string, unknown>;
-}
-
 const slice = createSlice({
   name: "skills",
   initialState,
   reducers: {
-    // ── Skills ──────────────────────────────────────────────────────────────
-    skillsLoading(state) {
-      state.skills.status = "loading";
-      state.skills.error = null;
-    },
-    skillsListLoaded(state, action: PayloadAction<string>) {
-      state.skills.loadedKey = action.payload;
-    },
-    skillsReceived(state, action: PayloadAction<SkillRow[]>) {
-      const { byId, allIds } = indexById(action.payload);
-      state.skills.byId = byId;
-      state.skills.allIds = allIds;
-      state.skills.status = "ready";
-      state.skills.error = null;
-    },
-    skillsError(state, action: PayloadAction<string>) {
-      state.skills.status = "error";
-      state.skills.error = action.payload;
-    },
-    skillUpserted(state, action: PayloadAction<SkillRow>) {
-      const row = action.payload;
-      if (!state.skills.byId[row.id]) {
-        state.skills.allIds.push(row.id);
-      }
-      state.skills.byId[row.id] = row;
-    },
-    skillRemoved(state, action: PayloadAction<string>) {
-      delete state.skills.byId[action.payload];
-      state.skills.allIds = state.skills.allIds.filter(
-        (id) => id !== action.payload,
-      );
-      if (state.skills.activeId === action.payload) {
-        state.skills.activeId = null;
+    // ── Mirror of the catalog (the one holder of skills + categories) ───────
+    catalogSynced(state, action: PayloadAction<SkillCatalogState>) {
+      const c = action.payload;
+      state.skills.byId = c.skills.byId;
+      state.skills.allIds = c.skills.allIds;
+      state.skills.status = c.skills.status;
+      state.skills.error = c.skills.error;
+      state.skills.loadedKey = c.skills.loadedKey;
+      state.categories.byId = c.categories.byId;
+      state.categories.allIds = c.categories.allIds;
+      state.categories.status = c.categories.status;
+      state.categories.error = c.categories.error;
+      if (c.lastIngestAt !== state.skills.lastIngestAt) {
+        state.skills.lastIngestAt = c.lastIngestAt;
+        // A `skills.ingested` stream event carries the ingest counts.
+        if (c.lastStreamReport) state.ingest.lastReport = c.lastStreamReport;
       }
     },
     setActiveSkillId(state, action: PayloadAction<string | null>) {
       state.skills.activeId = action.payload;
     },
-
-    // ── Categories ──────────────────────────────────────────────────────────
-    categoriesLoading(state) {
-      state.categories.status = "loading";
-      state.categories.error = null;
-    },
-    categoriesReceived(state, action: PayloadAction<CategoryRow[]>) {
-      const { byId, allIds } = indexById(action.payload);
-      state.categories.byId = byId;
-      state.categories.allIds = allIds;
-      state.categories.status = "ready";
-      state.categories.error = null;
-    },
-    categoriesError(state, action: PayloadAction<string>) {
-      state.categories.status = "error";
-      state.categories.error = action.payload;
-    },
-    categoryUpserted(state, action: PayloadAction<CategoryRow>) {
-      const row = action.payload;
-      if (!state.categories.byId[row.id]) {
-        state.categories.allIds.push(row.id);
-      }
-      state.categories.byId[row.id] = row;
-    },
-    categoryRemoved(state, action: PayloadAction<string>) {
-      delete state.categories.byId[action.payload];
-      state.categories.allIds = state.categories.allIds.filter(
-        (id) => id !== action.payload,
-      );
-    },
-
-    /** Bulk-reorder siblings under a parent. The reparent thunk dispatches
-     * this after the per-row sort_order updates so the slice's perceived
-     * order is consistent even if individual writes raced. */
-    categoriesReordered(
-      state,
-      action: PayloadAction<{
-        parentId: string | null;
-        orderedIds: string[];
-      }>,
-    ) {
-      const { parentId, orderedIds } = action.payload;
-      orderedIds.forEach((id, idx) => {
-        const row = state.categories.byId[id];
-        if (!row) return;
-        row.sortOrder = idx;
-        row.parentCategoryId = parentId;
-      });
-    },
-
-    // ── Skill ↔ Project association (mutates the projectIds slot in place) ─
-    skillProjectsUpdated(
-      state,
-      action: PayloadAction<{ skillId: string; projectIds: string[] }>,
-    ) {
-      const { skillId, projectIds } = action.payload;
-      const row = state.skills.byId[skillId];
-      if (row) {
-        row.projectIds = projectIds;
+    /** A skill was deleted: close it if it is the open one (the row itself leaves via the catalog). */
+    skillRemoved(state, action: PayloadAction<string>) {
+      if (state.skills.activeId === action.payload) {
+        state.skills.activeId = null;
       }
     },
 
@@ -242,36 +156,6 @@ const slice = createSlice({
       state.ingest.lastReport = null;
       state.ingest.status = "idle";
       state.ingest.error = null;
-    },
-
-    // ── Stream event from the central process-stream pump ──────────────────
-    /** Called by the stream-event handler when a `resource_changed` event
-     * with `kind` starting in "skills." or "skill." arrives. The hook
-     * subscribes to `lastIngestAt` and reacts (refetch + toast).
-     *
-     * We intentionally don't mutate the byId map here — the hook owns the
-     * effect, and refetching gives us authoritative state. */
-    streamEventReceived(state, action: PayloadAction<SkillStreamEventPayload>) {
-      state.skills.lastIngestAt = Date.now();
-      // Stash the latest event metadata so the hook can use it for the toast.
-      // We piggy-back on the ingest slot since the shape lines up; the hook
-      // reads it just-in-time and clears it on consume.
-      if (action.payload.kind === "skills.ingested") {
-        const md = action.payload.metadata ?? {};
-        const created = Number(md.created ?? 0) || 0;
-        const updated = Number(md.updated ?? 0) || 0;
-        const unchanged = Number(md.unchanged ?? 0) || 0;
-        const roots = Array.isArray(md.roots) ? (md.roots as string[]) : [];
-        state.ingest.lastReport = {
-          parsed: created + updated + unchanged,
-          created,
-          updated,
-          unchanged,
-          errors: [],
-          skills: [],
-          roots,
-        };
-      }
     },
 
     // ── Resources ───────────────────────────────────────────────────────────

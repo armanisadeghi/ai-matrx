@@ -21,7 +21,6 @@
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
-import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 import { callApi } from "@/lib/api/call-api";
 import { operationFailed } from "@/utils/errors";
@@ -50,11 +49,16 @@ type CategoryCreateBody = components["schemas"]["CategoryCreate"];
 type CategoryPatchBody = components["schemas"]["CategoryPatch"];
 
 import { skillsActions } from "./skillsSlice";
+import { getSkillCatalog } from "@/lib/skills/skillCatalog";
+import {
+  SkillCatalogReadError,
+  skillsListKey,
+  type FetchSkillsArgs,
+} from "@ai-matrx/agents/skills";
 import {
   draftToCreateBody,
   draftToPatchBody,
   platformCategoryToSklRow,
-  PLATFORM_SKILL_CATEGORY_SELECT,
   type PlatformCategorySelectRow,
   supabaseRowToCategoryRow,
   supabaseRowToSkillRow,
@@ -65,7 +69,7 @@ import {
 /** Columns selected for every skill read, plus the project-membership join.
  * Used by `fetchSkills` + `fetchSkillById` so both return identical shapes. */
 // skill.project junction retired → project associations load from
-// platform.associations (see loadSkillProjectIds). No embedded join.
+// platform.associations (the catalog's associations port). No embedded join.
 const SKILL_SELECT = "*";
 
 import type {
@@ -94,145 +98,46 @@ const NOT_PUBLISHED = {
 // Reads
 // ---------------------------------------------------------------------------
 
-export interface FetchSkillsArgs {
-  categoryId?: string;
-  isPublicOnly?: boolean;
-  projectId?: string;
-  limit?: number;
-}
+// The read door: every read goes through the catalog (`@ai-matrx/agents/skills`); these thunks keep
+// the names + `dispatch(fetchX())` call shape every caller already uses. The catalog mirrors its
+// state into the slice (`catalogSynced`), so nothing else dispatches here.
+export { skillsListKey, type FetchSkillsArgs };
 
-/** The key of one skills-list read — what `useSkills` compares to reuse a
- * list already in Redux instead of reading it again on every mount. */
-export function skillsListKey(args: FetchSkillsArgs | undefined): string {
-  return JSON.stringify({
-    categoryId: args?.categoryId ?? null,
-    isPublicOnly: args?.isPublicOnly ?? false,
-    projectId: args?.projectId ?? null,
-    limit: args?.limit ?? null,
-  });
+/** The catalog rejects with `SkillCatalogReadError`; the app's error door words it for the person. */
+async function throughErrorDoor<T>(read: () => Promise<T>): Promise<T> {
+  try {
+    return await read();
+  } catch (e) {
+    if (e instanceof SkillCatalogReadError) {
+      throw e.pgError ? operationFailed(e.operation, e.pgError) : new Error(e.message);
+    }
+    throw e;
+  }
 }
 
 export const fetchSkills = createAsyncThunk<
   SkillRow[],
   FetchSkillsArgs | undefined,
   { state: RootState }
->("skills/fetchSkills", async (args, { dispatch }) => {
-  dispatch(skillsActions.skillsLoading());
-
-  // Supabase direct — RLS gates access (published + system + own + org +
-  // project + task membership), so this is a plain client-side read. No
-  // server round-trip: the Python `/api/skills` GET was a needless hop
-  // (and 404'd once `callApi` stripped the `/api` prefix).
-  let query = supabase
-    .schema("skill")
-    .from("definition")
-    .select(SKILL_SELECT)
-    .eq("is_active", true);
-
-  if (args?.categoryId) query = query.eq("category_id", args.categoryId);
-  if (args?.isPublicOnly) query = query.eq("published_to_web", true);
-
-  // Project filter: skills associated with the project via platform.associations
-  // (edge skill → project, role "member"). The bespoke skill.project junction retired.
-  if (args?.projectId) {
-    const assocRes = await associationsService.listForTargets("project", [
-      args.projectId,
-    ]);
-    if (!assocRes.ok) {
-      dispatch(skillsActions.skillsError(assocRes.error.message));
-      throw new Error(assocRes.error.message);
-    }
-    const ids = assocRes.data.edges
-      .filter((e) => e.sourceType === "skill" && e.role === "member")
-      .map((e) => e.sourceId);
-    if (ids.length === 0) {
-      dispatch(skillsActions.skillsReceived([]));
-      dispatch(skillsActions.skillsListLoaded(skillsListKey(args)));
-      return [];
-    }
-    query = query.in("id", ids);
-  }
-
-  query = query.order("sort_order", { ascending: true });
-  if (args?.limit) query = query.limit(args.limit);
-
-  const { data, error } = await query;
-  if (error) {
-    dispatch(skillsActions.skillsError(error.message));
-    throw operationFailed("load your skills", error);
-  }
-
-  const rows = (data ?? []).map(supabaseRowToSkillRow);
-  // Fill project associations from platform.associations (batched, one round-trip).
-  const projectIdsBySkill = await loadSkillProjectIds(rows.map((r) => r.id));
-  for (const r of rows) r.projectIds = projectIdsBySkill[r.id] ?? [];
-  dispatch(skillsActions.skillsReceived(rows));
-  dispatch(skillsActions.skillsListLoaded(skillsListKey(args)));
-  return rows;
-});
+>("skills/fetchSkills", (args) =>
+  throughErrorDoor(() => getSkillCatalog().fetchSkills(args)),
+);
 
 export const fetchSkillById = createAsyncThunk<
   SkillRow | null,
   { skillRef: string },
   { state: RootState }
->("skills/fetchSkillById", async ({ skillRef }, { dispatch }) => {
-  // Supabase direct — `skill_ref` is either the row UUID or the `skill_id`
-  // business key. RLS gates access, so no server hop is needed.
-  const { data, error } = await supabase
-    .schema("skill")
-    .from("definition")
-    .select(SKILL_SELECT)
-    .eq(isUuidShape(skillRef) ? "id" : "skill_id", skillRef)
-    .eq("is_active", true)
-    .maybeSingle();
-
-  if (error) {
-    throw operationFailed("open this skill", error);
-  }
-  if (!data) return null;
-
-  const row = supabaseRowToSkillRow(data);
-  dispatch(skillsActions.skillUpserted(row));
-  return row;
-});
+>("skills/fetchSkillById", ({ skillRef }) =>
+  throughErrorDoor(() => getSkillCatalog().fetchSkillById(skillRef)),
+);
 
 export const fetchSkillCategories = createAsyncThunk<
   CategoryRow[],
   void,
   { state: RootState }
->("skills/fetchCategories", async (_arg, { dispatch }) => {
-  dispatch(skillsActions.categoriesLoading());
-
-  // Supabase direct — RLS handles access (system + own + org +
-  // project + task), and unlike the Python `/api/skills/categories`
-  // GET endpoint this preserves `user_id` so the editor can route
-  // writes (Supabase direct for owned rows, Python admin for system
-  // rows). Matches CLAUDE.md doctrine for simple reads.
-  // Formerly skill.category — now platform.categories with dimension='skill'.
-  // Aliases map new column names back to the old shape so supabaseRowToCategoryRow
-  // keeps working without changes.
-  const { data, error } = await supabase
-    .schema("platform")
-    .from("categories")
-    .select(PLATFORM_SKILL_CATEGORY_SELECT)
-    .eq("dimension", "skill")
-    .eq("metadata->>is_active", "true");
-
-  if (error) {
-    dispatch(skillsActions.categoriesError(error.message));
-    throw operationFailed("load skill categories", error);
-  }
-
-  const rows = (data ?? []).map((row) =>
-    supabaseRowToCategoryRow(platformCategoryToSklRow(row)),
-  );
-  rows.sort(
-    (a, b) =>
-      (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.label.localeCompare(b.label),
-  );
-  dispatch(skillsActions.categoriesReceived(rows));
-  return rows;
-});
+>("skills/fetchCategories", () =>
+  throughErrorDoor(() => getSkillCatalog().fetchSkillCategories()),
+);
 
 // ---------------------------------------------------------------------------
 // Writes
@@ -263,7 +168,7 @@ export const createSkill = createAsyncThunk<
       throw new Error(result.error.message);
     }
     const row = wireToSkillRow(result.data as SkillRowWire);
-    dispatch(skillsActions.skillUpserted(row));
+    getSkillCatalog().applySkill(row);
     return row;
   }
 
@@ -305,7 +210,7 @@ export const createSkill = createAsyncThunk<
     .single();
   if (error) throw operationFailed("create this skill", error);
   const row = supabaseRowToSkillRow(data);
-  dispatch(skillsActions.skillUpserted(row));
+  getSkillCatalog().applySkill(row);
   return row;
 });
 
@@ -333,7 +238,7 @@ export const patchSkill = createAsyncThunk<
       throw new Error(result.error.message);
     }
     const row = wireToSkillRow(result.data as SkillRowWire);
-    dispatch(skillsActions.skillUpserted(row));
+    getSkillCatalog().applySkill(row);
     return row;
   }
 
@@ -358,7 +263,7 @@ export const patchSkill = createAsyncThunk<
   );
   if (error) throw operationFailed("save this skill", error);
   const row = supabaseRowToSkillRow(data);
-  dispatch(skillsActions.skillUpserted(row));
+  getSkillCatalog().applySkill(row);
   return row;
 });
 
@@ -420,6 +325,7 @@ export const deleteSkill = createAsyncThunk<
     }
   }
 
+  getSkillCatalog().applySkillRemoved(skillId);
   dispatch(skillsActions.skillRemoved(skillId));
   return skillId;
 });
@@ -480,12 +386,7 @@ export const addSkillProject = createAsyncThunk<
     // Optimistically merge into the row's projectIds.
     const row = getState().skills.skills.byId[skillId];
     if (row && !row.projectIds.includes(projectId)) {
-      dispatch(
-        skillsActions.skillProjectsUpdated({
-          skillId,
-          projectIds: [...row.projectIds, projectId],
-        }),
-      );
+      getSkillCatalog().applySkillProjects(skillId, [...row.projectIds, projectId]);
     }
     return { skillId, projectId };
   },
@@ -508,35 +409,11 @@ export const removeSkillProject = createAsyncThunk<
     if (!res.ok) throw new Error(res.error.message);
     const row = getState().skills.skills.byId[skillId];
     if (row) {
-      dispatch(
-        skillsActions.skillProjectsUpdated({
-          skillId,
-          projectIds: row.projectIds.filter((p) => p !== projectId),
-        }),
-      );
+      getSkillCatalog().applySkillProjects(skillId, row.projectIds.filter((p) => p !== projectId));
     }
     return { skillId, projectId };
   },
 );
-
-/**
- * Load the project-association ids for a set of skills from platform.associations
- * (edge skill → project, role "member"). Batched, one round-trip. Returns a
- * map skillId → projectId[]. Replaces the retired skill.project embedded join.
- */
-export async function loadSkillProjectIds(
-  skillIds: string[],
-): Promise<Record<string, string[]>> {
-  const out: Record<string, string[]> = {};
-  if (skillIds.length === 0) return out;
-  const res = await associationsService.listForSources("skill", skillIds, "project");
-  if (!res.ok) return out;
-  for (const edge of res.data.edges) {
-    if (edge.role !== "member") continue;
-    (out[edge.sourceId] ??= []).push(edge.targetId);
-  }
-  return out;
-}
 
 // ---------------------------------------------------------------------------
 // Category CRUD (smart-dispatch: Supabase direct for owned rows, Python
@@ -598,7 +475,7 @@ export const createCategoryThunk = createAsyncThunk<
     );
     if (result.error) throw new Error(result.error.message);
     const row = wireToCategoryRow(result.data as CategoryRowWire);
-    dispatch(skillsActions.categoryUpserted(row));
+    getSkillCatalog().applyCategory(row);
     return row;
   }
 
@@ -646,7 +523,7 @@ export const createCategoryThunk = createAsyncThunk<
   if (error) throw operationFailed("create this category", error);
   if (!data) throw new Error("That category could not be created. Reload and try again.");
   const row = supabaseRowToCategoryRow(platformCategoryToSklRow(categoryRow<PlatformCategorySelectRow>(data)!));
-  dispatch(skillsActions.categoryUpserted(row));
+  getSkillCatalog().applyCategory(row);
   return row;
 });
 
@@ -705,7 +582,7 @@ export const updateCategoryThunk = createAsyncThunk<
     );
     if (result.error) throw new Error(result.error.message);
     const row = wireToCategoryRow(result.data as CategoryRowWire);
-    dispatch(skillsActions.categoryUpserted(row));
+    getSkillCatalog().applyCategory(row);
     return row;
   }
 
@@ -765,7 +642,7 @@ export const updateCategoryThunk = createAsyncThunk<
   if (error) throw operationFailed("save this category", error);
   if (!data) throw new Error("That category is no longer available. Reload the list.");
   const row = supabaseRowToCategoryRow(platformCategoryToSklRow(categoryRow<PlatformCategorySelectRow>(data)!));
-  dispatch(skillsActions.categoryUpserted(row));
+  getSkillCatalog().applyCategory(row);
   // Silence unused-var lint for userId — it's documented as the
   // ownership hint even when not interpolated.
   void userId;
@@ -807,7 +684,7 @@ export const deleteCategoryThunk = createAsyncThunk<
     if (!data) throw new Error("That category is no longer available. Reload the list.");
   }
 
-  dispatch(skillsActions.categoryRemoved(id));
+  getSkillCatalog().applyCategoryRemoved(id);
   return id;
 });
 
@@ -875,12 +752,7 @@ export const reparentCategoryThunk = createAsyncThunk<
     // updateCategoryThunk dispatch above (categoryUpserted on each).
     // Apply a final bulk reorder action to ensure the slice's
     // perceived order matches even if the per-row updates raced.
-    dispatch(
-      skillsActions.categoriesReordered({
-        parentId: newParentId,
-        orderedIds: newSiblingOrder,
-      }),
-    );
+    getSkillCatalog().applyCategoriesReordered(newParentId, newSiblingOrder);
   },
 );
 
