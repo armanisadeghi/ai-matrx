@@ -279,6 +279,15 @@ export const MARKETING_SEO_SECTIONS = [
     group: "Programs",
   },
   {
+    slug: "context",
+    name: "Context",
+    titlePrefix: "Site Context",
+    description:
+      "What agents know about this site — goals, key pages, competitors, voice — and where each is edited.",
+    letter: "Cx",
+    group: "Setup",
+  },
+  {
     slug: "capabilities",
     name: "Capabilities",
     titlePrefix: "SEO Capabilities",

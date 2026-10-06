@@ -260,7 +260,9 @@ describe("marketing site sub-view registry", () => {
     // person, never an organization). Sub-views 50 - 1 = 49.
     // 2026-10-05 — OpenSEO Wave 3 item 4: the seo branch gained `reports`
     // (saved SEO reports + templates). Sections 24 + 1 = 25; destinations 73 + 1 = 74.
-    expect(MARKETING_SITE_SECTIONS.length).toBe(25);
+    // 2026-10-05 — OpenSEO Wave 3 item 5: the seo branch gained `context`
+    // (what agents know about the site). Sections 25 + 1 = 26; destinations 74 + 1 = 75.
+    expect(MARKETING_SITE_SECTIONS.length).toBe(26);
     expect(
       MARKETING_SITE_SUBVIEWS.reduce(
         (total, entry) => total + entry.views.length,
@@ -268,7 +270,7 @@ describe("marketing site sub-view registry", () => {
       ),
     ).toBe(49);
     expect(countMarketingSiteDestinations(MARKETING_SITE_SECTIONS.length)).toBe(
-      74,
+      75,
     );
   });
 });

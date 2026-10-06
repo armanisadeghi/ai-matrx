@@ -17,6 +17,7 @@ import {
   Activity,
   AlertTriangle,
   BadgeCheck,
+  BookUser,
   CircleDollarSign,
   ClipboardCheck,
   FileChartColumn,
@@ -81,5 +82,6 @@ export const MARKETING_SEO_SECTION_ICONS: Record<
   "growth-loop": RefreshCw,
   reports: FileChartColumn,
   automations: Workflow,
+  context: BookUser,
   capabilities: Wrench,
 };

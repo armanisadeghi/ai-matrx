@@ -109,6 +109,7 @@ export const MARKETING_SITE_SECTION_HOMES: Record<
   "growth-loop": { branch: "seo", slug: "growth-loop" },
   automations: { branch: "seo", slug: "automations" },
   reports: { branch: "seo", slug: "reports" },
+  context: { branch: "seo", slug: "context" },
 };
 
 /**
@@ -215,6 +216,9 @@ export const marketingRoutes = {
   /** One canonical location and its publisher-listing workspace. */
   brandLocation: (brandId: string, locationId: string) =>
     `/marketing/${brandId}/locations/${locationId}`,
+  /** One location's Maps rank grid: preview free, then a confirmed paid run. */
+  brandLocationGrid: (brandId: string, locationId: string) =>
+    `/marketing/${brandId}/locations/${locationId}/grid`,
   brandWebsites: (brandId: string) => `/marketing/${brandId}/websites`,
   brandSeo: (brandId: string) => `/marketing/${brandId}/seo`,
   brandContentPlan: (brandId: string) => `/marketing/${brandId}/content/plan`,
@@ -289,6 +293,9 @@ export const marketingRoutes = {
     `/marketing/${brandId}/seo/${siteId}/capabilities`,
   siteReports: (brandId: string, siteId: string) =>
     `/marketing/${brandId}/seo/${siteId}/reports`,
+  /** What agents know about the site, and the door to each fact's editor. */
+  siteContext: (brandId: string, siteId: string) =>
+    `/marketing/${brandId}/seo/${siteId}/context`,
 
   /**
    * Compatibility site base — the pre-restructure workhorse (79 call sites).

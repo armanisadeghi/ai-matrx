@@ -198,12 +198,15 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const addRow = async () => {
     let organization_id: string;
     try {
+      console.log('R9DBG ensure', activeOrganizationId);
       organization_id = await ensureOrgId(activeOrganizationId);
+      console.log('R9DBG got', organization_id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(sentence(err, "A row could not be added here."));
       return;
     }
     const res = await client.entityRowWrite({ token, record_id: null, organization_id });
+    console.log('R9DBG res', JSON.stringify(res).slice(0, 300));
     if (!res.ok) {
       toast.error(sentence(res.error, "A row could not be added here."));
       return;

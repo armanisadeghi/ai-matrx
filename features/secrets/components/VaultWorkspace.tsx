@@ -50,7 +50,7 @@ import {
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useMediaQuery } from "@ai-matrx/kit/media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
@@ -1089,48 +1089,24 @@ export function VaultWorkspace({
       <div className="hidden flex-wrap items-center gap-2 lg:flex">
         {/* Scope — a deliberate destination, never a silent widening */}
         {principal.type === "user" && (
-          <div
-            role="tablist"
+          <SegmentedControl
             aria-label="Vault scope"
-            className="inline-flex shrink-0 rounded-lg border border-border bg-muted/50 p-0.5"
-          >
-            {(["mine", "shared"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={scope.kind === value}
-                onClick={() => {
-                  setUserScope({ kind: value });
-                  setSelectedId(null);
-                }}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  scope.kind === value
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {value === "mine" ? "Mine" : "Shared with me"}
-              </button>
-            ))}
-            {availableOrganizations.length > 0 && (
-              <button
-                type="button"
-                role="tab"
-                aria-selected={scope.kind === "organization"}
-                onClick={openOrganizationScope}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                  scope.kind === "organization"
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                Organization
-              </button>
-            )}
-          </div>
+            value={scope.kind}
+            onValueChange={(kind) => {
+              if (kind === "organization") openOrganizationScope();
+              else {
+                setUserScope({ kind });
+                setSelectedId(null);
+              }
+            }}
+            data={[
+              { value: "mine", label: "Mine" },
+              { value: "shared", label: "Shared with me" },
+              ...(availableOrganizations.length > 0
+                ? [{ value: "organization" as const, label: "Organization" }]
+                : []),
+            ]}
+          />
         )}
         {principal.type === "user" && scope.kind === "organization" && (
           <EntityOrgFilter

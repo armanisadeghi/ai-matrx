@@ -15,7 +15,7 @@ const S = "/marketing/brand-1/seo/site-1";
 const SEO_SLUGS = new Set([
   "keywords","rankings","search-console","audit","findings","analysis",
   "coverage","performance","changes","backlinks","links","authority",
-  "valuation","ai-visibility","growth-loop","reports","automations","capabilities",
+  "valuation","ai-visibility","growth-loop","reports","automations","context","capabilities",
 ]);
 const baseFor = (slug: string) => (SEO_SLUGS.has(slug) ? S : W);
 const SITE = W;
