@@ -15,7 +15,21 @@
  * `@source inline(...)` safelist generated from the live corpus; that is the
  * rendering-parity session (S5), not this one.
  */
+/* THE SAME STACK AS app/layout.tsx, IN THE SAME ORDER (2026-10-06). The
+   package stylesheets carry chrome globals.css no longer does — the copy
+   menu's palette (content-transfer.css via styles.css) and tap-button
+   geometry (tap-target.css). With only globals.css the frame's copy bar
+   rendered unstyled: giant glyphs, no grid, the trigger jammed against "…".
+   Guard: __tests__/sandbox-css-matches-layout.test.ts. */
+@import "@ai-matrx/messaging/tokens.css";
+@import "@ai-matrx/meet/tokens.css";
+@import "@ai-matrx/agents/catalog/styles.css";
 @import "../../../../app/globals.css";
+@import "@ai-matrx/design-system/tap-target.css";
+@import "@ai-matrx/design-system/tokens.css";
+@import "@ai-matrx/design-system/styles.css";
+@import "@ai-matrx/messaging/styles.css";
+@import "@ai-matrx/meet/styles.css";
 
 /* The frame is a bare document: no AppShell, no body chrome. It owns nothing
    but the component, and the HOST page owns scroll (plan §1.8). */
