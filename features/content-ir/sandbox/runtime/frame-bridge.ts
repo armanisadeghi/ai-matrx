@@ -26,7 +26,6 @@
  * The build audits the served bytes for all of them and fails.
  */
 import {
-    FRAME_HEIGHT_CEILING_PX,
     IN_FLIGHT_ACTION_CAPACITY,
     SANDBOX_PROTOCOL_VERSION,
     checkHostMessage,
@@ -420,7 +419,7 @@ function startInstance(
         if (document.documentElement.clientWidth <= 0) return;
         const contentHeight = measure();
         if (contentHeight <= 0) return;
-        const height = Math.min(contentHeight, FRAME_HEIGHT_CEILING_PX);
+        const height = contentHeight;
         if (height === lastHeight && contentHeight === lastContentHeight) return;
         lastHeight = height;
         lastContentHeight = contentHeight;
@@ -429,7 +428,7 @@ function startInstance(
             instanceId,
             height,
             contentHeight,
-            capped: contentHeight > FRAME_HEIGHT_CEILING_PX,
+            capped: false,
         });
     };
 

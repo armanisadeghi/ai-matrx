@@ -3,16 +3,13 @@
 /**
  * useKindSandboxKnob — the ONE read that decides whether an organization-
  * authored kind component renders inside the Shape sandbox frame
- * (`/kind-sandbox`) or in the page as it does today, AND the three ceilings
+ * (`/kind-sandbox`) or in the page as it does today, AND the message ceiling
  * the host enforces once it does (DD-123 §1.10, S7).
  *
- * FOUR ROWS, ONE CALL, feature `custom`
+ * TWO ROWS, ONE CALL, feature `custom`
  * (migration `dd123_kind_sandbox_gate_and_ceilings_knobs.sql`):
  *
  *   sandbox_org_components            the gate (boolean, seeded OFF)
- *   sandbox_frame_height_px           the height one frame gets before the
- *                                     host offers "Show all"
- *   sandbox_expanded_frame_height_px  what "Show all" grows to
  *   sandbox_message_bytes             the largest message the host accepts
  *                                     from a frame
  *
@@ -27,8 +24,8 @@
  *
  * NOTHING IS SILENT AND NOTHING FALLS BACK (Law 4 + the knob law). If the
  * resolver cannot answer — no active organization, an RPC failure, a key the
- * register does not have, a ceiling that is not a number, or an expanded
- * ceiling BELOW the unexpanded one — the sandbox stays OFF and the reason is
+ * register does not have, or a ceiling that is not a number
+ * — the sandbox stays OFF and the reason is
  * said out loud, once, naming the remedy. OFF is byte-identical to the
  * behavior shipped today, so a reader sees exactly what they saw yesterday
  * while the sentence sits in the console for whoever comes next. There is no
@@ -56,16 +53,12 @@ export const KIND_SANDBOX_KNOB = {
 
 /** The ceilings the HOST enforces, resolved from the register. */
 export interface KindSandboxCeilings {
-    /** Iframe height before the "Show all" control appears. */
-    frameHeightPx: number;
-    /** What "Show all" grows to before the host says the rest is cut off. */
-    expandedFrameHeightPx: number;
     /** Largest single frame→host message the host will accept. */
     messageBytes: number;
 }
 
 export interface KindSandboxSettings {
-    /** True only when the gate is on AND all three ceilings resolved. */
+    /** True only when the gate is on AND the message ceiling resolved. */
     enabled: boolean;
     /** Null whenever `enabled` is false — there is nothing to enforce. */
     ceilings: KindSandboxCeilings | null;
@@ -131,39 +124,15 @@ export function resolveKindSandboxSettings(
     // settings guards (`check:settings-orphans` / `-unregistered`) read a
     // `useScopedKnobs` consumer, so a row seeded here and a row read here can
     // never drift apart unnoticed.
-    const frame = readCeiling(
-        knobs.find((knob) => knob.key === "sandbox_frame_height_px"),
-        "sandbox_frame_height_px",
-    );
-    if (!frame.ok) return { enabled: false, ceilings: null, refusal: frame.refusal };
-    const expanded = readCeiling(
-        knobs.find((knob) => knob.key === "sandbox_expanded_frame_height_px"),
-        "sandbox_expanded_frame_height_px",
-    );
-    if (!expanded.ok) return { enabled: false, ceilings: null, refusal: expanded.refusal };
     const message = readCeiling(
         knobs.find((knob) => knob.key === "sandbox_message_bytes"),
         "sandbox_message_bytes",
     );
     if (!message.ok) return { enabled: false, ceilings: null, refusal: message.refusal };
 
-    if (expanded.value < frame.value) {
-        return {
-            enabled: false,
-            ceilings: null,
-            refusal:
-                `"custom.sandbox_expanded_frame_height_px" is ${expanded.value} pixels, ` +
-                `below "custom.sandbox_frame_height_px" at ${frame.value} — expanding a ` +
-                `component would show LESS of it, so nothing is framed until the two ` +
-                `settings agree.`,
-        };
-    }
-
     return {
         enabled: true,
         ceilings: {
-            frameHeightPx: frame.value,
-            expandedFrameHeightPx: expanded.value,
             messageBytes: message.value,
         },
         refusal: null,

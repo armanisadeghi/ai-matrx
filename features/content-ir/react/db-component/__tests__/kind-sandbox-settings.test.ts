@@ -67,15 +67,11 @@ function row(key: string, effective: unknown): ScopedKnob {
 
 const LIVE_OFF: ScopedKnob[] = [
     row("sandbox_org_components", false),
-    row("sandbox_frame_height_px", 4000),
-    row("sandbox_expanded_frame_height_px", 20000),
     row("sandbox_message_bytes", 65536),
 ];
 
 const liveOn = (): ScopedKnob[] => [
     row("sandbox_org_components", true),
-    row("sandbox_frame_height_px", 4000),
-    row("sandbox_expanded_frame_height_px", 20000),
     row("sandbox_message_bytes", 65536),
 ];
 
@@ -92,8 +88,6 @@ describe("the shipped configuration", () => {
         expect(resolveKindSandboxSettings(liveOn())).toEqual({
             enabled: true,
             ceilings: {
-                frameHeightPx: 4000,
-                expandedFrameHeightPx: 20000,
                 messageBytes: 65536,
             },
             refusal: null,
@@ -102,11 +96,11 @@ describe("the shipped configuration", () => {
 
     it("follows the register when an admin moves a ceiling", () => {
         const rows = liveOn().map((knob) =>
-            knob.key === "sandbox_frame_height_px"
-                ? row("sandbox_frame_height_px", 2500)
+            knob.key === "sandbox_message_bytes"
+                ? row("sandbox_message_bytes", 2500)
                 : knob,
         );
-        expect(resolveKindSandboxSettings(rows).ceilings?.frameHeightPx).toBe(2500);
+        expect(resolveKindSandboxSettings(rows).ceilings?.messageBytes).toBe(2500);
     });
 });
 
@@ -120,12 +114,12 @@ describe("what happens when the settings cannot be trusted", () => {
 
     it("refuses to frame anything when a ceiling is missing, and says which", () => {
         const rows = liveOn().filter(
-            (knob) => knob.key !== "sandbox_expanded_frame_height_px",
+            (knob) => knob.key !== "sandbox_message_bytes",
         );
         const settings = resolveKindSandboxSettings(rows);
         expect(settings.enabled).toBe(false);
         expect(settings.ceilings).toBeNull();
-        expect(settings.refusal).toContain("custom.sandbox_expanded_frame_height_px");
+        expect(settings.refusal).toContain("custom.sandbox_message_bytes");
     });
 
     it("refuses a ceiling that is not a usable number", () => {
@@ -139,21 +133,10 @@ describe("what happens when the settings cannot be trusted", () => {
         expect(settings.refusal).toContain('"plenty"');
     });
 
-    it("refuses an expanded ceiling BELOW the unexpanded one — expanding would show less", () => {
-        const rows = liveOn().map((knob) =>
-            knob.key === "sandbox_expanded_frame_height_px"
-                ? row("sandbox_expanded_frame_height_px", 1200)
-                : knob,
-        );
-        const settings = resolveKindSandboxSettings(rows);
-        expect(settings.enabled).toBe(false);
-        expect(settings.refusal).toContain("show LESS of it");
-    });
-
     it("never invents a value: a key the register reports as missing is missing", () => {
         const rows = liveOn().map((knob) =>
-            knob.key === "sandbox_frame_height_px"
-                ? { ...row("sandbox_frame_height_px", null), origin: "missing" as const }
+            knob.key === "sandbox_message_bytes"
+                ? { ...row("sandbox_message_bytes", null), origin: "missing" as const }
                 : knob,
         );
         expect(resolveKindSandboxSettings(rows).enabled).toBe(false);

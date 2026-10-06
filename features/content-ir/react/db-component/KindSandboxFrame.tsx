@@ -175,59 +175,12 @@ export function invalidateKindSandboxTransforms(): void {
 
 
 /**
- * WHAT THE READER GETS WHEN A COMPONENT IS TALLER THAN THE CEILING (S3).
- *
- * Pure on purpose: the decision — how tall the iframe is, whether a control is
- * offered, and the exact sentence beside it — is the part that must never go
- * quiet, so it is testable without a browser. A component the ceiling is
- * holding back NEVER just ends: the sentence says how tall it really is.
+ * THE HEIGHT THE IFRAME GETS: the component's own measured height, always.
+ * There is no ceiling and no "Show all" — a component is rendered whole, and
+ * the host page owns scroll (Arman, 2026-10-06: auto-capping is never allowed).
  */
-export interface FrameHeightDecision {
-    height: number;
-    capped: boolean;
-    control: "none" | "show-all" | "show-less";
-    sentence: string | null;
-}
-
-export function frameHeightDecision(
-    measuredHeight: number,
-    contentHeight: number,
-    expanded: boolean,
-    /**
-     * The RESOLVED ceilings (S7) — `custom.sandbox_frame_height_px` and
-     * `custom.sandbox_expanded_frame_height_px` from the settings register.
-     * Required: this function holds no default, because a host-side default is
-     * exactly the frozen number the knob system exists to end.
-     */
-    ceilings: Pick<KindSandboxCeilings, "frameHeightPx" | "expandedFrameHeightPx">,
-): FrameHeightDecision {
-    const ceiling = ceilings.frameHeightPx;
-    const expandedCeiling = ceilings.expandedFrameHeightPx;
-    if (contentHeight <= ceiling) {
-        return { height: measuredHeight, capped: false, control: "none", sentence: null };
-    }
-    if (!expanded) {
-        return {
-            height: Math.min(measuredHeight, ceiling),
-            capped: true,
-            control: "show-all",
-            sentence: `This component is ${contentHeight} pixels tall; ${ceiling} are shown.`,
-        };
-    }
-    if (contentHeight > expandedCeiling) {
-        return {
-            height: expandedCeiling,
-            capped: true,
-            control: "show-less",
-            sentence: `This component is ${contentHeight} pixels tall — more than one screen can usefully hold, so it is shown at ${expandedCeiling} pixels and the rest is cut off.`,
-        };
-    }
-    return {
-        height: contentHeight,
-        capped: true,
-        control: "show-less",
-        sentence: `Showing all ${contentHeight} pixels of this component.`,
-    };
+export function frameHeight(contentHeight: number): number {
+    return Math.max(1, Math.ceil(contentHeight));
 }
 
 /** Counted, so a refusal is a fact a test can read — not only a log line. */
@@ -286,7 +239,6 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     const portRef = React.useRef<MessagePort | null>(null);
     const answered = React.useRef<Set<string>>(new Set());
     const inFlight = React.useRef<Set<string>>(new Set());
-    const [height, setHeight] = React.useState(INITIAL_HEIGHT);
     // Did the frame ever speak? Until it does, say so — SILENT_FRAME_MS after
     // its document loaded, or NEVER_LOADED_MS after mount if it never loaded.
     const [heard, setHeard] = React.useState(false);
@@ -317,7 +269,6 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         offeredPorts.current = [];
     }
     const [contentHeight, setContentHeight] = React.useState(INITIAL_HEIGHT);
-    const [expanded, setExpanded] = React.useState(false);
     const [oversize, setOversize] = React.useState<string | null>(null);
     /**
      * 0 until the first measurement, which happens in a layout effect — before
@@ -408,16 +359,13 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
             case "matrx:sandbox:ready":
                 break;
             case "matrx:sandbox:size": {
-                // The frame reports what it OCCUPIES; the host decides what to
-                // give it. Nothing scrolls inside the frame, so the iframe is
-                // exactly as tall as its content — up to the cap, past which
-                // the reader gets a control that names the real height (S3).
+                // Nothing scrolls inside the frame, so the iframe is exactly
+                // as tall as its content — never capped.
                 const measured = Math.max(
                     1,
                     Math.ceil(message.contentHeight ?? message.height),
                 );
                 setContentHeight(measured);
-                setHeight(Math.max(1, Math.ceil(message.height)));
                 break;
             }
             case "matrx:sandbox:resolve":
@@ -681,10 +629,9 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         );
     }
 
-    // THE HEIGHT THE IFRAME GETS. Normally the content's own height, so the
-    // frame never scrolls and the host page owns scroll. Past the ceiling the
-    // reader is told, in a control, how tall the thing really is (S3).
-    const decision = frameHeightDecision(height, contentHeight, expanded, ceilings);
+    // THE HEIGHT THE IFRAME GETS: the content's own, uncapped, so the frame
+    // never scrolls and the host page owns scroll.
+    const decision = { height: frameHeight(contentHeight) };
     const title = sandboxFrameTitle(kind, resolution.config as Record<string, unknown>);
 
     return (
@@ -735,18 +682,6 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
                     }}
                 />
             </div>
-            {decision.capped ? (
-                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <button
-                        type="button"
-                        onClick={() => setExpanded((value) => !value)}
-                        className="rounded-md border border-border px-2 py-1 font-medium text-foreground hover:bg-accent"
-                    >
-                        {decision.control === "show-less" ? "Show less" : "Show all"}
-                    </button>
-                    <span>{decision.sentence}</span>
-                </div>
-            ) : null}
             {silent && !heard ? (
                 <ErrorNotice
                     size="inline"

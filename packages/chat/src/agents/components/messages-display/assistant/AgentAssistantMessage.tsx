@@ -85,6 +85,7 @@ import { BreathingOrb } from "./BreathingOrb";
 import {
   AssistantMessageContextMenu,
   AssistantMessageFooter,
+  AssistantMessageFooterPlaceholder,
 } from "./AssistantMessageFooter";
 import { AssistantNoAnswer } from "./AssistantNoAnswer";
 import { selectInstanceStatus } from "../../../redux/execution-system/conversations/conversations.selectors";
@@ -742,15 +743,20 @@ export function AgentAssistantMessage({
             <StoppedNote metadata={record?.metadata} requestStatus={requestStatus} />
           )}
           {/* While content is streaming, the breathing orb trails just below
-              it, moving down as the message grows, then unmounts at completion
-              (its slot becomes the action bar). The pre-token / "waiting for
-              the server" beat is owned by the markdown engine's ShimmerText
-              ("Processing…"), so the orb deliberately stays out of the
-              connecting / pre_token window — no two indicators at once. */}
+              it, moving down as the message grows, then unmounts at completion.
+              It takes NO height of its own: it floats inside the action row's
+              reserved space (the footer placeholder that always follows a
+              streaming turn), so its leaving and the actions arriving shift
+              nothing. The pre-token / "waiting for the server" beat is owned
+              by the markdown engine's ShimmerText ("Processing…"), so the orb
+              deliberately stays out of the connecting / pre_token window — no
+              two indicators at once. */}
           {isStreamActive &&
             !failed &&
             (phase === "text_streaming" || phase === "interstitial") && (
-              <BreathingOrb className="mt-1.5" size={48} />
+              <div className="relative h-0 overflow-visible">
+                <BreathingOrb className="absolute left-0 top-[3px]" size={40} />
+              </div>
             )}
         </>
       )}
@@ -793,6 +799,11 @@ export function AgentAssistantMessage({
           isCapturing={isCapturing}
           surfaceKey={surfaceKey}
         />
+      )}
+      {/* The row's space is held while the reply streams, so the actions
+          arriving at the end shift nothing. */}
+      {!hideActionBar && (isStreamActive || !messageId) && !failed && !editingInPlace && (
+        <AssistantMessageFooterPlaceholder />
       )}
     </div>
   );

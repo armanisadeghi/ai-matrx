@@ -136,29 +136,9 @@ export const MAX_OUTBOUND_PROPS_BYTES = 256 * 1024;
 export const IN_FLIGHT_ACTION_CAPACITY = 16;
 
 /**
- * THE SIZING CAP (§1.8, S3). The frame measures itself and the host gives the
- * iframe exactly that height — so nothing scrolls inside the frame and the
- * host page owns scroll. A runaway body (an author's infinite list, a layout
- * loop) must not be able to grow the page without bound, so the host holds it
- * at this height and shows the reader an "expand" control naming the real
- * height. Nothing is hidden silently: the affordance says how tall the thing
- * actually is.
- */
-export const FRAME_HEIGHT_CEILING_PX = 4000;
-
-/** What "expand" grows to. Past this the host says so rather than growing. */
-export const EXPANDED_FRAME_HEIGHT_CEILING_PX = 20000;
-
-/**
- * BOTH HEIGHTS ABOVE ARE THE FRAME'S COPIES AND THE REGISTER'S DEFAULTS (S7).
- * The host resolves `custom.sandbox_frame_height_px` and
- * `custom.sandbox_expanded_frame_height_px` through the scoped resolver and
- * passes them into `frameHeightDecision`; it holds no default of its own —
- * a ceiling that does not resolve turns the sandbox OFF with a sentence rather
- * than quietly reusing a number from this file. The frame caps the `height` it
- * REPORTS at FRAME_HEIGHT_CEILING_PX but always reports the true
- * `contentHeight`, so a host ceiling below 4000 is honoured exactly and one
- * above it needs a new bundle.
+ * SIZING (§1.8). The frame measures itself and the host gives the iframe
+ * exactly that height, uncapped — nothing scrolls inside the frame and the
+ * host page owns scroll. No component is ever cut off (Arman, 2026-10-06).
  */
 
 /**
@@ -256,7 +236,7 @@ export interface SandboxReadyMessage {
 export interface SandboxSizeMessage {
     type: "matrx:sandbox:size";
     instanceId: string;
-    /** What the host should give the iframe — never above {@link FRAME_HEIGHT_CEILING_PX}. */
+    /** What the host should give the iframe — the content's own height. */
     height: number;
     /**
      * What the component ACTUALLY occupies, overlays included. Equal to
@@ -265,7 +245,7 @@ export interface SandboxSizeMessage {
      * number to put in it (S3).
      */
     contentHeight?: number;
-    /** True when `contentHeight > FRAME_HEIGHT_CEILING_PX` — the reader is seeing part. */
+    /** Always false: frames are never capped. Kept for old frame bundles. */
     capped?: boolean;
 }
 

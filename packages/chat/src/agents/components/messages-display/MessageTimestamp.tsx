@@ -54,7 +54,14 @@ export function formatTimestampDisplay(
     : null;
 }
 
-/** Hover-only compact time; the exact date, seconds and zone remain available on focus. */
+/**
+ * The time at the END of the action row. It always occupies its space — it is
+ * revealed by opacity on hover/focus, never inserted — so showing it shifts
+ * nothing. It never wraps: a narrow row gets the time alone ("2:23 PM"), a
+ * wider one the date too ("Oct 6, 2:23 PM"). The exact date, seconds and zone
+ * stay in the tooltip and accessible name. A touch screen has no hover to
+ * reveal it, so there it takes no space at all and the actions get the row.
+ */
 export function MessageTimestamp({ timestamp }: MessageTimestampProps) {
   const [display, setDisplay] = useState<TimestampDisplay | null>(null);
 
@@ -67,18 +74,15 @@ export function MessageTimestamp({ timestamp }: MessageTimestampProps) {
 
   if (!display) return null;
 
-  // Visually hidden but keyboard reachable until hover/focus. The absolute
-  // sr-only position reserves no space beside or below the actions.
   return (
     <span
       tabIndex={0}
       aria-label={`${display.absolute} (${display.relative})`}
       title={`${display.absolute} (${display.relative})`}
-      style={{ whiteSpace: "nowrap" }}
-      className="sr-only text-[10px] font-normal text-muted-foreground/65 focus:not-sr-only [@media(hover:hover)]:group-hover/assistant-msg:not-sr-only [@media(hover:hover)]:group-focus-within/assistant-msg:not-sr-only"
+      className="shrink-0 whitespace-nowrap [@media(hover:none)]:hidden text-[10px] font-normal text-muted-foreground/65 opacity-0 transition-opacity focus:opacity-100 [@media(hover:hover)]:group-hover/assistant-msg:opacity-100 [@media(hover:hover)]:group-focus-within/assistant-msg:opacity-100"
     >
-      <span className="@min-[400px]/message-footer:hidden">{display.compact}</span>
-      <span className="hidden @min-[400px]/message-footer:inline">{display.short}</span>
+      <span className="@min-[420px]/message-footer:hidden">{display.compact}</span>
+      <span className="hidden @min-[420px]/message-footer:inline">{display.short}</span>
     </span>
   );
 }

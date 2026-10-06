@@ -19,8 +19,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import {
-    EXPANDED_FRAME_HEIGHT_CEILING_PX,
-    FRAME_HEIGHT_CEILING_PX,
     IN_FLIGHT_ACTION_CAPACITY,
     MAX_INBOUND_BYTES,
     MAX_OUTBOUND_PROPS_BYTES,
@@ -62,15 +60,11 @@ const BODY = `export default function Component({ data }) { return null; }`;
 
 /**
  * The ceilings the host enforces. In the product they are resolved from the
- * settings register (`custom.sandbox_frame_height_px`,
- * `custom.sandbox_expanded_frame_height_px`, `custom.sandbox_message_bytes`);
- * the register was seeded with exactly these numbers, and the frame's own
- * copies in `protocol.ts` are the same three, so naming them from there keeps
- * one source rather than three literals.
+ * settings register (`custom.sandbox_message_bytes`);
+ * the frame's own copy in `protocol.ts` is the same number, so naming it from
+ * there keeps one source. There is no height ceiling.
  */
 const CEILINGS: KindSandboxCeilings = {
-    frameHeightPx: FRAME_HEIGHT_CEILING_PX,
-    expandedFrameHeightPx: EXPANDED_FRAME_HEIGHT_CEILING_PX,
     messageBytes: MAX_INBOUND_BYTES,
 };
 
@@ -490,13 +484,16 @@ describe("size messages", () => {
         expect(h.iframe.style.height).toBe("412px");
     });
 
-    it("past the ceiling the host caps the frame and the control names the REAL height", async () => {
-        const h = await stand({ contentBottom: FRAME_HEIGHT_CEILING_PX + 1979 });
-        await act(async () => settle());
-        expect(h.iframe.style.height).toBe(`${FRAME_HEIGHT_CEILING_PX}px`);
-        const text = h.hostEl.textContent ?? "";
-        expect(text).toContain(String(FRAME_HEIGHT_CEILING_PX + 1979));
-        expect(text).toContain("Show all");
+    it("a very tall component gets an iframe of exactly its full height, never capped", async () => {
+        for (const tall of [5979, 25000]) {
+            const h = await stand({ contentBottom: tall });
+            await act(async () => settle());
+            expect(h.iframe.style.height).toBe(`${tall}px`);
+            const text = h.hostEl.textContent ?? "";
+            expect(text).not.toContain("Show all");
+            expect(text).not.toContain("Show less");
+            expect(text).not.toContain("pixels tall");
+        }
     });
 
     it("a degenerate zero-width layout is not a height: the frame reports nothing", async () => {

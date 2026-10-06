@@ -133,8 +133,6 @@ describe("the host tells the frame about the reader's window", () => {
                         Promise.resolve({ ok: false, error: "no action" })) as never}
                     ceilings={
                         {
-                            frameHeightPx: 4000,
-                            expandedFrameHeightPx: 20000,
                             messageBytes: MAX_INBOUND_BYTES,
                         } as never
                     }

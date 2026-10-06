@@ -40,6 +40,7 @@ import { AgentAssistantMessage } from "./AgentAssistantMessage";
 import {
   AssistantMessageContextMenu,
   AssistantMessageFooter,
+  AssistantMessageFooterPlaceholder,
 } from "./AssistantMessageFooter";
 import {
   membersForRender,
@@ -222,6 +223,9 @@ export function AssistantTurnGroup({
           />
         ))}
 
+      {/* Hold the action row's space while the turn streams — no shift
+          when the bar arrives. */}
+      {lastMember && !showBar && <AssistantMessageFooterPlaceholder />}
       {showBar && anchorMessageId && (
         // The group's bar sits BESIDE its members, so it carries the turn's
         // one menu itself — its ⋯ opens the same menu the answer's

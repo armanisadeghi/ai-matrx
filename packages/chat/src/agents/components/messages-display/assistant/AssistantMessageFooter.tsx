@@ -217,6 +217,22 @@ export function useAssistantMessageActions({
   };
 }
 
+/**
+ * The action row's last measured height. Every rendered footer writes it, and
+ * the placeholder holds exactly that while a reply streams — so the actions
+ * arriving shift nothing, whatever the bar's buttons measure (46px on a fine
+ * pointer today, taller on touch). 46 is only the first-paint guess.
+ */
+let lastFooterRowHeight = 46;
+
+/**
+ * Holds the action row's space while a reply streams (the real footer needs
+ * the saved message id), so nothing below jumps when the actions arrive.
+ */
+export function AssistantMessageFooterPlaceholder() {
+  return <div aria-hidden style={{ height: lastFooterRowHeight }} />;
+}
+
 export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
   const { messageId, conversationId, surfaceKey } = props;
   const {
@@ -237,6 +253,18 @@ export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
   // latest answer always shows it.
   const isHoverOnly = density === "compact" && !isLatestAssistant;
 
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row) return;
+    const observer = new ResizeObserver(() => {
+      const height = row.getBoundingClientRect().height;
+      if (height > 0) lastFooterRowHeight = height;
+    });
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <>
       <div
@@ -246,17 +274,22 @@ export function AssistantMessageFooter(props: AssistantMessageFooterProps) {
             "opacity-0 group-hover/assistant-msg:opacity-100 focus-within:opacity-100",
         )}
       >
-        <div className="@container/message-footer w-full min-w-0">
-          <RichDocumentActions
-            content={config.content}
-            source={config.source}
-            actions={config.actions}
-            hideOverflow={!showOptions}
-            className="px-0"
-          />
-          <div className="flex justify-end">
-            <MessageTimestamp timestamp={record?.createdAt} />
+        {/* ONE row: actions, then the time at the right end on the same
+            line. The time never drops to a line of its own. */}
+        <div
+          ref={rowRef}
+          className="@container/message-footer flex w-full min-w-0 items-center gap-2"
+        >
+          <div className="min-w-0 flex-1">
+            <RichDocumentActions
+              content={config.content}
+              source={config.source}
+              actions={config.actions}
+              hideOverflow={!showOptions}
+              className="px-0"
+            />
           </div>
+          <MessageTimestamp timestamp={record?.createdAt} />
         </div>
 
         {/* Negative-verdict follow-up — reads the SAME output-feedback store
