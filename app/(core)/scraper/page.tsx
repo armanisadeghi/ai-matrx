@@ -11,6 +11,7 @@ import {
 import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import PageContent from "@/features/scraper/parts/core/PageContent";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
+import { ScrapeOrganizationPrompt } from "@/features/scraper/parts/ScrapeOrganizationPrompt";
 import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSurfaceMount";
 // THE scrape-target URL rule — the same helper the floating workspace and the
 // `scrape_command` write handler use, so an agent can never stage a URL this
@@ -51,6 +52,7 @@ export default function Page() {
     scrapeUrl: fullScrape,
     error: hookScrapeError,
     errorDiagnostics,
+    failure: hookScrapeFailure,
     hasError: hookScrapeHasError,
     reset: resetScraper,
   } = useScraperApi();
@@ -215,7 +217,12 @@ export default function Page() {
               <span className="hidden sm:inline">Full Scrape</span>
             </Button>
           </div>
-          {(error || hookScrapeHasError) && (
+          {!error && hookScrapeFailure?.kind === "needs_organization" ? (
+            <ScrapeOrganizationPrompt
+              className="mt-2 rounded-md border border-border bg-card text-left"
+              onPicked={() => void handleFullScrape()}
+            />
+          ) : (error || hookScrapeHasError) && (
             <div className="mt-1 max-w-5xl mx-auto text-center">
               <p className="text-xs text-destructive">
                 {error || hookScrapeError}
@@ -263,7 +270,12 @@ export default function Page() {
             inputMode="url"
             autoComplete="url"
           />
-          {(error || hookScrapeHasError) && (
+          {!error && hookScrapeFailure?.kind === "needs_organization" ? (
+            <ScrapeOrganizationPrompt
+              className="mt-2 rounded-md border border-border bg-card text-left"
+              onPicked={() => void handleFullScrape()}
+            />
+          ) : (error || hookScrapeHasError) && (
             <div className="mt-2 text-center w-full">
               <p className="text-xs text-destructive">
                 {error || hookScrapeError}

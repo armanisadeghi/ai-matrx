@@ -15,6 +15,7 @@ import {
 import ScraperDataUtils from "@/features/scraper/utils/data-utils";
 import PageContent from "@/features/scraper/parts/core/PageContent";
 import { ScraperHookErrorDetails } from "@/features/scraper/parts/ScraperHookErrorDetails";
+import { ScrapeOrganizationPrompt } from "@/features/scraper/parts/ScrapeOrganizationPrompt";
 import { ScraperSurfaceMount } from "@/features/scraper/agent-context/ScraperSurfaceMount";
 import {
   PAGE_LIMIT_DEFAULT,
@@ -33,6 +34,7 @@ export default function ScraperSearchAndScrapePage() {
     hasError,
     error,
     errorDiagnostics,
+    failure,
     statusMessage,
     landedSentence,
     landedReport,
@@ -212,7 +214,12 @@ export default function ScraperSearchAndScrapePage() {
               </Button>
             </div>
           </div>
-          {hasError && (
+          {failure?.kind === "needs_organization" ? (
+            <ScrapeOrganizationPrompt
+              className="mt-2 rounded-md border border-border bg-card"
+              onPicked={() => void handleSearchAndScrape()}
+            />
+          ) : hasError && (
             <Alert variant="destructive" className="mt-2 py-2">
               <AlertDescription className="text-xs">
                 {error}
