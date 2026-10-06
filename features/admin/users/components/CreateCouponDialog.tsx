@@ -161,7 +161,7 @@ export function CreateCouponDialog({
 
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>{created ? "Coupons made" : "New coupons"}</DialogTitle>
           <DialogDescription>

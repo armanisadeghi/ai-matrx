@@ -63,7 +63,7 @@ export function DefineSeatJobDialog({
 }) {
   return (
     <Dialog open={position !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent>
         {position && (
           <Body key={position.id} position={position} context={context} onClose={onClose} onDefined={onDefined} />
         )}
