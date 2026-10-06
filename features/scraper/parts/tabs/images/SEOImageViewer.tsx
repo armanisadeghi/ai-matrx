@@ -1,4 +1,6 @@
 'use client';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Copy, Check, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +28,10 @@ export function SEOImageViewer({
   metadata = {}, 
   onRequestMetadata 
 }: SEOImageViewerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -89,7 +95,7 @@ export function SEOImageViewer({
 
   // Copy text to clipboard
   const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text)
+    copyText(text)
       .then(() => {
         setIsCopied(type);
         setTimeout(() => setIsCopied(null), 2000);

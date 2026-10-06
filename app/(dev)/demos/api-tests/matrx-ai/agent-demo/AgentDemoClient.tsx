@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState, useEffect, useRef } from "react";
@@ -105,6 +106,10 @@ function statusBadge(status: ExecStatus) {
 }
 
 function CopyButton({ text }: { text: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <Button
@@ -116,7 +121,7 @@ function CopyButton({ text }: { text: string }) {
       variant="quiet"
       disabled={!text}
       onClick={async () => {
-        await navigator.clipboard.writeText(text).catch(() => null);
+        await copyText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       }}

@@ -9,6 +9,8 @@
 // component. Controlled by `content` inside the studio (no input column);
 // uncontrolled, with its own sample, on the demo page.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useCallback, useRef } from "react";
 import { parseNdjsonStream } from "@/lib/api/stream-parser";
 import { ENDPOINTS } from "@/lib/api/endpoints";
@@ -116,6 +118,10 @@ interface ServerEventInspectorProps {
 }
 
 export default function ServerEventInspector({ content: controlled }: ServerEventInspectorProps = {}) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
 
   const [ownContent, setContent] = useState(SAMPLE_CONTENT);
@@ -151,7 +157,7 @@ export default function ServerEventInspector({ content: controlled }: ServerEven
   const abortRef = useRef<AbortController | null>(null);
 
   const copyText = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {});
+    copyTextKit(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, []);

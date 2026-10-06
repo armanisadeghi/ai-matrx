@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import React, {
@@ -882,6 +884,10 @@ export default function CoolifyLogViewer({
   initialApp,
   hideAppSelector = false,
 }: CoolifyLogViewerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1095,7 +1101,7 @@ export default function CoolifyLogViewer({
         : filteredLines.filter((l) => l.raw.trim() !== "");
 
     const text = linesToCopy.map((l) => l.raw).join("\n");
-    navigator.clipboard.writeText(text).then(() => {
+    copyText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

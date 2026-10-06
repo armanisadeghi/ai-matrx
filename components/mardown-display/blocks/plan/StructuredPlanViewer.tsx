@@ -1,4 +1,6 @@
 // StructuredPlanViewer.tsx
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +31,10 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
   hideTitle = false,
   onCopySection = () => {}
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [stats, setStats] = useState({ 
     sectionCount: 0, 
     bulletPoints: 0,
@@ -66,7 +72,7 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
   // Handle copy section
   const handleCopy = () => {
     onCopySection(content);
-    navigator.clipboard.writeText(content).then(() => {
+    copyText(content).then(() => {
       setCopiedSection('full');
       setTimeout(() => setCopiedSection(null), 2000);
     });

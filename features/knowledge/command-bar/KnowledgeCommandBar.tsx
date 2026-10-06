@@ -21,6 +21,7 @@
  * shell hotkey (`CommandBarHotkey`) or a resource picker's search step.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -55,7 +56,6 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { selectIsCreator, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import {
   resolveEntityToken,
@@ -183,6 +183,10 @@ export default function KnowledgeCommandBar({
   runner,
   tablesModule,
 }: KnowledgeCommandBarProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const [, startTransition] = useTransition();
   const dispatch = useAppDispatch();
@@ -758,7 +762,7 @@ export default function KnowledgeCommandBar({
         label: "Copy link",
         icon: Link2,
         run: () => {
-          void writeClipboard(url).then(() => toast.success("Link copied."));
+          void copyText(url, "Link copied.");
           close();
         },
       });

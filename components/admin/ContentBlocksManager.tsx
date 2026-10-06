@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { catWriteArgs, categoryRow } from "@/lib/db/category-door";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -202,6 +204,10 @@ interface Category {
 }
 
 export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   // State
   const [contentBlocks, setContentBlocks] = useState<ContentBlockDB[]>([]);
   const [skills, setSkills] = useState<SkillOption[]>([]);
@@ -303,7 +309,7 @@ export function ContentBlocksManager({ className }: ContentBlocksManagerProps) {
 
   const copyRawApiData = useCallback(() => {
     if (!rawApiDataRef.current) return;
-    navigator.clipboard.writeText(rawApiDataRef.current).catch(() => {});
+    copyText(rawApiDataRef.current);
     setRawCopied(true);
     setTimeout(() => setRawCopied(false), 1500);
   }, []);

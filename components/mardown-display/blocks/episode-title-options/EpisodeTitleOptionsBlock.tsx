@@ -32,6 +32,8 @@
  * one-by-one as the model writes them.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useState } from "react";
 import { Check, Copy, Loader2, Type } from "lucide-react";
 import { useKindActionRunner } from "@/features/content-ir/react/actions/useKindActionRunner";
@@ -89,9 +91,13 @@ function readData(serverData: unknown): EpisodeTitleOptionsData | null {
 }
 
 function CopyTitleButton({ title }: { title: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    void navigator.clipboard.writeText(title).then(() => {
+    void copyText(title).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

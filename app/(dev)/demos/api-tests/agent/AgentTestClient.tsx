@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { requestRaw } from "@/lib/python-client";
 import { getUserMessage } from "@ai-matrx/agents/matrx";
 import React, { useState, useCallback, useRef, useEffect } from "react";
@@ -247,6 +249,10 @@ function RunLogCard({
 // Main client
 // ─────────────────────────────────────────────────────
 export default function AgentTestClient() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
 
@@ -314,7 +320,7 @@ export default function AgentTestClient() {
   }, []);
 
   const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {});
+    copyText(text);
   }, []);
 
   // ── 1. Warm Up Agent ──────────────────────────────

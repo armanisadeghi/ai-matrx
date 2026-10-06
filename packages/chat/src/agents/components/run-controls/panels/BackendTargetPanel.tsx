@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 
 /**
@@ -53,9 +55,13 @@ function CopyableValue({
   mono?: boolean;
   className?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    void navigator.clipboard.writeText(value).then(() => {
+    void copyText(value).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     });

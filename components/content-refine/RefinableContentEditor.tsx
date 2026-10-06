@@ -9,6 +9,8 @@
 // and footer; this component only owns the content-refinement strip.
 // Reference consumers: QuickNoteSaveCore (notes), TaskQuickCreateCore (tasks).
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { FileText, Eye, Columns2, Copy, RotateCcw, Rocket } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -72,6 +74,10 @@ export function RefinableContentEditor({
   toolbarEnd,
   imagePolicy,
 }: RefinableContentEditorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [editorMode, setEditorMode] = useState<EditorMode>(initialEditorMode);
 
   const {
@@ -92,7 +98,7 @@ export function RefinableContentEditor({
 
   const handleCopy = () => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(workingContent).catch(() => {});
+      copyText(workingContent);
     }
   };
 

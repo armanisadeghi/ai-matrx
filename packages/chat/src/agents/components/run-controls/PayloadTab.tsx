@@ -21,6 +21,8 @@
  *   - Raw payload (collapsed JSON) + Copy button
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Badge, Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useMemo, useState } from "react";
 import { Copy, Check } from "lucide-react";
@@ -250,6 +252,10 @@ interface PayloadTabProps {
 }
 
 export function PayloadTab({ conversationId }: PayloadTabProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const assembledRequestSelector = useMemo(
     () => makeSelectAssembledRequest(conversationId),
     [conversationId],
@@ -304,7 +310,7 @@ export function PayloadTab({ conversationId }: PayloadTabProps) {
     if (!request) return;
     try {
       const text = JSON.stringify(request, null, 2);
-      void navigator.clipboard.writeText(text).then(() => {
+      void copyText(text).then(() => {
         setCopied(true);
         window.setTimeout(() => setCopied(false), 1500);
       });

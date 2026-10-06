@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useCallback } from "react";
 import {
   Dialog,
@@ -45,6 +47,10 @@ export function ContextDebugModal({
   onClose,
   contextData,
 }: ContextDebugModalProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   const standardScopes = {
@@ -63,7 +69,7 @@ export function ContextDebugModal({
   const hasCustomVariables = Object.keys(customVariables).length > 0;
 
   const copyToClipboard = useCallback((text: string, key: string) => {
-    navigator.clipboard.writeText(text).then(() => {
+    copyText(text).then(() => {
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 1500);
     });

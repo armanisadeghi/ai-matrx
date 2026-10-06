@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Badge as StatusBadge } from "@ai-matrx/design-system/controls";
 import { Button, } from "@ai-matrx/design-system/controls";
 import React, { useCallback, useState } from "react";
@@ -113,9 +115,13 @@ const TABS: TabDef[] = [
 // ─── Copy helper ──────────────────────────────────────────────────────────────
 
 function useCopyText(text: string) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const copy = useCallback(() => {
-    navigator.clipboard.writeText(text).then(() => {
+    copyText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

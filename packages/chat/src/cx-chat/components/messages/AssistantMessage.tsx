@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { recognizeOurFileUrl } from "@ai-matrx/media/files/engine";
 import React, { useState, useEffect, useCallback } from "react";
 import {
@@ -51,6 +53,10 @@ export function AssistantMessage({
   isTtsRequest = false,
   onContentChange,
 }: AssistantMessageProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isAppearing, setIsAppearing] = useState(true);
   const [isAudioLinkCopied, setIsAudioLinkCopied] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -238,7 +244,7 @@ export function AssistantMessage({
                 variant="quiet"
                 onClick={async () => {
                   if (!audioUrl) return;
-                  await navigator.clipboard.writeText(audioUrl).catch(() => {});
+                  await copyText(audioUrl);
                   setIsAudioLinkCopied(true);
                   setTimeout(() => setIsAudioLinkCopied(false), 2000);
                 }}

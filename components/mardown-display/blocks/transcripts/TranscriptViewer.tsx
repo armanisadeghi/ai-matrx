@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import type { KIND_KEY } from "@ai-matrx/content-ir";
 // THE SHAPES COME FROM THE REGISTRY (`pnpm shape:types`) — this file never
 // re-declares a registered kind's fields (`check:kind-type-twins`).
@@ -57,6 +59,10 @@ const TranscriptViewer = ({
   onCopySegment = () => {},
   maxHeight = '500px'
 }: TranscriptViewerProps) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [showTimecodes, setShowTimecodes] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -261,7 +267,7 @@ const TranscriptViewer = ({
   // Copy segment text
   const handleCopySegment = (text: string, id: string) => {
     onCopySegment(text);
-    navigator.clipboard.writeText(text).then(() => {
+    copyText(text).then(() => {
       setCopiedSegmentId(id);
       setTimeout(() => setCopiedSegmentId(null), 2000);
     });
