@@ -1251,6 +1251,10 @@
 .spaces-db-new-more { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid rgb(255 255 255 / 0.25); }
 .spaces-db-new-main:hover, .spaces-db-new-more:hover { background: #0077d4; }
 .spaces-db-body { min-width: 0; overflow-x: auto; }
+/* A relation cell's linked page reads in body ink (Notion's page chip), not the browser's blue underline
+   that BlockNote's `.bn-shadcn .bn-editor a { color: revert }` restores inside the editor. */
+.spaces-editor .spaces-db-frame .spaces-db-body a { color: inherit; text-decoration: none; }
+.spaces-editor .spaces-db-frame .spaces-db-body a:hover { text-decoration: underline; }
 .spaces-db-newrow { display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; padding: 0 8px; font-size: 14px; color: var(--spaces-ink-soft); border-radius: 4px; }
 .spaces-db-newrow:hover { background: var(--spaces-hover); }
 .spaces-db-menurow { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 30px; padding: 4px 8px; border-radius: 6px; font-size: 14px; }

@@ -141,3 +141,11 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   and the seed's own normalisation is the baseline (opening a page writes nothing). Others' saves only teach the version. Offline
   marker in the top bar; on reconnect the provider is rebuilt and this member's state re-sent (works around the provider dropping
   late `y-state` answers). Viewers / commenters (`useAccess` below edit) get the live room read-only and no Add icon / Add cover.
+- 2026-10-06 — builder round 16: "Add the sample" on an older install runs `upgradeTemplateInstall` (custom.template_upgrade)
+  from install's `upgrade` hint — stages in the Templates row, counts in the toast, the refusal sentence on failure (Harbor & Pine
+  upgraded v1 → v2 through the UI). Sample views name fields by the install's keys, matched by title (`AgencyTable.keys`,
+  `viewOnInstalledKeys`): an upgraded install's Offer Bought is `offer_2`. A stored version the live room did not write (Move to
+  from another page) is merged into the room on block ids before the host saves (`page/merge-stored.ts`). The store's
+  `subscribe()` is on `subscribeToRealtimeManager`. Column widths follow the editor's change feed (a room's body never reached
+  BlockNoteView's onChange, so columns drew 50/50); an unfocused block selection shows no selection toolbar; relation links in
+  embedded grids read in body ink.
