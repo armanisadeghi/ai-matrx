@@ -7,7 +7,8 @@
 
 import { Popover, PopoverAnchor, PopoverContent } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system/controls";
-import { LiveRunDisplay } from "@ai-matrx/chat/agents/components/live-run/LiveRunDisplay";
+import { useLiveRunStatus } from "@ai-matrx/chat/agents/components/live-run/useLiveRunStatus";
+import { useRetainRequestForViewer } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/useRetainRequestForViewer";
 import { selectLatestAnswerText } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import { useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
@@ -27,10 +28,13 @@ import {
   Text,
   Trash2,
   WrapText,
+  Loader2,
 } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import MarkdownStream from "@/components/MarkdownStream";
 import { notionMarkdownToBlocks } from "@/lib/spaces-blocks/notion-markdown";
 
 import { toEngine } from "../editor/convert";
@@ -89,8 +93,34 @@ const EMPTY_LINE_GROUPS: Array<{ title: string; items: Item[] }> = [
   },
 ];
 
+/**
+ * The answer itself, nothing else (Notion's card has no copy / edit / pin / share / speaker / thumbs):
+ * the one stream renderer over the run's request, with the box's own Replace / Insert below / Try again
+ * / Discard under it.
+ */
 function Answer({ conversationId }: { conversationId: string }) {
-  return <LiveRunDisplay conversationId={conversationId} variant="bare" bodyClassName="max-h-[40dvh] overflow-y-auto" />;
+  const { requestId, isActive, statusText, errorMessage } = useLiveRunStatus(conversationId);
+  useRetainRequestForViewer(requestId, "spaces-ask-ai");
+  if (errorMessage) {
+    return (
+      <p className="px-2 pb-2 text-xs text-destructive">
+        {errorMessage} <ErrorAlchemyMenu error={errorMessage} />
+      </p>
+    );
+  }
+  if (!requestId) {
+    return (
+      <p className="flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
+        {statusText ?? "Starting…"}
+      </p>
+    );
+  }
+  return (
+    <div className="max-h-[40dvh] overflow-y-auto px-2">
+      <MarkdownStream imagePolicy="ai" requestId={requestId} conversationId={conversationId} isStreamActive={isActive} hideCopyButton />
+    </div>
+  );
 }
 
 /** The settled answer text (never the live stream) — what Replace / Insert below write. */

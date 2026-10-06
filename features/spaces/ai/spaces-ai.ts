@@ -101,7 +101,9 @@ export function useAskPage() {
         surfaceKey: SURFACE_KEY,
         sourceFeature: SOURCE_FEATURE,
         runtime: { variables: { page_title: page.title, page_markdown: page.markdown }, userInput: question || undefined },
-        config: { displayMode: "chat-assistant", allowChat: true, autoRun: true },
+        // Notion's page chat: a panel at the right, the page given as hidden context — the variables are
+        // supplied, never shown as fields, and only the person's question appears in the transcript.
+        config: { displayMode: "sidebar", allowChat: true, autoRun: true, showVariablePanel: false, showDefinitionMessages: false },
       }),
     );
   };

@@ -4,7 +4,8 @@
 // Notion's choice beside it: keep it a Link, Mention (a Space's address or any link), Bookmark or Embed.
 
 import { AtSign, Bookmark, Code2, Link2 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 import type { SpacesEditor } from "./schema";
 
@@ -73,9 +74,51 @@ function toBlock(editor: SpacesEditor, p: PastedUrl, type: "bookmark" | "embed")
   }
 }
 
+const GAP = 4;
+const EDGE = 8;
+
+/** The pasted link on the page (the last one with that address in its block), else null. */
+function linkElement(blockId: string, url: string): HTMLElement | null {
+  const block = document.querySelector(`.bn-block[data-id="${CSS.escape(blockId)}"]`);
+  const links = block ? Array.from(block.querySelectorAll<HTMLAnchorElement>("a[href]")).filter((a) => a.getAttribute("href") === url) : [];
+  return links[links.length - 1] ?? null;
+}
+
 export function PasteUrlMenu({ editor, pasted, onClose }: { editor: SpacesEditor; pasted: PastedUrl; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const spaceId = spaceIdOf(pasted.url);
+  // Notion's placement: under the pasted link's first line, left edges aligned; above it when the room
+  // below is short; kept inside the window; it follows the link as the page scrolls.
+  useLayoutEffect(() => {
+    const place = () => {
+      const el = ref.current;
+      if (!el) return;
+      const link = linkElement(pasted.blockId, pasted.url);
+      const rects = link ? Array.from(link.getClientRects()) : [];
+      const first = rects[0];
+      const last = rects[rects.length - 1];
+      const anchor = first && last ? { left: first.left, top: first.top, bottom: last.bottom } : { left: pasted.at.left, top: pasted.at.top - 6, bottom: pasted.at.top - 6 };
+      const h = el.offsetHeight;
+      const w = el.offsetWidth;
+      const below = window.innerHeight - anchor.bottom - GAP - EDGE;
+      const top = below >= h || below >= anchor.top ? anchor.bottom + GAP : anchor.top - GAP - h;
+      const left = Math.min(Math.max(EDGE, anchor.left), window.innerWidth - w - EDGE);
+      // Written to the menu's own style (it is ours, not ProseMirror's), so following a scroll re-renders nothing.
+      // Scrolled out of the window with its link, it is not drawn pinned to the edge.
+      const offscreen = anchor.bottom < 0 || anchor.top > window.innerHeight;
+      el.style.left = `${left}px`;
+      el.style.top = `${top}px`;
+      if (offscreen) delete el.dataset.placed;
+      else el.dataset.placed = "true";
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [pasted]);
 
   useEffect(() => {
     const away = (e: MouseEvent) => {
@@ -99,8 +142,9 @@ export function PasteUrlMenu({ editor, pasted, onClose }: { editor: SpacesEditor
     editor.focus();
   };
 
-  return (
-    <div ref={ref} role="menu" aria-label="Paste as" className="spaces-paste-menu" style={{ left: pasted.at.left, top: pasted.at.top }}>
+  // In the body, above the page: inside the editor it sat under the title's stacking layer when flipped up.
+  return createPortal(
+    <div ref={ref} role="menu" aria-label="Paste as" className="spaces-paste-menu">
       <button type="button" role="menuitem" className="spaces-paste-item" onClick={pick(() => undefined)}>
         <Link2 size={16} />
         Link
@@ -125,6 +169,7 @@ export function PasteUrlMenu({ editor, pasted, onClose }: { editor: SpacesEditor
         <Code2 size={16} />
         Embed
       </button>
-    </div>
+    </div>,
+    document.body,
   );
 }

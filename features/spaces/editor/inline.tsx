@@ -4,7 +4,8 @@
 // and inline equations. Each node holds its whole stored span (convert.ts), so marks and links survive.
 
 import { createReactInlineContentSpec } from "@blocknote/react";
-import { ArrowUpRight, FileText, Link2 } from "lucide-react";
+import { ArrowUpRight, FileText, Globe } from "lucide-react";
+import { useState } from "react";
 import { useLinkPreview } from "@/lib/link-preview";
 
 import type { RichSpan } from "../contract";
@@ -63,7 +64,9 @@ function LinkMention({ url, title: storedTitle, icon: storedIcon }: { url: strin
       return url;
     }
   })();
-  const isImage = !!icon && /^(https?:|data:|\/)/.test(icon);
+  // A favicon that fails to load (blocked, 404) leaves no gap: the globe stands in, as in Notion.
+  const [failedIcon, setFailedIcon] = useState<string | null>(null);
+  const isImage = !!icon && /^(https?:|data:|\/)/.test(icon) && failedIcon !== icon;
   return (
     <span className="spaces-mention-linkwrap">
       <a
@@ -76,9 +79,9 @@ function LinkMention({ url, title: storedTitle, icon: storedIcon }: { url: strin
         <span className="spaces-mention-icon">
           {isImage ? (
             // eslint-disable-next-line @next/next/no-img-element -- a site's favicon, any host
-            <img src={icon} alt="" width={14} height={14} style={{ width: 14, height: 14, borderRadius: 3 }} />
+            <img src={icon} alt="" width={14} height={14} style={{ width: 14, height: 14, borderRadius: 3 }} onError={() => setFailedIcon(icon ?? null)} />
           ) : (
-            <Link2 size={14} strokeWidth={1.6} />
+            <Globe size={14} strokeWidth={1.6} />
           )}
         </span>
         <span className="spaces-mention-title">{title || host}</span>

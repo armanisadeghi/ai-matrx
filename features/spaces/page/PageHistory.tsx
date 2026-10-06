@@ -14,8 +14,14 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import type { SpaceBlock } from "../contract";
+import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
 import type { SpaceHistoryEntry } from "../store-db/supabase-store";
+
+const NONE = async () => null;
+const READ_ONLY_SLASH = { createSubpage: NONE, pickPage: NONE, pickSource: NONE };
+const READ_ONLY_MENU = { moveBlocksTo: () => undefined, turnIntoPageIn: () => undefined, askAi: () => undefined };
+const IGNORE = () => undefined;
 
 const text = (b: SpaceBlock) => (b.text ?? []).map((s) => s.text).join("");
 
@@ -59,7 +65,8 @@ export function PageHistory({
   editable: boolean;
 }) {
   const me = useAppSelector(selectUserId);
-  const { store } = useSpaces();
+  const { store, byId } = useSpaces();
+  const title = byId.get(spaceId)?.title ?? "";
   const [rows, setRows] = useState<SpaceHistoryEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picked, setPicked] = useState(0);
@@ -88,7 +95,21 @@ export function PageHistory({
           <div className="spaces-history-preview">
             {error ? <ErrorNotice title="The history could not be read" message={error} size="compact" /> : null}
             {!rows && !error ? <RegionSkeleton shape="rows" count={8} aria-label="Loading page history" /> : null}
-            {entry ? <Preview blocks={entry.snapshot.blocks} /> : null}
+            {entry ? (
+              // Notion draws the old version as the page itself: the real block renderer, read-only.
+              <div className="spaces-history-doc">
+                <h1 className="spaces-history-title">{title || "Untitled"}</h1>
+                <SpaceEditor
+                  key={entry.contentVersion}
+                  spaceId={spaceId}
+                  initialBlocks={entry.snapshot.blocks}
+                  editable={false}
+                  onChange={IGNORE}
+                  slash={READ_ONLY_SLASH}
+                  menu={READ_ONLY_MENU}
+                />
+              </div>
+            ) : null}
           </div>
           <aside className="spaces-history-list">
             <div className="spaces-history-head type-secondary text-muted-foreground">Page history</div>

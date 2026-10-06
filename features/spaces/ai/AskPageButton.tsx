@@ -1,8 +1,8 @@
 "use client";
 
 // features/spaces/ai/AskPageButton.tsx — "Ask about this page" (M4): a question field in the top bar;
-// sending opens the chat assistant with the page title and its Markdown as named variables (the
-// question is the only user input). Not wired → the field says "AI is not connected yet".
+// sending opens the chat panel at the right with the page title and its Markdown as hidden variables
+// (the question is the only user input and the only words shown). Not wired → the field says "AI is not connected yet".
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system/controls";
