@@ -56,7 +56,7 @@ export const PEEK_REGISTRY: Record<
   dataset: DatasetPeek,
   transcript: TranscriptPeek,
   agent_shortcut: ShortcutPeek,
-  structured_list: ListPeek,
+  pick_list: ListPeek,
   workbook: WorkbookPeek,
   quiz_session: QuizPeek,
   sandbox_instance: SandboxPeek,

@@ -3737,7 +3737,7 @@
     "primitive-visual-class|features/agents/components/variables-management/ContextItemBindingEditor.tsx": 2,
     "primitive-visual-class|features/agents/components/variables-management/CustomComponentConfigurator.tsx": 11,
     "primitive-visual-class|features/agents/components/variables-management/OptionsEditor.tsx": 2,
-    "primitive-visual-class|features/agents/components/variables-management/StructuredListBindingEditor.tsx": 5,
+    "primitive-visual-class|features/agents/components/variables-management/PickListBindingEditor.tsx": 5,
     "primitive-visual-class|features/agents/components/variables-management/VariableSelector.tsx": 3,
     "primitive-visual-class|features/agents/components/variables-management/custom-data/CustomDataBindingPicker.tsx": 8,
     "primitive-visual-class|features/agents/decision-review/components/CalibrationView.tsx": 3,

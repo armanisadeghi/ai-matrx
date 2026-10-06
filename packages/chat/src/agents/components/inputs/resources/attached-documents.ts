@@ -1,8 +1,9 @@
 "use client";
 
+import { fileHandler } from "@ai-matrx/media/files/engine";
+import { useFile } from "@ai-matrx/media/files/engine/handler/hooks/useFile";
 import type { ChatRootState } from "../../../../store/root-state";
 import { useEffect, useState } from "react";
-import { resolveFile, useFile } from "@ai-matrx/chat/host/ui-slots";
 
 /**
  * attached-documents — the shared vocabulary for a document attached to a chat.
@@ -197,7 +198,7 @@ export function useAttachedDocumentFileNames(
     if (!idsKey) return undefined;
     let cancelled = false;
     for (const fileId of idsKey.split(",")) {
-      resolveFile({ kind: "file_id", fileId })
+      fileHandler.resolve({ kind: "file_id", fileId })
         .then((file: { meta: { fileName?: string | null } }) => {
           const name = file.meta.fileName?.trim();
           if (cancelled || !name) return;

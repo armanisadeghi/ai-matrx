@@ -54,7 +54,7 @@ export default function PickListManagerWindow({
     >
       {/* 🚨 A WINDOW MOUNTS ITS OWN MENU (context-menu-v3 SKILL). Without
           this, a right-click here is answered by whatever page sits
-          underneath. Reuses the `structured_list` entity token already
+          underneath. Reuses the `pick_list` entity token already
           registered by the list engines' own row menus; in
           browse mode (no `forcedListId`) the pane shows many lists via its
           own switcher, so no single entity applies. */}
@@ -64,7 +64,7 @@ export default function PickListManagerWindow({
         entity={
           forcedListId
             ? {
-                type: "structured_list",
+                type: "pick_list",
                 id: forcedListId,
                 title: resolvedTitle,
                 resourceType: "structured_list",

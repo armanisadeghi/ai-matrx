@@ -27,6 +27,7 @@
  */
 
 import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { preferAggregateClean } from "../service/cleanOutcome";
 import { useRouter } from "next/navigation";
 import {
   editSource,
@@ -269,8 +270,12 @@ export function PdfStudioReader({
     [pages],
   );
   const cleanedPagesEmpty = useMemo(
-    () => pages.length > 0 && pages.every((p) => !p.cleanedText.trim()),
-    [pages],
+    () =>
+      preferAggregateClean(
+        pages.map((p) => p.cleanedText),
+        doc.cleanContent,
+      ),
+    [pages, doc.cleanContent],
   );
 
   // Design's results-header stat ("486 words · 98% confidence") — word
@@ -1516,7 +1521,9 @@ function TextPane({
                     }}
                     onSaveEdit={saveEditThroughDoor}
                     onReClean={async () => {
-                      await onRunPipeline();
+                      // The clean path — full-pipeline would mint a child doc
+                      // with no cleaned text.
+                      await onRunAiClean();
                       onRefreshPages();
                     }}
                   />
@@ -1726,7 +1733,7 @@ function PageBlock({
               {field === "raw" && (
                 <button
                   type="button"
-                  title="Re-clean this page with AI (re-runs full doc clean)"
+                  title="Re-clean with AI"
                   disabled={reCleaning || saving}
                   onClick={(e) => {
                     e.stopPropagation();

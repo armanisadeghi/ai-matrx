@@ -26,6 +26,8 @@ import { buildDirectiveSlug, type DirectiveClass } from "@ai-matrx/content-ir";
 
 import { supabase } from "@/utils/supabase/client";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export interface ConversationDirectiveReceipt {
   /** The ledger key — stable, unique, and the React key. */
@@ -126,8 +128,11 @@ const NO_RECEIPTS: ConversationDirectiveReceipt[] = [];
  * whether its receipt exists.
  */
 export function useConversationReceipts(conversationId: string | null) {
+  // A signed-out visitor owns no ledger rows (owner-read RLS): asking is a refused
+  // read that lands in ops.system_error, so the read is simply not issued.
+  const signedIn = useAppSelector(selectUserId) !== null;
   const read = useStoreRead<ConversationDirectiveReceipt[]>(
-    conversationId ? `chat.directive-receipts:${conversationId}` : null,
+    conversationId && signedIn ? `chat.directive-receipts:${conversationId}` : null,
     () => fetchConversationReceipts(conversationId as string),
   );
   return {

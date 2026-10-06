@@ -479,7 +479,9 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
  */
 {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { configureFilesHost } = require("@ai-matrx/media/files/engine") as typeof import("@ai-matrx/media/files/engine");
+  // The host port module alone — never the front door, which would load the
+  // whole engine here, before any suite's jest.mock of an engine module.
+  const { configureFilesHost } = require("@ai-matrx/media/files/engine/host/configure") as typeof import("@ai-matrx/media/files/engine/host/configure");
   const lazy = <T extends object>(spec: string): T =>
     new Proxy({} as T, {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

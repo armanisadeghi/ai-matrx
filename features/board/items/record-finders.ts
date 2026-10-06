@@ -37,7 +37,7 @@ export async function findTables(
     .slice(0, limit);
 }
 
-/** Picklists, through the picklist picker's index (`pick_list_index_everywhere`), archived left out. */
+/** Pick lists, through the pick list picker's index (`pick_list_index_everywhere`), archived left out. */
 export async function findPickLists(
   key: string,
   query: string,

@@ -269,9 +269,9 @@ function tableNameResolver(): ReferenceResolver {
  */
 const RESOLVERS: Record<string, ReferenceResolver> = {
   // ── Structured list family ─────────────────────────────────────────────────
-  /** `structured_list` → { list_id }. Live value = the list name. */
-  structured_list: {
-    openItemType: "structured_list",
+  /** `pick_list` → { list_id }. Live value = the list name. */
+  pick_list: {
+    openItemType: "pick_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.list_id) return undefined;
@@ -282,24 +282,24 @@ const RESOLVERS: Record<string, ReferenceResolver> = {
     },
   },
 
-  /** `structured_list_group` → { list_id, group_name }. Live value = the group name. */
-  structured_list_group: {
-    openItemType: "structured_list",
+  /** `pick_list_group` → { list_id, group_name }. Live value = the group name. */
+  pick_list_group: {
+    openItemType: "pick_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (_supabase, ref) => stringify(ref.group_name),
   },
 
   /**
-   * `structured_list_item` → { list_id, item_id }. Live value = the item's
+   * `pick_list_item` → { list_id, item_id }. Live value = the item's
    * description (fallback to its label). Opens the list (`list_id`).
    */
-  structured_list_item: {
-    openItemType: "structured_list",
+  pick_list_item: {
+    openItemType: "pick_list",
     openId: (ref) => ref.list_id,
     resolveValue: async (supabase, ref) => {
       if (!ref.item_id || !ref.list_id) return undefined;
       // The list door shows a choice's description to an editor.
-      const read = await supabase.rpc("get_pick_list_with_items", { p_list_id: ref.list_id });
+      const read = await supabase.rpc("get_user_list_with_items", { p_list_id: ref.list_id });
       const doc = (read.data ?? null) as {
         items_grouped?: Record<string, Array<{ id: string; label?: string | null; description?: string | null }>> | null;
       } | null;
@@ -851,6 +851,17 @@ function derivedResolver(noun: string): ReferenceResolver | undefined {
 /** Every noun with a bespoke resolver (the overlay above the catalog). */
 export const BESPOKE_REFERENCE_NOUNS: readonly string[] = Object.keys(RESOLVERS);
 
+/** References stored before the rename name the pick list family `structured_list*` / `picklist*`;
+ * they still resolve, as the one `pick_list*` family. NEW content emits `pick_list*`. */
+const RETIRED_PICK_LIST_NOUNS: Record<string, string> = {
+  structured_list: "pick_list",
+  structured_list_group: "pick_list_group",
+  structured_list_item: "pick_list_item",
+  picklist: "pick_list",
+  picklist_group: "pick_list_group",
+  picklist_item: "pick_list_item",
+};
+
 /** Resolve a reference `type` to its resolver, or `undefined` (graceful chip).
 
  * Bespoke overlay first, then the catalog-derived generic resolver. Aliases are
@@ -858,7 +869,7 @@ export const BESPOKE_REFERENCE_NOUNS: readonly string[] = Object.keys(RESOLVERS)
 export function getReferenceResolver(
   type: string,
 ): ReferenceResolver | undefined {
-  const canonical = CATALOG_ALIASES[type] ?? type;
+  const canonical = RETIRED_PICK_LIST_NOUNS[type] ?? CATALOG_ALIASES[type] ?? type;
   return RESOLVERS[canonical] ?? derivedResolver(canonical);
 }
 

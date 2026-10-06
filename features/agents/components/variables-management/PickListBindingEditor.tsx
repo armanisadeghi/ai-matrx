@@ -18,7 +18,7 @@ import {
 import type { UserList } from "@/features/data-tables/pick-lists/types";
 import type { StructuredListBinding } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
-interface StructuredListBindingEditorProps {
+interface PickListBindingEditorProps {
   binding: StructuredListBinding | undefined;
   onChange: (binding: StructuredListBinding | undefined) => void;
   /**
@@ -34,17 +34,17 @@ interface StructuredListBindingEditorProps {
 const ALL_GROUPS = "__all__";
 
 /**
- * Builder control for binding a variable to a user picklist. The author selects a list,
+ * Builder control for binding a variable to a user pick list. The author selects a list,
  * optional group, and single/multi. At run time the consumer sees only labels — the secret
  * item `description` is resolved on the server. Owners author descriptions in the Lists editor.
  */
-export function StructuredListBindingEditor({
+export function PickListBindingEditor({
   binding,
   onChange,
   allowOther,
   onAllowOtherChange,
   readonly,
-}: StructuredListBindingEditorProps) {
+}: PickListBindingEditorProps) {
   const [lists, setLists] = useState<UserList[]>([]);
   const [groups, setGroups] = useState<string[]>([]);
   const bound = !!binding?.listId;
@@ -113,7 +113,7 @@ export function StructuredListBindingEditor({
       <div className="flex items-center justify-between gap-3">
         <div>
           <Label className="text-sm font-medium cursor-pointer">
-            Bind to a picklist
+            Bind to a pick list
           </Label>
           <p className="type-secondary text-muted-foreground mt-0.5">
             People pick a label; the agent gets its full text
@@ -138,7 +138,7 @@ export function StructuredListBindingEditor({
                   rel="noreferrer"
                   className="inline-flex items-center gap-1 type-secondary font-medium text-primary "
                 >
-                  Edit picklist
+                  Edit pick list
                   <ExternalLink className="h-3 w-3" />
                 </a>
               )}

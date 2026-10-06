@@ -364,6 +364,7 @@ export const deleteAgent = createAsyncThunk<void, string, ThunkApi>(
  *
  *   dispatch(duplicateAgent(agentId))                          // user copy
  *   dispatch(duplicateAgent({ agentId, asSystem: true }))      // system copy
+ *   dispatch(duplicateAgent({ agentId, versionId }))           // copy of a past version
  *
  * `asSystem: true` is admin-only — the RPC verifies `is_super_admin()` and
  * rejects otherwise. When set, the new row is inserted as a builtin system
@@ -375,19 +376,9 @@ export const duplicateAgent = createAsyncThunk<
   string | DuplicateAgentOptions,
   ThunkApi
 >("agentDefinition/duplicate", async (input, { dispatch, getState }) => {
-  const {
-    agentId,
-    asSystem,
-    organizationId: explicitOrganizationId,
-    followsSource,
-  } =
+  const { agentId, asSystem, organizationId: explicitOrganizationId, followsSource, versionId } =
     typeof input === "string"
-      ? {
-          agentId: input,
-          asSystem: false,
-          organizationId: undefined,
-          followsSource: false,
-        }
+      ? { agentId: input, asSystem: false, organizationId: undefined, followsSource: false, versionId: undefined }
       : input;
 
   // A personal copy lives in the organization the caller named, else the one the
@@ -398,12 +389,22 @@ export const duplicateAgent = createAsyncThunk<
     ? undefined
     : await ensureOrgId(explicitOrganizationId ?? selectOrganizationId(getState()));
 
-  const { data, error } = await supabase.rpc("agx_duplicate_agent", {
-    p_agent_id: agentId,
-    p_as_system: Boolean(asSystem),
-    p_organization_id: organizationId,
-    p_follows_source: Boolean(followsSource),
-  });
+  // A chosen past version is copied from its immutable snapshot (the copy
+  // records which version it came from and never follows the source); no
+  // version = the agent as it is now.
+  const { data, error } = versionId
+    ? await supabase.rpc("agx_duplicate_version", {
+        p_version_id: versionId,
+        p_as_system: Boolean(asSystem),
+        p_organization_id: organizationId,
+      })
+    : await supabase.rpc("agx_duplicate_agent", {
+        // The options type guarantees an agent id whenever no version is named.
+        p_agent_id: agentId as string,
+        p_as_system: Boolean(asSystem),
+        p_organization_id: organizationId,
+        p_follows_source: Boolean(followsSource),
+      });
 
   if (error) throw pgErrorToError(error);
 

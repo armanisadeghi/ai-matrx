@@ -8187,7 +8187,7 @@
       }
     },
     {
-      "kind": "picklist_tool_result",
+      "kind": "pick_list_tool_result",
       "is_active": false,
       "family": "picklists",
       "assets": {
@@ -19280,8 +19280,8 @@
     {
       "severity": "yellow",
       "code": "no-content-block",
-      "kind": "picklist_tool_result",
-      "message": "kind \"picklist_tool_result\" has no content block referencing \"__kind\": \"picklist_tool_result\""
+      "kind": "pick_list_tool_result",
+      "message": "kind \"pick_list_tool_result\" has no content block referencing \"__kind\": \"pick_list_tool_result\""
     },
     {
       "severity": "yellow",
@@ -26210,8 +26210,8 @@
     {
       "severity": "yellow",
       "code": "no-skill",
-      "kind": "picklist_tool_result",
-      "message": "kind \"picklist_tool_result\" has no render_block skill teaching it"
+      "kind": "pick_list_tool_result",
+      "message": "kind \"pick_list_tool_result\" has no render_block skill teaching it"
     },
     {
       "severity": "yellow",

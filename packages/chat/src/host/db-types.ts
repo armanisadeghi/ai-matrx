@@ -29906,7 +29906,7 @@ export type ChatDatabase = {
           isSetofReturn: true
         }
       }
-      _d31_impl_get_pick_list_with_items: {
+      _d31_impl_get_user_list_with_items: {
         Args: { p_list_id: string }
         Returns: Json
       }
@@ -29946,7 +29946,7 @@ export type ChatDatabase = {
         }
         Returns: Json
       }
-      _d31_impl_update_pick_list: {
+      _d31_impl_update_user_list: {
         Args: {
           p_authenticated_read?: boolean
           p_description?: string
@@ -35215,7 +35215,7 @@ export type ChatDatabase = {
         Args: { p_is_guest?: boolean; p_user_id: string }
         Returns: Json
       }
-      get_pick_list_with_items: { Args: { p_list_id: string }; Returns: Json }
+      get_user_list_with_items: { Args: { p_list_id: string }; Returns: Json }
       get_pick_lists_summary: { Args: { p_user_id: string }; Returns: Json }
       get_user_messages: {
         Args: { p_feedback_id: string }
@@ -39222,7 +39222,7 @@ export type ChatDatabase = {
         }
         Returns: Json
       }
-      update_pick_list: {
+      update_user_list: {
         Args: {
           p_authenticated_read?: boolean
           p_description?: string

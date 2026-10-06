@@ -31,7 +31,7 @@ export type RecordStoreKind = "table" | "pick_list";
 export const RECORD_STORE_TOKEN: Record<RecordStoreKind, string> = {
   table: "dataset",
   // The server reads both with one reader; the token only names the card ("Table" / "Pick list").
-  pick_list: "structured_list",
+  pick_list: "pick_list",
 };
 
 /** The badge a pick list's row carries inside Tables (vocabulary: a Pick list is a Table). */

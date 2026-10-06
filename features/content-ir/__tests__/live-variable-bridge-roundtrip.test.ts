@@ -5,13 +5,13 @@
  * pulled read-only from `agent.definition.variable_definitions` (2026-07-15),
  * spanning every live category: allowOther option sets, checkbox multi-select
  * option sets, closed option sets, media (youtube), bounded numbers,
- * picklist-bound (structured_list AND the legacy `picklist` key), scope-bound
+ * picklist-bound (pick_list AND the legacy `structured_list` / `picklist` keys), scope-bound
  * (binding), plain textareas, and toggleValues toggles. (No slider variables
  * exist live — `number` covers the bounds path.)
  *
  * THE CONTRACT: variables → (fields, sidecar) → variables reproduces the
  * original with zero information loss except the DOCUMENTED normalizations:
- *   - legacy `customComponent.picklist` key → canonical `structured_list`
+ *   - legacy `customComponent.picklist` key → canonical `pick_list`
  *   - `customComponent.stash` (authoring residue) dropped
  *   - explicit `required: false` / `allowOther: false` → key omitted
  *   - empty-string helpText → omitted
@@ -62,8 +62,8 @@ function normalize(v: VariableDefinition): Record<string, unknown> {
     if (cc.min !== undefined) norm.min = cc.min;
     if (cc.max !== undefined) norm.max = cc.max;
     if (cc.step !== undefined) norm.step = cc.step;
-    const list = cc.structured_list ?? cc.picklist;
-    if (list) norm.structured_list = list;
+    const list = cc.pick_list ?? cc.structured_list ?? cc.picklist;
+    if (list) norm.pick_list = list;
     // stash: authoring residue, dropped by contract.
   }
   out.customComponent = norm;
@@ -161,7 +161,7 @@ describe("live agent variables round-trip (18 docs, all live categories)", () =>
       const { sidecar } = variableDefinitionsToKindFields([doc.variable]);
       const cc = doc.variable.customComponent;
       expect(sidecar[doc.variable.name]?.structuredList).toStrictEqual(
-        cc?.structured_list ?? cc?.picklist,
+        cc?.pick_list ?? cc?.structured_list ?? cc?.picklist,
       );
     }
     for (const doc of byCat("toggle_values")) {

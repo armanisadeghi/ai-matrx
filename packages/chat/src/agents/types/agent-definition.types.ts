@@ -94,7 +94,7 @@ export type VariableComponentType = (typeof VARIABLE_COMPONENT_TYPES)[number];
  * Binding of a variable to a Structured List (a Table of choices in the record store). When set, the
  * variable's options are hydrated at runtime from the list (labels only — the secret `description`
  * never reaches the client) and the emitted value is a ```matrx reference fence string
- * (`kind:"reference"`, `type:"structured_list_item"`), not text. Orthogonal to `type`, so a
+ * (`kind:"reference"`, `type:"pick_list_item"`), not text. Orthogonal to `type`, so a
  * structured-list-bound variable can render as select / radio / buttons / checkbox (a "picklist"
  * in the dropdown-projection sense).
  */
@@ -146,16 +146,18 @@ export interface VariableCustomComponent {
   unit?: string;
   /**
    * Structured-list binding. When present, options come from the bound Structured List and the
-   * variable's value is a ```matrx reference fence string (one `structured_list_item` for
+   * variable's value is a ```matrx reference fence string (one `pick_list_item` for
    * single-select, N items + any "Other" lines for multi). Kept top-level (not stashable) so it
    * survives component-type switches.
    */
-  structured_list?: StructuredListBinding;
+  pick_list?: StructuredListBinding;
   /**
-   * @deprecated Legacy key — READ-ONLY. Historical agent definitions store the binding under
-   * `picklist`; readers fall back to it via {@link readStructuredList}. New writes use
-   * `structured_list` only. Do not emit this key.
+   * @deprecated Legacy keys — READ-ONLY. Historical agent definitions store the binding under
+   * `structured_list` or `picklist`; readers fall back to them via {@link readStructuredList}.
+   * New writes use `pick_list` only. Do not emit these keys.
    */
+  structured_list?: StructuredListBinding;
+  /** @deprecated Legacy key — READ-ONLY (see `structured_list`). */
   picklist?: StructuredListBinding;
   /** Automatic-assignment strategies explicitly enabled by the agent author. */
   assignment?: VariableAssignmentConfig;

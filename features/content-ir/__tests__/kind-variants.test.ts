@@ -150,7 +150,7 @@ describe("validateKindVariant", () => {
       name: "dropdown",
       label: "Dropdown",
       component_type: "select",
-      config: { options: [], structured_list: { listId: "abc" } },
+      config: { options: [], pick_list: { listId: "abc" } },
     });
     expect(result.errors).toEqual([]);
     expect(result.warnings).toEqual([]);

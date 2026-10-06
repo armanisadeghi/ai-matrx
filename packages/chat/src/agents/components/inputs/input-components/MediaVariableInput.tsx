@@ -21,6 +21,7 @@
  * a `mediaKind`. YouTube is its own component — paste-only, no upload.
  */
 
+import { useFileUpload } from "@ai-matrx/media/files/engine/handler/hooks/useFileUpload";
 import { useCallback, useRef, useState } from "react";
 import {
   Image as ImageIcon,
@@ -41,7 +42,6 @@ import { FileResourceChip } from "@ai-matrx/chat/host/ui-slots";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { useFileDocument } from "@ai-matrx/chat/host/ui-slots";
 import { useMediaResolution } from "@ai-matrx/media/core";
-import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
 import { FilesResourcePicker } from "../../../../host/ui-slots";
 import { cn } from "@ai-matrx/design-system";
 import type { VariableResourceContextConfig } from "../../../types/agent-definition.types";

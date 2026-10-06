@@ -18,12 +18,19 @@ import type { AgentDefinition } from "../agents/types/agent-definition.types";
 type Cfg = { dispatch: ChatDispatch; state: ChatRootState };
 type Door<Arg, Ret> = (arg: Arg) => AsyncThunkAction<Ret, Arg, Cfg>;
 
-export interface DuplicateAgentOptions {
-  agentId: string;
+interface DuplicateAgentCommon {
   asSystem?: boolean;
   organizationId?: string;
   followsSource?: boolean;
 }
+
+/**
+ * What to copy into a new agent: the agent as it is now (`agentId`), or one
+ * exact saved version (`versionId`, an agent.definition_version id — its
+ * snapshot is copied, never the possibly-newer master).
+ */
+export type DuplicateAgentOptions = DuplicateAgentCommon &
+  ({ agentId: string; versionId?: string } | { agentId?: string; versionId: string });
 
 export type CreateAgentInput = Partial<
   Omit<

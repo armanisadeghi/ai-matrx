@@ -73,6 +73,16 @@ function labelForKey(key: string): string {
  * compound noun's fields arrive from the server automatically.
  */
 const REF_FIELDS: Record<string, RefFieldSpec[]> = {
+  pick_list: [{ key: "list_id", label: "List ID", uuid: true }],
+  pick_list_group: [
+    { key: "list_id", label: "List ID", uuid: true },
+    { key: "group_name", label: "Group name" },
+  ],
+  pick_list_item: [
+    { key: "list_id", label: "List ID", uuid: true },
+    { key: "item_id", label: "Item ID", uuid: true },
+  ],
+  // Legacy read-only aliases: references stored before the rename. NEW content emits pick_list*.
   structured_list: [{ key: "list_id", label: "List ID", uuid: true }],
   structured_list_group: [
     { key: "list_id", label: "List ID", uuid: true },

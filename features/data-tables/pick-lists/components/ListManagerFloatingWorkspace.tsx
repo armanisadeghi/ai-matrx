@@ -133,7 +133,7 @@ export function ListManagerFloatingWorkspace() {
   // Write half of the list-manager surface (manifest `writeTargets`). The
   // validation and the canonical server-action calls live in the shared
   // `buildListSurfaceWriteHandlers` — the SAME implementation the `/pick-lists/[id]`
-  // route mount (`matrx-user/lists`) uses, so the two mounts of this state can
+  // route mount (`matrx-user/pick-lists`) uses, so the two mounts of this state can
   // never drift apart. This component supplies only what is mount-specific:
   // which list is active, and how to refresh the read twins afterwards. We
   // refetch immediately rather than waiting out the 5s poll, so the values the
@@ -173,7 +173,7 @@ export function ListManagerFloatingWorkspace() {
 
   return (
     <SurfaceRuntimeProvider
-      surfaceName="matrx-user/list-manager"
+      surfaceName="matrx-user/pick-list-manager"
       getScope={getSurfaceScope}
       isEditable
       getWriteHandlers={getSurfaceWriteHandlers}

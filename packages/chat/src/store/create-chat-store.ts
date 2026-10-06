@@ -8,6 +8,11 @@
 import { combineReducers, configureStore, type Middleware } from "@reduxjs/toolkit";
 import createSagaMiddleware from "redux-saga";
 import { fork } from "redux-saga/effects";
+import {
+  cloudFilesMutationToastMiddleware,
+  cloudFilesRealtimeMiddleware,
+  cloudFilesReducer,
+} from "@ai-matrx/media/files/engine";
 import { chatReducers } from "./slices";
 import { chatMiddlewares } from "./middlewares";
 import { chatSagas } from "./sagas";
@@ -16,7 +21,9 @@ import type { ChatState } from "./state";
 export function createChatStore(preloadedState?: Partial<ChatState>) {
   const sagaMiddleware = createSagaMiddleware();
   const store = configureStore({
-    reducer: combineReducers(chatReducers),
+    // Files are part of chat (P16f): the files engine's slice and its two middlewares come
+    // straight from @ai-matrx/media. A host that brings its own store mounts them itself.
+    reducer: combineReducers({ ...chatReducers, cloudFiles: cloudFilesReducer }),
     preloadedState: preloadedState as ChatState | undefined,
     // The chat middlewares are still typed against the host RootState (§2.3 — host keys
     // they read); widened here until those reads move onto `chatHost` (P7–P9).
@@ -25,7 +32,12 @@ export function createChatStore(preloadedState?: Partial<ChatState>) {
         serializableCheck: false,
         immutableCheck: false,
         actionCreatorCheck: false,
-      }).concat(sagaMiddleware, ...(chatMiddlewares() as readonly Middleware[])),
+      }).concat(
+        sagaMiddleware,
+        ...(chatMiddlewares() as readonly Middleware[]),
+        cloudFilesRealtimeMiddleware,
+        cloudFilesMutationToastMiddleware,
+      ),
     devTools: process.env.NODE_ENV !== "production",
   });
   sagaMiddleware.run(function* chatRootSaga() {

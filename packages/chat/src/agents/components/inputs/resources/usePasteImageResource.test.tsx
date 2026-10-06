@@ -1,5 +1,4 @@
 import { renderHook } from "@ai-matrx/chat/testing/render-hook";
-import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 
 const upload = jest.fn();
 const attachResource = jest.fn();
@@ -30,8 +29,10 @@ jest.mock("../../../../store/hooks", () => ({
 // The host code this test renders reads the app's own hooks (P3): one double covers both.
 
 
-// The host registers its upload hook (P16f slot); this test registers the double.
-beforeEach(() => registerChatUi({ useFileUpload: () => ({ upload }) }));
+// The upload hook is the files engine's own (P16f); this test replaces it with a double.
+jest.mock("@ai-matrx/media/files/engine/handler/hooks/useFileUpload", () => ({
+  useFileUpload: () => ({ upload }),
+}));
 
 jest.mock(
   "./attach-resource",
@@ -44,9 +45,10 @@ jest.mock("../../../redux/execution-system/utils/ids", () => ({
   generateResourceId: () => "resource-1",
 }));
 
-registerChatUi({
+jest.mock("@ai-matrx/media/files/engine", () => ({
+  ...jest.requireActual("@ai-matrx/media/files/engine"),
   normalize: () => ({ meta: { category: "DOCUMENT" }, url: null }),
-});
+}));
 
 jest.mock("../../../../host/notify", () => ({
   toast: { error: jest.fn() },

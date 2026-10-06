@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Picklist on a board — the `/pick-lists` feature. A list is a Table of choices in the record store
+ * Pick list on a board — the `/pick-lists` feature. A list is a Table of choices in the record store
  * (`custom.*`, one Record per choice), and `/pick-lists/<id>` opens it as the store's table page
  * (`UnifiedDataTablePage`). The tile body IS that page's body: `TableRecordBody`
  * (`useUnifiedTable` + `UnifiedTableBody`, the same component the Table item and the page render),
@@ -11,7 +11,7 @@
  *
  * Start new places a tile at once; the list is made when the person presses Create (never on mount)
  * through `createList` — `custom.pick_list_create`, filed in the organization the gate resolves.
- * Bring in lists every picklist the person may open across ALL their organizations, from THE LIST
+ * Bring in lists every pick list the person may open across ALL their organizations, from THE LIST
  * INDEX (`readPickListIndex`), never the active organization.
  */
 
@@ -38,7 +38,7 @@ import { TableRecordBody } from "./data-items";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
 export const LIST_ITEM_KEY = "list";
-const NEW_LIST_TITLE = "New picklist";
+const NEW_LIST_TITLE = "New pick list";
 
 export function listSource(id: string | null): NodeSource {
   return { kind: "entity", entity: LIST_ITEM_KEY, id };
@@ -75,14 +75,14 @@ function ListPicker({ onPick, onCancel }: PickerProps) {
         rows={read.phase === "read" ? read.lists : []}
         read={readOf(
           { loading: read.phase === "reading", error: read.phase === "failed" ? new Error(read.why) : null },
-          { what: "your picklists", onRetry: () => setAgain((n) => n + 1) },
+          { what: "your pick lists", onRetry: () => setAgain((n) => n + 1) },
         )}
         rowKey={(l) => l.id}
         isArchived={(l) => read.phase === "read" && read.archivedIds.has(l.id)}
         rowText={(l) => `${l.listName} ${l.organizationName ?? ""}`}
         onChoose={(l) => onPick([{ title: l.listName, source: listSource(l.id) }])}
         onCancel={onCancel}
-        emptyState={<>No picklists yet. Make one with New picklist.</>}
+        emptyState={<>No pick lists yet. Make one with New pick list.</>}
         renderRow={(l) => (
           <>
             <span className="min-w-0 flex-1 truncate">{l.listName}</span>
@@ -104,8 +104,8 @@ type Failure = { reason: string; cancelled: boolean };
 /** Outside the component: a `try` inside one makes the React Compiler skip it. */
 async function makeList(name: string, userId: string): Promise<{ id: string } | { failure: Failure }> {
   try {
-    // A NEW picklist is filed in the organization the gate resolves (it asks when none is set).
-    // org-filter: write-target — the same birth the Picklists page does
+    // A NEW pick list is filed in the organization the gate resolves (it asks when none is set).
+    // org-filter: write-target — the same birth the Pick lists page does
     const organizationId = await ensureOrgId(null);
     const made = (await createList({
       p_list_name: name,
@@ -114,18 +114,18 @@ async function makeList(name: string, userId: string): Promise<{ id: string } | 
       p_items: [],
     })) as { list_id?: string; id?: string } | null;
     const id = made?.list_id ?? made?.id;
-    if (!id) throw new Error("The list was made but its address did not come back. It is on the Picklists page.");
+    if (!id) throw new Error("The list was made but its address did not come back. It is on the Pick lists page.");
     return { id };
   } catch (err) {
     if (isOrganizationSelectionCancelled(err)) {
-      return { failure: { reason: "Choose the workspace this picklist belongs to, then try again.", cancelled: true } };
+      return { failure: { reason: "Choose the workspace this pick list belongs to, then try again.", cancelled: true } };
     }
-    console.error("[board/list] could not create the picklist", err);
+    console.error("[board/list] could not create the pick list", err);
     return { failure: { reason: err instanceof Error ? err.message : String(err), cancelled: false } };
   }
 }
 
-/** A new picklist tile before its list exists: nothing is made until Create is pressed. */
+/** A new pick list tile before its list exists: nothing is made until Create is pressed. */
 function ListDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
   const userId = useAppSelector(selectUserId);
   const [name, setName] = useState("");
@@ -151,9 +151,9 @@ function ListDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
       {failure ? (
         <ErrorNotice
           size="compact"
-          title={failure.cancelled ? "No workspace chosen" : "This picklist could not be created"}
+          title={failure.cancelled ? "No workspace chosen" : "This pick list could not be created"}
           message={failure.reason}
-          operation="Create a picklist on the board"
+          operation="Create a pick list on the board"
         />
       ) : null}
       <BasicInput
@@ -162,8 +162,8 @@ function ListDraftBody({ onSource }: Pick<ItemBodyProps, "onSource">) {
         onKeyDown={(e) => {
           if (e.key === "Enter") void create();
         }}
-        placeholder="Name the picklist"
-        aria-label="Picklist name"
+        placeholder="Name the pick list"
+        aria-label="Pick list name"
         className="w-full max-w-xs"
       />
       <Button icon={creating ? <Spinner size="xs" className="text-current" /> : <ListChecks />} variant="primary" onClick={() => void create()} disabled={creating || !name.trim() || !userId}>
@@ -183,10 +183,10 @@ export const LIST_ITEMS: readonly BoardItemType[] = [
     key: LIST_ITEM_KEY,
     // The page mounts no surface of its own; the table page's body mounts the data-tables surface.
     surface: { name: DATA_TABLES_SURFACE },
-    // A picklist is a record-store table: like the Table item it has no thread of its own.
+    // A pick list is a record-store table: like the Table item it has no thread of its own.
     comments: null,
-    label: "Picklist",
-    kindLabel: "picklist",
+    label: "Pick list",
+    kindLabel: "pick list",
     icon: ListChecks,
     group: "work",
     accent: "teal",
@@ -197,10 +197,10 @@ export const LIST_ITEMS: readonly BoardItemType[] = [
     matches: (s) => s.kind === "entity" && s.entity === LIST_ITEM_KEY,
     Body: ListBody,
     startNew: { label: NEW_LIST_TITLE, create: () => ({ title: NEW_LIST_TITLE, source: listSource(null) }) },
-    bringIn: { label: "Picklist", Picker: ListPicker },
-    // Picklists are not in the search projection: the picklist picker's own index, matched on the name.
+    bringIn: { label: "Pick list", Picker: ListPicker },
+    // Pick lists are not in the search projection: the pick list picker's own index, matched on the name.
     record: {
-      place: (id, title) => ({ title: title?.trim() || "Picklist", source: listSource(id) }),
+      place: (id, title) => ({ title: title?.trim() || "Pick list", source: listSource(id) }),
       find: (query, limit) => findPickLists(LIST_ITEM_KEY, query, limit, () => readPickListIndex(supabase, { everywhere: true })),
     },
     href: (s) => {

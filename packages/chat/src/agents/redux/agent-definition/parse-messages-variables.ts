@@ -61,6 +61,7 @@ type VariableComponentKnownKey =
       | "min"
       | "max"
       | "step"
+      | "pick_list"
       | "structured_list"
       | "picklist"
       | "assignment"
@@ -97,6 +98,7 @@ const VARIABLE_COMPONENT_KNOWN_KEYS: readonly VariableComponentKnownKey[] = [
   "min",
   "max",
   "step",
+  "pick_list",
   "structured_list",
   "picklist",
   "assignment",
@@ -340,6 +342,10 @@ function parseVariableCustomComponent(
   const min = parseOptionalNumber(value.min, `${path}.min`);
   const max = parseOptionalNumber(value.max, `${path}.max`);
   const step = parseOptionalNumber(value.step, `${path}.step`);
+  const pickList = parseStructuredListBinding(
+    value.pick_list,
+    `${path}.pick_list`,
+  );
   const structuredList = parseStructuredListBinding(
     value.structured_list,
     `${path}.structured_list`,
@@ -364,6 +370,7 @@ function parseVariableCustomComponent(
   if (min !== undefined) parsed.min = min;
   if (max !== undefined) parsed.max = max;
   if (step !== undefined) parsed.step = step;
+  if (pickList !== undefined) parsed.pick_list = pickList;
   if (structuredList !== undefined) parsed.structured_list = structuredList;
   if (picklist !== undefined) parsed.picklist = picklist;
   if (assignment !== undefined) parsed.assignment = assignment;

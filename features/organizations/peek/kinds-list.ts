@@ -39,7 +39,7 @@ export const PEEK_KINDS = [
   "dataset",
   "transcript",
   "agent_shortcut",
-  "structured_list",
+  "pick_list",
   "workbook",
   "quiz_session",
   "sandbox_instance",

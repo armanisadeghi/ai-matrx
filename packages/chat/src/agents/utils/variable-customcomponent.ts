@@ -98,13 +98,13 @@ export function readStep(cc: VariableCustomComponent | undefined): number {
 
 /**
  * The structured-list binding, if this variable is bound to a Structured List. Top-level only.
- * Reads the canonical `structured_list` key and falls back to the legacy `picklist` key
- * (read-only back-compat for historical agent definitions — new writes use `structured_list`).
+ * Reads the canonical `pick_list` key and falls back to the legacy `structured_list` and `picklist` keys
+ * (read-only back-compat for historical agent definitions — new writes use `pick_list`).
  */
 export function readStructuredList(
   cc: VariableCustomComponent | undefined,
 ): StructuredListBinding | undefined {
-  return cc?.structured_list ?? cc?.picklist;
+  return cc?.pick_list ?? cc?.structured_list ?? cc?.picklist;
 }
 
 // ─── Builder ──────────────────────────────────────────────────────────────────
@@ -184,9 +184,9 @@ export function buildCustomComponent(
 
   // Structured-list binding is type-independent: always preserved top-level, regardless of the
   // chosen display component. Its presence also means this is never a bare textarea.
-  // Emit the canonical `structured_list` key only (never the legacy `picklist` key).
+  // Emit the canonical `pick_list` key only (never the legacy `structured_list` / `picklist` keys).
   if (input.structuredList?.listId) {
-    cc.structured_list = input.structuredList;
+    cc.pick_list = input.structuredList;
   }
 
   if (input.randomAssignment) {
@@ -204,7 +204,7 @@ export function buildCustomComponent(
   if (
     type === "textarea" &&
     !cc.stash &&
-    !cc.structured_list &&
+    !cc.pick_list &&
     !cc.assignment &&
     !cc.resource_context
   )
@@ -261,6 +261,7 @@ export function normalizeCustomComponent(
   if (
     next.type === "textarea" &&
     !next.stash &&
+    !next.pick_list &&
     !next.structured_list &&
     !next.picklist &&
     !next.assignment &&

@@ -43,6 +43,7 @@
 // backstop for a missed directive, not the mechanism. A React face is
 // `useEffectiveKnob` (useSyncExternalStore), so a control showing the value
 // re-renders the moment a write lands.
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { createClient } from "@/utils/supabase/client";
 import { registerDirectiveHandler } from "@/lib/client-directives/directiveRegistry";
 import { getWebDeviceId } from "./deviceId";
@@ -233,6 +234,10 @@ export function ensureEffectiveKnob(
   ref: KnobRef,
   scopes?: readonly KnobScope[],
 ): Promise<unknown> {
+  // SIGNED OUT: `platform.knob_snapshot` answers 42501 to anon, and a refused read is a
+  // system_error row per visitor. "Not answered" is `undefined` — exactly what a reader
+  // holds before the read lands — so the consumer keeps its own default; nothing is cached.
+  if (isSignedOutVisitor()) return Promise.resolve(undefined);
   const fullKey = fullKeyOf(ref);
   return ensureKnobSnapshot(organizationId, userId, scopes).then((snapshot) => {
     if (!(fullKey in snapshot.resolved)) {
@@ -253,6 +258,13 @@ export function ensureEffectiveKnob(
     }
     return snapshot.resolved[fullKey];
   });
+}
+
+/** True only when the app store exists and holds no signed-in identity (never for a bare harness). */
+export function isSignedOutVisitor(): boolean {
+  const store = getStoreSingleton();
+  if (!store) return false;
+  return !(store.getState() as { userAuth?: { id: string | null } }).userAuth?.id;
 }
 
 /** ONE round trip. No caching, no races — the caller owns both. */

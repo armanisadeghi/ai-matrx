@@ -284,6 +284,9 @@ function readSites(): ReadSite[] {
  * cannot quietly absorb a new unaddressable read.
  */
 const COMPUTED_REFS: Record<string, string> = {
+  "components/selection-toolbar/SelectionToolbarRoot.tsx":
+    "reads its own declared HIGHLIGHT_WHILE_EDITING_KNOB constant from selection-actions.ts, the pair " +
+    "`selection_toolbar` / `highlight_while_editing`, which is a row in the knob snapshot",
   "app/(dev)/demos/composer/ComposerPlayground.tsx":
     "dev demo: reads `COMPOSER_KNOBS.compactInputMaxHeightPct`, a member access on the composer's " +
     "own declared COMPOSER_KNOBS table; the same knob the composer itself reads",

@@ -71,6 +71,7 @@ import { OfflineStudySyncMount } from "@/features/education/study/offline/Offlin
 import { EducationAgeGateMount } from "@/features/education/compliance/EducationAgeGateMount";
 import { BLOCKS, toolNavigation } from "@/features/education/home/EducationHome";
 import { loadEducationSnapshot } from "@/features/education/home/snapshot";
+import { useSignedIn } from "@/lib/scoped-config/useSignedIn";
 import { buildEducationOverviewScope } from "@/features/education/home/overviewSurfaceScope";
 import { missingFormatsFor } from "@/features/education/home/nudges";
 import type { EducationSnapshot } from "@/features/education/home/types";
@@ -615,9 +616,13 @@ const RENDER: Record<string, (s: EducationSnapshot) => ReactNode> = {
 export function EducationOverviewSample() {
   const [snapshot, setSnapshot] = useState<EducationSnapshot | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // The snapshot is the signed-in learner's own library: a signed-out visitor has none, and the
+  // library RPCs refuse anon, so the read is not issued (re-runs the moment a person signs in).
+  const signedIn = useSignedIn();
 
   // The real home's read and its study-today publish, unchanged.
   useEffect(() => {
+    if (!signedIn) return;
     let cancelled = false;
     void loadEducationSnapshot().then((next) => {
       if (cancelled) return;
@@ -639,7 +644,7 @@ export function EducationOverviewSample() {
       cancelled = true;
       setStudyTodaySnapshot(null);
     };
-  }, [reloadKey]);
+  }, [reloadKey, signedIn]);
 
   // The real home's block signals decide which sections show, and their order.
   const blocks = snapshot

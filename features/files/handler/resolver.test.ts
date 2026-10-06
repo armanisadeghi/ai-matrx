@@ -12,19 +12,19 @@ import { resolve } from "./resolver";
 jest.mock("@/lib/redux/store-singleton", () => ({
   getStoreSingleton: () => ({ getState: () => ({}) }),
 }));
-jest.mock("@/features/files/api/files", () => ({ getFile: jest.fn() }));
-jest.mock("@/features/files/redux/converters", () => {
-  const actual = jest.requireActual("@/features/files/redux/converters");
+jest.mock("@ai-matrx/media/files/engine/api/files", () => ({ getFile: jest.fn() }));
+jest.mock("@ai-matrx/media/files/engine/redux/converters", () => {
+  const actual = jest.requireActual("@ai-matrx/media/files/engine/redux/converters");
   return { ...actual, apiFileRecordToCloudFile: jest.fn() };
 });
-jest.mock("@/features/files/filesDb", () => ({
+jest.mock("@ai-matrx/media/files/engine/filesDb", () => ({
   readFileRowById: jest.fn(),
 }));
-jest.mock("@/features/files/redux/selectors", () => ({
+jest.mock("@ai-matrx/media/files/engine/redux/selectors", () => ({
   selectFileById: jest.fn(),
   selectPermissionsForResource: jest.fn(() => []),
 }));
-jest.mock("./intelligence/access", () => ({
+jest.mock("@ai-matrx/media/files/engine/handler/intelligence/access", () => ({
   decideForOwnedFile: () => ({
     origin: "owned",
     capabilities: {

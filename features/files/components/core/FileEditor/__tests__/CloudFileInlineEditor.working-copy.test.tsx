@@ -41,7 +41,7 @@ async function readText(blob: Blob): Promise<string> {
   });
 }
 
-jest.mock("@/features/files/api/files", () => ({
+jest.mock("@ai-matrx/media/files/engine/api/files", () => ({
   downloadFileWithProgress: async (fileId: string) => {
     downloads.push(fileId);
     const row = server.get(fileId);
@@ -72,7 +72,7 @@ jest.mock("@/features/files/api/files", () => ({
   getFileMetadata: jest.fn(),
 }));
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
-jest.mock("@/features/files/filesDb", () => {
+jest.mock("@ai-matrx/media/files/engine/filesDb", () => {
   const chain = {
     select: () => chain,
     eq: () => chain,
@@ -80,14 +80,14 @@ jest.mock("@/features/files/filesDb", () => {
   };
   return { filesDb: () => ({ from: () => chain }), FILE_VERSIONS_TABLE_COLUMNS: "*" };
 });
-jest.mock("@/features/files/cache/idb-store", () => ({
+jest.mock("@ai-matrx/media/files/engine/cache/idb-store", () => ({
   deleteEntriesForFile: jest.fn(async () => undefined),
   clearForUser: jest.fn(async () => undefined),
   getEntry: jest.fn(async () => null),
   putEntry: jest.fn(async () => undefined),
   openBlobCacheDb: jest.fn(async () => null),
 }));
-jest.mock("@/features/files/cache/register-service-worker", () => ({
+jest.mock("@ai-matrx/media/files/engine/cache/register-service-worker", () => ({
   postBlobCacheInvalidate: jest.fn(async () => undefined),
   postBlobCacheClearUser: jest.fn(async () => undefined),
 }));

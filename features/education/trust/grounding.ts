@@ -43,6 +43,7 @@ export function recordKindOfResourceType(resourceType: string | null | undefined
       return "conversation";
     case "dataset":
       return "table";
+    case "pick_list":
     case "structured_list":
       return "pick_list";
     case "content_ir_kind_instance":

@@ -92,7 +92,8 @@ const CommentReplyRenderer = dynamic(
 /** Per-reference-type chip icon. Falls back to a generic link glyph. */
 function chipIcon(type: string): ComponentType<{ className?: string }> {
   switch (type) {
-    case "structured_list":
+    case "pick_list":
+    case "structured_list": // legacy read-only
     case "picklist": // legacy read-only
       return List;
     case "structured_list_group":

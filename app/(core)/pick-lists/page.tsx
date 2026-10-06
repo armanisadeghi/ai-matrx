@@ -4,7 +4,7 @@ import { PickListsPage } from "@/features/data-tables/pick-lists/components/Pick
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 
 // /pick-lists — one route, two audiences (module-landing-pages, "branch in page"): a signed-in person gets
-// the Picklists page (every picklist, each opening at /pick-lists/<id>); a guest gets the landing.
+// the Pick lists page (every pick list, each opening at /pick-lists/<id>); a guest gets the landing.
 export default async function PicklistsRoute() {
   const { isAuthenticated } = await getSessionVerdict();
   if (isAuthenticated) return <PickListsPage />;

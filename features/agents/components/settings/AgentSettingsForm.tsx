@@ -59,7 +59,7 @@ interface AgentSettingsFormProps {
    * registered, `getRegisteredWriteHandlers` would merge them and the last one
    * mounted would win — staging a rewrite into a form the user who pressed
    * Apply is not looking at. Only `AgentSettingsWindow` passes this. Same gate,
-   * for the same reason, as `matrx-user/lists`' `asRoute`.
+   * for the same reason, as `matrx-user/pick-lists`' `asRoute`.
    */
   writeSurfaceName?: string | null;
 }

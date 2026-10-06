@@ -12,6 +12,12 @@ export const AGENT_EXCLUDE_PATHS = new Set([
   "parentAgentId",
   "sourceAgentId",
   "sourceSnapshotAt",
+  // Lineage and record bookkeeping: who made the row and which version it was
+  // copied from never change what the agent does, so a copy never "differs" here.
+  "sourceVersion",
+  "followsSource",
+  "createdBy",
+  "runCounts",
   "isOwner",
   "accessLevel",
   "sharedByEmail",

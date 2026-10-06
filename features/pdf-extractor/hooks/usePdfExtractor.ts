@@ -16,6 +16,8 @@ import { supabase } from "@/utils/supabase/client";
 import { docprocDb, PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
 import { parseHttpError } from "@/lib/api/errors";
 import { getAccessTokenOrNull, requestRaw } from "@/lib/python-client";
+import { invalidateProcessedDocumentPages } from "./useProcessedDocumentPages";
+import { markAutoCleanHandled } from "./useAutoCleanOnOpen";
 import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
 import {
   appendBatchExtractDebugLine,
@@ -28,6 +30,14 @@ import {
   streamPdfFullPipeline,
   type PdfFullPipelineBody,
 } from "../service/streamPdf";
+import {
+  CLEAN_FAILED_MESSAGE,
+  CLEAN_QUEUED_LABEL,
+  NO_RECORD_UPDATE_MESSAGE,
+  classifyRecordUpdateStatus,
+  pollForCleanContent,
+  shouldRefreshOnProcessingProgress,
+} from "../service/cleanOutcome";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -250,13 +260,15 @@ export async function readProcessedDocument(
       // Only cache a HIT. A miss (row not yet visible right after the server
       // created it, a transient RLS/replication race) must self-heal on the
       // next read instead of being pinned for the full TTL.
-      if (read.kind === "ok") {
+      // A read whose in-flight entry was evicted by an invalidation started
+      // BEFORE the write it was invalidated for — never cache it.
+      if (read.kind === "ok" && fetchDocInflight.get(key) === promise) {
         fetchDocCache.set(key, { resolvedAt: Date.now(), doc: read.doc });
       }
       return read;
     })
     .finally(() => {
-      fetchDocInflight.delete(key);
+      if (fetchDocInflight.get(key) === promise) fetchDocInflight.delete(key);
     });
 
   fetchDocInflight.set(key, promise);
@@ -283,10 +295,16 @@ async function fetchProcessedDocument(
 export function invalidateProcessedDocumentCache(docId?: string): void {
   if (docId == null) {
     fetchDocCache.clear();
+    fetchDocInflight.clear();
     return;
   }
   for (const key of fetchDocCache.keys()) {
     if (key.endsWith(`:${docId}`)) fetchDocCache.delete(key);
+  }
+  // In-flight reads too: one started before this write would otherwise be
+  // cached for the full TTL without the new text.
+  for (const key of fetchDocInflight.keys()) {
+    if (key.endsWith(`:${docId}`)) fetchDocInflight.delete(key);
   }
 }
 
@@ -616,6 +634,26 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         };
 
+        // Per-doc bookkeeping for the terminal `record_update` contract: a
+        // doc that never gets one did not finish processing (said, never
+        // silent).
+        const recordUpdated = new Set<string>();
+        const lastCleanRefreshAt = new Map<string, number>();
+
+        const refreshCleanedDoc = async (recordId: string) => {
+          invalidateProcessedDocumentCache(recordId);
+          invalidateProcessedDocumentPages(recordId);
+          const fresh = await fetchDocument(recordId);
+          setTabs((prev) =>
+            prev.map((tab) =>
+              tab.id === recordId
+                ? { ...tab, document: fresh ?? tab.document }
+                : tab,
+            ),
+          );
+          setProcessedDocSignal({ docId: recordId, at: Date.now() });
+        };
+
         for await (const event of stream) {
           if (event.event === "info") {
             if (event.data.code === "pdf_page_progress") {
@@ -632,14 +670,43 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             event.data.table === "processed_documents"
           ) {
             const recordId = event.data.record_id;
+            const outcome = classifyRecordUpdateStatus(event.data.status);
+            recordUpdated.add(recordId);
             invalidateProcessedDocumentCache(recordId);
             const fresh = await fetchDocument(recordId);
+            if (outcome === "queued" || outcome === "active") {
+              // Not terminal: keep the doc's status label visible.
+              if (outcome === "queued") {
+                setProcessingStatus((prev) => ({
+                  ...prev,
+                  [recordId]: CLEAN_QUEUED_LABEL,
+                }));
+              }
+              setTabs((prev) =>
+                prev.map((tab) =>
+                  tab.id === recordId
+                    ? {
+                        ...tab,
+                        document: fresh ?? tab.document,
+                        progressMessage:
+                          outcome === "queued"
+                            ? CLEAN_QUEUED_LABEL
+                            : tab.progressMessage,
+                      }
+                    : tab,
+                ),
+              );
+              setProcessedDocSignal({ docId: recordId, at: Date.now() });
+              continue;
+            }
+            const failed = outcome === "failed";
             setTabs((prev) =>
               prev.map((tab) =>
                 tab.id === recordId
                   ? {
                       ...tab,
                       document: fresh ?? tab.document,
+                      error: failed ? CLEAN_FAILED_MESSAGE : tab.error,
                       progressMessage: undefined,
                     }
                   : tab,
@@ -687,6 +754,19 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               const message = (evtData.message as string) ?? "";
               const label = `${stage}: ${message}`;
               if (docId) {
+                // Cleaned text is readable as soon as the clean stage writes
+                // it — refetch then, not after chunk/embed/NER finish.
+                const now = Date.now();
+                if (
+                  shouldRefreshOnProcessingProgress(
+                    evtData,
+                    lastCleanRefreshAt.get(docId) ?? 0,
+                    now,
+                  )
+                ) {
+                  lastCleanRefreshAt.set(docId, now);
+                  void refreshCleanedDoc(docId);
+                }
                 setProcessingStatus((prev) => ({ ...prev, [docId]: label }));
                 setTabs((prev) =>
                   prev.map((tab) =>
@@ -733,6 +813,8 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               // below (which can momentarily miss) is what stranded the user
               // on the upload screen after a successful extraction.
               completedDocIds.push(docId);
+              // The upload stream owns this doc's clean — never auto-run one.
+              markAutoCleanHandled(docId);
               if (!firstDocIdFired) {
                 firstDocIdFired = true;
                 opts.onFirstDocId?.(docId);
@@ -786,6 +868,21 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           if (event.event === "end") {
             break;
           }
+        }
+
+        // The stream is over: any finished doc that never got its terminal
+        // `record_update` was not fully processed — say so on its tab.
+        const unconfirmed = completedDocIds.filter(
+          (id) => !recordUpdated.has(id),
+        );
+        if (unconfirmed.length > 0) {
+          setTabs((prev) =>
+            prev.map((tab) =>
+              unconfirmed.includes(tab.id) && !tab.error
+                ? { ...tab, error: NO_RECORD_UPDATE_MESSAGE }
+                : tab,
+            ),
+          );
         }
 
         if (debugSessionId) {
@@ -848,8 +945,15 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
         setBatchStatus("idle");
         // The stream is over — no more processing events can arrive, so any
-        // leftover per-doc status is stale. Clear it.
-        setProcessingStatus({});
+        // leftover per-doc status is stale. Clear it — except docs parked on
+        // the batch queue, whose "Cleaning queued" label is still true.
+        setProcessingStatus((prev) => {
+          const kept: Record<string, string> = {};
+          for (const [id, label] of Object.entries(prev)) {
+            if (label === CLEAN_QUEUED_LABEL) kept[id] = label;
+          }
+          return kept;
+        });
         clearFiles();
         // Refresh history
         loadHistory();
@@ -1006,8 +1110,16 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
     onTextDelta?: (accumulated: string) => void;
   }
 
+  /** `queued` = the server parked the clean on the batch queue; text comes later. */
+  interface CleanContentResult {
+    status: "done" | "queued";
+  }
+
   const cleanContent = useCallback(
-    async (docId: string, opts: CleanContentCallbacks = {}) => {
+    async (
+      docId: string,
+      opts: CleanContentCallbacks = {},
+    ): Promise<CleanContentResult> => {
       // Set tab to cleaning status; clear any prior error / stale stream text.
       setTabs((prev) =>
         prev.map((tab) =>
@@ -1035,19 +1147,22 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       // stream that's actively working never trips it. Without this, a
       // mid-stream network death stranded the tab on "cleaning" forever
       // with no recovery short of a reload.
+      let recordStatus: string | null = null;
+      let confirmedUpdate = false;
       const runStreamOnce = async (): Promise<string | null> => {
         const watchdog = createInactivityWatchdog(90_000);
         try {
-          const { cleanContent: streamedClean } = await streamPdfClean({
+          const result = await streamPdfClean({
             docId,
             signal: watchdog.signal,
             callbacks: {
+              // EVERY event (heartbeat, record_reserved, …) proves the
+              // server is alive — only silence trips the watchdog.
+              onActivity: () => watchdog.bump(),
               onCleanStarted: (info) => {
-                watchdog.bump();
                 perPageMode = info.mode === "per_page";
               },
               onProgress: (msg) => {
-                watchdog.bump();
                 opts.onProgress?.(msg);
                 setTabs((prev) =>
                   prev.map((tab) =>
@@ -1056,7 +1171,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                 );
               },
               onTextDelta: (accumulated) => {
-                watchdog.bump();
                 opts.onTextDelta?.(accumulated);
                 setTabs((prev) =>
                   prev.map((tab) =>
@@ -1067,7 +1181,6 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                 );
               },
               onCleanContent: (text) => {
-                watchdog.bump();
                 // Mirror the final payload into the live preview field so
                 // legacy consumers (AiCleanView) see the final blob the same
                 // way they saw the deltas.
@@ -1078,11 +1191,27 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
                   ),
                 );
               },
-              onRecordUpdate: () => watchdog.bump(),
+              onRecordUpdate: (_id, status) => {
+                confirmedUpdate = true;
+                recordStatus = status;
+                if (classifyRecordUpdateStatus(status) === "queued") {
+                  opts.onProgress?.(CLEAN_QUEUED_LABEL);
+                  setTabs((prev) =>
+                    prev.map((tab) =>
+                      tab.id === docId
+                        ? { ...tab, progressMessage: CLEAN_QUEUED_LABEL }
+                        : tab,
+                    ),
+                  );
+                }
+              },
             },
           });
-          return streamedClean;
+          return result.cleanContent;
         } catch (err) {
+          // The watchdog aborts the fetch; the stream parser ends an aborted
+          // stream quietly (streamPdfClean then throws), so this is the one
+          // place the stall becomes the timeout message the retry logic sees.
           if (watchdog.timedOut) {
             throw new Error(
               "No response from the server for 90s — the cleanup may still finish in the background. Refetch in a moment or retry.",
@@ -1122,12 +1251,54 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
         // round-trip Supabase so the in-memory tab matches the DB exactly
         // (rules out drift if a parallel writer touched the row).
         // Bounded: a hung Supabase fetch must not strand the tab either.
+        if (classifyRecordUpdateStatus(recordStatus) === "failed") {
+          throw new Error(CLEAN_FAILED_MESSAGE);
+        }
+
         invalidateProcessedDocumentCache(docId);
-        const fresh = await withTimeout(
+        let fresh = await withTimeout(
           fetchDocument(docId),
           15_000,
           "Refreshing the cleaned document",
         ).catch(() => null);
+
+        const queued =
+          classifyRecordUpdateStatus(recordStatus) === "queued" &&
+          !streamedClean &&
+          !fresh?.cleanContent;
+
+        // The stream ended with no text and no queue notice: the server often
+        // finishes the write seconds later — poll the row for a bounded time
+        // before calling it an error.
+        if (!queued && !streamedClean && !fresh?.cleanContent) {
+          const polled = await pollForCleanContent(async () => {
+            invalidateProcessedDocumentCache(docId);
+            fresh = await fetchDocument(docId);
+            return fresh?.cleanContent ?? null;
+          });
+          if (polled) streamedClean = polled;
+        }
+
+        if (queued) {
+          setProcessingStatus((prev) => ({
+            ...prev,
+            [docId]: CLEAN_QUEUED_LABEL,
+          }));
+          setTabs((prev) =>
+            prev.map((tab) =>
+              tab.id === docId
+                ? {
+                    ...tab,
+                    status: "done" as const,
+                    progressMessage: CLEAN_QUEUED_LABEL,
+                    streamingText: undefined,
+                    document: fresh ?? tab.document,
+                  }
+                : tab,
+            ),
+          );
+          return { status: "queued" };
+        }
 
         setTabs((prev) =>
           prev.map((tab) => {
@@ -1154,9 +1325,18 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           // the caller can decide (toast / retry) instead of pretending
           // the run worked.
           throw new Error(
-            "AI cleanup completed but no clean_content was returned",
+            confirmedUpdate
+              ? "AI cleanup completed but no clean_content was returned"
+              : NO_RECORD_UPDATE_MESSAGE,
           );
         }
+        setProcessingStatus((prev) => {
+          if (!(docId in prev)) return prev;
+          const next = { ...prev };
+          delete next[docId];
+          return next;
+        });
+        return { status: "done" };
       } catch (err) {
         const msg = err instanceof Error ? err.message : "AI cleanup failed";
         setTabs((prev) =>
@@ -1303,6 +1483,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           body,
           signal: watchdog.signal,
           callbacks: {
+            onActivity: () => watchdog.bump(),
             onProgress: (msg) => {
               watchdog.bump();
               options?.onProgress?.(msg);

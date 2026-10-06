@@ -471,7 +471,7 @@ describe("variableDefinitionsToKindFields", () => {
       makeVar("v", {
         type: "select",
         options: ["x", "y"],
-        structured_list: { listId: "list-1" },
+        pick_list: { listId: "list-1" },
       }),
     ]);
     expect(fields.v).toStrictEqual({ type: "enum", values: ["x", "y"] });
@@ -483,7 +483,7 @@ describe("variableDefinitionsToKindFields", () => {
 
   it("picklist-bound without static options → string plus a loss", () => {
     const { fields, losses } = variableDefinitionsToKindFields([
-      makeVar("v", { type: "select", structured_list: { listId: "list-1" } }),
+      makeVar("v", { type: "select", pick_list: { listId: "list-1" } }),
     ]);
     expect(fields.v).toStrictEqual({ type: "string" });
     expect(losses).toHaveLength(1);
@@ -493,7 +493,7 @@ describe("variableDefinitionsToKindFields", () => {
 
   it("legacy cc.picklist key still resolves via the read-alias", () => {
     // Historical agent definitions store the binding under `picklist`; readStructuredList
-    // falls back to it read-only. New data uses `structured_list` (tests above).
+    // falls back to it read-only. New data uses `pick_list` (tests above).
     const { fields, losses } = variableDefinitionsToKindFields([
       makeVar("v", { type: "select", picklist: { listId: "legacy-1" } }),
     ]);
@@ -508,7 +508,7 @@ describe("variableDefinitionsToKindFields", () => {
       makeVar("v", {
         type: "checkbox",
         options: ["x"],
-        structured_list: { listId: "list-1", multiple: true },
+        pick_list: { listId: "list-1", multiple: true },
       }),
     ]);
     expect(fields.v).toStrictEqual({ type: "string" });
@@ -665,7 +665,7 @@ describe("round-trip law", () => {
         customComponent: {
           type: "buttons",
           options: ["a", "b"],
-          structured_list: { listId: "list-1" },
+          pick_list: { listId: "list-1" },
         },
       },
       {
