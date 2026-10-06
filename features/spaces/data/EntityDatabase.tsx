@@ -369,7 +369,9 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
     );
   }
   const more = entity.total > entity.rows.length && entity.rows.length >= limit;
-  const choice = entity.columns.find((c) => c.type === "choice" || c.lookup);
+  // The default grouping is a choice the module names in words (a project's Status), never a lookup
+  // the door answers as bare ids (Created by) — those drew a legend of uuids.
+  const choice = entity.columns.find((c) => c.type === "choice") ?? entity.columns.find((c) => c.lookup && c.lookup.replaces);
   if (view.layout === "chart") {
     const by = view.chart?.groupBy ?? view.groupField ?? choice?.api_name;
     return (
