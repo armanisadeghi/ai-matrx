@@ -1248,6 +1248,8 @@ export {
 /** Stable prefixes used by the shared API error-to-status mapper. */
 export const NO_SUCH_MIRROR_ROW_PREFIX = "No such mirror row:";
 export const STILL_DECLARED_REFUSAL_PREFIX = "Still declared:";
+/** A row whose `declared_by` is 'database' (Applet surfaces, org extensions). */
+export const DATABASE_OWNED_REFUSAL_PREFIX = "Database-owned:";
 
 export interface DeleteMirrorRowArgs {
   table: MirrorTable;
@@ -1327,7 +1329,7 @@ export async function deleteMirrorRow(
   // 1. Read the row first. This both proves it exists and gives us the
   //    `updated_at` the recency guard and the result report need.
   const read = await byKey(
-    sb.schema("ui").from(table).select("surface_name, name, updated_at"),
+    sb.schema("ui").from(table).select("surface_name, name, updated_at, declared_by"),
   )
     .is("deleted_at", null)
     .maybeSingle();
@@ -1335,6 +1337,15 @@ export async function deleteMirrorRow(
   if (!read.data) {
     throw new Error(
       `${NO_SUCH_MIRROR_ROW_PREFIX} no ${table} row for ${surfaceName} · ${name}. It may already be gone — re-run the drift report.`,
+    );
+  }
+
+  // 1b. A database-owned row (Applet surface, org extension) is never touched
+  //     by code sync; the database trigger would refuse it anyway, so we do
+  //     not attempt it and say so plainly.
+  if (read.data.declared_by !== "code") {
+    throw new Error(
+      `${DATABASE_OWNED_REFUSAL_PREFIX} ${surfaceName} · ${name} is owned by the database, not by code, so code sync cannot archive it.`,
     );
   }
 
@@ -1370,6 +1381,7 @@ export async function deleteMirrorRow(
   const del = await byKey(
     sb.schema("ui").from(table).update({ deleted_at: new Date().toISOString() }),
   )
+    .eq("declared_by", "code")
     .is("deleted_at", null)
     .select("surface_name, name");
   if (del.error) throw del.error;
