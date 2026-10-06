@@ -9,7 +9,7 @@
  * Break it names: the engine swapped for the kit serializer (echoes Markdown) →
  * red; JSON offered as "Plain text" (it would be the JSON again) → red.
  */
-import { capture, createDraft, type Payload } from "@ai-matrx/kit/content-transfer";
+import { capture, createDraft, type Payload } from "@ai-matrx/alchemy/operate";
 import { alchemyPlainTextFormat } from "./alchemy-plain-text-format";
 import { buildConversationMarkdown } from "@ai-matrx/chat/agents/conversation-export/conversation-markdown";
 
@@ -17,7 +17,7 @@ const signal = new AbortController().signal;
 
 async function plainOf(payload: Payload) {
   const { snapshot } = await capture(payload, signal);
-  return alchemyPlainTextFormat.build(createDraft(snapshot), signal);
+  return (await alchemyPlainTextFormat.load()).build(createDraft(snapshot), {}, signal);
 }
 
 describe("Plain text from the one engine", () => {
