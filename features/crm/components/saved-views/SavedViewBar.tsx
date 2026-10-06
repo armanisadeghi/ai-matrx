@@ -12,7 +12,14 @@
 // query path, exactly as the agent write handlers do.
 
 import { useEffect, useState } from "react";
-import { Bookmark, Check, Loader2, MoreVertical, Plus, Users } from "lucide-react";
+import {
+  Bookmark,
+  Check,
+  Loader2,
+  MoreVertical,
+  Plus,
+  Users,
+} from "lucide-react";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -27,6 +34,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectLabel,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -34,7 +50,10 @@ import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog
 import { cn } from "@/lib/utils";
 import type { CrmQueryContext } from "../../types";
 import type { SavedView } from "../../saved-views/types";
-import type { SavedViewCodec, SavedViewSection } from "../../saved-views/service";
+import type {
+  SavedViewCodec,
+  SavedViewSection,
+} from "../../saved-views/service";
 import {
   createSavedView,
   deleteSavedView,
@@ -179,7 +198,8 @@ export function SavedViewBar<TDef>({
 
   const saveNew = async (name: string, shared: boolean) => {
     if (!orgId) throw new Error("No organization to save this view into");
-    if (current === null) throw new Error("This surface cannot be saved as a view");
+    if (current === null)
+      throw new Error("This surface cannot be saved as a view");
     const created = await createSavedView({
       name,
       definition: current,
@@ -225,106 +245,163 @@ export function SavedViewBar<TDef>({
     toast.success(`Renamed to "${name.trim()}"`);
   };
 
-  const menuFor = (view: SavedView<TDef>): (() => ItemMenuConfig) => () => ({
-    sections: [
-      {
-        id: "use",
-        items: [
-          {
-            id: "apply",
-            label: "Open this view",
-            onSelect: () => apply(view),
-          },
-          {
-            id: "update",
-            label: "Save current filters into this view",
-            disabled: !dirty || activeViewId !== view.id,
-            disabledReason:
-              activeViewId === view.id
-                ? "The list already matches this view"
-                : "Open the view first, then adjust the filters",
-            onSelect: () => updateDefinition(view),
-          },
-          {
-            id: "rename",
-            label: "Rename…",
-            onSelect: () => setRenaming(view),
-          },
-        ],
-      },
-      {
-        id: "share",
-        items: [
-          {
-            id: "visibility",
-            label:
-              view.visibility === "internal"
-                ? "Make it mine only"
-                : "Share with my organization",
-            onSelect: async () => {
-              const nextVisibility =
-                view.visibility === "internal" ? "personal" : "internal";
-              try {
-                await updateSavedView(view.id, codec.listKey, { visibility: nextVisibility });
-                setViews((prev) =>
-                  prev.map((v) =>
-                    v.id === view.id ? { ...v, visibility: nextVisibility } : v,
-                  ),
-                );
-                toast.success(
-                  nextVisibility === "internal"
-                    ? `"${view.name}" is now shared with your organization`
-                    : `"${view.name}" is now yours alone`,
-                );
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Sharing failed");
-              }
+  const menuFor =
+    (view: SavedView<TDef>): (() => ItemMenuConfig) =>
+    () => ({
+      sections: [
+        {
+          id: "use",
+          items: [
+            {
+              id: "apply",
+              label: "Open this view",
+              onSelect: () => apply(view),
             },
-          },
-        ],
-      },
-      {
-        id: "danger",
-        items: [
-          {
-            id: "delete",
-            label: "Delete view",
-            tone: "destructive",
-            onSelect: async () => {
-              const ok = await confirm({
-                title: `Delete "${view.name}"?`,
-                description:
-                  "The saved query is removed. The records it lists are untouched.",
-                confirmLabel: "Delete view",
-                variant: "destructive",
-              });
-              if (!ok) return;
-              try {
-                await deleteSavedView(view.id, codec.listKey);
-                dismissRecordToasts({ type: "saved_view", id: view.id });
-                setViews((prev) => prev.filter((v) => v.id !== view.id));
-                if (activeViewId === view.id) {
-                  onActiveViewIdChange(null);
-                  onActiveViewChange?.(null);
+            {
+              id: "update",
+              label: "Save current filters into this view",
+              disabled: !dirty || activeViewId !== view.id,
+              disabledReason:
+                activeViewId === view.id
+                  ? "The list already matches this view"
+                  : "Open the view first, then adjust the filters",
+              onSelect: () => updateDefinition(view),
+            },
+            {
+              id: "rename",
+              label: "Rename…",
+              onSelect: () => setRenaming(view),
+            },
+          ],
+        },
+        {
+          id: "share",
+          items: [
+            {
+              id: "visibility",
+              label:
+                view.visibility === "internal"
+                  ? "Make it mine only"
+                  : "Share with my organization",
+              onSelect: async () => {
+                const nextVisibility =
+                  view.visibility === "internal" ? "personal" : "internal";
+                try {
+                  await updateSavedView(view.id, codec.listKey, {
+                    visibility: nextVisibility,
+                  });
+                  setViews((prev) =>
+                    prev.map((v) =>
+                      v.id === view.id
+                        ? { ...v, visibility: nextVisibility }
+                        : v,
+                    ),
+                  );
+                  toast.success(
+                    nextVisibility === "internal"
+                      ? `"${view.name}" is now shared with your organization`
+                      : `"${view.name}" is now yours alone`,
+                  );
+                } catch (e) {
+                  toast.error(
+                    e instanceof Error ? e.message : "Sharing failed",
+                  );
                 }
-                toast.success(`"${view.name}" deleted`);
-              } catch (e) {
-                toast.error(e instanceof Error ? e.message : "Delete failed");
-              }
+              },
             },
-          },
-        ],
-      },
-    ],
-  });
+          ],
+        },
+        {
+          id: "danger",
+          items: [
+            {
+              id: "delete",
+              label: "Delete view",
+              tone: "destructive",
+              onSelect: async () => {
+                const ok = await confirm({
+                  title: `Delete "${view.name}"?`,
+                  description:
+                    "The saved query is removed. The records it lists are untouched.",
+                  confirmLabel: "Delete view",
+                  variant: "destructive",
+                });
+                if (!ok) return;
+                try {
+                  await deleteSavedView(view.id, codec.listKey);
+                  dismissRecordToasts({ type: "saved_view", id: view.id });
+                  setViews((prev) => prev.filter((v) => v.id !== view.id));
+                  if (activeViewId === view.id) {
+                    onActiveViewIdChange(null);
+                    onActiveViewChange?.(null);
+                  }
+                  toast.success(`"${view.name}" deleted`);
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : "Delete failed");
+                }
+              },
+            },
+          ],
+        },
+      ],
+    });
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-1.5", className)}>
-      <span className="inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+    <div
+      className={cn(
+        "matrx-touch-targets flex min-w-0 flex-nowrap items-center gap-1.5 lg:flex-wrap",
+        className,
+      )}
+    >
+      <span className="hidden lg:inline-flex items-center gap-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
         <Bookmark className="h-3.5 w-3.5" />
         Views
       </span>
 
+      {views.length > 0 && (
+        <div className="flex min-w-0 flex-1 items-center gap-1 lg:hidden">
+          <Select
+            value={activeViewId ?? ""}
+            onValueChange={(id) => {
+              const view = views.find((candidate) => candidate.id === id);
+              if (view) apply(view);
+            }}
+          >
+            <SelectTrigger className="min-w-0 flex-1" aria-label="Saved view">
+              <SelectValue placeholder="Choose a view" />
+              {dirty && active && (
+                <span className="shrink-0 text-xs text-amber-700 dark:text-amber-400">
+                  Modified
+                </span>
+              )}
+            </SelectTrigger>
+            <SelectContent>
+              {SECTIONS.map(({ id, label }) => {
+                const section = views.filter((view) => view.section === id);
+                return section.length ? (
+                  <SelectGroup key={id}>
+                    <SelectLabel>{label}</SelectLabel>
+                    {section.map((view) => (
+                      <SelectItem key={view.id} value={view.id}>
+                        {view.name}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                ) : null;
+              })}
+            </SelectContent>
+          </Select>
+          {active && (
+            <ItemMenu config={menuFor(active)} align="end">
+              <Button
+                variant="quiet"
+                icon={<MoreVertical />}
+                aria-label={`Actions for view ${active.name}`}
+              />
+            </ItemMenu>
+          )}
+        </div>
+      )}
       {loading && views.length === 0 ? (
         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -341,9 +418,7 @@ export function SavedViewBar<TDef>({
           }}
         />
       ) : views.length === 0 ? (
-        <span className="text-xs text-muted-foreground">
-          None yet — filter the list, then save it as a view your team can work.
-        </span>
+        <span className="text-xs text-muted-foreground">No saved views</span>
       ) : (
         SECTIONS.flatMap(({ id: sectionId, label }) => {
           const inSection = views.filter((v) => v.section === sectionId);
@@ -355,53 +430,53 @@ export function SavedViewBar<TDef>({
               <span
                 key={`section-${sectionId}`}
                 data-saved-view-section={sectionId}
-                className="ml-1 text-[11px] text-muted-foreground first:ml-0"
+                className="hidden lg:inline ml-1 text-[11px] text-muted-foreground first:ml-0"
               >
                 {label}
               </span>
             ) : null,
             ...inSection.map((view) => {
-          const isActive = view.id === activeViewId;
-          return (
-            <span
-              key={view.id}
-              className={cn(
-                "inline-flex items-center rounded-md border text-xs transition-colors",
-                isActive
-                  ? "border-primary/40 bg-accent text-foreground"
-                  : "border-border text-muted-foreground hover:bg-accent/50",
-              )}
-            >
-              <button
-                type="button"
-                onClick={() => apply(view)}
-                title={describe(view.definition)}
-                className="inline-flex h-11 items-center gap-1 px-2 font-medium lg:h-7"
-              >
-                {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
-                {view.visibility === "internal" && (
-                  <Users className="h-3 w-3 shrink-0 opacity-70" />
-                )}
-                <span className="max-w-[12rem] truncate">{view.name}</span>
-              </button>
-              <ItemMenu config={menuFor(view)} align="end">
-                <button
-                  type="button"
-                  aria-label={`Actions for view ${view.name}`}
-                  className="inline-flex h-11 w-6 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground lg:h-7"
+              const isActive = view.id === activeViewId;
+              return (
+                <span
+                  key={view.id}
+                  className={cn(
+                    "hidden lg:inline-flex items-center rounded-md border text-xs transition-colors",
+                    isActive
+                      ? "border-primary/40 bg-accent text-foreground"
+                      : "border-border text-muted-foreground hover:bg-accent/50",
+                  )}
                 >
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </button>
-              </ItemMenu>
-            </span>
-          );
+                  <button
+                    type="button"
+                    onClick={() => apply(view)}
+                    title={describe(view.definition)}
+                    className="inline-flex h-11 items-center gap-1 px-2 font-medium lg:h-7"
+                  >
+                    {isActive && <Check className="h-3.5 w-3.5 text-primary" />}
+                    {view.visibility === "internal" && (
+                      <Users className="h-3 w-3 shrink-0 opacity-70" />
+                    )}
+                    <span className="max-w-[12rem] truncate">{view.name}</span>
+                  </button>
+                  <ItemMenu config={menuFor(view)} align="end">
+                    <button
+                      type="button"
+                      aria-label={`Actions for view ${view.name}`}
+                      className="inline-flex h-11 w-6 items-center justify-center rounded-r-md text-muted-foreground hover:text-foreground lg:h-7"
+                    >
+                      <MoreVertical className="h-3.5 w-3.5" />
+                    </button>
+                  </ItemMenu>
+                </span>
+              );
             }),
           ];
         })
       )}
 
       {dirty && active && (
-        <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
+        <span className="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
           Modified
           <button
             type="button"
@@ -421,6 +496,7 @@ export function SavedViewBar<TDef>({
       )}
 
       <Button
+        className="shrink-0"
         icon={<Plus />}
         variant="quiet"
         disabled={!orgId || current === null}
