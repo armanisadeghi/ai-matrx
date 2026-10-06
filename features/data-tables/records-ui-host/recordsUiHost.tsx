@@ -19,6 +19,7 @@
 
 import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
 import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";
+import { DynamicIcon } from "@ai-matrx/icons";
 import { useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -151,6 +152,10 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
         <RecordBodySpace tableId={args.tableId} recordId={args.recordId} record={args.record} readOnly={args.readOnly} fallback={args.fallback} />
       ),
     },
+    // A relation cell wears its record's (else its table's) icon; the store keeps a picked icon as a NAME
+    // ("Briefcase"), drawn here by the platform's one icon resolver (records-ui ≥0.101.33 `renderIcon`).
+    // Spread as its own object: a records-ui build before the port ignores the key.
+    ...{ renderIcon: (name: string) => <DynamicIcon name={name} size={14} fallbackIcon="FileText" /> },
     // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).
     // Spread as its own object: a records-ui build before the port ignores the key.
     ...recordSectionsPort(ports.organizationId),
