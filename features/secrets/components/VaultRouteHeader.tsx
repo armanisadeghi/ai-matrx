@@ -6,6 +6,14 @@
  * would give the route two competing toolbars.
  */
 import { useState } from "react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { ShieldCheck, KeyRound, Globe } from "lucide-react";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -26,19 +34,45 @@ export function VaultRouteHeader() {
           </div>
         }
         right={
-          // A labelled tap button, so on a phone RouteHeader keeps it visible
-          // icon-only (name + tooltip kept) rather than folding it into "…".
           <div className="flex items-center">
-            <TapTargetButton
-              onClick={() => setBrowsersOpen(true)}
-              icon={<Globe className="h-4 w-4" />}
-              label="Browsers"
-            />
-            <TapTargetButton
-              href="/vault/authenticator"
-              icon={<KeyRound className="h-4 w-4" />}
-              label="Authenticator"
-            />
+            <div className="lg:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="quiet"
+                    icon={<ShieldCheck />}
+                    aria-label="Vault tools"
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="matrx-touch-targets"
+                >
+                  <DropdownMenuItem onSelect={() => setBrowsersOpen(true)}>
+                    <Globe className="mr-2 h-4 w-4" />
+                    Browsers
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/vault/authenticator">
+                      <KeyRound className="mr-2 h-4 w-4" />
+                      Authenticator
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="hidden items-center lg:flex">
+              <TapTargetButton
+                onClick={() => setBrowsersOpen(true)}
+                icon={<Globe className="h-4 w-4" />}
+                label="Browsers"
+              />
+              <TapTargetButton
+                href="/vault/authenticator"
+                icon={<KeyRound className="h-4 w-4" />}
+                label="Authenticator"
+              />
+            </div>
           </div>
         }
       />

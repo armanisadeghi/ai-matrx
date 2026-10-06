@@ -61,6 +61,7 @@ import { Handle } from "@/features/resizable-panels/Handle";
 import { RegisteredPanel } from "@/features/resizable-panels/RegisteredPanel";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -421,6 +422,7 @@ export function KnowledgeHubPage({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [focusedKey, setFocusedKey] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [fileUnderFor, setFileUnderFor] = useState<KnowledgeHit[] | null>(null);
   const [mobilePane, setMobilePane] = useState<"sidebar" | "main">("main");
   const [busy, setBusy] = useState(false);
@@ -1635,8 +1637,7 @@ export function KnowledgeHubPage({
   ) : results.engine === "title_stand_in" ? (
     <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-1.5 text-xs text-muted-foreground">
       <span className="min-w-0 flex-1">
-        Full Knowledge search is not on the server yet, so this is matching titles only — passages, filters beyond type,
-        and counts arrive with it.
+        Title search only. Passage search is unavailable.
       </span>
       <button type="button" className="font-medium text-foreground underline-offset-2 hover:underline" onClick={() => write({ data: "sample", peek: null })}>
         Try sample data
@@ -1797,62 +1798,10 @@ export function KnowledgeHubPage({
   const containerRecordHref =
     state.view.kind === "container" ? (tryGetEntityInfo(state.view.type)?.hrefFor?.(state.view.id) ?? null) : null;
 
-  // @container: the toolbar sizes to the MAIN PANE, not the window — with the peek open the
-  // pane is narrow on a wide screen, and labels must fold to icons before the search box does.
-  const resultsMain = (
-    <div className="@container flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
-      {engineBanner}
-      {/* One toolbar, reflowed by the pane's width (CSS order):
-            wide   — [search ........][settings][new][save][layout]
-                     [facets ....................][count]
-            narrow — [search .............................]
-                     [facets → scroll]
-                     [count ..........][settings][new][save][layout]
-          so the search box always gets the full width it needs on a phone. */}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
-        <div className="order-1 min-w-0 basis-full @lg:basis-0 @lg:flex-1">
-          <HubFilterMenu
-            open={filtersOpen}
-            onOpenChange={setFiltersOpen}
-            query={state.query}
-            onQueryChange={(q) => write({ query: normalizeQuery(q) })}
-            hits={hits}
-            // read-gate-exempt: total is undefined (unknown) unless every section answered with a count
-            total={total}
-            stage={
-              sample || trashView
-                ? undefined
-                : {
-                    selected: state.stage,
-                    counts: stageCounts(baseHits, stages.stageFor),
-                    onToggle: toggleStage,
-                    note: stageNote,
-                  }
-            }
-          >
-            <div>
-              <HubSearchBox
-                ref={searchRef}
-                query={state.query}
-                onQueryChange={onQueryChange}
-                onOpenFilters={() => setFiltersOpen(true)}
-                titleFor={titleFor}
-                viewQuery={viewOwnQuery}
-                placeholder={
-                  state.view.kind === "preset" || state.view.kind === "kind"
-                    ? `Search ${title.toLowerCase()}`
-                    : undefined
-                }
-                onEnterResults={() => {
-                  searchRef.current?.blur();
-                  if (!focusedKey && hits[0]) setFocusedKey(hitKey(hits[0]));
-                }}
-              />
-            </div>
-          </HubFilterMenu>
-        </div>
+  // Secondary controls use the desktop toolbar or the scrollable phone sheet.
+  const secondaryTools = (<>
         {/* Trash lists trashed Sources only: views, layouts and search reach do not apply there. */}
-        <div className={trashView ? "hidden" : "order-3 flex shrink-0 items-center gap-1 @lg:order-1"}>
+        <div className={trashView ? "hidden" : "order-3 flex min-w-0 flex-wrap items-center gap-1 @lg:order-1"}>
           {/* The ORGANIZATION FILTER: All organizations first and default, in the URL (?org_filter=),
               never the header's active organization. It narrows every section and count. */}
           <EntityOrgFilter
@@ -1958,6 +1907,75 @@ export function KnowledgeHubPage({
             </span>
           </>
         ) : null}
+  </>);
+
+  // @container: the toolbar sizes to the MAIN PANE, not the window — with the peek open the
+  // pane is narrow on a wide screen, and labels must fold to icons before the search box does.
+  const resultsMain = (
+    <div className="@container flex h-full min-h-0 flex-col gap-2 px-4 pb-2 pt-3 md:px-4">
+      {engineBanner}
+      {/* One toolbar, reflowed by the pane's width (CSS order):
+            wide   — [search ........][settings][new][save][layout]
+                     [facets ....................][count]
+            narrow — [search .............................]
+                     [facets → scroll]
+                     [count ..........][settings][new][save][layout]
+          so the search box always gets the full width it needs on a phone. */}
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-2">
+        <div className="order-1 min-w-0 basis-full @lg:basis-0 @lg:flex-1">
+          <HubFilterMenu
+            open={filtersOpen}
+            onOpenChange={setFiltersOpen}
+            query={state.query}
+            onQueryChange={(q) => write({ query: normalizeQuery(q) })}
+            hits={hits}
+            // read-gate-exempt: total is undefined (unknown) unless every section answered with a count
+            total={total}
+            stage={
+              sample || trashView
+                ? undefined
+                : {
+                    selected: state.stage,
+                    counts: stageCounts(baseHits, stages.stageFor),
+                    onToggle: toggleStage,
+                    note: stageNote,
+                  }
+            }
+          >
+            <div>
+              <HubSearchBox
+                ref={searchRef}
+                query={state.query}
+                onQueryChange={onQueryChange}
+                onOpenFilters={() => setFiltersOpen(true)}
+                titleFor={titleFor}
+                viewQuery={viewOwnQuery}
+                placeholder={
+                  state.view.kind === "preset" || state.view.kind === "kind"
+                    ? `Search ${title.toLowerCase()}`
+                    : undefined
+                }
+                onEnterResults={() => {
+                  searchRef.current?.blur();
+                  if (!focusedKey && hits[0]) setFocusedKey(hitKey(hits[0]));
+                }}
+              />
+            </div>
+          </HubFilterMenu>
+        </div>
+        {isMobile ? <>
+          <div className="flex w-full items-center justify-between gap-2">
+            <span className="text-xs tabular-nums text-muted-foreground" aria-live="polite">{resultCount}</span>
+            {!trashView && <Button variant="outline" icon={<Settings2 />} onClick={() => setMobileToolsOpen(true)}>View options</Button>}
+          </div>
+          <Dialog open={mobileToolsOpen} onOpenChange={setMobileToolsOpen}>
+            <DialogContent className="matrx-touch-targets">
+              <DialogHeader><DialogTitle>View options</DialogTitle></DialogHeader>
+              <div className="flex min-w-0 flex-wrap items-center gap-3">{secondaryTools}</div>
+            </DialogContent>
+          </Dialog>
+        </> : secondaryTools}
+
       </div>
       {bulkBar}
       {rowTagsError ? (
