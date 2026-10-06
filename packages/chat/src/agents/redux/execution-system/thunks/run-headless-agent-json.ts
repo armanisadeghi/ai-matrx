@@ -999,6 +999,7 @@ async function waitForExtraction(
           harvested: harvested.data,
           agentRef: args.agentRef,
           surfaceKey: args.surfaceKey,
+          answerText: b.fullResponse,
         });
         if (verdict) {
           screamFlattening(verdict, {

@@ -93,6 +93,22 @@ describe("judgeHarvestedFlattening (signal 2 — the answer IS a shape)", () => 
     expect(verdict?.message).toContain("Remedy");
   });
 
+  it("stays quiet for a prose answer that EMBEDS a shape, and still screams when the answer is only the shape", () => {
+    const report = { __kind: "fact_check_report", verdict: "risky", claims: [] };
+    const fenced = "```json\n" + JSON.stringify(report, null, 2) + "\n```";
+    const prose =
+      "## Fact-check verdict\nVerdict: RISKY — two claims need sources before this is sent.\n\n" +
+      "## Facts & Citations\nSee the report below.\n\n" + fenced + "\n\n## Warning\nDo not send yet.";
+    expect(
+      judgeHarvestedFlattening({ expect: "text", harvested: report, agentRef: "scraper.fact_check", surfaceKey: "scraper:fact-check", answerText: prose }),
+    ).toBeNull();
+    for (const onlyShape of [fenced, JSON.stringify(report), "Here:\n" + fenced]) {
+      expect(
+        judgeHarvestedFlattening({ expect: "text", harvested: report, agentRef: "a", surfaceKey: "s", answerText: onlyShape })?.kind,
+      ).toBe("fact_check_report");
+    }
+  });
+
   it("stays quiet for prose answers and for json runs", () => {
     expect(
       judgeHarvestedFlattening({
