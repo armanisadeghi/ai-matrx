@@ -10,15 +10,19 @@
 // plain text come out exactly as before. Structured content has no separate
 // plain text (it would be the JSON), so it is not offered.
 
-import type { FormatAdapter } from "@ai-matrx/kit/content-transfer";
+import type { FormatAdapter } from "@ai-matrx/alchemy/operate";
 
 export const alchemyPlainTextFormat: FormatAdapter = {
   id: "plain",
   label: "Plain text",
+  extension: "txt",
+  mime: "text/plain;charset=utf-8",
+  modes: ["copy", "download"],
+  runsOn: "client",
   supports: (payload) => payload.kind !== "json" && payload.kind !== "registered",
-  build: async (draft, signal) => {
+  // The contract's lazy adapter: the engine is THE one "plain" engine, loaded on first use.
+  load: async () => {
     const { formatAdapter } = await import("@ai-matrx/alchemy/operate");
-    const engine = await formatAdapter("plain").load();
-    return engine.build(draft, {}, signal);
+    return formatAdapter("plain").load();
   },
 };

@@ -34,7 +34,7 @@ import {
   UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";

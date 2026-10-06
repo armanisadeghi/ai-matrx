@@ -18,13 +18,13 @@ import {
   createTransferEmailActions,
   useContentTransferCapabilities,
   type ContentTransferController,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import {
   applyTransferLimits,
   capture,
   createDraft,
   resolveTransferPreferences,
-} from "@ai-matrx/kit/content-transfer";
+} from "@ai-matrx/alchemy/operate";
 import { toast } from "@/lib/toast";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectUserId } from "@/lib/redux/slices/userSlice";

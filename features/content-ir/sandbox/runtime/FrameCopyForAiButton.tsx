@@ -12,7 +12,7 @@ import { useId } from "react";
 import {
   MatrxCopyMenu,
   type AlchemyCopyVariant,
-} from "@ai-matrx/design-system/content-transfer";
+} from "@ai-matrx/alchemy/react/workspace";
 import { cn } from "@/lib/utils";
 import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayload";
 

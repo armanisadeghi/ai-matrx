@@ -5,7 +5,7 @@ import {
   createSurfaceTransferHandle,
   type SurfaceHandle,
 } from "@ai-matrx/alchemy/operate";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import { getSurfaceManifest } from "../host/ui-slots";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 

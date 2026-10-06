@@ -46,7 +46,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { hasRunHistoryParams } from "./runHistoryFilters";
 import { Button } from "@/components/ui/button";
 import { Badge, Chip, Input } from "@ai-matrx/design-system/controls";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/lib/toast";

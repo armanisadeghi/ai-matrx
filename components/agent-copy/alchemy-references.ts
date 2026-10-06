@@ -1,4 +1,4 @@
-import type { ContentTransferReferencePort } from "@ai-matrx/design-system/content-transfer";
+import type { ContentTransferReferencePort } from "@ai-matrx/alchemy/react/workspace";
 import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
 import type { NounDirectives } from "@/features/directive-catalog/types";
 import { buildReferenceFence } from "@ai-matrx/agents/envelope";

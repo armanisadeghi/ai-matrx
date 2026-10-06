@@ -25,7 +25,7 @@ import {
   setDisplayIconNameOverride,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { Button } from "@/components/ui/button";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import type {
   AgentAppShellConfigCommon,
   PublicAgentApp,

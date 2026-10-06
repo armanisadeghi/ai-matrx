@@ -38,7 +38,7 @@ import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/Publ
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAgentApp } from "@/features/agent-apps/hooks/useAgentApp";
 import type { UseAgentAppReturn } from "@/features/agent-apps/hooks/useAgentApp";
-import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferSurfaceProvider } from "@ai-matrx/alchemy/react/workspace";
 import { useAgentAppTracker } from "@/features/agent-apps/tracking/useAgentAppTracker";
 import {
   isPageLeaving,

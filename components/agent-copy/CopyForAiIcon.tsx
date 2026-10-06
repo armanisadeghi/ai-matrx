@@ -1,2 +1,2 @@
 /** Compatibility name for the shared Alchemy content-transfer glyph. */
-export { AlchemyGlyph as CopyForAiIcon } from "@ai-matrx/design-system/content-transfer";
+export { AlchemyGlyph as CopyForAiIcon } from "@ai-matrx/alchemy/react/workspace";

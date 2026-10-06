@@ -35,7 +35,7 @@ import {
   type MatrxDrillOther,
   type MatrxDrillQuestion,
 } from "@ai-matrx/design-system/data-table";
-import type { EnvelopeMeta } from "@ai-matrx/design-system/content-transfer";
+import type { EnvelopeMeta } from "@ai-matrx/alchemy/react/workspace";
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 
