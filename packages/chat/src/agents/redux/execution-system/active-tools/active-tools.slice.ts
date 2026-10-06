@@ -17,7 +17,7 @@
 
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
-interface ActiveToolsState {
+export interface ActiveToolsState {
   /**
    * Monotonic per-conversation counter — increments on every active-tools
    * invalidation event. Components subscribe to this and refetch.

@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2913",
+  "version": "0.4.2915",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -490,6 +490,9 @@
     "check:demos-chat-registration:self-test": "tsx scripts/check-demos-chat-registration.ts --self-test",
     "check:chat-db-types": "node packages/chat/scripts/generate-db-types.mjs --check",
     "check:chat-package-boundary:self-test": "node scripts/check-chat-package-boundary.mjs --self-test",
+    "check:chat-public-subpaths": "node scripts/check-chat-public-subpaths.mjs",
+    "check:chat-public-subpaths:self-test": "node scripts/check-chat-public-subpaths.mjs --self-test",
+    "check:chat-package": "pnpm --filter @ai-matrx/chat check:package",
     "test:release-fail-forward": "node --test scripts/release-fail-forward.test.mjs",
     "test:release-outcome": "node --test scripts/release-outcome.test.mjs scripts/lab-version-route.test.mjs",
     "test:release-route-manifest": "node --test scripts/release-publishes-the-route-manifest.test.mjs",

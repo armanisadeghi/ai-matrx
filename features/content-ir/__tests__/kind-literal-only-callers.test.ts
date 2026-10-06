@@ -4,6 +4,10 @@
  * literal `"__kind"` alone missed every other realistic spelling — an escaped
  * tool result, a Python repr, a JavaScript object literal from a sandbox — and
  * drew it raw. Each caller below now reads through the normalizing detector.
+ *
+ * ROUND 10 (302f4ceed7, 11ec229496, 0072e32abd): only REAL JSON is lifted or converted. A
+ * Python repr, JavaScript literal or backslash-escaped key in free text is DETECTION ONLY —
+ * the sentinel / detectors still see it; no reader rewrites it to a label or opens a kind.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -35,10 +39,11 @@ describe("L-2 — a JavaScript object literal is a kind everywhere text is read"
     expect(firstKindSlug(js, ALL_KIND_SPELLINGS)).toBe("flashcard_set");
     expect(jsonKindSignal(js, ALL_KIND_SPELLINGS)).toBe("kind");
     expect(screenTextHoldsKind(`Tool output: ${js}`)).toBe(true);
-    expect(markdownCarriesKind(`Tool output: ${js}`)).toBe(true);
+    // Detection only (round 10): the markdown gate does not lift a JS literal.
+    expect(markdownCarriesKind(`Tool output: ${js}`)).toBe(false);
   });
-  it("prose reads it as its one-line label", () => {
-    expect(spelledKindsAsOneLine(`Tool output: ${js} Done.`)).toBe("Tool output: **Cell biology** · Flashcard Set Done.");
+  it("prose leaves it exactly as written (round 10: detection only, never converted)", () => {
+    expect(spelledKindsAsOneLine(`Tool output: ${js} Done.`)).toBe(`Tool output: ${js} Done.`);
   });
   it("a JSON context keeps the literal rule (an unquoted key is not JSON)", () => {
     expect(jsonKindSignal(js)).not.toBe("kind");
@@ -46,8 +51,8 @@ describe("L-2 — a JavaScript object literal is a kind everywhere text is read"
 });
 
 describe("L-3 — text callers read every realistic spelling", () => {
-  it.each(SPELLED)("%s: the response canvas opens the kind", (_name, spelled) => {
-    expect(responseCanvasTarget(`Here you go: ${spelled}`, "App").mode).toBe("kind");
+  it.each(SPELLED)("%s: the response canvas does not open it as a kind (detection only, round 10)", (_name, spelled) => {
+    expect(responseCanvasTarget(`Here you go: ${spelled}`, "App").mode).toBe("html");
   });
   it.each(SPELLED)("%s: the Save to my Shapes gate sees it", (_name, spelled) => {
     expect(messageMayContainKindBlock(`Here you go: ${spelled}`)).toBe(true);
@@ -78,11 +83,15 @@ describe("L-5 — the factory build's Why panel reads a kind as its label", () =
     expect(source).toContain("{catalogProseText(reason ?? state.error)}");
     expect(source).not.toMatch(/>\s*\{reason \?\? state\.error\}\s*</);
   });
-  it.each(SPELLED)("%s in a reason reads as the label, every other word kept", (_name, spelled) => {
+  it.each(SPELLED)("%s in a reason is kept exactly as written, every other word kept (round 10)", (_name, spelled) => {
     const out = catalogProseText(`Candidate lost: it returned ${spelled} instead of a quiz.`);
-    expect(out).toContain("Candidate lost: it returned");
-    expect(out).toContain("instead of a quiz.");
+    expect(out).toBe(`Candidate lost: it returned ${spelled} instead of a quiz.`);
+    expect(screenTextHoldsKind(out)).toBe(true);
+  });
+  it("a real JSON kind in a reason still reads as the label", () => {
+    const out = catalogProseText(`Candidate lost: it returned ${JSON_TEXT} instead of a quiz.`);
     expect(out).toContain("Flashcard Set");
+    expect(out).toContain("instead of a quiz.");
     expect(out).not.toMatch(/__kind/);
   });
 });

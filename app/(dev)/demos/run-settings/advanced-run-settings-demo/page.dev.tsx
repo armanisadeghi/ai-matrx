@@ -7,7 +7,7 @@ import {
   DEFAULT_ADVANCED_RUN_SETTINGS,
   type AdvancedRunSettingsValue,
 } from '@ai-matrx/chat/agents/components/run-controls/AdvancedRunSettings/constants';
-import { runAlgorithm } from '@ai-matrx/chat/agents/components/run-controls/AdvancedRunSettings/algorithm';
+import { runAlgorithm } from '@ai-matrx/chat/agents/components/run-controls/AdvancedRunSettings/algorithm/index';
 
 export default function AdvancedRunSettingsDemoPage() {
   const [value, setValue] = useState<AdvancedRunSettingsValue>(

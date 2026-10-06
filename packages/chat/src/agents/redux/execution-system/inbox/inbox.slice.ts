@@ -60,7 +60,7 @@ export interface ConversationInboxItem {
   source?: string | null;
 }
 
-interface ConversationInboxState {
+export interface ConversationInboxState {
   /** FIFO per conversation — order mirrors server `enqueued_seq`. */
   byConversationId: Record<string, ConversationInboxItem[]>;
 }

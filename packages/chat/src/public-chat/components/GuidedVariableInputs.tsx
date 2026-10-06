@@ -15,7 +15,7 @@ import { enterSendsHere } from "@ai-matrx/chat/ui/composer/composerSubmit";
 // TYPES
 // ============================================================================
 
-interface GuidedVariableInputsProps {
+export interface GuidedVariableInputsProps {
   variableDefaults: PromptVariable[];
   values: Record<string, string>;
   onChange: (name: string, value: string) => void;

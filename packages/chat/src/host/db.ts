@@ -53,8 +53,14 @@ export const supabase: ChatDb = new Proxy({} as ChatDb, {
   },
 });
 
+// Named so the published declarations can spell it (P26): an inferred
+// `PostgrestClient` lives in a transitive package a consumer cannot name.
+declare const schedulerShape: ChatDb;
+/** The `scheduler`-schema client `schedulerDb` returns. */
+export type ChatSchedulerDb = ReturnType<typeof schedulerShape.schema<"scheduler">>;
+
 /** A client scoped to the `scheduler` schema (scheduled-task `sch_*` tables). */
-export function schedulerDb<C extends ChatDb>(client: C) {
+export function schedulerDb<C extends ChatDb>(client: C): ChatSchedulerDb {
   return client.schema("scheduler");
 }
 

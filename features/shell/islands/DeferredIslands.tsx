@@ -14,6 +14,9 @@ import dynamic from "next/dynamic";
 // nothing else. The bar itself loads behind the overlay controller's single
 // lazy edge the first time it opens.
 import CommandBarHotkey from "@/features/knowledge/command-bar/CommandBarHotkey";
+// Over-the-organization-cap reminder: renders nothing, raises one toast per
+// browser session while the person is over their cap.
+import { OrganizationCapReminder } from "@/features/organizations/limits/OrganizationCapReminder";
 
 const WindowTraySync = dynamic(
   () => import("@/features/window-panels/WindowTraySync"),
@@ -28,6 +31,7 @@ export default function DeferredIslands() {
           reachable even if no later resize event occurs. */}
       <WindowTraySync />
       <CommandBarHotkey />
+      <OrganizationCapReminder />
     </>
   );
 }

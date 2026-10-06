@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../store/root-state";
 
-interface ChatIncognitoState {
+export interface ChatIncognitoState {
   isActive: boolean;
 }
 

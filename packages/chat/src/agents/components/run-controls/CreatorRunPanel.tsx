@@ -28,7 +28,7 @@ import CreatorRunTabContent, {
   RUN_TAB_LABELS,
   type RunTabId,
 } from "./CreatorRunTabContent";
-interface CreatorRunPanelProps {
+export interface CreatorRunPanelProps {
   /**
    * The INPUT conversation — where the user is typing and which settings
    * adjustments target (Run Settings, System Prompt, Payload, Context,

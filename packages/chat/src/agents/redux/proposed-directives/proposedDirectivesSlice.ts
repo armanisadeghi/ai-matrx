@@ -55,7 +55,7 @@ export interface ProposedDirective {
   outcomeMessage?: string;
 }
 
-interface ProposedDirectivesState {
+export interface ProposedDirectivesState {
   /** Pending proposals per conversation, in arrival order. */
   byConversation: Record<string, ProposedDirective[]>;
 }

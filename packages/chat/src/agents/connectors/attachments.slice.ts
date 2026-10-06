@@ -58,7 +58,7 @@ export interface ConversationAttachmentsEntry {
   handoffRemovedKeys: string[];
 }
 
-interface AttachmentsSliceState {
+export interface AttachmentsSliceState {
   byConversationId: Record<string, ConversationAttachmentsEntry>;
 }
 

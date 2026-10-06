@@ -75,7 +75,7 @@ export type ModelFetchScope = "active" | "deprecated" | "all" | null;
 // State
 // ---------------------------------------------------------------------------
 
-interface ModelRegistryState {
+export interface ModelRegistryState {
   /** Normalized entity map: id → AIModelRecord */
   entities: Record<string, AIModelRecord>;
   /** Ordered list of active (non-deprecated) model IDs for stable ordering */

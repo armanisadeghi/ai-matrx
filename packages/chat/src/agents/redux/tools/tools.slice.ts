@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import { fetchAvailableTools, fetchToolById } from "./tools.thunks";
 import type { DatabaseTool } from "@ai-matrx/chat/ui/database-tool";
 
-interface ToolsSliceState {
+export interface ToolsSliceState {
   tools: DatabaseTool[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
