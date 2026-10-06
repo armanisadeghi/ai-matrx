@@ -740,7 +740,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     idColumn: "id",
     ownerColumn: "created_by",
     isPublicColumn: null,
-    displayLabel: "Structured List",
+    displayLabel: "Pick list",
     urlPathTemplate: "/pick-lists/{id}",
     rlsUsesHasPermission: true,
   },

@@ -468,3 +468,52 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
   unobserve() {}
   disconnect() {}
 };
+
+/**
+ * ── The files engine host (@ai-matrx/media/files/engine) ─────────────────────
+ * The app wires it in `features/files/files-host.ts`, imported by the store
+ * module. Here every member is required at CALL time, so a suite's
+ * `jest.mock("@/lib/python-client")` (or supabase client, toast, share links,
+ * store singleton) is what the engine calls — exactly as when the engine lived
+ * in the app.
+ */
+{
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { configureFilesHost } = require("@ai-matrx/media/files/engine") as typeof import("@ai-matrx/media/files/engine");
+  const lazy = <T extends object>(spec: string): T =>
+    new Proxy({} as T, {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      get: (_target, key) => (require(spec) as Record<PropertyKey, unknown>)[key],
+    });
+  configureFilesHost({
+    get db() {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      return require("@/utils/supabase/client").supabase;
+    },
+    server: lazy("@/lib/python-client"),
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    store: () => require("@/lib/redux/store-singleton").getStoreSingleton(),
+    scope: (state) => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const ctx = require("@/lib/redux/slices/appContextSlice");
+      const s = state as { userAuth?: { id?: string | null }; appContext?: unknown } | null | undefined;
+      const has = Boolean(s?.appContext);
+      return {
+        userId: s?.userAuth?.id ?? null,
+        organizationId: has ? ctx.selectOrganizationId(s) : null,
+        projectId: has ? ctx.selectProjectId(s) : null,
+        taskId: has ? ctx.selectTaskId(s) : null,
+      };
+    },
+    ensureOrganizationContext: (options) =>
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require("@/lib/organization/organization-gate").ensureOrganizationContext(options),
+    shareLinks: lazy("@/utils/permissions/shareLinks"),
+    notify: {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      success: (message, options) => require("@/lib/toast").toast.success(message, options),
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      error: (message, options) => require("@/lib/toast").toast.error(message, options),
+    },
+  });
+}

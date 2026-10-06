@@ -1,10 +1,10 @@
-# FEATURE.md — `user-lists` (Pick lists)
+# FEATURE.md — `data-tables/pick-lists` (Pick lists)
 
 Cross-repo system-of-record: /Users/armanisadeghi/code/common-docs/systems/data/custom-data/STATE.md — read it before touching this feature in ANY repo.
 
-Structured Lists are reusable collections of choices. A list can stay flat, or each choice can carry a
+Pick lists are reusable collections of choices (a sub-feature of Data tables in the domain tree). A list can stay flat, or each choice can carry a
 `group_name` so the same data can be projected as grouped sections, dependent dropdown options,
-categorized checklists, menus, lightweight taxonomies, or agent/runtime choice sets. "Picklist" is the
+categorized checklists, menus, lightweight taxonomies, or agent/runtime choice sets. A pick list is the
 mode where a list is bound to a dropdown/choice input.
 
 **Where a list lives.** Every list is a Table of choices in the record store (`custom.*`), one Record
@@ -15,7 +15,7 @@ id. It is edited on its own page, `/pick-lists/<id>` — the store's table page 
 
 | Route | What it is |
 |---|---|
-| `/pick-lists` | Signed in: the Picklists page (`components/PickListsPage.tsx` → `PickListsIndex`), every picklist across the person's organizations from THE LIST INDEX, New picklist first. Guest: the landing (`features/data-tables/pick-lists/components/PickListsLanding.tsx`). |
+| `/pick-lists` | Signed in: the Pick lists page (`components/PickListsPage.tsx` → `PickListsIndex`), every pick list across the person's organizations from THE LIST INDEX, New pick list first. Guest: the landing (`features/data-tables/pick-lists/components/PickListsLanding.tsx`). |
 | `/pick-lists/<id>` | The list's page: the store's table page (`app/(core)/pick-lists/[id]/StoreListPage.tsx`) under one line. |
 | `/pick-lists`, `/pick-lists`, `/pick-lists` | Retired addresses; redirect to `/pick-lists`. |
 
@@ -28,7 +28,7 @@ id. It is edited on its own page, `/pick-lists/<id>` — the store's table page 
 | One list, labels only (consumers, agent runtime) | `get_structured_list_for_selection` (`getPickListForSelection`, `usePickListForSelection`) |
 | Rename / re-describe | `update_user_list` (`updateList`) |
 | Add / change a choice | the records client in the list's organization: `recordWrite` / `recordUpdate` on the list's Table (`addChoices`, `updateChoice`) |
-| New picklist | `create_user_list` (`createList`), born in the store |
+| New pick list | `create_user_list` (`createList`), born in the store |
 
 ### Item `description` is an owner-only secret
 
@@ -41,11 +41,11 @@ injects it only into the in-flight provider request. Do NOT add a client read pa
 
 | Component | Purpose |
 |---|---|
-| `PickListsPage` / `PickListsIndex` | The Picklists page at `/pick-lists` |
+| `PickListsPage` / `PickListsIndex` | The Pick lists page at `/pick-lists` |
 | `ListManagerFloatingWorkspace` | The List Manager window: `ListsSidebar` + the selected list (`ListDetailClient`) |
 | `ListsSidebar` / `ListCard` | Searchable list of lists |
 | `ListDetailClient` | A list handed to a host: its name and the way to its page |
-| `GroupSection` / `ListItem` / `BookmarkCopyButton` | Grouped read-only choice rows with bookmarks (the picklist tool's inline view) |
+| `GroupSection` / `ListItem` / `BookmarkCopyButton` | Grouped read-only choice rows with bookmarks (the pick list tool's inline view) |
 
 ## Bookmark System
 
@@ -66,6 +66,8 @@ route mount is now the store's table page. Read
 [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md) § "The 360 loop" before changing them.
 
 ## Change Log
+
+- `2026-10-06` — **One feature, one name (Arman: "Yes to all of the cleanup").** The folder is `features/data-tables/pick-lists` (was `features/user-lists`; `features/structured-lists` is deleted, its landing is `components/PickListsLanding.tsx`). The route is `/pick-lists` and `/pick-lists/<id>` (`/lists*` redirects permanently). The window is `pickListManagerWindow` (`?panels=pickListManager`), opener `useOpenPickListManagerWindow`; the V1/V2 names, the `get_user_lists` renderer and the six `userlist_*` helpers are gone. The agent tool is `pick_list` (args `pick_list_id`, `pick_list_name`; DB `tool.definition` row renamed in place, agents hold it by id so none changed). UI copy says "Pick list". Guards: `__tests__/the-old-list-names-never-come-back.test.ts` here, and `packages/matrx-ai/tests/test_the_old_list_tool_names_never_come_back.py` in aidream. Left for the one batched token release (needs the associations release gate): entity token `structured_list` and its `picklist` alias, variable binding key `customComponent.structured_list`/`picklist`, DB function names (`get_user_list_with_items`, `get_structured_list_for_selection`, `update_user_list`, `create_user_list`, `get_user_lists_summary`), result-kind slug `picklist_tool_result`, receipt target types `picklist_choice(s)`.
 
 - `2026-10-01` — **No trace of the older list tables (lane OLD-READERS-REMOVAL, part FE-LISTS).** `/pick-lists` is the Picklists page for a signed-in person (moved from `/pick-lists`); `/pick-lists`–`v3` redirect there. Deleted: the two older managers (`features/structured-lists/StructuredListManagerV1/V2`, `useStructuredLists`, the v1·v2·v3 header), the older list editor (dialogs, tree/split/table layouts, `actions/list-actions.ts`), the `lists-junk` demos and their tests. `service.ts` reads only the list index and the store-answering doors; choice writes go through the records client. `/pick-lists/<id>` no longer reads the older row for an owner or a "moved" line. Tests: `__tests__/a-persons-picklists-live-in-the-record-store.test.tsx` (A–E), `app/(core)/pick-lists/[id]/__tests__/a-list-page-says-what-it-is-and-never-that-it-moved.test.tsx`.
 

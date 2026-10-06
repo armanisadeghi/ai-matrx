@@ -2689,7 +2689,7 @@
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
-    "display_label": "Structured List",
+    "display_label": "Pick list",
     "url_path_template": "/pick-lists/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
