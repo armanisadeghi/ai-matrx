@@ -23,6 +23,7 @@ agent -> Needs Arman) with ` — <question> — <what was checked> — <who>` ad
 Its files stay as they are.
 
 ## Held files
+- _conflicts/2026-10-05-184715/features/secrets/components/VaultWorkspace.tsx.held — LOCAL latest 2026-10-05 18:44; GITHUB latest 2026-10-05 18:10; LOCAL lacks 126 of GITHUB's 150 new lines; GITHUB lacks 3 of LOCAL's 3 new lines; recover: git show d4387d4e87:'features/secrets/components/VaultWorkspace.tsx' / 5a9ca8ca73:'features/secrets/components/VaultWorkspace.tsx'
 
 ## Needs a manager
 

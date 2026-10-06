@@ -6,7 +6,9 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 let search = new URLSearchParams("data=sample");
 const listeners = new Set<() => void>();
@@ -39,27 +41,67 @@ jest.mock("next/navigation", () => {
     }),
   };
 });
-jest.mock("@ai-matrx/kit/media-query", () => ({ ...jest.requireActual("@ai-matrx/kit/media-query"), useIsMobile: () => true }));
+jest.mock("@ai-matrx/kit/media-query", () => ({
+  ...jest.requireActual("@ai-matrx/kit/media-query"),
+  useIsMobile: () => true,
+}));
 jest.mock("@/features/shell/components/header/RouteHeader", () => ({
   __esModule: true,
-  default: ({ left, right }: { left: React.ReactNode; right: React.ReactNode }) => (
+  default: ({
+    left,
+    right,
+  }: {
+    left: React.ReactNode;
+    right: React.ReactNode;
+  }) => (
     <header>
       {left}
       {right}
     </header>
   ),
 }));
-jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => null }));
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: () => null,
+  useAppDispatch: () => jest.fn(),
+  useAppStore: () => ({ getState: () => ({}), dispatch: jest.fn() }),
+}));
+// Organization membership is an external account read; sample rows and peek routing stay real.
+jest.mock("@/features/organizations/hooks", () => ({
+  useUserOrganizations: () => ({
+    organizations: [],
+    loading: false,
+    error: null,
+    refresh: jest.fn(),
+  }),
+}));
 // The chat package reads these hooks through its own module (P3): one double covers both.
-jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@ai-matrx/chat/store/hooks", () =>
+  jest.requireMock("@/lib/redux/hooks"),
+);
 jest.mock("@ai-matrx/associations/react", () => ({
-  useEntityTitles: () => ({ titleFor: () => "Untitled", isUnresolved: () => false, loading: false }),
-  useAssociations: () => ({ edges: [], status: "ready", error: null, reload: async () => undefined }),
+  useEntityTitles: () => ({
+    titleFor: () => "Untitled",
+    isUnresolved: () => false,
+    loading: false,
+  }),
+  useAssociations: () => ({
+    edges: [],
+    status: "ready",
+    error: null,
+    reload: async () => undefined,
+  }),
   UniversalAssociationPicker: () => null,
 }));
-const ready = { status: "ready" as const, items: [], error: null, retry: jest.fn() };
+const ready = {
+  status: "ready" as const,
+  items: [],
+  error: null,
+  retry: jest.fn(),
+};
 jest.mock("@/features/knowledge/hub/hooks/useHubSidebarData", () => {
-  const actual = jest.requireActual("@/features/knowledge/hub/hooks/useHubSidebarData");
+  const actual = jest.requireActual(
+    "@/features/knowledge/hub/hooks/useHubSidebarData",
+  );
   return {
     ...actual,
     useHubSidebarData: () => ({
@@ -113,10 +155,11 @@ async function mount() {
 }
 
 function row(title: string): HTMLElement {
-  const el = [...host.querySelectorAll<HTMLElement>("[data-hit-key]")].find((e) =>
-    e.textContent?.includes(title),
+  const el = [...host.querySelectorAll<HTMLElement>("[data-hit-key]")].find(
+    (e) => e.textContent?.includes(title),
   );
-  if (!el) throw new Error(`no row "${title}" in: ${host.textContent?.slice(0, 400)}`);
+  if (!el)
+    throw new Error(`no row "${title}" in: ${host.textContent?.slice(0, 400)}`);
   return el;
 }
 

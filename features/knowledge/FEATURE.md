@@ -88,6 +88,12 @@ Plan: `common-docs/projects/knowledge-system/KNOWLEDGE-HUB.md` §5.1.
 
 ## Traps
 
+- `KnowledgeHubPage` renders the same secondary controls in the desktop toolbar or
+  the mobile **View options** sheet. Do not add permanent phone toolbar rows for
+  organization, transcript facets, saved-view actions, or layout; they squeeze the
+  virtualized results. Page keyboard shortcuts pause while this sheet is open.
+
+
 - **The bar's search runs on the title stand-in until `POST /knowledge/search` (H1) ships.** The
   old RAG route at the same path answers 422; `searchKnowledge` treats 404/405/422 as "not here
   yet", answers with the cross-type title search, and the bar says so in a banner. Delete

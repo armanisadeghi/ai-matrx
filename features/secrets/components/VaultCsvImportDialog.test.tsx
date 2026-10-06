@@ -24,6 +24,7 @@ let mockDeferredKeePassLoadWorker:
 let mockAuthStateListener:
   | ((event: string, session?: { user: { id: string } } | null) => void)
   | undefined;
+let mockDesktopWorkspace = true;
 let mockOrganizationId = "11111111-1111-4111-8111-111111111111";
 
 jest.mock("@/utils/supabase/client", () => ({
@@ -44,7 +45,8 @@ jest.mock("@/utils/supabase/client", () => ({
 }));
 
 jest.mock("@ai-matrx/kit/media-query", () => ({
-  ...jest.requireActual("@ai-matrx/kit/media-query"), useMediaQuery: () => true,
+  ...jest.requireActual("@ai-matrx/kit/media-query"),
+  useMediaQuery: () => mockDesktopWorkspace,
 }));
 
 jest.mock("@/features/organizations/hooks", () => ({
@@ -74,7 +76,9 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => mockOrganizationId,
 }));
 // The chat package reads these hooks through its own module (P3): one double covers both.
-jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
+jest.mock("@ai-matrx/chat/store/hooks", () =>
+  jest.requireMock("@/lib/redux/hooks"),
+);
 
 jest.mock("../csv-import-limits", () => ({
   fetchCsvImportLimits: jest.fn(async () => ({
@@ -266,6 +270,16 @@ if (!File.prototype.arrayBuffer) {
 if (!HTMLElement.prototype.scrollIntoView) {
   HTMLElement.prototype.scrollIntoView = jest.fn();
 }
+
+// JSDOM has no layout observer; real dialog/menu behavior stays mounted.
+Object.defineProperty(globalThis, "ResizeObserver", {
+  configurable: true,
+  value: class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  },
+});
 
 const createVaultItemMock = jest.mocked(createVaultItem);
 const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
@@ -491,6 +505,7 @@ describe("VaultCsvImportDialog", () => {
   let host: HTMLDivElement;
 
   beforeEach(() => {
+    mockDesktopWorkspace = true;
     host = document.createElement("div");
     document.body.appendChild(host);
     root = createRoot(host);
@@ -836,17 +851,14 @@ describe("VaultCsvImportDialog", () => {
         code === "idempotency_key_conflict"
           ? "This import retry key conflicts with a different request."
           : "The import result is no longer available to confirm.";
-      await waitForCondition(
-        () => {
-          const text = document.body.textContent ?? "";
-          return (
-            text.includes(terminalMessage) &&
-            !text.includes("Retry current row") &&
-            !text.includes("Import selected records")
-          );
-        },
-        "terminal receipt response was not processed",
-      );
+      await waitForCondition(() => {
+        const text = document.body.textContent ?? "";
+        return (
+          text.includes(terminalMessage) &&
+          !text.includes("Retry current row") &&
+          !text.includes("Import selected records")
+        );
+      }, "terminal receipt response was not processed");
       expect(createVaultItemMock).toHaveBeenCalledTimes(2);
       expect(document.body.textContent).toContain(
         "Imported 1; skipped 0; failed 1.",
@@ -940,21 +952,41 @@ describe("VaultCsvImportDialog", () => {
     );
   });
 
-  it("opens the real CSV dialog from the full workspace", async () => {
-    await act(async () => {
-      root.render(
-        <VaultWorkspace principal={{ type: "user" }} presentation="full" />,
-      );
-    });
-    const button = [...document.querySelectorAll("button")].find((candidate) =>
-      candidate.textContent?.includes("Import passwords"),
-    );
-    if (!(button instanceof HTMLButtonElement))
-      throw new Error("full import trigger missing");
-    await act(async () => button.click());
-    expect(document.body.textContent).toContain("Import passwords");
-    expect(document.body.textContent).toContain("Choose import file");
-  });
+  it.each([true, false])(
+    "opens the real CSV dialog from the full workspace (desktop: %s)",
+    async (desktop) => {
+      mockDesktopWorkspace = desktop;
+      await act(async () => {
+        root.render(
+          <VaultWorkspace principal={{ type: "user" }} presentation="full" />,
+        );
+      });
+      if (!desktop) {
+        const menu = document.querySelector(
+          'button[aria-label="Vault actions"]',
+        );
+        if (!(menu instanceof HTMLButtonElement))
+          throw new Error("mobile action menu missing");
+        await act(async () =>
+          menu.dispatchEvent(
+            new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+          ),
+        );
+      }
+      const trigger = desktop
+        ? [...document.querySelectorAll("button")].find((node) =>
+            node.textContent?.includes("Import passwords"),
+          )
+        : [...document.querySelectorAll('[role="menuitem"]')].find((node) =>
+            node.textContent?.includes("Import passwords"),
+          );
+      if (!(trigger instanceof HTMLElement))
+        throw new Error("import trigger missing");
+      await act(async () => trigger.click());
+      expect(document.body.textContent).toContain("Import passwords");
+      expect(document.body.textContent).toContain("Choose import file");
+    },
+  );
 
   it("terminates a mounted JSON worker and rejects its late reply after account change", async () => {
     await act(async () =>
