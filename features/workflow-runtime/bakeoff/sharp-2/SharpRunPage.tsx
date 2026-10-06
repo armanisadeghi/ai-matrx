@@ -487,7 +487,7 @@ function HeaderAction({
       onClick={onClick}
       className={
         destructive
-          ? "flex items-center gap-1 rounded-full border border-destructive/40 px-2.5 py-1 text-[11px] font-medium text-destructive hover:bg-destructive/10"
+          ? "flex items-center gap-1 rounded-full border border-destructive/40 px-2.5 py-1 text-[11px] font-medium text-destructive-ink hover:bg-destructive/10"
           : "flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-muted"
       }
     >

@@ -156,7 +156,7 @@ export function SharpStatusBand({
               });
             }}
             aria-label="Stop the run"
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+            className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink"
           >
             <Square className="h-3.5 w-3.5" />
           </button>

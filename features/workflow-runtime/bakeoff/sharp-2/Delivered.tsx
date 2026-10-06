@@ -58,9 +58,9 @@ export function PromiseStrip({
             className={cn(
               "flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
               done
-                ? "border-primary/40 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/10 text-primary-ink"
                 : failed
-                  ? "border-destructive/40 bg-destructive/5 text-destructive"
+                  ? "border-destructive/40 bg-destructive/5 text-destructive-ink"
                   : "border-border bg-card text-muted-foreground hover:text-foreground",
             )}
           >

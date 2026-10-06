@@ -251,7 +251,7 @@ function SharpOffer({
                       {promise.title}
                     </span>
                     {promise.presentation === "showcase" ? (
-                      <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
+                      <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary-ink">
                         centre stage
                       </span>
                     ) : null}

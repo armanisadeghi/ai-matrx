@@ -50,7 +50,7 @@ export const ERROR_TIERS: Record<ErrorTier, ErrorTierMeta> = {
     rank: 3,
     visible: true,
     dotClass: "bg-destructive",
-    chipClass: "bg-destructive/15 text-destructive border-destructive/30",
+    chipClass: "bg-destructive/15 text-destructive-ink border-destructive/30",
     accentClass: "border-l-destructive",
   },
   orange: {

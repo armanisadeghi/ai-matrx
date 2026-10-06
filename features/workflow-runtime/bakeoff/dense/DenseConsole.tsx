@@ -233,9 +233,9 @@ export function DenseConsole({
                   "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
                   ready &&
                     "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-                  busy && "border-primary/30 bg-primary/10 text-primary",
+                  busy && "border-primary/30 bg-primary/10 text-primary-ink",
                   bad &&
-                    "border-destructive/30 bg-destructive/10 text-destructive",
+                    "border-destructive/30 bg-destructive/10 text-destructive-ink",
                   !ready &&
                     !busy &&
                     !bad &&
@@ -324,7 +324,7 @@ function HeaderAction({
       className={cn(
         "inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[11px] font-medium transition-colors",
         destructive
-          ? "border-destructive/30 text-destructive hover:bg-destructive/10"
+          ? "border-destructive/30 text-destructive-ink hover:bg-destructive/10"
           : "border-border text-foreground hover:bg-accent",
       )}
     >

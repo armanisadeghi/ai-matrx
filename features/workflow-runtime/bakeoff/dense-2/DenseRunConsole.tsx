@@ -531,7 +531,7 @@ function PromiseChip({
           : phase === "running" || phase === "retrying"
             ? "border-blue-500/20 bg-blue-500/15 text-blue-600 dark:text-blue-400"
             : phase === "failed"
-              ? "border-destructive/20 bg-destructive/15 text-destructive"
+              ? "border-destructive/20 bg-destructive/15 text-destructive-ink"
               : "border-border bg-muted text-muted-foreground",
         aimed && "ring-1 ring-primary/40",
       )}

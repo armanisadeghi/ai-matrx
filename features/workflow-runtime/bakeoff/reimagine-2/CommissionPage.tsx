@@ -461,7 +461,7 @@ function IntakeBrief({
   return (
     <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
       <header className="flex items-start gap-3">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
           <Feather className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">

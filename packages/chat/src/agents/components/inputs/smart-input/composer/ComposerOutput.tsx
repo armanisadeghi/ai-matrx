@@ -203,7 +203,7 @@ function TypeGrid({ types, onToggle }: { types: readonly string[]; onToggle: (id
             onClick={() => onToggle(type.id)}
             className={cn(
               "flex h-8 min-w-0 items-center gap-1.5 rounded-md px-2 text-left text-[13px] transition-colors",
-              on ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent",
+              on ? "bg-primary/10 text-primary-ink" : "text-foreground hover:bg-accent",
             )}
           >
             <Icon className={cn("h-3.5 w-3.5 shrink-0", !on && "text-muted-foreground")} />

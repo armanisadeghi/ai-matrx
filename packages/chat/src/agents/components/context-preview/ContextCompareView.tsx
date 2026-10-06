@@ -79,7 +79,7 @@ type DifferenceClass = Difference["difference_class"];
 const CLASS_LOOK: Record<DifferenceClass, { label: string; className: string }> = {
   defect: {
     label: "Defect",
-    className: "bg-destructive/10 text-destructive border-destructive/40",
+    className: "bg-destructive/10 text-destructive-ink border-destructive/40",
   },
   "old path delivered without a check": {
     label: "Old path delivered without a check",
@@ -92,7 +92,7 @@ const CLASS_LOOK: Record<DifferenceClass, { label: string; className: string }> 
   },
   "declared tier move": {
     label: "Declared tier move",
-    className: "bg-primary/10 text-primary border-primary/30",
+    className: "bg-primary/10 text-primary-ink border-primary/30",
   },
 };
 
@@ -778,7 +778,7 @@ function AnswerBoth({
         </Button>
       </div>
       {error && (
-        <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

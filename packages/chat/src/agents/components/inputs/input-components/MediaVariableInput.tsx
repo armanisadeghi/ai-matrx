@@ -422,7 +422,7 @@ export function MediaVariableInput({
       )}
 
       {error && (
-        <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-md bg-destructive/10 text-destructive">
+        <div className="flex items-start gap-1.5 px-2 py-1.5 rounded-md bg-destructive/10 text-destructive-ink">
           <AlertCircle className="w-3 h-3 mt-0.5 shrink-0" />
           <span className="text-[11px]">{error.message}</span>
           <ErrorAlchemyMenu error={error.message} />

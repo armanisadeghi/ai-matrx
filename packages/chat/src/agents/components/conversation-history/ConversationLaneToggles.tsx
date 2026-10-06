@@ -87,7 +87,7 @@ export const ConversationLaneToggles: React.FC<
             }
             className={cn(
               "h-7 min-w-0 rounded-none border-0 border-r border-border px-1 text-[10px] font-medium whitespace-nowrap text-muted-foreground last:border-r-0",
-              "hover:bg-accent hover:text-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:shadow-none",
+              "hover:bg-accent hover:text-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink data-[state=on]:shadow-none",
             )}
           >
             {meta.label}

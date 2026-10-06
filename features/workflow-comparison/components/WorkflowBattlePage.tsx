@@ -707,7 +707,7 @@ function ArmColumn({
       </div>
 
       {arm.error && (
-        <div className="border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive">
+        <div className="border-b border-border bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
           {arm.error}
           <ErrorAlchemyMenu error={arm.error} />
         </div>

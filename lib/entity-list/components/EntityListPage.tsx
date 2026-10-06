@@ -1345,7 +1345,7 @@ export function EntityListPage<TRow>({
         {list.error && (
           <div
             role="alert"
-            className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive"
+            className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink"
           >
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span className="flex-1">{list.error.message}</span>

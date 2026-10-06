@@ -75,7 +75,7 @@ function ControlButton({
       className={cn(
         "inline-flex min-h-8 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium transition-colors",
         tone === "destructive"
-          ? "border-destructive/40 text-destructive hover:bg-destructive/10"
+          ? "border-destructive/40 text-destructive-ink hover:bg-destructive/10"
           : "border-border text-foreground hover:bg-accent/60",
         (!enabled || busy) && "cursor-not-allowed opacity-45 hover:bg-transparent",
       )}

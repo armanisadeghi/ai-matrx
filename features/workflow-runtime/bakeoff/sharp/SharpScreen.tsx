@@ -122,7 +122,7 @@ export function SharpScreen({
           <button
             type="button"
             onClick={onBackToLive}
-            className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20"
+            className="rounded-full border border-primary/40 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary-ink hover:bg-primary/20"
           >
             Back to live
           </button>

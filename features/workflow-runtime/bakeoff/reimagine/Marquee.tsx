@@ -44,7 +44,7 @@ function ControlButton({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50",
         destructive
-          ? "border-destructive/40 text-destructive hover:bg-destructive/10"
+          ? "border-destructive/40 text-destructive-ink hover:bg-destructive/10"
           : "border-border text-foreground hover:bg-accent",
       )}
     >
@@ -178,7 +178,7 @@ export function Marquee({
                 landed
                   ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 dark:text-emerald-400"
                   : working
-                    ? "animate-pulse border-primary/40 bg-primary/10 text-primary"
+                    ? "animate-pulse border-primary/40 bg-primary/10 text-primary-ink"
                     : "border-dashed border-border text-muted-foreground hover:bg-accent",
               )}
             >

@@ -30,7 +30,7 @@ const SCOPE_OPTIONS: { value: AgentMemoryScope; label: string }[] = [
 ];
 
 const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
-  high: "bg-primary/15 text-primary",
+  high: "bg-primary/15 text-primary-ink",
   medium: "bg-muted text-foreground",
   low: "bg-muted text-muted-foreground",
 };

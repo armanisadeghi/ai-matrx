@@ -78,9 +78,9 @@ export function RunStatusChip({
     <span
       className={cn(
         "inline-flex max-w-full items-center gap-1 truncate rounded-full px-1.5 py-0.5 text-[11px] font-medium",
-        phase === "settled" && "bg-primary/10 text-primary",
-        phase === "failed" && "bg-destructive/10 text-destructive",
-        phase === "running" && "bg-primary/10 text-primary",
+        phase === "settled" && "bg-primary/10 text-primary-ink",
+        phase === "failed" && "bg-destructive/10 text-destructive-ink",
+        phase === "running" && "bg-primary/10 text-primary-ink",
         phase === "waiting" && "bg-amber-500/10 text-amber-600 dark:text-amber-400",
         (phase === "idle" || phase === "skipped") && "bg-muted text-muted-foreground",
         className,

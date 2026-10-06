@@ -20,7 +20,7 @@ import type { UseAgentMemoriesReturn } from "../hooks/useAgentMemories";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 
 const TIER_BADGE_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
-  high: "bg-primary/15 text-primary",
+  high: "bg-primary/15 text-primary-ink",
   medium: "bg-muted text-foreground",
   low: "bg-muted text-muted-foreground",
 };

@@ -118,7 +118,7 @@ export function FocusPanel({
           className={cn(
             "flex h-8 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors",
             following
-              ? "border-primary/40 bg-primary/10 text-primary"
+              ? "border-primary/40 bg-primary/10 text-primary-ink"
               : "border-border text-foreground hover:bg-muted",
           )}
         >

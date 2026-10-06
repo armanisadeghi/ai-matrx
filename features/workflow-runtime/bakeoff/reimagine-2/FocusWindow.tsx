@@ -127,7 +127,7 @@ export function FocusWindow({
           <button
             type="button"
             onClick={onFollow}
-            className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20"
+            className="flex shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary-ink hover:bg-primary/20"
           >
             <LocateFixed className="h-3.5 w-3.5" />
             Follow the work

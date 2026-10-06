@@ -649,7 +649,7 @@ function RunControls({
           })
         }
         aria-label="Stop the run"
-        className="flex h-7 w-7 items-center justify-center rounded-md text-destructive hover:bg-destructive/10 disabled:opacity-50"
+        className="flex h-7 w-7 items-center justify-center rounded-md text-destructive-ink hover:bg-destructive/10 disabled:opacity-50"
       >
         <OctagonX className="h-3.5 w-3.5" aria-hidden />
       </button>

@@ -98,7 +98,7 @@ export function FocusPanel({
           <button
             type="button"
             onClick={onFollowLive}
-            className="flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/15"
+            className="flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary-ink transition-colors hover:bg-primary/15"
           >
             <Radio className="h-3 w-3" />
             Back to live

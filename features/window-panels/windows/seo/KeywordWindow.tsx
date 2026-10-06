@@ -413,7 +413,7 @@ function WorkspaceKeywordItem({
       className={cn(
         "group flex w-full min-w-0 items-center gap-1.5 border-l-2 px-2 py-1.5 text-left transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-primary-ink"
           : "border-transparent text-muted-foreground hover:bg-accent/60 hover:text-foreground",
       )}
     >

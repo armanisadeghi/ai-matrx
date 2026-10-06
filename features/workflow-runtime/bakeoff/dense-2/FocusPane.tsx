@@ -105,7 +105,7 @@ export function FocusPane({
           <button
             type="button"
             onClick={onFollow}
-            className="flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/15"
+            className="flex shrink-0 items-center gap-1 rounded-md border border-primary/40 bg-primary/10 px-2 py-1 text-xs font-medium text-primary-ink hover:bg-primary/15"
           >
             <LocateFixed className="h-3.5 w-3.5" />
             Back to the action

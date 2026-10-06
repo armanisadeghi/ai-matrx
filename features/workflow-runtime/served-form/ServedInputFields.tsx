@@ -408,7 +408,7 @@ export function SourcingBadge({ input }: { input: ServedInput }) {
   }
   const tone =
     input.sourcing === "ask"
-      ? "bg-primary/10 text-primary"
+      ? "bg-primary/10 text-primary-ink"
       : input.sourcing === "require"
         ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
         : "bg-muted text-muted-foreground";

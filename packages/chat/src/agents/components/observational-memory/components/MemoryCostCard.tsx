@@ -104,7 +104,7 @@ export function MemoryCostCard({
       </div>
 
       {fetchState?.status === "error" && (
-        <div className="text-[11px] bg-destructive/5 border border-destructive/20 text-destructive rounded p-2">
+        <div className="text-[11px] bg-destructive/5 border border-destructive/20 text-destructive-ink rounded p-2">
           {fetchState.error ?? "Failed to load memory cost."}
           <ErrorAlchemyMenu error={fetchState.error} />
         </div>

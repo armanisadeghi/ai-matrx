@@ -1973,7 +1973,7 @@ function InstanceTab({
       className={cn(
         "inline-flex items-center gap-1 px-2.5 py-1.5 text-[10px] whitespace-nowrap border-b-2 border-r border-border/30 transition-colors cursor-pointer font-mono",
         isActive
-          ? "border-b-primary text-primary bg-primary/5"
+          ? "border-b-primary text-primary-ink bg-primary/5"
           : "border-b-transparent text-muted-foreground hover:text-foreground hover:bg-muted/20",
       )}
     >

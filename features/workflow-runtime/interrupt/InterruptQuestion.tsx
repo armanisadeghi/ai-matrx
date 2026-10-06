@@ -296,7 +296,7 @@ function ApprovalControl({
           data-interrupt-reject
           disabled={sending}
           onClick={() => onDecide(approvalResumeValue(false, note))}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-destructive/50 px-3 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-destructive/50 px-3 text-sm font-medium text-destructive-ink transition-colors hover:bg-destructive/10 disabled:opacity-50"
         >
           <X className="h-4 w-4" />
           Reject

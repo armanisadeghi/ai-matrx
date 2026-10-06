@@ -87,7 +87,7 @@ const CHIP_GEOMETRY =
 const CHIP_TONE: Record<ComposerChipTone, string> = {
   neutral: "border-border bg-card text-foreground",
   quiet: "border-border bg-card text-muted-foreground",
-  primary: "border-primary/30 bg-primary/5 text-foreground [&_svg]:text-primary",
+  primary: "border-primary/30 bg-primary/5 text-foreground [&_svg]:text-primary-ink",
   warning: "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-300",
 };
 
@@ -319,7 +319,7 @@ export function ComposerChipPart({
         PART_CONTENT,
         PART_CORNERS,
         "shrink-0 border-l border-border",
-        lit ? "bg-primary/10 text-primary hover:bg-primary/20" : PART_HOVER[tone],
+        lit ? "bg-primary/10 text-primary-ink hover:bg-primary/20" : PART_HOVER[tone],
         className,
       )}
       {...props}

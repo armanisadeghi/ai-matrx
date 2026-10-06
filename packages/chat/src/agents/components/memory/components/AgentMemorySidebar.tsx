@@ -42,7 +42,7 @@ import {
 import { Button } from "@ai-matrx/design-system/controls";
 
 const TIER_CHIP_CLASS: Record<ReturnType<typeof importanceTier>, string> = {
-  high: "bg-primary/15 text-primary",
+  high: "bg-primary/15 text-primary-ink",
   medium: "bg-muted text-foreground/80",
   low: "bg-muted text-muted-foreground",
 };
@@ -68,7 +68,7 @@ function MemoryRow({
       className={cn(
         "group/row relative flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left transition-colors",
         isActive
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "text-foreground hover:bg-muted/60",
       )}
     >
@@ -103,7 +103,7 @@ function MemoryRow({
         <DropdownMenuContent align="end" side="right">
           <DropdownMenuItem
             onClick={onRequestDelete}
-            className="gap-2 text-destructive focus:bg-destructive/10 focus:text-destructive"
+            className="gap-2 text-destructive-ink focus:bg-destructive/10 focus:text-destructive-ink"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
@@ -174,7 +174,7 @@ export function AgentMemorySidebar({ state }: AgentMemorySidebarProps) {
                 onClick={() => setSortMode(option.value)}
                 className={cn(
                   "text-xs",
-                  sortMode === option.value && "bg-primary/10 text-primary",
+                  sortMode === option.value && "bg-primary/10 text-primary-ink",
                 )}
               >
                 {option.label}

@@ -204,7 +204,7 @@ export function WorkflowTriggersPage({
         ) : null}
 
         {triggersError ? (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive">
+          <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive-ink">
             {triggersError}
             <ErrorAlchemyMenu error={triggersError} />
           </p>

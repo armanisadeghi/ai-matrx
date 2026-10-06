@@ -28,7 +28,7 @@ export function AgentComingSoonContent({
         className,
       )}
     >
-      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-4">
+      <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 text-primary-ink mb-4">
         <Icon className="w-7 h-7" />
       </div>
       <div className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">

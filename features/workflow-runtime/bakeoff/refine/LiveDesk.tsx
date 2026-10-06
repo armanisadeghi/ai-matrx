@@ -368,7 +368,7 @@ export function LiveDesk({
                     if (accepted) void verb("stop", () => cancel(runId));
                   })
                 }
-                className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-destructive hover:bg-destructive/5 disabled:opacity-50"
+                className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-destructive-ink hover:bg-destructive/5 disabled:opacity-50"
               >
                 {busyVerb === "stop" ? "Stopping…" : "Stop"}
               </button>
