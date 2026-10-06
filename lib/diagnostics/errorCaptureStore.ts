@@ -50,6 +50,8 @@ export type CapturedErrorSource =
    * providers/ChatHostAdapter.tsx); `name` is `chat:<area>`.
    */
   | "chat"
+  /** An Applet's host (`@ai-matrx/applets/platform` reportError) — `callSite` names where. */
+  | "applet"
   /** An unhandled promise rejection reached `window`. */
   | "unhandled-rejection"
   /** A `console.error(...)` call (noise-filtered). */

@@ -116,7 +116,7 @@ jest.mock("@/features/shell/pageObjectOrganization", () => ({ useDeclarePageObje
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [{ id: ITS_ORG, name: "Arman's Org" }, { id: ACTIVE_ORG, name: "AI Matrx" }], loading: false }),
 }));
-jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
+jest.mock("@ai-matrx/records/realtime", () => ({ createRecordsRealtimePort: () => undefined }));
 jest.mock("@/features/unified-data/row-agent-action/rowAgentAction", () => ({ runRowAgentAction: jest.fn() }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 jest.mock("@/features/unified-data/row-change-agent/RowChangeAgentLink", () => ({

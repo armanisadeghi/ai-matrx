@@ -13,7 +13,7 @@ jest.mock("@/features/sharing/components/RecordStoreShareSurface", () => ({ reco
 jest.mock("@/features/unified-data/record-chat/RecordScopedChat", () => ({ RecordScopedChat: () => null }));
 jest.mock("@/features/organizations/service", () => ({ getOrganizationMembers: jest.fn() }));
 jest.mock("@/features/organizations/hooks", () => ({ useUserOrganizations: () => ({ organizations: [], loading: false }) }));
-jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: jest.fn() }));
+jest.mock("@ai-matrx/records/realtime", () => ({ createRecordsRealtimePort: jest.fn() }));
 jest.mock("@/features/unified-data/row-agent-action/rowAgentAction", () => ({ runRowAgentAction: jest.fn() }));
 jest.mock("@/features/unified-data/grid-agent-context/RecordStoreTableSurface", () => ({
   RecordStoreTableSurface: ({ children }: { children: unknown }) => children,

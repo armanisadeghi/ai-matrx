@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2911",
+  "version": "0.4.2912",
   "private": true,
   "scripts": {
     "dev": "bash scripts/agent-dev-server.sh start",
@@ -867,6 +867,7 @@
   "dependencies": {
     "@ai-matrx/agents": "latest",
     "@ai-matrx/alchemy": "latest",
+    "@ai-matrx/applets": "latest",
     "@ai-matrx/associations": "latest",
     "@ai-matrx/browser-audio": "latest",
     "@ai-matrx/canvas": "latest",
