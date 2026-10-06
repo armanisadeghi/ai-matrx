@@ -751,7 +751,7 @@ export function TaskEditorBody({
           <EntityCustomFields entityToken="task" recordId={taskId} organizationId={task?.organization_id ?? null} />
 
           {/* Everything linked to this task, both ways (W1.4). */}
-          <LinkedRecordsSection token="task" id={taskId} title={task.title ?? ""} />
+          <LinkedRecordsSection backLinksShownElsewhere token="task" id={taskId} title={task.title ?? ""} />
 
           {/* Attachments — notes, files, messages, conversations, chat blocks */}
           <section>
