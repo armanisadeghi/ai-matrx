@@ -305,7 +305,13 @@ export function SingleSendDialog({
             ) : recipientFit ? (
               <RecipientFitBadge fit={recipientFit} />
             ) : (
-              <span className="text-muted-foreground">{fit.error ? "Could not read" : "Not checked"}</span>
+              fit.error ? (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  Could not read <ErrorAlchemyMenu error={fit.error} />
+                </span>
+              ) : (
+                <span className="text-muted-foreground">Not checked</span>
+              )
             )}
             <Button
              
@@ -411,7 +417,10 @@ export function SingleSendDialog({
                 <span className="text-muted-foreground">From:</span>{" "}
                 {draft.from_address || (
                   <span className="text-amber-700 dark:text-amber-300" data-testid="single-send-no-mailbox">
-                    No mailbox yet. Review works; sending needs one.
+                    No mailbox yet. Review works; sending needs one.{" "}
+                    <Link className="font-medium underline" href="/crm/sending-identities">
+                      Connect a mailbox
+                    </Link>
                   </span>
                 )}
               </span>
