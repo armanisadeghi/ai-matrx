@@ -29,6 +29,8 @@ import { ImageAssetUploader } from "@/components/official/ImageAssetUploader";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useOrganizationCap } from "../limits/useOrganizationCap";
+import { OrganizationCapReached } from "../limits/OrganizationCapReached";
 
 interface CreateOrgModalProps {
   isOpen: boolean;
@@ -69,6 +71,8 @@ export function CreateOrgModal({
   const fieldId = useId();
   const nameInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // The organization cap is enforced here, in the interface only.
+  const organizationCap = useOrganizationCap();
 
   // Form state
   const [name, setName] = useState("");
@@ -138,6 +142,11 @@ export function CreateOrgModal({
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (organizationCap.atCap) {
+      toast.error("Organization limit reached");
+      return;
+    }
 
     if (!isFormValid) {
       toast.error("Please fix validation errors before submitting");
@@ -217,6 +226,23 @@ export function CreateOrgModal({
       </div>
     );
   };
+
+  if (organizationCap.atCap && organizationCap.cap !== null) {
+    return (
+      <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Create New Organization</DialogTitle>
+          </DialogHeader>
+          <OrganizationCapReached
+            count={organizationCap.count}
+            cap={organizationCap.cap}
+            onNavigate={onClose}
+          />
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
