@@ -117,7 +117,10 @@ describe("Twilio Voice provider adapter", () => {
       },
     });
 
-    expect(twiml.indexOf("<Start>")).toBeLessThan(twiml.indexOf("<Connect>"));
+    expect(twiml.indexOf("<Start>")).toBeLessThan(twiml.indexOf("<Connect "));
+    expect(twiml).toContain(
+      '/api/webhooks/twilio/voice/relay-ended" method="POST"',
+    );
     expect(twiml).toContain('dtmfDetection="true"');
     expect(twiml).toContain(
       '<ConversationRelay url="wss://server.app.matrxserver.com/communications/voice/conversation-relay"',

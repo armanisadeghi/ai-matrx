@@ -46,6 +46,10 @@ SMS-only validator was removed after all consumers moved atomically.
 
 - Production inbound URL: `https://www.aimatrx.com/api/webhooks/twilio/voice`
 - Lifecycle callback URL: `https://www.aimatrx.com/api/webhooks/twilio/voice/status`
+- Relay-end callback: `/api/webhooks/twilio/voice/relay-ended` is the signed `<Connect action>`
+  target. Unexpected closure explains the interruption then hangs up; explicit app completion
+  gets a farewell and completed calls stay silent. Never speak provider error or handoff payloads
+  and never reconnect or start a second recording from this callback.
 - Runtime: short Node.js route handler on Vercel; no long-lived WebSocket.
 - Admission: the signed request must match the exactly-one active `ai_matrx_owner_beta`
   destination and its exactly-one verified-phone enrollment by provider account, called number,
@@ -98,6 +102,8 @@ exact URL and all form parameters:
 [recording consent guidance](https://help.twilio.com/articles/360011522553).
 
 ## Change log
+
+- 2026-10-06 — Added signed relay-end caller fallback and clean hangup; local HTTP callback verified.
 
 - 2026-09-30 — Outbound guard: a clone-wired server never emails, texts, verifies, buys/repoints
   numbers or posts to Slack for real (X1).

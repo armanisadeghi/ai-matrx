@@ -494,7 +494,11 @@ describe("POST /api/webhooks/twilio/voice", () => {
     expect(body).toContain("Recording has started. How can I help you?");
     expect(body).not.toContain("Goodbye");
     expect(body).not.toContain("working correctly");
-    expect(body).toContain("<Connect><ConversationRelay");
+    expect(body).toContain("<Connect ");
+    expect(body).toContain("><ConversationRelay");
+    expect(body).toContain(
+      '/api/webhooks/twilio/voice/relay-ended" method="POST"',
+    );
     expect(body).toContain(
       'url="wss://server.app.matrxserver.com/communications/voice/conversation-relay"',
     );
@@ -582,7 +586,7 @@ describe("POST /api/webhooks/twilio/voice", () => {
     const body = await (await POST(consentActionRequest({}))).text();
 
     expect(body).toContain("<Start><Recording");
-    expect(body).not.toContain("<Connect><ConversationRelay");
+    expect(body).not.toContain("<Connect");
     expect(prepareConversationRelaySession).toHaveBeenCalledTimes(1);
     expect(recordConversationRelayPreparationFailure).toHaveBeenCalledWith(
       preparationError,

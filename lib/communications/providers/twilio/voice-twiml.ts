@@ -1,6 +1,9 @@
 /** TwiML for the disclosed owner Voice beta control plane. */
 
 import twilio from "twilio";
+import { getApplicationBaseUrl } from "./config";
+
+export const VOICE_RELAY_ENDED_PATH = "/api/webhooks/twilio/voice/relay-ended";
 
 const VOICE = "Polly.Joanna-Neural";
 
@@ -47,6 +50,28 @@ function disclosedResponse(message: string): string {
   return response.toString();
 }
 
+/** The Connect action runs after the relay closes, including a failed WebSocket. */
+export function buildVoiceRelayEndedTwiml(
+  params: Record<string, string>,
+): string {
+  // The caller has already hung up. Do not manufacture an apology or restart the call.
+  if (
+    params.CallStatus === "completed" ||
+    params.SessionStatus === "completed"
+  ) {
+    const response = new twilio.twiml.VoiceResponse();
+    response.hangup();
+    return response.toString();
+  }
+  // Provider error text and handoffData can carry private content; never read them aloud.
+  if (params.SessionStatus === "ended") {
+    return disclosedResponse("Thank you for calling A.I. Matrix. Goodbye.");
+  }
+  return disclosedResponse(
+    "The A.I. assistant's connection has ended. Please call again to continue. Goodbye.",
+  );
+}
+
 export function buildOwnerBetaConsentPromptTwiml(actionUrl: string): string {
   const response = new twilio.twiml.VoiceResponse();
   const gather = response.gather({
@@ -87,7 +112,13 @@ export function buildOwnerBetaConsentAcceptedTwiml(
   });
 
   if (options.conversationRelay) {
-    const connect = response.connect();
+    const connect = response.connect({
+      action: new URL(
+        VOICE_RELAY_ENDED_PATH,
+        getApplicationBaseUrl(),
+      ).toString(),
+      method: "POST",
+    });
     const relay = connect.conversationRelay({
       url: options.conversationRelay.url,
       dtmfDetection: true,
