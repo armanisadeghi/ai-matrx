@@ -71,7 +71,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { buildInstanceBaseSettings } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/base-settings";
 import { useMandateAlchemyTabCapture } from "@/features/mandates/workspace/MandateAlchemy";
-import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";
 import { inheritedModelOverrides, MODEL_OVERRIDE_SOURCE } from "./inherited-model-overrides";
 import { RunConfigOverrides } from "@ai-matrx/chat/agents/components/run-controls/RunConfigOverrides";

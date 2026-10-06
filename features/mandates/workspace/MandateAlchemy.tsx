@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, type ReactNode } from "react";
 import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
-import { directSource, normalizeTransferJson, type Json, type Source } from "@ai-matrx/alchemy/core";
+import { directSource, normalizeTransferJson, type Json, type Source } from "@ai-matrx/alchemy/operate";
 import { contractOfMandate, goalOfMandate } from "@/lib/supabase/mandateStorage";
 import { resolveMandateGoal } from "../goal";
 import { parseDraftInputs } from "../authoring/service";

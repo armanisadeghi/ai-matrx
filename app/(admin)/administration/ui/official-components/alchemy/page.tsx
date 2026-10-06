@@ -21,7 +21,7 @@ import {
   directSource,
   type Payload,
   type TransferScope,
-} from "@ai-matrx/alchemy/core";
+} from "@ai-matrx/alchemy/operate";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_OFFICIAL_COMPONENTS_SURFACE_NAME,

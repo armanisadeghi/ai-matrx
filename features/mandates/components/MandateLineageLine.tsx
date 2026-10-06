@@ -1,7 +1,7 @@
 "use client";
 
 import { ADMIN_MANDATES_HOME } from "@/features/mandates/admin-routes";
-import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
 // features/mandates/components/MandateLineageLine.tsx
