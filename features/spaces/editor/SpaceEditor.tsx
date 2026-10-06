@@ -222,6 +222,16 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       className="contents"
       onKeyDownCapture={(e) => {
         turnIntoKey(editor, e);
+        // M1 — Space on an empty line opens Ask AI (Notion); anywhere else it is a space.
+        if (e.key === " " && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && editable && !document.querySelector(".bn-suggestion-menu")) {
+          const { from, to } = editor.prosemirrorState.selection;
+          const block = from === to ? editor.getTextCursorPosition().block : null;
+          if (block && block.type === "paragraph" && Array.isArray(block.content) && block.content.length === 0) {
+            e.preventDefault();
+            e.stopPropagation();
+            menu.askAi();
+          }
+        }
         // Escape with text selected drops the selection, so the selection toolbar goes with it
         // (it used to stay up with nothing selected). Menus that are open take Escape first.
         if (e.key === "Escape" && !e.defaultPrevented && !document.querySelector(".bn-suggestion-menu, [role='menu']")) {

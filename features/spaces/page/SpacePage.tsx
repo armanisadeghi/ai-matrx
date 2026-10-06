@@ -14,6 +14,11 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useSourcePicker } from "../data/SourcePicker";
+import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
+import { AskPageButton } from "../ai/AskPageButton";
+import { useSpacesAiDisclosure } from "../ai/spaces-ai";
+import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
+import { blocksToMarkdownLines, spaceToMarkdown, type MarkdownContext } from "../io/markdown";
 import { ExportDialog } from "./ExportDialog";
 import { PageHistory } from "./PageHistory";
 
@@ -104,6 +109,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [focusTitle, setFocusTitle] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
+  const [aiTarget, setAiTarget] = useState<AskAiTarget | null>(null);
+  useSpacesAiDisclosure();
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -339,6 +346,39 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     );
   };
 
+  // The page as Markdown — what the AI reads as named variables (never as the person's typed input).
+  const mdContext: MarkdownContext = {
+    titleOf: (id) => spaces.byId.get(id)?.title ?? "Untitled",
+    hrefOf: (id) => `${window.location.origin}/spaces/${id}`,
+  };
+  const pageForAi = () => {
+    const d = docRef.current ?? doc;
+    return { title: d.title, markdown: spaceToMarkdown(d.title, d.blocks, mdContext) };
+  };
+
+  // M1 / M2 — the Ask AI box under the selection (or the empty line the caret is on).
+  const openAskAi = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const id = currentBlockId(editor);
+    if (!id) return;
+    const blockIds = selectedOrCurrent(editor, id);
+    const picked = blockIds.map((b) => editor.getBlock(b)).filter(Boolean) as unknown as EngineBlock[];
+    const selectedText = editor.getSelectedText() || plainText(fromEngine(picked));
+    const top = editor.document.findIndex((b) => b.id === blockIds[0]);
+    const before = top > 0 ? fromEngine(editor.document.slice(0, top) as unknown as EngineBlock[]) : [];
+    const range = window.getSelection()?.rangeCount ? window.getSelection()!.getRangeAt(0).getBoundingClientRect() : null;
+    const el = document.querySelector(`.spaces-editor .bn-block-outer[data-id="${CSS.escape(blockIds[blockIds.length - 1])}"]`);
+    const box = range && range.height ? range : el?.getBoundingClientRect();
+    setAiTarget({
+      at: { left: box?.left ?? 0, top: (box?.bottom ?? 0) + 4 },
+      mode: selectedText.trim() ? "selection" : "empty-line",
+      blockIds,
+      selectedText,
+      precedingMarkdown: blocksToMarkdownLines(before, mdContext).join("\n"),
+    });
+  };
+
   const fontClass = doc.settings.font === "serif" ? "spaces-font-serif" : doc.settings.font === "mono" ? "spaces-font-mono" : "";
 
   return (
@@ -371,6 +411,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             Locked
           </button>
         ) : null}
+        {!doc.isArchived ? <AskPageButton page={pageForAi} /> : null}
         <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
           {saveState === "saving" ? "Saving…" : saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
           {saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
@@ -502,9 +543,10 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
               pickPage: () => new Promise((resolve) => openQuickFind("pick", (id) => resolve(id))),
               pickSource,
             }}
-            menu={{ moveBlocksTo, turnIntoPageIn, askAi: () => toast.info("AI is not connected yet") }}
+            menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
           />
           {sourcePicker}
+          {aiTarget && editorRef.current ? <AskAiMenu editor={editorRef.current} target={aiTarget} page={pageForAi} onClose={() => setAiTarget(null)} /> : null}
           <ExportDialog open={exportOpen} onOpenChange={setExportOpen} spaceId={doc.id} beforeExport={flush} />
           <PageHistory
             open={historyOpen}
