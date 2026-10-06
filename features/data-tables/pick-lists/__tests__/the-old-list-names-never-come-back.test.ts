@@ -54,7 +54,12 @@ export function scan(root: string): string[] {
       }
       const rel = path.relative(root, full);
       if (SKIP_FILES.has(entry.name) || SKIP_PATH.test(rel) || !SCAN_EXT.test(entry.name)) continue;
-      const text = fs.readFileSync(full, "utf8");
+      let text: string;
+      try {
+        text = fs.readFileSync(full, "utf8");
+      } catch {
+        continue; // a file another process removed mid-scan
+      }
       for (const [what, re] of OLD_TEXT) {
         if (re.test(text)) hits.push(`${rel}: ${what}`);
       }
