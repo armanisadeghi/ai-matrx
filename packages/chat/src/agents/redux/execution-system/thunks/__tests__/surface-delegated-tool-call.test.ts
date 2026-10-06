@@ -78,7 +78,7 @@ jest.mock("../dispatch-matrx-extend-tool.thunk", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
+import { createChatTestReducer } from "../../../../../testing/chat-test-reducer";
 import { createInstance } from "../../conversations/conversations.slice";
 import { createRequest } from "../../active-requests/active-requests.slice";
 import {

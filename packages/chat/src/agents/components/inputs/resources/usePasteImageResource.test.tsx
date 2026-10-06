@@ -1,4 +1,4 @@
-import { renderHook } from "@ai-matrx/chat/host/__tests__/render-hook";
+import { renderHook } from "@ai-matrx/chat/testing/render-hook";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
 
 const upload = jest.fn();

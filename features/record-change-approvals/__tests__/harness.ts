@@ -96,7 +96,7 @@ import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core"
 import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
 import { setStoreSingleton } from "@/lib/redux/store-singleton";
 
-import captured from "@ai-matrx/chat/tool-call-visualization/components/__tests__/fixtures/awaiting-approval.captured.json";
+import captured from "@ai-matrx/chat/testing/captured/awaiting-approval";
 import { readRecordChangeWait, type RecordChangeWait } from "../recordChangeApproval";
 
 // `override: true` — jest.setup.ts seeds a fake localhost URL/key so modules

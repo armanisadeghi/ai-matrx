@@ -14,7 +14,7 @@ import {
   type ChatPortName,
 } from "../index";
 import { _resetAnnouncements } from "../errors";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 import { CHAT_WINDOWS } from "../windows";
 
 const ALL_PORTS: ChatPortName[] = [

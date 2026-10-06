@@ -74,6 +74,7 @@ export function judgeSpec(spec, importerRel, root, { domains, named }) {
   const first = sub.split("/")[0];
   if (first === "src") return "SRC";
   if (!domains.has(first)) return "DOMAIN";
+  if (first === "testing" && !TEST_IMPORTER.test(importerRel)) return "TEST_PATH";
   const isTestPath = TEST_SEGMENT.test(sub);
   if (isTestPath && !TEST_IMPORTER.test(importerRel)) return "TEST_PATH";
   const base = path.join(root, "packages/chat/src", sub);
@@ -145,7 +146,7 @@ async function selfTest() {
   w("packages/chat/src/host/index.ts", "export {};");
   w("packages/chat/src/agents/redux/a.slice.ts", "export {};");
   w("packages/chat/src/agents/run/index.ts", "export {};");
-  w("packages/chat/src/host/__tests__/fake-db.ts", "export {};");
+  w("packages/chat/src/testing/fake-db.ts", "export {};");
   const cases = [
     ["features/ok.ts", `import { a } from "@ai-matrx/chat/agents/redux/a.slice"; import "@ai-matrx/chat/host"; // "@ai-matrx/chat/src/x" in a comment\n`, []],
     ["features/src.ts", `import x from "@ai-matrx/chat/src/agents/redux/a.slice";`, ["SRC"]],
@@ -154,8 +155,8 @@ async function selfTest() {
     ["features/ext.ts", `import x from "@ai-matrx/chat/agents/redux/a.slice.ts";`, ["EXTENSION"]],
     ["features/dir.ts", `jest.mock("@ai-matrx/chat/agents/run");`, ["DIRECTORY"]],
     ["features/missing.ts", `export type T = import("@ai-matrx/chat/agents/gone").T;`, ["MISSING"]],
-    ["features/runtime-test-path.ts", `import { fake } from "@ai-matrx/chat/host/__tests__/fake-db";`, ["TEST_PATH"]],
-    ["features/__tests__/ok-test-reach.test.ts", `import { fake } from "@ai-matrx/chat/host/__tests__/fake-db";`, []],
+    ["features/runtime-test-path.ts", `import { fake } from "@ai-matrx/chat/testing/fake-db";`, ["TEST_PATH"]],
+    ["features/__tests__/ok-test-reach.test.ts", `import { fake } from "@ai-matrx/chat/testing/fake-db";`, []],
   ];
   let failed = 0;
   for (const [rel, body, want] of cases) {

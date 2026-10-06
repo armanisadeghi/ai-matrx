@@ -144,7 +144,7 @@ import adminPreferencesReducer from "@/lib/redux/preferences/adminPreferencesSli
 import userPreferencesReducer from "@/lib/redux/preferences/userPreferencesSlice";
 import { editorStateReducer } from "@/features/code-editor/redux/editor-state.slice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
-import { configureRecordingWindows, type RecordingWindows } from "@ai-matrx/chat/host/__tests__/recording-windows";
+import { configureRecordingWindows, type RecordingWindows } from "@ai-matrx/chat/testing/recording-windows";
 import { CHAT_WINDOWS } from "@ai-matrx/chat/host/windows";
 import type { ChatDispatch, ChatRootState } from "@ai-matrx/chat/store/root-state";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";

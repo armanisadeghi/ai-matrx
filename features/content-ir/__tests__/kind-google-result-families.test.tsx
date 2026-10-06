@@ -26,6 +26,7 @@
  * exact block and the cells on both sides — never as a receipt.
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Provider } from "react-redux";

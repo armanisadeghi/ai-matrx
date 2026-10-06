@@ -89,7 +89,7 @@ import {
   resolveMandate,
 } from "@ai-matrx/chat/mandates/service";
 import { withClaims } from "@/test-utils/supabase-auth";
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 import { appChatServerApi } from "@/lib/api/chat-server-api";
 
 beforeAll(() => {

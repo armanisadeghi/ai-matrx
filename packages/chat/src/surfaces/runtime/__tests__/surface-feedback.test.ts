@@ -47,7 +47,7 @@ import {
 } from "../surface-writeback";
 import { registerSurfaceRuntime } from "../SurfaceRuntimeContext";
 import { _resetChatHostForTests, configureChat } from "../../../host/configure";
-import { createFakeDb } from "../../../host/__tests__/fake-db";
+import { createFakeDb } from "../../../testing/fake-db";
 
 // The host's feedback port is the submit path (matrx-frontend wires `submitFeedback`).
 beforeAll(() => {

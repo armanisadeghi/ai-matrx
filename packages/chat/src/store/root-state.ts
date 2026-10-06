@@ -27,8 +27,58 @@ import type { ChatState } from "./state";
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ChatStoreRegister {}
 
-/** The full store state the package runs in: the host's when registered, else `ChatState`. */
-export type ChatRootState = ChatStoreRegister extends { rootState: infer S } ? S : ChatState;
+/**
+ * Slices the HOST owns that package code reads when present (§2.3). A private store has none of
+ * them, so every read is optional; a registered host store supplies the real shapes. Only the
+ * fields the package reads are named — anything else stays `unknown`.
+ */
+export interface ChatHostReadSlices {
+  userAuth?: {
+    id: string | null;
+    email?: string | null;
+    isAnonymous?: boolean;
+    accessToken?: string | null;
+    isAdmin?: boolean;
+    adminLaneOpen?: boolean;
+    adminLevel?: string | null;
+    [field: string]: unknown;
+  };
+  appContext?: { organization_id?: string | null; [field: string]: unknown };
+  userProfile?: {
+    fingerprintId?: string | null;
+    userMetadata?: {
+      fullName?: string | null;
+      name?: string | null;
+      preferredUsername?: string | null;
+      [field: string]: unknown;
+    } | null;
+    [field: string]: unknown;
+  };
+  cloudFiles?: {
+    filesById: Record<string, { fileName?: string | null; [field: string]: unknown } | undefined>;
+    [field: string]: unknown;
+  };
+  transcriptStudio?: {
+    byId?: Record<
+      string,
+      | {
+          id: string;
+          assistantConversationId?: string | null;
+          assistantConversations?: readonly { conversationId: string; [field: string]: unknown }[];
+          [field: string]: unknown;
+        }
+      | undefined
+    >;
+    documentsById?: Record<
+      string,
+      Record<string, { id?: string; content?: string | null; [field: string]: unknown } | undefined> | undefined
+    >;
+    [field: string]: unknown;
+  };
+}
+
+/** The full store state the package runs in: the host's when registered, else `ChatState` + optional host reads. */
+export type ChatRootState = ChatStoreRegister extends { rootState: infer S } ? S : ChatState & ChatHostReadSlices;
 
 /** Thunk-aware dispatch (the `ThunkDispatch & Dispatch` intersection keeps the thunk overload). */
 export type ChatDispatch = ChatStoreRegister extends { dispatch: infer D }

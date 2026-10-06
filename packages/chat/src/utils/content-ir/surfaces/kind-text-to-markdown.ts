@@ -302,20 +302,45 @@ function convertRegions(
   if (spans.length === 0) return null;
   spans.sort((a, b) => a.start - b.start);
 
-  let out = "";
+  // Built as parts: `closeBefore` of the whole output per span copied the growing
+  // string each time (quadratic on thousands of regions, round 11 P5).
+  const parts: string[] = [];
+  const push = (piece: string) => {
+    if (piece) parts.push(piece);
+  };
+  const closeBeforeParts = () => {
+    while (parts.length > 0) {
+      const last = parts[parts.length - 1]!;
+      const trimmed = last.replace(/[ \t\r]+$/, "");
+      if (trimmed) {
+        parts[parts.length - 1] = trimmed;
+        break;
+      }
+      parts.pop();
+    }
+    if (parts.length === 0) return;
+    const last = parts[parts.length - 1]!;
+    if (last[last.length - 1] !== "\n") {
+      parts.push("\n\n");
+      return;
+    }
+    const before = last.length > 1 ? last[last.length - 2] : parts.length > 1 ? parts[parts.length - 2]!.slice(-1) : "";
+    if (before !== "\n") parts.push("\n");
+  };
   let cursor = 0;
   let afterBlock = false;
   for (const span of spans) {
     if (span.start < cursor) continue; // inside a span already taken
     const between = leftover(text.slice(cursor, span.start));
-    out += afterBlock ? openAfter(between) : between;
-    out = closeBefore(out) + span.md;
+    push(afterBlock ? openAfter(between) : between);
+    closeBeforeParts();
+    push(span.md);
     cursor = span.end;
     afterBlock = true;
   }
   const tail = leftover(text.slice(cursor));
-  out += afterBlock ? openAfter(tail) : tail;
-  return out;
+  push(afterBlock ? openAfter(tail) : tail);
+  return parts.join("");
 }
 
 /** Fence languages whose body is a JSON region (an unlabelled fence included). */

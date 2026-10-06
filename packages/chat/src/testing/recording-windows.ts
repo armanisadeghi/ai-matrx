@@ -4,9 +4,9 @@
  * previous test configured.
  */
 
-import { _resetChatHostForTests, configureChat } from "../configure";
-import type { ChatWindowsPort } from "../contract";
-import type { ChatWindowId } from "../windows";
+import { _resetChatHostForTests, configureChat } from "../host/configure";
+import type { ChatWindowsPort } from "../host/contract";
+import type { ChatWindowId } from "../host/windows";
 import { createFakeDb } from "./fake-db";
 
 export interface RecordedWindowCall {

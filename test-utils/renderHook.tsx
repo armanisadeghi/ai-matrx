@@ -1,1 +1,1 @@
-export * from "@ai-matrx/chat/host/__tests__/render-hook";
+export * from "@ai-matrx/chat/testing/render-hook";

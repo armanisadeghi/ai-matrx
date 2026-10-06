@@ -19,7 +19,7 @@ import {
 } from "../diagnostics";
 import { RecordUnavailableError } from "@ai-matrx/data/db";
 import { _resetAnnouncements } from "../errors";
-import { createFakeDb } from "./fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 
 const WARNING: ChatDiagnosticEntry = {
   source: "agent-stream-warning",

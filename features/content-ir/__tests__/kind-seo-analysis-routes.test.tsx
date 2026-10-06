@@ -30,6 +30,7 @@
  * Maturity is deliberately untouched (KINDS_EVERYWHERE_PLAN.md §7.8).
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

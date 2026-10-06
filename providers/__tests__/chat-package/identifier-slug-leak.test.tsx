@@ -24,7 +24,7 @@ import { StructuredValueView } from "@/components/official/structured-value/Stru
 import { isTechnicalTableColumn } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultTable";
 import { isIdentifierKey, humanNameSiblingKey } from "@ai-matrx/chat/tool-call-visualization/result-fields/KeyValueGrid";
 
-import deliver from "@ai-matrx/chat/tool-call-visualization/result-fields/__tests__/fixtures/masterwork-run-cef6ae07-deliver.json";
+import deliver from "@ai-matrx/chat/testing/captured/masterwork-run-cef6ae07-deliver";
 
 /** Every rule-id slug that appears anywhere in the real run payload. */
 const SLUGS = [

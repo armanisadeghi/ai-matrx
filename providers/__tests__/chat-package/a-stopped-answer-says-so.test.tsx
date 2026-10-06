@@ -33,7 +33,7 @@ import {
   setRequestStatus,
 } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.slice";
 import { TooltipProvider } from "@ai-matrx/design-system";
-import { ChatHostTestProvider } from "@ai-matrx/chat/host/__tests__/chat-host-test-provider";
+import { ChatHostTestProvider } from "@ai-matrx/chat/testing/chat-host-test-provider";
 import { AlchemyActionsTestHost } from "@/test-utils/alchemy-actions-host";
 import { AgentAssistantMessage } from "@ai-matrx/chat/agents/components/messages-display/assistant/AgentAssistantMessage";
 

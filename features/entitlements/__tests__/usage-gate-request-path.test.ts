@@ -30,7 +30,7 @@ import {
 } from "../usage-gate/usageGate";
 import type { UsageSnapshot } from "../usage-gate/usageState";
 import { runAiStream } from "@/packages/chat/src/agents/redux/execution-system/thunks/run-ai-stream";
-import { configureServerForTest } from "@/packages/chat/src/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 const readMock = readUsageSnapshot as jest.MockedFunction<
   typeof readUsageSnapshot

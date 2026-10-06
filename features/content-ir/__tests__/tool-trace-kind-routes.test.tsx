@@ -19,6 +19,7 @@
  * (fixtures/tool-trace-kind-examples.json, pulled verbatim from content_ir).
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

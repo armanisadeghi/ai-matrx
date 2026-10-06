@@ -3,7 +3,7 @@
  * lets a test choose the session. Only the surface the host defaults touch.
  */
 
-import type { ChatDb } from "../contract";
+import type { ChatDb } from "../host/contract";
 
 export interface RpcCall {
   fn: string;

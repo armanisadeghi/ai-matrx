@@ -15,6 +15,7 @@ jest.mock("@ai-matrx/media/core", () => ({
 }));
 
 import ImageBlock from "./ImageBlock";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 const FILE_ID = "30b9e3cc-9f1a-4787-bae6-3b47f22d9675";
@@ -23,6 +24,8 @@ const ENDPOINT = `https://files.matrxserver.com/files/${FILE_ID}/download`;
 describe("ImageBlock authenticated transport", () => {
   let container: HTMLDivElement;
   let root: Root;
+  // The app mounts one TooltipProvider at its root (app/Providers.tsx); the image's action buttons need it.
+  const render = (node: React.ReactNode) => root.render(<TooltipProvider>{node}</TooltipProvider>);
 
   beforeEach(() => {
     container = document.createElement("div");
@@ -61,7 +64,7 @@ describe("ImageBlock authenticated transport", () => {
   });
 
   it("never binds the private endpoint while authenticated bytes are loading", () => {
-    act(() => root.render(<ImageBlock src={ENDPOINT} alt="private image" />));
+    act(() => render(<ImageBlock src={ENDPOINT} alt="private image" />));
 
     expect(useMediaBlob).toHaveBeenCalledWith({ file_id: FILE_ID });
     expect(useMediaLoadRecovery).toHaveBeenCalledWith(null, {
@@ -80,7 +83,7 @@ describe("ImageBlock authenticated transport", () => {
       retry: jest.fn(),
     });
 
-    act(() => root.render(<ImageBlock src={ENDPOINT} alt="private image" />));
+    act(() => render(<ImageBlock src={ENDPOINT} alt="private image" />));
 
     expect(container.querySelector("img")?.getAttribute("src")).toBe(
       "blob:https://www.aimatrx.com/authenticated-image",
@@ -94,14 +97,14 @@ describe("ImageBlock authenticated transport", () => {
   // Chair ruling 2026-09-25: a remote image follows WHO WROTE the text, and never sends a referrer.
   const REMOTE = "https://supplier.example.com/probe-angle.png";
   it("a remote image in the viewer's own text draws, without a referrer", () => {
-    act(() => root.render(<ImagePolicyProvider value="self"><ImageBlock src={REMOTE} alt="probe angle" /></ImagePolicyProvider>));
+    act(() => render(<ImagePolicyProvider value="self"><ImageBlock src={REMOTE} alt="probe angle" /></ImagePolicyProvider>));
     const img = container.querySelector("img");
     expect(img?.getAttribute("src")).toBe(REMOTE);
     expect(img?.getAttribute("referrerpolicy")).toBe("no-referrer");
   });
 
   it("a remote image in an AI answer waits for a click", () => {
-    act(() => root.render(<ImagePolicyProvider value="ai"><ImageBlock src={REMOTE} alt="probe angle" /></ImagePolicyProvider>));
+    act(() => render(<ImagePolicyProvider value="ai"><ImageBlock src={REMOTE} alt="probe angle" /></ImagePolicyProvider>));
     expect(container.querySelector(`img[src="${REMOTE}"]`)).toBeNull();
     expect(container.querySelector('[data-rc-remote-image="supplier.example.com"]')).not.toBeNull();
   });

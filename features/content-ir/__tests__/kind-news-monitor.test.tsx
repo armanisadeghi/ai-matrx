@@ -105,7 +105,8 @@ describe("news monitor kinds — views", () => {
         }}
       />,
     );
-    expect(html).toContain("Watch / context · 1");
+    // c993b0ce0f renamed the tier heading so it never reads as the watch list.
+    expect(html).toContain("Context (not the watch list) · 1");
     expect(html).toContain("No bridge to e-waste recycling.");
     expect(html).toContain("No Client Standing");
   });
