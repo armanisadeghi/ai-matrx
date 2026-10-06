@@ -7,7 +7,7 @@
 // The page's own saves arrive through the store's subscription (store-db, owner's).
 // On @ai-matrx/realtime (supabase-realtime skill): namespace-built topic, backfill = re-read the threads.
 
-import { defineChannelNamespace } from "@ai-matrx/realtime";
+import { defineChannelNamespace, type RealtimeStatus } from "@ai-matrx/realtime";
 import { usePresence } from "@ai-matrx/realtime/react";
 import { useRef } from "react";
 
@@ -32,7 +32,14 @@ export interface SpaceViewer {
   avatarUrl: string | null;
 }
 
-export function useSpaceRoom(spaceId: string, onCommentsChanged: () => void): { viewers: SpaceViewer[]; me: string | null } {
+export interface SpaceRoom {
+  viewers: SpaceViewer[];
+  me: string | null;
+  /** The page channel's connection (co-editing reads it for Offline and the host election). */
+  status: RealtimeStatus;
+}
+
+export function useSpaceRoom(spaceId: string, onCommentsChanged: () => void): SpaceRoom {
   const userId = useAppSelector(selectUserId);
   const fullName = useAppSelector(selectUserFullName);
   const email = useAppSelector(selectUserEmail);
@@ -41,7 +48,7 @@ export function useSpaceRoom(spaceId: string, onCommentsChanged: () => void): { 
   const changed = useRef(onCommentsChanged);
   changed.current = onCommentsChanged;
 
-  const { members } = usePresence<SpaceViewerState>(
+  const { members, status } = usePresence<SpaceViewerState>(
     {
       topic: spacesPage.topic({ spaceId }),
       presence: {
@@ -72,5 +79,5 @@ export function useSpaceRoom(spaceId: string, onCommentsChanged: () => void): { 
     byUser.set(s.userId, { userId: s.userId, name: s.name || "Someone", avatarUrl: s.avatarUrl ?? null });
   }
   const viewers = [...byUser.values()].sort((a, b) => (a.userId === userId ? -1 : b.userId === userId ? 1 : a.name.localeCompare(b.name)));
-  return { viewers, me: userId };
+  return { viewers, me: userId, status };
 }

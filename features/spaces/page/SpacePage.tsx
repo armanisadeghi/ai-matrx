@@ -3,7 +3,7 @@
 // features/spaces/page/SpacePage.tsx — one open Space: top bar, cover, icon, title, editor (§A).
 
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, CloudOff, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,6 +11,8 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserEmail, selectUserFullName } from "@/lib/redux/selectors/userSelectors";
 import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker } from "../data/SourcePicker";
@@ -24,7 +26,7 @@ import { ExportDialog } from "./ExportDialog";
 import { PageHistory } from "./PageHistory";
 
 import type { SpaceBlock, SpaceDoc } from "../contract";
-import { fromEngine, plainText, type EngineBlock } from "../editor/convert";
+import { fromEngine, plainText, toEngine, type EngineBlock } from "../editor/convert";
 import type { SpacesEditor } from "../editor/schema";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
@@ -39,6 +41,8 @@ import { spaceCommentSource, type SpaceCommentAnchor } from "../collab/comments"
 import { PresenceAvatars, ShareMenu } from "../collab/TopBarCollab";
 import { useSpaceComments } from "../collab/useSpaceComments";
 import { useSpaceRoom } from "../collab/useSpaceRoom";
+import { useSpaceCollab } from "../collab/useSpaceCollab";
+import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -100,7 +104,9 @@ function pageCounts(doc: SpaceDoc): { words: number; characters: number } {
   return { words, characters: text.replace(/\s/g, "").length };
 }
 
-const sameBlocks = (a: SpaceDoc["blocks"], b: SpaceDoc["blocks"]) => JSON.stringify(a) === JSON.stringify(b);
+/** What a save writes, as one comparable string: a save whose content is already stored is skipped. */
+const contentKey = (d: Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">) =>
+  JSON.stringify([d.title, d.icon ?? null, d.cover ?? null, d.settings, d.blocks]);
 
 export function SpacePage({ spaceId }: { spaceId: string }) {
   const spaces = useSpaces();
@@ -111,8 +117,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [saveState, setSaveState] = useState<SaveState>("saved");
   /** Why the last save failed — handed to the error menu beside "Not saved". */
   const [saveError, setSaveError] = useState<unknown>(null);
-  /** Bumped when the page is replaced by a newer stored copy: the editor remounts on it. */
-  const [editorRound, setEditorRound] = useState(0);
   const [focusTitle, setFocusTitle] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
@@ -124,16 +128,15 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [addingPageComment, setAddingPageComment] = useState(false);
   /** Bumped on every edit, so the comment margin re-reads block positions. */
   const [contentTick, setContentTick] = useState(0);
-  /** H3 — a newer copy saved by someone else arrived while this person was editing. */
-  const [remoteChanged, setRemoteChanged] = useState(false);
-  const remoteDoc = useRef<SpaceDoc | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const comments = useSpaceComments(spaceId, doc?.title ?? "");
   const room = useSpaceRoom(spaceId, comments.reload);
-  // What this person may do here: the database decides (get_resource_access). A viewer or commenter gets
-  // no editing affordances and never writes.
+  // H5 — what this person may do here: the database decides (get_resource_access); a viewer or
+  // commenter never gets editing affordances, never writes, and sees the room read-only.
   const access = useAccess("document", spaceId);
   const canEdit = access.level === "edit" || access.level === "admin";
+  const canEditRef = useRef(canEdit);
+  canEditRef.current = canEdit;
   useSpacesAiDisclosure();
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -146,12 +149,54 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const inFlight = useRef(false);
   const timer = useRef<number | null>(null);
   const [origin] = useState(() => crypto.randomUUID());
+  /** `contentKey` of the newest stored version this member knows of (its own save or the host's). */
+  const savedKey = useRef<string | null>(null);
+  /** When the first unsaved change since the last save happened (the cadence's max wait runs from it). */
+  const dirtySince = useRef<number | null>(null);
 
   const adopt = (d: SpaceDoc) => {
     docRef.current = d;
     baseVersion.current = d.version;
+    savedKey.current = contentKey(d);
     setDoc(d);
   };
+
+  // H3 — live co-editing. The room (Yjs over broadcast) is the page's truth while it is open; exactly one
+  // member (the host) writes it to the store.
+  const fullName = useAppSelector(selectUserFullName);
+  const email = useAppSelector(selectUserEmail);
+  const applyMeta = (meta: Partial<SpaceMeta>) => {
+    if (!docRef.current) return;
+    const patch = meta as Partial<Editable>;
+    docRef.current = { ...docRef.current, ...patch };
+    setDoc((d) => (d ? { ...d, ...patch } : d));
+    if ("title" in patch || "icon" in patch) patchSummary(spaceId, { ...("title" in patch ? { title: patch.title } : {}), ...("icon" in patch ? { icon: patch.icon } : {}) });
+    schedule();
+  };
+  const hostAtLastRender = useRef(false);
+  const collab = useSpaceCollab({
+    spaceId,
+    snapshot: doc,
+    userId: room.me,
+    name: fullName || email || "Someone",
+    canEdit,
+    room,
+    onMeta: applyMeta,
+    // Only real edits the room holds (pending) are saved on handover — opening a page never writes one.
+    onBecameHost: () => {
+      if (pending.current) schedule();
+    },
+  });
+  hostAtLastRender.current = collab.isHost;
+  // Built from the stored snapshot: the body the editor will hold (BlockNote's normalisation of the stored
+  // blocks) IS the stored version, so it is the save baseline — opening a page never writes a version.
+  useEffect(() => {
+    const s = collab.session;
+    const d = docRef.current;
+    if (!s || !d || !s.seededBlocks) return;
+    docRef.current = { ...d, blocks: fromEngine(s.seededBlocks as EngineBlock[]) };
+    savedKey.current = contentKey(docRef.current);
+  }, [collab.session]);
 
   // Another Space opened in this same page: drop the last one's state while rendering (React's
   // "reset state when a prop changes"), so nothing of it paints under the new id.
@@ -162,7 +207,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     setSaveState("saved");
     setDraft(undefined);
     setAddingPageComment(false);
-    setRemoteChanged(false);
   }
 
   useEffect(() => {
@@ -195,89 +239,133 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
 
   const refused = useRef<string | null>(null);
   const [sourcePicker, pickSource] = useSourcePicker(spaceId);
-  const flush = async (): Promise<void> => {
+  /**
+   * Write the page to the store — the host only (a member that is not host never writes; the host saves
+   * what the room holds). A save whose content is already the stored content is skipped, so an idle room,
+   * a cursor move or a peer's echo writes nothing.
+   */
+  const flush = async (leaving = false): Promise<void> => {
+    if (timer.current) window.clearTimeout(timer.current);
     timer.current = null;
     refused.current = null;
     if (inFlight.current || !pending.current || !docRef.current) return;
+    // Leaving: the session is already torn down, so the host status of the last render decides.
+    if (!(leaving ? hostAtLastRender.current : collab.hostRef.current)) return;
+    const sent = docRef.current;
+    const key = contentKey(sent);
     pending.current = false;
+    if (key === savedKey.current) {
+      dirtySince.current = null;
+      setSaveState("saved");
+      return;
+    }
     inFlight.current = true;
     setSaveState("saving");
-    const sent = docRef.current;
     try {
-      const saved = await store.saveFrom(origin, sent, baseVersion.current);
+      let saved: SpaceDoc;
+      try {
+        saved = await store.saveFrom(origin, sent, baseVersion.current);
+      } catch (err) {
+        // A version this member had not heard of yet (the last host's final save, a rename from the
+        // sidebar): the room already holds every edit, so save the room's copy over the newest version.
+        const latest = await store.get(spaceId).catch(() => null);
+        if (!latest || latest.version === baseVersion.current) throw err;
+        baseVersion.current = latest.version;
+        saved = await store.saveFrom(origin, sent, latest.version);
+      }
       baseVersion.current = saved.version;
+      savedKey.current = key;
+      dirtySince.current = pending.current ? dirtySince.current : null;
       if (docRef.current) docRef.current = { ...docRef.current, version: saved.version, updatedAt: saved.updatedAt };
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
       setSaveState(pending.current ? "saving" : "saved");
     } catch (err) {
-      const latest = await store.get(spaceId).catch(() => null);
-      if (latest && latest.version !== baseVersion.current) {
-        // Someone else saved first: never write over them. Show their copy and say so.
-        pending.current = false;
-        adopt(latest);
-        setEditorRound((r) => r + 1);
-        setSaveState("saved");
-        toast.warning("This page was changed somewhere else. Showing the latest version; your last edit was not saved.");
-      } else {
-        pending.current = true;
-        setSaveError(err);
-        setSaveState("failed");
-        // The database's refusal (22023 "not a valid snapshot: …") can arrive as a plain error object.
-        const raw = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as { message: unknown }).message) : "";
-        const message = raw || "We couldn't save this page.";
-        // A snapshot the database refuses (22023) will be refused again: say it once, retry on the next edit.
-        refused.current = /not a valid snapshot/i.test(message) ? message : null;
-        toast.error(message);
-      }
+      pending.current = true;
+      setSaveError(err);
+      setSaveState("failed");
+      // The database's refusal (22023 "not a valid snapshot: …") can arrive as a plain error object.
+      const raw = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as { message: unknown }).message) : "";
+      const message = raw || "We couldn't save this page.";
+      // A snapshot the database refuses (22023) will be refused again: say it once, retry on the next edit.
+      refused.current = /not a valid snapshot/i.test(message) ? message : null;
+      toast.error(message);
     } finally {
       inFlight.current = false;
       if (pending.current && !refused.current && !timer.current) timer.current = window.setTimeout(() => void flush(), 1000);
     }
   };
-  const update = (patch: Partial<Editable>, delay = 300) => {
+  /**
+   * Something changed (here or from a peer): every editor marks it, the host saves it on the cadence —
+   * `debounceMs` after the last change, and at least every `maxWaitMs` while changes keep coming.
+   */
+  const schedule = () => {
+    if (!docRef.current || !canEditRef.current) return;
+    pending.current = true;
+    const now = Date.now();
+    dirtySince.current ??= now;
+    // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
+    const cadence = collab.cadence;
+    if (!collab.hostRef.current || !cadence) return;
+    if (contentKey(docRef.current) !== savedKey.current) setSaveState("saving");
+    const wait = Math.max(0, Math.min(cadence.debounceMs, dirtySince.current + cadence.maxWaitMs - now));
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = window.setTimeout(() => void flush(), wait);
+  };
+  const update = (patch: Partial<Editable>) => {
     if (!docRef.current) return;
     docRef.current = { ...docRef.current, ...patch };
-    pending.current = true;
-    setSaveState("saving");
     setDoc((d) => (d ? { ...d, ...patch } : d));
     if ("blocks" in patch) setContentTick((t) => t + 1);
     if ("title" in patch || "icon" in patch) patchSummary(spaceId, { ...("title" in patch ? { title: patch.title } : {}), ...("icon" in patch ? { icon: patch.icon } : {}) });
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => void flush(), delay);
+    // Title, icon, cover and settings travel through the room's meta map; the body through the fragment.
+    const { blocks: _blocks, ...meta } = patch;
+    if (Object.keys(meta).length) collab.session?.setMeta(meta);
+    schedule();
   };
 
-  // A save of this page from elsewhere (sidebar rename, another tab): take it when nothing local is pending.
+  // A stored version newer than this member knows: the host's save (or this tab's sidebar rename / icon
+  // change, which is not in the room yet). The room stays the page's truth — nothing here replaces the
+  // editor; this member only learns the version and what is now stored, so its next save (if it becomes
+  // host) compares against it.
   useEffect(() => {
-    const take = (incoming: SpaceDoc) => {
+    const learn = (incoming: SpaceDoc) => {
       if (incoming.id !== spaceId || incoming.version <= baseVersion.current) return;
-      // Someone else saved while this person is mid-edit (unsaved changes, or the caret in the page):
-      // never yank the page from under them — the top bar says the page was updated and offers it.
-      const typing = !!document.activeElement?.closest(".spaces-editor, .spaces-title");
-      if (pending.current || inFlight.current || typing) {
-        remoteDoc.current = incoming;
-        setRemoteChanged(true);
-        return;
-      }
-      const before = docRef.current;
-      adopt(incoming);
-      if (!before || !sameBlocks(before.blocks, incoming.blocks)) setEditorRound((r) => r + 1);
+      baseVersion.current = incoming.version;
+      savedKey.current = contentKey(incoming);
+      if (docRef.current) docRef.current = { ...docRef.current, version: incoming.version, updatedAt: incoming.updatedAt };
+      setDoc((d) => (d ? { ...d, version: incoming.version, updatedAt: incoming.updatedAt } : d));
     };
     const off = store.onChange((change) => {
-      if (change.kind === "saved" && change.origin !== origin) take(change.doc);
+      if (change.kind !== "saved" || change.origin === origin || change.doc.id !== spaceId) return;
+      // Saved from elsewhere in this tab (sidebar rename, icon): carry the change into the room.
+      const cur = docRef.current;
+      const d = change.doc;
+      if (cur && (cur.title !== d.title || JSON.stringify(cur.icon) !== JSON.stringify(d.icon))) {
+        learn(d);
+        update({ title: d.title, icon: d.icon });
+        return;
+      }
+      learn(d);
     });
-    const unsubscribe = store.subscribe(spaceId, take);
+    const unsubscribe = store.subscribe(spaceId, learn);
     return () => {
       off();
       unsubscribe();
     };
-    // adopt only touches refs and setters.
+    // learn / update only touch refs, setters and the session.
   }, [store, spaceId, origin]);
+
+  // The cadence knobs arrived, or this member just became host: time whatever is pending.
+  useEffect(() => {
+    if (collab.isHost && collab.cadence && pending.current) schedule();
+  }, [collab.isHost, collab.cadence]);
 
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {
-      if (!pending.current && !inFlight.current) return;
-      void flush();
+      // Only the host holds unsaved work for everyone; any other member's edits are already in the room.
+      if (!hostAtLastRender.current || ((!pending.current || (docRef.current && contentKey(docRef.current) === savedKey.current)) && !inFlight.current)) return;
+      void flush(true);
       e.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
@@ -285,7 +373,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       window.removeEventListener("beforeunload", warn);
       // Leaving this Space: write what is pending now.
       if (timer.current) window.clearTimeout(timer.current);
-      void flush();
+      void flush(true);
     };
     // Flush on leaving this Space only.
   }, [spaceId]);
@@ -302,10 +390,11 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   }
 
   const locked = doc.settings.locked;
+  // A person without edit (viewer, commenter) reads the live page; nothing editable is drawn for them.
   const editable = canEdit && !locked && !doc.isArchived;
   const path = doc.isArchived ? [] : pathTo(doc.id);
   const isFavorite = favorites.includes(doc.id);
-  const setSettings = (patch: Partial<SpaceDoc["settings"]>) => update({ settings: { ...doc.settings, ...patch } }, 0);
+  const setSettings = (patch: Partial<SpaceDoc["settings"]>) => update({ settings: { ...doc.settings, ...patch } });
 
   const focusFirstBlock = () => {
     const editor = editorRef.current;
@@ -381,20 +470,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       () => toast.success("Copied link"),
       () => toast.error("Could not copy the link"),
     );
-  };
-
-  const showLatest = () => {
-    const latest = remoteDoc.current;
-    remoteDoc.current = null;
-    setRemoteChanged(false);
-    if (!latest) return;
-    // Their copy replaces this one; an unsaved local edit is dropped, as a conflicting save would be.
-    pending.current = false;
-    if (timer.current) window.clearTimeout(timer.current);
-    timer.current = null;
-    adopt(latest);
-    setEditorRound((r) => r + 1);
-    setSaveState("saved");
   };
 
   const jumpToBlock = (anchor: SpaceCommentAnchor) => {
@@ -475,16 +550,18 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             Locked
           </button>
         ) : null}
-        {remoteChanged ? (
-          <button type="button" className="spaces-locked-pill" onClick={showLatest} title="Someone else saved this page">
-            Page updated · Show latest
-          </button>
+        {collab.offline ? (
+          // Notion's Offline marker: edits stay on this screen and reach the others when the connection is back.
+          <span className="spaces-locked-pill" title="Changes will sync when you're back online" aria-live="polite">
+            <CloudOff size={13} />
+            Offline
+          </span>
         ) : null}
         <PresenceAvatars viewers={room.viewers} me={room.me} />
         {!doc.isArchived ? <AskPageButton page={pageForAi} /> : null}
         <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
-          {saveState === "saving" ? "Saving…" : saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
-          {saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
+          {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
+          {collab.isHost && saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
         <ShareMenu spaceId={doc.id} title={doc.title} onCopyLink={copyLink} />
         <button
@@ -564,12 +641,12 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
           </div>
         ) : null}
 
-        {doc.cover ? <Cover cover={doc.cover} editable={editable} onChange={(cover) => update({ cover }, 0)} /> : null}
+        {doc.cover ? <Cover cover={doc.cover} editable={editable} onChange={(cover) => update({ cover })} /> : null}
 
         <div className={`spaces-content ${fontClass}`} ref={contentRef}>
           <div className="spaces-header" ref={headerRef} data-has-cover={doc.cover ? "true" : undefined} data-has-icon={doc.icon ? "true" : undefined}>
             {doc.icon ? (
-              <IconPicker value={doc.icon} onChange={(icon) => update({ icon }, 0)} disabled={!editable}>
+              <IconPicker value={doc.icon} onChange={(icon) => update({ icon })} disabled={!editable}>
                 <button type="button" className="spaces-page-icon" data-image={doc.icon && !("icon" in doc.icon) ? "true" : undefined} aria-label="Change icon">
                   <SpaceIcon media={doc.icon} size={doc.icon && !("icon" in doc.icon) ? 136 : 78} />
                 </button>
@@ -578,13 +655,13 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             {!doc.isArchived ? (
               <div className="spaces-header-controls">
                 {editable && !doc.icon ? (
-                  <button type="button" className="spaces-header-control" onClick={() => update({ icon: randomIcon() }, 0)}>
+                  <button type="button" className="spaces-header-control" onClick={() => update({ icon: randomIcon() })}>
                     <SmilePlus size={15} />
                     Add icon
                   </button>
                 ) : null}
                 {editable && !doc.cover ? (
-                  <button type="button" className="spaces-header-control" onClick={() => update({ cover: randomCover() }, 0)}>
+                  <button type="button" className="spaces-header-control" onClick={() => update({ cover: randomCover() })}>
                     <ImageIcon size={15} />
                     Add cover
                   </button>
@@ -599,13 +676,15 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             <Backlinks key={doc.id} spaceId={doc.id} />
             <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>
-          <CommentMargin threads={comments.threads} containerRef={contentRef} tick={`${contentTick}:${editorRound}`} onOpen={openThread} />
+          <CommentMargin threads={comments.threads} containerRef={contentRef} tick={String(contentTick)} onOpen={openThread} />
+          {collab.session ? (
           <SpaceEditor
-            key={`${doc.id}:${editorRound}`}
+            key={doc.id}
             spaceId={doc.id}
             initialBlocks={doc.blocks}
             editable={editable}
-            onChange={(blocks) => update({ blocks }, 400)}
+            collab={{ fragment: collab.session.fragment, provider: collab.session.providerRef, user: collab.session.user }}
+            onChange={(blocks) => update({ blocks })}
             onReady={(editor) => {
               editorRef.current = editor;
             }}
@@ -622,6 +701,9 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
             onComment={startComment}
           />
+          ) : (
+            <div className="spaces-editor-pending" aria-busy="true" />
+          )}
           {sourcePicker}
           {aiTarget && editorRef.current ? <AskAiMenu editor={editorRef.current} target={aiTarget} page={pageForAi} onClose={() => setAiTarget(null)} /> : null}
           <ExportDialog open={exportOpen} onOpenChange={setExportOpen} spaceId={doc.id} beforeExport={flush} />
@@ -632,9 +714,11 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             editable={editable}
             onRestore={(entry) => {
               // A restore is a new version with that version's content; the editor remounts on it.
+              // Through the room, so everyone on the page sees the restored version at once.
               const { blocks, settings, icon, cover } = entry.snapshot;
-              update({ blocks, settings, icon, cover }, 0);
-              setEditorRound((r) => r + 1);
+              const editor = editorRef.current;
+              if (editor) editor.replaceBlocks(editor.document, toEngine(blocks) as never);
+              update({ settings, icon, cover });
               toast.success("Version restored");
             }}
           />

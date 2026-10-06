@@ -7,6 +7,7 @@
 // SpaceBlock — the engine never reaches the store.
 
 import { createExtension, filterSuggestionItems } from "@blocknote/core";
+import { CollaborationExtension } from "@blocknote/core/yjs";
 import { en } from "@blocknote/core/locales";
 import {
   AddBlockButton,
@@ -25,6 +26,8 @@ import {
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { useEffect, useState } from "react";
+import type { Awareness } from "y-protocols/awareness";
+import type * as Y from "yjs";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { mentionCandidates } from "@/features/rich-document/annotations/service";
@@ -152,6 +155,11 @@ export interface SpaceEditorProps {
   onComment?: (anchor: { blockId: string; quote: string }) => void;
   /** Lets the page reach the editor (title Enter → first block, Move to). */
   onReady?: (editor: SpacesEditor) => void;
+  /**
+   * H3 live co-editing: the body is the room's shared Yjs fragment (`initialBlocks` is then unused — the
+   * fragment already holds the page) and other members' cursors draw in their colours.
+   */
+  collab?: { fragment: Y.XmlFragment; provider: { awareness: Awareness }; user: { name: string; color: string } };
 }
 
 /** Column widths as CSS keyed by block id (the flex items are BlockNote's own outer elements). */
@@ -167,10 +175,16 @@ function columnCss(blocks: EngineBlock[]): string {
   return rules.join("\n");
 }
 
-export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment }: SpaceEditorProps) {
+export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment, collab }: SpaceEditorProps) {
   const dark = useDarkMode();
   const { byId } = useSpaces();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
+  // H3: with a room, BlockNote's own Yjs binding drives the body (sync, cursors, Yjs undo) — exactly what
+  // @blocknote/core/yjs `withCollaboration` adds: the extension, ProseMirror history off, and its fixed-id
+  // placeholder first block (the fragment's content replaces it).
+  const room = collab
+    ? CollaborationExtension({ fragment: collab.fragment, provider: collab.provider, user: collab.user, showCursorLabels: "activity" })
+    : null;
   const editor = useCreateBlockNote(
     {
       // B12: a lone URL goes in as a link and the Link / Mention / Bookmark / Embed choice opens beside
@@ -189,9 +203,10 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       },
       tables: { headers: true, splitCells: false, cellBackgroundColor: true, cellTextColor: true },
       schema: spacesSchema,
-      initialContent: initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
+      initialContent: room ? ([{ type: "paragraph", id: "initialBlockId" }] as never) : initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
+      disableExtensions: room ? ["history"] : undefined,
       dictionary: { ...en, placeholders: PLACEHOLDERS },
-      extensions: [notionKeys()],
+      extensions: room ? [notionKeys(), room] : [notionKeys()],
       tabBehavior: "prefer-indent",
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
       trailingBlock: false,
