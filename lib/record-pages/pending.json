@@ -1704,7 +1704,6 @@
   "components/official/ConfigurationFields.tsx",
   "components/official/processor-extractor/path-management/BookmarkManager.tsx",
   "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx",
-  "components/user-generated-table-data/UserTableViewer.tsx",
   "features/admin/relationships/components/RelationshipsOverviewClient.tsx",
   "features/agents/components/scope-batch-import/ScopeBatchImportBody.tsx",
   "features/cms/components/admin/ActivityFeedPanel.tsx",

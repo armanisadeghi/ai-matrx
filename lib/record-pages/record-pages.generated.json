@@ -6339,7 +6339,6 @@
   "components/official/processor-extractor/path-management/BookmarkManager.tsx": "noncanonical",
   "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx": "noncanonical",
   "components/read-state/ReadGate.tsx": "pending",
-  "components/user-generated-table-data/UserTableViewer.tsx": "noncanonical",
   "features/acquisition-console/AcquisitionConsolePage.tsx": "pending",
   "features/admin/agent-review/components/AgentReviewQueueTable.tsx": "pending",
   "features/admin/applications/catalogs/components/CatalogHistoryPanel.tsx": "pending",
