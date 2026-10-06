@@ -187,9 +187,9 @@ import {
   type SurfaceWriteHandlers,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildDeckWriteHandlers } from "../editor/deckWriteHandlers";
+import { deckSurfaceCards, deckSurfaceDetails } from "./deckSurfaceValues";
 import {
   createEducationFlashcardSetScope,
-  type FlashcardSetSurfaceCard,
   type FlashcardSetSurfaceMastery,
 } from "@/features/surfaces/manifests/education-flashcard-set.manifest";
 import { masteryTier } from "@/features/education/study/utils/masteryFsrs";
@@ -1075,33 +1075,9 @@ export function SetDetailView({
       ...(error ? { load_error: error } : {}),
       ...(loaded
         ? {
-            set_details: {
-              name: data.set.name,
-              topic: data.set.topic,
-              lesson: data.set.lesson,
-              description: data.set.description,
-              difficulty: data.set.difficulty,
-              visibility: data.set.visibility,
-            },
+            set_details: deckSurfaceDetails(data.set),
             card_count: data.cards.length,
-            cards: data.cards.map(
-              (card, index): FlashcardSetSurfaceCard => ({
-                id: card.id,
-                position: card.position ?? index,
-                card_kind: asCardKind(card.card_kind),
-                front: card.front,
-                back: card.back,
-                pairs:
-                  asCardKind(card.card_kind) === CARD_KIND.matching
-                    ? matchingPairs(card)
-                    : null,
-                detail_layers: card.details.map((detail) => ({
-                  kind: detail.kind,
-                  text: detail.text,
-                  generation_status: detail.generation_status,
-                })),
-              }),
-            ),
+            cards: deckSurfaceCards(data.cards),
             ...(masteryStatus === "available"
               ? {
                   card_mastery: data.cards.flatMap(

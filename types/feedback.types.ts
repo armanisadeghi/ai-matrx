@@ -18,6 +18,12 @@ export const FEEDBACK_TYPES = [
   "other",
   /** An access request — someone asks for a capability they lack (RequestAccess). */
   "request",
+  /**
+   * A page story (Applets AP-6): what a person is doing on this page and which page data the
+   * AI should get in full, kept verbatim; `metadata.surface_name` names the page's surface.
+   * Agents turn it into that surface's situation sentence and inline limits.
+   */
+  "page_story",
 ] as const;
 export type FeedbackType = (typeof FEEDBACK_TYPES)[number];
 export type FeedbackStatus =

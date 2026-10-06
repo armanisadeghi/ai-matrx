@@ -141,6 +141,7 @@ import { educationTutorHistoryManifest } from "./education-tutor-history.manifes
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
 import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
 import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
+import { educationFlashcardStudyManifest } from "./education-flashcard-study.manifest";
 import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
 import { educationQuizzesManifest } from "./education-quizzes.manifest";
@@ -412,6 +413,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationFlashcardsManifest,
   educationFlashcardSetManifest,
   educationFlashcardEditorManifest,
+  educationFlashcardStudyManifest,
   educationFastfireManifest,
   educationAssessmentManifest,
   educationQuizzesManifest,

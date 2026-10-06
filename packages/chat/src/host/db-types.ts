@@ -2238,15 +2238,6 @@ export type ChatDatabase = {
         }
         Relationships: []
       }
-      org_default_tool: {
-        Row: {
-          feature: string | null
-          key: string | null
-          tool_name: string | null
-          why: string | null
-        }
-        Relationships: []
-      }
     }
     Functions: {
       _created_via_from: {
@@ -2254,10 +2245,6 @@ export type ChatDatabase = {
         Returns: string
       }
       canonical_message_flags: { Args: { p_messages: Json }; Returns: Json }
-      default_tool_ids_for_organization: {
-        Args: { p_organization_id: string }
-        Returns: string[]
-      }
       message_flag_problems: {
         Args: never
         Returns: {
@@ -7117,7 +7104,7 @@ export type ChatDatabase = {
         Row: {
           args: Json | null
           call_id: string | null
-          conversation_id: string
+          conversation_id: string | null
           created_at: string
           created_by: string | null
           custom_fields: Json
@@ -7143,7 +7130,7 @@ export type ChatDatabase = {
         Insert: {
           args?: Json | null
           call_id?: string | null
-          conversation_id: string
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -7169,7 +7156,7 @@ export type ChatDatabase = {
         Update: {
           args?: Json | null
           call_id?: string | null
-          conversation_id?: string
+          conversation_id?: string | null
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
@@ -16633,6 +16620,7 @@ export type ChatDatabase = {
           mandate_id: string | null
           mandate_key: string | null
           metadata: Json | null
+          never_include_tools: Json | null
           organization_id: string | null
           pre_execution_message: string | null
           response_density: string | null
@@ -25162,6 +25150,10 @@ export type ChatDatabase = {
         Args: { p_label: string; p_type: string; p_values: Json }
         Returns: undefined
       }
+      _drill_choice_words_in: {
+        Args: { p_def: Json; p_question: Json }
+        Returns: Json
+      }
       _drill_column: {
         Args: { p_column: string; p_schema: string; p_table: string }
         Returns: Json
@@ -25221,6 +25213,10 @@ export type ChatDatabase = {
         Args: { p_grain: string; p_local: string; p_shift: number }
         Returns: string
       }
+      _drill_person_words: {
+        Args: { p_ids?: string[]; p_limit?: number; p_word?: string }
+        Returns: Json
+      }
       _drill_plan: {
         Args: {
           p_kind: string
@@ -25246,6 +25242,14 @@ export type ChatDatabase = {
       _drill_ratio_sql: {
         Args: { p_filter?: string; p_measure: Json; p_prefix: string }
         Returns: string
+      }
+      _drill_reach: {
+        Args: {
+          p_door: string
+          p_organization_id: string
+          p_source_kind: string
+        }
+        Returns: undefined
       }
       _drill_resolve: {
         Args: { p_organization_id: string; p_token: string }
@@ -26626,6 +26630,10 @@ export type ChatDatabase = {
           p_resource_type: string
         }
         Returns: string
+      }
+      entity_columns: {
+        Args: { p_organization_id: string; p_token: string }
+        Returns: Json
       }
       entity_default_list_scope: { Args: { p_token: string }; Returns: string }
       entity_default_visibility: {
@@ -41885,6 +41893,7 @@ export type ChatDatabase = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          declared_by: string
           deleted_at: string | null
           description: string
           execution_mode: string
@@ -41898,16 +41907,20 @@ export type ChatDatabase = {
           last_checked_by: string | null
           metadata: Json
           name: string
+          organization_id: string
           overlay_id: string | null
           parent_surface_name: string | null
           readiness: string | null
           readiness_note: string | null
+          situation: string | null
           sort_order: number
           supports_dictionary: boolean
           updated_at: string
           updated_by: string | null
           url_pattern: string | null
           value_groups: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           check_claimed_at?: string | null
@@ -41917,6 +41930,7 @@ export type ChatDatabase = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           execution_mode?: string
@@ -41930,16 +41944,20 @@ export type ChatDatabase = {
           last_checked_by?: string | null
           metadata?: Json
           name: string
+          organization_id: string
           overlay_id?: string | null
           parent_surface_name?: string | null
           readiness?: string | null
           readiness_note?: string | null
+          situation?: string | null
           sort_order?: number
           supports_dictionary?: boolean
           updated_at?: string
           updated_by?: string | null
           url_pattern?: string | null
           value_groups?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           check_claimed_at?: string | null
@@ -41949,6 +41967,7 @@ export type ChatDatabase = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           execution_mode?: string
@@ -41962,16 +41981,20 @@ export type ChatDatabase = {
           last_checked_by?: string | null
           metadata?: Json
           name?: string
+          organization_id?: string
           overlay_id?: string | null
           parent_surface_name?: string | null
           readiness?: string | null
           readiness_note?: string | null
+          situation?: string | null
           sort_order?: number
           supports_dictionary?: boolean
           updated_at?: string
           updated_by?: string | null
           url_pattern?: string | null
           value_groups?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -41987,6 +42010,101 @@ export type ChatDatabase = {
             isOneToOne: false
             referencedRelation: "ui_surface"
             referencedColumns: ["name"]
+          },
+        ]
+      }
+      ui_surface_action: {
+        Row: {
+          category: string
+          code_ref: string | null
+          created_at: string
+          created_by: string | null
+          declared_by: string
+          deleted_at: string | null
+          description: string
+          id: string
+          input: Json | null
+          item_type: string
+          label: string
+          metadata: Json
+          name: string
+          organization_id: string
+          output: string | null
+          policy: string
+          runs: string
+          sort_order: number
+          surface_id: string
+          surface_name: string
+          target: string | null
+          triggered_by: string[]
+          updated_at: string
+          updated_by: string | null
+          updates_value: string | null
+          version: number
+        }
+        Insert: {
+          category?: string
+          code_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          input?: Json | null
+          item_type?: string
+          label: string
+          metadata?: Json
+          name: string
+          organization_id: string
+          output?: string | null
+          policy?: string
+          runs: string
+          sort_order?: number
+          surface_id: string
+          surface_name: string
+          target?: string | null
+          triggered_by?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          updates_value?: string | null
+          version?: number
+        }
+        Update: {
+          category?: string
+          code_ref?: string | null
+          created_at?: string
+          created_by?: string | null
+          declared_by?: string
+          deleted_at?: string | null
+          description?: string
+          id?: string
+          input?: Json | null
+          item_type?: string
+          label?: string
+          metadata?: Json
+          name?: string
+          organization_id?: string
+          output?: string | null
+          policy?: string
+          runs?: string
+          sort_order?: number
+          surface_id?: string
+          surface_name?: string
+          target?: string | null
+          triggered_by?: string[]
+          updated_at?: string
+          updated_by?: string | null
+          updates_value?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ui_surface_action_surface_id_fkey"
+            columns: ["surface_id"]
+            isOneToOne: false
+            referencedRelation: "ui_surface"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -42082,6 +42200,7 @@ export type ChatDatabase = {
           auto_run: string
           created_at: string
           created_by: string | null
+          declared_by: string
           default_agent_id: string | null
           deleted_at: string | null
           description: string
@@ -42111,6 +42230,7 @@ export type ChatDatabase = {
           auto_run?: string
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           default_agent_id?: string | null
           deleted_at?: string | null
           description?: string
@@ -42140,6 +42260,7 @@ export type ChatDatabase = {
           auto_run?: string
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           default_agent_id?: string | null
           deleted_at?: string | null
           description?: string
@@ -42178,6 +42299,7 @@ export type ChatDatabase = {
         Row: {
           created_at: string
           created_by: string | null
+          declared_by: string
           deleted_at: string | null
           description: string
           id: string
@@ -42202,6 +42324,7 @@ export type ChatDatabase = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           id?: string
@@ -42226,6 +42349,7 @@ export type ChatDatabase = {
         Update: {
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           id?: string
@@ -42338,6 +42462,7 @@ export type ChatDatabase = {
         Row: {
           created_at: string
           created_by: string | null
+          declared_by: string
           deleted_at: string | null
           description: string
           entity_type: string | null
@@ -42364,6 +42489,7 @@ export type ChatDatabase = {
         Insert: {
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           entity_type?: string | null
@@ -42390,6 +42516,7 @@ export type ChatDatabase = {
         Update: {
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           entity_type?: string | null
@@ -42430,6 +42557,7 @@ export type ChatDatabase = {
           classification: string
           created_at: string
           created_by: string | null
+          declared_by: string
           deleted_at: string | null
           description: string
           exportable: boolean
@@ -42466,6 +42594,7 @@ export type ChatDatabase = {
           classification?: string
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           exportable?: boolean
@@ -42502,6 +42631,7 @@ export type ChatDatabase = {
           classification?: string
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           exportable?: boolean
@@ -42548,6 +42678,7 @@ export type ChatDatabase = {
           approval_comparison: string | null
           created_at: string
           created_by: string | null
+          declared_by: string
           deleted_at: string | null
           description: string
           destination: boolean
@@ -42582,6 +42713,7 @@ export type ChatDatabase = {
           approval_comparison?: string | null
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           destination?: boolean
@@ -42616,6 +42748,7 @@ export type ChatDatabase = {
           approval_comparison?: string | null
           created_at?: string
           created_by?: string | null
+          declared_by?: string
           deleted_at?: string | null
           description?: string
           destination?: boolean
@@ -42660,7 +42793,28 @@ export type ChatDatabase = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      save_applet_surface: {
+        Args: { p_applet_id: string; p_spec?: Json }
+        Returns: Json
+      }
+      save_surface_extension: {
+        Args: {
+          p_actions?: Json
+          p_organization_id: string
+          p_surface_name: string
+        }
+        Returns: Json
+      }
+      surface_code_refs_broken: {
+        Args: never
+        Returns: {
+          action_id: string
+          action_name: string
+          code_ref: string
+          reason: string
+          surface_name: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
