@@ -91,7 +91,7 @@ export function BrokenFunctionSeverityFilterBar({
                 "inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-[11px] transition-colors",
                 active
                   ? severity === "real"
-                    ? "border-destructive/40 bg-destructive/10 text-destructive"
+                    ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
                     : severity === "advisory"
                       ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
                       : "border-primary/40 bg-primary/10 text-foreground"
@@ -115,7 +115,7 @@ export function BrokenFunctionSeverityFilterBar({
             className={cn(
               "inline-flex h-6 items-center gap-1.5 rounded-md border px-2 text-[11px] transition-colors",
               includeUnclassified
-                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
                 : "border-border bg-transparent text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >

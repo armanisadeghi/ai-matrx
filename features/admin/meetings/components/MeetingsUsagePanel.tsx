@@ -99,7 +99,7 @@ export function MeetingsUsagePanel({ onOpenOrganization }: { onOpenOrganization:
       </div>
 
       {state.error ? (
-        <div className="relative rounded-md border border-destructive/40 bg-destructive/5 p-3 pr-10 text-sm text-destructive">
+        <div className="relative rounded-md border border-destructive/40 bg-destructive/5 p-3 pr-10 text-sm text-destructive-ink">
           Usage could not be read: {state.error}
           <ErrorAlchemyMenu error={state.error} operation="Read platform meeting usage" />
         </div>

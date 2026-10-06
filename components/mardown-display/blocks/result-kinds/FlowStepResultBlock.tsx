@@ -123,7 +123,7 @@ const FlowStepResultBlock: React.FC<ResultKindBlockProps> = ({
               {label || "Branch"}
               {" → "}
             </span>
-            <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-primary">
+            <span className="rounded-md bg-primary/10 px-2 py-0.5 font-mono text-primary-ink">
               {direction}
             </span>
           </span>

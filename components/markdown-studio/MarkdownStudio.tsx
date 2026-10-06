@@ -907,7 +907,7 @@ export function MarkdownStudio() {
             <button
               type="button"
               onClick={handleUpdatePreview}
-              className="rounded border border-primary/40 bg-primary/10 px-1.5 text-[10px] text-primary hover:bg-primary/20"
+              className="rounded border border-primary/40 bg-primary/10 px-1.5 text-[10px] text-primary-ink hover:bg-primary/20"
               title="The preview shows your last update — click to render the current text"
             >
               preview behind · update

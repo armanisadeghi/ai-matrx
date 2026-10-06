@@ -86,9 +86,9 @@ const STATUS_TONE_CLASS: Record<
   ReturnType<typeof statusTone>,
   string
 > = {
-  success: "bg-success/10 text-success",
-  warning: "bg-warning/10 text-warning",
-  danger: "bg-destructive/10 text-destructive",
+  success: "bg-success/10 text-success-ink",
+  warning: "bg-warning/10 text-warning-ink",
+  danger: "bg-destructive/10 text-destructive-ink",
   neutral: "bg-muted text-muted-foreground",
 };
 

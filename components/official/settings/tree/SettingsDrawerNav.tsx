@@ -303,7 +303,7 @@ function DrawerRow({
       style={{ minHeight: 56 }}
     >
       {node.icon && (
-        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary-ink shrink-0">
           <node.icon className="h-4 w-4" />
         </span>
       )}

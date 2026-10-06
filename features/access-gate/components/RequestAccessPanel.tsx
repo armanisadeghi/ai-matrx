@@ -263,7 +263,7 @@ function LevelChoice({
       className={[
         "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-primary-ink"
           : "border-border bg-background text-muted-foreground hover:bg-accent",
       ].join(" ")}
     >

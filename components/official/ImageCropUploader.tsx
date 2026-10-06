@@ -248,7 +248,7 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
           className={cn(
             "flex-1 flex items-center justify-center gap-1.5 h-8 rounded-lg border text-xs transition-colors disabled:opacity-50 disabled:pointer-events-none",
             mode === "url"
-              ? "border-primary/50 bg-primary/5 text-primary"
+              ? "border-primary/50 bg-primary/5 text-primary-ink"
               : "border-border text-muted-foreground hover:text-foreground hover:bg-muted/40",
           )}
         >

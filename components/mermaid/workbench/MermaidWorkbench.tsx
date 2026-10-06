@@ -531,7 +531,7 @@ export default function MermaidWorkbench({
                       className={cn(
                         "flex items-center gap-1 rounded px-2 py-1 text-xs font-medium transition-colors",
                         aiOpen
-                          ? "bg-primary/10 text-primary"
+                          ? "bg-primary/10 text-primary-ink"
                           : "text-muted-foreground hover:bg-muted hover:text-foreground",
                       )}
                     >
@@ -885,7 +885,7 @@ function SaveIndicator({
       <button
         type="button"
         onClick={onRetry}
-        className="flex items-center gap-1 rounded px-1.5 text-xs text-destructive hover:bg-destructive/10"
+        className="flex items-center gap-1 rounded px-1.5 text-xs text-destructive-ink hover:bg-destructive/10"
       >
         <TriangleAlert className="h-3 w-3" />
         Retry save

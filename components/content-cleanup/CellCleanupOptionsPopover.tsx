@@ -122,7 +122,7 @@ export function CellCleanupOptionsPopover({
                             {m.label}
                           </span>
                           {on && n > 0 && (
-                            <span className="rounded bg-primary/10 px-1 text-[0.5625rem] font-medium tabular-nums text-primary">
+                            <span className="rounded bg-primary/10 px-1 text-[0.5625rem] font-medium tabular-nums text-primary-ink">
                               {n}
                             </span>
                           )}

@@ -394,8 +394,8 @@ export default function AdminAttentionDock() {
           className={cn(
             "flex items-center gap-1 rounded-full border py-1 pl-2 pr-1 text-xs font-medium backdrop-blur",
             tone === "destructive"
-              ? "border-destructive/40 bg-destructive/10 text-destructive"
-              : "border-warning/40 bg-warning/10 text-warning",
+              ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
+              : "border-warning/40 bg-warning/10 text-warning-ink",
           )}
         >
           {dragHandle}

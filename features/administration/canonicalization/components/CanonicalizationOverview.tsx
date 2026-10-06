@@ -205,7 +205,7 @@ export function CanonicalizationOverview() {
       </div>
 
       {error ? (
-        <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

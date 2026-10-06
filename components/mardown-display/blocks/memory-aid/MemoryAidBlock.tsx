@@ -262,7 +262,7 @@ export function MemoryPalaceSection({ palace, controls }: { palace: MemoryPalace
         <ol className="space-y-2">
           {palace.loci.map((l, i) => (
             <li key={`loc-${i}`} className="group flex gap-2.5 rounded-md py-1">
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary-ink">
                 {i + 1}
               </span>
               {controls?.editor?.kind === "locus" && controls.editor.index === i ? controls.editor.content : <>
@@ -286,7 +286,7 @@ export function MemoryPalaceSection({ palace, controls }: { palace: MemoryPalace
           ))}
           {addingNew && controls?.editor && (
             <li key="loc-new" className="group flex gap-2.5 rounded-md py-1">
-              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary-ink">
                 {palace.loci.length + 1}
               </span>
               <div className="min-w-0 flex-1">{controls.editor.content}</div>

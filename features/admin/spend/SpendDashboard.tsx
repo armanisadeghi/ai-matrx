@@ -59,11 +59,11 @@ const ROLE_LABEL: Record<SpendLedgerRole, string> = {
 };
 
 const ROLE_CLASS: Record<SpendLedgerRole, string> = {
-  primary: "bg-primary/15 text-primary",
+  primary: "bg-primary/15 text-primary-ink",
   overlap: "bg-muted text-muted-foreground",
   additive: "bg-secondary text-secondary-foreground",
-  gap: "bg-destructive/15 text-destructive",
-  unmeasured: "bg-destructive/15 text-destructive",
+  gap: "bg-destructive/15 text-destructive-ink",
+  unmeasured: "bg-destructive/15 text-destructive-ink",
 };
 
 function RoleBadge({ role }: { role: SpendLedgerRole }) {
@@ -304,7 +304,7 @@ export function SpendDashboard() {
     >
       <div className="scroll-page-end-space flex w-full min-w-0 flex-col gap-4 p-4">
       {error ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive-ink">
           <div className="flex items-center justify-between gap-2">
             <div className="font-medium">The spend overview read failed.</div>
             <RefreshCwTapButton
@@ -321,7 +321,7 @@ export function SpendDashboard() {
       ) : null}
 
       {knobsState.error ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive-ink">
           Alarm threshold unreadable ({knobsState.error.message}); headline
           colour won&apos;t change. Seed
           <span className="font-mono">

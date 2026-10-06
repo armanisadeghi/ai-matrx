@@ -306,7 +306,7 @@ function Chip({
           ? "border-border bg-transparent text-muted-foreground/70"
           : "border-border bg-card text-foreground hover:bg-accent",
         tone === "danger" && count > 0 &&
-          "border-destructive/50 bg-destructive/10 text-destructive hover:bg-destructive/15",
+          "border-destructive/50 bg-destructive/10 text-destructive-ink hover:bg-destructive/15",
         active && "ring-2 ring-primary ring-offset-1 ring-offset-background",
       )}
     >
@@ -515,7 +515,7 @@ export function BatchDashboard() {
       <ScrollArea className="flex-1">
         <div className="space-y-3 p-4">
           {(queueError || savingsError || providerError) && (
-            <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-xs text-destructive">
+            <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-xs text-destructive-ink">
               <p className="font-semibold">The batch data could not be read.</p>
               <p className="mt-1 font-mono">
                 {queueError ?? savingsError ?? providerError}

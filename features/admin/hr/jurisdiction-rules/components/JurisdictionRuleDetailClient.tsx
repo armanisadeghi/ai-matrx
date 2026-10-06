@@ -147,7 +147,7 @@ function CitationAtSignoff({ rule }: { rule: JurisdictionRule }) {
       </div>
 
       {noSource ? (
-        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">
+        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive-ink">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           This rule cites our own research, not an external authority
           {citation?.url ? ` (${citation.url})` : ""}. There is no external
@@ -156,7 +156,7 @@ function CitationAtSignoff({ rule }: { rule: JurisdictionRule }) {
       ) : null}
 
       {rule.unverified_keys.length > 0 ? (
-        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">
+        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive-ink">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           {rule.unverified_keys.length} parameter
           {rule.unverified_keys.length === 1 ? "" : "s"} unverified (

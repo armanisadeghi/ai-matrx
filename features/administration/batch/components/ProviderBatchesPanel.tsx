@@ -86,7 +86,7 @@ export function ProviderBatchesPanel({
 
   if (error) {
     return (
-      <section className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-4 text-xs text-destructive">
+      <section className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-4 text-xs text-destructive-ink">
         <p className="font-semibold">The provider batches could not be read.</p>
         <p className="mt-1 font-mono">{error}</p>
         <ErrorAlchemyMenu />

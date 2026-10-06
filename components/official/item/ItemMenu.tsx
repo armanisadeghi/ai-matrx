@@ -100,7 +100,7 @@ const dropdownFamily: MenuFamily = {
 };
 
 const DESTRUCTIVE_ITEM_CLASS =
-  "text-destructive focus:bg-destructive/10 focus:text-destructive [&_svg]:text-destructive";
+  "text-destructive-ink focus:bg-destructive/10 focus:text-destructive-ink [&_svg]:text-destructive-ink";
 
 // ── Action dispatch — shared with the v3 converter (itemMenuToV3.ts) ────────
 // Lives in run-entry.ts so toast.promise / fire-and-forget semantics cannot

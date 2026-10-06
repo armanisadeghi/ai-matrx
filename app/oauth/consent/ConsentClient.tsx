@@ -684,7 +684,7 @@ function ConsentForm({
           {userAvatar && (
             <AvatarImage src={userAvatar} alt={userName ?? userEmail} />
           )}
-          <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary">
+          <AvatarFallback className="text-xs font-medium bg-primary/10 text-primary-ink">
             {getInitials(userEmail)}
           </AvatarFallback>
         </Avatar>

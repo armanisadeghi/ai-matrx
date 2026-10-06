@@ -252,7 +252,7 @@ export function CloudUploadTab({
               type="button"
               onClick={handleChangeFolder}
               className={cn(
-                "min-h-[32px] rounded-md px-2 text-primary hover:bg-primary/10 transition-colors",
+                "min-h-[32px] rounded-md px-2 text-primary-ink hover:bg-primary/10 transition-colors",
                 resolving && "opacity-50 cursor-wait",
               )}
               disabled={resolving}

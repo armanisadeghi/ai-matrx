@@ -37,7 +37,7 @@ const STATE_TONE: Record<MeetingState, string> = {
   live: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
   ended: "bg-muted text-muted-foreground",
   scheduled: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
-  cancelled: "bg-destructive/10 text-destructive",
+  cancelled: "bg-destructive/10 text-destructive-ink",
   archived: "bg-muted text-muted-foreground",
 };
 
@@ -239,7 +239,7 @@ export function MeetingsHistoryPanel({
       </form>
 
       {error ? (
-        <div className="relative rounded-md border border-destructive/40 bg-destructive/5 p-3 pr-10 text-sm text-destructive">
+        <div className="relative rounded-md border border-destructive/40 bg-destructive/5 p-3 pr-10 text-sm text-destructive-ink">
           Meetings could not be read: {error}
           <ErrorAlchemyMenu error={error} operation="Search platform meeting history" />
         </div>

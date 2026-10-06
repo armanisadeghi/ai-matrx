@@ -105,7 +105,7 @@ export default function RouteDisplaySwitcher({
                       }}
                       className={`w-full text-left px-3 py-2 text-xs transition-colors ${
                         key === variant
-                          ? "bg-primary/10 text-primary font-medium"
+                          ? "bg-primary/10 text-primary-ink font-medium"
                           : "text-foreground hover:bg-accent/50"
                       }`}
                     >

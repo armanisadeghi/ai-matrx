@@ -89,7 +89,7 @@ describe("the error-display detector (self-test — each RC-B12 verify hole, red
     // "This meeting was cancelled: “{reason}”" in a destructive box: nothing failed.
     expect(shown('<div className="border-destructive/30 bg-destructive/5">This meeting was cancelled{p.reason ? `: ${p.reason}` : "."}</div>')).toBe(0);
     // The same box reporting a failure is still an error.
-    expect(shown('<div className="bg-destructive/5 text-destructive">This meeting was cancelled but the invite could not be sent</div>')).toBe(1);
+    expect(shown('<div className="bg-destructive/5 text-destructive-ink">This meeting was cancelled but the invite could not be sent</div>')).toBe(1);
     expect(shown('<div className="text-destructive">The event was cancelled: {p.error}</div>')).toBe(1);
     // Red text with a message value and no lifecycle fact still counts (round 3).
     expect(shown('<p className="text-destructive">{p.reason}</p>')).toBe(1);
@@ -156,10 +156,10 @@ describe("round-2 holes (RC-B12 verify R2-1), red then green", () => {
   });
   it("a row that is red only under a condition is not the error box (its menu would show on every row)", () => {
     expect(
-      count('<div className={cn("group", error && "bg-destructive/10")}><span>{key}</span>{error && <div className="text-destructive">{error.message}</div>}<ErrorAlchemyMenu /></div>'),
+      count('<div className={cn("group", error && "bg-destructive/10")}><span>{key}</span>{error && <div className="text-destructive-ink">{error.message}</div>}<ErrorAlchemyMenu /></div>'),
     ).toBe(1);
     expect(
-      count('<div className={cn("group", error && "bg-destructive/10")}><span>{key}</span>{error && <div className="text-destructive">{error.message}<ErrorAlchemyMenu /></div>}</div>'),
+      count('<div className={cn("group", error && "bg-destructive/10")}><span>{key}</span>{error && <div className="text-destructive-ink">{error.message}<ErrorAlchemyMenu /></div>}</div>'),
     ).toBe(0);
   });
   it("a hidden menu does not carry", () => {
@@ -174,7 +174,7 @@ describe("round-2 holes (RC-B12 verify R2-1), red then green", () => {
 describe("round-3 probes (RC-B12 verify R3-1), red then green", () => {
   it("one destructive card with plain wrappers inside is one box, carried by one menu", () => {
     expect(
-      count('<div className="bg-destructive/10"><div className="flex"><div><p className="text-destructive">Template Error</p><p className="text-destructive/80">Failed to compile.</p></div></div><ErrorAlchemyMenu /></div>'),
+      count('<div className="bg-destructive/10"><div className="flex"><div><p className="text-destructive-ink">Template Error</p><p className="text-destructive-ink/80">Failed to compile.</p></div></div><ErrorAlchemyMenu /></div>'),
     ).toBe(0);
   });
   it("'Template Error' / 'Failed to compile' in a destructive box counts", () => {

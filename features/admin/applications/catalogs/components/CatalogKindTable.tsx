@@ -539,7 +539,7 @@ export function CatalogKindTable({
           pendingToggle?.next ? (
             <div className="space-y-2 text-xs">
               {activationPayloadCheck?.status === "invalid" ? (
-                <p className="flex items-start gap-1 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 font-medium text-destructive">
+                <p className="flex items-start gap-1 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 font-medium text-destructive-ink">
                   <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   <span>Payload fails the {kindLabel(
                     pendingToggle.row.kind,

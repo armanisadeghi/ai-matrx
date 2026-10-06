@@ -178,7 +178,7 @@ export function SampleLibrarySheet({
         </div>
 
         {error && (
-          <div className="mx-4 mt-3 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive">
+          <div className="mx-4 mt-3 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-2 text-xs text-destructive-ink">
             {error}
             <ErrorAlchemyMenu />
           </div>

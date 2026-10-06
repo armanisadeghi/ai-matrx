@@ -100,7 +100,7 @@ export function InstanceUIStateSliceViewer({
           className={cn(
             "h-6 px-2 flex items-center gap-1 rounded text-xs transition-colors shrink-0",
             showFullSlice
-              ? "bg-primary/10 text-primary border border-primary/20"
+              ? "bg-primary/10 text-primary-ink border border-primary/20"
               : "text-muted-foreground hover:text-foreground hover:bg-accent",
           )}
           title="Toggle full slice JSON"

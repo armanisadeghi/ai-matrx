@@ -773,7 +773,7 @@ export default function RichEditorImpl({
                     onClick={() => switchView(option)}
                     className={cn(
                       "flex h-7 items-center gap-1 rounded px-2 text-xs font-medium text-muted-foreground",
-                      view === option && "bg-primary/10 text-primary",
+                      view === option && "bg-primary/10 text-primary-ink",
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -984,7 +984,7 @@ function ToolbarButton({
       onClick={onClick}
       className={cn(
         "flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40",
-        active && "bg-primary/10 text-primary",
+        active && "bg-primary/10 text-primary-ink",
       )}
     >
       {children}

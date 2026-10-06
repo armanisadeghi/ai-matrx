@@ -41,9 +41,9 @@ interface BlockProps {
 /* ------------------------------------------------------------------ links */
 
 const LINK_TYPE_TONE = {
-  internal: "border-primary/40 bg-primary/10 text-primary",
+  internal: "border-primary/40 bg-primary/10 text-primary-ink",
   external: "border-border bg-muted/40 text-muted-foreground",
-  subdomain: "border-warning/40 bg-warning/10 text-warning",
+  subdomain: "border-warning/40 bg-warning/10 text-warning-ink",
 } as const;
 
 export function PageLinkBlock({ serverData, className }: BlockProps) {

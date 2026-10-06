@@ -266,7 +266,7 @@ export const PreviewPanel = forwardRef<HTMLDivElement, PreviewPanelProps>(
                 className={cn(
                   "inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
                   showStreamControls || streamText !== null
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-primary/10 text-primary-ink"
                     : "text-muted-foreground hover:text-foreground",
                 )}
                 title="Replay this content as a stream"

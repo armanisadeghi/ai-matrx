@@ -69,6 +69,9 @@ export type ActionRequestTransportResult = {
     next?: string | null;
     code?: string;
     remedy?: string | null;
+    /** approve_spend only: whether they approved, and the approval to spend under. */
+    approved?: boolean | null;
+    spend_approval_id?: string | null;
   } | null;
 };
 

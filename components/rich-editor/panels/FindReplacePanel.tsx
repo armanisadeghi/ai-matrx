@@ -23,7 +23,7 @@ export interface FindReplacePanelProps {
 }
 
 /** A search option is a pressed-state button — the package Toggle, sized for this bar. */
-const OPTION_TOGGLE = "h-7 w-7 min-w-7 px-0 text-muted-foreground data-[state=on]:bg-primary/15 data-[state=on]:text-primary";
+const OPTION_TOGGLE = "h-7 w-7 min-w-7 px-0 text-muted-foreground data-[state=on]:bg-primary/15 data-[state=on]:text-primary-ink";
 
 export function FindReplacePanel({ showReplace, onFind, onReplace, onReplaceAll, onClose }: FindReplacePanelProps) {
   const [query, setQuery] = useState("");

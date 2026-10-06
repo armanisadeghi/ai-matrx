@@ -226,12 +226,12 @@ export function shortDate(value?: string | null): string | null {
 }
 
 const AUTHORITY_TONE: Record<string, string> = {
-  official: "border-success/40 bg-success/10 text-success",
-  primary: "border-success/40 bg-success/10 text-success",
-  regulatory: "border-success/40 bg-success/10 text-success",
+  official: "border-success/40 bg-success/10 text-success-ink",
+  primary: "border-success/40 bg-success/10 text-success-ink",
+  regulatory: "border-success/40 bg-success/10 text-success-ink",
   secondary: "border-border bg-muted/40 text-muted-foreground",
   commentary: "border-border bg-muted/40 text-muted-foreground",
-  unofficial: "border-warning/40 bg-warning/10 text-warning",
+  unofficial: "border-warning/40 bg-warning/10 text-warning-ink",
 };
 
 /** How authoritative the corpus says this source is. Free text by design. */
@@ -283,7 +283,7 @@ export const InForceLine: React.FC<{
       className={cn(
         "flex w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-md border px-2 py-1 text-[11px]",
         superseded
-          ? "border-destructive/40 bg-destructive/5 text-destructive"
+          ? "border-destructive/40 bg-destructive/5 text-destructive-ink"
           : "border-border bg-muted/30 text-muted-foreground",
         className,
       )}

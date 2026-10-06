@@ -26,7 +26,7 @@ export const PICK_NOT_YET = "Choosing here is not available yet";
 function Refused({ sentence, className }: { sentence: string; className?: string }) {
   return (
     <div
-      className={cn("my-2 flex min-w-0 items-start gap-1.5 rounded-md border border-warning/30 bg-warning/5 p-2.5 text-xs font-semibold text-warning", className)}
+      className={cn("my-2 flex min-w-0 items-start gap-1.5 rounded-md border border-warning/30 bg-warning/5 p-2.5 text-xs font-semibold text-warning-ink", className)}
       data-pick-list-refused=""
     >
       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />

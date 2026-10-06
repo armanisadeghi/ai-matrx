@@ -58,7 +58,7 @@ const STATUS_PILL_STYLES: Record<AgentAppCardModel["status"], string> = {
   published:
     "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-300",
   archived: "bg-muted text-muted-foreground",
-  suspended: "bg-destructive/15 text-destructive dark:bg-destructive/25",
+  suspended: "bg-destructive/15 text-destructive-ink dark:bg-destructive/25",
 };
 
 export function AgentAppCard({

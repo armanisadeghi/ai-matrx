@@ -45,7 +45,7 @@ export const RankBadge: React.FC<{
     className={cn(
       "flex min-w-11 flex-col items-center justify-center rounded-md border px-2 py-1",
       emphasis
-        ? "border-primary/50 bg-primary/10 text-primary"
+        ? "border-primary/50 bg-primary/10 text-primary-ink"
         : "border-border bg-muted/40 text-foreground",
       className,
     )}

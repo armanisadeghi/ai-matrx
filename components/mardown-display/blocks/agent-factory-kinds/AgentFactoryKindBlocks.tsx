@@ -235,7 +235,7 @@ const Template: React.FC<{ text: string | null }> = ({ text }) => {
     <pre className="max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/30 p-2.5 font-mono text-xs leading-relaxed">
       {parts.map((p, i) =>
         /^\{\{/.test(p) ? (
-          <span key={i} className="rounded bg-primary/10 px-0.5 text-primary">
+          <span key={i} className="rounded bg-primary/10 px-0.5 text-primary-ink">
             {p}
           </span>
         ) : (

@@ -169,7 +169,7 @@ export function StarterPacksTab({ directory }: { directory: SharedKnowledgeDirec
             <Skeleton className="h-16 w-full" />
           </div>
         ) : catalog.isError ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink">
             {extractErrorMessage(catalog.error)}
             <ErrorAlchemyMenu />
           </div>

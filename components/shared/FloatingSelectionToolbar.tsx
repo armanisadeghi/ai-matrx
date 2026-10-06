@@ -98,7 +98,7 @@ export function FloatingSelectionToolbarButton({
         "max-md:w-9 max-md:justify-center max-md:px-0",
         "disabled:cursor-not-allowed disabled:opacity-50",
         tone === "destructive"
-          ? "text-destructive hover:bg-destructive/10"
+          ? "text-destructive-ink hover:bg-destructive/10"
           : "text-foreground hover:bg-accent",
       )}
     >

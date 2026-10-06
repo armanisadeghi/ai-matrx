@@ -188,7 +188,7 @@ export default function TaxonomyAdminClient() {
       </div>
 
       {loadError && (
-        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-ink">
           Failed to load the registry: {loadError}
           <ErrorAlchemyMenu error={loadError} />
         </div>

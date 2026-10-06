@@ -21,7 +21,7 @@ export function AdminDomainSection({
   return (
     <section className="border-b border-border bg-background last:border-b-0">
       <div className="flex items-center gap-3 border-b border-border/70 bg-muted/30 px-4 py-3">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
           <IconResolver iconName={domain.iconName} className="h-4 w-4" />
         </span>
         <AppLink

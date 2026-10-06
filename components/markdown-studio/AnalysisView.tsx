@@ -349,7 +349,7 @@ export function AnalysisView({
 
       <div className="flex-1 overflow-auto p-4 space-y-4">
         {error && (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive-ink">
             <div className="flex items-center gap-2 font-medium">
               <AlertTriangle className="h-4 w-4" />
               Comparison failed
@@ -418,7 +418,7 @@ function DriftHero({ result }: { result: RunResult }) {
             "flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
             isClean
               ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
-              : "bg-destructive/20 text-destructive",
+              : "bg-destructive/20 text-destructive-ink",
           )}
         >
           {isClean ? (

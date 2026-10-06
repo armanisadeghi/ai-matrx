@@ -265,7 +265,7 @@ export function ItemRow({
       className={cn(
         "item-row group/item relative rounded-lg transition-colors",
         !active && "hover:bg-accent/60",
-        active && "bg-primary/10 text-primary",
+        active && "bg-primary/10 text-primary-ink",
         className,
       )}
     >

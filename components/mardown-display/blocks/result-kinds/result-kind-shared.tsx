@@ -118,10 +118,10 @@ export type ChipTone = "neutral" | "good" | "bad" | "warn" | "accent";
 
 const CHIP_TONE: Record<ChipTone, string> = {
   neutral: "bg-muted text-muted-foreground",
-  good: "bg-success/10 text-success",
-  bad: "bg-destructive/10 text-destructive",
-  warn: "bg-warning/10 text-warning",
-  accent: "bg-primary/10 text-primary",
+  good: "bg-success/10 text-success-ink",
+  bad: "bg-destructive/10 text-destructive-ink",
+  warn: "bg-warning/10 text-warning-ink",
+  accent: "bg-primary/10 text-primary-ink",
 };
 
 /**

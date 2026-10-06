@@ -168,8 +168,8 @@ export function AgentAppHeader({
           title={isPublished ? "Published" : "Unpublished"}
           className={
             isPublished
-              ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-xs font-medium text-success"
-              : "inline-flex shrink-0 items-center gap-1 rounded-full bg-warning/15 px-1.5 py-0.5 text-xs font-medium text-warning"
+              ? "inline-flex shrink-0 items-center gap-1 rounded-full bg-success/15 px-1.5 py-0.5 text-xs font-medium text-success-ink"
+              : "inline-flex shrink-0 items-center gap-1 rounded-full bg-warning/15 px-1.5 py-0.5 text-xs font-medium text-warning-ink"
           }
         >
           <span aria-hidden className="size-1.5 rounded-full bg-current sm:hidden" />

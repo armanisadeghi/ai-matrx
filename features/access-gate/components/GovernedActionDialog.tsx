@@ -132,7 +132,7 @@ export function GovernedActionDialog({
             Finding the person who can help…
           </div>
         ) : context?.status === "error" || context?.status === "anonymous" ? (
-          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-ink">
             We couldn't find the right person to contact. Try again after
             refreshing.
             <ErrorAlchemyMenu />

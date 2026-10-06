@@ -127,7 +127,7 @@ function GateChip({
         "inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 text-xs font-medium",
         ok
           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-          : "border-destructive/30 bg-destructive/10 text-destructive",
+          : "border-destructive/30 bg-destructive/10 text-destructive-ink",
       )}
     >
       {ok ? (

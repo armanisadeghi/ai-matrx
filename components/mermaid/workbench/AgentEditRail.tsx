@@ -140,7 +140,7 @@ export function AgentEditRail({
         </Button>
 
         {error && (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </p>

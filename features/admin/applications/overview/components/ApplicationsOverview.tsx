@@ -270,7 +270,7 @@ export function ApplicationsOverview({
             </div>
 
             {s.fleetBelow > 0 ? (
-              <div className="mb-3 flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <div className="mb-3 flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
                 <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
                 <span>
                   <strong>{s.fleetBelow}</strong> installed{" "}

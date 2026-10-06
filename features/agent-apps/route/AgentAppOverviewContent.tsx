@@ -236,7 +236,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
       <div className="max-w-4xl mx-auto px-6 pb-10 pt-6 space-y-6">
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <div className="flex items-start gap-5">
-          <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-primary/10 text-primary inline-flex items-center justify-center">
+          <div className="flex-shrink-0 w-16 h-16 rounded-xl bg-primary/10 text-primary-ink inline-flex items-center justify-center">
             <InlineMediaRef
               ref={app.favicon_url ?? null}
               size={{ width: 48, height: 48 }}
@@ -539,7 +539,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
                       key={v.name}
                       className="group/x flex items-start gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/40"
                     >
-                      <code className="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
+                      <code className="text-xs font-semibold text-primary-ink bg-primary/10 px-1.5 py-0.5 rounded shrink-0">
                         {`{{${v.name}}}`}
                       </code>
                       <div className="flex-1 min-w-0 text-sm space-y-0.5">

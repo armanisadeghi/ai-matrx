@@ -68,7 +68,7 @@ export function AudioCitationBlock({
       className={cn(
         "my-0.5 inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 align-baseline text-sm transition-colors",
         playable
-          ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+          ? "border-primary/30 bg-primary/10 text-primary-ink hover:bg-primary/20"
           : "border-border bg-muted text-muted-foreground",
       )}
     >
