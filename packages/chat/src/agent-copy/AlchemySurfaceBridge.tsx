@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, type ReactNode } from "react";
 import {
   createSurfaceTransferHandle,
   type SurfaceHandle,
-} from "@ai-matrx/kit/content-transfer";
+} from "@ai-matrx/alchemy/operate";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
 import { getSurfaceManifest } from "../host/ui-slots";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";

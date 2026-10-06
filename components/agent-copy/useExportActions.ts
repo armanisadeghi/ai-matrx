@@ -1,5 +1,5 @@
 import { toast } from "@/lib/toast";
-import type { TransferOutcome } from "@ai-matrx/kit/content-transfer";
+import type { TransferOutcome } from "@ai-matrx/alchemy/operate";
 import {
   NOTHING_CHANGED_YET,
   announceProposedGoogleWrite,

@@ -32,8 +32,9 @@
 
 import { refuseSurfaceWrite } from "./surface-writeback";
 import type { SurfaceWriteTarget } from "../types";
+import { PLATFORM_WRITE_TARGETS } from "../manifests/_baseline.manifest";
 
-export const WINDOW_FORM_TARGET_NAME = "window_form_fields";
+export const WINDOW_FORM_TARGET_NAME = PLATFORM_WRITE_TARGETS.window_form_fields.name;
 
 /** The marker a REGISTERED layer puts on its root element. */
 export const SURFACE_LAYER_ATTRIBUTE = "data-surface-layer";
@@ -56,16 +57,8 @@ export interface WindowForm {
   fields: WindowFormField[];
 }
 
-/** The platform target — declared here once, offered only while a window form is open. */
-export const WINDOW_FORM_TARGET: SurfaceWriteTarget = {
-  name: WINDOW_FORM_TARGET_NAME,
-  label: "Fields in an open window",
-  description:
-    'Change fields in an open window that has no registered surface (listed in your context as window::<title>). Value: { "window": "<title exactly as listed>", "changes": [{ "field": "<field key>", "value": <new value> }] }. A text or number field takes a string or number, a checkbox or switch takes true/false, a list takes the text of one of its choices (a wrong choice is refused with the real ones). Every change is checked against the field\'s rules before anything lands; the person approves first, and the window\'s own Save still decides.',
-  valueType: "object",
-  mode: "draft",
-  applyPolicy: "ask",
-};
+/** The platform target — declared once on the baseline surface (`_baseline.manifest.ts`), offered only while a window form is open. */
+export const WINDOW_FORM_TARGET: SurfaceWriteTarget = PLATFORM_WRITE_TARGETS.window_form_fields;
 
 const WINDOW_SELECTOR =
   '[role="dialog"], [role="alertdialog"], [data-window-panel]';

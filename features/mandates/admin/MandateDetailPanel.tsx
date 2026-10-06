@@ -1,7 +1,7 @@
 "use client";
 
 import { ContractMismatchList } from "@/features/mandates/components/ContractMismatchNotice";
-import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
 /**

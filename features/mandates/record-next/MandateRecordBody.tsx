@@ -83,7 +83,7 @@ import {
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useMandateHolder } from "@ai-matrx/chat/mandates/useMandateHolder";
 import { MANDATE_WORKSPACE_SURFACE_NAME } from "@/features/surfaces/manifests/mandate-workspace.manifest";
-import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import {
   useMandateAlchemyTabCapture,
   MandateAlchemy,

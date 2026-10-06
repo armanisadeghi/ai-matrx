@@ -12,6 +12,10 @@
  *   matrx-user/notes · create_notes   "Save to Notes" (and the scratch note) —
  *                                     a new note per item, in the organization
  *                                     the person is working in.
+ *   matrx-user/documents · create_documents   "Save to document" — a new
+ *                                     document from markdown (export-targets).
+ *   matrx-user/workbooks · create_workbooks   "Save to workbook" — a new
+ *                                     workbook from a table (export-targets).
  *
  * Every write returns a receipt: applied, queued, or refused with a sentence
  * and a remedy. Nothing here throws to a caller.
@@ -19,7 +23,7 @@
 
 import type { Receipt, WriteDoor, WriteHandler } from "@ai-matrx/alchemy/operate";
 import type { ApprovalPort } from "@ai-matrx/alchemy/ports";
-import type { TransferTarget } from "@ai-matrx/kit/content-transfer";
+import type { TransferTarget } from "@ai-matrx/alchemy/operate";
 import {
   loadSurfaceWriteDoor,
   surfaceWriteApprovals,
@@ -31,6 +35,10 @@ import { alchemyOrganizationId } from "./alchemy-organization";
 
 export const NOTES_SURFACE_NAME = "matrx-user/notes";
 export const CREATE_NOTES_TARGET = "create_notes";
+export const DOCUMENTS_SURFACE_NAME = "matrx-user/documents";
+export const CREATE_DOCUMENTS_TARGET = "create_documents";
+export const WORKBOOKS_SURFACE_NAME = "matrx-user/workbooks";
+export const CREATE_WORKBOOKS_TARGET = "create_workbooks";
 
 function report(error: unknown, stage: string): void {
   captureError({
@@ -153,6 +161,92 @@ export function createNotesHeadlessHandler(getState: () => RootState): WriteHand
   };
 }
 
+/** One `create_documents` value, as `documents.manifest.ts` declares it. */
+export interface NewDocument {
+  markdown: string;
+  name?: string;
+}
+
+/** One `create_workbooks` value, as `workbooks.manifest.ts` declares it (export-targets' `TableInput`). */
+export interface NewWorkbook {
+  name: string;
+  headers: string[];
+  rows: string[][];
+}
+
+/** What a create handler reports: the created record, and — when it was created but not filled — why. */
+interface CreatedRecord {
+  id: string;
+  href: string;
+  name: string;
+  error?: string;
+}
+
+function workingOrganization(state: RootState, what: string): string {
+  const organizationId = alchemyOrganizationId(state);
+  if (!selectUserId(state) || !organizationId) {
+    throw new Error(`Sign in and select an organization to save ${what}.`);
+  }
+  return organizationId;
+}
+
+function readNewDocument(value: unknown): NewDocument {
+  const doc = value as Record<string, unknown> | null;
+  if (!doc || typeof doc !== "object" || Array.isArray(doc) || typeof doc.markdown !== "string") {
+    throw new Error("Saving a document needs its markdown.");
+  }
+  return { markdown: doc.markdown, ...(typeof doc.name === "string" ? { name: doc.name } : {}) };
+}
+
+function readNewWorkbook(value: unknown): NewWorkbook {
+  const table = value as Record<string, unknown> | null;
+  const strings = (list: unknown): list is string[] => Array.isArray(list) && list.every((cell) => typeof cell === "string");
+  if (!table || typeof table !== "object" || !strings(table.headers) || !Array.isArray(table.rows) || !table.rows.every(strings)) {
+    throw new Error("A workbook requires tabular content: headers and rows of text.");
+  }
+  return { name: typeof table.name === "string" ? table.name : "", headers: table.headers, rows: table.rows as string[][] };
+}
+
+/**
+ * A created record as the handler's result. Created but not filled (its
+ * content failed to save) is still a created record: the receipt carries its
+ * link and the reason, so the person opens it instead of making another copy.
+ */
+function createdResult(
+  pushed: { ok: boolean; id?: string; href?: string; error?: string },
+  name: string,
+  kind: "document" | "workbook",
+): { status: "applied"; sentence: string; result: { id: string; href: string; name: string; error?: string } } {
+  if (!pushed.id || !pushed.href) throw new Error(pushed.error ?? `The ${kind} could not be created.`);
+  return {
+    status: "applied",
+    sentence: pushed.ok ? `Saved as ${kind} "${name}".` : (pushed.error ?? `The ${kind} was created but not filled.`),
+    result: { id: pushed.id, href: pushed.href, name, ...(pushed.ok ? {} : { error: pushed.error ?? `The ${kind} was created but not filled.` }) },
+  };
+}
+
+/** `matrx-user/documents · create_documents` with no page open: a new document in the working organization. */
+export function createDocumentsHeadlessHandler(getState: () => RootState): WriteHandler {
+  return async (request) => {
+    const doc = readNewDocument(request.value);
+    const organizationId = workingOrganization(getState(), "a document");
+    const { pushMarkdownToDocument } = await import("@/features/data-tables/export-targets");
+    const pushed = await pushMarkdownToDocument(doc.markdown, doc.name, organizationId);
+    return createdResult(pushed, doc.name?.trim() || "Document", "document");
+  };
+}
+
+/** `matrx-user/workbooks · create_workbooks` with no page open: a new workbook in the working organization. */
+export function createWorkbooksHeadlessHandler(getState: () => RootState): WriteHandler {
+  return async (request) => {
+    const table = readNewWorkbook(request.value);
+    const organizationId = workingOrganization(getState(), "a workbook");
+    const { pushTableToWorkbook } = await import("@/features/data-tables/export-targets");
+    const pushed = await pushTableToWorkbook(table, organizationId);
+    return createdResult(pushed, table.name.trim() || "Table", "workbook");
+  };
+}
+
 let destinationState: (() => RootState) | null = null;
 
 /**
@@ -163,11 +257,11 @@ export function registerHeadlessDestinations(getState: () => RootState): void {
   const first = destinationState === null;
   destinationState = getState;
   if (!first) return;
-  createAlchemyDoorPort().registerHeadless(
-    NOTES_SURFACE_NAME,
-    CREATE_NOTES_TARGET,
-    createNotesHeadlessHandler(() => (destinationState ?? getState)()),
-  );
+  const current = () => (destinationState ?? getState)();
+  const port = createAlchemyDoorPort();
+  port.registerHeadless(NOTES_SURFACE_NAME, CREATE_NOTES_TARGET, createNotesHeadlessHandler(current));
+  port.registerHeadless(DOCUMENTS_SURFACE_NAME, CREATE_DOCUMENTS_TARGET, createDocumentsHeadlessHandler(current));
+  port.registerHeadless(WORKBOOKS_SURFACE_NAME, CREATE_WORKBOOKS_TARGET, createWorkbooksHeadlessHandler(current));
 }
 
 /** The notes a `create_notes` handler reported (`{ notes: [{ id, name }] }`) as links; none reported = none. */
@@ -191,4 +285,38 @@ export async function saveNotesThroughDoor(
     new AbortController().signal,
   );
   return { receipt, created: receipt.status === "applied" ? createdNotesOf(receipt.result) : [] };
+}
+
+/** The record a `create_documents` / `create_workbooks` handler reported; none reported = null. */
+function createdRecordOf(result: unknown): CreatedRecord | null {
+  const record = result && typeof result === "object" ? (result as Record<string, unknown>) : null;
+  if (!record || typeof record.id !== "string" || !record.id || typeof record.href !== "string" || !record.href) return null;
+  return {
+    id: record.id,
+    href: record.href,
+    name: typeof record.name === "string" ? record.name : "",
+    ...(typeof record.error === "string" ? { error: record.error } : {}),
+  };
+}
+
+/** A person's "Save to document": one write through the door; the receipt and the document it created. */
+export async function saveDocumentThroughDoor(
+  doc: NewDocument,
+): Promise<{ receipt: Receipt; created: CreatedRecord | null }> {
+  const receipt = await createAlchemyDoorPort().write(
+    { surfaceName: DOCUMENTS_SURFACE_NAME, target: CREATE_DOCUMENTS_TARGET, value: doc, by: "destination" },
+    new AbortController().signal,
+  );
+  return { receipt, created: receipt.status === "applied" ? createdRecordOf(receipt.result) : null };
+}
+
+/** A person's "Save to workbook": one write through the door; the receipt and the workbook it created. */
+export async function saveWorkbookThroughDoor(
+  table: NewWorkbook,
+): Promise<{ receipt: Receipt; created: CreatedRecord | null }> {
+  const receipt = await createAlchemyDoorPort().write(
+    { surfaceName: WORKBOOKS_SURFACE_NAME, target: CREATE_WORKBOOKS_TARGET, value: table, by: "destination" },
+    new AbortController().signal,
+  );
+  return { receipt, created: receipt.status === "applied" ? createdRecordOf(receipt.result) : null };
 }

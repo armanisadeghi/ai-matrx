@@ -511,6 +511,22 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "document_identity",
     sortOrder: 359,
   },
+  {
+    // ALC-17: "Save to document" (an Alchemy destination) lands here through
+    // the one write door. The page registers no handler; the headless one
+    // (`components/agent-copy/alchemy-door.ts`) creates the document with no
+    // page open, through `pushMarkdownToDocument`. A destination is a person's
+    // own act; an agent's write asks first, like every target here.
+    name: "create_documents",
+    label: "Create a document",
+    description:
+      'Creates a NEW document from markdown and saves it immediately, in the organization the person is working in; the open document (if any) is not touched. Value: a JSON object (not a string) { "markdown": "<the document body as markdown>", "name"?: "<one-line name; derived from the first heading when omitted>" }. Returns the new document\'s id and link.',
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "document_library",
+    sortOrder: 370,
+  },
 ];
 
 export const documentsManifest: SurfaceManifest = {

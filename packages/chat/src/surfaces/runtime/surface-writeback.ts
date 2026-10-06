@@ -58,6 +58,12 @@ import type {
 } from "@ai-matrx/alchemy/operate";
 import { getManifest } from "./registry";
 import {
+  BASELINE_SURFACE_NAME,
+  isPlatformWriteTarget,
+  PLATFORM_WRITE_TARGETS,
+  type PlatformWriteTargetName,
+} from "../manifests/_baseline.manifest";
+import {
   isSurfaceWritePatch,
   resolveSurfaceWritePatch,
   type SurfaceWritePatch,
@@ -868,11 +874,17 @@ const surfaceWriteKinds: KindValidatorPort = {
 
 /**
  * The declarations the door reads: every manifest, with each target's
- * EFFECTIVE policy. No `ancestry`: a resolved manifest already carries what it
- * inherits, so a target resolves on the surface that is writing.
+ * EFFECTIVE policy, plus the BASELINE surface (`BASELINE_SURFACE_NAME`), which
+ * declares the platform's own targets (`PLATFORM_WRITE_TARGETS`). The only
+ * ancestry is the baseline: a resolved manifest already carries what it
+ * inherits from its parents, so a surface's own target resolves on the surface
+ * that is writing, and a platform target on the baseline every surface sits on.
  */
 export const surfaceWriteDeclarations: WriteDoorDeclarations = {
   get(surfaceName) {
+    if (surfaceName === BASELINE_SURFACE_NAME) {
+      return { writeTargets: Object.values(PLATFORM_WRITE_TARGETS) };
+    }
     const manifest = getManifest(surfaceName);
     if (!manifest) return undefined;
     return {
@@ -882,6 +894,9 @@ export const surfaceWriteDeclarations: WriteDoorDeclarations = {
       })),
       ...(manifest.itemTypes ? { itemTypes: manifest.itemTypes } : {}),
     };
+  },
+  ancestry(surfaceName) {
+    return surfaceName === BASELINE_SURFACE_NAME ? [] : [BASELINE_SURFACE_NAME];
   },
 };
 
@@ -905,6 +920,7 @@ export function loadSurfaceWriteDoor(): Promise<WriteDoor> {
       }),
     ).then((door) => {
       routeMountedPages(door);
+      registerPlatformHandlers(door);
       return door;
     });
     surfaceDoor = loading;
@@ -988,10 +1004,11 @@ function routeMountedPages(door: WriteDoor): void {
   });
 }
 
-/** The ONE live handler every route registers: a seam write by its run id, else the mounted page. */
+/** The ONE live handler every route registers: a seam write by its run id, else the mounted page (or the platform's handler). */
 const routePageWrite: WriteHandler = (request) => {
   const seam = request.runId ? seamWrites.get(request.runId) : undefined;
   if (seam) return seam.apply();
+  if (isPlatformWriteTarget(request.target.name)) return applyPlatformHeadless(request);
   return applyMountedPageWrite(request);
 };
 
@@ -1544,17 +1561,10 @@ async function applySurfaceWriteNow(
 ): Promise<SurfaceWriteResult> {
   const registry = opts?.source ?? getGlobalSurfaceRegistry();
   const onScreen = registry.kind === "global";
-  if (onScreen && targetName === WINDOW_FORM_TARGET_NAME) {
-    return applyWindowFormWrite(rawValue, opts);
-  }
-  if (onScreen && targetName === SURFACE_FEEDBACK_TARGET_NAME) {
-    return applySurfaceFeedbackWrite(rawValue, opts);
-  }
-  if (onScreen && targetName === CUSTOM_FIELDS_TARGET_NAME) {
-    return applyCustomFieldsTargetWrite(rawValue, opts, "add");
-  }
-  if (onScreen && targetName === CUSTOM_FIELDS_SET_TARGET_NAME) {
-    return applyCustomFieldsTargetWrite(rawValue, opts, "set");
+  // The platform targets (declared on the baseline every surface inherits)
+  // belong to the SCREEN, never to a capture; they land through the door too.
+  if (onScreen && isPlatformWriteTarget(targetName)) {
+    return applyPlatformWrite(targetName, rawValue, opts);
   }
   const stack = registry.stack().filter(
     (entry) => !opts?.surfaceName || entry.surfaceName === opts.surfaceName,
@@ -1871,214 +1881,254 @@ async function applySurfaceWriteNow(
   );
 }
 
-/**
- * The PLATFORM write target `window_form_fields` — fields in an open window
- * that no registered surface speaks for (`window-forms.ts`). It belongs to no
- * manifest, so it is resolved here instead of on the stack; everything else is
- * the same seam: the agent-write policy (`ask` — the person approves on the
- * usual card), a refusal returned to the agent with its reason, and a loud
- * failure for anything unexpected.
- */
-async function applyWindowFormWrite(
-  rawValue: unknown,
-  opts?: ApplySurfaceWriteOptions,
-): Promise<SurfaceWriteResult> {
-  const target = WINDOW_FORM_TARGET;
-  const primary = getSurfaceRuntimeStack()[0];
-  // The person approves what they can read: each change names its field.
-  rawValue = labelWindowFormWrite(rawValue);
-  const surfaceName = primary?.surfaceName ?? "";
-  if ((opts?.origin ?? "user") === "agent") {
-    const verdict = await agentWriteAllowed(
-      target,
-      surfaceName,
-      opts?.actorLabel,
-      rawValue,
-      opts?.requestApproval,
-      primary ?? { surfaceName, getScope: () => ({}) },
-    );
-    if (verdict !== true) return verdict;
-  }
-  try {
-    await applyWindowFormChanges(rawValue);
-    if (!opts?.quiet) toast.success(`${target.label} — filled in. Review and save.`);
-    return { ok: true, surfaceName, target, change: writeReceipt(target, rawValue, NOT_READ) };
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : `Applying "${target.label}" failed.`;
-    if (error instanceof SurfaceWriteRefusalError) {
-      return { ok: false, refused: true, error: message };
+// ── The PLATFORM write targets, through the door ────────────────────────────
+//
+// `window_form_fields`, `surface_feedback`, `custom_fields_add` and
+// `custom_fields_set` are DECLARED once on the baseline surface
+// (`_baseline.manifest.ts` `PLATFORM_WRITE_TARGETS`), which the door reads as
+// every surface's root ancestor. Their handlers are registered HEADLESS on the
+// baseline (`registerPlatformHandlers`), so an Action, a menu or a destination
+// writing one from any surface lands; a seam write runs this seam's own apply
+// (the card, the toast, the outcome) on its live route, like every target.
+
+/** Applies one platform write. Throws `SurfaceWriteRefusalError` for the writer's to correct. */
+async function applyPlatformTarget(
+  name: PlatformWriteTargetName,
+  value: unknown,
+  context: { surfaceName: string; conversationId?: string; agentId?: string; actorLabel?: string },
+): Promise<SurfaceWriteOutcome | undefined> {
+  switch (name) {
+    case "window_form_fields":
+      await applyWindowFormChanges(value);
+      return undefined;
+    case "surface_feedback": {
+      validateSurfaceFeedback(value);
+      return saveSurfaceFeedback(value, {
+        surfaceName: context.surfaceName,
+        route: typeof window === "undefined" ? "" : window.location.pathname,
+        organizationId: await feedbackOrganizationId(),
+        ...(context.conversationId ? { conversationId: context.conversationId } : {}),
+        ...(context.agentId ? { agentId: context.agentId } : {}),
+        ...(context.actorLabel ? { agentName: context.actorLabel } : {}),
+      });
     }
-    return fail(message, { targetName: target.name, surfaceName, error });
+    case "custom_fields_add":
+      if (!hasCustomFieldsDoors()) refuseSurfaceWrite("No custom-fields section is open on this page.");
+      validateCustomFieldsWrite(value);
+      return asRefusal(() => applyCustomFieldsWrite(value));
+    case "custom_fields_set":
+      if (!hasCustomFieldsSetDoors()) refuseSurfaceWrite("No custom-fields section is open on this page.");
+      validateCustomFieldsSetWrite(value);
+      return asRefusal(() => applyCustomFieldsSetWrite(value));
+  }
+}
+
+/** The store's own refusal, or a part-way result naming what landed: the writer's to act on, not a platform fault. */
+async function asRefusal<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (error instanceof SurfaceWriteRefusalError) throw error;
+    throw new SurfaceWriteRefusalError(error instanceof Error && error.message ? error.message : "The write did not complete.");
   }
 }
 
 /**
- * The PLATFORM write target `surface_feedback` (`surface-feedback.ts`) — feedback
- * about a mounted surface, filed for the team in `users.user_feedback`. It
- * belongs to no manifest; it goes to the primary (deepest) mounted surface, or
- * to `opts.surfaceName` when that names another MOUNTED surface. Same order as
- * every write: declared type → the target's own `validate` (refused before
- * anything is written) → policy (`auto`: nobody is asked) → apply → outcome.
+ * Feedback is filed under the organization the person is acting in. The table
+ * requires one; with none selected it is refused with the remedy rather than
+ * open an organization picker just for feedback. "None yet" is not "none": a
+ * write racing boot waits for its answer, and a FAILED organization read is
+ * said as that, never as "pick one".
  */
-async function applySurfaceFeedbackWrite(
-  rawValue: unknown,
-  opts?: ApplySurfaceWriteOptions,
-): Promise<SurfaceWriteResult> {
-  const target = SURFACE_FEEDBACK_TARGET;
-  const stack = getSurfaceRuntimeStack();
-  const mounted = stack.map((entry) => entry.surfaceName);
-  if (stack.length === 0) {
-    return failUnapplicable(
-      unapplicableMessage(target.name, "This screen mounts no registered surface to give feedback on."),
-      { targetName: target.name },
-    );
-  }
-  const runtime = opts?.surfaceName
-    ? stack.find((entry) => entry.surfaceName === opts.surfaceName)
-    : stack[0];
-  if (!runtime) {
-    return refuseBeforeApproval(
-      `Surface "${opts?.surfaceName}" is not open here, so feedback cannot be filed for it. Open surfaces: ${mounted.join(", ")}. Nothing was saved.`,
-      { targetName: target.name, surfaceName: opts?.surfaceName, mounted },
-    );
-  }
-  const surfaceName = runtime.surfaceName;
+async function feedbackOrganizationId(): Promise<string> {
+  const active = readActiveOrganizationId(); // org-filter: write-target feedback is filed under the organization the person is acting in
+  if (active) return active;
+  // org-filter: write-target writes into the organization the person is working in; no list reads it
+  const resolved = await awaitEffectiveOrganizationId();
+  if (resolved.status === "ready") return resolved.organizationId;
+  refuseSurfaceWrite(
+    resolved.cause === "unreadable"
+      ? "The person's organization could not be read just now, so nothing was saved. " +
+          "Tell them their feedback was not filed and to send it again in a moment."
+      : "No organization is selected, and every feedback row is filed under one, so nothing was saved. " +
+          "Tell the person their feedback could not be filed until they pick their organization from the avatar menu, then send it again.",
+  );
+}
 
-  const typed = coerceDeclaredValueType(target, rawValue);
-  if (!typed.ok) {
-    return refuseBeforeApproval(typed.error, { targetName: target.name, surfaceName });
-  }
-  const value = typed.value;
+/** A platform write from outside this seam (an Action, a menu, a destination), on any surface. */
+async function applyPlatformHeadless(request: WriteApplyRequest): Promise<WriteHandlerResult> {
+  const name = request.target.name;
+  if (!isPlatformWriteTarget(name)) throw new Error(`"${name}" is not a platform write target.`);
+  if (request.ops) throw new Error(`"${request.target.label}" takes a whole value; send it instead of edits.`);
   try {
-    validateSurfaceFeedback(value);
-  } catch (error) {
-    return refuseBeforeApproval(
-      error instanceof Error ? error.message : `"${target.label}" refused this value.`,
-      { targetName: target.name, surfaceName },
-    );
-  }
-
-  if ((opts?.origin ?? "user") === "agent") {
-    const verdict = await agentWriteAllowed(
-      target,
-      surfaceName,
-      opts?.actorLabel,
-      value,
-      opts?.requestApproval,
-      runtime,
-    );
-    if (verdict !== true) return verdict;
-  }
-
-  // Filed under the organization the person is acting in. The table requires
-  // one; with none selected we refuse with the remedy rather than open an
-  // organization picker just for feedback. "None yet" is not "none": a write
-  // racing boot waits for its answer, and a FAILED organization read is said
-  // as that, never as "pick one".
-  let organizationId = readActiveOrganizationId(); // org-filter: write-target feedback is filed under the organization the person is acting in
-  if (!organizationId) {
-    // org-filter: write-target writes into the organization the person is working in; no list reads it
-    const resolved = await awaitEffectiveOrganizationId();
-    if (resolved.status === "ready") organizationId = resolved.organizationId;
-    else
-      return {
-        ok: false,
-        refused: true,
-        phase: "apply",
-        error:
-          resolved.cause === "unreadable"
-            ? "The person's organization could not be read just now, so nothing was saved. " +
-              "Tell them their feedback was not filed and to send it again in a moment."
-            : "No organization is selected, and every feedback row is filed under one, so nothing was saved. " +
-              "Tell the person their feedback could not be filed until they pick their organization from the avatar menu, then send it again.",
-      };
-  }
-
-  try {
-    const outcome = await saveSurfaceFeedback(value, {
-      surfaceName,
-      route: typeof window === "undefined" ? "" : window.location.pathname,
-      organizationId,
-      ...(opts?.conversationId ? { conversationId: opts.conversationId } : {}),
-      ...(opts?.agentId ? { agentId: opts.agentId } : {}),
-      ...(opts?.actorLabel ? { agentName: opts.actorLabel } : {}),
+    const outcome = await applyPlatformTarget(name, request.value, {
+      surfaceName: request.surfaceName === BASELINE_SURFACE_NAME ? "" : request.surfaceName,
     });
-    if (!opts?.quiet) {
-      toast.success("Feedback saved for the team.", { description: surfaceName });
-    }
-    return { ok: true, surfaceName, target, outcome, change: writeReceipt(target, value, NOT_READ) };
+    return {
+      status: "applied",
+      ...(outcome?.summary ? { sentence: outcome.summary } : {}),
+      ...(outcome?.data !== undefined ? { result: outcome.data as Json } : {}),
+    };
   } catch (error) {
-    const failure = fail(
-      error instanceof Error && error.message ? error.message : `Saving "${target.label}" failed.`,
-      { targetName: target.name, surfaceName, error },
-    );
-    return failure.ok ? failure : { ...failure, phase: "apply" };
+    // A refusal is the writer's to correct; the receipt carries it, nothing is captured.
+    if (error instanceof SurfaceWriteRefusalError) throw reportedError(error.message);
+    throw error;
   }
 }
 
+let platformHandlersOn: WriteDoor | null = null;
+
+/** The platform targets' headless handlers, on the baseline surface every surface inherits — once per door. */
+function registerPlatformHandlers(door: WriteDoor): void {
+  if (platformHandlersOn === door) return;
+  platformHandlersOn = door;
+  for (const name of Object.keys(PLATFORM_WRITE_TARGETS)) {
+    door.registerHeadless(BASELINE_SURFACE_NAME, name, (request) => applyPlatformHeadless(request));
+  }
+}
+
+/** The offer's wording of a platform target (the custom-fields ones name the mounted sections). */
+function platformTarget(name: PlatformWriteTargetName): SurfaceWriteTarget {
+  if (name === CUSTOM_FIELDS_TARGET_NAME) return customFieldsTarget();
+  if (name === CUSTOM_FIELDS_SET_TARGET_NAME) return customFieldsSetTarget();
+  return PLATFORM_WRITE_TARGETS[name];
+}
+
 /**
- * The PLATFORM write target `custom_fields_add` (`custom-field-targets.ts`) —
- * the agent twin of a custom-fields section's "Add field". It belongs to no
- * manifest: it is offered while a section is mounted and goes to that
- * section's own door. Same order as every write: declared type → the whole
- * request checked (every problem at once, before any card) → policy (`ask`:
- * the person approves) → the section adds each field and reads it back.
+ * A seam write to a platform target. Same order as every write: which surface
+ * it is for → declared type → the target's own check (refused before any card)
+ * → the door (policy: the card for an agent on an `ask` target) → apply →
+ * outcome and receipt. `window_form_fields` and `custom_fields_add` go to the
+ * primary (deepest) mounted surface, or the baseline with none mounted;
+ * `surface_feedback` to the primary one, or `opts.surfaceName` when that names
+ * another MOUNTED surface.
  */
-async function applyCustomFieldsTargetWrite(
+async function applyPlatformWrite(
+  name: PlatformWriteTargetName,
   rawValue: unknown,
-  opts: ApplySurfaceWriteOptions | undefined,
-  mode: "add" | "set",
+  opts?: ApplySurfaceWriteOptions,
 ): Promise<SurfaceWriteResult> {
-  const name = mode === "add" ? CUSTOM_FIELDS_TARGET_NAME : CUSTOM_FIELDS_SET_TARGET_NAME;
-  if (mode === "add" ? !hasCustomFieldsDoors() : !hasCustomFieldsSetDoors()) {
+  const stack = getSurfaceRuntimeStack();
+  let runtime: SurfaceRuntimeValue | undefined = stack[0];
+  if (name === SURFACE_FEEDBACK_TARGET_NAME) {
+    const mounted = stack.map((entry) => entry.surfaceName);
+    if (stack.length === 0) {
+      return failUnapplicable(
+        unapplicableMessage(name, "This screen mounts no registered surface to give feedback on."),
+        { targetName: name },
+      );
+    }
+    runtime = opts?.surfaceName ? stack.find((entry) => entry.surfaceName === opts.surfaceName) : stack[0];
+    if (!runtime) {
+      return refuseBeforeApproval(
+        `Surface "${opts?.surfaceName}" is not open here, so feedback cannot be filed for it. Open surfaces: ${mounted.join(", ")}. Nothing was saved.`,
+        { targetName: name, surfaceName: opts?.surfaceName, mounted },
+      );
+    }
+  }
+  if (name === CUSTOM_FIELDS_TARGET_NAME ? !hasCustomFieldsDoors() : name === CUSTOM_FIELDS_SET_TARGET_NAME && !hasCustomFieldsSetDoors()) {
     return failUnapplicable(
       unapplicableMessage(name, "No custom-fields section is open on this page."),
       { targetName: name },
     );
   }
-  const target = mode === "add" ? customFieldsTarget() : customFieldsSetTarget();
-  const primary = getSurfaceRuntimeStack()[0];
-  const surfaceName = primary?.surfaceName ?? "";
+  const target = platformTarget(name);
+  const surfaceName = runtime?.surfaceName ?? "";
+  const approvalRuntime: SurfaceRuntimeValue = runtime ?? { surfaceName, getScope: () => ({}) };
+
   const typed = coerceDeclaredValueType(target, rawValue);
   if (!typed.ok) {
-    return refuseBeforeApproval(typed.error, { targetName: target.name, surfaceName });
+    return refuseBeforeApproval(typed.error, { targetName: name, surfaceName });
   }
-  const value = typed.value;
+  // The person approves what they can read: each window change names its field.
+  const value = name === WINDOW_FORM_TARGET_NAME ? labelWindowFormWrite(typed.value) : typed.value;
   try {
-    if (mode === "add") validateCustomFieldsWrite(value);
-    else validateCustomFieldsSetWrite(value);
+    if (name === SURFACE_FEEDBACK_TARGET_NAME) validateSurfaceFeedback(value);
+    if (name === CUSTOM_FIELDS_TARGET_NAME) validateCustomFieldsWrite(value);
+    if (name === CUSTOM_FIELDS_SET_TARGET_NAME) validateCustomFieldsSetWrite(value);
   } catch (error) {
     return refuseBeforeApproval(
       error instanceof Error ? error.message : `"${target.label}" refused this value.`,
-      { targetName: target.name, surfaceName },
+      { targetName: name, surfaceName },
     );
   }
-  if ((opts?.origin ?? "user") === "agent") {
-    const verdict = await agentWriteAllowed(
-      target,
-      surfaceName,
-      opts?.actorLabel,
-      value,
-      opts?.requestApproval,
-      primary ?? { surfaceName, getScope: () => ({}) },
-    );
+
+  const origin = opts?.origin ?? "user";
+  const askAgent = (): Promise<SurfaceWriteResult | true> =>
+    agentWriteAllowed(target, surfaceName, opts?.actorLabel, value, opts?.requestApproval, approvalRuntime);
+  // An `auto` target is never asked about by the door; a binding that
+  // tightened it on this surface still holds (the policy is re-resolved here).
+  if (origin === "agent" && target.applyPolicy === "auto") {
+    const verdict = await askAgent();
     if (verdict !== true) return verdict;
   }
-  try {
-    const outcome = mode === "add" ? await applyCustomFieldsWrite(value) : await applyCustomFieldsSetWrite(value);
-    if (!opts?.quiet && outcome.summary) toast.success(outcome.summary);
-    return { ok: true, surfaceName, target, outcome, change: writeReceipt(target, value, NOT_READ) };
-  } catch (error) {
-    // The store's own refusal, or a part-way result naming what landed: the
-    // agent's to act on, not a platform fault.
-    return {
-      ok: false,
-      refused: true,
-      phase: "apply",
-      error: error instanceof Error ? error.message : `"${target.label}" did not complete.`,
-    };
+
+  let settled: SurfaceWriteResult | undefined;
+  const approve =
+    origin === "agent"
+      ? async (): Promise<boolean> => {
+          const verdict = await askAgent();
+          if (verdict === true) return true;
+          settled = verdict;
+          if (!verdict.ok && verdict.declined) return false;
+          throw reportedError(verdict.ok ? `"${target.label}" was not applied.` : verdict.error);
+        }
+      : undefined;
+
+  const apply = async (): Promise<WriteHandlerResult> => {
+    try {
+      const outcome = await applyPlatformTarget(name, value, {
+        surfaceName,
+        ...(opts?.conversationId ? { conversationId: opts.conversationId } : {}),
+        ...(opts?.agentId ? { agentId: opts.agentId } : {}),
+        ...(opts?.actorLabel ? { actorLabel: opts.actorLabel } : {}),
+      });
+      if (!opts?.quiet) {
+        if (name === WINDOW_FORM_TARGET_NAME) toast.success(`${target.label} — filled in. Review and save.`);
+        else if (name === SURFACE_FEEDBACK_TARGET_NAME) toast.success("Feedback saved for the team.", { description: surfaceName });
+        else if (outcome?.summary) toast.success(outcome.summary);
+      }
+      settled = {
+        ok: true,
+        surfaceName,
+        target,
+        ...(outcome ? { outcome } : {}),
+        change: writeReceipt(target, value, NOT_READ),
+      };
+      return { status: "applied", ...(outcome?.summary ? { sentence: outcome.summary } : {}) };
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message ? error.message : `Applying "${target.label}" failed.`;
+      if (error instanceof SurfaceWriteRefusalError) {
+        settled =
+          name === WINDOW_FORM_TARGET_NAME
+            ? { ok: false, refused: true, error: message }
+            : { ok: false, refused: true, phase: "apply", error: message };
+      } else {
+        const failure = fail(message, { targetName: name, surfaceName, error });
+        settled = failure.ok ? failure : { ...failure, phase: "apply" };
+      }
+      throw reportedError(message);
+    }
+  };
+
+  const receipt = await writeThroughDoor(
+    { surfaceName: surfaceName || BASELINE_SURFACE_NAME, target: name, value, by: origin === "agent" ? "agent" : "person" },
+    opts?.conversationId ?? null,
+    apply,
+    approve,
+  );
+  if (receipt.status === "applied" && receipt.warning && !opts?.quiet) {
+    toast.warning(receipt.warning, receipt.fix ? { description: receipt.fix } : undefined);
   }
+  const result: SurfaceWriteResult =
+    settled ??
+    fail(receipt.status === "refused" ? receipt.sentence : `"${target.label}" was not applied: ${receipt.sentence}`, {
+      targetName: name,
+      surfaceName,
+      receipt,
+    });
+  return { ...result, receipt };
 }
 
 /**

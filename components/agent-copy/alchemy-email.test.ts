@@ -1,4 +1,4 @@
-import type { Artifact } from "@ai-matrx/kit/content-transfer";
+import type { Artifact } from "@ai-matrx/alchemy/operate";
 
 import { sendAlchemyEmail } from "./alchemy-email";
 

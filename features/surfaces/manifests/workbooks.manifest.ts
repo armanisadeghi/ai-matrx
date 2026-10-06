@@ -356,6 +356,22 @@ const writeTargets: SurfaceWriteTarget[] = [
     group: "workbook_content",
     sortOrder: 120,
   },
+  {
+    // ALC-17: "Save to workbook" (an Alchemy destination) lands here through
+    // the one write door. The page registers no handler; the headless one
+    // (`components/agent-copy/alchemy-door.ts`) creates the workbook with no
+    // page open, through `pushTableToWorkbook`. A destination is a person's
+    // own act; an agent's write asks first, like every target here.
+    name: "create_workbooks",
+    label: "Create a workbook",
+    description:
+      'Creates a NEW workbook with one sheet from a table and saves it immediately, in the organization the person is working in; the open workbook (if any) is not touched. Value: a JSON object (not a string) { "name": "<workbook and sheet name>", "headers": ["<column>", ...], "rows": [["<cell>", ...], ...] } — every row parallel to headers. Returns the new workbook\'s id and link.',
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+    group: "workbook_library",
+    sortOrder: 130,
+  },
 ];
 
 export const workbooksManifest: SurfaceManifest = {

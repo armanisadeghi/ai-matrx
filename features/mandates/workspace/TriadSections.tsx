@@ -1,6 +1,6 @@
 "use client";
 
-import { normalizeTransferJson } from "@ai-matrx/alchemy/core";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { useMandateAlchemyTabCapture } from "./MandateAlchemy";
 
 // features/mandates/workspace/TriadSections.tsx

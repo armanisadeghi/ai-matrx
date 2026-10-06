@@ -7,10 +7,10 @@
  * exam dates", "create_classes never said X"). The team reads it the next time
  * it updates that surface (`pnpm surface:feedback --surface <name>`).
  *
- * Like `window_form_fields` (`window-forms.ts`) it is declared here once and
- * belongs to no manifest: `listLiveWriteTargets` offers it whenever at least
- * one registered surface is mounted, and `applySurfaceWrite` routes it to
- * `applySurfaceFeedbackWrite` in the seam. It changes NOTHING on the page, so
+ * Like `window_form_fields` (`window-forms.ts`) it is declared once on the
+ * baseline surface (`_baseline.manifest.ts`): `listLiveWriteTargets` offers it
+ * whenever at least one registered surface is mounted, and it is written
+ * through the one write door (`surface-writeback.ts` `applyPlatformWrite`). It changes NOTHING on the page, so
  * it is `auto` — the person is never interrupted by a card for it.
  *
  * Storage is the central triage table `users.user_feedback`, written through
@@ -23,21 +23,17 @@ import { getChatHost } from "../../host/configure";
 import type { ChatFeedbackInput, ChatFeedbackType } from "../../host/contract";
 import { getStoreSingleton } from "../../store/store-singleton";
 import type { SurfaceWriteTarget } from "../types";
+import {
+  PLATFORM_WRITE_TARGETS,
+  SURFACE_FEEDBACK_KINDS,
+  SURFACE_FEEDBACK_MESSAGE_MAX,
+  SURFACE_FEEDBACK_MESSAGE_MIN,
+} from "../manifests/_baseline.manifest";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
-export const SURFACE_FEEDBACK_TARGET_NAME = "surface_feedback";
+export const SURFACE_FEEDBACK_TARGET_NAME = PLATFORM_WRITE_TARGETS.surface_feedback.name;
 
-export const SURFACE_FEEDBACK_KINDS = [
-  "missing_capability",
-  "wrong_or_unclear_description",
-  "bug",
-  "missing_data",
-  "suggestion",
-] as const;
 export type SurfaceFeedbackKind = (typeof SURFACE_FEEDBACK_KINDS)[number];
-
-export const SURFACE_FEEDBACK_MESSAGE_MIN = 10;
-export const SURFACE_FEEDBACK_MESSAGE_MAX = 4000;
 
 export interface SurfaceFeedbackValue {
   kind: SurfaceFeedbackKind;
@@ -47,20 +43,8 @@ export interface SurfaceFeedbackValue {
 
 const KIND_LIST = SURFACE_FEEDBACK_KINDS.join(" | ");
 
-/** The platform target — declared once; offered whenever a surface is mounted. */
-export const SURFACE_FEEDBACK_TARGET: SurfaceWriteTarget = {
-  name: SURFACE_FEEDBACK_TARGET_NAME,
-  label: "Feedback about this page",
-  description:
-    "Save feedback about this page (surface) for the team that builds it — it changes NOTHING on the page and nobody is asked. " +
-    "Use it when something about the page got in your way: a write you needed does not exist, a description was wrong or unclear, " +
-    "data you needed was missing or arrived in an awkward form, or something broke. Also use it when the person asks you to give feedback on this page. " +
-    `Value: { "kind": "${KIND_LIST}", "message": "<what happened and what would have helped, ${SURFACE_FEEDBACK_MESSAGE_MIN}-${SURFACE_FEEDBACK_MESSAGE_MAX} characters>", "target_or_value": "<optional: the write target or value name it concerns>" }. ` +
-    "It is filed for the surface named on this line; pass `surface` to file it for another open surface instead.",
-  valueType: "object",
-  mode: "entity",
-  applyPolicy: "auto",
-};
+/** The platform target — declared once on the baseline surface (`_baseline.manifest.ts`); offered whenever a surface is mounted. */
+export const SURFACE_FEEDBACK_TARGET: SurfaceWriteTarget = PLATFORM_WRITE_TARGETS.surface_feedback;
 
 const ALLOWED_KEYS = new Set(["kind", "message", "target_or_value"]);
 

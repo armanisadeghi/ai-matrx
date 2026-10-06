@@ -17,7 +17,7 @@
  *
  * Layer 0 is never optional: message + Copy-for-AI + close on every toast.
  * The copy button writes the platform's ONE agent envelope
- * (`buildAgentPayload`, `@ai-matrx/kit/content-transfer` — the same builder
+ * (`buildAgentPayload`, `@ai-matrx/alchemy/operate` — the same builder
  * behind `components/agent-copy`), filled for free with the route, URL, page
  * title, viewport, locale, time zone, the exact message, the kind and the
  * moment it was shown, plus the caller's `aiContext`, `detail` and `href`.
@@ -59,7 +59,7 @@ import {
   MoreHorizontalTapButton,
   XTapButton,
 } from "@ai-matrx/tap-target/buttons";
-import { buildAgentPayload } from "@ai-matrx/kit/content-transfer";
+import { buildAgentPayload } from "@ai-matrx/alchemy/operate";
 import {
   ChevronDown,
   CircleAlert,

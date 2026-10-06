@@ -45,7 +45,19 @@ jest.mock("@ai-matrx/chat/host/content-ir-slots", () => ({
   }),
 }));
 
+const mockPushDocument = jest.fn();
+const mockPushWorkbook = jest.fn();
+jest.mock("@/features/data-tables/export-targets", () => ({
+  pushMarkdownToDocument: (...args: unknown[]) => mockPushDocument(...args),
+  pushTableToWorkbook: (...args: unknown[]) => mockPushWorkbook(...args),
+}));
+
 import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import {
+  __resetCustomFieldsDoors,
+  registerCustomFieldsDoor,
+  type CustomFieldsAgentDoor,
+} from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
 import { registerSurfaceRuntime } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { RootState } from "@/lib/redux/rootReducer";
 
@@ -87,6 +99,8 @@ beforeEach(() => {
   mockToastSuccess.mockReset();
   mockToastWarning.mockReset();
   mockCreateNote.mockReset();
+  mockPushDocument.mockReset();
+  mockPushWorkbook.mockReset();
 });
 
 describe("a page write goes through the door and returns a receipt", () => {
@@ -450,5 +464,202 @@ describe("the value contract: what the door's check covers and what it does not"
     } finally {
       unregister();
     }
+  });
+});
+
+// ── The four PLATFORM targets (declared once on the baseline, inherited by every surface) ──
+
+function openInviteDialog() {
+  document.body.innerHTML = `
+    <div role="dialog" aria-labelledby="t">
+      <h2 id="t">Invite a teammate</h2>
+      <label for="email">Work email</label><input id="email" type="email" required />
+    </div>`;
+  return document.getElementById("email") as HTMLInputElement;
+}
+
+const INVITE = { window: "Invite a teammate", changes: [{ field: "work_email", value: "dana@allgreen.example" }] };
+
+describe("the platform targets land through the door and return a receipt", () => {
+  const rects = HTMLElement.prototype.getClientRects;
+  beforeAll(() => {
+    HTMLElement.prototype.getClientRects = () => [{}] as unknown as DOMRectList;
+  });
+  afterAll(() => {
+    HTMLElement.prototype.getClientRects = rects;
+  });
+  afterEach(() => {
+    document.body.innerHTML = "";
+    __resetCustomFieldsDoors();
+  });
+
+  it("window_form_fields: a person's write fills the window and comes back with an applied receipt", async () => {
+    const email = openInviteDialog();
+    const result = await applySurfaceWrite("window_form_fields", INVITE, { quiet: true });
+    expect(email.value).toBe("dana@allgreen.example");
+    expect(result).toMatchObject({ ok: true, receipt: { status: "applied", to: { target: "window_form_fields" } } });
+  });
+
+  it("window_form_fields: an agent's write still asks on the card, and a decline changes nothing", async () => {
+    const email = openInviteDialog();
+    const declined = jest.fn(async () => ({ kind: "declined" as const }));
+    const refused = await applySurfaceWrite("window_form_fields", INVITE, { origin: "agent", quiet: true, requestApproval: declined });
+    expect(declined).toHaveBeenCalledTimes(1);
+    expect(email.value).toBe("");
+    expect(refused).toMatchObject({ ok: false, declined: true, receipt: { status: "refused", reason: "declined" } });
+
+    const approved = jest.fn(async () => ({ kind: "approved" as const }));
+    const applied = await applySurfaceWrite("window_form_fields", INVITE, { origin: "agent", quiet: true, requestApproval: approved });
+    expect(approved).toHaveBeenCalledTimes(1);
+    expect(email.value).toBe("dana@allgreen.example");
+    expect(applied).toMatchObject({ ok: true, receipt: { status: "applied" } });
+  });
+
+  it("window_form_fields: an agent's write with no card to ask on is refused exactly as before", async () => {
+    const email = openInviteDialog();
+    const result = await applySurfaceWrite("window_form_fields", INVITE, { origin: "agent", quiet: true });
+    expect(email.value).toBe("");
+    expect(result).toMatchObject({ ok: false, error: expect.stringMatching(/requires approval/) });
+  });
+
+  it("window_form_fields: a write from outside the seam (an Action) on any surface reaches the platform's headless handler", async () => {
+    const email = openInviteDialog();
+    const { createAlchemyDoorPort } = await import("./alchemy-door");
+    const receipt = await createAlchemyDoorPort().write({
+      surfaceName: "matrx-user/notes",
+      target: "window_form_fields",
+      value: INVITE,
+      by: "person",
+    });
+    expect(receipt).toMatchObject({ status: "applied", to: { surfaceName: "matrx-user/notes", target: "window_form_fields" } });
+    expect(email.value).toBe("dana@allgreen.example");
+  });
+
+  it("custom_fields_add / custom_fields_set: approved through the card, applied by the section, with a receipt", async () => {
+    const added: string[] = [];
+    const set: Record<string, unknown>[] = [];
+    const door: CustomFieldsAgentDoor = {
+      entityToken: "message_template",
+      recordId: "9a4b2c1d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+      state: () => ({
+        entityToken: "message_template",
+        recordId: "9a4b2c1d-5e6f-4a7b-8c9d-0e1f2a3b4c5d",
+        entityLabel: "Message template",
+        mayAdd: true,
+        refusal: null,
+        fields: [{ key: "tone", label: "Tone", type: "text", value: "Warm" }],
+        types: [{ value: "text", label: "Text" }],
+      }),
+      check: () => [],
+      addField: async (request) => {
+        added.push(request.label);
+        return { ok: true, field_id: "f-1", label: request.label, type: "text" };
+      },
+      checkValues: () => [],
+      setValues: async (values) => {
+        set.push(values);
+        return { ok: true, written: [{ key: "tone", label: "Tone", value: values.tone }] };
+      },
+    };
+    registerCustomFieldsDoor(door);
+    const approve = jest.fn(async () => ({ kind: "approved" as const }));
+    const add = await applySurfaceWrite("custom_fields_add", { fields: [{ label: "Recall interval" }] }, {
+      origin: "agent",
+      quiet: true,
+      requestApproval: approve,
+    });
+    expect(add).toMatchObject({ ok: true, receipt: { status: "applied", to: { target: "custom_fields_add" } } });
+    expect(added).toEqual(["Recall interval"]);
+    const fill = await applySurfaceWrite("custom_fields_set", { values: { tone: "Brisk" } }, {
+      origin: "agent",
+      quiet: true,
+      requestApproval: approve,
+    });
+    expect(fill).toMatchObject({ ok: true, receipt: { status: "applied", to: { target: "custom_fields_set" } } });
+    expect(set).toEqual([{ tone: "Brisk" }]);
+    expect(approve).toHaveBeenCalledTimes(2);
+  });
+
+  it("surface_feedback: an agent's feedback needs no card and comes back with a receipt", async () => {
+    const unregister = mountNotesPage(jest.fn());
+    try {
+      const requestApproval = jest.fn(async () => ({ kind: "approved" as const }));
+      const result = await applySurfaceWrite(
+        "surface_feedback",
+        { kind: "suggestion", message: "The class list arrived as a lookup, not inline." },
+        { origin: "agent", quiet: true, requestApproval },
+      );
+      expect(requestApproval).not.toHaveBeenCalled();
+      expect(result.receipt).toMatchObject({ to: { surfaceName: "matrx-user/notes", target: "surface_feedback" } });
+    } finally {
+      unregister();
+    }
+  });
+});
+
+describe("Save to document / workbook are declared write targets with headless handlers", () => {
+  const content = (extra: Record<string, unknown> = {}) =>
+    ({ label: "Q3 plan", markdown: "# Q3\n\nShip it.", plainText: "Q3", signal: new AbortController().signal, draft: { sourceId: "s" }, ...extra }) as never;
+
+  it("Save to document writes `create_documents` through the door and returns the created link", async () => {
+    mockPushDocument.mockResolvedValue({ ok: true, id: "doc-42", href: "/documents/doc-42" });
+    const { registerHeadlessDestinations } = await import("./alchemy-door");
+    registerHeadlessDestinations(state);
+    const { createAlchemyDestinationPorts } = await import("./alchemy-destinations");
+    const ports = createAlchemyDestinationPorts({ getCurrentState: state, dispatch: jest.fn(), navigate: jest.fn() });
+    const outcome = await ports.document(content());
+    expect(mockPushDocument).toHaveBeenCalledWith("# Q3\n\nShip it.", "Q3 plan", ORG);
+    expect(outcome).toMatchObject({ status: "success", target: { kind: "document", id: "doc-42", href: "/documents/doc-42" } });
+  });
+
+  it("Save to document's receipt carries the created document, by the door's own answer", async () => {
+    mockPushDocument.mockResolvedValue({ ok: true, id: "doc-43", href: "/documents/doc-43" });
+    const { registerHeadlessDestinations, saveDocumentThroughDoor } = await import("./alchemy-door");
+    registerHeadlessDestinations(state);
+    const { receipt } = await saveDocumentThroughDoor({ name: "Q3 plan", markdown: "body" });
+    expect(receipt).toMatchObject({
+      status: "applied",
+      to: { surfaceName: "matrx-user/documents", target: "create_documents" },
+      result: { id: "doc-43", href: "/documents/doc-43", name: "Q3 plan" },
+    });
+  });
+
+  it("Save to workbook writes `create_workbooks` through the door and returns the created link", async () => {
+    mockPushWorkbook.mockResolvedValue({ ok: true, id: "wb-7", href: "/workbooks/wb-7" });
+    const { registerHeadlessDestinations } = await import("./alchemy-door");
+    registerHeadlessDestinations(state);
+    const { createAlchemyDestinationPorts } = await import("./alchemy-destinations");
+    const ports = createAlchemyDestinationPorts({ getCurrentState: state, dispatch: jest.fn(), navigate: jest.fn() });
+    const table = { name: "Revenue", headers: ["Q", "Rev"], rows: [["Q3", "10"]] };
+    const outcome = await ports.workbook(content({ table }));
+    expect(mockPushWorkbook).toHaveBeenCalledWith(table, ORG);
+    expect(outcome).toMatchObject({ status: "success", target: { kind: "workbook", id: "wb-7", href: "/workbooks/wb-7" } });
+  });
+
+  it("an agent's `create_documents` with no one to approve it is refused, and nothing is created", async () => {
+    const { registerHeadlessDestinations, createAlchemyDoorPort } = await import("./alchemy-door");
+    registerHeadlessDestinations(state);
+    const receipt = await createAlchemyDoorPort().write({
+      surfaceName: "matrx-user/documents",
+      target: "create_documents",
+      value: { name: "From an agent", markdown: "x" },
+      by: "agent",
+    });
+    expect(receipt.status).toBe("refused");
+    expect(mockPushDocument).not.toHaveBeenCalled();
+  });
+
+  it("with no handler registered, `create_documents` is refused `unapplicable` with the sentence", async () => {
+    let receipt: Awaited<ReturnType<typeof import("./alchemy-door")["saveDocumentThroughDoor"]>>["receipt"] | undefined;
+    await jest.isolateModulesAsync(async () => {
+      const door = await import("./alchemy-door");
+      receipt = (await door.saveDocumentThroughDoor({ name: "Nowhere", markdown: "x" })).receipt;
+    });
+    expect(mockPushDocument).not.toHaveBeenCalled();
+    expect(receipt).toMatchObject({
+      status: "refused",
+      reason: "unapplicable",
+      sentence: expect.stringMatching(/can only be saved with matrx-user\/documents open/),
+    });
   });
 });
