@@ -417,8 +417,8 @@ const nextConfig = {
       jspdf: "jspdf/dist/jspdf.es.min.js",
       // The demos AppShell is shared by every demo route. Keep the registrations
       // appended in v0.4.2884 out of that global graph, but retain the same
-      // synchronous module for every non-demos profile. Demos chat routes import
-      // it through DemosChatUiRegistrations before their chat UI renders.
+      // synchronous module for every non-demos profile. The demos route layout
+      // imports the full registry before any demo client surface renders.
       "@/providers/chatUiRegistrationProfile": path.join(
         __dirname,
         MATRX_PROFILE === "demos"
@@ -447,11 +447,7 @@ const nextConfig = {
   // calls that throw `ReferenceError: React is not defined` in production.
   // - react-filerobot-image-editor: Image Studio Edit mode (Filerobot 5.0).
   // - @scaleflex/ui: Filerobot's underlying UI primitives (same pattern).
-  transpilePackages: [
-    "@ai-matrx/chat",
-    "react-filerobot-image-editor",
-    "@scaleflex/ui",
-  ],
+  transpilePackages: ["@ai-matrx/chat", "react-filerobot-image-editor", "@scaleflex/ui"],
   typescript: {
     // RATIFIED (Arman, 2026-07-28, closing D64/D65): checks scream loud but
     // NEVER stop the build. Type errors are surfaced by the advisory release
@@ -477,11 +473,7 @@ const nextConfig = {
       // DB-built hrefs keep working; the query string carries over untouched.
       // THE ONLY place "/data-v2" may appear in source (scripts/check-no-data-v2.ts).
       { source: "/data-v2", destination: "/data", permanent: true },
-      {
-        source: "/data-v2/:path*",
-        destination: "/data/:path*",
-        permanent: true,
-      },
+      { source: "/data-v2/:path*", destination: "/data/:path*", permanent: true },
       // The old "New table" page; a table is made on the Data home itself.
       { source: "/data/create", destination: "/data", permanent: true },
       // 2026-08-26 (HRB-022): the HR workflow spec built `/hr/inbox` into every
@@ -777,9 +769,7 @@ const nextConfig = {
       },
       {
         source: "/administration/mandates",
-        has: [
-          { type: "query", key: "table.mandates.q", value: "(?<search>.+)" },
-        ],
+        has: [{ type: "query", key: "table.mandates.q", value: "(?<search>.+)" }],
         destination: "/administration/intelligence/mandates?q=:search",
         permanent: true,
       },
@@ -1002,6 +992,19 @@ const nextConfig = {
     // First apply your existing webpack config
     config = configureWebpack(config, { isServer });
 
+    // Keep webpack builds on the same registration profile as Turbopack. The
+    // physical module is intentionally a TypeScript no-op, so omitting this
+    // alias silently leaves demos without the base registrations.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@/providers/chatUiRegistrationProfile": path.join(
+        __dirname,
+        MATRX_PROFILE === "demos"
+          ? "providers/chatUiRegistrationBase.ts"
+          : "providers/chatUiRegistration.ts",
+      ),
+    };
+
     if (FORCE_EXCLUDE_SIDEMENU) {
       config.resolve.alias = {
         ...config.resolve.alias,
@@ -1100,18 +1103,11 @@ const nextConfig = {
 // any mode but live — is refused here, before a single
 // worker spawns. The table and the rule: scripts/agent-harness/shared-dev-servers.cjs.
 const { PHASE_DEVELOPMENT_SERVER } = require("next/constants");
-const {
-  sharedDevServerRefusal,
-  otherDevServers,
-} = require("./scripts/agent-harness/shared-dev-servers.cjs");
+const { sharedDevServerRefusal, otherDevServers } = require("./scripts/agent-harness/shared-dev-servers.cjs");
 
 function assertSharedDevServer(phase) {
   if (phase !== PHASE_DEVELOPMENT_SERVER) return;
-  const refusal = sharedDevServerRefusal({
-    env: process.env,
-    argv: process.argv,
-    others: otherDevServers(),
-  });
+  const refusal = sharedDevServerRefusal({ env: process.env, argv: process.argv, others: otherDevServers() });
   if (refusal) throw new Error(refusal);
 }
 
