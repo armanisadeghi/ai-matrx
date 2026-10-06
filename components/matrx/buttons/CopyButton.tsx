@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { ContentTransferMenu } from "@ai-matrx/design-system/content-transfer";
-import { directSource } from "@ai-matrx/kit/content-transfer";
+import { directSource } from "@ai-matrx/alchemy/operate";
 import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosure";
 import { cn } from "@/lib/utils";
 

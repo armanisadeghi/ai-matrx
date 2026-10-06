@@ -4,7 +4,7 @@ import { useAlchemyDisclosure } from "@/components/agent-copy/useAlchemyDisclosu
 
 import { useId } from "react";
 import { ContentTransferMenu } from "@ai-matrx/design-system/content-transfer";
-import { directSource } from "@ai-matrx/kit/content-transfer";
+import { directSource } from "@ai-matrx/alchemy/operate";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { useOpenHtmlPreviewBridge } from "@/features/overlays/openers/htmlPreview";
 import { cn } from "@/lib/utils";
