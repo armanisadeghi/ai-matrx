@@ -4,16 +4,17 @@
 // projects, deals, employees — `{kind: "entity", token}` read through the drill doors AS THE PERSON.
 //
 // The store answers which rows a person sees; this block only asks a question of it (a filter, a
-// sort) and draws the answer: table (the one data table), board (read-only — moving a card between
-// groups waits on the package), a side / center / full-page peek whose writable properties save
-// through the module's own write door. Charts over a built-in source are not drawn yet (NEEDS.md).
+// sort) and draws the answer: table (the one data table), board (records-ui's embedded `TablePage` over
+// the source — cards move between groups), chart (`EntityChartBlock`, bare, total in the donut's middle),
+// a side / center / full-page peek whose writable properties save through the module's own write door.
+// "New" adds a row where the module allows it (task, project); every other module refuses in its words.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
-import { RecordsMount, type EntityColumn, type EntityRow } from "@ai-matrx/records-ui";
+import { EntityChartBlock, RecordsMount, TablePage, type ChartKind, type EntityColumn, type EntityRow } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
-import { ArrowDownUp, ArrowUpRight, Database, Kanban, List, ListFilter, Maximize2, PanelRight, Plus, SlidersHorizontal, Square, Table2, X } from "lucide-react";
+import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, SlidersHorizontal, Square, Table2, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -30,7 +31,11 @@ import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView,
 const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof Table2 }> = [
   { id: "grid", label: "Table", icon: Table2 },
   { id: "kanban", label: "Board", icon: Kanban },
+  { id: "chart", label: "Chart", icon: PieChart },
 ];
+
+/** Spaces' chart types as records-ui's chart kinds (Notion's vertical bar = a column chart). */
+const CHART_KIND: Record<string, ChartKind> = { donut: "donut", bar: "column", hbar: "bar", line: "line" };
 
 const PAGE = 100;
 
@@ -182,9 +187,22 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
   const saveView = (patch: Partial<SpaceDbView>) => save({ views: views.map((v) => (v.id === active.id ? { ...v, ...patch } : v)), activeViewId: active.id });
   const known = BUILT_IN_SOURCES.find((b) => b.token === token)?.name;
+  const client = useRecordsClient();
+  // "New" (F7): one row added in place through the module's write door, then opened in the peek.
+  const addRow = () => {
+    void client.entityRowWrite({ token, record_id: null }).then((res) => {
+      if (!res.ok) {
+        toast.error(sentence(res.error, "A row could not be added here."));
+        return;
+      }
+      entity.reload();
+      const id = (res.data as unknown as { id?: string }).id;
+      if (id) setOpen(id);
+    });
+  };
   const sourceName = props.title || entity.label || known || token;
 
-  const body = <EntityBody entity={entity} view={shown} onOpen={setOpen} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />;
+  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />;
 
   return (
     <div className="spaces-db-frame" data-layout={active.layout} data-source="entity">
@@ -247,6 +265,11 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
           />
           <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
           <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={editable} />
+          {editable ? (
+            <Button variant="primary" onClick={addRow}>
+              New
+            </Button>
+          ) : null}
         </div>
       </div>
       {body}
@@ -263,7 +286,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   );
 }
 
-function EntityBody({ entity, view, onOpen, limit, onMore }: { entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; limit: number; onMore: () => void }) {
+function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; limit: number; onMore: () => void }) {
   const hidden = new Set(view.hiddenFields ?? []);
   const shown = entity.columns.filter((c) => !hidden.has(c.api_name));
   const title = titleColumn(entity.columns);
@@ -303,11 +326,34 @@ function EntityBody({ entity, view, onOpen, limit, onMore }: { entity: Entity; v
     );
   }
   const more = entity.total > entity.rows.length && entity.rows.length >= limit;
+  const choice = entity.columns.find((c) => c.type === "choice" || c.lookup);
+  if (view.layout === "chart") {
+    const by = view.chart?.groupBy ?? view.groupField ?? choice?.api_name;
+    return (
+      <div className="spaces-db-body">
+        <EntityChartBlock
+          source={{ kind: "entity", token }}
+          kind={CHART_KIND[view.chart?.type ?? "donut"] ?? "donut"}
+          by={by ?? undefined}
+          where={view.filters && Object.keys(view.filters).length ? view.filters : undefined}
+          title={view.name}
+          centerValue={view.chart?.centerValue ?? true}
+          variant="bare"
+        />
+      </div>
+    );
+  }
+  if (view.layout === "kanban") {
+    // records-ui's board over the source: lanes per stage / status, cards move between them.
+    return (
+      <div className="spaces-db-body">
+        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} />
+      </div>
+    );
+  }
   return (
     <div className="spaces-db-body">
-      {view.layout === "kanban" ? (
-        <EntityBoard entity={entity} view={view} title={title} shown={ordered} onOpen={onOpen} />
-      ) : (
+      {(
         <MatrxDataTable<EntityRow>
           data={entity.rows}
           columns={columns}
@@ -333,47 +379,6 @@ function EntityBody({ entity, view, onOpen, limit, onMore }: { entity: Entity; v
           </Button>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-/** Board: one column per choice of the group property. Cards open the peek; moving a card is the package's next release. */
-function EntityBoard({ entity, view, title, shown, onOpen }: { entity: Entity; view: SpaceDbView; title?: EntityColumn; shown: EntityColumn[]; onOpen: (id: string) => void }) {
-  const group = entity.columns.find((c) => c.api_name === view.groupField) ?? entity.columns.find((c) => c.type === "choice");
-  if (!group) return <div className="spaces-db-note">Board needs a choice property to group by.</div>;
-  const names = [...(group.choices ?? [])];
-  for (const r of entity.rows) {
-    const v = r[group.api_name];
-    const k = v === null || v === undefined || v === "" ? "" : String(v);
-    if (!names.includes(k)) names.push(k);
-  }
-  const extra = shown.filter((c) => c !== title && c !== group).slice(0, 3);
-  return (
-    <div className="spaces-entity-board" role="list">
-      {names.map((name) => {
-        const cards = entity.rows.filter((r) => String(r[group.api_name] ?? "") === name);
-        return (
-          <section key={name || "none"} className="spaces-entity-lane" aria-label={name || `No ${group.name}`}>
-            <header className="spaces-entity-lanehead">
-              <span className="spaces-entity-pill">{name || `No ${group.name}`}</span>
-              <span className="type-secondary text-muted-foreground">{cards.length}</span>
-            </header>
-            {cards.map((r) => (
-              <button key={r.id} type="button" className="spaces-entity-card" onClick={() => onOpen(r.id)}>
-                <span className="spaces-entity-cardtitle">{title ? valueText(title, r[title.api_name]) || "Untitled" : "Untitled"}</span>
-                {extra.map((c) => {
-                  const t = valueText(c, r[c.api_name]);
-                  return t ? (
-                    <span key={c.api_name} className="type-secondary text-muted-foreground truncate">
-                      {t}
-                    </span>
-                  ) : null;
-                })}
-              </button>
-            ))}
-          </section>
-        );
-      })}
     </div>
   );
 }

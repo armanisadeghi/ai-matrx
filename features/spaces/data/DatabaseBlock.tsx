@@ -136,10 +136,12 @@ function DatabaseFrame({
   const [open, setOpen] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  // The toolbar sort is this viewer's own, per view, never written to the view (Notion). Until records-ui
-  // takes `sortOverride` on ViewSwitcher, it rides in the spec the block hands it (NEEDS).
+  // The toolbar sort is this viewer's own, per view, never written to the view (Notion): it reaches the
+  // grid as `sortOverride` (null = the view's saved sort); charts and boards read it from the spec.
   const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
-  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]) };
+  const choice = sortChoices[active.id];
+  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, choice) };
+  const sortOverride = choice ?? null;
 
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
   const saveView = (patch: Partial<SpaceDbView>) => save({ views: views.map((v) => (v.id === active.id ? { ...v, ...patch } : v)), activeViewId: active.id });
@@ -161,9 +163,9 @@ function DatabaseFrame({
       view={shown}
       fields={fields}
       onOpenRecord={setOpen}
-      onNew={addRow}
       editable={editable}
       sample={sample}
+      sortOverride={sortOverride}
     />
   );
 
@@ -228,7 +230,7 @@ function DatabaseFrame({
             />
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
-            <NewButton onNew={() => setCreating(true)} />
+            <NewButton onNew={addRow} />
           </div>
         ) : null}
       </div>
@@ -246,7 +248,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} onNew={addRow} editable={editable} sample={sample} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} sortOverride={sortOverride} />
         </DialogContent>
       </Dialog>
     </div>
@@ -280,17 +282,17 @@ function DatabaseBody({
   view,
   fields,
   onOpenRecord,
-  onNew,
   editable,
   sample,
+  sortOverride,
 }: {
   tableId: string;
   view: SpaceDbView;
   fields: Field[];
   onOpenRecord: (id: string) => void;
-  onNew: () => void;
   editable: boolean;
   sample: boolean;
+  sortOverride: { field: string; direction: "asc" | "desc" } | null;
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
@@ -302,14 +304,19 @@ function DatabaseBody({
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
   const date = needsDate ? fields.find((f) => ["datetime", "date"].includes(kindOf(f)))?.key : undefined;
   const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null });
+  // Notion's inline database: records-ui's embedded grid (no search box, tick-boxes, Actions column or
+  // pager; one-line rows; its own "New page" line, which writes the row in place).
   return (
     <div className="spaces-db-body">
-      <ViewSwitcher view={spec} chooser={false} onOpenRecord={onOpenRecord} filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined} />
-      {editable && (view.layout === "grid" || view.layout === "list") ? (
-        <Button variant="quiet" icon={<Plus size={14} strokeWidth={1.8} />} onClick={onNew}>
-          New page
-        </Button>
-      ) : null}
+      <ViewSwitcher
+        view={spec}
+        chooser={false}
+        embedded
+        newRowLabel={editable ? "New page" : undefined}
+        sortOverride={sortOverride}
+        onOpenRecord={onOpenRecord}
+        filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
+      />
     </div>
   );
 }

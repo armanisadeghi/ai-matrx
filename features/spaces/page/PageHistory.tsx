@@ -19,7 +19,7 @@ import type { SpaceHistoryEntry } from "../store-db/supabase-store";
 
 const text = (b: SpaceBlock) => (b.text ?? []).map((s) => s.text).join("");
 
-export function Preview({ blocks, depth = 0 }: { blocks: SpaceBlock[]; depth?: number }) {
+export function Preview({ blocks, depth = 0, titleOf }: { blocks: SpaceBlock[]; depth?: number; titleOf?: (spaceId: string) => string | null }) {
   return (
     <>
       {blocks.map((b) => {
@@ -32,10 +32,12 @@ export function Preview({ blocks, depth = 0 }: { blocks: SpaceBlock[]; depth?: n
                 {b.type === "bulletListItem" || b.type === "bullet" ? "• " : ""}
                 {t}
               </p>
+            ) : (b.type === "page" || b.type === "linkToPage") && titleOf ? (
+              <p className="spaces-history-line spaces-history-pageline">{titleOf(String(b.props?.spaceId ?? "")) || "Untitled"}</p>
             ) : b.type === "database" || b.type === "page" || b.type === "linkToPage" || b.type === "image" ? (
               <p className="spaces-history-line text-muted-foreground">[{b.type}]</p>
             ) : null}
-            {b.children?.length ? <Preview blocks={b.children} depth={depth + 1} /> : null}
+            {b.children?.length ? <Preview blocks={b.children} depth={depth + 1} titleOf={titleOf} /> : null}
           </div>
         );
       })}

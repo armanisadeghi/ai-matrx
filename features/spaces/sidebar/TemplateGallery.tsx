@@ -53,7 +53,9 @@ export function TemplateGallery({ open, onOpenChange }: { open: boolean; onOpenC
   }, [ids.join(",")]);
 
   const listed = ids.filter((id) => docs[id] && !docs[id]!.isArchived);
-  const sampleRoot = picked === SAMPLE_KEY ? seedSpaces().find((s) => s.id === SEED_ROOT_ID) ?? null : null;
+  const seed = picked === SAMPLE_KEY ? seedSpaces() : [];
+  const sampleRoot = seed.find((s) => s.id === SEED_ROOT_ID) ?? null;
+  const sampleTitles = new Map(seed.map((s) => [s.id, s.title]));
   const current = picked === SAMPLE_KEY ? sampleRoot : (docs[picked] ?? null);
 
   const use = async () => {
@@ -104,7 +106,7 @@ export function TemplateGallery({ open, onOpenChange }: { open: boolean; onOpenC
               {current ? (
                 <>
                   <h1 className="spaces-templates-title">{current.title || "Untitled"}</h1>
-                  <Preview blocks={current.blocks} />
+                  <Preview blocks={current.blocks} titleOf={(id) => sampleTitles.get(id) ?? spaces.byId.get(id)?.title ?? null} />
                 </>
               ) : picked !== SAMPLE_KEY && !(picked in docs) ? (
                 <RegionSkeleton shape="rows" count={8} aria-label="Loading the template" />
