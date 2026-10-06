@@ -100,43 +100,6 @@ export function entityRecordReadable(
   });
 }
 
-/**
- * AP-4 — the custom rows that link to one platform record (`custom.entity_back_links`): the
- * "Onboarding checklist" row linked to an employee, grouped by the page into its table. Keyed by
- * the ROW's organization (never the active one); paged by `next_cursor`.
- */
-export interface EntityBackLinkItem {
-  record: { token: "record"; id: string; label: string | null };
-  table_id: string;
-  table_label: string | null;
-  field_id: string;
-  field_key: string;
-  field_label: string | null;
-  organization_id: string;
-  linked_at: string | null;
-}
-export interface EntityBackLinksAnswer {
-  target: { token: string; id: string; label: string | null };
-  items: EntityBackLinkItem[];
-  next_cursor: string | null;
-}
-export function entityBackLinks(
-  dataSource: RecordsDataSource,
-  organizationId: string,
-  token: string,
-  recordId: string,
-  cursor: string | null = null,
-  limit = 50,
-): Promise<DoorAnswer<EntityBackLinksAnswer>> {
-  return call<EntityBackLinksAnswer>(dataSource, "entity_back_links", {
-    p_organization_id: organizationId,
-    p_token: token,
-    p_record_id: recordId,
-    p_limit: limit,
-    p_cursor: cursor,
-  });
-}
-
 /** REC-27's Table kernel. Every Table of an organization is a record in it. */
 export function tableKernelId(dataSource: RecordsDataSource): Promise<DoorAnswer<string>> {
   return call<string>(dataSource, "table_kernel_id", {});

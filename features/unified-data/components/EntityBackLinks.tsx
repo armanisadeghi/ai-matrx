@@ -7,27 +7,26 @@
 //
 //   <EntityBackLinks entityToken="hr_employee" recordId={employee.id} organizationId={row.organization_id} />
 //
+// The read is the PACKAGE's (`useEntityBackLinks` in @ai-matrx/records/react): the door, the cache and the
+// paging live there so every client of the records package carries the same capability.
+//
 // `EntityCustomFields` renders it, so every page, peek and Detail host that carries the custom-fields
 // line carries this one too; a record view that carries its custom fields another way (the party's
 // StandardRecordForm) mounts it beside that form. G1 fails a record view with neither
 // (every-record-view-has-custom-fields.test.ts, "record view without Linked records").
 //
-// The store answers (`custom.entity_back_links`, through hub/doors.ts): which custom rows link here,
+// The store answers (`custom.entity_back_links`, through the records package): which custom rows link here,
 // by which field, in which table. The organization is the ROW's, never the active one. Rows group by
-// table and each opens its custom record page; more load through `next_cursor`.
+// table and each opens its custom record page; more load through `next_cursor`. A missing door or a
+// refused read is said in the section, in the store's own words, with a Retry — never hidden.
 
-import { useState } from "react";
 import { Link2 } from "lucide-react";
-import { recordsDataSource } from "@ai-matrx/records-ui";
+import { RecordsMount } from "@ai-matrx/records-ui";
+import { useEntityBackLinks } from "@ai-matrx/records/react";
+import type { EntityBackLinkItem } from "@ai-matrx/records";
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
-import { createClient } from "@/utils/supabase/client";
-import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
-import {
-  entityBackLinks,
-  type EntityBackLinkItem,
-  type EntityBackLinksAnswer,
-} from "@/features/unified-data/hub/doors";
+import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { recordPageHref } from "@/features/unified-data/table-page/recordPageHref";
 
 export interface EntityBackLinksProps {
@@ -37,13 +36,6 @@ export interface EntityBackLinksProps {
   organizationId: string | null;
   className?: string;
 }
-
-export const backLinksKey = (organizationId: string, token: string, recordId: string) =>
-  `unified-data.back-links:${organizationId}:${token}:${recordId}`;
-
-type FirstPage = { kind: "page"; answer: EntityBackLinksAnswer } | { kind: "door-absent" };
-
-let announcedAbsent = false;
 
 /** Group items by table, keeping the order the store gave. */
 export function groupBackLinksByTable(items: EntityBackLinkItem[]) {
@@ -56,69 +48,47 @@ export function groupBackLinksByTable(items: EntityBackLinkItem[]) {
   return [...groups.values()];
 }
 
-export function EntityBackLinks({ entityToken, recordId, organizationId, className }: EntityBackLinksProps) {
-  const read = useStoreRead<FirstPage>(
-    organizationId ? backLinksKey(organizationId, entityToken, recordId) : null,
-    async () => {
-      const answer = await entityBackLinks(recordsDataSource(createClient()), organizationId!, entityToken, recordId);
-      if (answer.ok) return { kind: "page", answer: answer.data };
-      if (answer.error.sqlstate === "PGRST202" || answer.error.sqlstate === "42883") return { kind: "door-absent" };
-      console.error("[EntityBackLinks] custom.entity_back_links failed", { entityToken, recordId, error: answer.error });
-      throw new Error(answer.error.message);
-    },
+export function EntityBackLinks(props: EntityBackLinksProps) {
+  const config = useAppRecordsConfig(props.organizationId);
+  if (!props.organizationId) return null;
+  return (
+    <RecordsMount config={config}>
+      <BackLinksSection {...props} organizationId={props.organizationId} />
+    </RecordsMount>
   );
-  const [more, setMore] = useState<{ items: EntityBackLinkItem[]; cursor: string | null | undefined; busy: boolean; failed: boolean }>({
-    items: [],
-    cursor: undefined,
-    busy: false,
-    failed: false,
-  });
+}
 
-  if (!organizationId) return null;
-  if (read.data?.kind === "door-absent") {
-    if (!announcedAbsent) {
-      announcedAbsent = true;
-      console.warn("[EntityBackLinks] custom.entity_back_links is not on this database yet; the Linked records section stays hidden until it is.");
-    }
-    return null;
-  }
-  if (read.status === "error" && !read.hasData) {
+function BackLinksSection({ entityToken, recordId, organizationId, className }: EntityBackLinksProps & { organizationId: string }) {
+  const links = useEntityBackLinks(entityToken, recordId, { organizationId });
+
+  if (links.error && links.items.length === 0) {
     return (
       <section data-section="back-links" data-state="error" className={className}>
         <h3 className="text-sm font-medium">Linked records</h3>
-        <span className="text-xs text-muted-foreground">Couldn&apos;t read linked records</span>
-        <Button size="sm" variant="ghost" onClick={() => void read.refresh()}>
-          Retry
-        </Button>
+        <EmptyState
+          icon={<Link2 className="h-5 w-5" />}
+          title="Couldn't read linked records"
+          line={links.error.message}
+          action={
+            <Button size="sm" variant="ghost" onClick={() => links.reload()}>
+              Retry
+            </Button>
+          }
+        />
       </section>
     );
   }
-  if (read.data?.kind !== "page") return null;
+  if (links.loading && links.items.length === 0) return null;
 
-  const first = read.data.answer;
-  const items = [...first.items, ...more.items];
-  const cursor = more.cursor === undefined ? first.next_cursor : more.cursor;
-
-  const loadMore = async () => {
-    if (!cursor || !organizationId) return;
-    setMore((m) => ({ ...m, busy: true, failed: false }));
-    const answer = await entityBackLinks(recordsDataSource(createClient()), organizationId, entityToken, recordId, cursor);
-    if (!answer.ok) {
-      console.error("[EntityBackLinks] custom.entity_back_links (next page) failed", { entityToken, recordId, error: answer.error });
-      setMore((m) => ({ ...m, busy: false, failed: true }));
-      return;
-    }
-    setMore((m) => ({ items: [...m.items, ...answer.data.items], cursor: answer.data.next_cursor, busy: false, failed: false }));
-  };
-
+  const state = links.items.length ? "ready" : "empty";
   return (
-    <section data-section="back-links" data-state={items.length ? "ready" : "empty"} className={className}>
+    <section data-section="back-links" data-state={state} className={className}>
       <h3 className="text-sm font-medium">Linked records</h3>
-      {items.length === 0 ? (
+      {links.items.length === 0 ? (
         <EmptyState icon={<Link2 className="h-5 w-5" />} title="Nothing links here" />
       ) : (
         <div className="flex flex-col gap-2">
-          {groupBackLinksByTable(items).map((group) => (
+          {groupBackLinksByTable(links.items).map((group) => (
             <div key={group.tableId} data-back-links-table={group.tableId} className="flex flex-col gap-1">
               <span className="text-xs text-muted-foreground">{group.tableLabel ?? "Table"}</span>
               {group.items.map((item) => (
@@ -136,9 +106,10 @@ export function EntityBackLinks({ entityToken, recordId, organizationId, classNa
           ))}
         </div>
       )}
-      {cursor ? (
-        <Button size="sm" variant="ghost" disabled={more.busy} onClick={() => void loadMore()}>
-          {more.failed ? "Retry" : "Load more"}
+      {links.moreError ? <span className="text-xs text-muted-foreground">{links.moreError.message}</span> : null}
+      {links.hasMore ? (
+        <Button size="sm" variant="ghost" disabled={links.loadingMore} onClick={() => void links.loadMore()}>
+          {links.moreError ? "Retry" : "Load more"}
         </Button>
       ) : null}
     </section>
