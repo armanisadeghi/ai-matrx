@@ -27,7 +27,7 @@ export interface UseStructuredListForSelectionResult {
 }
 
 // Module-level cache keyed by listId — labels are public and rarely change within a session.
-// Mirrors the in-memory cache pattern used by useStructuredLists (@/features/structured-lists).
+// An in-memory cache keyed by list id, shared by every caller in the page.
 const _cache = new Map<string, StructuredListForSelection | null>();
 
 function flatten(data: StructuredListForSelection | null): {

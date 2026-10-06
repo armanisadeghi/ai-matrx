@@ -10,6 +10,7 @@
  */
 import fs from "node:fs";
 import path from "node:path";
+import { execFileSync } from "node:child_process";
 
 const REPO = path.resolve(__dirname, "../../../..");
 
@@ -45,27 +46,38 @@ export function scan(root: string): string[] {
   for (const folder of OLD_FOLDERS) {
     if (fs.existsSync(path.join(root, folder))) hits.push(`folder exists: ${folder}`);
   }
-  const walk = (dir: string) => {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        if (!SKIP_DIRS.has(entry.name)) walk(full);
-        continue;
-      }
-      const rel = path.relative(root, full);
-      if (SKIP_FILES.has(entry.name) || SKIP_PATH.test(rel) || !SCAN_EXT.test(entry.name)) continue;
-      let text: string;
-      try {
-        text = fs.readFileSync(full, "utf8");
-      } catch {
-        continue; // a file another process removed mid-scan
-      }
-      for (const [what, re] of OLD_TEXT) {
-        if (re.test(text)) hits.push(`${rel}: ${what}`);
-      }
+  const check = (rel: string) => {
+    const name = path.basename(rel);
+    if (SKIP_FILES.has(name) || SKIP_PATH.test(rel) || !SCAN_EXT.test(name)) return;
+    if (rel.split("/").some((part) => SKIP_DIRS.has(part))) return;
+    let text: string;
+    try {
+      text = fs.readFileSync(path.join(root, rel), "utf8");
+    } catch {
+      return; // a file another process removed mid-scan
+    }
+    for (const [what, re] of OLD_TEXT) {
+      if (re.test(text)) hits.push(`${rel}: ${what}`);
     }
   };
-  walk(root);
+  if (fs.existsSync(path.join(root, ".git"))) {
+    // Tracked files only: fast, and never reads untracked scratch.
+    const tracked = execFileSync("git", ["ls-files", "-z"], { cwd: root, maxBuffer: 1 << 28 })
+      .toString()
+      .split("\0")
+      .filter(Boolean);
+    tracked.forEach(check);
+  } else {
+    const walk = (dir: string) => {
+      for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          if (!SKIP_DIRS.has(entry.name)) walk(full);
+        } else check(path.relative(root, full));
+      }
+    };
+    walk(root);
+  }
   return hits;
 }
 
