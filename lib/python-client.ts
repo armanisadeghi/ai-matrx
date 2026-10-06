@@ -37,6 +37,7 @@ import {
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { supabase } from "@/utils/supabase/client";
 import { getStore } from "@/lib/redux/store-singleton";
+import { noticeUsageRefusal } from "@/features/entitlements/usage-gate/usageGate";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { waitForOrganizationAdmission } from "@/lib/api/organization-admission";
@@ -60,7 +61,7 @@ import {
   buildMatrxRequestUrl,
   parseMatrxNdjsonResponse,
   readMatrxJsonResponse,
-  sendMatrxRequest,
+  sendMatrxRequest as sendMatrxRequestRaw,
 } from "@ai-matrx/agents/matrx";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
@@ -888,6 +889,41 @@ export async function postMultipart<T>(
 }
 
 /**
+ * Every non-2xx response on this client passes here: the usage gate's
+ * refusal (HTTP 402 `usage_limit_reached` / `guest_ai_allowance_used`, the
+ * flat envelope of USAGE-GATE.md § Contract) gets the SAME answer the chat
+ * stream and `callApi` give — the person is held `over` and offered the
+ * upgrade dialog (a guest gets the sign-up reminder) — through the one shared
+ * handler. Only a body carrying the refusal code counts (status passed as
+ * null), so an unrelated 402 never opens the dialog.
+ */
+async function noticeUsageRefusalIn(response: Response): Promise<void> {
+  if (response.status !== 402) return;
+  noticeUsageRefusalInBody(await response.clone().json().catch(() => null));
+}
+
+function noticeUsageRefusalInBody(body: unknown): void {
+  const store = getStore();
+  if (!store || !body) return;
+  try {
+    noticeUsageRefusal(null, body, store.dispatch, store.getState);
+  } catch {
+    // Showing the dialog must never replace the request's own error.
+  }
+}
+
+/**
+ * The one send of this client: every call site goes through here, so a usage
+ * refusal is noticed whatever reads the body afterwards (the package's JSON
+ * reader, the NDJSON reader, `parseHttpError`).
+ */
+const sendMatrxRequest: typeof sendMatrxRequestRaw = async (...args) => {
+  const response = await sendMatrxRequestRaw(...args);
+  await noticeUsageRefusalIn(response);
+  return response;
+};
+
+/**
  * Turn a non-2xx XHR into a BackendApiError using the SAME parser `fetch`
  * callers use (`parseHttpErrorBody`), so an XHR transport never surfaces a
  * thinner error than a fetch would for the identical response body.
@@ -908,6 +944,7 @@ function parseXhrError(
     body = null;
   }
   if (body) {
+    if (xhr.status === 402) noticeUsageRefusalInBody(body);
     const parsed = parseHttpErrorBody(body, xhr.status);
     return new BackendApiError({
       code: parsed.code,

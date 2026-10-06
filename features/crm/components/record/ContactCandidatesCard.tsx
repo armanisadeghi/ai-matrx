@@ -65,6 +65,8 @@ const PAID_LOOKUP_MAX_USD = 0.02;
 
 interface Props {
   partyId: string;
+  /** The organization that owns this party; every write names it. */
+  organizationId: string;
   onChanged?: () => void;
   /**
    * What this card shows, handed up so the page's agent scope can emit it:
@@ -96,6 +98,7 @@ function verificationLabel(candidate: ContactCandidateView): {
 
 export function ContactCandidatesCard({
   partyId,
+  organizationId,
   onChanged,
   onStateChange,
 }: Props) {
@@ -152,7 +155,7 @@ export function ContactCandidatesCard({
     if (!ok) return;
     setFinding(true);
     try {
-      const result = await findContacts(partyId, { usePaidProviders: true });
+      const result = await findContacts(partyId, organizationId, { usePaidProviders: true });
       const personal = result.personal_found ?? 0;
       toast.success(
         result.candidates?.length
@@ -190,7 +193,7 @@ export function ContactCandidatesCard({
 
     setBusyId(candidate.id);
     try {
-      await confirmCandidate(partyId, candidate.id, {
+      await confirmCandidate(partyId, organizationId, candidate.id, {
         acceptRoleAddress: Boolean(candidate.is_role_address),
         acceptUnverified: candidate.verification_status !== "verified",
       });
@@ -214,7 +217,7 @@ export function ContactCandidatesCard({
     if (!ok) return;
     setBusyId(candidate.id);
     try {
-      await rejectCandidate(partyId, candidate.id);
+      await rejectCandidate(partyId, organizationId, candidate.id);
       toast.success("Suggestion dismissed");
       await load();
     } catch (cause) {

@@ -73,3 +73,4 @@ export async function copyTemplate(templateId: string, title: string, activeOrga
   if (error || !data) throw new Error(`We couldn't use this template${error ? `: ${error.message}` : "."}`);
   return data;
 }
+

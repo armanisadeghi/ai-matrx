@@ -3,7 +3,7 @@
  *
  * Covers the two load-bearing, mock-light pieces:
  *
- *   1. compileEmitRenderer — the REUSED Babel sandbox (`compileSlotComponent` +
+ *   1. the emit compile — `compileStoredComponent` over `@ai-matrx/code-runtime` (+
  *      the fixed allow-list) actually compiles a representative agent-authored
  *      emit component and renders it with the canonical `EmitRendererProps`.
  *      This is the security spine — if the reuse ever broke, this fails.
@@ -21,7 +21,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { compileEmitRenderer } from "../compileEmitRenderer";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import type { EmitRendererProps, NodeEmittedEvent } from "../types";
 
 /**
@@ -96,7 +96,7 @@ describe("the emit props contract carries the whole wire event", () => {
   });
 });
 
-describe("compileEmitRenderer (reused Babel sandbox)", () => {
+describe("emit renderer compile (@ai-matrx/code-runtime)", () => {
   it("compiles an agent-authored emit component using only the allow-list", () => {
     // Representative author code: TSX, an `export default`, a lucide icon and a
     // bare `import` line (stripped by the sandbox), reading EmitRendererProps.
@@ -114,16 +114,17 @@ describe("compileEmitRenderer (reused Babel sandbox)", () => {
       }
     `;
 
-    const { Component, error } = compileEmitRenderer(code, [
-      "react",
-      "lucide-react",
-    ], "test:emit");
+    const { Component, error } = compileStoredComponent({
+      code,
+      allowedImports: ["react", "lucide-react"],
+      origin: "test:emit",
+    });
 
     expect(error).toBeNull();
     expect(Component).toBeTruthy();
 
     const html = renderToStaticMarkup(
-      React.createElement(Component!, propsFromEvent(FIXTURE_EVENT, 0)),
+      React.createElement(Component!, propsFromEvent(FIXTURE_EVENT, 0) as unknown as Record<string, unknown>),
     );
     expect(html).toContain("data-testid=\"custom-emit\"");
     expect(html).toContain("Status");
@@ -131,7 +132,7 @@ describe("compileEmitRenderer (reused Babel sandbox)", () => {
   });
 
   it("returns {Component:null,error:null} for empty code (no row authored)", () => {
-    const { Component, error } = compileEmitRenderer("", [], "test:emit");
+    const { Component, error } = compileStoredComponent({ code: "", allowedImports: [], origin: "test:emit" });
     expect(Component).toBeNull();
     expect(error).toBeNull();
   });

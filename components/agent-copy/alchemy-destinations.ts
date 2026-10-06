@@ -4,6 +4,7 @@ import { createMatrxTransferPorts, type MatrxTransferContent } from "@ai-matrx/a
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
 import { alchemyOrganizationId } from "./alchemy-organization";
+import { saveNotesThroughDoor } from "./alchemy-door";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { clearFocus } from "@ai-matrx/chat/agents/redux/execution-system/conversation-focus/conversation-focus.slice";
@@ -23,12 +24,15 @@ export function createAlchemyDestinationPorts(host: Host) {
     if (!userId || !organizationId) throw new Error("Sign in and select an organization to use Matrx destinations.");
     return { userId, organizationId };
   };
+  // A write: it lands through the one write door (`matrx-user/notes · create_notes`, headless
+  // when no Notes page is open) and is refused with the door's own sentence and remedy.
   const saveNote = async (content: MatrxTransferContent, folder: string) => {
-    const { organizationId } = identity();
-    const { NotesAPI } = await import("@/features/notes/service/notesApi");
     identity();
-    const note = await NotesAPI.create({ label: content.label, content: content.markdown, folder_name: folder, tags: [], organization_id: organizationId });
-    return { kind: "note", id: note.id, label: note.label, href: `/notes/${note.id}` };
+    const { receipt, created } = await saveNotesThroughDoor([{ title: content.label, content: content.markdown, folder }]);
+    if (receipt.status === "refused") throw new Error(`${receipt.sentence} ${receipt.remedy}`);
+    const note = created[0];
+    if (!note) throw new Error(`${receipt.sentence} The new note's link isn't available; find it in Notes.`);
+    return note;
   };
   return createMatrxTransferPorts({
     getIdentity: identity,

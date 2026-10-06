@@ -121,13 +121,13 @@ function trapOpaqueOriginProperties(): Trap {
     return { hits, restore: () => undo.forEach((fn) => fn()) };
 }
 
-const RENDERING_BODY = {
-    transformed:
-        'const Component = function Component(props) { return React.createElement("p", { id: "probe-body" }, "value: " + String(props.data && props.data.title)); };\nreturn Component;',
-    importBindings: [],
-    declaredTopLevel: [],
-    allowedImports: [],
-};
+// Built by the PARENT half, exactly as the host posts it — the frame never
+// sees Babel, so the transform runs here, before the traps are armed.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const RENDERING_BODY = (require("../transform/transform-kind-body") as typeof import("../transform/transform-kind-body")).transformKindComponentBody(
+    'export default function Component(props) { return React.createElement("p", { id: "probe-body" }, "value: " + String(props.data && props.data.title)); }',
+    [],
+).payload;
 
 describe("the frame runtime never touches a property an opaque origin refuses", () => {
     it("mounts, re-renders, re-themes and unmounts a real body with zero accesses", () => {
@@ -203,13 +203,13 @@ describe("the frame runtime never touches a property an opaque origin refuses", 
         try {
             // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { executeKindBody } = require("../runtime/execute-kind-body") as typeof import("../runtime/execute-kind-body");
-            const built = executeKindBody({
-                transformed:
-                    'const Component = function Component() { fetch("https://evil.example"); return null; };\nreturn Component;',
-                importBindings: [],
-                declaredTopLevel: [],
-                allowedImports: [],
-            } as never);
+            const { transformKindComponentBody } = require("../transform/transform-kind-body") as typeof import("../transform/transform-kind-body");
+            const { payload } = transformKindComponentBody(
+                'export default function Component() { fetch("https://evil.example"); return null; }',
+                [],
+            );
+            must(payload !== null, "The body did not transform.");
+            const built = executeKindBody(payload!);
             expect(built.Component).toBeTruthy();
 
             let thrown: Error | null = null;

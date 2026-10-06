@@ -14,8 +14,8 @@ import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { EntityChartBlock, RecordsMount, TablePage, type ChartKind, type EntityColumn, type EntityRow } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
-import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, SlidersHorizontal, Square, Table2, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, Search, SlidersHorizontal, Square, Table2, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -40,7 +40,10 @@ const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof T
 /** Spaces' chart types as records-ui's chart kinds (Notion's vertical bar = a column chart). */
 const CHART_KIND: Record<string, ChartKind> = { donut: "donut", bar: "column", hbar: "bar", line: "line" };
 
-const PAGE = 100;
+/** Rows per read: the first page, and each "Load more" asks only the NEXT page (offset = rows held). */
+const PAGE = 50;
+/** How long a read may go unanswered before it is asked again (once), then named. */
+const STALL_MS = 15000;
 
 interface EntityState {
   label: string | null;
@@ -60,14 +63,31 @@ function sentence(e: unknown, fallback: string): string {
  * One built-in source's presented columns and one page of rows for the view's question — the filter
  * and the sort are asked of the store (never applied to a page here), so a count and a page agree.
  */
-function useEntityRows(token: string, view: SpaceDbView, limit: number) {
+function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const client = useRecordsClient();
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null });
   const where = JSON.stringify(view.filters ?? {});
   const sortKey = JSON.stringify(view.sorts?.[0] ?? null);
+  // A read that never answers (a stalled session in a long-lived tab) must not leave blank skeleton
+  // rows forever: past STALL_MS the read is asked once more, then the block says so with Try again.
+  const [stalls, setStalls] = useState(0);
+  // How many rows a re-read asks for (after a write, Try again): what is held, so nothing loaded vanishes.
+  const held = useRef(PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const asked = useRef("");
   useEffect(() => {
+    // A new question (filter, sort, source) starts again at one page; a re-read keeps what is held.
+    const question = `${token}|${where}|${sortKey}|${search}`;
+    if (asked.current !== question) held.current = PAGE;
+    asked.current = question;
     let cancelled = false;
+    let settled = false;
+    const stall = setTimeout(() => {
+      if (cancelled || settled) return;
+      if (stalls === 0) setStalls(1);
+      else setState((s) => ({ ...s, loading: false, error: "This database is taking too long to answer." }));
+    }, STALL_MS);
     const source = { kind: "entity" as const, token };
     const filters = JSON.parse(where) as Record<string, unknown>;
     const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
@@ -77,10 +97,12 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
         source,
         ...(Object.keys(filters).length ? { where: filters } : {}),
         ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
-        limit,
+        ...(search ? { search } : {}),
+        limit: held.current,
       }),
     ]).then(
       ([def, page]) => {
+        settled = true;
         if (cancelled) return;
         if (!def.ok) return setState((s) => ({ ...s, loading: false, error: sentence(def.error, "This database could not be read.") }));
         if (!page.ok) return setState((s) => ({ ...s, loading: false, error: sentence(page.error, "This database’s rows could not be read.") }));
@@ -97,15 +119,55 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
         });
       },
       (thrown: unknown) => {
+        settled = true;
         if (!cancelled) setState((s) => ({ ...s, loading: false, error: sentence(thrown, "This database could not be read.") }));
       },
     );
     return () => {
       cancelled = true;
+      clearTimeout(stall);
     };
-  }, [client, token, where, sortKey, limit, tick]);
-  const reload = () => setTick((t) => t + 1);
+  }, [client, token, where, sortKey, search, tick, stalls]);
+
+  const reload = () => {
+    setStalls(0);
+    setState((s) => ({ ...s, loading: true, error: null }));
+    setTick((t) => t + 1);
+  };
   const rows = state.rows;
+  const hasMore = !state.loading && !state.error && state.total > rows.length;
+  /** "Load more": ONE read of the next page (offset = rows held), appended — never the whole source again. */
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const filters = JSON.parse(where) as Record<string, unknown>;
+    const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
+    try {
+      const page = await client.drillRows({
+        source: { kind: "entity", token },
+        ...(Object.keys(filters).length ? { where: filters } : {}),
+        ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
+        ...(search ? { search } : {}),
+        limit: PAGE,
+        offset: rows.length,
+      });
+      if (!page.ok) {
+        toast.error(sentence(page.error, "More rows could not be read."));
+        return;
+      }
+      const next = (page.data.rows ?? []) as EntityRow[];
+      setState((s) => {
+        const seen = new Set(s.rows.map((r) => r.id));
+        const merged = [...s.rows, ...next.filter((r) => !seen.has(r.id))];
+        held.current = Math.max(PAGE, merged.length);
+        return { ...s, rows: merged, total: Number(page.data.total ?? s.total) };
+      });
+    } catch (thrown) {
+      toast.error(sentence(thrown, "More rows could not be read."));
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const write = async (rowId: string, apiName: string, value: unknown): Promise<string | null> => {
     const seen = rows.find((r) => r.id === rowId)?.["version"];
     const done = await client.entityRowWrite({ token, record_id: rowId, columns: { [apiName]: value }, ...(typeof seen === "number" ? { expected_version: seen } : {}) });
@@ -113,7 +175,7 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
     setTick((t) => t + 1);
     return null;
   };
-  return { ...state, write, reload };
+  return { ...state, write, reload, loadMore, hasMore, loadingMore };
 }
 
 type Entity = ReturnType<typeof useEntityRows>;
@@ -179,14 +241,28 @@ export function EntityDatabase(p: EntityDatabaseProps) {
 function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabaseProps) {
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
-  const [limit, setLimit] = useState(PAGE);
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion); the store is
   // asked with it, so the page and the count agree.
   const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
   // The toolbar filter is the viewer's own the same way, until an editor saves it for everyone.
   const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
   const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]), filters: shownFilters(active, filterChoices[active.id]) };
-  const entity = useEntityRows(token, shown, limit);
+  // The magnifier (Notion's toolbar search): this viewer's own, per view, never saved; asked of the door
+  // (drillRows `search`), so the count and Load more answer the search, not the page held.
+  const [searchChoices, setSearchChoices] = useState<Record<string, string>>({});
+  const [searchOpen, setSearchOpen] = useState<Record<string, boolean>>({});
+  const term = searchChoices[active.id] ?? "";
+  const [asked, setAsked] = useState(term);
+  useEffect(() => {
+    const t = window.setTimeout(() => setAsked(term.trim()), 250);
+    return () => window.clearTimeout(t);
+  }, [term]);
+  const setTerm = (value: string) => setSearchChoices((all) => ({ ...all, [active.id]: value }));
+  const closeSearch = () => {
+    setTerm("");
+    setSearchOpen((all) => ({ ...all, [active.id]: false }));
+  };
+  const entity = useEntityRows(token, shown, asked);
   const [open, setOpen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
@@ -220,7 +296,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   };
   const sourceName = props.title || entity.label || known || token;
 
-  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />;
+  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} search={asked} />;
 
   return (
     <div className="spaces-db-frame" data-layout={active.layout} data-source="entity">
@@ -271,6 +347,28 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
           ) : null}
         </div>
         <div className="spaces-db-tools">
+          {searchOpen[active.id] || term ? (
+            <div className="spaces-db-search">
+              <Search size={14} strokeWidth={1.8} aria-hidden />
+              <Input
+                autoFocus
+                type="search"
+                aria-label="Search this database"
+                placeholder="Type to search…"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeSearch();
+                }}
+                onBlur={() => {
+                  if (!term) setSearchOpen((all) => ({ ...all, [active.id]: false }));
+                }}
+              />
+              {term ? <Button variant="quiet" icon={<X size={13} />} aria-label="Clear search" onClick={closeSearch} /> : null}
+            </div>
+          ) : (
+            <Button variant="quiet" icon={<Search size={15} strokeWidth={1.8} />} aria-label="Search" title="Search" onClick={() => setSearchOpen((all) => ({ ...all, [active.id]: true }))} />
+          )}
           <EntityFilter
             view={active}
             columns={entity.columns}
@@ -311,7 +409,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   );
 }
 
-function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; limit: number; onMore: () => void }) {
+function EntityBody({ token, entity, view, onOpen, search }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; search: string }) {
   const hidden = new Set(view.hiddenFields ?? []);
   const shown = entity.columns.filter((c) => !hidden.has(c.api_name));
   const title = titleColumn(entity.columns);
@@ -350,8 +448,9 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
       </div>
     );
   }
-  const more = entity.total > entity.rows.length && entity.rows.length >= limit;
-  const choice = entity.columns.find((c) => c.type === "choice" || c.lookup);
+  // The default grouping is a choice the module names in words (a project's Status), never a lookup
+  // the door answers as bare ids (Created by) — those drew a legend of uuids.
+  const choice = entity.columns.find((c) => c.type === "choice") ?? entity.columns.find((c) => c.lookup && c.lookup.replaces);
   if (view.layout === "chart") {
     const by = view.chart?.groupBy ?? view.groupField ?? choice?.api_name;
     return (
@@ -372,7 +471,7 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
     // records-ui's board over the source: lanes per stage / status, cards move between them.
     return (
       <div className="spaces-db-body">
-        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} />
+        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} searchOverride={search || null} />
       </div>
     );
   }
@@ -398,9 +497,9 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
       )}
       <div className="spaces-entity-count type-secondary text-muted-foreground">
         {entity.loading && !entity.rows.length ? "" : `${entity.total.toLocaleString()} ${entity.total === 1 ? "row" : "rows"}`}
-        {more ? (
-          <Button variant="quiet" onClick={onMore}>
-            Load more
+        {entity.hasMore ? (
+          <Button variant="quiet" disabled={entity.loadingMore} onClick={() => void entity.loadMore()}>
+            {entity.loadingMore ? "Loading…" : "Load more"}
           </Button>
         ) : null}
       </div>

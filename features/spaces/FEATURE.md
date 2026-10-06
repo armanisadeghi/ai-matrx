@@ -18,7 +18,8 @@ Notion code, fonts or logos.
 - Guard: `pnpm check:spaces-fence` (`:self-test`) — run before every commit.
 - Published packages are **read, never edited**: `@ai-matrx/records-ui` (grid, board, calendar,
   timeline, gallery, list, chart, dashboard, form, record page), `@ai-matrx/records/memory`
-  (`templatePreview` — in-memory sample data, no writes), `@ai-matrx/design-system/controls`.
+  (`templatePreview` — in-memory sample data, no writes; only the template gallery's preview draws it),
+  `@ai-matrx/design-system/controls`.
 - Something missing outside the fence (a design-system option, a records-ui layout, an icon) goes in
   `NEEDS.md` beside this file — the owner session adds it to the package and clears the row.
 
@@ -27,7 +28,7 @@ Notion code, fonts or logos.
 | Port | Now | Later (owner session) |
 |---|---|---|
 | `SpacesStore` | the database store (`store-db/`, owner's) wrapped by `state/live-store.ts` (active org via `ensureOrgId` for new top-level pages, change events for the tree) | realtime merge |
-| `SpacesDataPort` | `templatePreview(spec).config` over a realistic template spec | live config + built-in modules via drill doors |
+| `SpacesDataPort` | live store tables (`DataMount`, the table's own org) + built-in modules via drill doors; the sample's tables are installed by `data/agency-install.ts` (`custom.template_declare` + `template_install`, the gallery's Install door); `templatePreview` only in the template gallery preview | — |
 | `SpacesAiPort` | `ai/spaces-ai.ts`: `spaces.writing_assist` (useLiveAgentRun) and `spaces.ask_page` (launchAgentExecution) looked up in `MANDATE_KEYS`; a missing key = "AI is not connected yet" | — |
 
 Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color`, `background`,
@@ -107,3 +108,65 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   print window); K2 `io/import.ts` + `sidebar/ImportMenu.tsx`. C22/B12 `useLinkPreview` cards and mention titles. M1/M2/M4 `ai/` (Ask AI box,
   Ask about this page; disclosed through `useDeclaredSurfaceMandates`). Data: `ViewSwitcher embedded` + `sortOverride` + "New page" line;
   built-in boards on `TablePage source`, built-in charts on `EntityChartBlock`, New adds task / project rows.
+- 2026-10-05 — builder round 11: "Add the sample" installs the agency spec as REAL store tables in the active org
+  (`data/agency-install.ts`: `template_declare` upsert on catalogue id `T-SPACES-1` + `runTemplateDoor("template_install")`,
+  the same door as the template gallery's Install; a second add answers `already` with the same tables) and points the
+  page's ring and client blocks at them (`{kind:"table", tableId, viewId}`, no `sample`); an older copy is repointed in
+  place. The source picker's "Sample agency" rows install too. Date fields carry `absoluteDates`; title fields are not
+  required ("+ New page" writes an untitled row); the client grid hides the store's reverse links (`linked:<inverse key>`).
+  Type measured on the references: title 36px, blocks 15px/1.5 (`spaces.css`).
+- 2026-10-06 — builder round 12: "Add the sample" files the agency tables in the sample PAGE's organization (an existing
+  page: `content.document.organization_id`; a new page and its tables: the write organization, created by
+  `createDatabaseSpacesStore(org)`), and repoints any block left on another organization's agency tables. The install is
+  the gallery's whole Install: after `template_install`, `addInstalledAgent` (features/make) copies and notes the "Agency
+  assistant" with the gallery's ports (`installAgencySample(org, dispatch)`). Embedded grids hand every date column
+  `presentation.formats` date `long` ("January 1, 2026"); records-ui 0.101.29's embedded look (40px centred rows,
+  dividers, choice dots) needs nothing from the host. Rhythm: link-to-page rows 32.5px, to-dos 29px (measured).
+- 2026-10-06 — builder round 14 (phase 5, collaboration): `collab/`. Comments on the ONE comment store — `comments.ts` reads
+  `cmt_list` raw and writes `cmt_add` with `part_anchor` `block:<id>` (the quoted text in `label`); edit / delete (archive) / resolve /
+  mention notices are `features/rich-document/annotations/service.ts`'s own calls; the composer is its `MentionComposer`, bodies its
+  `CommentBody`. Page comments under the title ("Add comment" on title hover), selection-toolbar Comment, block-menu Comment, right
+  panel All / Open / Resolved from the top bar, highlights by the CSS Custom Highlight API and margin count bubbles (`CommentMargin.tsx`).
+  `useSpaceRoom.ts`: ONE `@ai-matrx/realtime` channel per page (namespace `spaces-page`) — presence (top-bar avatars, +N) and
+  `platform.comments` changes. "@" in the page lists people (`cmt_mention_candidates`) before pages and stores `mention {kind:"person"}`.
+  A save from someone else while this person is typing shows "Page updated · Show latest" instead of replacing the page. Share opens
+  the platform `ShareModal` on `document` (Invite) beside Copy link.
+- 2026-10-06 — builder round 15 (H3 live co-editing): `collab/space-collab.ts` + `collab/useSpaceCollab.ts`. The page body is a Yjs
+  fragment shared over Supabase broadcast through the workbook provider (`yjs:spaces:<id>`, imported as-is) and bound by BlockNote's
+  `CollaborationExtension` (named cursors in `personColor`, the same colour rings the top-bar avatar); title / icon / cover / settings
+  ride a Yjs map. An empty room is seeded from the stored version in a scratch doc whose client id hashes (page, version), so two
+  people opening at once write identical items (no duplicated blocks). Exactly one host saves: editors still on the page's presence
+  channel, lowest `uid:clientID`, the room's tab leader; it saves through `space_save` on knobs `spaces.collab.snapshot_debounce_ms` /
+  `snapshot_max_wait_ms` (page org; platform value for an outside sharee) and on leave; a save whose content is stored is skipped,
+  and the seed's own normalisation is the baseline (opening a page writes nothing). Others' saves only teach the version. Offline
+  marker in the top bar; on reconnect the provider is rebuilt and this member's state re-sent (works around the provider dropping
+  late `y-state` answers). Viewers / commenters (`useAccess` below edit) get the live room read-only and no Add icon / Add cover.
+- 2026-10-06 — builder round 16: "Add the sample" on an older install runs `upgradeTemplateInstall` (custom.template_upgrade)
+  from install's `upgrade` hint — stages in the Templates row, counts in the toast, the refusal sentence on failure (Harbor & Pine
+  upgraded v1 → v2 through the UI). Sample views name fields by the install's keys, matched by title (`AgencyTable.keys`,
+  `viewOnInstalledKeys`): an upgraded install's Offer Bought is `offer_2`. A stored version the live room did not write (Move to
+  from another page) is merged into the room on block ids before the host saves (`page/merge-stored.ts`). The store's
+  `subscribe()` is on `subscribeToRealtimeManager`. Column widths follow the editor's change feed (a room's body never reached
+  BlockNoteView's onChange, so columns drew 50/50); an unfocused block selection shows no selection toolbar; relation links in
+  embedded grids read in body ink.
+- 2026-10-06 — builder round 17: a block dropped on another's left / right edge makes columns (`editor/column-drop.ts`:
+  BlockNote's `dropCursor.hooks.computeDropPosition` draws the vertical guide, a window-capture drop takes it before
+  ProseMirror's move; inside a column it adds a column). The block menu opens on a click only (the handle's press never
+  reaches the menu trigger). "/" items land where the "/" was typed — the block is named at the click and the insert goes by
+  id after the picker's await (`editor/slash-insert.ts`; proof `run-editor-proof.sh slash-insert`). A page trashed from the
+  sidebar while open shows the Trash banner (`page/trash-state.ts` + test). "Saving…" only while a write is in flight. A
+  built-in read that never answers is retried once, then named with Try again. Built-in charts group by a choice by
+  default. Slash menu fits the page's scroll area. Sample: thinner rings, dashed many-group ring, grey pill on the open
+  view tab, lightning → the table's automations (`NotifyRuleEditor`), Claude Skills / Auto posting lines as the reference
+  (`upgradeLinkLines` on Add the sample).
+- 2026-10-06 — builder round 18: column lists are always well formed across the store boundary (`editor/columns.ts`, run by
+  `convert.ts` on load and save: stray blocks get a column, a list in a list joins it, one-column lists and loose columns melt;
+  a list inside a column is valid and kept). The editor never nests: "/2 columns" in a column lands below the outer list, a
+  dragged column list keeps its above/below drop. A save that does not land never loses edits (`page/unsaved.ts`): a body the
+  database would refuse is not sent, a refused or failed save keeps the page on the device, a reload restores it ("Unsaved
+  changes restored"), a stored save clears it; the label reads "Not saved" for a refusal. A page in Trash writes nothing and
+  elects no host (`trash-state.ts` `mayWrite` / `roomCanEdit`). Use template on the sample copies it (`state/template-plan.ts`);
+  the sample is the oldest page with its title. Pages this tab made (new, duplicate) seed their room at once. Enter at the end
+  of an open toggle's title writes its first child (`editor/toggle-enter.ts`). Inline tables at natural widths, scrolling
+  sideways; grey toggle triangles; no selection ring between columns. Viewer search on table blocks (records-ui
+  `searchOverride`); built-in Load more reads one 50-row page by offset.

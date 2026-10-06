@@ -10,14 +10,19 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
-import { addTravelingSmmSample } from "../store/sample";
+import { installAgencySample, pageOrganizationId } from "../data/agency-install";
+import { addTravelingSmmSample, findSamplePage } from "../store/sample";
+import { createDatabaseSpacesStore } from "../store-db/create-store";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
+import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
+import { sampleTemplatePlan } from "./template-plan";
 import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
 
 const FAVORITES_KEY = "spaces:favorites";
@@ -48,15 +53,19 @@ export type DropPlacement = "before" | "after" | "inside";
 interface SpacesContextValue {
   store: LiveSpacesStore;
   ready: boolean;
-  /** The tree could not be read (signed out, network): the screens say so instead of looking empty. */
+  /** The tree could not be read for a fault (network, server): the screens say so instead of looking empty. */
   loadError: string | null;
+  /** The tree read was refused: signed out, or no access. The screens show the sign-in / no-access state. */
+  access: LoadAccess | null;
+  /** Read the tree again (after a fault or a refusal). */
+  retryLoad: () => void;
   /** Optimistic title/icon in the tree while the open page types (Notion renames the row live). */
   patchSummary: (id: SpaceId, patch: Partial<Pick<SpaceSummary, "title" | "icon">>) => void;
   /** A page just created by the person: its title takes focus once it opens. */
   takeFocusTitle: (id: SpaceId) => boolean;
   /** A page created in this tab, handed to its screen once so it opens without a round trip. */
   takeFresh: (id: SpaceId) => SpaceDoc | null;
-  sample: { adding: boolean; progress: string | null; add: () => Promise<void> };
+  sample: { adding: boolean; progress: string | null; add: (opts?: { asTemplate?: boolean }) => Promise<void> };
   /** I2 / I3 — Spaces marked as templates that the person can open (null = not read yet). */
   templates: {
     ids: string[] | null;
@@ -103,9 +112,12 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const orgRef = useRef(organizationId);
   orgRef.current = organizationId;
   const [store] = useState(() => createLiveSpacesStore(() => orgRef.current));
+  const dispatch = useAppDispatch();
   const [all, setAll] = useState<SpaceSummary[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [access, setAccess] = useState<LoadAccess | null>(null);
+  const reload = useRef<() => void>(() => {});
   const focusTitle = useRef<SpaceId | null>(null);
   const fresh = useRef(new Map<SpaceId, SpaceDoc>());
   const [sampleProgress, setSampleProgress] = useState<string | null>(null);
@@ -119,22 +131,50 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let live = true;
+    let retriedRefusal = false;
     const refresh = () => {
       void store.list({ includeArchived: true }).then(
         (list) => {
           if (!live) return;
           setAll(list);
           setLoadError(null);
+          setAccess(null);
           setReady(true);
         },
-        (err: unknown) => {
+        async (err: unknown) => {
           if (!live) return;
-          setLoadError(err instanceof Error ? err.message : "We couldn't load your pages.");
+          if (isRefusal(err)) {
+            const signedIn = await hasSignedInSession();
+            if (!live) return;
+            // A refusal with a session is usually the boot race (the read left before the session
+            // attached): read once more before calling it no access.
+            if (signedIn && !retriedRefusal) {
+              retriedRefusal = true;
+              window.setTimeout(() => live && refresh(), 1200);
+              return;
+            }
+            setAccess(signedIn ? "no-access" : "signed-out");
+            setLoadError(null);
+          } else {
+            console.error("[spaces] the page tree could not be read", err);
+            setAccess(null);
+            setLoadError("We couldn't load your pages.");
+          }
           setReady(true);
         },
       );
     };
+    reload.current = () => {
+      retriedRefusal = false;
+      refresh();
+    };
     refresh();
+    // Signing in (or a session attaching late) reads the tree again.
+    const offAuth = onSignedIn(() => {
+      if (!live) return;
+      retriedRefusal = false;
+      refresh();
+    });
     const off = store.onChange((change) => {
       if (change.kind === "tree") return refresh();
       const { id, title, icon, updatedAt, isArchived } = change.doc;
@@ -151,6 +191,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     return () => {
       live = false;
       off();
+      offAuth();
     };
   }, [store]);
 
@@ -230,12 +271,35 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     focusTitle.current = null;
     return true;
   };
-  const addSample = async () => {
+  const addSample = async (opts?: { asTemplate?: boolean }) => {
     if (sampleProgress) return;
     setSampleProgress("0");
     try {
-      const root = await addTravelingSmmSample(store, (done, total) => setSampleProgress(`${done}/${total}`));
-      open(root.id);
+      const existed = (await findSamplePage(store))?.id ?? null;
+      // The page and its tables share one organization: an existing sample page's own organization;
+      // a new page and its tables go to the write organization (asked for when none is chosen).
+      const root = await addTravelingSmmSample(
+        store,
+        {
+          orgOf: async (id) => {
+            const org = await pageOrganizationId(id);
+            if (!org) throw new Error("We couldn't read the sample page's organization.");
+            return org;
+          },
+          // org-filter: write-target a new sample page and its tables are filed in the active organization
+          writeOrg: () => ensureOrgId(orgRef.current),
+          install: (orgId) => installAgencySample(orgId, dispatch, setSampleProgress),
+          createRoot: async (orgId, title) => {
+            const doc = await createDatabaseSpacesStore(orgId).create({ parentId: null, title });
+            store.notifyTree();
+            return doc;
+          },
+        },
+        (done, total) => setSampleProgress(`${done}/${total}`),
+      );
+      const plan = sampleTemplatePlan(Boolean(opts?.asTemplate), existed, root.id);
+      if (plan.kind === "copy") await applyTemplate(plan.of, root.title);
+      else open(plan.id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");
     } finally {
@@ -258,7 +322,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const applyTemplate = async (id: SpaceId, title: string) => {
     try {
       const copyId = await copyTemplate(id, title, orgRef.current);
-      // The tree learns of the copy, then it opens (Notion opens the new page at once).
+      // The copy's sidebar row shows at once (top-level, last: created order), then the tree re-reads.
+      const source = all.find((s) => s.id === id);
+      const now = new Date().toISOString();
+      setAll((prev) => (prev.some((s) => s.id === copyId) ? prev : [...prev, { id: copyId, parentId: null, position: topLevelLast(prev), title: title || "Untitled", icon: source?.icon ?? null, isArchived: false, updatedAt: now }]));
       store.notifyTree();
       open(copyId);
     } catch (err) {
@@ -266,9 +333,13 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     }
   };
   const archiveSpace = (id: SpaceId) => store.archive(id);
+  /** A position after every top-level page (top-level order is created order). */
+  const topLevelLast = (list: SpaceSummary[]) => list.filter((s) => !s.parentId).map((s) => s.position).sort().at(-1)?.concat("z") ?? "z";
   const restoreSpace = (id: SpaceId) => store.restore(id);
   const duplicateSpace = async (id: SpaceId) => {
     const copy = await store.duplicate(id, { withChildren: true });
+    // The copy opens with its content at once (the duplicate already read it), never blank while re-read.
+    fresh.current.set(copy.id, copy);
     return copy;
   };
   const moveSpace: SpacesContextValue["moveSpace"] = async (id, targetId, placement) => {
@@ -291,6 +362,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     store,
     ready,
     loadError,
+    access,
+    retryLoad: () => reload.current(),
     patchSummary,
     takeFocusTitle,
     takeFresh,

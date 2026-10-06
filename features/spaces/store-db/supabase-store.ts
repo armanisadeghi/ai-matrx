@@ -15,8 +15,16 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { guardedUpdate, readAllRows } from "@ai-matrx/data/db";
+import { defineChannelNamespace, subscribeToRealtimeManager } from "@ai-matrx/realtime";
 import type { Database, Json } from "@/types/database.types";
 import type { SpaceBlock, SpaceDoc, SpaceId, SpaceMedia, SpaceSummary, SpacesStore } from "../contract";
+
+/** One open Space's stored row (content.document UPDATE): a save from another tab, person or page. */
+const spacesDocumentChannel = defineChannelNamespace({
+  namespace: "spaces-document",
+  parts: ["spaceId"],
+  description: "One open Space's stored document row: re-read when another tab, person or page saves it.",
+});
 
 type Db = SupabaseClient<Database>;
 type DocumentRow = Database["content"]["Tables"]["document"]["Row"];
@@ -106,6 +114,18 @@ function projection(title: string, blocks: SpaceBlock[]): string {
   };
   walk(blocks);
   return lines.join("\n\n");
+}
+
+/** The arguments of `content.space_save` — the one shape a save sends (page/leave-save.ts sends it too). */
+export function spaceSaveArgs(doc: SpaceDoc, expectedVersion: number) {
+  return {
+    p_document_id: doc.id,
+    p_expected_version: expectedVersion,
+    p_snapshot: toSnapshot(doc) as unknown as Json,
+    p_title: doc.title,
+    p_projection: projection(doc.title, doc.blocks),
+    p_origin: "manual",
+  };
 }
 
 function fail(action: string, error: { message: string } | null | undefined): never {
@@ -397,14 +417,7 @@ export class SupabaseSpacesStore implements SpacesStore {
     const result = await guardedUpdate<DocHead>({
       expectedVersion,
       applyUpdate: async ({ expectedVersion: version }) => {
-        const { data, error } = await this.db.schema("content").rpc("space_save", {
-          p_document_id: doc.id,
-          p_expected_version: version,
-          p_snapshot: toSnapshot(doc) as unknown as Json,
-          p_title: doc.title,
-          p_projection: projection(doc.title, doc.blocks),
-          p_origin: "manual",
-        });
+        const { data, error } = await this.db.schema("content").rpc("space_save", spaceSaveArgs(doc, version));
         // PT409 (HTTP 409) is the door's compare-and-swap miss: hand guardedUpdate "no row" so it classifies it.
         if (error?.code === "PT409") return { data: null, error: null, count: null, status: 200, statusText: "OK" };
         if (error) return { data: null, error, count: null, status: 400, statusText: "Bad Request" };
@@ -494,16 +507,29 @@ export class SupabaseSpacesStore implements SpacesStore {
   }
 
   subscribe(id: SpaceId, onChange: (doc: SpaceDoc) => void): () => void {
-    const channel = this.db
-      .channel(`spaces:document:${id}:${crypto.randomUUID()}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "content", table: "document", filter: `id=eq.${id}` }, () => {
-        void this.get(id).then((doc) => {
+    // On the app's one realtime manager (supabase-realtime skill): a namespace-built topic, reconnect and
+    // tab-wake handled by the package, and a backfill that re-reads the page so a save made while the
+    // socket was down still arrives. The row carries ids only; the page is always re-read through `get`.
+    const reread = () =>
+      void this.get(id).then(
+        (doc) => {
           if (doc) onChange(doc);
-        });
-      })
-      .subscribe();
-    return () => {
-      void this.db.removeChannel(channel);
-    };
+        },
+        () => undefined,
+      );
+    return subscribeToRealtimeManager(() => ({
+      topic: spacesDocumentChannel.topic({ spaceId: id }),
+      postgresChanges: [
+        {
+          event: "UPDATE",
+          schema: "content",
+          table: "document",
+          filter: `id=eq.${id}`,
+          rowId: (row) => (typeof row.id === "string" ? row.id : undefined),
+          onChange: reread,
+        },
+      ],
+      onBackfill: reread,
+    }));
   }
 }

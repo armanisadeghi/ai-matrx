@@ -2,7 +2,7 @@
  * emit-bundle-boundary — the source guard that keeps `@babel/standalone` out
  * of the workflow run-surface bundle.
  *
- * `emitRendererCache` → `compileEmitRenderer` → the agent-apps compiler → a
+ * `emitRendererCache` → `compileStoredComponent` → `@ai-matrx/code-runtime` → a
  * STATIC `import { transform } from "@babel/standalone"`. The ONLY thing
  * keeping that out of every chunk that can show a workflow run is the
  * `next/dynamic` boundary in `DbEmitRenderer.tsx`. A run surface that imports

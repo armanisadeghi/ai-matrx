@@ -10,10 +10,10 @@
  * there; behavior does not belong here.
  *
  * What stays here is genuinely OURS — injection only:
- *  - the SHARED in-page allowlist compiler (`compileSlotComponent` over
- *    `buildComponentScope`) — the same machinery Agent Apps and the DB tool
- *    renderer run; no third compiler exists;
- *  - the full registered allowlist (`getDefaultImportsForKindComponents`);
+ *  - THE compiler, `@ai-matrx/code-runtime`'s `kindComponentCompiler` (the
+ *    same runtime Agent Apps and the DB tool renderer use; no second one
+ *    exists), over the app's scope modules (`lib/code-runtime/app-scope`);
+ *  - the default scope (`defaultComponentEntries`, the package's registry);
  *  - the Error Inspector sink (`captureError`);
  *  - the durable incident producer (`reportKindComponentIncident` — files on
  *    the kind's own queue so the component's author learns);
@@ -37,8 +37,10 @@ import {
   type ComponentResolution,
 } from "@ai-matrx/content-ir-react";
 
-import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
-import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
+import { kindComponentCompiler } from "@ai-matrx/code-runtime";
+import { defaultComponentEntries } from "@ai-matrx/code-runtime/scope";
+import { provideAppScopeModules } from "@/lib/code-runtime/app-scope";
+import { captureUnresolvedImports } from "@/lib/diagnostics/captureUnresolvedImports";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
   INVALIDATION_KEYS,
@@ -66,6 +68,8 @@ export {
  */
 let compilingOrigin: string | null = null;
 
+provideAppScopeModules();
+
 const cache = createDbKindComponentCache({
   // Every body this cache compiles comes out of `content_ir.kind_component`,
   // i.e. it was authored by an organization through the Studio or an agent —
@@ -73,13 +77,12 @@ const cache = createDbKindComponentCache({
   // compiler. So the dangerous-global stubs are ON here (Q82 / B-17): a body
   // that reaches for fetch/XHR/WebSocket/eval/storage throws a NAMED error the
   // error boundary shows, instead of quietly reading the reader's session.
-  compile: (args) =>
-    compileSlotComponent({
-      ...args,
-      origin: compilingOrigin ?? "kind-component",
-      sandboxDangerousGlobals: true,
-    }),
-  defaultAllowedImports: getDefaultImportsForKindComponents,
+  // `kindComponentCompiler` always shadows them.
+  compile: kindComponentCompiler({
+    origin: () => compilingOrigin ?? "kind-component",
+    onUnresolved: captureUnresolvedImports,
+  }),
+  defaultAllowedImports: defaultComponentEntries,
   reportError: captureError,
   reportIncident: reportKindComponentIncident,
   platform: "web",

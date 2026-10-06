@@ -410,8 +410,8 @@ async function readEveryRow(
 // is not handed on over it. Saving an order writes it on that view, else on the view that was
 // hand-ordered before a sort replaced it, else on the Table's default view when that view IS the
 // Sheet (`layout: "sheet"`); only a table with none of these gets a new view,
-// on Save and never before, and it opens as the Sheet — the one layout that draws a hand-set
-// order (the records-ui grid draws the table's sort, so a grid tab would lie). Where the doors are
+// on Save and never before, and it opens as the grid (the old Sheet is retired; a saved view
+// that still says `layout: "sheet"` reads as the grid). Where the doors are
 // not on the database the capability is ABSENT (`hand_order` carries the store's sentence) and
 // the Reorder control is not drawn — never a button that cannot save.
 
@@ -492,7 +492,7 @@ export async function setRowOrdering(
   if (!viewId) {
     const made = await client.viewDeclare({
       table_id: args.tableId,
-      spec: { name: HAND_ORDER_VIEW, definition: { layout: "sheet" } },
+      spec: { name: HAND_ORDER_VIEW, definition: { layout: "grid" } },
     });
     if (!made.ok) return refused(made.error);
     viewId = made.data;

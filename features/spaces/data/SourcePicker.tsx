@@ -3,16 +3,23 @@
 // features/spaces/data/SourcePicker.tsx — "Linked view of database": choose the records a data block
 // shows. Built-in modules (tasks, projects, deals, employees — read as the person), the person's real
 // tables (every table they can see, across all their organizations — the data home's own list) and the
-// agency sample. Never filtered by the active organization (access ladder).
+// agency sample — picking one installs the agency's real tables in the PAGE's organization, as "Add the
+// sample" does (once; a second pick reuses them; the active organization only when the page is unsaved). The lists are never filtered by the active organization (access ladder).
 
 import { Button, RegionSkeleton, SearchField } from "@ai-matrx/design-system/controls";
-import { CircleCheckBig, Contact, Database, FlaskConical, FolderKanban, Handshake } from "lucide-react";
+import { CircleCheckBig, Contact, Database, FlaskConical, FolderKanban, Handshake, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
-import { AGENCY_SAMPLE_ID, BUILT_IN_SOURCES, agencySample } from "./sources";
+import { installAgencySample, pageOrganizationId, type AgencyToken } from "./agency-install";
+import { AGENCY_SPEC } from "./agency-spec";
+import { BUILT_IN_SOURCES } from "./sources";
 
 const BUILT_IN_ICON = { task: CircleCheckBig, project: FolderKanban, deal: Handshake, employee: Contact } as const;
 
@@ -25,11 +32,31 @@ export interface PickedSource {
   entity?: string;
 }
 
-function Lists({ query, onPick }: { query: string; onPick: (s: PickedSource) => void }) {
+function Lists({ query, onPick, spaceId }: { query: string; onPick: (s: PickedSource) => void; spaceId?: string }) {
   const tables = useTablesEverywhere();
   const q = query.trim().toLowerCase();
   const real = tables.rows.filter((t) => !q || `${t.table_name} ${t.organization_name}`.toLowerCase().includes(q));
-  const sample = agencySample().tables.filter((t) => !q || t.name.toLowerCase().includes(q));
+  const sample = AGENCY_SPEC.tables.filter((t) => !q || t.name.toLowerCase().includes(q));
+  // org-filter: write-target a sample picked on an unsaved page installs in the active organization
+  const activeOrg = useAppSelector(selectActiveOrganizationId);
+  const dispatch = useAppDispatch();
+  const [installing, setInstalling] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const pickSample = async (token: AgencyToken | "offer") => {
+    setInstalling(token);
+    setFailed(null);
+    try {
+      // The page and its tables share one organization (the same rule as "Add the sample").
+      const orgId = (spaceId ? await pageOrganizationId(spaceId) : null) ?? (await ensureOrgId(activeOrg));
+      const made = (await installAgencySample(orgId, dispatch))[token];
+      if (!made) throw new Error("This organization's sample has no such table yet.");
+      onPick({ tableId: made.tableId, name: made.name });
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) setFailed(err instanceof Error ? err.message : "The sample could not be added.");
+    } finally {
+      setInstalling(null);
+    }
+  };
   const builtIn = BUILT_IN_SOURCES.filter((b) => !q || b.name.toLowerCase().includes(q));
   // The list appears once, whole: drawing the sample rows while "Your tables" is still loading moved
   // them down under the pointer when the tables arrived, and a click picked the wrong source.
@@ -62,17 +89,25 @@ function Lists({ query, onPick }: { query: string; onPick: (s: PickedSource) => 
       ))}
       <div className="px-3 pt-3 pb-1 type-secondary text-muted-foreground">Sample agency</div>
       {sample.map((t) => (
-        <Button variant="quiet" icon={<FlaskConical size={15} />} key={t.id} onClick={() => onPick({ tableId: t.id, name: t.name, sample: AGENCY_SAMPLE_ID })}>
+        <Button
+          variant="quiet"
+          icon={installing === t.token ? <Loader2 size={15} className="animate-spin" /> : <FlaskConical size={15} />}
+          key={t.token}
+          disabled={installing !== null}
+          onClick={() => void pickSample(t.token as AgencyToken | "offer")}
+        >
           <span className="flex-1 truncate text-left">{t.name}</span>
-          <span className="type-secondary text-muted-foreground">{t.rows} rows</span>
+          <span className="type-secondary text-muted-foreground">{t.rows.length} rows</span>
         </Button>
       ))}
+      {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}</div> : null}
     </div>
   );
 }
 
-/** Returns the dialog to render and an async `pick()` that resolves with the chosen source (or null). */
-export function useSourcePicker(): [React.ReactNode, () => Promise<PickedSource | null>] {
+/** Returns the dialog to render and an async `pick()` that resolves with the chosen source (or null).
+ *  `spaceId` is the page the block sits on: a picked sample installs into that page's organization. */
+export function useSourcePicker(spaceId?: string): [React.ReactNode, () => Promise<PickedSource | null>] {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const resolve = useRef<((s: PickedSource | null) => void) | null>(null);
@@ -89,7 +124,7 @@ export function useSourcePicker(): [React.ReactNode, () => Promise<PickedSource 
         <div className="border-b border-border p-2">
           <SearchField autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search for a data source…" aria-label="Search data sources" />
         </div>
-        {open ? <Lists query={query} onPick={finish} /> : null}
+        {open ? <Lists query={query} onPick={finish} spaceId={spaceId} /> : null}
       </DialogContent>
     </Dialog>
   );

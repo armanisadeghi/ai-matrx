@@ -258,6 +258,7 @@ wrapper added in another lane's file.
   button; the direct interaction guard proves Edit and Retire fire once without
   expanding the row.
 
+- **2026-10-06 (AP-4: the HR Fields page reads and writes the LIVE custom store)** — `/hr/settings/fields` listed `platform.custom_field_definition`, an older twin with 0 rows ever, so a field an organization declared through the live doors (`custom.entity_fields` / `entity_field_declare` / `entity_field_update` / `entity_field_retire`) never showed and the panel could not create one ("Add a custom field" was a coming-soon stub). Now one block per switched-on `hr_*` token: fields via `useEntityFields`, add via the platform `FieldEditor entityToken`, archive via `useEntityFieldMutation().retire`, all from `@ai-matrx/records(-ui)`. `fetchHrCustomFieldRegistry` returns only `{ targets, labels }` (policy rows, read-only). Guard: `settings/__tests__/no-reader-of-custom-field-definition.test.ts` (red on the old reader, green now). Left: renaming an existing field (the editor takes no existing entity field yet).
 - **2026-09-11 (the HR Fields page shows what the database actually enables, DD-097)** —
   `features/hr/settings/service.ts` asked `platform.custom_field_target` about a
   hand-written list of seven `hr_*` tokens, filtered to the active employer. Live,

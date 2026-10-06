@@ -19,6 +19,7 @@ import {
   Link,
   List,
   ListChecks,
+  MessageSquare,
   ListOrdered,
   ListTree,
   Palette,
@@ -66,6 +67,8 @@ export interface BlockMenuActions {
   /** "Turn into page in": the blocks become a new page inside the page the person picks. */
   turnIntoPageIn: (blockIds: string[]) => void;
   askAi: () => void;
+  /** H1 — a comment on the block (its own text is the quote). */
+  comment: (blockId: string) => void;
 }
 
 export function makeBlockMenu(actions: BlockMenuActions) {
@@ -82,7 +85,7 @@ export function makeBlockMenu(actions: BlockMenuActions) {
     const q = query.trim().toLowerCase();
     const shows = (label: string) => !q || label.toLowerCase().includes(q);
     const turnMatches = q ? TURN_INTO.filter((t) => shows(t.label) || shows("turn into")) : TURN_INTO;
-    const none = q && !["Ask AI", "Delete", "Duplicate", "Turn into", "Turn into page in", "Copy link to block", "Move to", "Color"].some(shows) && !turnMatches.length;
+    const none = q && !["Ask AI", "Delete", "Duplicate", "Turn into", "Turn into page in", "Copy link to block", "Move to", "Comment", "Color"].some(shows) && !turnMatches.length;
     return (
       <C.Generic.Menu.Dropdown className="bn-menu-dropdown bn-drag-handle-menu spaces-block-menu">
         <div className="spaces-block-menu-search" onKeyDown={(e) => e.key !== "Escape" && e.key !== "ArrowDown" && e.stopPropagation()}>
@@ -191,6 +194,18 @@ export function makeBlockMenu(actions: BlockMenuActions) {
               actions.moveBlocksTo(targets());
             }}>
             Move to
+          </C.Generic.Menu.Item>
+        ) : null}
+        {shows("Comment") ? (
+          <C.Generic.Menu.Item
+            className="bn-menu-item"
+            icon={<MessageSquare size={I} />}
+            onClick={() => {
+              closeMenus();
+              actions.comment(block.id);
+            }}
+          >
+            Comment
           </C.Generic.Menu.Item>
         ) : null}
         {shows("Color") ? (

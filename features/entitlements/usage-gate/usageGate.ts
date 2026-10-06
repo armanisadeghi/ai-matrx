@@ -255,6 +255,27 @@ export function applyUsageRefusal(
   applyPersonRefusal(dispatch, getState, body);
 }
 
+/**
+ * THE ONE HANDLER every request path calls on a failed response: classify the
+ * refusal and show its one answer (person → `over` + limit dialog; guest →
+ * sign-up reminder). Returns the kind, or null when it was no usage refusal.
+ *
+ * `status` 402 counts as a refusal even with a bare body (the AI paths that
+ * know the call was paid AI pass it); a path that cannot know that passes
+ * `null`, so only a body carrying the refusal code counts.
+ */
+export function noticeUsageRefusal(
+  status: number | null,
+  body: unknown,
+  dispatch: AnyDispatch,
+  getState: () => unknown,
+  userMessage?: string | null,
+): UsageRefusalKind | null {
+  const kind = classifyUsageRefusal(status, body, getState);
+  if (kind) applyUsageRefusal(kind, dispatch, getState, body, userMessage);
+  return kind;
+}
+
 /** The machine code a classified refusal travels under. */
 export function usageRefusalCode(kind: UsageRefusalKind): string {
   return kind === "guest" ? GUEST_AI_ALLOWANCE_USED : USAGE_LIMIT_REACHED;

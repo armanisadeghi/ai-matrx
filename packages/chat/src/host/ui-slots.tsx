@@ -239,7 +239,7 @@ export interface ChatUiSlots {
   updateArtifactThunk: AnyFn;
   registerArtifactThunk: AnyFn;
   selectHtmlPageArtifactForMessage: AnyFn;
-  compileSlotComponent: AnyFn;
+  compileStoredComponent: AnyFn;
   reportCanvasOpenDrop: AnyFn;
   refreshNoteContent: AnyFn;
   fetchNotesList: AnyFn;
@@ -581,7 +581,7 @@ const STAND_INS: Partial<Record<keyof ChatUiSlots, AnyFn>> = {
   canvasGetById: async () => null,
   notesGetById: async () => null,
   convertMarkdownToHtml: (markdown: unknown) => `<pre>${String(markdown ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;")}</pre>`,
-  compileSlotComponent: () => ({ Component: null, error: "This host cannot compile tool renderers." }),
+  compileStoredComponent: () => ({ Component: null, error: "This host cannot compile tool renderers.", unresolvedImports: [] }),
   useModelFull: () => null,
   useModelOptions: () => NONE,
   useAuthGuardedAction: (action: unknown) => action,
@@ -915,7 +915,7 @@ export const fetchArtifactsForMessageThunk = slotFn("fetchArtifactsForMessageThu
 export const updateArtifactThunk = slotFn("updateArtifactThunk");
 export const registerArtifactThunk = slotFn("registerArtifactThunk");
 export const selectHtmlPageArtifactForMessage = slotFn("selectHtmlPageArtifactForMessage");
-export const compileSlotComponent = slotFn("compileSlotComponent");
+export const compileStoredComponent = slotFn("compileStoredComponent");
 export const reportCanvasOpenDrop = slotFn("reportCanvasOpenDrop", () => undefined);
 export const refreshNoteContent = slotFn("refreshNoteContent");
 export const fetchNotesList = slotFn("fetchNotesList");

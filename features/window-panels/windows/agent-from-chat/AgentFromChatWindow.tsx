@@ -22,6 +22,9 @@ import type {
 import { RichContent } from "@/components/rich-content/RichContent";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
+import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
+import { ExamplesField, ProofCount, emptyExamples, filledExamples } from "@/features/agents/factory/components/ExamplesField";
+import { useFactoryDoor } from "@/features/agents/factory/door";
 import {
   FROM_CHAT_STEPS,
   latestAgentFromChat,
@@ -78,12 +81,19 @@ function AgentFromChatWindowInner({
   const router = useRouter();
 
   const [lane, setLane] = useState<Lane>("agent");
-  const [phase, setPhase] = useState<"idle" | "running" | "done" | "failed">("idle");
+  const [phase, setPhase] = useState<"idle" | "running" | "building" | "done" | "failed">("idle");
   const [reached, setReached] = useState<FromChatStep | null>(null);
   const [says, setSays] = useState("");
   const [failure, setFailure] = useState<{ says: string; at: FromChatStep | null } | null>(null);
   const [result, setResult] = useState<FromChatResult | null>(null);
+  // AF-D door #4 on `pipeline`: the Agent Factory build the server started for this chat.
+  const [buildId, setBuildId] = useState<string | null>(null);
+  // R55: what the started build really proves on, as the server counted it.
+  const [proof, setProof] = useState<{ cases: number | null; says: string } | null>(null);
   const [tab, setTab] = useState<ResultTab>("compare");
+  // R52: on the factory path the person may add examples; the chat's own request is case 1.
+  const pipelineMode = useFactoryDoor("from_chat") === "pipeline";
+  const [examples, setExamples] = useState<string[]>(() => emptyExamples().slice(0, 2));
   const [startingMasterwork, setStartingMasterwork] = useState(false);
   // ONE INTENT, ONE RULEBOOK: a second press of "Start" lands on the same draft.
   const masterworkToken = useRef<string | null>(null);
@@ -114,11 +124,17 @@ function AgentFromChatWindowInner({
     setSays("");
     setFailure(null);
     setResult(null);
+    setBuildId(null);
+    setProof(null);
     const answer = await makeAgentFromChat(dispatch, conversationId, (step, line) => {
       setReached(step);
       setSays(line);
-    });
-    if (answer.ok) {
+    }, pipelineMode ? examples : []);
+    if (answer.ok && "buildId" in answer) {
+      setBuildId(answer.buildId);
+      setProof({ cases: answer.proofCases, says: answer.says });
+      setPhase("building");
+    } else if (answer.ok) {
       setResult(answer.result);
       setTab("compare");
       setPhase("done");
@@ -176,19 +192,22 @@ function AgentFromChatWindowInner({
 
   return (
     <WindowPanel
+      // The window sizes itself once; the door answers a moment after it opens, so it is
+      // opened again at the right height when the answer changes it.
+      key={pipelineMode ? "factory" : "legacy"}
       title="Make an agent"
       id="agent-from-chat-window"
       minWidth={420}
       minHeight={220}
       width={phase === "done" ? 960 : 520}
-      height={phase === "done" ? 680 : phase === "idle" ? (previous ? 290 : 240) : 420}
+      height={phase === "done" ? 680 : phase === "idle" ? (pipelineMode && lane === "agent" ? 560 : previous ? 290 : 240) : phase === "building" ? 320 : 420}
       position="center"
       onClose={onClose}
       overlayId="agentFromChatWindow"
       onCollectData={() => ({ conversationId, conversationTitle })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
         {phase === "idle" ? (
           <>
             <p className="truncate text-sm text-muted-foreground">
@@ -208,6 +227,9 @@ function AgentFromChatWindowInner({
                 ? "One agent that gets this result on the first try."
                 : "A Rulebook built from this chat, for a multi-step job."}
             </p>
+            {pipelineMode && lane === "agent" ? (
+              <ExamplesField examples={examples} onChange={setExamples} supplied={1} />
+            ) : null}
             {previous ? (
               <div className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
                 <AGENT_ICON className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -244,6 +266,17 @@ function AgentFromChatWindowInner({
         ) : null}
 
         {phase === "running" || phase === "failed" ? <LiveRunProgress progress={progress} /> : null}
+
+        {phase === "building" && buildId && proof && proof.cases !== null ? (
+          <div className="space-y-1 text-xs text-muted-foreground" data-testid="from-chat-proof-cases">
+            <p>
+              <ProofCount count={proof.cases} />
+            </p>
+            {/* Fewer cases than the person gave (chat + examples): the server's line says which and why. */}
+            {proof.cases < filledExamples(examples).length + 1 ? <p>{proof.says}</p> : null}
+          </div>
+        ) : null}
+        {phase === "building" && buildId ? <BuildProgress buildId={buildId} onRebuilt={setBuildId} /> : null}
 
         {phase === "failed" && failure ? (
           <EmptyState

@@ -26,6 +26,7 @@ import { NextResponse } from "next/server";
 import {
   RECENT_ROW_REFUSAL_PREFIX,
   STILL_DECLARED_REFUSAL_PREFIX,
+  DATABASE_OWNED_REFUSAL_PREFIX,
   NO_SUCH_MIRROR_ROW_PREFIX,
 } from "@/features/surfaces/services/manifest-sync.service";
 
@@ -48,6 +49,7 @@ export function surfacesAdminErrorStatus(message: string): number {
   if (message.startsWith(NO_SUCH_MIRROR_ROW_PREFIX)) return 404;
   if (message.startsWith(STILL_DECLARED_REFUSAL_PREFIX)) return 409;
   if (message.startsWith(RECENT_ROW_REFUSAL_PREFIX)) return 409;
+  if (message.startsWith(DATABASE_OWNED_REFUSAL_PREFIX)) return 409;
   return 500;
 }
 

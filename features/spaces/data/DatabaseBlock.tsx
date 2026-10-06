@@ -11,7 +11,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { DashboardCanvas, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { DashboardCanvas, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
@@ -30,6 +30,7 @@ import {
   ListFilter,
   Maximize2,
   PanelRight,
+  Zap,
   PieChart,
   Plus,
   Square,
@@ -144,6 +145,13 @@ function DatabaseFrame({
   const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
   const shown: SpaceDbView = { ...active, sorts: shownSorts(active, choice), filters: shownFilters(active, filterChoices[active.id]) };
   const sortOverride = choice ?? null;
+  // The viewer's search (the table's magnifier), per view, beside the sort and filter: never saved,
+  // asked of the store's search by the grid (records-ui searchOverride).
+  const [searchChoices, setSearchChoices] = useState<Record<string, string>>({});
+  const search = {
+    value: searchChoices[active.id] ?? "",
+    onChange: (term: string) => setSearchChoices((prev) => (prev[active.id] === term ? prev : { ...prev, [active.id]: term })),
+  };
 
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
   const saveView = (patch: Partial<SpaceDbView>) => save({ views: views.map((v) => (v.id === active.id ? { ...v, ...patch } : v)), activeViewId: active.id });
@@ -168,6 +176,7 @@ function DatabaseFrame({
       editable={editable}
       sample={sample}
       sortOverride={sortOverride}
+      search={search}
     />
   );
 
@@ -237,6 +246,7 @@ function DatabaseFrame({
               onSave={(sorts) => saveView({ sorts })}
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
+            <AutomationsButton tableId={tableId} sample={sample} />
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
             <NewButton onNew={addRow} />
@@ -257,7 +267,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} sortOverride={sortOverride} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} sortOverride={sortOverride} search={search} />
         </DialogContent>
       </Dialog>
     </div>
@@ -271,8 +281,17 @@ function scalarFilters(f: SpaceDbView["filters"]): Record<string, string | numbe
   return out;
 }
 
-function viewSpec(tableId: string, view: SpaceDbView): SavedViewSpec {
+/** Notion's default date is "Full date" (January 1, 2026): every date column of an inline grid. */
+function longDates(fields: Field[]): Record<string, { id: "date"; options: { dateStyle: "long" } }> {
+  const out: Record<string, { id: "date"; options: { dateStyle: "long" } }> = {};
+  for (const f of fields) if (kindOf(f) === "date" || kindOf(f) === "datetime") out[f.key] = { id: "date", options: { dateStyle: "long" } };
+  return out;
+}
+
+function viewSpec(tableId: string, view: SpaceDbView, fields: Field[] = []): SavedViewSpec {
   const layout = view.layout === "chart" ? "grid" : view.layout;
+  const formats = longDates(fields);
+  const hasFormats = Object.keys(formats).length > 0;
   return {
     name: view.name,
     subject: tableId,
@@ -282,7 +301,9 @@ function viewSpec(tableId: string, view: SpaceDbView): SavedViewSpec {
     startField: view.dateField ?? null,
     sorts: view.sorts ?? [],
     filters: scalarFilters(view.filters),
-    ...(view.hiddenFields?.length ? { presentation: { hiddenFields: view.hiddenFields } } : {}),
+    // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
+    // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
+    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}) },
   };
 }
 
@@ -294,6 +315,7 @@ function DatabaseBody({
   editable,
   sample,
   sortOverride,
+  search,
 }: {
   tableId: string;
   view: SpaceDbView;
@@ -302,6 +324,7 @@ function DatabaseBody({
   editable: boolean;
   sample: boolean;
   sortOverride: { field: string; direction: "asc" | "desc" } | null;
+  search: { value: string; onChange: (term: string) => void };
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
@@ -312,7 +335,7 @@ function DatabaseBody({
   const group = needsGroup ? fields.find((f) => ["select", "status", "list"].includes(kindOf(f)))?.key : undefined;
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
   const date = needsDate ? fields.find((f) => ["datetime", "date"].includes(kindOf(f)))?.key : undefined;
-  const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null });
+  const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null }, fields);
   // Notion's inline database: records-ui's embedded grid (no search box, tick-boxes, Actions column or
   // pager; one-line rows; its own "New page" line, which writes the row in place).
   return (
@@ -323,10 +346,39 @@ function DatabaseBody({
         embedded
         newRowLabel={editable ? "New page" : undefined}
         sortOverride={sortOverride}
+        searchOverride={search.value || null}
+        onSearchChange={search.onChange}
         onOpenRecord={onOpenRecord}
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
       />
     </div>
+  );
+}
+
+/**
+ * Notion's lightning (F3): the table's automations — records-ui's rule editor ("when a row …, tell …")
+ * over this table, and the table's own page for the rest. The in-memory sample has no store to keep a
+ * rule in, and says so.
+ */
+function AutomationsButton({ tableId, sample }: { tableId: string; sample: boolean }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="quiet" icon={<Zap size={15} strokeWidth={1.8} />} aria-label="Automations" title="Automations" />
+      </PopoverTrigger>
+      <PopoverContent surface="solid" align="end" width="md" padding="sm">
+        {sample ? (
+          <p className="type-secondary text-muted-foreground">This preview keeps no automations.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <NotifyRuleEditor tableId={tableId} />
+            <a className="type-secondary text-muted-foreground underline-offset-2 hover:underline" href={`/data/${tableId}?rail=notifications`}>
+              Open the table’s automations
+            </a>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 

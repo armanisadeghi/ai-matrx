@@ -578,16 +578,8 @@ export async function updateTaskResult(
     // browser's later notification request to say who performed that write.
     if (updates.assignee_id !== undefined) payload.updated_by = requireUserId();
     if (reminders !== undefined) payload.reminders = toJson(reminders);
-    // Lifecycle bookkeeping: completing stamps completed_at; reopening clears it.
-    if (updates.status === "completed" && updates.completed_at === undefined) {
-      payload.completed_at = new Date().toISOString();
-    } else if (
-      updates.status &&
-      updates.status !== "completed" &&
-      updates.completed_at === undefined
-    ) {
-      payload.completed_at = null;
-    }
+    // completed_at follows status in the database for every writer (trigger
+    // projects._task_completed_at_follows_status) — never stamped here.
 
     // Zero rows (RLS refused, or the task is gone) is said in words — a
     // `.single()` here used to turn it into PGRST116 and a generic toast.

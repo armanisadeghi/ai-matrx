@@ -35,6 +35,8 @@ jest.mock("@ai-matrx/records-ui", () => ({
   personActor: () => ({ actor: "user" }),
   recordsDataSource: () => ({}),
 }));
+// Linked records have their own test (entity-back-links.test.tsx); this one is about the fields.
+jest.mock("@/features/unified-data/components/EntityBackLinks", () => ({ EntityBackLinks: () => null }));
 jest.mock("@/features/unified-data/hub/doors", () => ({
   entityRecordHome: (...args: unknown[]) => (doors.home as (...a: unknown[]) => unknown)(...args),
   entityRecordReadable: (...args: unknown[]) => (doors.readable as (...a: unknown[]) => unknown)(...args),
@@ -45,6 +47,11 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "u
 jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({ chooseActiveOrganization: () => ({ type: "noop" }) }));
 jest.mock("@/features/scopes/hooks/useScopeTree", () => ({ useScopeTree: () => ({ organizations: [] }) }));
 jest.mock("@/features/scopes/registry/entityRegistry", () => ({ tryGetEntityInfo: () => null }));
+// The host module also exports the share surface (ShareModal -> scopes -> associations store), none of which
+// this test is about; EntityCustomFields takes only `useAppRecordsConfig` from it.
+jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
+  useAppRecordsConfig: (organizationId: string | null) => ({ dataSource: {}, actor: { actor: "user" }, organizationId }),
+}));
 jest.mock("@/features/make/MakeMount", () => ({ NewTableDialog: () => null }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
 jest.mock("@ai-matrx/chat/surfaces/runtime/custom-field-targets", () => ({

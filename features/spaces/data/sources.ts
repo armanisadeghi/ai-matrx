@@ -1,14 +1,15 @@
 // features/spaces/data/sources.ts — where a database or chart block's records come from.
 //
 // Two kinds of source, both read through the record store's one client:
-//  - the sample agency (`props.sample = AGENCY_SAMPLE_ID`): `templatePreview` installs data/agency-spec.ts
-//    into memory — read-only, writes are refused in a sentence;
+//  - the sample agency in memory (`props.sample = AGENCY_SAMPLE_ID`): `templatePreview` installs
+//    data/agency-spec.ts into memory — read-only; drawn only by the template gallery's preview;
 //  - a real store table (no `props.sample`): read live as the table's own organization.
 // Blocks are filters only: what a person may open is the database's answer, never this code's.
 
 import { templatePreview, type TemplatePreview } from "@ai-matrx/records/memory";
 
 import type { SpaceDataSource } from "../contract";
+import type { AgencyTables, AgencyToken } from "./agency-install";
 import { AGENCY_SAMPLE_ID, AGENCY_SPEC } from "./agency-spec";
 
 /** The day the sample's dates are read against (its rows carry absolute 2026 dates). */
@@ -27,6 +28,13 @@ export function sampleTable(token: string): { id: string; name: string } {
   const t = agencySample().tables.find((x) => x.token === token);
   if (!t) throw new Error(`spaces: the agency sample has no table "${token}"`);
   return { id: t.id, name: t.name };
+}
+
+/** The agency's tables in the in-memory preview — for the template gallery's read-only preview only
+ *  ("Add the sample" installs real tables: data/agency-install.ts). */
+export function previewAgencyTables(): AgencyTables {
+  const one = (token: AgencyToken) => ({ tableId: sampleTable(token).id, name: sampleTable(token).name, sample: AGENCY_SAMPLE_ID });
+  return { client: one("client"), nps_survey: one("nps_survey"), client_win: one("client_win"), task: one("task") };
 }
 
 /** One layout a database block can show. `chart` draws the Notion chart view over the same records. */

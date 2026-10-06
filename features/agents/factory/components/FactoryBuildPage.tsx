@@ -101,6 +101,19 @@ export function buildRows(detail: FactoryBuildDetail): RunRow[] {
     startedAt: detail.startedAt ?? detail.createdAt,
     endedAt: history[0]?.started_at ?? (state.facts ? detail.checkpointAt : null),
   });
+  // R53: a rebuild runs today's version on every case first — its own step.
+  const rebuilds = Boolean(state.rebuild || state.request?.rebuild_of);
+  if (state.rebuild) {
+    rows.push({
+      key: "baseline",
+      step: "baseline",
+      status: state.rebuild.baselined
+        ? "done"
+        : state.current_step === "baseline"
+          ? failedHere === "baseline" || over ? "failed" : "running"
+          : "pending",
+    });
+  }
   if (state.steps?.contract?.status === "skipped") {
     rows.push({ key: "contract-skipped", step: "contract", status: "skipped" });
   }
@@ -173,6 +186,7 @@ export function buildRows(detail: FactoryBuildDetail): RunRow[] {
     const seen = new Set(rows.map((r) => r.step));
     const at = STEP_ORDER.indexOf((current ?? "intake") as FactoryStepName);
     for (const s of STEP_ORDER.slice(at + 1)) {
+      if (s === "baseline" && !rebuilds) continue;
       if (!seen.has(s) && !(s === "contract" && state.facts && !state.facts.greenfield)) {
         rows.push({ key: `${s}-pending`, step: s, status: "pending" });
       }

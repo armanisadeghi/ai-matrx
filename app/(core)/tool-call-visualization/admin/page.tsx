@@ -129,7 +129,7 @@ const TOOL_VIZ_ADMIN_MAP: FeatureAdminMap = {
     },
     {
       name: "Agent Apps",
-      description: "Owns compileSlotComponent — the Babel sandbox the DB renderer runtime reuses to run agent-written code.",
+      description: "Hosts the app scope for @ai-matrx/code-runtime, the compiler that runs agent-written code.",
     },
   ],
 };

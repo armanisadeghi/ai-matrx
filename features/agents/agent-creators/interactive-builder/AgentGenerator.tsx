@@ -49,6 +49,12 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { useFactoryDoor } from "@/features/agents/factory/door";
+import { startAgentBuild } from "@/features/agents/factory/service";
+import { KEPT_OUTCOMES, type FactoryBuildState } from "@/features/agents/factory/types";
+import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
 
 const GENERATOR_SHORTCUT = getSystemShortcut("agent-generator-01");
 
@@ -65,12 +71,13 @@ import {
   Copy,
   AlertTriangle,
   Rocket,
-  Bug
+  Bug,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ExamplesField, emptyExamples } from "@/features/agents/factory/components/ExamplesField";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 
@@ -152,6 +159,10 @@ class GeneratorErrorBoundary extends Component<
  * `owner` decides whose agent it is — the rung's rule, never the page's.
  */
 export interface AgentGeneratorMandateMode {
+  /** The Mandate this agent is drafted to hold (AF-D door #5: the factory proves it on its runs). */
+  mandateKey: string;
+  /** Its display name — the factory build's name. */
+  label: string;
   /** The offered values of `mandates.holder_draft_brief`, keyed by name. */
   variables: Record<string, unknown>;
   owner: AgentOwner;
@@ -166,6 +177,8 @@ interface AgentGeneratorProps {
 }
 
 const HOLDER_DRAFT_MANDATE_KEY = MANDATE_KEYS.mandates__holder_draft;
+/** Words a factory build's derived name never ends on. */
+const TRAILING_JOINERS = new Set(["a", "an", "the", "for", "of", "to", "and", "or", "in", "on", "with", "from", "by"]);
 // Disclosure (the Agents menu): in mandate mode this component RUNS a fixed
 // job, so it registers it; the free-form generator runs a chosen builder and
 // registers nothing. Renders no UI either way.
@@ -186,7 +199,12 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   const openMandateWindow = useOpenMandateWindow();
   const { createAgent } = useAgentBuilder(onComplete);
   const mandateMode = mandate !== undefined;
-  useDeclaredSurfaceMandates(mandateMode ? HOLDER_DRAFT_DISCLOSURE : NO_DISCLOSURE);
+  // AF-D doors #5 (mandate "+ Agent") and #6 (/agents/new/generate): each door's knob
+  // (`agent_factory.door_mandate_holder_draft` / `door_generate`) decides. `pipeline` =
+  // an Agent Factory build on the server, shown by BuildProgress; `legacy` = today's
+  // generator below, unchanged.
+  const pipelineMode = useFactoryDoor(mandateMode ? "mandate_holder_draft" : "generate") === "pipeline";
+  useDeclaredSurfaceMandates(mandateMode && !pipelineMode ? HOLDER_DRAFT_DISCLOSURE : NO_DISCLOSURE);
   const {
     publish,
     publishKey,
@@ -208,6 +226,12 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
 
+  // Pipeline path: the person's example inputs (proof needs 3, R34) and the build it started.
+  const [examples, setExamples] = useState<string[]>(emptyExamples);
+  const [buildId, setBuildId] = useState<string | null>(null);
+  const [buildOver, setBuildOver] = useState(false);
+  const [startingBuild, setStartingBuild] = useState(false);
+
   // ── Generator-shortcut readiness ─────────────────────────────────────────
   // The generator is pinned to a specific shortcut. Warm it on mount so the
   // user never has to wait after clicking Generate, and surface any
@@ -227,20 +251,25 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   // (access follows the object; the page already knows the org).
   const ownerOrganizationId =
     mandate?.owner.kind === "organization" ? mandate.owner.organizationId : null;
-  const holderDraft = useMandate(mandateMode ? HOLDER_DRAFT_MANDATE_KEY : "", {
+  const holderDraft = useMandate(mandateMode && !pipelineMode ? HOLDER_DRAFT_MANDATE_KEY : "", {
     organizationId: ownerOrganizationId,
   });
-  const shortcutReady = mandateMode
-    ? holderDraft.mandate !== null
-    : generatorShortcut !== null;
+  // The pipeline path runs no generator shortcut and no drafting job — nothing to load.
+  const shortcutReady = pipelineMode
+    ? true
+    : mandateMode
+      ? holderDraft.mandate !== null
+      : generatorShortcut !== null;
   // 🚨 `organizationPending` MEANS WAIT, NOT REPAIR (the F4 class `useMandate`
   // documents against). The hook sets `error` AND `organizationPending`
   // together on a cold navigation, so reading `error` alone told the person
   // the drafting job needed a Holder assigned — and handed them the
   // administrator's door — while the truth was that their workspace had not
   // finished hydrating. That state is the LOADING state here.
-  const holderDraftWaiting = mandateMode && holderDraft.organizationPending;
-  const generatorLoadError = mandateMode
+  const holderDraftWaiting = mandateMode && !pipelineMode && holderDraft.organizationPending;
+  const generatorLoadError = pipelineMode
+    ? null
+    : mandateMode
     ? holderDraftWaiting
       ? null
       : holderDraft.error
@@ -314,10 +343,12 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
     : null;
   const extractionFailed =
     jsonExtractionComplete && !hasExtractedJson && !!streamingText;
+  const buildRunning = buildId !== null && !buildOver;
   const canGenerate =
     (mandateMode || selection.trim().length > 0) &&
     shortcutReady &&
-    !generatorLoadError;
+    !generatorLoadError &&
+    !(pipelineMode && (startingBuild || buildRunning));
 
   // ── Auto-populate agent name from extraction ─────────────────────────────
 
@@ -420,6 +451,11 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
       return;
     }
 
+    if (pipelineMode) {
+      await startFactoryBuild();
+      return;
+    }
+
     if (conversationId) dispatch(destroyInstanceIfAllowed(conversationId));
     setAgentName("");
     // Clear any prior conversationId so the streaming UI resets immediately
@@ -505,7 +541,70 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
     trigger,
     launchMandate,
     dispatch,
+    pipelineMode,
+    startFactoryBuild,
   ]);
+
+  // ── Pipeline path (AF-D doors #5 / #6): the server builds and proves the agent ──
+  async function startFactoryBuild() {
+    const purpose = [selection.trim(), userInput.trim()].filter(Boolean).join("\n\n");
+    const words = (mandate ? mandate.mandateKey : selection)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 6);
+    // A name never ends on a joining word ("… For A").
+    while (words.length > 1 && TRAILING_JOINERS.has(words[words.length - 1])) words.pop();
+    const name = words.join("_") || "new_agent";
+    const examplesGiven = examples.map((e) => e.trim()).filter(Boolean);
+    const spec: Record<string, unknown> = mandate
+      ? {
+          name: `${name}_holder`,
+          display_name: mandate.label,
+          ...(userInput.trim() ? { purpose: userInput.trim() } : {}),
+        }
+      : {
+          name,
+          display_name: humanizeIdentifier(name) || name,
+          purpose,
+          ...(examplesGiven.length > 0 ? { sample_inputs: JSON.stringify(examplesGiven) } : {}),
+        };
+    setStartingBuild(true);
+    try {
+      // The organization the agent is born in: the owner's (an org rung), else the active
+      // one — with none selected the person is asked to pick (never picked for them).
+      const organizationId = ownerOrganizationId ?? (await ensureOrgId(null));
+      const id = await startAgentBuild({
+        spec,
+        mandateKey: mandate?.mandateKey ?? null,
+        door: mandate ? "mandate_holder_draft" : "generate",
+        builtin: mandate?.owner.kind === "system",
+        organizationId,
+      });
+      setBuildOver(false);
+      setBuildId(id);
+    } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
+      toast.error("The build did not start", {
+        description: extractErrorMessage(err, "Unknown error"),
+        position: TOAST_POSITION,
+      });
+    } finally {
+      setStartingBuild(false);
+    }
+  }
+
+  // A kept agent goes where today's door puts it: the mandate's holder controls (door #5).
+  // Door #6 opens it from BuildProgress itself.
+  const placeKeptAgent = (agentId: string) => {
+    if (mandate) mandate.onCreated(agentId);
+  };
+  const onBuildFinished = (state: FactoryBuildState) => {
+    setBuildOver(true);
+    if (state.agent_id && state.outcome && KEPT_OUTCOMES.has(state.outcome)) placeKeptAgent(state.agent_id);
+  };
 
   const handleCreateAgent = useCallback(async () => {
     if (!extractedValue) {
@@ -696,7 +795,8 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   !!generatorLoadError ||
                   isActive ||
                   isStreaming ||
-                  showResult
+                  showResult ||
+                  buildRunning
                 }
                 onTranscriptionComplete={() =>
                   toast.success("Voice input added", {
@@ -732,7 +832,8 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                   !!generatorLoadError ||
                   isActive ||
                   isStreaming ||
-                  showResult
+                  showResult ||
+                  buildRunning
                 }
                 onTranscriptionComplete={() =>
                   toast.success("Voice input added", {
@@ -747,6 +848,14 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
                 }
               />
             </div>
+
+            {pipelineMode && !mandateMode ? (
+              <ExamplesField
+                examples={examples}
+                onChange={setExamples}
+                disabled={startingBuild || buildRunning}
+              />
+            ) : null}
 
             {showResult && (
               <div className="space-y-2">
@@ -769,7 +878,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
         <div className="flex flex-col min-h-0 flex-1 lg:flex-initial">
           <div className="flex items-center justify-between mb-2 flex-shrink-0">
             <Label className="text-xs sm:text-sm font-medium">
-              Generated Agent
+              {pipelineMode ? "Build" : "Generated Agent"}
             </Label>
             {streamingText && !isActive && !isStreaming && (
               <div className="flex gap-1">
@@ -794,6 +903,26 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               </div>
             )}
           </div>
+          {pipelineMode ? (
+            <div className="flex-1 min-h-[300px] overflow-y-auto" data-testid="generator-build">
+              {buildId ? (
+                <BuildProgress
+                  buildId={buildId}
+                  onFinished={onBuildFinished}
+                  onRebuilt={(id) => {
+                    setBuildOver(false);
+                    setBuildId(id);
+                  }}
+                  onKept={placeKeptAgent}
+                />
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border border-border p-4 text-center">
+                  <Hammer className="h-10 w-10 text-muted-foreground mb-3" />
+                  <p className="type-body text-muted-foreground">Ready to build</p>
+                </div>
+              )}
+            </div>
+          ) : (
           <div className="flex-1 bg-textured border-2 border-purple-300 dark:border-purple-700 rounded-lg overflow-hidden min-h-[300px]">
             <GeneratorErrorBoundary
               fallbackContent={streamingText}
@@ -872,6 +1001,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               )}
             </GeneratorErrorBoundary>
           </div>
+          )}
         </div>
       </div>
 
@@ -930,7 +1060,19 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
               disabled={!canGenerate || isActive || isStreaming}
               className="flex-1 sm:flex-initial"
             >
-              {isActive || isStreaming ? (
+              {pipelineMode ? (
+                startingBuild ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Starting…
+                  </>
+                ) : (
+                  <>
+                    <Rocket className="h-4 w-4 mr-2" />
+                    {buildId ? "Build again" : "Build agent"}
+                  </>
+                )
+              ) : isActive || isStreaming ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Generating...

@@ -35,6 +35,7 @@ import {
 import type { BrandProfile, MarketingBrand } from "@/features/marketing/types";
 import {
   brandProfileToJson,
+  mergeBrandProfile,
   parseBrandProfile,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
@@ -74,6 +75,14 @@ interface BrandDraft {
   profileTargetKeywords: string;
   profileContentGuidelines: string;
   profileNotes: string;
+  /** Press expertise profile (web.brand.profile) — read by the source-request responder. */
+  pressSpokespersonName: string;
+  pressSpokespersonTitle: string;
+  pressExpertiseAreas: string;
+  pressCredentials: string;
+  pressDoNotCommentOn: string;
+  pressOutletsToSkip: string;
+  pressContactBlock: string;
 }
 
 /** Multi-line draft → string[]: split on newlines, trim, drop empties. */
@@ -112,6 +121,13 @@ function draftFrom(brand: MarketingBrand | null): BrandDraft {
     profileTargetKeywords: listToLines(profile.target_keywords),
     profileContentGuidelines: profile.content_guidelines ?? "",
     profileNotes: profile.notes ?? "",
+    pressSpokespersonName: profile.spokesperson_name ?? "",
+    pressSpokespersonTitle: profile.spokesperson_title ?? "",
+    pressExpertiseAreas: listToLines(profile.expertise_areas),
+    pressCredentials: listToLines(profile.credentials),
+    pressDoNotCommentOn: listToLines(profile.do_not_comment_on),
+    pressOutletsToSkip: listToLines(profile.outlets_to_skip),
+    pressContactBlock: profile.contact_block ?? "",
   };
 }
 
@@ -127,6 +143,13 @@ function profileFromDraft(draft: BrandDraft): BrandProfile {
     target_keywords: linesToList(draft.profileTargetKeywords),
     content_guidelines: draft.profileContentGuidelines.trim() || undefined,
     notes: draft.profileNotes.trim() || undefined,
+    spokesperson_name: draft.pressSpokespersonName.trim() || undefined,
+    spokesperson_title: draft.pressSpokespersonTitle.trim() || undefined,
+    expertise_areas: linesToList(draft.pressExpertiseAreas),
+    credentials: linesToList(draft.pressCredentials),
+    do_not_comment_on: linesToList(draft.pressDoNotCommentOn),
+    outlets_to_skip: linesToList(draft.pressOutletsToSkip),
+    contact_block: draft.pressContactBlock.trim() || undefined,
   };
 }
 
@@ -173,6 +196,16 @@ function BrandEditorDialogBody({
   const [organizationId, setOrganizationId] = useState<string | null>(null);
   // Open the profile section by default when the brand already has one
   // authored (the component remounts per open, so this stays stable).
+  const [hasPressProfile] = useState(() => {
+    const profile = parseBrandProfile(brand?.profile);
+    return Boolean(
+      profile.spokesperson_name ||
+        profile.expertise_areas?.length ||
+        profile.credentials?.length ||
+        profile.do_not_comment_on?.length ||
+        profile.contact_block,
+    );
+  });
   const [hasProfile] = useState(
     () => Object.keys(parseBrandProfile(brand?.profile)).length > 0,
   );
@@ -209,7 +242,8 @@ function BrandEditorDialogBody({
             ...(draft.publishedToWeb !== brand.published_to_web
               ? publishedToWebPatch(draft.publishedToWeb, userId)
               : {}),
-            profile: brandProfileToJson(profileFromDraft(draft)),
+            // Merged, never replaced: keys this editor does not own survive.
+            profile: mergeBrandProfile(brand.profile, profileFromDraft(draft)),
           },
         });
         toast.success("Brand saved");
@@ -572,6 +606,111 @@ function BrandEditorDialogBody({
                   placeholder="Anything else the writing team should know"
                 />
               </div>
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible defaultOpen={hasPressProfile} className="rounded-md border border-border">
+            <CollapsibleTrigger className="group flex w-full items-center justify-between px-3 py-2 text-left">
+              <span className="text-sm font-medium">Press expertise</span>
+              <span className="flex items-center gap-2">
+                <span className="text-[11px] text-muted-foreground">
+                  Who speaks to reporters, on what, and what to decline
+                </span>
+                <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+              </span>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="grid gap-3 border-t border-border p-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-spokesperson" className="text-xs">
+                    Spokesperson
+                  </Label>
+                  <Input
+                    id="brand-press-spokesperson"
+                    value={draft.pressSpokespersonName}
+                    onChange={(event) => set("pressSpokespersonName")(event.target.value)}
+                    placeholder="Full name"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-spokesperson-title" className="text-xs">
+                    Spokesperson title
+                  </Label>
+                  <Input
+                    id="brand-press-spokesperson-title"
+                    value={draft.pressSpokespersonTitle}
+                    onChange={(event) => set("pressSpokespersonTitle")(event.target.value)}
+                    placeholder="Founder & CEO"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-expertise" className="text-xs">
+                    Speaks on (one per line)
+                  </Label>
+                  <ProTextarea
+                    id="brand-press-expertise"
+                    value={draft.pressExpertiseAreas}
+                    onChange={(event) => set("pressExpertiseAreas")(event.target.value)}
+                    minHeight={64}
+                    maxHeight={140}
+                    placeholder={"E-waste recycling law\nData destruction"}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-credentials" className="text-xs">
+                    Credentials (one per line)
+                  </Label>
+                  <ProTextarea
+                    id="brand-press-credentials"
+                    value={draft.pressCredentials}
+                    onChange={(event) => set("pressCredentials")(event.target.value)}
+                    minHeight={64}
+                    maxHeight={140}
+                    placeholder={"R2v3 certified since 2019\n20 years in ITAD"}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-avoid" className="text-xs">
+                    Never comments on (one per line)
+                  </Label>
+                  <ProTextarea
+                    id="brand-press-avoid"
+                    value={draft.pressDoNotCommentOn}
+                    onChange={(event) => set("pressDoNotCommentOn")(event.target.value)}
+                    minHeight={64}
+                    maxHeight={140}
+                    placeholder={"Politics\nCompetitors by name"}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-skip-outlets" className="text-xs">
+                    Outlets to skip (one per line)
+                  </Label>
+                  <ProTextarea
+                    id="brand-press-skip-outlets"
+                    value={draft.pressOutletsToSkip}
+                    onChange={(event) => set("pressOutletsToSkip")(event.target.value)}
+                    minHeight={64}
+                    maxHeight={140}
+                    placeholder={"tabloid.example"}
+                  />
+                </div>
+              </div>
+                <div className="space-y-1">
+                  <Label htmlFor="brand-press-contact" className="text-xs">
+                    Contact block (signed exactly as written)
+                  </Label>
+                  <ProTextarea
+                    id="brand-press-contact"
+                    value={draft.pressContactBlock}
+                    onChange={(event) => set("pressContactBlock")(event.target.value)}
+                    minHeight={56}
+                    maxHeight={140}
+                    placeholder={"Jane Doe, Founder\njane@example.com · 555-0100"}
+                  />
+                </div>
             </CollapsibleContent>
           </Collapsible>
         </div>

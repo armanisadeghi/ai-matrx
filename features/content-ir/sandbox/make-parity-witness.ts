@@ -37,7 +37,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformKindComponentBody } from "./transform/transform-kind-body";
-import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
+import { defaultComponentEntries } from "@ai-matrx/code-runtime/scope";
 import { inlineJson } from "./inline-json";
 import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 
@@ -105,7 +105,7 @@ async function main(): Promise<void> {
         );
     }
 
-    const allowed = getDefaultImportsForKindComponents();
+    const allowed = defaultComponentEntries();
     const cases: unknown[] = [];
 
     for (const key of keys) {

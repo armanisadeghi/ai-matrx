@@ -103,6 +103,7 @@ export const mentionInline = createReactInlineContentSpec(
       const m = s.mention;
       if (m?.kind === "space") return <PageMention spaceId={m.spaceId} fallback={s.text} />;
       if (m?.kind === "link") return <LinkMention url={m.url} title={m.title ?? s.text} icon={m.icon} />;
+      if (m?.kind === "person") return <span className="spaces-mention spaces-mention-person" data-user-id={m.userId}>@{s.text.replace(/^@/, "")}</span>;
       if (m?.kind === "date") return <span className="spaces-mention spaces-mention-muted">@{formatDate(m.iso)}</span>;
       return <span className="spaces-mention spaces-mention-muted">@{s.text.replace(/^@/, "")}</span>;
     },

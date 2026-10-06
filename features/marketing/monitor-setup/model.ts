@@ -271,6 +271,20 @@ type Proposal = {
 export type SetupProposal = Proposal;
 
 /**
+ * A proposed item the server's one setup name guard held out of the proposal:
+ * it names someone on file (`known`) or is shaped like a person's name and is
+ * none of the brand, competitor, product or outlet names we know (`name_shape`
+ * — the CEO picked off a website).
+ */
+export interface HeldPersonName {
+  text: string;
+  target: OfferTarget;
+  basis: Basis;
+  person: string;
+  reason: "known" | "name_shape" | string;
+}
+
+/**
  * Fold a proposal into the draft WITHOUT overwriting what the person already
  * has: a proposed item is added only when no item with the same text exists,
  * and a proposed means line fills only an empty one.
@@ -279,8 +293,19 @@ export function applyProposal(
   draft: MonitorDraft,
   rawProposal: Proposal,
   people: PeopleIndex,
+  held: HeldPersonName[] = [],
 ): MonitorDraft {
-  const { proposal, offers } = holdBackPeople(rawProposal, people);
+  const { proposal, offers: rosterOffers } = holdBackPeople(rawProposal, people);
+  // The server already took these out of the proposal; each is offered back.
+  const offers: PersonOffer[] = [
+    ...held.map((h) => ({
+      text: h.text,
+      target: h.target,
+      basis: h.basis,
+      why: "person" as const,
+    })),
+    ...rosterOffers,
+  ];
   const items = (list: Proposal["topics"]) =>
     (list ?? []).map((i) => ({ text: i.text, basis: i.basis }));
   const brandKeywords = (proposal.coverage_keywords ?? []).filter(
@@ -642,16 +667,28 @@ export function newDraft(input: {
   timezone: string;
   /** Who is a person. An alias naming one is offered, never preselected (defect A). */
   people: PeopleIndex;
+  /**
+   * The aliases the server's one setup name guard says look like a person
+   * (`alias_person_names` on the setup facts) — offered, never preselected.
+   * `null` = the check could not be read, so every alias is offered unchecked.
+   */
+  personShapedAliases?: string[] | null;
 }): MonitorDraft {
   const hasSite = Boolean(input.siteId);
   const brandKey = normalizeName(input.brandName);
   const aliases: string[] = [];
   const personOffers: PersonOffer[] = [];
+  const shaped = new Set(
+    (input.personShapedAliases ?? []).map((a) => normalizeName(a)),
+  );
   for (const alias of input.aliases) {
-    const unchecked = input.people.names === null;
+    const unchecked =
+      input.people.names === null || input.personShapedAliases === null;
     if (
       normalizeName(alias) !== brandKey &&
-      (unchecked || namesPerson(alias, input.people))
+      (unchecked ||
+        namesPerson(alias, input.people) ||
+        shaped.has(normalizeName(alias)))
     ) {
       personOffers.push({
         text: alias,

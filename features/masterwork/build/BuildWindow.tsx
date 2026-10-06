@@ -15,6 +15,7 @@ import {
 } from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { LiveRunProgress } from "@ai-matrx/chat/agents/components/live-run/LiveRunProgress";
+import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { masterworkHref } from "../masterworkDoors";
 import { toast } from "@/lib/toast";
@@ -414,6 +415,18 @@ function BuildWindowInner({
       return (
         <div className="min-h-0 flex-1 overflow-y-auto">
           <LiveRunProgress progress={progress} />
+          {run.agentBuilds.some((b) => b.buildId) ? (
+            <div className="space-y-3 px-4 pb-4">
+              {run.agentBuilds.map((b) =>
+                b.buildId ? (
+                  <section key={b.role} aria-label={b.name} className="space-y-1.5">
+                    <p className="type-secondary font-medium">{b.name}</p>
+                    <BuildProgress buildId={b.buildId} />
+                  </section>
+                ) : null,
+              )}
+            </div>
+          ) : null}
         </div>
       );
     }

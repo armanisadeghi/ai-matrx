@@ -11,6 +11,8 @@
 
 import type { RichSpan, SpaceBlock, SpaceColor } from "../contract";
 
+import { columnsAreWellFormed, normalizeColumns } from "./columns";
+
 /** Stored type <-> engine type. Custom blocks (callout, page, columns…) use the same name on both sides. */
 const TO_ENGINE: Record<string, string> = {
   text: "paragraph",
@@ -204,7 +206,12 @@ function tableFromEngine(block: EngineBlock): SpaceBlock {
   return out;
 }
 
+/** Stored → engine. Column lists come out well formed (columns.ts). */
 export function toEngine(blocks: SpaceBlock[]): EngineBlock[] {
+  return toEngineTree(columnsAreWellFormed(blocks) ? blocks : normalizeColumns(blocks));
+}
+
+function toEngineTree(blocks: SpaceBlock[]): EngineBlock[] {
   return blocks.map((block) => {
     if (block.type === "table") return tableToEngine(block);
     if (DATA_BLOCKS.has(block.type)) {
@@ -218,7 +225,7 @@ export function toEngine(blocks: SpaceBlock[]): EngineBlock[] {
       const props: Record<string, unknown> = { data: JSON.stringify(rest) };
       if (isColor(block.color)) props.textColor = block.color;
       if (isColor(block.background)) props.backgroundColor = block.background;
-      return { id: block.id, type: "unsupportedText", props, content: spansToEngine(block.text), children: toEngine(block.children ?? []) };
+      return { id: block.id, type: "unsupportedText", props, content: spansToEngine(block.text), children: toEngineTree(block.children ?? []) };
     }
     const type = TO_ENGINE[block.type] ?? block.type;
     const props: Record<string, unknown> = { ...(block.props ?? {}) };
@@ -233,13 +240,19 @@ export function toEngine(blocks: SpaceBlock[]): EngineBlock[] {
     }
     if (isColor(block.color)) props.textColor = block.color;
     if (isColor(block.background)) props.backgroundColor = block.background;
-    const out: EngineBlock = { id: block.id, type, props, children: toEngine(block.children ?? []) };
+    const out: EngineBlock = { id: block.id, type, props, children: toEngineTree(block.children ?? []) };
     if (!NO_CONTENT.has(type)) out.content = spansToEngine(block.text);
     return out;
   });
 }
 
+/** Engine → stored. Column lists go out well formed (columns.ts), so a save is never refused for its columns. */
 export function fromEngine(blocks: EngineBlock[]): SpaceBlock[] {
+  const out = fromEngineTree(blocks);
+  return columnsAreWellFormed(out) ? out : normalizeColumns(out);
+}
+
+function fromEngineTree(blocks: EngineBlock[]): SpaceBlock[] {
   return blocks.map((block) => {
     if (block.type === "table") return tableFromEngine(block);
     if (block.type === "unknownBlock") return parse(block.props?.data) as unknown as SpaceBlock;
@@ -255,7 +268,7 @@ export function fromEngine(blocks: EngineBlock[]): SpaceBlock[] {
       const out: SpaceBlock = { id: block.id, type: "text", text: engineToSpans(block.content), props: parse(block.props?.data) };
       if (isColor(block.props?.textColor)) out.color = block.props.textColor;
       if (isColor(block.props?.backgroundColor)) out.background = block.props.backgroundColor;
-      if (block.children?.length) out.children = fromEngine(block.children);
+      if (block.children?.length) out.children = fromEngineTree(block.children);
       return out;
     }
     const type = FROM_ENGINE[block.type] ?? block.type;
@@ -280,7 +293,7 @@ export function fromEngine(blocks: EngineBlock[]): SpaceBlock[] {
     if (isColor(textColor)) out.color = textColor;
     if (isColor(backgroundColor)) out.background = backgroundColor;
     if (Object.keys(props).length) out.props = props;
-    if (block.children?.length) out.children = fromEngine(block.children);
+    if (block.children?.length) out.children = fromEngineTree(block.children);
     return out;
   });
 }

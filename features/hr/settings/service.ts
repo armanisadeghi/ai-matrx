@@ -22,7 +22,6 @@ import { supabase } from "@/utils/supabase/client";
 
 import type { HrResult } from "../types";
 import type {
-  HrCustomFieldDefinition,
   HrCustomFieldTarget,
   HrEmployerProfileRead,
 } from "./types";
@@ -411,22 +410,21 @@ export async function fetchHrKnobMetadata(): Promise<HrResult<HrKnobMetadata[]>>
 export const HR_CUSTOM_FIELD_TOKEN_LIKE = "hr\\_%";
 
 /**
- * Read the custom-field registry for this org's HR tokens.
+ * Read the custom-field POLICY for this org's HR tokens: which tokens are switched on and their
+ * ceilings (`platform.custom_field_target`), plus each token's human label.
  *
- * 🚨 READ ONLY, ON PURPOSE. The platform's one authoring surface — `FieldEditor` and
- * `CustomFieldsSection` in @ai-matrx/records-ui, declaring into `custom.field` — exists, but
- * HR's definitions still live in this older registry. Lane 7 STANDARD-TABLES folds them into
- * `custom.field` (wave 4) and HR then authors through that one editor; a competing kit here
- * would be two editors for one shape. So route 73 renders this registry honestly until then.
- *
- * The `platform` schema IS exposed to PostgREST (unlike `hr`), so this is a direct
- * RLS-checked read — no RPC, no Next.js hop.
+ * 🚨 THE FIELDS THEMSELVES ARE NOT READ HERE. An organization's custom fields on a platform record
+ * type live in the custom store (`custom.entity_fields` / `entity_field_declare` / `entity_field_update`
+ * / `entity_field_retire`), reached through `@ai-matrx/records`; `HrFieldsPanel` mounts those hooks and
+ * `FieldEditor`. `platform.custom_field_definition` is the older twin (0 rows ever) and is never read;
+ * `__tests__/no-reader-of-custom-field-definition.test.ts` fails if anything does.
+ * `custom.entity_field_rights` answers only who may declare, not which tokens are on or their
+ * ceilings, so the policy rows are still read here — read only, never written.
  */
 export async function fetchHrCustomFieldRegistry(args: {
   organizationId: string;
 }): Promise<
   HrResult<{
-    definitions: HrCustomFieldDefinition[];
     targets: HrCustomFieldTarget[];
     /** `entity_types.token` → `entity_types.label`, read live. Never a hand-written map. */
     labels: Record<string, string>;
@@ -441,21 +439,7 @@ export async function fetchHrCustomFieldRegistry(args: {
     );
   }
 
-  const [definitionsResult, targetsResult] = await Promise.all([
-    supabase
-      .schema("platform")
-      .from("custom_field_definition")
-      // One STRING LITERAL — see `fetchHrKnobMetadata`.
-      .select(
-        "id, target_token, field_key, display_name, field_type, field_order, is_required, is_multi, sensitivity_tier, ai_exposure, reference_target_token, archived_at, options",
-      )
-      // DECLARED SCOPE (db-rules THE VIEW LAW): a DEFINITION belongs to the employer
-      // that wrote it, so the scope is `mine` — this employer's rows only.
-      .eq("organization_id", args.organizationId)
-      .like("target_token", HR_CUSTOM_FIELD_TOKEN_LIKE)
-      .is("deleted_at", null)
-      .order("target_token", { ascending: true })
-      .order("field_order", { ascending: true }),
+  const [targetsResult] = await Promise.all([
     supabase
       .schema("platform")
       .from("custom_field_target")
@@ -475,13 +459,6 @@ export async function fetchHrCustomFieldRegistry(args: {
       .order("target_token", { ascending: true }),
   ]);
 
-  if (definitionsResult.error) {
-    return failed(
-      `The custom-field registry did not arrive.`,
-      definitionsResult.error.code ?? null,
-      definitionsResult.error.message ?? null,
-    );
-  }
   if (targetsResult.error) {
     return failed(
       `The custom-field limits did not arrive.`,
@@ -490,21 +467,8 @@ export async function fetchHrCustomFieldRegistry(args: {
     );
   }
 
-  // ✅ VERIFIED ALIGNED 2026-08-26 — BOTH CASTS LEFT ALONE ON PURPOSE. How it was
-  // verified: both select lists were checked column by column against
-  // `information_schema.columns` for `platform.custom_field_definition` and
-  // `platform.custom_field_target`, and live `hr_*` target rows were serialised through
-  // `to_jsonb()`. Every selected column exists, and every nullability matches what
-  // `types.ts` declares — `target_token` and `notes` nullable; `field_order`,
-  // `is_required`, `is_multi`, `sensitivity_tier`, `ai_exposure`, `is_enabled`,
-  // `validation_mode`, `sensitivity_ceiling`, `ai_exposure_ceiling` all `not null`;
-  // `max_fields` / `max_custom_bytes` nullable and null on every live row, which
-  // `number | null` says correctly and a `?? 0` would turn into a ceiling of zero.
-  // `options` is nullable `jsonb`, typed `unknown`, which is right — L14 owns its schema.
-  // This is a plain RLS-checked PostgREST read: `platform` IS in the `authenticator`
-  // role's `pgrst.db_schemas`, and `hr` genuinely is NOT (checked live in
-  // `pg_db_role_setting`), which is the standing reason the `hr` reads above use doors.
-  const definitions = (definitionsResult.data ?? []) as HrCustomFieldDefinition[];
+  // `platform` IS exposed to PostgREST (`hr` is not), so this is a plain RLS-checked read. `max_fields` /
+  // `max_custom_bytes` are nullable and null on every live row; `number | null` says that correctly.
   const targets = (targetsResult.data ?? []) as HrCustomFieldTarget[];
 
   // THE RECORD-TYPE NAMES COME FROM THE REGISTRY, NOT FROM A MAP IN A COMPONENT.
@@ -515,9 +479,6 @@ export async function fetchHrCustomFieldRegistry(args: {
   const tokens = Array.from(
     new Set([
       ...targets.map((row) => row.target_token),
-      ...definitions
-        .map((row) => row.target_token)
-        .filter((token): token is string => Boolean(token)),
     ]),
   );
 
@@ -543,5 +504,5 @@ export async function fetchHrCustomFieldRegistry(args: {
     );
   }
 
-  return { ok: true, data: { definitions, targets, labels } };
+  return { ok: true, data: { targets, labels } };
 }

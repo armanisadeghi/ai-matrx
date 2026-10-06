@@ -22,10 +22,11 @@ import { KeywordChip, TagList } from "@/components/kind-kit/TagList";
 // constant keeps this guard pinned to the canon instead of a literal.
 import { MOTION_PULSE } from "@ai-matrx/design-system";
 import {
-  ALLOWED_IMPORTS_CONFIG,
-  buildComponentScope,
-  getDefaultImportsForKindComponents,
-} from "@/features/agent-apps/utils/allowed-imports";
+  buildScope,
+  defaultComponentEntries,
+  listScopeEntryPaths,
+} from "@ai-matrx/code-runtime/scope";
+import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -63,11 +64,12 @@ describe("kind-kit", () => {
   });
 
   it("is on the compiler allowlist with explicit named exports, and in the kind-component default scope", () => {
-    const paths = ALLOWED_IMPORTS_CONFIG.map((c) => c.path);
+    const paths = listScopeEntryPaths();
     for (const p of KIT_PATHS) expect(paths).toContain(p);
-    const defaults = getDefaultImportsForKindComponents();
+    const defaults = defaultComponentEntries();
     for (const p of KIT_PATHS) expect(defaults).toContain(p);
-    const scope = buildComponentScope(KIT_PATHS);
+    provideStoredComponentScopeModules();
+    const scope = buildScope({ entries: KIT_PATHS, shadowDangerousGlobals: false });
     expect(scope.SortableList).toBe(SortableList);
     expect(scope.KindPanelGrid).toBe(KindPanelGrid);
     expect(scope.KindPanel).toBe(KindPanel);

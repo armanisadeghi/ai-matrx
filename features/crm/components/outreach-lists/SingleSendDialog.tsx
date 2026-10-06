@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Loader2, Mail, Send } from "lucide-react";
+import { AlertTriangle, Check, ClipboardCheck, Loader2, Mail, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -50,6 +50,9 @@ import {
   canPerformOutreachOffer,
   performOutreachOffer,
 } from "@/features/crm/pitch-advisories/outreachOffers";
+import { PreSendCheckPanel } from "@/features/crm/pre-send-check/PreSendCheckPanel";
+import { RecipientFitBadge } from "@/features/crm/pre-send-check/RecipientFitBadge";
+import { usePreSendCheck } from "@/features/crm/pre-send-check/usePreSendCheck";
 
 interface SingleSendDialogProps {
   open: boolean;
@@ -148,6 +151,63 @@ export function SingleSendDialog({
       : null,
   );
 
+  // THE PRE-SEND CHECK. `fit` is the cheap read beside the recipient (stored
+  // verdict, no model call) and its "Check fit" (fresh, against this draft);
+  // `review` is "Review before send": critique + fact check (knob
+  // pr.auto_factcheck_on_review) + fit + the PR floor, in one report. Neither
+  // ever disables Send — validation offers, never blocks.
+  const fit = usePreSendCheck(list.organization_id);
+  const review = usePreSendCheck(list.organization_id);
+  const recipientPartyId = member?.party_id ?? null;
+  const runFit = fit.run;
+  const resetFit = fit.reset;
+  const resetReview = review.reset;
+  useEffect(() => {
+    if (!open || !recipientPartyId) return;
+    void runFit({
+      surface: "single_send",
+      recipient_party_ids: [recipientPartyId],
+      run_critique: false,
+      run_fact_check: false,
+    });
+    return () => {
+      resetFit();
+      resetReview();
+    };
+  }, [open, recipientPartyId, runFit, resetFit, resetReview]);
+  const recipientFit =
+    (review.report?.recipients ?? []).find((r) => r.party_id === recipientPartyId) ??
+    (fit.report?.recipients ?? []).find((r) => r.party_id === recipientPartyId) ??
+    null;
+
+  function checkFit() {
+    if (!recipientPartyId) return;
+    void fit.run({
+      surface: "single_send",
+      recipient_party_ids: [recipientPartyId],
+      ...(draft ? { draft_id: draft.id } : {}),
+      run_critique: false,
+      run_fact_check: false,
+      fresh_fit: true,
+    });
+  }
+
+  function reviewBeforeSend() {
+    if (!draft) return;
+    void review.run({
+      surface: "single_send",
+      draft_id: draft.id,
+      recipient_party_ids: [draft.party_id],
+      fresh_fit: true,
+    });
+  }
+
+  // REVIEWING NEVER NEEDS A MAILBOX. The server previews a draft for a campaign
+  // with none and says so with a null sender; only Send needs one, and pressing
+  // it then offers the connect step instead of failing.
+  const mailboxMissing = Boolean(draft && !draft.from_address);
+  const [mailboxOffer, setMailboxOffer] = useState(false);
+
   const approved = Boolean(draft?.approved_at);
   const canSend = Boolean(
     draft?.eligibility.allowed &&
@@ -202,6 +262,10 @@ export function SingleSendDialog({
 
   async function send() {
     if (!draft) return;
+    if (mailboxMissing) {
+      setMailboxOffer(true);
+      return;
+    }
     setBusy("send");
     setProblem(null);
     try {
@@ -232,6 +296,36 @@ export function SingleSendDialog({
             against the live CRM record; blank merge fields cannot be sent.
           </DialogDescription>
         </DialogHeader>
+
+        {recipientPartyId && (
+          <div className="flex flex-wrap items-center gap-2 text-xs" data-testid="single-send-recipient-fit">
+            <span className="text-muted-foreground">Fit for {member?.party?.display_name ?? "recipient"}:</span>
+            {fit.running && !recipientFit ? (
+              <Loader2 className="h-3 w-3 animate-spin" />
+            ) : recipientFit ? (
+              <RecipientFitBadge fit={recipientFit} />
+            ) : (
+              fit.error ? (
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  Could not read <ErrorAlchemyMenu error={fit.error} />
+                </span>
+              ) : (
+                <span className="text-muted-foreground">Not checked</span>
+              )
+            )}
+            <Button
+             
+              variant="quiet"
+             
+              onClick={checkFit}
+              disabled={fit.running || !draft}
+              title={draft ? undefined : "Preview the message first"}
+              icon={fit.running && recipientFit ? <Loader2 className="animate-spin" /> : undefined}
+            >
+              Check fit
+            </Button>
+          </div>
+        )}
 
         {!draft && (
           <div className="space-y-3">
@@ -305,6 +399,13 @@ export function SingleSendDialog({
                 {problem.unresolved.join(", ")}
               </p>
             )}
+            {problem.code === "identity_required" && (
+              <p className="mt-1 pl-6">
+                <Link className="font-medium text-primary underline" href="/crm/sending-identities">
+                  Connect a mailbox
+                </Link>
+              </p>
+            )}
             <ErrorAlchemyMenu error={problem.message} />
           </div>
         )}
@@ -314,7 +415,14 @@ export function SingleSendDialog({
             <div className="grid gap-1 rounded-md border bg-muted/30 p-3 text-sm sm:grid-cols-2">
               <span>
                 <span className="text-muted-foreground">From:</span>{" "}
-                {draft.from_address}
+                {draft.from_address || (
+                  <span className="text-amber-700 dark:text-amber-300" data-testid="single-send-no-mailbox">
+                    No mailbox yet. Review works; sending needs one.{" "}
+                    <Link className="font-medium underline" href="/crm/sending-identities">
+                      Connect a mailbox
+                    </Link>
+                  </span>
+                )}
               </span>
               <span>
                 <span className="text-muted-foreground">To:</span>{" "}
@@ -382,6 +490,26 @@ export function SingleSendDialog({
                 }}
               />
             )}
+            {(review.running || review.report || review.error) && (
+              <PreSendCheckPanel state={review} onRerun={reviewBeforeSend} />
+            )}
+            {mailboxOffer && mailboxMissing && (
+              <div
+                className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm"
+                data-testid="single-send-connect-mailbox"
+              >
+                <p className="font-medium">Sending needs a mailbox. This campaign has none.</p>
+                <p className="mt-1 text-muted-foreground">
+                  Connect one, choose it as the campaign&apos;s sending mailbox, then preview again.
+                </p>
+                <Link
+                  className="mt-1 inline-block font-medium text-primary underline"
+                  href="/crm/sending-identities"
+                >
+                  Connect a mailbox
+                </Link>
+              </div>
+            )}
             {(draft.eligibility.blocks ?? []).map((block) => (
               <div
                 key={block.code}
@@ -423,6 +551,14 @@ export function SingleSendDialog({
             <Button variant="primary" onClick={() => onOpenChange(false)}>Done</Button>
           ) : (
             <>
+              <Button
+                icon={review.running ? <Loader2 className="animate-spin" /> : <ClipboardCheck />}
+                variant="outline"
+                onClick={reviewBeforeSend}
+                disabled={review.running || busy !== null}
+              >
+                Review before send
+              </Button>
               {draft.approval.required_for_this_message && !approved && (
                 <Button
                   icon={busy === "approve" && (

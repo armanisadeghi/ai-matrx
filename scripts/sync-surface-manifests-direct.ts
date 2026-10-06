@@ -124,7 +124,7 @@ async function applyMirrorLifecycle(
     const key = planKey(plan, table);
     if (archive.length) {
       await client.query(
-        `update ui.${table} set deleted_at = now() where id = any($1::uuid[]) and deleted_at is null`,
+        `update ui.${table} set deleted_at = now() where id = any($1::uuid[]) and deleted_at is null and declared_by = 'code'`,
         [archive.map((row) => row.id)],
       );
       for (const row of archive)
@@ -132,7 +132,7 @@ async function applyMirrorLifecycle(
     }
     if (revive.length) {
       await client.query(
-        `update ui.${table} set deleted_at = null where id = any($1::uuid[]) and deleted_at is not null`,
+        `update ui.${table} set deleted_at = null where id = any($1::uuid[]) and deleted_at is not null and declared_by = 'code'`,
         [revive.map((row) => row.id)],
       );
       for (const row of revive)

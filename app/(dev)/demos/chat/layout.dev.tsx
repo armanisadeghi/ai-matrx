@@ -24,6 +24,7 @@ import {
   ChatDesktopHeader,
 } from "@ai-matrx/chat/cx-chat/components/ChatSidebarClient";
 import ChatMobileHeaderBar from "@ai-matrx/chat/cx-chat/components/ChatMobileHeaderBar";
+import { DemosChatUiRegistrations } from "@/providers/DemosChatUiRegistrations";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/chat", {
@@ -40,6 +41,7 @@ export default function ChatLayout({
 }) {
   return (
     <>
+      <DemosChatUiRegistrations />
       {/* ── Panel sidebar ──────────────────────────────────────────────────
           Detected by shell CSS via :has(.shell-panel).
           The <aside> and all structural divs are pure server HTML.

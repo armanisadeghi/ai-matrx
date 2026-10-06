@@ -35,7 +35,7 @@ const CHOICE_HEX: Record<string, string> = {
 /** Groups with no option color, in Notion's order (its Avg NPS ring reads purple, green, yellow, blue). */
 const PALETTE = ["#b98fd5", "#73b98f", "#e9c26c", "#5c9be3", "#e08679", "#d69258", "#e295bf", "#b89a83", "#b4b2ad"];
 /** Past a couple dozen groups Notion draws one pale color in many thin slices. */
-const MANY_HEX = "#d3e9dc";
+const MANY_HEX = "#a9d6b9";
 
 interface Choice {
   value: string;
@@ -177,7 +177,8 @@ function pretty(n: number | null): string {
 
 /** The donut (Notion's ring): a thin ring from 12 o'clock clockwise, a hairline gap between slices,
  *  the total in the middle in a large semibold numeral. Sizes are Notion's, measured: 112px ring,
- *  5px stroke, ~50px numeral (smaller as the number grows). */
+ *  a 3.5px stroke, ~50px numeral (smaller as the number grows). Past a couple dozen groups the ring
+ *  is Notion's dashed one: each slice a short radial tick with an equal gap after it. */
 const RING = 116;
 function Donut({ data, settings }: { data: ChartData; settings: ChartSettings }) {
   const r = 54;
@@ -199,7 +200,7 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
         {data.points.map((p, i) => {
           const offset = offsets[i];
           const len = (Math.max(0, p.value) / sum) * c;
-          const dash = Math.max(0.5, len - gap);
+          const dash = many ? Math.max(0.4, len * 0.5) : Math.max(0.5, len - gap);
           const el = (
             <circle
               key={p.key}
@@ -208,7 +209,7 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
               r={r}
               fill="none"
               stroke={p.color}
-              strokeWidth={many ? 6 : 5}
+              strokeWidth={many ? 7 : 3.5}
               strokeDasharray={`${dash} ${c - dash}`}
               strokeDashoffset={-offset}
               transform={`rotate(-90 ${mid} ${mid})`}

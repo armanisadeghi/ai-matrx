@@ -55,10 +55,9 @@
 // ─── External dependencies ───────────────────────────────────────────────────
 
 import {
-  applyUsageRefusal,
   checkUsageBeforeAiCall,
-  classifyUsageRefusal,
   noteAiCallEnded,
+  noticeUsageRefusal,
   USAGE_LIMIT_REACHED,
 } from "@/features/entitlements/usage-gate/usageGate";
 import { isPaidAiCall } from "@/features/entitlements/usage-gate/paidAiPaths";
@@ -1057,21 +1056,13 @@ export function callApi<
       if (isPaidAi) {
         // The server's usage refusal → a person gets `over` + the limit
         // dialog; a guest gets the sign-up reminder only, never both.
-        const refusalKind =
-          result.error?.status !== undefined
-            ? classifyUsageRefusal(
-                result.error.status,
-                result.error.serverDetail,
-                getState,
-              )
-            : null;
-        if (refusalKind) {
-          applyUsageRefusal(
-            refusalKind,
+        if (result.error?.status !== undefined) {
+          noticeUsageRefusal(
+            result.error.status,
+            result.error.serverDetail,
             _dispatch,
             getState,
-            result.error?.serverDetail,
-            result.error?.message,
+            result.error.message,
           );
         }
         // Call ended — stale + background refresh, never awaited (rule 8).

@@ -43,10 +43,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { ToolUiComponentRow } from "./types";
-import {
-  getAllAvailableImports,
-  getDefaultImportsForToolRenderer,
-} from "@/features/dynamic-react/toolRendererScope";
+import { listScopeEntries } from "@ai-matrx/code-runtime/scope";
+import { defaultToolRendererScopeEntries } from "@/lib/code-runtime/defaults";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 
@@ -204,7 +202,7 @@ export function ToolUiComponentEditor({
     header_extras_code: "",
     header_subtitle_code: "",
     keep_expanded_on_stream: false,
-    allowed_imports: getDefaultImportsForToolRenderer(),
+    allowed_imports: defaultToolRendererScopeEntries(),
     language: "tsx" as "tsx" | "jsx",
     is_active: true,
     version: "1.0.0",
@@ -212,7 +210,7 @@ export function ToolUiComponentEditor({
     contract_version: 2 as 1 | 2,
   });
 
-  const availableImports = getAllAvailableImports();
+  const availableImports = listScopeEntries();
 
   // Load existing component if editing
   useEffect(() => {

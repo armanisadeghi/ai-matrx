@@ -2,11 +2,13 @@
 //
 // The acceptance Space ("The Traveling SMM™ OS", rebuilt from Arman's three reference screenshots) and
 // one sub-Space for every page link in it, each with a little realistic working content. The four chart
-// rings and the client database are `database` blocks over the agency sample (data/agency-spec.ts).
+// rings and the client database are `database` blocks over the agency's REAL tables, installed into the
+// organization first (data/agency-install.ts).
 
 import type { RichSpan, SpaceBlock, SpaceColor, SpaceDoc, SpaceMedia } from "../contract";
 import { spread } from "./position";
-import { AGENCY_SAMPLE_ID, sampleTable, type ChartSettings, type SpaceDbView } from "../data/sources";
+import { viewOnInstalledKeys, type AgencyTables, type AgencyToken } from "../data/agency-install";
+import type { ChartSettings, SpaceDbView } from "../data/sources";
 
 const bid = () => crypto.randomUUID();
 
@@ -48,17 +50,20 @@ export const b = {
     children: cols.map((c) => ({ id: bid(), type: "column", props: { width: c.width }, children: c.blocks })),
   }),
   slot: (label: string, height: number): SpaceBlock => ({ id: bid(), type: "slot", props: { label, height } }),
-  /** A linked view of one agency-sample table (Notion's inline database / chart tile). */
-  database: (token: string, views: SpaceDbView[], extra: Record<string, unknown> = {}): SpaceBlock => {
-    const table = sampleTable(token);
+  /** A linked view of one installed agency table (Notion's inline database / chart tile). */
+  database: (tables: AgencyTables, token: AgencyToken, views: SpaceDbView[], extra: Record<string, unknown> = {}): SpaceBlock => {
+    const table = tables[token];
+    // Fields are named by the install's keys (an upgraded install renames a converted column).
+    views = views.map((v) => viewOnInstalledKeys(v, table.keys));
+    const source = table.viewId ? { kind: "table" as const, tableId: table.tableId, viewId: table.viewId } : { kind: "table" as const, tableId: table.tableId };
     return {
       id: bid(),
       type: "database",
-      props: { source: { kind: "table", tableId: table.id }, inline: true, title: table.name, sample: AGENCY_SAMPLE_ID, linked: true, showTitle: false, views, activeViewId: views[0].id, ...extra },
+      props: { source, inline: true, title: table.name, ...(table.sample ? { sample: table.sample } : {}), linked: true, showTitle: false, views, activeViewId: views[0].id, ...extra },
     };
   },
-  ring: (token: string, name: string, icon: string, chart: ChartSettings): SpaceBlock =>
-    b.database(token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
+  ring: (tables: AgencyTables, token: AgencyToken, name: string, icon: string, chart: ChartSettings): SpaceBlock =>
+    b.database(tables, token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
 };
 
 /** The four chart rings' view names, as the page's owner typed them (in capitals). */
@@ -70,27 +75,60 @@ export const RING_NAMES: Record<string, string> = {
 };
 
 /** The page's cover and icon: a warm landscape and a portrait, from the bundled gallery (page/gallery.ts). */
+/** The two link lines of screenshot 3, as written there (lead words, then the link drawn as its URL). */
+export const SAMPLE_LINK_LINES = [
+  { lead: "Claude Skills - ", url: "https://youtube.com/shorts/jDtLcMOLjIQ?si=6HfkEJE1NmPe6jv6" },
+  { lead: "Auto posting for social media: ", url: "https://www.instagram.com/reel/Dc31jlbxT-T/?stkn=MXhmYnZjejBrMnN5bQ==" },
+] as const;
+export function sampleLinkLine(line: { lead: string; url: string }): RichSpan[] {
+  return [t(line.lead), t(line.url, { link: line.url })];
+}
+
 export const SAMPLE_COVER = { url: "gallery:photo-golden-palms", offsetY: 62 };
 export const SAMPLE_ICON = { url: "gallery:portrait-founder" };
 /** The page's two columns, measured on the reference: 348px beside 1070px. */
 export const SAMPLE_COLUMNS = [0.245, 0.755] as const;
 
 /** The four chart rings of the acceptance page (Active clients, Client wins, Avg NPS score, YTD tasks). */
-export function sampleRings(): SpaceBlock {
+export function sampleRings(tables: AgencyTables): SpaceBlock {
   return b.columns(
-      { width: 0.25, blocks: [b.ring("client", RING_NAMES["Active clients"], "Users", { type: "donut", groupBy: "status", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("client_win", RING_NAMES["Client wins"], "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("nps_survey", RING_NAMES["Avg NPS score"], "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
-      { width: 0.25, blocks: [b.ring("task", RING_NAMES["YTD tasks completed"], "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
+      { width: 0.25, blocks: [b.ring(tables, "client", RING_NAMES["Active clients"], "Users", { type: "donut", groupBy: "status", op: "count" })] },
+      { width: 0.25, blocks: [b.ring(tables, "client_win", RING_NAMES["Client wins"], "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
+      { width: 0.25, blocks: [b.ring(tables, "nps_survey", RING_NAMES["Avg NPS score"], "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
+      { width: 0.25, blocks: [b.ring(tables, "task", RING_NAMES["YTD tasks completed"], "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
     );
 }
 
-/** The screenshot's client database shows five properties; the reverse links (surveys, wins, tasks) are hidden. */
-export const SAMPLE_CLIENT_HIDDEN = ["linked:nps_survey__client", "linked:client_win__client", "linked:task__client"];
+/** Empty lines the reference leaves after two blocks of the plan column (screenshot 2/3 at Notion's 40px
+ *  paragraph rhythm: four after the last to-do of the first list, three after "Claude Skills"). `anchor`
+ *  is the block's text start; sample.ts tops an older page up to `lines` with the same rule. */
+export const SAMPLE_GAP_RULES = [
+  { anchor: "Put the shot list system into Cora", lines: 4 },
+  { anchor: "Claude Skills - ", lines: 3 },
+] as const;
+export const SAMPLE_GAPS = {
+  afterShotList: () => Array.from({ length: SAMPLE_GAP_RULES[0].lines }, () => b.text("")),
+  afterClaudeSkills: () => Array.from({ length: SAMPLE_GAP_RULES[1].lines }, () => b.text("")),
+};
+
+/** The screenshot's client database shows five properties; the reverse links (surveys, wins, tasks) are hidden.
+ *  The installed store keys a reverse column by its inverse key (the linking table's name); the gallery's
+ *  in-memory preview keys it `<token>__<field>` — both are listed so either world hides them. */
+export const SAMPLE_CLIENT_HIDDEN = [
+  "linked:nps_surveys",
+  "linked:client_wins",
+  "linked:tasks",
+  "linked:nps_survey__client",
+  "linked:client_win__client",
+  "linked:task__client",
+];
+
+/** The reference lists clients by the day they started. */
+export const SAMPLE_CLIENT_SORTS: NonNullable<SpaceDbView["sorts"]> = [{ field: "date_started", direction: "asc" }];
 
 /** The linked client database of the acceptance page. */
-export function sampleClientsDatabase(): SpaceBlock {
-  return b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN }]);
+export function sampleClientsDatabase(tables: AgencyTables): SpaceBlock {
+  return b.database(tables, "client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN, sorts: SAMPLE_CLIENT_SORTS }]);
 }
 
 interface PageSeed {
@@ -284,7 +322,7 @@ function bodyFor(page: PageSeed): SpaceBlock[] {
 const icon = (name: string): SpaceMedia | null => (name ? { icon: name } : null);
 
 /** The sample as docs keyed by `seed-<key>` ids; the installer swaps in the database's real ids. */
-export function seedSpaces(): SpaceDoc[] {
+export function seedSpaces(tables: AgencyTables): SpaceDoc[] {
   const stamp = new Date(Date.now() - 37 * 60 * 1000).toISOString();
   const docs: SpaceDoc[] = [];
   const idOf = (key: string) => `seed-${key}`;
@@ -323,8 +361,8 @@ export function seedSpaces(): SpaceDoc[] {
   ];
 
   const right: SpaceBlock[] = [
-    sampleRings(),
-    sampleClientsDatabase(),
+    sampleRings(tables),
+    sampleClientsDatabase(tables),
     b.text(""),
     b.h1([t("90 Day Plan", { link: `/spaces/${idOf(PLAN.key)}`, color: "gray" })]),
     ...PLAN_PAGES.map((p) => b.page(idOf(p.key))),
@@ -341,9 +379,7 @@ export function seedSpaces(): SpaceDoc[] {
     b.todo("Get Metricool set up for Jonathon"),
     b.todo("Cora's content"),
     b.todo("Put the shot list system into Cora's notion"),
-    b.text(""),
-    b.text(""),
-    b.text(""),
+    ...SAMPLE_GAPS.afterShotList(),
     b.todo("Reviewing Cora's posts"),
     b.todo("Update Darlene's daily winning formula trainings"),
     b.text(""),
@@ -351,10 +387,9 @@ export function seedSpaces(): SpaceDoc[] {
     b.text(""),
     b.text("The Quote Pages (Cora, JetQuest, Viva)"),
     b.text("The reporting system (finish it for organic - monthly and quarterly)"),
-    b.text([t("Claude Skills - "), t("https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills", { link: "https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills" })]),
-    b.text(""),
-    b.text(""),
-    b.text([t("Auto posting for social media: "), t("https://www.instagram.com/creators/", { link: "https://www.instagram.com/creators/" })]),
+    b.text(sampleLinkLine(SAMPLE_LINK_LINES[0])),
+    ...SAMPLE_GAPS.afterClaudeSkills(),
+    b.text(sampleLinkLine(SAMPLE_LINK_LINES[1])),
     b.text(""),
     b.toggleH3("Other To Dos", [b.todo("Renew the Metricool plan"), b.todo("Update the Offers page pricing")]),
     b.toggleH3("Gina Notes", [b.text("Gina wants a weekly Loom instead of the Friday call.")]),

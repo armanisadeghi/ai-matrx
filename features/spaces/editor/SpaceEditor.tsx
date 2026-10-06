@@ -7,6 +7,7 @@
 // SpaceBlock — the engine never reaches the store.
 
 import { createExtension, filterSuggestionItems } from "@blocknote/core";
+import { CollaborationExtension } from "@blocknote/core/yjs";
 import { en } from "@blocknote/core/locales";
 import {
   AddBlockButton,
@@ -25,12 +26,20 @@ import {
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";
 import { useEffect, useState } from "react";
+import type { Awareness } from "y-protocols/awareness";
+import type * as Y from "yjs";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { mentionCandidates } from "@/features/rich-document/annotations/service";
+import { MessageSquare } from "lucide-react";
+
+import { spaceCommentSource } from "../collab/comments";
+import { PersonAvatar } from "../collab/CommentsPanel";
 
 import type { SpaceBlock } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces } from "../state/SpacesProvider";
+import { enterIntoOpenToggle } from "./toggle-enter";
 import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
@@ -39,6 +48,7 @@ import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { useRubberBand } from "./rubber-band";
 import { spacesSchema, type SpacesEditor } from "./schema";
 import { slashItems, type SlashContext } from "./slash-items";
+import { columnDropper } from "./column-drop";
 
 const PLACEHOLDERS = {
   ...en.placeholders,
@@ -127,15 +137,31 @@ function AskAiButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+function CommentButton({ onClick }: { onClick: () => void }) {
+  const C = useComponentsContext()!;
+  return (
+    <C.FormattingToolbar.Button mainTooltip="Comment" icon={<MessageSquare size={16} />} onClick={onClick} label="Comment">
+      Comment
+    </C.FormattingToolbar.Button>
+  );
+}
+
 export interface SpaceEditorProps {
   spaceId: string;
   initialBlocks: SpaceBlock[];
   editable: boolean;
   onChange: (blocks: SpaceBlock[]) => void;
   slash: SlashContext;
-  menu: Omit<BlockMenuActions, "spaceId">;
+  menu: Omit<BlockMenuActions, "spaceId" | "comment">;
+  /** H1 — start a comment on a block, about `quote` (the selection, or the block's text). */
+  onComment?: (anchor: { blockId: string; quote: string }) => void;
   /** Lets the page reach the editor (title Enter → first block, Move to). */
   onReady?: (editor: SpacesEditor) => void;
+  /**
+   * H3 live co-editing: the body is the room's shared Yjs fragment (`initialBlocks` is then unused — the
+   * fragment already holds the page) and other members' cursors draw in their colours.
+   */
+  collab?: { fragment: Y.XmlFragment; provider: { awareness: Awareness }; user: { name: string; color: string } };
 }
 
 /** Column widths as CSS keyed by block id (the flex items are BlockNote's own outer elements). */
@@ -151,10 +177,18 @@ function columnCss(blocks: EngineBlock[]): string {
   return rules.join("\n");
 }
 
-export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady }: SpaceEditorProps) {
+export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment, collab }: SpaceEditorProps) {
   const dark = useDarkMode();
   const { byId } = useSpaces();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
+  // H3: with a room, BlockNote's own Yjs binding drives the body (sync, cursors, Yjs undo) — exactly what
+  // @blocknote/core/yjs `withCollaboration` adds: the extension, ProseMirror history off, and its fixed-id
+  // placeholder first block (the fragment's content replaces it).
+  // C16: a block dropped on another's left / right edge makes columns (a vertical guide, not a line).
+  const [columnDrop] = useState(columnDropper);
+  const room = collab
+    ? CollaborationExtension({ fragment: collab.fragment, provider: collab.provider, user: collab.user, showCursorLabels: "activity" })
+    : null;
   const editor = useCreateBlockNote(
     {
       // B12: a lone URL goes in as a link and the Link / Mention / Bookmark / Embed choice opens beside
@@ -173,17 +207,45 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       },
       tables: { headers: true, splitCells: false, cellBackgroundColor: true, cellTextColor: true },
       schema: spacesSchema,
-      initialContent: initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
+      initialContent: room ? ([{ type: "paragraph", id: "initialBlockId" }] as never) : initialBlocks.length ? (toEngine(initialBlocks) as never) : undefined,
+      disableExtensions: room ? ["history"] : undefined,
       dictionary: { ...en, placeholders: PLACEHOLDERS },
-      extensions: [notionKeys()],
+      extensions: room ? [notionKeys(), room] : [notionKeys()],
       tabBehavior: "prefer-indent",
+      dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
       trailingBlock: false,
     },
     [spaceId],
   ) as unknown as SpacesEditor;
-  const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu }));
+  const commentOnBlock = (blockId: string) => {
+    const b = editor.getBlock(blockId) as unknown as EngineBlock | undefined;
+    const quote = b ? fromEngine([b]).map((x) => (x.text ?? []).map((t) => t.text).join("")).join(" ") : "";
+    onComment?.({ blockId, quote });
+  };
+  const commentOnSelection = () => {
+    const blocks = editor.getSelection()?.blocks ?? [editor.getTextCursorPosition().block];
+    const first = blocks[0];
+    if (!first) return;
+    const quote = editor.getSelectedText().split("\n")[0] ?? "";
+    if (quote.trim()) onComment?.({ blockId: first.id, quote });
+    else commentOnBlock(first.id);
+  };
+  const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu, comment: (id) => commentOnBlock(id) }));
+  useEffect(() => columnDrop.attach(), [columnDrop]);
   const [widths, setWidths] = useState(() => columnCss(editor.document as unknown as EngineBlock[]));
+  // With a room the body arrives through the Yjs binding (the first sync, a peer's edit), which
+  // BlockNoteView's onChange never reports — so a page opened in a room drew its columns 50/50. The
+  // editor's own change feed, remote updates included, keeps the widths current.
+  useEffect(() => {
+    const read = () => setWidths(columnCss(editor.document as unknown as EngineBlock[]));
+    const raf = requestAnimationFrame(read);
+    const off = editor.onChange(read, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      off();
+    };
+  }, [editor]);
 
   useEffect(() => {
     onReady?.(editor);
@@ -222,6 +284,11 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       className="contents"
       onKeyDownCapture={(e) => {
         turnIntoKey(editor, e);
+        // Enter at the end of an open toggle's title writes inside it (Notion); closed: a sibling.
+        if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey && editable && !document.querySelector(".bn-suggestion-menu") && enterIntoOpenToggle(editor)) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         // M1 — Space on an empty line opens Ask AI (Notion); anywhere else it is a space.
         if (e.key === " " && !e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && editable && !document.querySelector(".bn-suggestion-menu")) {
           const { from, to } = editor.prosemirrorState.selection;
@@ -264,20 +331,33 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         triggerCharacter="@"
         floatingUIOptions={SLASH_MENU}
         getItems={async (query) => {
-          // B12 — "@" names a page: the mention is the page's address, shown as its current title.
+          // B14/C27 — "@" lists people (who can read this page: its organization's members and the people it
+          // is shared with — cmt_mention_candidates) then pages. A person mention stores the user id.
           const q = query.trim().toLowerCase();
+          const people = await mentionCandidates(spaceCommentSource(spaceId, ""), query.trim()).catch(() => []);
+          const personItems = people.slice(0, 5).map((p) => ({
+            title: p.name,
+            group: "People",
+            icon: <PersonAvatar name={p.name} url={p.avatarUrl} size={20} />,
+            onItemClick: () =>
+              editor.insertInlineContent([
+                { type: "inlineMention", props: { span: JSON.stringify({ text: p.name, mention: { kind: "person", userId: p.userId } }) } },
+                " ",
+              ] as never),
+          }));
           const hits = [...byId.values()]
             .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
             .slice(0, 8);
-          return hits.map((p) => ({
+          return [...personItems, ...hits.map((p) => ({
             title: p.title || "Untitled",
+            group: "Link to page",
             icon: <SpaceIcon media={p.icon} size={16} />,
             onItemClick: () =>
               editor.insertInlineContent([
                 { type: "inlineMention", props: { span: JSON.stringify({ text: p.title || "Untitled", mention: { kind: "space", spaceId: p.id } }) } },
                 " ",
               ] as never),
-          }));
+          }))];
         }}
       />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
@@ -287,7 +367,11 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         sideMenu={(props) => (
           <SideMenu {...props}>
             <AddBlockButton />
-            <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+            {/* The block menu opens on a click (Notion), never on the press that starts a drag: the
+                menu trigger opens on mousedown, so the press is kept from it and the click opens it. */}
+            <span className="spaces-drag-handle" onPointerDownCapture={(e) => e.stopPropagation()} onMouseDownCapture={(e) => e.stopPropagation()}>
+              <DragHandleButton {...props} dragHandleMenu={BlockMenu} />
+            </span>
           </SideMenu>
         )}
       />
@@ -295,7 +379,12 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       {editable ? (
       <FormattingToolbarController
         floatingUIOptions={INSTANT_CLOSE}
-        formattingToolbar={() => (
+        formattingToolbar={() =>
+          // BlockNote re-evaluates the toolbar on every document change without asking for focus, so the
+          // room's first sync over a page that starts with columns left a block (node) selection on the
+          // first column and drew "Ask AI | Comment" over the title with nothing selected. A block
+          // selection nobody made in a focused editor shows no toolbar (Notion).
+          (editor.prosemirrorState.selection as { node?: unknown }).node && !editor.isFocused() ? null : (
           <FormattingToolbar>
             <AskAiButton onClick={menu.askAi} />
             <BlockTypeSelect key="blockTypeSelect" />
@@ -306,8 +395,10 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
             <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
             <BasicTextStyleButton basicTextStyle="code" key="codeStyleButton" />
             <ColorStyleButton key="colorStyleButton" />
+            {onComment ? <CommentButton onClick={commentOnSelection} /> : null}
           </FormattingToolbar>
-        )}
+          )
+        }
       />
       ) : null}
     </BlockNoteView>

@@ -1,5 +1,6 @@
 -- additive: yes
 -- lane: CHAIR-STANDARD-SOURCES
+-- chair-step: the only DROP is `drop trigger if exists` on a trigger this file itself creates, so a re-run replaces it instead of failing; no data, column, grant or policy is dropped.
 -- window-class: CREATE TRIGGER on projects.tasks (measured ACCESS EXCLUSIVE footprint); apply 0100-0400 Pacific
 -- LOCKS: one CREATE TRIGGER on projects.tasks — db:apply measures its footprint as ACCESS EXCLUSIVE
 -- (with the supautils hook's auth/storage/realtime relations), hence window-class; lock_timeout 3s.

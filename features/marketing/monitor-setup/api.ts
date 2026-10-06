@@ -11,7 +11,12 @@ import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 
-import type { Basis, DeclareTrackerBodyWithId, SetupProposal } from "./model";
+import type {
+  Basis,
+  DeclareTrackerBodyWithId,
+  HeldPersonName,
+  SetupProposal,
+} from "./model";
 
 export type SetupFacts = components["schemas"]["SetupFacts"];
 /**
@@ -39,6 +44,8 @@ export interface ProposalRef {
 export interface ProposalResult {
   brand_id: string;
   proposal: SetupProposal;
+  /** Proposed items the server's name guard held because they name a person — offered, never added. */
+  held_person_names?: HeldPersonName[];
   refs: ProposalRef[];
   inputs: Record<string, number>;
 }

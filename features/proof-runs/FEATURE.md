@@ -62,7 +62,7 @@ by their parent, the same precedent as `faq_item` and `media_chapter`.
   calls the proofs were computed from, so it renders as an `<EntityRef token="conversation">` in
   both the live console and the run detail (`pnpm check:dead-ends`). The kind component shows the
   id as text because `EntityRef` is not on the DB-component import allowlist
-  (`features/agent-apps/utils/allowed-imports.ts`) — a real platform gap, logged in
+  (the `@ai-matrx/code-runtime` scope, `lib/code-runtime/stored-scope.ts`) — a real platform gap, logged in
   `FOUND_DEFECTS.md`, not something to work around per-component.
 
 ## What the first click found
@@ -77,6 +77,7 @@ quietly reading as passes.
 
 ## Change Log
 
+- 2026-10-06 — Import-allowlist pointer moved to the `@ai-matrx/code-runtime` scope (`lib/code-runtime/stored-scope.ts`); old `allowed-imports.ts` deleted.
 - **2026-09-08 — Claude: status audit, no code change.** The server is blocked on Anthropic
   billing, so nothing on this page can complete a live run today; a replay still renders honestly
   (code proofs pass, the judge rule shows SKIPPED with the reason). Confirmed the page still

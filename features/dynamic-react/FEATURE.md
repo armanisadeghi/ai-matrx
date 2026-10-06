@@ -13,28 +13,24 @@ new (2026-06-19); the SDK is a read-only `tasks` spike.
 
 ## Entry points
 
-- `compileReactComponent.ts` — `compileReactComponent({ code, language })`:
-  detects needed capabilities from the **original** source (before import
-  stripping) via `detectReactCapabilities`, builds an async demand-loaded scope,
-  injects the `matrx` SDK, and returns the component. `getReactBlockImports()`
-  returns the full set (rarely needed; prefer demand detection).
+- `compileCodeBlock.ts` — `compileCodeBlock({ code, language })`: the block
+  compiles through `@ai-matrx/code-runtime` (`compileAsync`) with the
+  package's core entries plus `detectEntries` (imports and bare heavy-library
+  names), the `matrx` SDK as a host override, and the "conventional names
+  first" component rule.
 - `ReactCodeBlock.tsx` — the UI: streaming code → compiling loader → live
   preview → silent code fallback on error (opt-in error details). Has a
   `ReactRenderBoundary` for runtime errors.
-- `compile-core.ts` — shared Babel pipeline (`loadBabelTransform`,
-  `stripImports`, `replaceExportDefault`, `babelTransform`), used by both this
-  feature and the tool-UI compiler.
 - `sdk/matrxSdk.ts` — `createMatrxSdk()` → the `matrx` object in scope.
 
 ## Capabilities (what generated code can import / use)
 
-The allowlist is **not** owned here — it is the shared async capability registry
-at `features/tool-call-visualization/dynamic/allowed-imports.ts`. To widen what
-generated code can use, add an entry there (one extension point, every consumer
-benefits). Today's set: React hooks, all Lucide icons (missing → placeholder),
-`cn`, the common shadcn UI set, `MarkdownStream` (always loaded), plus
-demand-only heavy libs `recharts`, `motion/react`, `react-katex`, `react-pdf`,
-`xlsx`, `three`, `@react-three/fiber`, `date-fns`, `lodash`.
+Not owned here: the ONE documented scope registry is `@ai-matrx/code-runtime`'s
+(`listScopeEntries()`); the app supplies its own modules through
+`lib/code-runtime/app-scope.ts`. Heavy libraries (`recharts`, `motion/react`,
+`react-katex`, `react-pdf`, `xlsx`, `three`, `@react-three/fiber`, `date-fns`,
+`lodash`) load only when a block references them. Unknown names render a marked
+placeholder.
 
 ## The `matrx` Data SDK (RLS-safe data surface)
 
@@ -57,23 +53,22 @@ which namespaces it uses; user/admin approves), and the guest-privilege model.
 
 ## Bundle / SSR invariants (load-bearing)
 
-- The whole compiler is reached only through lazy chunks; Babel is a dynamic
-  `import()` on first use. **Nothing is in the SSR or initial client bundle.**
-- Every capability loads through a literal-specifier boundary, so each is its
-  own chunk. The Lucide boundary loads `@ai-matrx/icons.staticLucideIconMap`,
-  never the full `lucide-react` namespace barrel. `detectReactCapabilities` loads only referenced
-  capabilities → a chart block never downloads three.js; a 3D block never
-  downloads recharts. Core (React/common UI/lucide/cn) is in shared chunks, so
-  re-importing adds ~nothing.
+- The whole compiler is reached only through the lazy `ReactCodeBlock` chunk.
+  **Nothing is in the SSR or initial client bundle.**
+- Heavy libraries load through literal-specifier `import()` boundaries in
+  `lib/code-runtime/app-scope.ts`, each its own chunk, fetched only when
+  referenced. Lucide is never an async `import("lucide-react")` boundary.
 
 ## Security note
 
 Generated code runs **in the app's JS context** (not an iframe). Appropriate for
 trusted / first-party generated content; do not feed it hostile third-party
-code. Imports are stripped and only allowlisted deps are injected; unknown
-PascalCase identifiers fall back to a placeholder icon instead of crashing.
+code. Only documented scope entries resolve; unknown names render a marked
+placeholder instead of crashing.
 
 ## Change log
+
+- `2026-10-06` — Applets AP-5: the block compiles through `@ai-matrx/code-runtime`; `compileReactComponent.ts`, `compile-core.ts` and the second scope registry `toolRendererScope.ts` are deleted.
 
 - `2026-08-30` — Removed application-owned dynamic imports of the full `lucide-react` namespace. Dynamic React loads the canonical curated map and retains its missing-icon fallback, preventing Turbopack from instantiating the Lucide barrel before its base factory.
 - `2026-06-19` — composer: Initial doc. Added async demand-loaded capability

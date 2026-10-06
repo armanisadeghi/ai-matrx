@@ -1,6 +1,6 @@
 "use client";
-import React from "react";
-import { AlertTriangle, Check, CircleSlash, Clock, MessagesSquare, RotateCcw } from "lucide-react";
+import React, { Suspense, lazy } from "react";
+import { AlertTriangle, Check, CircleSlash, Clock, Hammer, MessagesSquare, RotateCcw } from "lucide-react";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { openCommentThread } from "@/features/rich-document/annotations/canvas/commentThreadKind";
 import { Button } from "@ai-matrx/design-system/controls";
@@ -41,7 +41,20 @@ export type DirectiveReceiptOutcome =
   | "applied"
   | "already_applied"
   | "failed"
-  | "blocked";
+  | "blocked"
+  /** The directive STARTED long work (aidream ApplyStatus `pending`): the receipt names the job. */
+  | "pending";
+
+/**
+ * A receipt naming an Agent Factory build (`create_agent` on the pipeline, AF-D door #3):
+ * the build's live progress mounts under the sentence — the ONE `BuildProgress` primitive,
+ * lazy so a chat never downloads it until a build receipt appears. A replayed receipt
+ * (`already_applied`) names the same build, so it shows the same progress.
+ */
+export const FACTORY_BUILD_RESOURCE = "agent_factory_build";
+const BuildProgress = lazy(() =>
+  import("@/features/agents/factory/components/BuildProgress").then((m) => ({ default: m.BuildProgress })),
+);
 
 export interface DirectiveReceiptBlockProps {
   /** The directive SLUG — the one identity. */
@@ -116,6 +129,7 @@ const OUTCOME_STYLE: Record<
   proposed: { Icon: Clock, tone: "text-amber-600 dark:text-amber-500", label: "Waiting for you" },
   failed: { Icon: AlertTriangle, tone: "text-destructive", label: "Failed" },
   blocked: { Icon: CircleSlash, tone: "text-destructive", label: "Not applied" },
+  pending: { Icon: Hammer, tone: "text-amber-600 dark:text-amber-500", label: "Building" },
 };
 
 const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = (props) => {
@@ -123,6 +137,10 @@ const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = (props) => {
   if (COMMENT_REPLY_SLUG.test(directive)) return <CommentReplyReceipt {...props} />;
   const style = OUTCOME_STYLE[outcome] ?? OUTCOME_STYLE.applied;
   const { Icon } = style;
+  const buildId =
+    resourceKind === FACTORY_BUILD_RESOURCE && outcome !== "failed" && outcome !== "blocked"
+      ? resourceIds?.[0]
+      : undefined;
 
   return (
     <div
@@ -138,6 +156,11 @@ const DirectiveReceiptBlock: React.FC<DirectiveReceiptBlockProps> = (props) => {
         <span className="min-w-0 flex-1 text-foreground">{message}</span>
         <span className={`shrink-0 text-xs ${style.tone}`}>{style.label}</span>
       </div>
+      {buildId ? (
+        <Suspense fallback={null}>
+          <BuildProgress buildId={buildId} className="mt-2" />
+        </Suspense>
+      ) : null}
     </div>
   );
 };

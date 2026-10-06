@@ -18,7 +18,7 @@ import {
   DISPLAY_MODE_OPTIONS,
   getTemplateForDisplayMode,
 } from "../sample-code/templates";
-import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
+import { defaultNewAppScopeEntries } from "@/lib/code-runtime/defaults";
 import {
   generateSlugCandidates,
   validateSlugsInBatch,
@@ -123,7 +123,7 @@ export function CreateAgentAppForm({
           description: description.trim() || undefined,
           component_code: getTemplateForDisplayMode(displayMode),
           component_language: "tsx",
-          allowed_imports: getDefaultImportsForNewApps(),
+          allowed_imports: defaultNewAppScopeEntries(),
           layout_config: { displayMode },
           variable_schema: [],
         });

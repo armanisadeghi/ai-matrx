@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Button } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import {
@@ -102,6 +102,7 @@ const SOURCE_LABELS: Record<ConnectionUser["source"], string> = {
   invitation: "Invited",
 };
 
+
 /**
  * ShareWithUserTab - Form to share with a specific user.
  * Shows the user's contacts from conversations, organizations, and invitations
@@ -147,7 +148,52 @@ export function ShareWithUserTab({
     );
   }, [connections, searchQuery]);
 
-  const userSearchCandidates: UserSearchCandidate[] = connections.map(
+  // THE SEARCH FINDS ANY PERSON, NOT ONLY THIS ORGANIZATION'S ROSTER. The contact list above is
+  // scoped to the thing's organization (FIX-7B), but sharing with someone outside it is a real
+  // path (typed email → lookup_user_by_email). The magnifier used to search the roster alone, so
+  // an existing person outside it found "nothing" while typing their email worked. A full email
+  // typed in the field is now resolved by the same lookup and offered as a candidate.
+  const [looked, setLooked] = useState<ConnectionUser | null>(null);
+  useEffect(() => {
+    const typed = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(typed)) {
+      setLooked(null);
+      return;
+    }
+    if (connections.some((c) => c.email?.toLowerCase() === typed)) {
+      setLooked(null);
+      return;
+    }
+    let stale = false;
+    const handle = setTimeout(async () => {
+      const { data } = await createClient().rpc("lookup_user_by_email", { lookup_email: typed });
+      const row = (data as Array<{ user_id: string; user_email: string }> | null)?.[0];
+      if (stale) return;
+      setLooked(
+        row
+          ? {
+              user_id: row.user_id,
+              email: row.user_email,
+              display_name: row.user_email.split("@", 1)[0] ?? null,
+              avatar_url: null,
+              source: "invitation",
+              sourceDetails: "Found by email",
+            }
+          : null,
+      );
+    }, 300);
+    return () => {
+      stale = true;
+      clearTimeout(handle);
+    };
+  }, [email, connections]);
+
+  const searchableConnections = useMemo(
+    () => (looked ? [...connections, looked] : connections),
+    [connections, looked],
+  );
+
+  const userSearchCandidates: UserSearchCandidate[] = searchableConnections.map(
     (connection) => ({
       id: connection.user_id,
       email: connection.email,
@@ -159,7 +205,7 @@ export function ShareWithUserTab({
         connection.source === "organization" && connection.sourceDetails
           ? [connection.sourceDetails]
           : [],
-      source: SOURCE_LABELS[connection.source],
+      source: connection === looked ? "Found by email" : SOURCE_LABELS[connection.source],
       createdAt: null,
       lastSignInAt: null,
     }),
@@ -410,7 +456,7 @@ export function ShareWithUserTab({
                       value={searchQuery}
                       onValueChange={setSearchQuery}
                       onUserSelect={(user) => {
-                        const contact = connections.find(
+                        const contact = searchableConnections.find(
                           (candidate) => candidate.user_id === user.id,
                         );
                         if (contact) selectContact(contact);
@@ -520,7 +566,7 @@ export function ShareWithUserTab({
                 if (status.type === "error") resetStatus();
               }}
               onUserSelect={(user) => {
-                const contact = connections.find(
+                const contact = searchableConnections.find(
                   (candidate) => candidate.user_id === user.id,
                 );
                 if (contact) selectContact(contact);

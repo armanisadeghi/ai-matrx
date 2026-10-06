@@ -2,7 +2,7 @@
  * safe-url — the render-time protocol allowlist for the kind sandbox frame.
  *
  * WHY THIS IS NOT A STRING RULE. The authoring gate
- * (`features/agent-apps/utils/component-source-gate.ts`) limits what a
+ * (`@ai-matrx/code-runtime`'s `gate`) limits what a
  * component's SOURCE may say. It can never see a `javascript:` URL, because
  * that value does not live in the source — it arrives at render time inside
  * the kind instance's own data (`href={data.url}`). Five live component bodies

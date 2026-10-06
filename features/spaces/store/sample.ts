@@ -2,7 +2,10 @@
 // every sub-page through the store, so the sample is a real saved Space like any other.
 
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
-import { RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
+import { agencyTokenByName, viewOnInstalledKeys, type AgencyTables } from "../data/agency-install";
+import type { SpaceDbView } from "../data/sources";
+import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
+import { b, RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_GAP_RULES, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SAMPLE_LINK_LINES, SEED_ROOT_ID, sampleLinkLine, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -22,14 +25,78 @@ function remap(blocks: SpaceBlock[], ids: Map<string, SpaceId>): SpaceBlock[] {
   });
 }
 
-/** The phase-1 sample held `slot` placeholders where the data blocks now sit; swap them in place. */
-function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: boolean } {
+const plain = (blk: SpaceBlock) => (blk.text ?? []).map((x) => x.text).join("");
+const isEmptyLine = (blk: SpaceBlock) => blk.type === "text" && !blk.children?.length && plain(blk) === "";
+
+/** Round 13: the plan column's gaps match the reference's empty lines (SAMPLE_GAP_RULES) — an older
+ *  page with fewer is topped up after the same block; never shortened. */
+function topUpGaps(list: SpaceBlock[]): { list: SpaceBlock[]; changed: boolean } {
   let changed = false;
-  const walk = (list: SpaceBlock[]): SpaceBlock[] =>
-    list.map((blk): SpaceBlock | null => {
+  const out: SpaceBlock[] = [];
+  for (let i = 0; i < list.length; i++) {
+    out.push(list[i]);
+    const rule = SAMPLE_GAP_RULES.find((r) => plain(list[i]).startsWith(r.anchor));
+    if (!rule) continue;
+    let n = 0;
+    while (i + 1 + n < list.length && isEmptyLine(list[i + 1 + n])) n++;
+    for (let k = n; k < rule.lines; k++) {
+      out.push(b.text(""));
+      changed = true;
+    }
+  }
+  return { list: out, changed };
+}
+
+/** The phase-1 sample held `slot` placeholders where the data blocks now sit; swap them in place. */
+function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: SpaceBlock[]; changed: boolean } {
+  let changed = false;
+  const walk = (all: SpaceBlock[]): SpaceBlock[] => {
+    const gaps = topUpGaps(all);
+    if (gaps.changed) changed = true;
+    return gaps.list.map((blk): SpaceBlock | null => {
       const label = typeof blk.props?.label === "string" ? blk.props.label : "";
-      if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings());
-      if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase());
+      if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings(tables));
+      if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase(tables));
+      // Round 11: a block over the in-memory preview reads the organization's installed tables instead.
+      if (blk.type === "database" && blk.props?.sample === AGENCY_SAMPLE_ID) {
+        const token = agencyTokenByName(typeof blk.props.title === "string" ? blk.props.title : undefined);
+        if (token) {
+          changed = true;
+          const t = tables[token];
+          const { sample: _sample, ...rest } = blk.props;
+          blk = { ...blk, props: { ...rest, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
+        }
+      }
+      // Round 12: a block on an agency table in ANOTHER organization (an earlier add installed into the
+      // active organization, not the page's) reads the tables installed beside the page instead.
+      const src = blk.type === "database" ? (blk.props?.source as { kind?: string; tableId?: string } | undefined) : undefined;
+      if (src?.kind === "table" && !blk.props?.sample) {
+        const token = agencyTokenByName(typeof blk.props?.title === "string" ? blk.props.title : undefined);
+        const t = token ? tables[token] : null;
+        if (t && src.tableId !== t.tableId) {
+          changed = true;
+          blk = { ...blk, props: { ...blk.props, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
+        }
+      }
+      // Round 16: views name fields by the install's keys (an upgraded install renamed a converted column).
+      if (blk.type === "database" && !blk.props?.sample && Array.isArray(blk.props?.views)) {
+        const token = agencyTokenByName(typeof blk.props.title === "string" ? blk.props.title : undefined);
+        const keys = token ? tables[token]?.keys : undefined;
+        const vs = blk.props.views as SpaceDbView[];
+        const moved = vs.map((v) => viewOnInstalledKeys(v, keys));
+        if (moved.some((v, i) => v !== vs[i])) {
+          changed = true;
+          blk = { ...blk, props: { ...blk.props, views: moved } };
+        }
+      }
+      // Round 11: a client grid already on the installed table hides its reverse links and sorts by start date.
+      if (blk.type === "database" && !blk.props?.sample && blk.props?.title === "Clients") {
+        const vs = blk.props.views as Array<{ layout?: string; hiddenFields?: string[] }> | undefined;
+        if (vs?.some((v) => v.layout === "grid" && !v.hiddenFields?.includes("linked:nps_surveys"))) {
+          changed = true;
+          blk = { ...blk, props: { ...blk.props, views: vs.map((v) => (v.layout === "grid" ? viewOnInstalledKeys({ ...v, hiddenFields: SAMPLE_CLIENT_HIDDEN, sorts: SAMPLE_CLIENT_SORTS }, tables.client.keys) : v)) } };
+        }
+      }
       const views = blk.type === "database" ? (blk.props?.views as Array<{ hiddenFields?: string[] }> | undefined) : undefined;
       if (views?.[0]?.hiddenFields?.includes("surveys")) {
         changed = true;
@@ -62,10 +129,30 @@ function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: bo
       }
       return blk.children ? { ...blk, children: walk(blk.children) } : blk;
     }).filter((blk): blk is SpaceBlock => blk !== null);
+  };
   return { blocks: walk(blocks), changed };
 }
 
 /** The phase-1 cover and icon (a CSS gradient, a palm glyph) become the bundled landscape and portrait. */
+/** An older sample's link lines (another link after "Claude Skills - " / "Auto posting …") read as
+ *  screenshot 3 writes them. */
+export function upgradeLinkLines(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: boolean } {
+  let changed = false;
+  const walk = (all: SpaceBlock[]): SpaceBlock[] =>
+    all.map((blk) => {
+      const kids = blk.children?.length ? walk(blk.children) : blk.children;
+      const spans = blk.type === "text" ? (blk.text ?? []) : [];
+      const line = spans.length ? SAMPLE_LINK_LINES.find((l) => spans[0]?.text === l.lead) : undefined;
+      if (line && (spans.length !== 2 || spans[1]?.link !== line.url || spans[1]?.text !== line.url)) {
+        changed = true;
+        return { ...blk, text: sampleLinkLine(line), ...(kids ? { children: kids } : {}) };
+      }
+      return kids === blk.children ? blk : { ...blk, children: kids };
+    });
+  const out = walk(blocks);
+  return { blocks: changed ? out : blocks, changed };
+}
+
 function upgradeMedia(doc: SpaceDoc): Partial<SpaceDoc> | null {
   const oldCover = doc.cover && "url" in doc.cover && doc.cover.url === "gallery:gradient-sunset";
   const oldIcon = doc.icon && "icon" in doc.icon && doc.icon.icon === "TreePalm";
@@ -73,25 +160,60 @@ function upgradeMedia(doc: SpaceDoc): Partial<SpaceDoc> | null {
   return { ...(oldCover ? { cover: SAMPLE_COVER } : {}), ...(oldIcon ? { icon: SAMPLE_ICON } : {}) };
 }
 
+/** Where the sample's pieces are filed. The page and its tables always share one organization. */
+export interface SampleTargets {
+  /** The organization an existing page lives in (the sample page's own organization). */
+  orgOf: (id: SpaceId) => Promise<string>;
+  /** The organization to write a NEW sample into (the active one; asks when none is chosen). */
+  writeOrg: () => Promise<string>;
+  /** Makes (or finds) the agency's real tables — the full gallery install — in that organization. */
+  install: (organizationId: string) => Promise<AgencyTables>;
+  /** Creates the top-level sample page in that organization. */
+  createRoot: (organizationId: string, title: string) => Promise<SpaceDoc>;
+}
+
 /** Adds the sample once: when it is already in the tree, that copy is brought up to date and returned
- *  (no second "The Traveling SMM™ OS"). Otherwise creates it; `onProgress(done, total)` after each page. */
-export async function addTravelingSmmSample(store: SpacesStore, onProgress?: (done: number, total: number) => void): Promise<SpaceDoc> {
-  const existing = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
+ *  (no second "The Traveling SMM™ OS"), with the tables installed into THAT page's organization.
+ *  Otherwise the page and its tables are both made in the write organization; `onProgress(done, total)`
+ *  after each page. The page's data blocks point at the installed tables. */
+/**
+ * The person's sample page: the FIRST top-level page made with the sample's title. "Use template" copies
+ * carry the same title (Notion keeps it), so the oldest one is the sample — never a later copy, whose
+ * organization would get a second install.
+ */
+export async function findSamplePage(store: SpacesStore): Promise<{ id: string } | null> {
+  const named = (await store.list()).filter((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
+  if (named.length <= 1) return named[0] ?? null;
+  const docs = (await Promise.all(named.map((s) => store.get(s.id).catch(() => null)))).filter((d): d is SpaceDoc => Boolean(d));
+  docs.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  return docs[0] ?? named[0];
+}
+
+export async function addTravelingSmmSample(
+  store: SpacesStore,
+  targets: SampleTargets,
+  onProgress?: (done: number, total: number) => void,
+): Promise<SpaceDoc> {
+  const existing = await findSamplePage(store);
   if (existing) {
     const doc = await store.get(existing.id);
     if (doc) {
-      const up = upgradeSlots(doc.blocks);
+      const tables = await targets.install(await targets.orgOf(doc.id));
+      const slots = upgradeSlots(doc.blocks, tables);
+      const up = upgradeLinkLines(slots.blocks);
       const media = upgradeMedia(doc);
-      return up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
+      return slots.changed || up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
     }
   }
-  const docs = seedSpaces();
+  const organizationId = await targets.writeOrg();
+  const tables = await targets.install(organizationId);
+  const docs = seedSpaces(tables);
   const rootSeed = docs.find((d) => d.id === SEED_ROOT_ID)!;
   const kids = docs.filter((d) => d.parentId === SEED_ROOT_ID);
   const total = docs.length;
   const ids = new Map<string, SpaceId>();
 
-  const root = await store.create({ parentId: null, title: rootSeed.title });
+  const root = await targets.createRoot(organizationId, rootSeed.title);
   ids.set(rootSeed.id, root.id);
   onProgress?.(1, total);
 

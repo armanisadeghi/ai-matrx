@@ -7,7 +7,7 @@
 // action, in a plain dialog. The confirm button is ALWAYS live — the warnings
 // inform, they never gate (validation-offers-never-blocks).
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +33,7 @@ export function PitchAdvisoryConfirmDialog({
   entityType,
   entityId,
   onConfirm,
+  children,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -44,6 +45,8 @@ export function PitchAdvisoryConfirmDialog({
   entityType: string;
   entityId: string;
   onConfirm: () => Promise<void>;
+  /** A step of the caller's own between the warnings and the button (e.g. the outlet groups). */
+  children?: ReactNode;
 }) {
   const advisories = usePitchAdvisories(organizationId, open ? request : null);
   const [running, setRunning] = useState(false);
@@ -80,6 +83,7 @@ export function PitchAdvisoryConfirmDialog({
             Nothing to flag against your PR settings.
           </p>
         )}
+        {children}
         <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="quiet" onClick={() => onOpenChange(false)} disabled={running}>
             Cancel

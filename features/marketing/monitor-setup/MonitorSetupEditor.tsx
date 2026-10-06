@@ -540,6 +540,12 @@ function MonitorSetupEditorBody({
     }
     // A new draft waits for who-is-a-person, so no alias is preselected by a race.
     if (!trackerParam && (roster.loading || facts.isPending)) return;
+    // ...and for the server's name-shape check on the aliases (a CEO's name saved as an alias).
+    if (!trackerParam && !setup && !setupError) return;
+    const personShapedAliases = setup
+      ? ((setup as SetupFacts & { alias_person_names?: string[] })
+          .alias_person_names ?? [])
+      : null;
     const tz = browserTimezone();
     if (tracker.data) {
       const fallback = newDraft({
@@ -562,6 +568,7 @@ function MonitorSetupEditorBody({
       siteId,
       timezone: tz,
       people,
+      personShapedAliases,
     });
     seededDraft.current = seeded;
     setDraft(seeded);
@@ -578,6 +585,8 @@ function MonitorSetupEditorBody({
     aliases,
     roster.loading,
     facts.isPending,
+    setup,
+    setupError,
     keptStatus,
     applyKept,
   ]);
@@ -686,7 +695,14 @@ function MonitorSetupEditorBody({
       );
       setProposal(result);
       setDraft((current) =>
-        current ? applyProposal(current, result.proposal, people) : current,
+        current
+          ? applyProposal(
+              current,
+              result.proposal,
+              people,
+              result.held_person_names ?? [],
+            )
+          : current,
       );
       const dropped = result.proposal.dropped_without_basis?.length ?? 0;
       toast.success(

@@ -859,6 +859,18 @@ export function tryGetEntityInfoByTable(
   return info ? withIcon(info) : null;
 }
 
+/**
+ * Where a `content.document` row opens. A document's TYPE decides its door: a
+ * Space (`format = 'spaces'`) is its own page, every other document opens in
+ * the Markdown Studio (the `document` entry's `hrefFor`). Callers that hold the
+ * row's `format` use this; `hrefFor(id)` alone cannot know it.
+ */
+export const SPACE_DOCUMENT_FORMAT = "spaces";
+export function documentHref(id: string, format: string | null | undefined): string {
+  if (format === SPACE_DOCUMENT_FORMAT) return `/spaces/${encodeURIComponent(id)}`;
+  return `/markdown-studio?source=document&id=${encodeURIComponent(id)}`;
+}
+
 /** Resolve a raw table name only when it maps to exactly one registered entity. */
 export function tryGetEntityInfoByUniqueTableName(
   table: string,

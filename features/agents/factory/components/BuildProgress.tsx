@@ -54,6 +54,8 @@ export interface BuildProgressProps {
   onFinished?: (state: FactoryBuildState) => void;
   /** Called when the person starts a follow-up build (Build unproven) — the door tracks the new id. */
   onRebuilt?: (buildId: string) => void;
+  /** Called with the agent "Keep it anyway" kept — a door that places the agent (a mandate's holder) uses it. */
+  onKept?: (agentId: string) => void;
   className?: string;
 }
 
@@ -191,7 +193,7 @@ function OutcomePanel({
   );
 }
 
-export function BuildProgress({ buildId, onFinished, onRebuilt, className }: BuildProgressProps) {
+export function BuildProgress({ buildId, onFinished, onRebuilt, onKept, className }: BuildProgressProps) {
   // A "Build unproven" follow-up replaces the build this view tracks.
   const [rebuiltId, setRebuiltId] = useState<string | null>(null);
   const currentId = rebuiltId ?? buildId;
@@ -240,7 +242,9 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
   const keep = async () => {
     setBusy(true);
     try {
-      setKeptAgent(await keepBuildAnyway(currentId));
+      const agentId = await keepBuildAnyway(currentId);
+      setKeptAgent(agentId);
+      onKept?.(agentId);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not keep the draft");
     } finally {
@@ -253,7 +257,15 @@ export function BuildProgress({ buildId, onFinished, onRebuilt, className }: Bui
     if (!req?.spec) return;
     setBusy(true);
     try {
-      const next = await startAgentBuild({ spec: req.spec, mandateKey: req.mandate_key ?? null, unproven: true });
+      // The follow-up keeps the door that started this build, and a builtin stays a builtin
+      // (an ownerless spec; the server honors it for admins only).
+      const next = await startAgentBuild({
+        spec: req.spec,
+        mandateKey: req.mandate_key ?? null,
+        unproven: true,
+        door: req.door ?? null,
+        builtin: req.spec.owner === null,
+      });
       setRebuiltId(next);
       onRebuilt?.(next);
     } catch (e) {

@@ -415,6 +415,16 @@ const nextConfig = {
     // pin it to its browser ES build everywhere.
     resolveAlias: {
       jspdf: "jspdf/dist/jspdf.es.min.js",
+      // The demos AppShell is shared by every demo route. Keep the registrations
+      // appended in v0.4.2884 out of that global graph, but retain the same
+      // synchronous module for every non-demos profile. The demos route layout
+      // imports the full registry before any demo client surface renders.
+      // Turbopack resolves an alias VALUE as a module specifier from the project
+      // root — an absolute path made every (core) route 500 with "Module not found".
+      "@/providers/chatUiRegistrationProfile":
+        MATRX_PROFILE === "demos"
+          ? "./providers/chatUiRegistrationBase.ts"
+          : "./providers/chatUiRegistration.ts",
       ...sidemenuStubAliases(),
     },
   },
@@ -981,6 +991,19 @@ const nextConfig = {
   webpack: (config, { isServer, dev }) => {
     // First apply your existing webpack config
     config = configureWebpack(config, { isServer });
+
+    // Keep webpack builds on the same registration profile as Turbopack. The
+    // physical module is intentionally a TypeScript no-op, so omitting this
+    // alias silently leaves demos without the base registrations.
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@/providers/chatUiRegistrationProfile": path.join(
+        __dirname,
+        MATRX_PROFILE === "demos"
+          ? "providers/chatUiRegistrationBase.ts"
+          : "providers/chatUiRegistration.ts",
+      ),
+    };
 
     if (FORCE_EXCLUDE_SIDEMENU) {
       config.resolve.alias = {

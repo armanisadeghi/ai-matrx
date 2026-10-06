@@ -23,7 +23,7 @@
  *      document: `fetch(`, `new XMLHttpRequest`, `new WebSocket`,
  *      `new EventSource`, `sendBeacon(`, `window.top`, `window.parent`,
  *      `parent.postMessage`. It matches CALL shapes, never bare words: the
- *      component-source-gate's banned-identifier vocabulary is legitimately
+ *      code-runtime gate.s banned-identifier vocabulary is legitimately
  *      present in the bundle as string data, and a string is not a capability.
  *
  * ───────────────────────────────────────────────────────────────────────────

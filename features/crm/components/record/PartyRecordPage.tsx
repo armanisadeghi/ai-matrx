@@ -687,6 +687,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                   {/* Everything linked to this person or company, both ways (W1.4). */}
                   <LinkedRecordsSection
                     token="party"
+                    backLinksShownElsewhere
                     id={party.id}
                     title={party.display_name ?? ""}
                     className="flex flex-col gap-1.5 rounded-lg border border-border bg-card p-3"
@@ -703,6 +704,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                       until somebody confirms a row here. */}
                   <ContactCandidatesCard
                     partyId={party.id}
+                    organizationId={party.organization_id}
                     onChanged={refresh}
                     onStateChange={(rows, loadError) => {
                       setContactCandidates(rows);
@@ -716,6 +718,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                         what do they cover?" */}
                     <JournalistIntelligenceCard
                       partyId={party.id}
+                      organizationId={party.organization_id}
                       storedActivity={storedJournalistActivity(party)}
                     />
                   </div>

@@ -67,6 +67,15 @@ function hostOf(answer: InstallAnswer) {
   };
 }
 
+/**
+ * The platform agent an answer's `agent` names. Every template door answers its agent in ONE shape
+ * (`{name, copied, platform_agent, bindings:[{variable, tableToken, table_id}]}`, the store's one
+ * helper since 2026-10-06). A template may name none: null, and the caller says so.
+ */
+function platformAgentOf(agent: object): { id: string; name: string } | null {
+  return (agent as { platform_agent?: { id: string; name: string } | null }).platform_agent ?? null;
+}
+
 /** True when the install answered an agent the host still has to copy. */
 export function agentStillToCopy(answer: InstallAnswer): boolean {
   if (!answer.agent || answer.agent.copied) return false;
@@ -191,11 +200,13 @@ export async function addInstalledAgent(
     // 1 — the template's agent.
     const agent = answer.agent;
     if (agent && agentStillToCopy(current)) {
+      const platform = platformAgentOf(agent);
+      if (!platform) throw new Error(`The template's assistant "${agent.name}" does not say which assistant to copy.`);
       const done = await copyAndNote(ports.copier, ports, installId, organizationId, {
-        platformAgent: agent.platform_agent.name,
-        platformAgentId: agent.platform_agent.id,
+        platformAgent: platform.name,
+        platformAgentId: platform.id,
         name: agent.name,
-        bindings: agent.bindings.map((b) => {
+        bindings: (agent.bindings ?? []).map((b) => {
           const full = b["binding"] as TemplatePlanBinding | undefined;
           return {
             variable: String(b["variable"] ?? ""),

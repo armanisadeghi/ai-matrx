@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-06T03:02:50.406Z",
+  "generated_at": "2026-10-06T10:50:17.450Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -109,6 +109,24 @@
       "filename": "anonlanes_the_optin_withdraws_an_undeclared_lane.sql",
       "checksum": "af621dea27edd93feeb9126def93b485709fbe12b575e60a3ef9c35429af2916",
       "applied_at": "2026-09-22 01:36:21.496133+00"
+    },
+    "migrations/campaign/ap4_a_platform_record_lists_the_custom_rows_that_link_to_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "ap4_a_platform_record_lists_the_custom_rows_that_link_to_it.sql",
+      "checksum": "72b83e00ef57201bee429190622b69db1d98bd28b71522ea6107dbf4cf60ad1a",
+      "applied_at": "2026-10-06 04:01:49+00"
+    },
+    "migrations/campaign/ap4_b_a_platform_type_lists_its_columns_with_their_origin.sql": {
+      "source": "matrx-frontend",
+      "filename": "ap4_b_a_platform_type_lists_its_columns_with_their_origin.sql",
+      "checksum": "4124d0e9cca8dc9a42351cf5a58606202ab39c3119b1608757921078bc81e015",
+      "applied_at": "2026-10-06 04:22:54+00"
+    },
+    "migrations/campaign/ap4_c_a_choice_field_is_filtered_by_the_word_a_person_sees.sql": {
+      "source": "matrx-frontend",
+      "filename": "ap4_c_a_choice_field_is_filtered_by_the_word_a_person_sees.sql",
+      "checksum": "25f558707772dca2079028b6ca5939f12371bef723a96cdf3deb8dc2476d84df",
+      "applied_at": "2026-10-06 04:24:48+00"
     },
     "migrations/campaign/apprvfix_the_queue_holds_a_record_write_too.sql": {
       "source": "matrx-frontend",
@@ -487,6 +505,24 @@
       "filename": "chair_pb_a_view_or_a_page_gets_a_public_address.sql",
       "checksum": "3ddbf5902647dcd9830b029960834f6d6d527b3702ea1676026bccf668e03607",
       "applied_at": "2026-10-02 19:02:32.416309+00"
+    },
+    "migrations/campaign/chair_template_upgrade_b_seed_rows_carry_an_icon.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_template_upgrade_b_seed_rows_carry_an_icon.sql",
+      "checksum": "eb96db0b7c3e5bfc6b7a9e452899c3aaef4fdf5f76c04e5b62e0354c0aa2717d",
+      "applied_at": "2026-10-06 09:31:00.838234+00"
+    },
+    "migrations/campaign/chair_template_upgrade_c_one_agent_shape.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_template_upgrade_c_one_agent_shape.sql",
+      "checksum": "d2ec67c500d99bd11c20c9311c5bcc7cb06fe5370bad4841fb8558ab8377ab1b",
+      "applied_at": "2026-10-06 10:50:15.102999+00"
+    },
+    "migrations/campaign/chair_template_upgrade_one_door.sql": {
+      "source": "matrx-frontend",
+      "filename": "chair_template_upgrade_one_door.sql",
+      "checksum": "8cd64958fb68621fe6910470141034cf57a9507fd357eb29d480b682c6922cb3",
+      "applied_at": "2026-10-06 06:58:49.35895+00"
     },
     "migrations/campaign/chair_tf_one_template_family_one_install_door.sql": {
       "source": "matrx-frontend",
@@ -914,6 +950,12 @@
       "checksum": "3d88847c4cdc5341e54146b552cf9964af6482740a01f3e45352c4dd4a9df68a",
       "applied_at": "2026-10-05 21:11:05.257565+00"
     },
+    "migrations/campaign/chairstd_b_a_task_completed_anywhere_stamps_its_completed_at.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairstd_b_a_task_completed_anywhere_stamps_its_completed_at.sql",
+      "checksum": "33645a398b890581d7333d319fba738179f1f59fa8929af0e70b33f2c913fea1",
+      "applied_at": "2026-10-06 08:54:55.200262+00"
+    },
     "migrations/campaign/chairstep_doorsonly2_revoke_client_writes.sql": {
       "source": "matrx-frontend",
       "filename": "chairstep_doorsonly2_revoke_client_writes.sql",
@@ -991,6 +1033,12 @@
       "filename": "chairworld_g_a_public_reader_is_told_the_table_is_public.sql",
       "checksum": "a6c898014e344a4dac696e2917d27087ca2a6121901ce4dcf85c76c7cd06dedf",
       "applied_at": "2026-10-06 03:02:48.987281+00"
+    },
+    "migrations/campaign/chairworld_h_a_public_reader_sees_where_each_value_came_from.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairworld_h_a_public_reader_sees_where_each_value_came_from.sql",
+      "checksum": "5e1242d4324d1d6540da32ef0e7954dcea9df75eb236780a2ca4dc3ca86ea9af",
+      "applied_at": "2026-10-06 03:58:55.691113+00"
     },
     "migrations/campaign/checklists_a_checklist_is_a_template_of_work.sql": {
       "source": "matrx-frontend",
@@ -5108,6 +5156,12 @@
       "checksum": "4d0a69441df5d2db2d012d93feb81c961168841d3606695444fa2ba9b9606439",
       "applied_at": "2026-10-02 23:58:34.927557+00"
     },
+    "migrations/campaign/records_seed_trigger_teardown.sql": {
+      "source": "matrx-frontend",
+      "filename": "records_seed_trigger_teardown.sql",
+      "checksum": "cb53ddfde346db3b173493a9088c46a233ba135343e8dc0dc2ba7ef9709f0043",
+      "applied_at": "2026-10-06 08:57:49.78932+00"
+    },
     "migrations/campaign/records_the_data_page_builder_keeps_its_tool.sql": {
       "source": "matrx-frontend",
       "filename": "records_the_data_page_builder_keeps_its_tool.sql",
@@ -5233,6 +5287,12 @@
       "filename": "registrykernel_a_level_move_bumps_the_kernel_fixture_in_its_own_transaction.sql",
       "checksum": "1087dd16bd91cb07c258ae93f8dd5e500ffe5f7ef69c076bdab36b61312711dc",
       "applied_at": "2026-09-27 12:19:31.876503+00"
+    },
+    "migrations/campaign/relation_words_with_icons_many.sql": {
+      "source": "matrx-frontend",
+      "filename": "relation_words_with_icons_many.sql",
+      "checksum": "6ea74038b6a99b28d9be0b1157a486d61f356f7498c17bf2d51d54bccde9c93b",
+      "applied_at": "2026-10-06 07:40:17.454355+00"
     },
     "migrations/campaign/reldecl_a_column_that_stops_pointing_takes_its_edges.sql": {
       "source": "matrx-frontend",

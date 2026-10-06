@@ -23,7 +23,8 @@ import {
   LayoutTemplate,
   Undo2,
 } from "lucide-react";
-import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useParams, usePathname } from "next/navigation";
 import { useEffect, useState, type DragEvent } from "react";
 
 import { toast } from "@/lib/toast";
@@ -33,6 +34,7 @@ import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces, type DropPlacement } from "../state/SpacesProvider";
 import { ImportButton } from "./ImportMenu";
 import { TemplateGallery } from "./TemplateGallery";
+import { signInHref } from "../workspace/LoadAccessState";
 
 const EXPANDED_KEY = "spaces:expanded";
 
@@ -350,6 +352,7 @@ function TrashPopover() {
 
 export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }) {
   const spaces = useSpaces();
+  const pathname = usePathname();
   const params = useParams<{ spaceId?: string }>();
   const currentId = params?.spaceId ?? null;
   const [expanded, setExpanded] = useState<Set<SpaceId>>(new Set());
@@ -420,7 +423,17 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
           {roots.map((s) => (
             <TreeRow key={s.id} space={s} depth={0} {...rowProps} />
           ))}
-          {spaces.loadError ? <div className="spaces-row-empty spaces-row-error">{spaces.loadError}</div> : null}
+          {spaces.access === "signed-out" ? (
+            <Link className="spaces-row-empty" href={signInHref(pathname)}>
+              Sign in to see your pages
+            </Link>
+          ) : spaces.access === "no-access" ? (
+            <div className="spaces-row-empty">No access to these pages</div>
+          ) : spaces.loadError ? (
+            <button type="button" className="spaces-row-empty spaces-row-error" onClick={spaces.retryLoad}>
+              {spaces.loadError} Try again
+            </button>
+          ) : null}
           <div
             className="spaces-root-drop"
             data-drop={drag.id && drag.over === "__root" ? "after" : undefined}

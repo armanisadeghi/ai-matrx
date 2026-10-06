@@ -3,7 +3,7 @@
 // features/agent-apps/embed/AppletParts.tsx — WHAT AN APPLET MAY PLACE INSIDE ITSELF.
 //
 // v7 APPS-ON-DATA item 3 (Arman's endgame, 2026-10-02: applets nest, and mix a person's own data with
-// platform features). An applet's code imports these from "@/applets" (allowed-imports.ts):
+// platform features). An applet's code imports these from "@/applets" (a documented @ai-matrx/code-runtime scope entry):
 //   <DataPage id="<page id>" />   a page built from tables, read and written as the VIEWER
 //   <Applet id="<app id>" />      another applet, drawn in place by the one app renderer
 // Data reach is the viewer's own: the page reads through the store's doors under her session, so an

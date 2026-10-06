@@ -189,7 +189,7 @@ import {
 } from "@/features/canvas/host/conversation/contextPreviewKind";
 import { useOpenConversationDocuments } from "@/features/canvas/host/conversation/documentsKind";
 import { useOpenScratchpadPanel } from "@/features/quick-actions/canvas/scratchpadKind";
-import "@/providers/chatUiRegistration";
+import "@/providers/chatUiRegistrationProfile";
 // The rich-document rendering engine (P14).
 import "@/providers/chatMarkdownRegistration";
 import "@/providers/chatContentIrRegistration";

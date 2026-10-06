@@ -4,7 +4,7 @@
  * AgentAppFullyCustomShell — Tier-3 escape hatch.
  *
  * The whole UI lives in user-supplied React code (Babel sandbox, same
- * allowed-imports scope as Tier-2 slot overrides). Rather than the
+ * @ai-matrx/code-runtime scope as Tier-2 slot overrides). Rather than the
  * stale `(onExecute, response, ...)` callback contract used by the
  * legacy renderer, custom apps here receive the full `useAgentApp()`
  * output as props — variables, setVariable, submit, response,
@@ -32,7 +32,7 @@ import { selectPrimaryRequest } from "@ai-matrx/chat/agents/redux/execution-syst
 import { cancelExecution } from "@ai-matrx/chat/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { APP_RUN_ERROR_TITLE } from "@/features/agent-apps/components/app-run-error";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import { AgentAppErrorBoundary } from "@/features/agent-apps/components/AgentAppErrorBoundary";
 import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/PublicMessageOptionsMenu";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -81,7 +81,7 @@ export function AgentAppFullyCustomShell({
   // crashing through the error boundary on every keystroke from the editor.
   const { Component: CustomApp, error: compileError } = useMemo(
     () =>
-      compileSlotComponent({
+      compileStoredComponent({
         code: sourceCode,
         allowedImports: app.allowed_imports,
         origin: `agent-app:${app.id}`,

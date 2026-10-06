@@ -1,140 +1,50 @@
 /**
  * execute-kind-body — the FRAME half of the sandbox compile.
  *
- * Runs INSIDE the sandbox iframe. It never sees Babel: the parent already
- * transformed the body (`transform/transform-kind-body.ts`) and hands over a
- * `SandboxBodyPayload`. All this does is build the allowlisted scope and call
- * `new Function` — the step CSP `'unsafe-eval'` exists for, which is harmless
- * here precisely because the frame's `connect-src` is `'none'` (plan §1.3).
+ * Runs INSIDE the sandbox iframe and never sees Babel: the parent already
+ * transformed the body (`transform/transform-kind-body.ts`). This links and
+ * evaluates it with `@ai-matrx/code-runtime/execute` against the same stored
+ * scope the page uses (`lib/code-runtime/stored-scope.ts`; the frame bundle's
+ * esbuild aliases swap in the frame-safe Markdown, copy and Applet parts).
+ * `new Function` is what CSP `'unsafe-eval'` exists for, harmless here because
+ * the frame's `connect-src` is `'none'`.
  *
- * The scope is built by the SHARED allowlist (`buildComponentScope`) so the
- * frame and the page can never disagree about what a component may import.
- * The one substitution happens at bundle time, not here: every
- * `@/components/MarkdownStream` path is aliased to the frame-safe renderer
- * (chair ruling 1). Nothing in this file knows or cares.
- *
- * The dangerous-global stubs are ALWAYS on in the frame. In the page they were
- * a backstop over bare identifiers; here they are belt to the frame's braces,
- * and they keep the error sentence an author already sees identical.
+ * The dangerous-global stubs are ALWAYS on in the frame — belt to the frame's
+ * braces, and the sentence an author sees is the page's, word for word.
  */
-import {
-    bindImportedIdentifiers,
-    buildComponentScope,
-    getScopeFunctionParameters,
-    patchScopeForMissingIdentifiers,
-} from "@/features/agent-apps/utils/allowed-imports";
-import {
-    COMPONENT_BANNED_CALLABLES,
-    COMPONENT_BANNED_GLOBALS,
-} from "@/features/agent-apps/utils/component-source-gate";
-import {
-    collectUnresolvedImports,
-    type UnresolvedImport,
-} from "@/features/agent-apps/utils/patch-scope-identifiers";
+import { describeUnresolved, executeGraph, type UnresolvedImport } from "@ai-matrx/code-runtime/execute";
+import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import type { SandboxBodyPayload } from "../transform/transform-kind-body";
-
-/**
- * The same throwing stubs `compile-slot.ts` installs in the page, built from
- * the SAME vocabulary (`component-source-gate`'s banned lists) rather than
- * imported from compile-slot — that module pulls `@babel/standalone`, and
- * 2.3 MB of Babel may never enter the frame (plan §1.4). The sentence is
- * word-for-word the page's, so an author sees one message, not two.
- */
-function buildDangerousGlobalStubs(): Record<string, unknown> {
-    const stubs: Record<string, unknown> = {};
-    for (const name of [
-        ...COMPONENT_BANNED_GLOBALS,
-        ...COMPONENT_BANNED_CALLABLES,
-    ]) {
-        stubs[name] = function bannedGlobal(): never {
-            throw new Error(
-                `This component tried to use "${name}". Components stored in the ` +
-                    "database run inside the signed-in page and may not reach the " +
-                    "network, browser storage, or the JavaScript evaluator. Render what " +
-                    "the Shape hands you in props.data, and use a Shape action for " +
-                    "anything you need from the server.",
-            );
-        };
-    }
-    return stubs;
-}
 
 export interface ExecuteKindBodyResult {
     Component: React.ComponentType<Record<string, unknown>> | null;
     /** A human sentence. Never null-with-no-component and no reason. */
     error: string | null;
-    /**
-     * Names the body referenced that the scope could not supply. Each renders
-     * as a visible stand-in; the mount reports them to the host (Law 4).
-     */
+    /** Names the body referenced that the scope could not supply (each renders as a stand-in). */
     unresolvedImports: UnresolvedImport[];
 }
 
 /** One sentence naming every unresolved import, for the host's error queue. */
-export function describeUnresolvedImports(
-    unresolved: readonly UnresolvedImport[],
-): string {
-    const names = unresolved
-        .map((u) =>
-            u.identifier === "*"
-                ? `"${u.importPath}" (not in the allowlist)`
-                : u.importPath
-                  ? `${u.identifier} from "${u.importPath}"`
-                  : u.identifier,
-        )
-        .join(", ");
-    return `This component imports something the sandbox cannot supply, so it shows a marked placeholder there: ${names}.`;
+export function describeUnresolvedImports(unresolved: readonly UnresolvedImport[]): string {
+    return `This component imports something the sandbox cannot supply, so it shows a marked placeholder there: ${unresolved.map(describeUnresolved).join(", ")}.`;
 }
 
-export function executeKindBody(
-    payload: SandboxBodyPayload,
-): ExecuteKindBodyResult {
-    const { transformed, importBindings, declaredTopLevel, allowedImports } =
-        payload;
-
-    if (!transformed || !transformed.trim()) {
+export function executeKindBody(payload: SandboxBodyPayload): ExecuteKindBodyResult {
+    if (!payload?.graph || Object.keys(payload.graph.modules ?? {}).length === 0) {
         return {
             Component: null,
             error: "The component body arrived empty, so there is nothing to render.",
             unresolvedImports: [],
         };
     }
-
-    try {
-        const declared = new Set(declaredTopLevel ?? []);
-        const scope = buildComponentScope(allowedImports ?? []);
-        bindImportedIdentifiers(importBindings ?? [], scope, declared);
-        Object.assign(scope, buildDangerousGlobalStubs());
-        patchScopeForMissingIdentifiers(transformed, scope, declared);
-        const unresolvedImports = collectUnresolvedImports(scope);
-
-        const { paramNames, paramValues } = getScopeFunctionParameters(
-            scope,
-            declared,
-        );
-        // eslint-disable-next-line no-new-func
-        const factory = new Function(...paramNames, transformed);
-        const Component = factory(...paramValues) as
-            | React.ComponentType<Record<string, unknown>>
-            | null;
-
-        if (typeof Component !== "function") {
-            return {
-                Component: null,
-                error: "This component compiled but returned nothing to render. A kind component must export a React component as its default export.",
-                unresolvedImports,
-            };
-        }
-
-        return { Component, error: null, unresolvedImports };
-    } catch (err) {
-        return {
-            Component: null,
-            error:
-                err instanceof Error
-                    ? err.message
-                    : "Unknown error while evaluating the component inside the sandbox.",
-            unresolvedImports: [],
-        };
-    }
+    provideStoredComponentScopeModules();
+    const result = executeGraph(
+        payload.graph,
+        { entries: payload.allowedImports ?? [], shadowDangerousGlobals: true },
+        // The frame reports through its own channel (the mount's onError).
+        { origin: "kind-sandbox", onUnresolved: () => undefined },
+    );
+    return result.ok
+        ? { Component: result.Component, error: null, unresolvedImports: result.unresolvedImports }
+        : { Component: null, error: result.error.message, unresolvedImports: [] };
 }

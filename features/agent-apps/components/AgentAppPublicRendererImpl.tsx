@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import { AlertCircle, Copy, Check, MoreHorizontal } from "lucide-react";
 import { useApiAuth } from "@/hooks/useApiAuth";
-import { compileSlotComponent } from "../utils/compile-slot";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import MarkdownStream from "@/components/MarkdownStream";
 import PublicMessageOptionsMenu from "@ai-matrx/chat/public-chat/components/PublicMessageOptionsMenu";
@@ -546,10 +546,10 @@ function CustomComponentRenderer({
     if (TestComponent) return TestComponent;
     if (!app.component_code) return null;
 
-    // The ONE compile path (compile-slot): import-binding contract, author
+    // The ONE compile path (@ai-matrx/code-runtime): import-binding contract, author
     // top-level shadowing, and unresolved imports shown + reported under this
     // app's origin. This used to be a regex-strip twin that did none of that.
-    const { Component, error } = compileSlotComponent({
+    const { Component, error } = compileStoredComponent({
       code: app.component_code,
       allowedImports: app.allowed_imports,
       origin: `agent-app:${app.id}`,

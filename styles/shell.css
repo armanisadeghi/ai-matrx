@@ -1933,6 +1933,18 @@ body[style*="pointer-events: none"] {
   );
 }
 
+/* A DIALOG BODY THAT SCROLLS ENDS CLEAR OF FLOATING CHROME TOO. A dialog is portalled outside
+   `.shell-main`, so the page runway above never reaches it; at its max height its last row
+   sat under the assists bar. This takes the same measured runway, less the margin the dialog
+   already leaves under itself (5dvh at max-h-[90dvh]) — nothing is added when nothing floats. */
+.dialog-scroll-clear-floating::after {
+  content: "";
+  display: block;
+  flex: none;
+  block-size: max(0px, calc(var(--matrx-floating-clearance) - 5dvh));
+  pointer-events: none;
+}
+
 .shell-main::after,
 .shell-main
   > .h-full:is(.overflow-y-auto, .overflow-auto):not(

@@ -16,6 +16,7 @@
 //   - "record-view: host" reaches no Detail host, or DetailHost.tsx binds no customFields port;
 //   - a reason-less "record-view: none", or the views without a section rise above the ceiling;
 //   - a <MatrxDataTable> sets no rowToken and is not in the ledger's tablesPending;
+//   - a record view carries no "Linked records" section (<EntityBackLinks>, rendered by <EntityCustomFields> or mounted beside a StandardRecordForm);
 //   - lib/record-pages/record-pages.generated.json is stale.
 //
 // THE LIVE PART (a section that renders nothing, a dead branch) is the safety-net walk
@@ -89,6 +90,21 @@ describe("G1 self-test: the guard can fail", () => {
     expect(stripped).not.toEqual(cardText);
     const c = buildCensus({ root: ROOT, entityTypes, ledger, overrides: { [card]: stripped } });
     expect(c.problems.join("\n")).toMatch(/declares "party" but renders no <EntityCustomFields entityToken="party">/);
+  });
+
+  // LINKED RECORDS (AP-4): the party view must mount <EntityBackLinks>; losing it is red.
+  it("a record view without Linked records is red", () => {
+    const stripped = cardText.replace(/<EntityBackLinks\b[^>]*\/>/g, "");
+    expect(stripped).not.toEqual(cardText);
+    const c = buildCensus({ root: ROOT, entityTypes, ledger, overrides: { [card]: stripped } });
+    expect(c.problems.join("\n")).toMatch(/record view without Linked records — "party" renders no <EntityBackLinks/);
+  });
+
+  it("the shared custom-fields line that stops rendering Linked records is red", () => {
+    const shared = "features/unified-data/components/EntityCustomFields.tsx";
+    const text = readFileSync(join(ROOT, shared), "utf8").replace(/<EntityBackLinks\b[^>]*\/>/g, "");
+    const c = buildCensus({ root: ROOT, entityTypes, ledger, overrides: { [shared]: text } });
+    expect(c.problems.join("\n")).toMatch(/renders no <EntityBackLinks>/);
   });
 
   it("a new undeclared route is red", () => {

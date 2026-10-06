@@ -35,10 +35,14 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { SectionCard } from "./SectionCard";
+import { Textarea } from "@/components/ui/textarea";
+import { RecipientFitBadge } from "@/features/crm/pre-send-check/RecipientFitBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   partyId: string;
+  /** The organization that owns this party; every write names it. */
+  organizationId: string;
   /** Read straight off the party record so the card renders with no request. */
   storedActivity?: ActivityVerdict | null;
 }
@@ -99,7 +103,7 @@ function fitBadge(fit: BeatProfile["campaign_fit"]): {
   }
 }
 
-export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
+export function JournalistIntelligenceCard({ partyId, organizationId, storedActivity }: Props) {
   const [activity, setActivity] = useState<ActivityVerdict | null>(
     storedActivity ?? null,
   );
@@ -108,6 +112,12 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const [deriving, setDeriving] = useState(false);
   const [unreachable, setUnreachable] = useState(false);
   const [orgRequired, setOrgRequired] = useState(false);
+  // "Check against a pitch": the journalist fit check (matrx-journalist-fit-check)
+  // for one pitch the person pastes. Same door the pre-send check uses fresh.
+  const [pitchOpen, setPitchOpen] = useState(false);
+  const [pitch, setPitch] = useState("");
+  const [pitchChecking, setPitchChecking] = useState(false);
+  const [pitchFit, setPitchFit] = useState<{ verdict: string | null; note: string | null } | null>(null);
 
   const loadBeat = useCallback(async () => {
     try {
@@ -131,7 +141,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const check = async () => {
     setChecking(true);
     try {
-      const verdict = await checkJournalistActivity(partyId);
+      const verdict = await checkJournalistActivity(partyId, organizationId);
       setActivity(verdict);
       toast.success(verdict.summary);
     } catch (cause) {
@@ -144,13 +154,33 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const derive = async () => {
     setDeriving(true);
     try {
-      const profile = await deriveJournalistBeat(partyId);
+      const profile = await deriveJournalistBeat(partyId, organizationId);
       setBeat(profile);
       toast.success(profile.summary);
     } catch (cause) {
       toast.error(extractErrorMessage(cause));
     } finally {
       setDeriving(false);
+    }
+  };
+
+  const checkPitch = async () => {
+    if (!pitch.trim()) return;
+    setPitchChecking(true);
+    try {
+      const profile = await deriveJournalistBeat(partyId, organizationId, pitch);
+      setBeat(profile);
+      const stored = isJsonObject(profile.journalist_fit) ? profile.journalist_fit : null;
+      const verdict = typeof stored?.verdict === "string" ? stored.verdict : null;
+      const note = typeof stored?.note === "string" ? stored.note : null;
+      setPitchFit({
+        verdict: verdict ?? (profile.insufficient_evidence ? "unknown" : null),
+        note: note ?? profile.campaign_fit_reason ?? profile.summary ?? null,
+      });
+    } catch (cause) {
+      toast.error(extractErrorMessage(cause));
+    } finally {
+      setPitchChecking(false);
     }
   };
 
@@ -296,6 +326,41 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
                   their fit against.
                 </p>
               )}
+            </div>
+          )}
+        </section>
+
+        <section className="space-y-2" data-testid="journalist-pitch-check">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Pitch fit</p>
+            {!pitchOpen && (
+              <Button variant="outline" onClick={() => setPitchOpen(true)}>
+                Check against a pitch
+              </Button>
+            )}
+          </div>
+          {pitchOpen && (
+            <>
+              <Textarea
+                value={pitch}
+                onChange={(e) => setPitch(e.target.value)}
+                placeholder="Paste the pitch: subject and body"
+                rows={4}
+                aria-label="Pitch to check"
+              />
+              <Button
+               
+                onClick={() => void checkPitch()}
+                disabled={!pitch.trim() || pitchChecking}
+              >
+                {pitchChecking ? "Checking…" : "Check fit"}
+              </Button>
+            </>
+          )}
+          {pitchFit && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <RecipientFitBadge fit={{ verdict: pitchFit.verdict, basis: "fresh", note: pitchFit.note }} />
+              {pitchFit.note && <span className="text-muted-foreground">{pitchFit.note}</span>}
             </div>
           )}
         </section>

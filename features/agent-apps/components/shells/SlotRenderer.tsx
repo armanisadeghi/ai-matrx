@@ -7,7 +7,7 @@
  * Shells call this for every customisable slot. When the app row sets
  * `slot_overrides[slot] === 'custom'` AND non-empty `slot_code[slot]`
  * source exists, the custom component is compiled (Babel sandbox, same
- * allowed-imports scope as fully_custom apps) and rendered with
+ * @ai-matrx/code-runtime scope as fully_custom apps) and rendered with
  * `props`. Otherwise the shell's default `fallback` renders.
  *
  * Compilation errors are surfaced inline so the override author can fix
@@ -17,7 +17,7 @@
 
 import { useMemo } from "react";
 import { AlertTriangle } from "lucide-react";
-import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import { AgentAppErrorBoundary } from "@/features/agent-apps/components/AgentAppErrorBoundary";
 import type {
   AgentAppSlotName,
@@ -69,7 +69,7 @@ export function SlotRenderer<P extends Record<string, unknown>>({
     if (!isCustom || !source.trim()) {
       return { Component: null, error: null };
     }
-    return compileSlotComponent({
+    return compileStoredComponent({
       code: source,
       allowedImports,
       origin: `agent-app:${appId}:slot:${slot}`,

@@ -1097,7 +1097,7 @@ function renderHtmlCode(ctx: BlockDispatchContext) {
 // React/JSX/TSX → compile to a live component once finalized (auto-preview
 // like html). Streaming/incomplete shows the code; compile/runtime errors
 // fall back to the code block silently. Execution is allowlist-scoped and
-// in-app — see features/dynamic-react/compileReactComponent.
+// in-app — see features/dynamic-react/compileCodeBlock.
 function renderReactCode(ctx: BlockDispatchContext) {
   const { block, index, isStreamActive } = ctx;
   return (

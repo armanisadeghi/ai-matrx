@@ -32,7 +32,7 @@
 import React from "react";
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
+import { defaultComponentEntries } from "@ai-matrx/code-runtime/scope";
 import { transformKindComponentBody } from "@/features/content-ir/sandbox/transform/transform-kind-body";
 import {
     IN_FLIGHT_ACTION_CAPACITY,
@@ -140,7 +140,7 @@ function transformFor(
     const allowedImports =
         Array.isArray(declared) && declared.every((e) => typeof e === "string")
             ? (declared as string[])
-            : getDefaultImportsForKindComponents();
+            : defaultComponentEntries();
     const result = transformKindComponentBody(
         resolution.componentSource ?? "",
         allowedImports,

@@ -205,6 +205,12 @@ export interface StartAgentBuildInput {
   /** R34 "Build unproven": save with fewer than 3 examples, judged on its first 3 runs. */
   unproven?: boolean;
   idempotencyKey?: string;
+  /** The browser door starting it (aidream `pipeline_door.DOORS`), recorded on the build. */
+  door?: string | null;
+  /** A platform builtin (a mandate's system rung). The server honors it for admins only. */
+  builtin?: boolean;
+  /** The organization the agent is born in, when the door names one (an org rung). */
+  organizationId?: string;
 }
 
 /**
@@ -212,12 +218,18 @@ export interface StartAgentBuildInput {
  * runs detached). Every door's UI starts builds through this one call.
  */
 export async function startAgentBuild(input: StartAgentBuildInput): Promise<string> {
-  const { data } = await postJson<{ build_id: string }>("/agent-factory/builds", {
-    spec: input.spec,
-    mandate_key: input.mandateKey ?? null,
-    unproven: input.unproven ?? false,
-    idempotency_key: input.idempotencyKey ?? `person-build:${crypto.randomUUID()}`,
-  });
+  const { data } = await postJson<{ build_id: string }>(
+    "/agent-factory/builds",
+    {
+      spec: input.spec,
+      mandate_key: input.mandateKey ?? null,
+      unproven: input.unproven ?? false,
+      idempotency_key: input.idempotencyKey ?? `person-build:${crypto.randomUUID()}`,
+      ...(input.door ? { door: input.door } : {}),
+      ...(input.builtin ? { builtin: true } : {}),
+    },
+    input.organizationId ? { organizationId: input.organizationId } : {},
+  );
   if (!data?.build_id) throw new Error("The Agent Factory did not return a build id");
   return data.build_id;
 }

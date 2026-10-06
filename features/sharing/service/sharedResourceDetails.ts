@@ -9,6 +9,7 @@ import type { createClient } from "@/utils/supabase/server";
 // landing on "Select an organization first". Never build `?org=` by hand here.
 import { linkCarriesItsOrganization } from "@/lib/organizations/linkCarriesItsOrganization";
 import { getResourceSharePath } from "@/utils/permissions/registry";
+import { documentHref } from "@/features/scopes/registry/entityRegistry";
 
 export type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -152,6 +153,29 @@ export async function getResourceDetails(
         return {
           title: ("title" in data ? data.title : data.name) || "Untitled study item",
           url: await linkCarriesItsOrganization(`${siteUrl}${path}`, data.organization_id),
+        };
+      }
+
+      // A DOCUMENT (content.document) — its TYPE decides the door: a Space is /spaces/<id>, any
+      // other document opens in the Markdown Studio. Never the generic `/documents/<id>` guess
+      // the default branch below would build (that route loads a different table).
+      case "document": {
+        const { data } = await supabase
+          .schema("content")
+          .from("document")
+          .select("title, format, organization_id")
+          .eq("id", resourceId)
+          .maybeSingle();
+        if (!data) return null;
+        const url = await linkCarriesItsOrganization(
+          `${siteUrl}${documentHref(resourceId, data.format)}`,
+          data.organization_id,
+        );
+        const parsed = new URL(url);
+        return {
+          title: data.title || (data.format === "spaces" ? "Untitled space" : "Untitled document"),
+          url,
+          path: `${parsed.pathname}${parsed.search}`,
         };
       }
 

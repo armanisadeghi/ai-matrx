@@ -1,7 +1,8 @@
 /* features/spaces/spaces.css — Notion's page geometry on our tokens (layout of the Spaces canvas).
  *
- * Sizes copy Notion (708px text column, 96px gutters, 40px title, 16px/1.5 blocks, 240px sidebar,
- * 45px top bar). Colors: the ten content colors are a palette the writer picks (Notion's values,
+ * Sizes copy Notion (708px text column, 96px gutters, 240px sidebar, 45px top bar). Type is measured on
+ * Arman's reference screenshots (round 11): title 36px and 15px/1.5 blocks — the references' title is 89% and
+ * their text 94.6% of Notion's nominal 40px / 16px at this geometry. Colors: the ten content colors are a palette the writer picks (Notion's values,
  * stepped for dark); every chrome color comes from our semantic tokens. */
 
 /* On the page root AND on <html> while Spaces is open: menus, the phone drawer and popovers portal
@@ -729,7 +730,7 @@
 .spaces-title {
   margin: 0 0 4px;
   padding: 3px 2px;
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 700;
   line-height: 1.2;
   white-space: pre-wrap;
@@ -760,6 +761,7 @@
 }
 .spaces-editor .bn-default-styles {
   font-family: inherit;
+  font-size: 15px;
 }
 .spaces-editor .bn-block-outer {
   line-height: 1.5;
@@ -817,6 +819,25 @@
 .spaces-editor .bn-block-content[data-content-type="checkListItem"][data-checked="true"][data-text-color] .bn-inline-content {
   opacity: 0.7;
   text-decoration-color: currentColor;
+}
+/* Notion's rhythm, measured on the reference at 2000px: a link-to-page row sits 32.5px from the next
+   (in a callout box or not), a to-do 29px, a plain paragraph 40px — an empty one too (screenshot 3:
+   "The Quote Pages" → "The reporting system" → "Claude Skills" 40px apart, four lines to "Auto
+   posting"); toggle headings 59px apart. */
+.spaces-editor .bn-block-content[data-content-type="paragraph"] {
+  padding-top: 8.25px;
+  padding-bottom: 8.25px;
+}
+.spaces-editor .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-is-toggleable="true"]) + .bn-block-outer:has(> .bn-block > [data-content-type="heading"][data-is-toggleable="true"]) {
+  margin-top: 23px;
+}
+.spaces-editor .bn-block-content[data-content-type="page"] {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.spaces-editor .bn-block-content[data-content-type="checkListItem"] {
+  padding-top: 2px;
+  padding-bottom: 2px;
 }
 .spaces-editor .bn-block-content[data-content-type="checkListItem"] > div > input {
   width: 16px;
@@ -1047,6 +1068,13 @@
 .spaces-column-resizer:active {
   background: hsl(var(--primary) / 0.25);
 }
+/* A column or column list holding ProseMirror's node selection (a click in the gutter, the caret
+   landing at a list's edge) draws no selection box: between two columns its 4px ring read as a
+   permanent blue bar. Notion marks columns only on hover (the resize gutter above). */
+.spaces-editor [data-content-type="column"] > ::after,
+.spaces-editor [data-content-type="columnList"] > ::after {
+  content: none !important;
+}
 
 /* ---------- slot (phase-2 placeholder) ---------- */
 
@@ -1221,6 +1249,13 @@
 .spaces-chart-title > svg { flex: none; }
 .spaces-chart-title > span { overflow: hidden; text-overflow: clip; }
 .spaces-db-tools { display: flex; align-items: center; gap: 2px; flex: none; }
+/* The toolbar magnifier opens in place in the icon row (Notion), never as a row of its own. */
+.spaces-db-search { display: inline-flex; align-items: center; gap: 6px; height: 28px; color: var(--spaces-ink-soft); }
+.spaces-db-search input { width: 180px; height: 28px; font-size: 14px; }
+/* Notion shows the tab strip's "+" (add a view) only while the pointer is over the block (or focus is in it). */
+.spaces-db-tabs [aria-label="Add view"] { transition: opacity 120ms ease; }
+.spaces-db-frame:not(:hover):not(:focus-within) .spaces-db-tabs [aria-label="Add view"] { opacity: 0; }
+@media (hover: none) { .spaces-db-frame .spaces-db-tabs [aria-label="Add view"] { opacity: 1; } }
 .spaces-db-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: var(--spaces-ink-soft); flex: none; }
 .spaces-db-icon-sm { width: 22px; height: 22px; }
 .spaces-db-icon:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
@@ -1230,6 +1265,16 @@
 .spaces-db-new-more { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid rgb(255 255 255 / 0.25); }
 .spaces-db-new-main:hover, .spaces-db-new-more:hover { background: #0077d4; }
 .spaces-db-body { min-width: 0; overflow-x: auto; }
+/* N1 — BlockNote's `.bn-shadcn svg:not([class*="size-"]) { width: revert }` (unlayered, from the editor
+   around every block) beat the design system's layered sizing of its own glyphs: the table magnifier's
+   glyph grew to the whole field (247px) and pushed the typed text out of sight. A design-system glyph
+   inside the editor takes its own layered size back. */
+.bn-shadcn svg[class*="matrx-"]:not([class*="size-"]) { width: revert-layer; height: revert-layer; }
+.bn-shadcn .matrx-tap-search-input { font-size: 14px; }
+/* A relation cell's linked page reads in body ink (Notion's page chip), not the browser's blue underline
+   that BlockNote's `.bn-shadcn .bn-editor a { color: revert }` restores inside the editor. */
+.spaces-editor .spaces-db-frame .spaces-db-body a { color: inherit; text-decoration: none; }
+.spaces-editor .spaces-db-frame .spaces-db-body a:hover { text-decoration: underline; }
 .spaces-db-newrow { display: flex; align-items: center; gap: 6px; width: 100%; height: 34px; padding: 0 8px; font-size: 14px; color: var(--spaces-ink-soft); border-radius: 4px; }
 .spaces-db-newrow:hover { background: var(--spaces-hover); }
 .spaces-db-menurow { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 30px; padding: 4px 8px; border-radius: 6px; font-size: 14px; }
@@ -1403,4 +1448,69 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 @media (max-width: 640px) {
   .spaces-db-frame .spaces-db-body table { table-layout: auto !important; width: max-content !important; }
   .spaces-db-frame .spaces-db-body th, .spaces-db-frame .spaces-db-body td { min-width: 140px; }
+}
+
+/* ── Collaboration: comments (H1), presence (H3), share (H4) ── */
+.spaces-body { display: flex; flex: 1 1 auto; min-height: 0; }
+.spaces-body > .spaces-scroll { flex: 1 1 auto; min-width: 0; }
+.spaces-content { position: relative; }
+.spaces-comments-panel { display: flex; flex: 0 0 380px; flex-direction: column; gap: 8px; min-height: 0; width: 380px; padding: 10px 12px 0; border-left: 1px solid var(--spaces-rule); background: var(--spaces-page-bg); }
+@media (max-width: 767px) {
+  .spaces-comments-panel { position: fixed; inset: auto 0 0 0; z-index: 40; width: auto; height: 70dvh; border-left: 0; border-top: 1px solid var(--spaces-rule); border-radius: 12px 12px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+}
+.spaces-comments-head { display: flex; align-items: center; height: 28px; }
+.spaces-comments-title { font-size: 14px; font-weight: 600; color: var(--spaces-ink); }
+.spaces-comments-list { display: flex; flex: 1 1 auto; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-bottom: 16px; }
+.spaces-thread { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border: 1px solid var(--spaces-rule); border-radius: 10px; background: var(--spaces-page-bg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.04); }
+.spaces-thread[data-resolved="true"] { opacity: 0.75; }
+.spaces-thread-quote { display: block; padding-left: 8px; border-left: 2px solid var(--spaces-comment-mark); color: var(--spaces-ink-soft); font-size: 13px; line-height: 1.4; text-align: left; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.spaces-comment { display: flex; flex-direction: column; gap: 2px; }
+.spaces-comment-head { display: flex; align-items: center; gap: 6px; min-height: 28px; font-size: 13px; }
+.spaces-comment-author { font-weight: 600; color: var(--spaces-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spaces-comment-time { color: var(--spaces-ink-soft); font-size: 12px; white-space: nowrap; }
+.spaces-comment-actions { display: inline-flex; opacity: 0; transition: opacity 120ms; }
+.spaces-comment:hover .spaces-comment-actions, .spaces-comment:focus-within .spaces-comment-actions { opacity: 1; }
+@media (pointer: coarse) { .spaces-comment-actions { opacity: 1; } }
+.spaces-comment-body { padding-left: 26px; }
+.spaces-thread-reply { padding-left: 26px; }
+.spaces-avatar { flex: none; }
+.spaces-avatar-fallback { font-size: 10px; font-weight: 600; }
+.spaces-page-comments { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 4px; }
+.spaces-comment-bubble { position: absolute; right: 24px; display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 6px; border-radius: 6px; color: var(--spaces-ink-soft); font-size: 12px; transform: translateY(2px); }
+.spaces-comment-bubble:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
+:root { --spaces-comment-mark: rgb(255 212 0 / 0.8); --spaces-comment-fill: rgb(255 212 0 / 0.28); }
+.dark { --spaces-comment-mark: rgb(255 212 0 / 0.6); --spaces-comment-fill: rgb(255 212 0 / 0.18); }
+::highlight(spaces-comment) { background-color: var(--spaces-comment-fill); text-decoration: underline; text-decoration-color: var(--spaces-comment-mark); text-decoration-thickness: 2px; }
+.spaces-presence { display: inline-flex; align-items: center; margin-right: 6px; }
+.spaces-presence-avatar { display: inline-flex; margin-left: -6px; border-radius: 9999px; box-shadow: 0 0 0 2px var(--spaces-page-bg); }
+.spaces-presence-avatar:first-child { margin-left: 0; }
+.spaces-presence-more { margin-left: 4px; color: var(--spaces-ink-soft); font-size: 12px; }
+.spaces-mention-person { color: var(--spaces-ink-soft); }
+
+/* The drag handle sits in a wrapper that keeps the press from the block menu (C16 / round 17). */
+.spaces-drag-handle {
+  display: inline-flex;
+}
+
+/* Nested blocks (a to-do's sub-to-dos, a list's children) carry no vertical rule beside them (Notion). */
+.spaces-editor .bn-block-group .bn-block-group > .bn-block-outer::before {
+  display: none;
+}
+
+/* Toggle triangles at Notion's size and weight: a ~6 × 8 px triangle in Notion's grey (not the text ink). */
+.spaces-editor .bn-toggle-button {
+  padding: 5px;
+  color: var(--spaces-ink-soft);
+}
+.spaces-editor .bn-toggle-button > svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* The open view's tab: Notion's grey pill at toolbar size (screenshot 1 "All"). */
+.spaces-view-pill {
+  height: 28px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
 }

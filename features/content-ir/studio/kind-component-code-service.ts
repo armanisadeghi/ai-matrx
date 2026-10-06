@@ -12,7 +12,7 @@ import type { Database, Json } from "@/types/database.types";
 import { readAllRows } from "@ai-matrx/data/db";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
-import { componentSourceGate } from "@/features/agent-apps/utils/component-source-gate";
+import { componentSourceGate } from "@ai-matrx/code-runtime/gate";
 
 import { getClaimsUser } from "@/utils/supabase/claimsUser";
 export type KindComponentCodeClient = SupabaseClient<Database>;
@@ -167,7 +167,7 @@ export async function saveKindComponentCode(
   // write path ran NO check at all while the aidream agent-tool path ran an
   // import allowlist — so a component saved here could `fetch()` the reader's
   // session data to any host. Both paths now run the SAME rule
-  // (features/agent-apps/utils/component-source-gate.ts and its Python twin in
+  // (@ai-matrx/code-runtime's `gate` and its Python twin in
   // aidream kind_shared.py, held byte-identical by a parity test), and a
   // database trigger on content_ir.kind_component backstops both.
   const refusal = componentSourceGate(args.componentSource, {
