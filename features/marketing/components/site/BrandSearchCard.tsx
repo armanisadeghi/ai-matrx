@@ -145,8 +145,8 @@ export function BrandSearchCard({
                   <span
                     className={
                       signal.severity === "high"
-                        ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive"
-                        : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning"
+                        ? "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-destructive/10 text-destructive-ink"
+                        : "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-warning/10 text-warning-ink"
                     }
                   >
                     <AlertTriangle className="h-3 w-3" />

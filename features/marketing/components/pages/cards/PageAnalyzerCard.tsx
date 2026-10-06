@@ -111,7 +111,7 @@ export function PageAnalyzerCard({
       <div className="grid gap-3 p-3">
         {state.status === "idle" ? (
           <div className="flex min-h-28 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
               <AGENT_ICON className="h-4 w-4" />
             </span>
             <div>

@@ -268,7 +268,7 @@ export function AiVisibilityReport({
               <summary className="cursor-pointer list-none p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <span className="rounded-xl bg-primary/10 p-2 text-primary">
+                    <span className="rounded-xl bg-primary/10 p-2 text-primary-ink">
                       <MessageSquareQuote className="h-5 w-5" />
                     </span>
                     <div>

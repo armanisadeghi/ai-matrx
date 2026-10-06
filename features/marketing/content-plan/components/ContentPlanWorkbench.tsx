@@ -818,7 +818,7 @@ export function ContentPlanWorkbench({
           active={bulkDeepen.run.status === "running"}
         />
         {site && !site.brand_id ? (
-          <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+          <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive-ink">
             No brand assigned — set one in Marketing → Sites.
           </div>
         ) : null}

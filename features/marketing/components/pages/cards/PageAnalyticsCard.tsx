@@ -220,7 +220,7 @@ export function PageAnalyticsCard({ page }: { page: MarketingPage }) {
         ) : null}
         {!loading && !loadError && rows && rows.length === 0 ? (
           <div className="flex min-h-28 items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
               <LineChart className="h-4 w-4" />
             </span>
             <div>

@@ -1775,7 +1775,7 @@ function BuiltInProviderCard({
     <section className="rounded-lg border border-border bg-card">
       <div className="flex min-h-14 items-start justify-between gap-3 border-b border-border p-3">
         <div className="flex min-w-0 gap-2">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
             <Icon className="h-4 w-4" />
           </div>
           <div className="min-w-0">
@@ -1918,7 +1918,7 @@ function UrlChangeIntakeCard({
     <section className="rounded-lg border border-border bg-card">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border p-3">
         <div className="flex min-w-0 gap-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
             <Radio className="h-4 w-4" />
           </span>
           <div>

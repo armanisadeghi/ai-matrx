@@ -32,14 +32,14 @@ const RENDER_CAP = 400;
 type Filter = "all" | "new" | "conflict" | "failed";
 
 const STATE_BADGE: Record<RouteState, { label: string; className: string }> = {
-  new: { label: "New", className: "bg-primary/15 text-primary" },
+  new: { label: "New", className: "bg-primary/15 text-primary-ink" },
   exists: {
     label: "Already planned",
     className: "bg-muted text-muted-foreground",
   },
-  conflict: { label: "Conflict", className: "bg-warning/15 text-warning" },
-  created: { label: "Created", className: "bg-success/15 text-success" },
-  failed: { label: "Failed", className: "bg-destructive/15 text-destructive" },
+  conflict: { label: "Conflict", className: "bg-warning/15 text-warning-ink" },
+  created: { label: "Created", className: "bg-success/15 text-success-ink" },
+  failed: { label: "Failed", className: "bg-destructive/15 text-destructive-ink" },
 };
 
 const STATE_RAIL: Record<RouteState, string> = {

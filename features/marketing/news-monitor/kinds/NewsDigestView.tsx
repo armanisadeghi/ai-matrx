@@ -47,9 +47,9 @@ export interface NewsDigestViewProps {
 
 const PILL_TONE = {
   neutral: "border-border text-muted-foreground hover:border-primary/60 hover:text-foreground",
-  good: "border-success/40 bg-success/10 text-success hover:border-success",
-  warn: "border-warning/40 bg-warning/10 text-warning hover:border-warning",
-  info: "border-primary/40 bg-primary/10 text-primary hover:border-primary",
+  good: "border-success/40 bg-success/10 text-success-ink hover:border-success",
+  warn: "border-warning/40 bg-warning/10 text-warning-ink hover:border-warning",
+  info: "border-primary/40 bg-primary/10 text-primary-ink hover:border-primary",
 } as const;
 
 /** A count that opens its list: a button in the run view, a link anywhere else. */

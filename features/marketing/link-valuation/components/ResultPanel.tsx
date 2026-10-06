@@ -103,7 +103,7 @@ export function ResultPanel({ config, result }: Props) {
               key={gate.key}
               className={`flex items-start gap-2 rounded-md border p-2 text-xs ${
                 gate.action === "reject"
-                  ? "border-destructive/40 bg-destructive/10 text-destructive"
+                  ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
                   : "border-border bg-muted text-foreground"
               }`}
             >

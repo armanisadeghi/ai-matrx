@@ -512,7 +512,7 @@ export default function PressRoomWorkspace({
           ? (() => {
               const failed = Object.keys(rulings.failures ?? {}).length;
               const tone = failed
-                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
                 : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
               return (
                 <div

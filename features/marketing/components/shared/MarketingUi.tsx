@@ -329,12 +329,12 @@ export function MetricCell({
         {icon ? (
           <span
             className={cn(
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary",
+              "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink",
               tone === "good" &&
                 "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
               tone === "warning" &&
                 "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-              tone === "bad" && "bg-destructive/10 text-destructive",
+              tone === "bad" && "bg-destructive/10 text-destructive-ink",
             )}
           >
             {icon}

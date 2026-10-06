@@ -159,7 +159,7 @@ const ACTION_ICON = {
 
 const ACTION_TONE = {
   go: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-  build: "border-primary/40 bg-primary/10 text-primary",
+  build: "border-primary/40 bg-primary/10 text-primary-ink",
   wait: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
   ask: "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-400",
   off: "border-border bg-muted text-muted-foreground",

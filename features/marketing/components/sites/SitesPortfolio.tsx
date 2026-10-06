@@ -329,7 +329,7 @@ export function SitesPortfolio({
               />
               <section className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-primary/25 bg-card px-3 py-2">
                 <div className="flex min-w-0 items-center gap-2.5">
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                     <SearchCheck className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">

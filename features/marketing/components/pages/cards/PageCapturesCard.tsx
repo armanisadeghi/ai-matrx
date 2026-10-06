@@ -128,7 +128,7 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
               "inline-flex items-center gap-1.5 rounded-md border px-2 py-1",
               hasDesktopCapture
                 ? "border-border bg-muted/30 text-foreground"
-                : "border-warning/40 bg-warning/10 text-warning",
+                : "border-warning/40 bg-warning/10 text-warning-ink",
             )}
           >
             <Monitor className="h-3.5 w-3.5" />
@@ -139,7 +139,7 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
               "inline-flex items-center gap-1.5 rounded-md border px-2 py-1",
               hasMobileCapture
                 ? "border-border bg-muted/30 text-foreground"
-                : "border-warning/40 bg-warning/10 text-warning",
+                : "border-warning/40 bg-warning/10 text-warning-ink",
             )}
           >
             <Smartphone className="h-3.5 w-3.5" />
@@ -241,7 +241,7 @@ export function PageCapturesCard({ page }: { page: MarketingPage }) {
                             type="button"
                             title="Delete capture"
                             onClick={() => setDeleting(capture)}
-                            className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            className="inline-flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>

@@ -555,7 +555,7 @@ export function PageDraftEditor({
         </div>
 
         {reviewStale ? (
-          <p className="flex items-start gap-1.5 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning">
+          <p className="flex items-start gap-1.5 rounded-md border border-warning/40 bg-warning/10 p-2 text-[11px] text-warning-ink">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
             <span>
               Page changed since review — use <strong>Check the facts</strong>{" "}

@@ -94,7 +94,7 @@ import { CONTEXT_MENU_ENTITY_KEY } from "@/features/context-menu-v3/types";
 import type { ContextMenuExtraItem } from "@/features/context-menu-v3/types";
 
 const TIER_BADGE_CLASS: Record<PublisherTier, string> = {
-  critical: "bg-primary/15 text-primary",
+  critical: "bg-primary/15 text-primary-ink",
   aggregator: "bg-accent text-accent-foreground",
   high_value: "bg-muted text-foreground",
   vertical: "bg-muted text-muted-foreground",

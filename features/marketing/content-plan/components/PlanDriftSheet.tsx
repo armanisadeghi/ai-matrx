@@ -312,7 +312,7 @@ export function PlanDriftSheet({
 }
 
 const TONE_CLASS = {
-  danger: "bg-destructive/15 text-destructive",
+  danger: "bg-destructive/15 text-destructive-ink",
   warning: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   info: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
 } as const;

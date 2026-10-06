@@ -32,10 +32,10 @@ export function IndexabilityVerdictBanner({
 }) {
   const tone =
     evaluation.verdict === "indexable"
-      ? "border-success/40 bg-success/10 text-success"
+      ? "border-success/40 bg-success/10 text-success-ink"
       : evaluation.verdict === "check"
-        ? "border-warning/40 bg-warning/10 text-warning"
-        : "border-destructive/40 bg-destructive/10 text-destructive";
+        ? "border-warning/40 bg-warning/10 text-warning-ink"
+        : "border-destructive/40 bg-destructive/10 text-destructive-ink";
   const Icon =
     evaluation.verdict === "indexable"
       ? CheckCircle

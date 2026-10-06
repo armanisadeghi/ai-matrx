@@ -178,7 +178,7 @@ export function MakeClipDialog({
           ) : null}
           <StageList stages={stages} running={running} />
           {error ?? rejoin.error ? (
-            <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+            <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive-ink">
               <span>{error ?? rejoin.error}</span>
               <ErrorAlchemyMenu error={error ?? rejoin.error ?? ""} />
             </div>

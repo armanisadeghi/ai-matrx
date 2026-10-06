@@ -62,7 +62,7 @@ import {
 
 const URGENCY_CHIP: Record<DeadlineUrgency, string> = {
   critical:
-    "border-destructive/50 bg-destructive/10 text-destructive font-semibold",
+    "border-destructive/50 bg-destructive/10 text-destructive-ink font-semibold",
   urgent:
     "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-semibold",
   soon: "border-border bg-muted text-foreground",

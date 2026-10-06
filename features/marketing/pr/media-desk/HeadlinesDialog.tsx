@@ -285,7 +285,7 @@ export function HeadlinesDialog({
           ) : null}
           <StageList stages={stages} running={running} />
           {error ? (
-            <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+            <div className="flex items-start justify-between gap-2 rounded-md border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive-ink">
               <span>{error}</span>
               <ErrorAlchemyMenu error={error} />
             </div>

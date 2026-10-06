@@ -140,7 +140,7 @@ export function SetupShapeColumn({
                   ) : null}
                   <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] leading-none">
                     {committed ? (
-                      <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary">
+                      <span className="inline-flex items-center gap-1 rounded bg-primary/15 px-1.5 py-0.5 font-medium text-primary-ink">
                         <Check className="h-3 w-3" />
                         Current shape
                       </span>
@@ -152,7 +152,7 @@ export function SetupShapeColumn({
                     ) : null}
                     {overrides ? (
                       <span
-                        className="rounded bg-warning/15 px-1.5 py-0.5 font-medium text-warning"
+                        className="rounded bg-warning/15 px-1.5 py-0.5 font-medium text-warning-ink"
                         title="Your organization's profile overrides the platform archetype of this name."
                       >
                         overrides builtin

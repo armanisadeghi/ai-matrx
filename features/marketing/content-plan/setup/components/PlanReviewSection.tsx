@@ -35,9 +35,9 @@ const SEVERITY_LABEL: Record<ReviewSeverity, string> = {
 };
 
 const SEVERITY_CLASS: Record<ReviewSeverity, string> = {
-  gap: "bg-primary/15 text-primary",
-  mismatch: "bg-destructive/15 text-destructive",
-  structure: "bg-warning/15 text-warning",
+  gap: "bg-primary/15 text-primary-ink",
+  mismatch: "bg-destructive/15 text-destructive-ink",
+  structure: "bg-warning/15 text-warning-ink",
   priority: "bg-muted text-muted-foreground",
 };
 

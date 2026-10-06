@@ -132,7 +132,7 @@ function ProviderCard({
     <article className="flex min-h-36 flex-col rounded-xl border border-border bg-card shadow-sm">
       <header className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             <MessageSquareQuote className="h-4 w-4" />
           </span>
           <div>
@@ -833,7 +833,7 @@ export function AiVisibilityWorkspace({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <div className="flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                 <ScanSearch className="h-4 w-4" />
               </span>
               <div>
@@ -962,7 +962,7 @@ export function AiVisibilityWorkspace({
       </section>
 
       {run.status === "error" && run.error ? (
-        <section className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+        <section className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
           <p>{run.error}</p>
           <ErrorAlchemyMenu error={run.error} />

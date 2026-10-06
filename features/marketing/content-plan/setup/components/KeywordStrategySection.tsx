@@ -42,8 +42,8 @@ const ROLE_LABEL: Record<PageRole, string> = {
 };
 
 const ROLE_CLASS: Record<PageRole, string> = {
-  money: "bg-success/15 text-success",
-  supporting: "bg-primary/15 text-primary",
+  money: "bg-success/15 text-success-ink",
+  supporting: "bg-primary/15 text-primary-ink",
   navigational: "bg-muted text-muted-foreground",
 };
 

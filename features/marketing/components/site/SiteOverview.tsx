@@ -1396,7 +1396,7 @@ function WorkspaceDirectory({
             href={entry.href}
             className="group flex items-center gap-2.5 rounded-lg border border-border/70 px-2.5 py-2 transition-colors hover:border-primary/50 hover:bg-muted/40"
           >
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
               {entry.icon}
             </span>
             <span className="min-w-0 flex-1">
@@ -1758,7 +1758,7 @@ function InitializeCard({
   return (
     <section className="rounded-lg border border-primary/30 bg-primary/5 p-4">
       <div className="flex flex-wrap items-start gap-4">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-primary/15 text-primary-ink">
           <Rocket className="h-5 w-5" />
         </span>
         <div className="min-w-64 flex-1">

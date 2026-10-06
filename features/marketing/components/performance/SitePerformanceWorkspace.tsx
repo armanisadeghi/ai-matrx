@@ -765,7 +765,7 @@ export function SitePerformanceWorkspace() {
                   <p className="rounded-md bg-amber-500/10 p-2 text-amber-700 dark:text-amber-300">
                     <strong>{distribution.needs_work ?? 0}</strong> needs work
                   </p>
-                  <p className="rounded-md bg-destructive/10 p-2 text-destructive">
+                  <p className="rounded-md bg-destructive/10 p-2 text-destructive-ink">
                     <strong>{distribution.poor ?? 0}</strong> poor &lt;50
                   </p>
                 </div>

@@ -296,7 +296,7 @@ export function PushToCmsCard({
         {loading ? (
           <div className="h-24 animate-pulse rounded-lg border border-border bg-muted/40" />
         ) : facts.isError ? (
-          <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive-ink">
             <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span>Could not read the CMS: {extractErrorMessage(facts.error)}</span>
             <ErrorAlchemyMenu />
@@ -433,7 +433,7 @@ export function PushToCmsCard({
               </div>
             ) : null}
             {pushError ? (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive-ink">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>{pushError}</span>
                 <ErrorAlchemyMenu error={pushError} />

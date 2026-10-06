@@ -9,10 +9,10 @@ import {
 
 const TONE_CLASSES: Record<NodePipelineProgress["tone"], string> = {
   muted: "border-border bg-muted text-muted-foreground",
-  primary: "border-primary/40 bg-primary/10 text-primary",
-  success: "border-success/40 bg-success/10 text-success",
-  warning: "border-warning/40 bg-warning/10 text-warning",
-  destructive: "border-destructive/40 bg-destructive/10 text-destructive",
+  primary: "border-primary/40 bg-primary/10 text-primary-ink",
+  success: "border-success/40 bg-success/10 text-success-ink",
+  warning: "border-warning/40 bg-warning/10 text-warning-ink",
+  destructive: "border-destructive/40 bg-destructive/10 text-destructive-ink",
 };
 
 const DOT_CLASSES: Record<NodePipelineProgress["tone"], string> = {

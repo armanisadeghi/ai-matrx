@@ -14,8 +14,8 @@ import {
 
 const STAGE_CLASSES: Record<LaunchStage, string> = {
   not_requested: "bg-muted text-muted-foreground",
-  awaiting_first_impression: "bg-warning/15 text-warning",
-  live: "bg-success/15 text-success",
+  awaiting_first_impression: "bg-warning/15 text-warning-ink",
+  live: "bg-success/15 text-success-ink",
 };
 
 export function LifecycleChip({ stage }: { stage: LaunchStage }) {

@@ -224,7 +224,7 @@ export function PageVisualFeedback({ page }: { page: MarketingPage }) {
                 </button>
                 <button
                   type="button"
-                  className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  className="inline-flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink"
                   onClick={() => void detach(link)}
                   title="Detach from page"
                   aria-label="Detach from page"

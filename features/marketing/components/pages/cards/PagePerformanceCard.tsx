@@ -500,7 +500,7 @@ export function PagePerformanceCard({ page }: { page: MarketingPage }) {
 
         {!data.has_psi_data ? (
           <div className="flex min-h-44 flex-col items-center justify-center rounded-lg border border-dashed border-border p-6 text-center">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
               <Gauge className="h-5 w-5" />
             </span>
             <p className="mt-3 text-sm font-semibold text-foreground">

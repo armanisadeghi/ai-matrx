@@ -1344,7 +1344,7 @@ function Rung({
         <span
           className={cn(
             "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-            done ? "bg-success/15 text-success" : "bg-muted text-muted-foreground",
+            done ? "bg-success/15 text-success-ink" : "bg-muted text-muted-foreground",
           )}
         >
           {done ? <Check className="h-3 w-3" /> : index}
