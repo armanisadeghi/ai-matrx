@@ -19,6 +19,7 @@ import {
 } from "@/features/surfaces/manifests/education-flashcard-study.manifest";
 import type { UseFlashcardStudyResult } from "../../data/useFlashcardStudy";
 import { asCardKind, studyFaces } from "../../utils/cardVariants";
+import { deckSurfaceCards, deckSurfaceDetails } from "../set-detail/deckSurfaceValues";
 
 export type FlashcardStudyMode = "flip cards" | "learn" | "write the answer";
 
@@ -53,18 +54,19 @@ export function buildFlashcardStudyValues(
   secondsOnPage: number,
 ): FlashcardStudySurfaceValues {
   const { setId, study, mode } = options;
+  const loaded = !study.loading && !study.error && !!study.set;
   const values: FlashcardStudySurfaceValues = {
+    // The deck as data — the deck page's own values, through the same builder.
+    set_loaded: loaded,
     set_id: setId ?? "",
     study_mode: mode,
     seconds_on_page: Math.floor(secondsOnPage),
     time_on_page: durationInWords(secondsOnPage),
   };
   if (study.error) values.load_error = study.error;
-  if (study.set) {
-    values.deck_name = study.set.name;
-    if (study.set.topic?.trim()) values.deck_topic = study.set.topic.trim();
-  }
-  if (!study.loading && !study.error) {
+  if (study.set) values.set_details = deckSurfaceDetails(study.set);
+  if (loaded) {
+    values.cards = deckSurfaceCards(study.cards);
     values.card_count = study.deckSize ?? study.progress.total ?? study.cards.length;
     values.cards_in_round = study.cards.length;
     values.cards_graded = study.progress.done;

@@ -10,8 +10,8 @@ import { surfaceFromPathname } from "@ai-matrx/chat/surfaces/utils/route-to-surf
 import {
   EDUCATION_FLASHCARD_STUDY_SITUATION,
   EDUCATION_FLASHCARD_STUDY_SURFACE,
-  educationFlashcardStudyManifest,
 } from "@/features/surfaces/manifests/education-flashcard-study.manifest";
+import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   buildFlashcardStudyValues,
   durationInWords,
@@ -37,8 +37,15 @@ describe("flashcard study surface", () => {
     );
   });
 
+  it("inherits the whole deck from the deck page's surface", () => {
+    const names = new Set(getManifest(EDUCATION_FLASHCARD_STUDY_SURFACE)?.values.map((v) => v.name));
+    for (const name of ["set_loaded", "set_id", "set_details", "card_count", "cards", "card_mastery"]) {
+      expect(names.has(name)).toBe(true);
+    }
+  });
+
   it("names only declared values (or the request's user) in its situation", () => {
-    const declared = new Set(educationFlashcardStudyManifest.values.map((v) => v.name));
+    const declared = new Set(getManifest(EDUCATION_FLASHCARD_STUDY_SURFACE)?.values.map((v) => v.name));
     const blanks = [
       ...EDUCATION_FLASHCARD_STUDY_SITUATION.matchAll(/\{\s*([A-Za-z_][\w]*)/g),
     ].map((m) => m[1]);
@@ -50,11 +57,11 @@ describe("flashcard study surface", () => {
 
   it("fills the card in view, the side shown, and whether the answer was seen", () => {
     const study = {
-      set: { name: "Cleaner M — ADME", topic: "Toxicology" },
+      set: { name: "Cleaner M — ADME", topic: "Toxicology", lesson: null, description: null, difficulty: null, visibility: "personal" },
       cards: [
-        { id: "c1", front: "Q1", back: "A1", card_kind: "basic", dynamic_content: null },
-        { id: "c2", front: "Which organ removes water-soluble substances?", back: "The kidneys.", card_kind: "basic", dynamic_content: null },
-        { id: "c3", front: "Q3", back: "A3", card_kind: "basic", dynamic_content: null },
+        { id: "c1", front: "Q1", back: "A1", card_kind: "basic", dynamic_content: null, position: 0, details: [] },
+        { id: "c2", front: "Which organ removes water-soluble substances?", back: "The kidneys.", card_kind: "basic", dynamic_content: null, position: 1, details: [] },
+        { id: "c3", front: "Q3", back: "A3", card_kind: "basic", dynamic_content: null, position: 2, details: [] },
       ],
       loading: false,
       error: null,
@@ -68,9 +75,9 @@ describe("flashcard study surface", () => {
 
     const values = buildFlashcardStudyValues({ setId: SET, study, mode: "flip cards" }, 150);
     expect(values).toMatchObject({
+      set_loaded: true,
       set_id: SET,
-      deck_name: "Cleaner M — ADME",
-      deck_topic: "Toxicology",
+      set_details: expect.objectContaining({ name: "Cleaner M — ADME", topic: "Toxicology" }),
       card_count: 63,
       card_number: 2,
       cards_in_round: 3,
@@ -82,6 +89,8 @@ describe("flashcard study surface", () => {
       score: "1 of 1 graded cards right (100%)",
     });
     expect(values.card_history).toContain("4 times");
+    // The whole deck travels as data, in the deck page's own shape.
+    expect(values.cards?.map((c) => c.id)).toEqual(["c1", "c2", "c3"]);
   });
 
   it("says time and score in words", () => {
