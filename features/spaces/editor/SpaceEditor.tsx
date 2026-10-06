@@ -29,6 +29,8 @@ import { useEffect, useState } from "react";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 
 import type { SpaceBlock } from "../contract";
+import { SpaceIcon } from "../page/SpaceIcon";
+import { useSpaces } from "../state/SpacesProvider";
 import { INSTANT_CLOSE, SLASH_MENU } from "./floating";
 import { makeBlockMenu, type BlockMenuActions } from "./BlockMenu";
 import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-actions";
@@ -151,6 +153,7 @@ function columnCss(blocks: EngineBlock[]): string {
 
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady }: SpaceEditorProps) {
   const dark = useDarkMode();
+  const { byId } = useSpaces();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
   const editor = useCreateBlockNote(
     {
@@ -247,6 +250,26 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       }}
       className="spaces-editor"
     >
+      <SuggestionMenuController
+        triggerCharacter="@"
+        floatingUIOptions={SLASH_MENU}
+        getItems={async (query) => {
+          // B12 — "@" names a page: the mention is the page's address, shown as its current title.
+          const q = query.trim().toLowerCase();
+          const hits = [...byId.values()]
+            .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
+            .slice(0, 8);
+          return hits.map((p) => ({
+            title: p.title || "Untitled",
+            icon: <SpaceIcon media={p.icon} size={16} />,
+            onItemClick: () =>
+              editor.insertInlineContent([
+                { type: "inlineMention", props: { span: JSON.stringify({ text: p.title || "Untitled", mention: { kind: "space", spaceId: p.id } }) } },
+                " ",
+              ] as never),
+          }));
+        }}
+      />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
       {editable ? (
       <SideMenuController
