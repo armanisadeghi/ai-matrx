@@ -109,6 +109,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       ? requested
       : "members";
   });
+  const [actionsOpen, setActionsOpen] = useState(false);
   const ctx = useCrmContext();
   const [list, setOutreachList] = useState<OutreachListRow | null>(null);
   const [counts, setCounts] = useState<MemberStatusCounts | null>(null);
@@ -664,9 +665,10 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       <Button
         icon={<Award />}
         variant={activeView === "outcomes" ? "outline" : "quiet"}
-        onClick={() =>
-          setActiveView(activeView === "outcomes" ? "members" : "outcomes")
-        }
+        onClick={() => {
+          setActiveView(activeView === "outcomes" ? "members" : "outcomes");
+          setActionsOpen(false);
+        }}
       >
         Outcomes
       </Button>
@@ -674,11 +676,12 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       <Button
         icon={<BarChart3 />}
         variant={activeView === "performance" ? "outline" : "quiet"}
-        onClick={() =>
+        onClick={() => {
           setActiveView(
             activeView === "performance" ? "members" : "performance",
-          )
-        }
+          );
+          setActionsOpen(false);
+        }}
       >
         Performance
       </Button>
@@ -763,7 +766,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
             <div className="ml-auto hidden flex-wrap items-center gap-1.5 lg:flex">
               {campaignActions}
             </div>
-            <Dialog>
+            <Dialog open={actionsOpen} onOpenChange={setActionsOpen}>
               <DialogTrigger asChild>
                 <Button
                   variant="quiet"
