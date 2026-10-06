@@ -21,7 +21,8 @@ import { useEffect, useState } from "react";
 import { ClipboardList } from "lucide-react";
 import { RecordsProvider, useEntityFieldMutation, useEntityFields } from "@ai-matrx/records/react";
 import type { Field } from "@ai-matrx/records";
-import { FieldEditor, RefusalLine } from "@ai-matrx/records-ui";
+import { FIELD_SENSITIVITY_LABEL, FieldEditor, RefusalLine, fieldTypeLabel } from "@ai-matrx/records-ui";
+import { ConfirmDelete } from "@ai-matrx/design-system/controls";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,23 @@ import type { HrCustomFieldTarget } from "../types";
 // `service.ts`; live `platform.custom_field_target` enables five tokens, three of
 // which appeared in neither. `platform.entity_types.label` is the one place a
 // token's human name lives, and `fetchHrCustomFieldRegistry` reads it.
+
+/** The AI ceiling's stored values, in words. Sensitivity words come from the records package. */
+export const AI_CEILING_LABEL: Record<string, string> = {
+  allowed: "AI may read these fields",
+  aggregate_only: "AI sees only totals, never a person's value",
+  never: "Kept from AI entirely",
+};
+export const VALIDATION_LABEL: Record<string, string> = {
+  advisory: "Warns, never blocks",
+  permissive: "Warns, never blocks",
+  strict: "Blocks a bad value",
+};
+const UNRECOGNIZED = "Not recognized";
+const sensitivityWords = (v: string | null | undefined) =>
+  v ? ((FIELD_SENSITIVITY_LABEL as Record<string, string>)[v] ?? UNRECOGNIZED) : "Not set";
+const wordsFrom = (map: Record<string, string>, v: string | null | undefined) =>
+  v ? (map[v] ?? UNRECOGNIZED) : "Not set";
 
 export function HrFieldsPanel() {
   const { active } = useHrContext();
@@ -131,9 +149,9 @@ export function HrFieldsPanel() {
                     <dl className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
                       {[
                         ["Field limit", target.max_fields == null ? "Unlimited" : String(target.max_fields)],
-                        ["Sensitivity ceiling", target.sensitivity_ceiling],
-                        ["AI ceiling", target.ai_exposure_ceiling],
-                        ["Validation", target.validation_mode],
+                        ["Most sensitive a field may be, seen by", sensitivityWords(target.sensitivity_ceiling)],
+                        ["AI access", wordsFrom(AI_CEILING_LABEL, target.ai_exposure_ceiling)],
+                        ["Checking values", wordsFrom(VALIDATION_LABEL, target.validation_mode)],
                       ].map(([term, value]) => (
                         <div key={term} className="flex gap-1">
                           <dt>{term}</dt>
@@ -266,25 +284,23 @@ function HrTokenFields({ token, label }: { token: string; label: string }) {
               <span className="min-w-0 flex-1">
                 <span className="block font-medium text-foreground">{field.label}</span>
                 <span className="text-muted-foreground">
-                  {field.key} · {field.type}
+                  {fieldTypeLabel(field)}
                   {field.required ? " · required" : ""}
-                  {field.sensitivity ? ` · ${field.sensitivity}` : ""}
+                  {field.sensitivity ? ` · ${sensitivityWords(field.sensitivity)}` : ""}
                 </span>
               </span>
-              {confirming === field.id ? (
-                <span className="flex items-center gap-2">
-                  <Button type="button" size="sm" variant="destructive" disabled={mutation.saving} onClick={() => retire(field)}>
-                    Archive field
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(null)}>
-                    Keep
-                  </Button>
-                </span>
-              ) : (
-                <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(field.id)}>
-                  Archive
-                </Button>
-              )}
+              <Button type="button" size="sm" variant="ghost" onClick={() => setConfirming(field.id)}>
+                Archive
+              </Button>
+              <ConfirmDelete
+                open={confirming === field.id}
+                onOpenChange={(open) => setConfirming(open ? field.id : null)}
+                title={`Archive ${field.label}?`}
+                cost="Its values stay readable on every record, and nobody can add new ones."
+                confirmLabel="Archive field"
+                busy={mutation.saving}
+                onConfirm={() => retire(field)}
+              />
             </li>
           ))}
         </ul>

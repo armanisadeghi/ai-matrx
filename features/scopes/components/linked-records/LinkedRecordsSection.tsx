@@ -121,27 +121,41 @@ export function LinkedRecordsSection({ token, id, title, className, backLinksSho
 
   return (
     <section data-section="linked-records" className={className ?? "flex flex-col gap-1.5"}>
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-semibold">
-          <Link2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
-          Linked
-          {links.length > 0 ? <span className="text-xs font-normal text-muted-foreground">{links.length}</span> : null}
-        </h3>
+      {backLinksShownElsewhere ? (
+        // The page's "Linked records" section above is the ONE heading. This part adds only what it
+        // cannot: the direct links (if any) and the action — no second heading, no second empty line.
         <button
           type="button"
-          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
-          aria-label="Link a record"
-          title="Link a record"
+          data-linked-records-action="link-a-record"
+          className="inline-flex w-fit items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-muted-foreground hover:bg-accent hover:text-foreground"
           onClick={() => openLinkSheet({ target: { token, id, title } })}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" />
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          Link a record
         </button>
-      </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="flex items-center gap-1.5 text-sm font-semibold">
+            <Link2 className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+            Linked
+            {links.length > 0 ? <span className="text-xs font-normal text-muted-foreground">{links.length}</span> : null}
+          </h3>
+          <button
+            type="button"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+            aria-label="Link a record"
+            title="Link a record"
+            onClick={() => openLinkSheet({ target: { token, id, title } })}
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+          </button>
+        </div>
+      )}
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
-      {!error && status !== "ready" && links.length === 0 ? (
+      {!backLinksShownElsewhere && !error && status !== "ready" && links.length === 0 ? (
         <p className="text-xs text-muted-foreground" aria-busy="true">Loading links…</p>
       ) : null}
-      {!error && status === "ready" && links.length === 0 ? (
+      {!backLinksShownElsewhere && !error && status === "ready" && links.length === 0 ? (
         <p className="text-xs text-muted-foreground">Nothing linked yet</p>
       ) : null}
       {links.length > 0 ? (
