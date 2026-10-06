@@ -43,7 +43,7 @@ export function EduHero({
       />
       <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-14 sm:pt-20 pb-10 sm:pb-16 text-center">
         {eyebrow ? (
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary-ink mb-6">
             {EyebrowIcon ? <EyebrowIcon className="h-3.5 w-3.5" /> : null}
             {eyebrow}
           </div>

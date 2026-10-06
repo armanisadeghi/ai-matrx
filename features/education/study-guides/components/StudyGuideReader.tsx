@@ -118,7 +118,7 @@ function GuideList({ guides, activeId, activeLabel, content, onJump, loading, er
       <div className="border-b border-border px-1.5 py-1.5">
         <p className="pl-8 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Study</p>
         <nav className="mt-2 grid gap-1 text-sm" aria-label="Study tools">
-          <Link href="/education/study-guides" className="rounded-md bg-primary/10 px-2 py-1.5 font-medium text-primary">Study Guides</Link>
+          <Link href="/education/study-guides" className="rounded-md bg-primary/10 px-2 py-1.5 font-medium text-primary-ink">Study Guides</Link>
           <Link href="/education/flashcards" className="rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground">Flashcards</Link>
           <Link href="/education/practice-tests" className="rounded-md px-2 py-1.5 text-muted-foreground hover:bg-accent hover:text-foreground">Practice Tests</Link>
         </nav>

@@ -40,7 +40,7 @@ function KitCard({ kit }: { kit: StudyKit }) {
   return (
     <article className="flex flex-col rounded-2xl border border-border bg-card transition-colors hover:border-primary/40">
       <Link href={href} className="group flex min-h-16 items-start gap-3 p-3.5">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
           <Package className="h-5 w-5" />
         </span>
         <span className="min-w-0 flex-1">

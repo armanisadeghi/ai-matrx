@@ -222,7 +222,7 @@ export function MindMapView({
   const diagram = toDiagram(envelope);
   if (!diagram) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+      <div className="flex items-center gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-ink">
         <AlertCircle className="h-4 w-4 shrink-0" />
         <span>
           This mind map couldn&apos;t be rendered — try regenerating it.

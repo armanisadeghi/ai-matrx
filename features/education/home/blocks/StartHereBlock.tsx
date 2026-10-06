@@ -53,7 +53,7 @@ export function StartHereBlock() {
         className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card p-5 transition-colors hover:border-primary/60 sm:p-6"
       >
         <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/15 text-primary-ink">
             <FilePlus2 className="h-7 w-7" />
           </span>
           <h2 className="min-w-0 flex-1 text-lg font-semibold text-foreground sm:text-xl">

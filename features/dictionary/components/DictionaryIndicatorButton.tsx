@@ -36,7 +36,7 @@ export function DictionaryIndicatorButton({ surfaceKey, className, variant = "ic
       <Button icon={<BookA />} variant="outline" className={className} onClick={onClick}>
         Dictionary
         {activeCount > 0 && (
-          <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-[11px] font-medium text-primary">
+          <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-[11px] font-medium text-primary-ink">
             {activeCount}
           </span>
         )}

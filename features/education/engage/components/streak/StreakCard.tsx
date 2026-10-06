@@ -84,7 +84,7 @@ export function StreakCard() {
                 className={cn(
                   "rounded-md border px-2.5 py-1 text-xs transition-colors",
                   on
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary-ink"
                     : "border-border text-muted-foreground hover:border-primary/50",
                 )}
               >

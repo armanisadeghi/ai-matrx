@@ -418,7 +418,7 @@ function SegBtn({
       className={cn(
         "rounded-md border px-3 py-1.5 text-sm transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-primary-ink"
           : "border-border bg-card text-muted-foreground hover:bg-accent",
       )}
     >

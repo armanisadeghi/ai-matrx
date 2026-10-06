@@ -72,7 +72,7 @@ export function ExamHubActions({ entry }: { entry: AxisEntry }) {
                     : "border-border hover:border-primary/30"
                 }`}
               >
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink group-hover:scale-110 transition-transform">
                   <Icon className="h-5 w-5" />
                 </span>
                 <div className="min-w-0">

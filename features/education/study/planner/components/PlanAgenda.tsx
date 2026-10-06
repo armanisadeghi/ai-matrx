@@ -145,7 +145,7 @@ function DayCard({
             className={cn(
               "flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-lg border text-center",
               isToday
-                ? "border-primary/40 bg-primary/10 text-primary"
+                ? "border-primary/40 bg-primary/10 text-primary-ink"
                 : "border-border bg-muted/40 text-muted-foreground",
             )}
           >

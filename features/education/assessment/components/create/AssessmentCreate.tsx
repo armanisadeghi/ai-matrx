@@ -342,7 +342,7 @@ export function AssessmentCreate({ kind }: { kind: AssessmentKind }) {
             disabled={busy}
             aria-label={`Back to ${config.pluralLabel}`}
           />
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
             <Icon className="h-6 w-6" />
           </div>
           <div>

@@ -180,7 +180,7 @@ const ReactCodeBlock: React.FC<ReactCodeBlockProps> = ({
               <span>{showError ? "Hide details" : "Preview unavailable"}</span>
             </button>
             {showError && (
-              <div className="mt-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive whitespace-pre-wrap">
+              <div className="mt-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink whitespace-pre-wrap">
                 {errorMessage}
                 <ErrorAlchemyMenu error={errorMessage} />
               </div>

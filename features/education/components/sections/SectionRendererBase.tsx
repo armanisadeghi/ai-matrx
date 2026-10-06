@@ -93,7 +93,7 @@ function FeatureGrid({
             )}
           >
             {Icon ? (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4 group-hover:scale-110 transition-transform duration-300">
                 <Icon className="h-5 w-5" />
               </div>
             ) : null}
@@ -125,7 +125,7 @@ function Steps({ steps, inline }: { steps: EduStep[]; inline: RenderInline }) {
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
       {steps.map((step) => (
         <div key={step.number} className="flex gap-4">
-          <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
+          <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary-ink font-bold text-lg">
             {step.number}
           </div>
           <div>
@@ -162,7 +162,7 @@ function StatusCards({
             <div className="flex items-start justify-between gap-3 mb-3">
               <div className="flex items-center gap-2 min-w-0">
                 {Icon ? (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                     <Icon className="h-4 w-4" />
                   </span>
                 ) : null}

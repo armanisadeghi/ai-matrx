@@ -945,7 +945,7 @@ function LearnDocEditor({
                 }
               />
             ) : (
-              <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+              <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive-ink">
                 This draft contains a malformed block. Correct it in Advanced
                 JSON below; Save and Publish stay disabled until every rendered
                 field is valid.

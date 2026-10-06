@@ -54,7 +54,7 @@ export function MemoryItemEditor({ aid, kind, index, onChange, onSave, onCancel,
       <TextField label="What to remember" value={locus.item} onChange={(item) => updateLocus({ item })} />
       <TextField label="Image" value={locus.image ?? ""} onChange={(image) => updateLocus({ image })} multiline />
     </>}
-    {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
+    {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-sm text-destructive-ink">{error}<ErrorAlchemyMenu error={error} /></p>}
     <div className="flex justify-end gap-2">
       <Button type="button" variant="quiet" disabled={saving} onClick={onCancel}>Cancel</Button>
       <Button variant="primary" type="button" disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save"}</Button>

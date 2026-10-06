@@ -108,7 +108,7 @@ export function ResearchTable({
                   {row.name}
                 </Link>
                 {row.first_wave ? (
-                  <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] text-primary">first wave</span>
+                  <span className="ml-1 rounded bg-primary/10 px-1 text-[10px] text-primary-ink">first wave</span>
                 ) : null}
                 {row.fit_check ? (
                   <div className="text-[10px] text-muted-foreground">fit check: {row.fit_check.replace("_", " ")}</div>

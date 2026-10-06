@@ -328,7 +328,7 @@ export function SendingIdentityDetailPage({ identityId }: { identityId: string }
           </p>
         ) : null}
         {error ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-sm text-destructive">
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-sm text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </p>

@@ -90,7 +90,7 @@ export async function ExamCuratedLibrary({
                   href={eduHref(EDU_LEARN_SEGMENT, guide.slug)}
                   className="group flex items-start gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/40 hover:shadow-md hover:shadow-primary/5"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                     <BookOpen className="h-4 w-4" />
                   </span>
                   <div className="min-w-0">

@@ -154,7 +154,7 @@ export function SummaryEditor({ media, isOwner = false }: { media?: StudyMediaRo
         {draft.key_points.map((point, index) => <div key={index} className="flex gap-2"><Input aria-label={`Key point ${index + 1}`} value={point} onChange={(event) => setDraft((current) => ({ ...current, key_points: current.key_points.map((item, itemIndex) => itemIndex === index ? event.target.value : item) }))} /><Button icon={<Minus />} type="button" variant="quiet" aria-label={`Remove key point ${index + 1}`} onClick={() => setDraft((current) => ({ ...current, key_points: current.key_points.filter((_, itemIndex) => itemIndex !== index) }))} /></div>)}
         <Button icon={<Plus />} type="button" variant="outline" onClick={() => setDraft((current) => ({ ...current, key_points: [...current.key_points, ""] }))}>Add key point</Button>
       </section>
-      {error ? <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p> : null}
+      {error ? <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink">{error}<ErrorAlchemyMenu error={error} /></p> : null}
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.back(); }}>Cancel</Button><Button variant="primary" type="button" disabled={saving} onClick={() => { void save(); }}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create summary"}</Button></div>
     </main>
   </SurfaceRuntimeProvider>;

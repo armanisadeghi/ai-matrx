@@ -479,7 +479,7 @@ export function EduNotesHome() {
                     )}
                     aria-label={`Open note ${n.label}`}
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                       <NotebookPen className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">

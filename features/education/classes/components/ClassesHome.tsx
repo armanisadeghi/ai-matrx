@@ -83,7 +83,7 @@ function ClassRow({
       href={`/education/classes/${slug ?? id}`}
       className="flex w-full items-center gap-3 rounded-lg border border-border bg-card p-3 text-left transition-colors hover:bg-accent"
     >
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
         <GraduationCap className="h-5 w-5" />
       </span>
       <div className="min-w-0 flex-1">

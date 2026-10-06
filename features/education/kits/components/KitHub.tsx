@@ -725,7 +725,7 @@ export function KitHub({
                   </span>
                 )}
                 {!statsLoading && dueTotal > 0 && (
-                  <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 type-secondary font-semibold text-warning">
+                  <span className="rounded-full border border-warning/30 bg-warning/10 px-3 py-1.5 type-secondary font-semibold text-warning-ink">
                     {dueTotal} due now
                   </span>
                 )}

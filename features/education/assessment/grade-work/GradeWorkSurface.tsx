@@ -177,7 +177,7 @@ export function GradeWorkSurface() {
           Education
         </Link>
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
             <ScanText className="h-5 w-5" />
           </span>
           <div>

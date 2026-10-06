@@ -543,7 +543,7 @@ function SessionRow({
           e.stopPropagation();
           onDelete();
         }}
-        className="shrink-0 self-stretch px-2 text-muted-foreground opacity-100 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
+        className="shrink-0 self-stretch px-2 text-muted-foreground opacity-100 transition-colors hover:bg-destructive/10 hover:text-destructive-ink disabled:opacity-50 sm:opacity-0 sm:group-hover:opacity-100"
       >
         {isDeleting ? (
           <Loader2 className="h-4 w-4 animate-spin" />

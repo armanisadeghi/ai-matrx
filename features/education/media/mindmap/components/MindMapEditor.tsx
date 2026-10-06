@@ -125,7 +125,7 @@ export function MindMapEditor({ media, isOwner = false }: { media?: StudyMediaRo
           <Button icon={<Trash2 />} type="button" variant="quiet" className="justify-self-start" onClick={() => update({ edges: draft.edges.filter((_, position) => position !== index) })}>Delete connection</Button>
         </div>)}
       </section>
-      {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{error}<ErrorAlchemyMenu error={error} /></p>}
+      {error && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink">{error}<ErrorAlchemyMenu error={error} /></p>}
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(recoveryKey); router.back(); }}>Cancel</Button><Button variant="primary" type="button" disabled={saving || !dirty} onClick={() => void save()}>{saving ? "Saving…" : currentMedia ? "Save changes" : "Create mind map"}</Button></div>
     </main>
   </></SurfaceRuntimeProvider>;

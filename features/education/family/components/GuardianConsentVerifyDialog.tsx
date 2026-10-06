@@ -177,7 +177,7 @@ function MethodCard({
       <span
         className={cn(
           "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-          recommended ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+          recommended ? "bg-primary/10 text-primary-ink" : "bg-muted text-muted-foreground",
         )}
       >
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}

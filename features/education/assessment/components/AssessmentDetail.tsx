@@ -297,7 +297,7 @@ export function AssessmentDetail({
               onClick={() => router.back()}
               aria-label="Back"
             />
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
               <Icon className="h-6 w-6" />
             </div>
             <div className="min-w-0 flex-1">

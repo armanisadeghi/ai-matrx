@@ -129,7 +129,7 @@ function deliverabilityBadge(point: ContactPoint) {
       title={blocks
         .map((b) => `${MEDIUM_BLOCK_LABELS[b]} — ${MEDIUM_BLOCK_EXPLAINERS[b]}`)
         .join("\n")}
-      className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-xs font-medium leading-none text-destructive"
+      className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-xs font-medium leading-none text-destructive-ink"
     >
       {MEDIUM_BLOCK_LABELS[blocks[0]]}
     </span>

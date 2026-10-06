@@ -42,7 +42,7 @@ export function EduComingSoon({
       )}
     >
       <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 sm:p-8">
-        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-4">
+        <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary-ink mb-4">
           <Icon className="w-6 h-6" />
         </div>
         <div className="flex items-center gap-2 mb-3">

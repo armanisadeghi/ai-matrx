@@ -179,7 +179,7 @@ export function MemoryEditor({ media, isOwner = false }: { media?: StudyMediaRow
         </>}
       </section>
 
-      {errorMessage && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">{errorMessage}<ErrorAlchemyMenu error={errorMessage} /></p>}
+      {errorMessage && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink">{errorMessage}<ErrorAlchemyMenu error={errorMessage} /></p>}
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { sessionStorage.removeItem(draftKey); router.back(); }}>Cancel</Button><Button variant="primary" type="button" disabled={saving} onClick={save}>{saving ? "Saving…" : media ? "Save changes" : "Create memory aid"}</Button></div>
     </main>
   </SurfaceRuntimeProvider>;

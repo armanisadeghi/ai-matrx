@@ -58,7 +58,7 @@ export function ResultsSummary({
       {verificationError && (
         <div
           role="alert"
-          className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive"
+          className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink"
         >
           Your result could not be verified yet.
           {onRetryVerification && (
@@ -111,7 +111,7 @@ export function ResultsSummary({
               return (
                 <span
                   key={key}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm text-primary"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-sm text-primary-ink"
                   title={def.description}
                 >
                   <Icon className="h-4 w-4" />

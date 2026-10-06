@@ -278,7 +278,7 @@ export function FamilyDashboard() {
                       disabled={navigating}
                       onClick={() => openStudent(link.counterpart_user_id)}
                     >
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold uppercase text-primary-ink">
                         {displayName(link).charAt(0)}
                       </span>
                       <span className="min-w-0">

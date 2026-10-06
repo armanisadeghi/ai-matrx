@@ -64,7 +64,7 @@ export function PlaySurface({ game }: { game: UseGamePlayResult }) {
             <span
               className={cn(
                 "inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 font-mono tabular-nums",
-                seconds <= 10 && "bg-destructive/10 text-destructive",
+                seconds <= 10 && "bg-destructive/10 text-destructive-ink",
               )}
             >
               <Clock className="h-3.5 w-3.5" />

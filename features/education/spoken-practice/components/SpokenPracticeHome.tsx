@@ -34,7 +34,7 @@ export function SpokenPracticeHome({
                 "transition-colors hover:border-primary/40 hover:bg-accent",
               )}
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                 <Icon className="h-5 w-5" />
               </span>
               <span className="min-w-0 flex-1">
