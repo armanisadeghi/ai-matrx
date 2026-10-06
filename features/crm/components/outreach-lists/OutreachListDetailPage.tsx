@@ -889,7 +889,6 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           >
             <div className="flex min-w-0 flex-col lg:h-full lg:min-h-0">
               <MatrxDataTable<OutreachListMemberWithParty>
-                className="h-auto lg:h-full"
                 frameHeight="content"
                 data={members}
                 columns={[
