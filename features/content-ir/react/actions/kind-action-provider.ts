@@ -9,8 +9,8 @@
  * `KindActionDefinition` plus one line in `KIND_ACTIONS` below — never a
  * sandbox, compiler or prop-shape change.
  *
- * Each key becomes the registry Action `kind.<key>`: absent from every menu,
- * runnable only by id (`invoked-actions.ts`). The two non-negotiables live in
+ * Each key becomes the registry Action `kind.<key>`: programmatic-only (never in a menu),
+ * run by id through alchemy's `invokeAction` (`invoked-actions.ts`). The two non-negotiables live in
  * the runner: it never throws into component code, and a handler receives only
  * the capability-scoped `KindActionContext`.
  */

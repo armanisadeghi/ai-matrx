@@ -8,7 +8,7 @@
  * An assist is a system-noticed, one-click-actionable item: deterministic
  * code, background agents, sweeps, and stream events produce them; the user
  * sees a chip; accepting one dispatches the typed `action` binding through
- * the assist action registry (runtime/assist-action-registry.ts).
+ * the assist action provider (runtime/assist-action-provider.ts).
  */
 
 import type { Database } from "@/types/database.types";

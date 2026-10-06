@@ -7,82 +7,51 @@
  * Actions (Applets CONTRACTS §6: one registry, one runner), so they live on the
  * same registry as every menu action, contributed by a provider:
  *
- *  - Eligibility: ABSENT at every click target (they never appear in a menu,
- *    bar or palette) EXCEPT the invocation target this module builds for
- *    exactly that id. "Absent unless invoked" is the whole rule.
- *  - Running: `invokeRegisteredAction` resolves the registry at the invocation
- *    target, finds the Action by id and runs it through alchemy's ONE run path
- *    (`runAction`: failure capture + notify live there once). The handler's
- *    input and its capability-scoped context ride the target's opaque `host`
- *    slot; the handler's envelope comes back through the same slot.
+ *  - `invocableAction` (alchemy) marks each one programmatic-only
+ *    (`surfaces: ["invoke"]`): no menu, bar or palette ever resolves it.
+ *  - The runners (`useKindActionRunner`, `useAssistRunner`) run it with
+ *    alchemy's `invokeAction(registry, id, input, { ports, context })` — the
+ *    one programmatic runner: never throws, an unknown id is `not_registered`,
+ *    a handler throw is `action_failed` (captured + announced once there).
+ *    The handler's own envelope comes back as the result's `data`.
  *
- * Pure (no React): the runners (`useKindActionRunner`, `useAssistRunner`) bind
- * the registry, ports and context. `invokeRegisteredAction` never throws.
+ * Pure (no React): the runners bind the registry, ports and context.
  */
 
 import {
-  createClickTarget,
-  runAction,
+  invocableAction,
   staticActionProvider,
   type Action,
   type ActionCategory,
   type ActionProvider,
   type ActionRegistry,
-  type ClickTarget,
-  type RunActionOptions,
 } from "@ai-matrx/alchemy/actions";
-
-const INVOCATION = Symbol.for("ai-matrx.invoked-action");
-
-interface Invocation {
-  readonly [INVOCATION]: true;
-  readonly actionId: string;
-  readonly input: unknown;
-  readonly context: unknown;
-  settled?: { value: unknown };
-}
-
-function invocationOf(target: ClickTarget): Invocation | null {
-  const host = target.host as Partial<Invocation> | null | undefined;
-  return host && typeof host === "object" && host[INVOCATION] === true
-    ? (host as Invocation)
-    : null;
-}
 
 /** One capability run by id. `I`/`C`/`R`: its input, context, envelope. */
 export interface InvokedActionDefinition<I, C, R> {
   /** Registry id — globally unique; namespace it (`kind.trigger_agent`). */
   id: string;
-  /** Short name; alchemy's run path names it when the handler throws. */
+  /** Short name; alchemy's runner names it when the handler throws. */
   label: string;
   description: string;
   category?: ActionCategory;
   handler: (input: I, context: C) => Promise<R>;
 }
 
-/** Wrap a definition as an alchemy Action that is absent unless invoked by id. */
+/** Wrap a definition as a programmatic-only alchemy Action; its envelope is the result's `data`. */
 export function invokedAction<I, C, R>(
   def: InvokedActionDefinition<I, C, R>,
 ): Action {
-  return {
+  return invocableAction({
     id: def.id,
     label: def.label,
     description: def.description,
     category: def.category ?? "app",
-    eligible: (target) =>
-      invocationOf(target)?.actionId === def.id
-        ? { status: "available" }
-        : { status: "absent" },
-    async run(target) {
-      const invocation = invocationOf(target);
-      if (!invocation || invocation.actionId !== def.id) {
-        throw new Error(`"${def.id}" runs only when invoked by id.`);
-      }
-      invocation.settled = {
-        value: await def.handler(invocation.input as I, invocation.context as C),
-      };
-    },
-  };
+    invoke: async (input, ctx) => ({
+      ok: true,
+      data: await def.handler(input as I, ctx.context as C),
+    }),
+  });
 }
 
 /** A T0 provider over invoked actions; ids are declared, so duplicates fail at registration. */
@@ -109,47 +78,4 @@ export function ensureInvokedProvider(
   seen.add(provider.id);
   if (registry.providers().includes(provider.id)) return;
   registry.register(provider);
-}
-
-export type InvokeOutcome<R> =
-  | { status: "ran"; value: R }
-  | { status: "not-registered" }
-  | { status: "failed"; error: unknown };
-
-/**
- * Run a registered Action by id with an input and a capability context.
- * Never throws: an id nobody registered is `not-registered`; a handler throw is
- * `failed` (already captured + notified by alchemy's run path).
- */
-export async function invokeRegisteredAction<R>(
-  registry: Pick<ActionRegistry, "resolve">,
-  ports: RunActionOptions["ports"],
-  actionId: string,
-  input: unknown,
-  context: unknown,
-): Promise<InvokeOutcome<R>> {
-  const invocation: Invocation = {
-    [INVOCATION]: true,
-    actionId,
-    input,
-    context,
-  };
-  const target = createClickTarget({ host: invocation });
-  let action: Action | undefined;
-  try {
-    const resolved = await registry.resolve(target);
-    action = resolved.find((r) => r.action.id === actionId)?.action;
-  } catch (error) {
-    return { status: "failed", error };
-  }
-  if (!action) return { status: "not-registered" };
-  const result = await runAction(action, target, { ports });
-  if (result.status === "failed") return { status: "failed", error: result.error };
-  if (result.status !== "ran" || !invocation.settled) {
-    return {
-      status: "failed",
-      error: new Error(`"${actionId}" did not run (${result.status}).`),
-    };
-  }
-  return { status: "ran", value: invocation.settled.value as R };
 }
