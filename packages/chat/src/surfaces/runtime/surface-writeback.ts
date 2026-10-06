@@ -44,6 +44,7 @@ import { contentIrKindValidator } from "@ai-matrx/chat/host/content-ir-slots";
 import type {
   ApprovalPort,
   DiagnosticsPort,
+  Json,
   KindValidatorPort,
 } from "@ai-matrx/alchemy/ports";
 import type {
@@ -1015,7 +1016,12 @@ async function applyMountedPageWrite(request: WriteApplyRequest): Promise<WriteH
   }
   if (handler.validate) await handler.validate(request.value);
   const outcome = toWriteOutcome(await handler.apply(request.value));
-  return { status: "applied", ...(outcome?.summary ? { sentence: outcome.summary } : {}) };
+  return {
+    status: "applied",
+    ...(outcome?.summary ? { sentence: outcome.summary } : {}),
+    // What the page's handler produced (ids of created records) rides the receipt (alchemy 0.12.3).
+    ...(outcome?.data !== undefined ? { result: outcome.data as Json } : {}),
+  };
 }
 
 /** One seam write through the door, carrying its own run id end to end. */

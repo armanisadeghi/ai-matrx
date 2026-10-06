@@ -124,12 +124,9 @@ function readNewNoteItems(value: unknown): NewNoteItem[] {
   });
 }
 
-/** What a headless `create_notes` write created, read by the caller through the write's signal. */
-const createdNotes = new WeakMap<AbortSignal, TransferTarget[]>();
-
 /** `matrx-user/notes · create_notes` with no page open: new notes in the working organization. */
 export function createNotesHeadlessHandler(getState: () => RootState): WriteHandler {
-  return async (request, signal) => {
+  return async (request) => {
     const items = readNewNoteItems(request.value);
     const state = getState();
     const organizationId = alchemyOrganizationId(state);
@@ -148,10 +145,10 @@ export function createNotesHeadlessHandler(getState: () => RootState): WriteHand
       });
       created.push({ kind: "note", id: note.id, label: note.label, href: `/notes/${note.id}` });
     }
-    createdNotes.set(signal, created);
     return {
       status: "applied",
       sentence: created.length === 1 ? `Saved to note "${created[0].label}".` : `Saved ${created.length} notes.`,
+      result: { notes: created.map((note) => ({ id: note.id, name: note.label })) },
     };
   };
 }
@@ -173,14 +170,25 @@ export function registerHeadlessDestinations(getState: () => RootState): void {
   );
 }
 
+/** The notes a `create_notes` handler reported (`{ notes: [{ id, name }] }`) as links; none reported = none. */
+function createdNotesOf(result: unknown): TransferTarget[] {
+  const notes = result && typeof result === "object" ? (result as { notes?: unknown }).notes : undefined;
+  if (!Array.isArray(notes)) return [];
+  return notes.flatMap((entry) => {
+    const note = entry as { id?: unknown; name?: unknown } | null;
+    if (!note || typeof note.id !== "string" || !note.id) return [];
+    const label = typeof note.name === "string" && note.name ? note.name : "Note";
+    return [{ kind: "note", id: note.id, label, href: `/notes/${note.id}` }];
+  });
+}
+
 /** A person's "Save to Notes": one write through the door; the receipt and what it created. */
 export async function saveNotesThroughDoor(
   items: NewNoteItem[],
 ): Promise<{ receipt: Receipt; created: TransferTarget[] }> {
-  const controller = new AbortController();
   const receipt = await createAlchemyDoorPort().write(
     { surfaceName: NOTES_SURFACE_NAME, target: CREATE_NOTES_TARGET, value: items, by: "destination" },
-    controller.signal,
+    new AbortController().signal,
   );
-  return { receipt, created: createdNotes.get(controller.signal) ?? [] };
+  return { receipt, created: receipt.status === "applied" ? createdNotesOf(receipt.result) : [] };
 }

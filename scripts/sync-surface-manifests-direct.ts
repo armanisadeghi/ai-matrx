@@ -115,7 +115,7 @@ function expectedMetadata(
  * deletes. Returns one line per row for the run's output.
  */
 async function applyMirrorLifecycle(
-  client: { query: (sql: string, params?: unknown[]) => Promise<unknown> },
+  client: { query: (sql: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }> },
   lifecycle: readonly MirrorLifecycle[],
   plan: SurfaceSyncPlan,
 ): Promise<string[]> {
@@ -123,20 +123,27 @@ async function applyMirrorLifecycle(
   for (const { table, label, archive, revive } of lifecycle) {
     const key = planKey(plan, table);
     if (archive.length) {
-      await client.query(
-        `update ui.${table} set deleted_at = now() where id = any($1::uuid[]) and deleted_at is null and declared_by = 'code'`,
+      // Only the rows the statement really changed are reported: `declared_by = 'code'` skips database-owned rows.
+      const done = await client.query(
+        `update ui.${table} set deleted_at = now() where id = any($1::uuid[]) and deleted_at is null and declared_by = 'code' returning id`,
         [archive.map((row) => row.id)],
       );
-      for (const row of archive)
-        lines.push(`ARCHIVED ${label} ${mirrorKey(row, key)} (no longer declared in code)`);
+      const changedIds = new Set(done.rows.map((row) => String(row.id)));
+      for (const row of archive) {
+        if (changedIds.has(String(row.id))) lines.push(`ARCHIVED ${label} ${mirrorKey(row, key)} (no longer declared in code)`);
+        else lines.push(`SKIPPED ${label} ${mirrorKey(row, key)} (not archived: it is not code-owned, or already archived)`);
+      }
     }
     if (revive.length) {
-      await client.query(
-        `update ui.${table} set deleted_at = null where id = any($1::uuid[]) and deleted_at is not null and declared_by = 'code'`,
+      const done = await client.query(
+        `update ui.${table} set deleted_at = null where id = any($1::uuid[]) and deleted_at is not null and declared_by = 'code' returning id`,
         [revive.map((row) => row.id)],
       );
-      for (const row of revive)
-        lines.push(`REVIVED ${label} ${mirrorKey(row, key)} (declared in code again)`);
+      const changedIds = new Set(done.rows.map((row) => String(row.id)));
+      for (const row of revive) {
+        if (changedIds.has(String(row.id))) lines.push(`REVIVED ${label} ${mirrorKey(row, key)} (declared in code again)`);
+        else lines.push(`SKIPPED ${label} ${mirrorKey(row, key)} (not revived: it is not code-owned, or not archived)`);
+      }
     }
   }
   return lines;

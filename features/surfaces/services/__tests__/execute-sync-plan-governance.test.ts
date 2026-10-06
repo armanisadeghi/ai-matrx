@@ -141,3 +141,26 @@ describe("executeSyncPlan governance is insert-only", () => {
     expect(result.tables[0]!.written.map((r) => r.name).sort()).toEqual(["pallet_count", "pickup_address"]);
   });
 });
+
+describe("executeSyncPlan never overwrites or revives a database-owned row", () => {
+  it("skips a code key that collides with a database-owned row (changed or deleted) and says so", async () => {
+    const { sb, calls } = fakeClient([
+      { ...valueRow("pickup_address", "Pickup address (set by an organization)"), declared_by: "database", deleted_at: null },
+      { ...valueRow("pickup_window", "Pickup window"), declared_by: "database", deleted_at: "2026-10-01T00:00:00Z" },
+      { ...valueRow("pallet_count", "Pallet count old"), declared_by: "code", deleted_at: null },
+    ]);
+
+    const result = await executeSyncPlan(sb as any, plan, {
+      existingSurfaces: new Set([SURFACE]),
+      createMissingSurfaces: false,
+    });
+
+    // Only the code-owned row is written; the database-owned ones are untouched (no revive, no overwrite).
+    const updates = calls.filter((c) => c.op === "update");
+    expect(updates.map((c) => c.filters.find(([column]) => column === "name")?.[1])).toEqual(["pallet_count"]);
+    expect(calls.filter((c) => c.op === "upsert")).toHaveLength(0);
+    expect(result.tables[0]!.refused).toHaveLength(2);
+    expect(result.tables[0]!.refused[0]).toMatch(/pickup_address.*owned by the database/);
+    expect(result.tables[0]!.refused[1]).toMatch(/pickup_window.*owned by the database/);
+  });
+});

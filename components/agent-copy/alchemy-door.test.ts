@@ -321,6 +321,36 @@ describe("a mounted page's handler is live on the door for as long as the page i
     expect(mockCreateNote).toHaveBeenCalledTimes(1);
   });
 
+  it("Save to Notes with the Notes page open returns the note the page's own handler created, and saveNote never throws", async () => {
+    const { registerHeadlessDestinations, saveNotesThroughDoor } = await import("./alchemy-door");
+    registerHeadlessDestinations(state);
+    // The page's collection handler answers { summary, data: { notes: [{ id, name }] } }.
+    const createOnPage = jest.fn(async () => ({
+      summary: 'Created 1 note: "On the page" (note-77).',
+      data: { notes: [{ id: "note-77", name: "On the page" }] },
+    }));
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/notes",
+        getScope: () => ({}),
+        getWriteHandlers: () => ({ create_notes: createOnPage }),
+      },
+      1,
+    );
+    try {
+      const onPage = await saveNotesThroughDoor([{ title: "On the page" }]);
+      expect(onPage.receipt).toMatchObject({ status: "applied" });
+      expect(onPage.created).toEqual([{ kind: "note", id: "note-77", label: "On the page", href: "/notes/note-77" }]);
+      const { createAlchemyDestinationPorts } = await import("./alchemy-destinations");
+      const ports = createAlchemyDestinationPorts({ getCurrentState: state, dispatch: jest.fn(), navigate: jest.fn() });
+      const outcome = await ports.scratch({ label: "On the page", markdown: "x", plainText: "x", signal: new AbortController().signal, draft: { sourceId: "s" } } as never);
+      expect(outcome).toMatchObject({ status: "success", target: { id: "note-77" } });
+      expect(createOnPage).toHaveBeenCalledTimes(2);
+    } finally {
+      unregister();
+    }
+  });
+
   it("a person's write to a target while an agent's write to it waits for approval is applied, not refused", async () => {
     const { createAlchemyDoorPort } = await import("./alchemy-door");
     const noteTitle = jest.fn();
