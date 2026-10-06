@@ -9,6 +9,7 @@
 // React talks to Supabase directly. The only doors are the database's own:
 //   content.space_save  — compare-and-swap on `version`, writes title + icon + body projection + one snapshot
 //   content.space_list  — the person's share roots plus their sub-pages (the assoc_list reveal rule)
+//   content.space_duplicate — a page or whole tree copied in one transaction
 //   public.assoc_link / assoc_unlink — sub-page edges
 // Archive = soft delete (`deleted_at`); the database carries it to sub-pages and back.
 
@@ -444,32 +445,27 @@ export class SupabaseSpacesStore implements SpacesStore {
   }
 
   async duplicate(id: SpaceId, options: { withChildren: boolean }): Promise<SpaceDoc> {
-    const source = await this.get(id);
-    if (!source) throw new Error("This Space no longer exists.");
-    const freshIds = (blocks: SpaceBlock[]): SpaceBlock[] =>
-      blocks.map((b) => ({ ...b, id: crypto.randomUUID(), children: b.children ? freshIds(b.children) : undefined }));
-    const copy = async (from: SpaceDoc, parentId: SpaceId | null, title: string, afterId?: SpaceId): Promise<SpaceDoc> => {
-      const made = await this.create({ parentId, title, afterId });
-      return this.save(
-        { ...made, icon: from.icon, cover: from.cover, settings: from.settings, blocks: freshIds(from.blocks) },
-        made.version,
-      );
+    // One transaction in the database (content.space_duplicate): the page, and with `withChildren` its
+    // whole sub-page tree in the same order, in-tree page mentions pointing at the copies. The copy sits
+    // right after the original, in the original's organization when it is a sub-page.
+    const source = await this.head(id);
+    if (!source || source.deleted_at) throw new Error("This Space no longer exists.");
+    const edge = await this.parentEdge(id);
+    // Not in the generated types until the next regeneration: a typed local shape for this one door.
+    const content = this.db.schema("content") as unknown as {
+      rpc(fn: "space_duplicate", args: Record<string, unknown>): PromiseLike<{ data: string | null; error: { message: string } | null }>;
     };
-    const top = await copy(source, source.parentId, source.title ? `${source.title} (1)` : "", source.id);
-    if (options.withChildren) {
-      const all = await this.list();
-      const walk = async (fromId: SpaceId, toId: SpaceId) => {
-        const kids = all.filter((s) => s.parentId === fromId).sort((a, b) => a.position.localeCompare(b.position));
-        for (const kid of kids) {
-          const full = await this.get(kid.id);
-          if (!full) continue;
-          const made = await copy(full, toId, full.title);
-          await walk(kid.id, made.id);
-        }
-      };
-      await walk(source.id, top.id);
-    }
-    return top;
+    const { data, error } = await content.rpc("space_duplicate", {
+      p_space_id: id,
+      p_organization_id: edge ? source.organization_id : this.organizationId,
+      p_parent_id: edge?.parentId,
+      p_position: edge ? await this.slot(edge.parentId, id, { afterId: id }) : undefined,
+      p_with_children: options.withChildren,
+    });
+    if (error || !data) fail("duplicate this Space", error);
+    const copy = await this.get(data);
+    if (!copy) throw new Error("The copy was made but could not be opened.");
+    return copy;
   }
 
   private async setDeleted(id: SpaceId, deletedAt: string | null, action: string): Promise<void> {
