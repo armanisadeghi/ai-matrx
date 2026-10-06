@@ -109,6 +109,15 @@ function recordSectionsPort(organizationId: string | null): {
   };
 }
 
+/**
+ * THE RELATION-ICON BINDING, written once (records-ui ≥0.101.33 `renderIcon`): a stored icon NAME
+ * ("Briefcase") drawn by the platform's one icon resolver. Exported so a mount with no ports (an
+ * in-memory preview) wears the same icons without a copy.
+ */
+export const RECORDS_ICONS: Pick<RecordsUiHost, "renderIcon"> = {
+  renderIcon: (name: string) => <DynamicIcon name={name} size={14} fallbackIcon="FileText" />,
+};
+
 export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }: RecordsUiHostArgs): RecordsUiHost {
   return {
     Link,
@@ -155,7 +164,7 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     // A relation cell wears its record's (else its table's) icon; the store keeps a picked icon as a NAME
     // ("Briefcase"), drawn here by the platform's one icon resolver (records-ui ≥0.101.33 `renderIcon`).
     // Spread as its own object: a records-ui build before the port ignores the key.
-    ...{ renderIcon: (name: string) => <DynamicIcon name={name} size={14} fallbackIcon="FileText" /> },
+    ...RECORDS_ICONS,
     // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).
     // Spread as its own object: a records-ui build before the port ignores the key.
     ...recordSectionsPort(ports.organizationId),
