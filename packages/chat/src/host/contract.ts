@@ -690,7 +690,8 @@ export type ChatFeedbackType =
   | "feature"
   | "suggestion"
   | "other"
-  | "request";
+  | "request"
+  | "page_story";
 
 /** A JSON value (the Supabase `Json` shape). */
 export type ChatJson =

@@ -19,6 +19,7 @@ import {
   XCircle,
   Zap,
   KeyRound,
+  ScrollText,
 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { filterAndSortRows } from "@ai-matrx/design-system/data-table/filter-engine";
@@ -455,6 +456,7 @@ export default function FeedbackTable() {
                 suggestion: <Lightbulb className="size-3 text-yellow-500" />,
                 other: <HelpCircle className="size-3" />,
                 request: <KeyRound className="size-3 text-sky-500" />,
+                page_story: <ScrollText className="size-3 text-emerald-500" />,
               }[r.feedback_type]
             }
             {r.feedback_type}
