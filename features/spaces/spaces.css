@@ -422,7 +422,7 @@
 .spaces-breadcrumb-item:hover {
   background: var(--spaces-hover);
 }
-.spaces-topbar-text-button {
+.spaces-topbar-text-button { white-space: nowrap; flex: none;
   height: 28px;
   padding: 0 8px;
   border-radius: 6px;

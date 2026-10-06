@@ -28,7 +28,7 @@ Notion code, fonts or logos.
 |---|---|---|
 | `SpacesStore` | the database store (`store-db/`, owner's) wrapped by `state/live-store.ts` (active org via `ensureOrgId` for new top-level pages, change events for the tree) | realtime merge |
 | `SpacesDataPort` | `templatePreview(spec).config` over a realistic template spec | live config + built-in modules via drill doors |
-| `SpacesAiPort` | `wired: false` → the AI surface opens and says AI is not connected yet | our agents |
+| `SpacesAiPort` | `ai/spaces-ai.ts`: `spaces.writing_assist` (useLiveAgentRun) and `spaces.ask_page` (launchAgentExecution) looked up in `MANDATE_KEYS`; a missing key = "AI is not connected yet" | — |
 
 Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color`, `background`,
 `props`, `children`). Add block types and props freely; never rename a stored one.
@@ -98,3 +98,10 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   `content.space_backlinks`, read on page load). B12 Mention now stores `mention {kind:"link", url, title, icon}` for any pasted URL
   (favicon + host/path title until a title fetch exists, hover card; `editor/inline.tsx` `LinkMention`); "@" on a page opens a page picker
   (`SpaceEditor`, inserts `mention {kind:"space"}`). `data/ChartView.tsx` lint errors fixed (offsets computed up front, error box carries the Alchemy Menu).
+- 2026-10-05 — builder round 8 (phase 4): `embed/RecordBodySpace.tsx` takes `fallback` (drawn while loading, failed — captured — and none)
+  and mounts no QuickFind. I1 duplicate opens the copy (top-level copy filed in the active org, `live-store.ts`); I2/I3 `state/templates.ts`
+  (template label + Use template = `space_duplicate` to the top level), `sidebar/TemplateGallery.tsx`; K1 `io/markdown.ts` (blocks → Markdown,
+  also the page text the AI reads), `io/export.ts` + `page/ExportDialog.tsx` (Markdown / HTML via @ai-matrx/print, zip with sub-pages, PDF
+  print window); K2 `io/import.ts` + `sidebar/ImportMenu.tsx`. C22/B12 `useLinkPreview` cards and mention titles. M1/M2/M4 `ai/` (Ask AI box,
+  Ask about this page; disclosed through `useDeclaredSurfaceMandates`). Data: `ViewSwitcher embedded` + `sortOverride` + "New page" line;
+  built-in boards on `TablePage source`, built-in charts on `EntityChartBlock`, New adds task / project rows.
