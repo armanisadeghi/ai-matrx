@@ -16,6 +16,7 @@ import { toast } from "@/lib/toast";
 import { useSourcePicker } from "../data/SourcePicker";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
+import { LoadAccessState } from "../workspace/LoadAccessState";
 import { useSpacesAiDisclosure } from "../ai/spaces-ai";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
 import { blocksToMarkdownLines, spaceToMarkdown, type MarkdownContext } from "../io/markdown";
@@ -257,6 +258,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
+    // The tree read was refused or failed: say that (sign in / no access / try again), not "No Space here".
+    if (spaces.access || spaces.loadError) return <LoadAccessState access={spaces.access ?? "fault"} onRetry={spaces.retryLoad} />;
     return (
       <div className="flex h-full items-center justify-center p-6">
         <EmptyState icon={<FileQuestion />} title="No Space here" action={<Button asChild variant="primary"><Link href="/spaces">Open Spaces</Link></Button>} />

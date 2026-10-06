@@ -18,6 +18,7 @@ import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { addTravelingSmmSample } from "../store/sample";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
+import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
 import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
 
 const FAVORITES_KEY = "spaces:favorites";
@@ -48,8 +49,12 @@ export type DropPlacement = "before" | "after" | "inside";
 interface SpacesContextValue {
   store: LiveSpacesStore;
   ready: boolean;
-  /** The tree could not be read (signed out, network): the screens say so instead of looking empty. */
+  /** The tree could not be read for a fault (network, server): the screens say so instead of looking empty. */
   loadError: string | null;
+  /** The tree read was refused: signed out, or no access. The screens show the sign-in / no-access state. */
+  access: LoadAccess | null;
+  /** Read the tree again (after a fault or a refusal). */
+  retryLoad: () => void;
   /** Optimistic title/icon in the tree while the open page types (Notion renames the row live). */
   patchSummary: (id: SpaceId, patch: Partial<Pick<SpaceSummary, "title" | "icon">>) => void;
   /** A page just created by the person: its title takes focus once it opens. */
@@ -106,6 +111,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const [all, setAll] = useState<SpaceSummary[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [access, setAccess] = useState<LoadAccess | null>(null);
+  const reload = useRef<() => void>(() => {});
   const focusTitle = useRef<SpaceId | null>(null);
   const fresh = useRef(new Map<SpaceId, SpaceDoc>());
   const [sampleProgress, setSampleProgress] = useState<string | null>(null);
@@ -119,22 +126,50 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let live = true;
+    let retriedRefusal = false;
     const refresh = () => {
       void store.list({ includeArchived: true }).then(
         (list) => {
           if (!live) return;
           setAll(list);
           setLoadError(null);
+          setAccess(null);
           setReady(true);
         },
-        (err: unknown) => {
+        async (err: unknown) => {
           if (!live) return;
-          setLoadError(err instanceof Error ? err.message : "We couldn't load your pages.");
+          if (isRefusal(err)) {
+            const signedIn = await hasSignedInSession();
+            if (!live) return;
+            // A refusal with a session is usually the boot race (the read left before the session
+            // attached): read once more before calling it no access.
+            if (signedIn && !retriedRefusal) {
+              retriedRefusal = true;
+              window.setTimeout(() => live && refresh(), 1200);
+              return;
+            }
+            setAccess(signedIn ? "no-access" : "signed-out");
+            setLoadError(null);
+          } else {
+            console.error("[spaces] the page tree could not be read", err);
+            setAccess(null);
+            setLoadError("We couldn't load your pages.");
+          }
           setReady(true);
         },
       );
     };
+    reload.current = () => {
+      retriedRefusal = false;
+      refresh();
+    };
     refresh();
+    // Signing in (or a session attaching late) reads the tree again.
+    const offAuth = onSignedIn(() => {
+      if (!live) return;
+      retriedRefusal = false;
+      refresh();
+    });
     const off = store.onChange((change) => {
       if (change.kind === "tree") return refresh();
       const { id, title, icon, updatedAt, isArchived } = change.doc;
@@ -151,6 +186,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     return () => {
       live = false;
       off();
+      offAuth();
     };
   }, [store]);
 
@@ -291,6 +327,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     store,
     ready,
     loadError,
+    access,
+    retryLoad: () => reload.current(),
     patchSummary,
     takeFocusTitle,
     takeFresh,
