@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
-import { Button as ControlButton } from "@ai-matrx/design-system/controls";
+import { Button as ControlButton } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
