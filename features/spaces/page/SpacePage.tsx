@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useSourcePicker } from "../data/SourcePicker";
@@ -87,6 +88,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [doc, setDoc] = useState<SpaceDoc | null | undefined>(undefined);
   const [now, setNow] = useState(() => Date.now());
   const [saveState, setSaveState] = useState<SaveState>("saved");
+  /** Why the last save failed — handed to the error menu beside "Not saved". */
+  const [saveError, setSaveError] = useState<unknown>(null);
   /** Bumped when the page is replaced by a newer stored copy: the editor remounts on it. */
   const [editorRound, setEditorRound] = useState(0);
   const [focusTitle, setFocusTitle] = useState(false);
@@ -109,20 +112,23 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     setDoc(d);
   };
 
+  // Another Space opened in this same page: drop the last one's state while rendering (React's
+  // "reset state when a prop changes"), so nothing of it paints under the new id.
+  const [shownId, setShownId] = useState(spaceId);
+  if (shownId !== spaceId) {
+    setShownId(spaceId);
+    setDoc(undefined);
+    setSaveState("saved");
+  }
+
   useEffect(() => {
     let live = true;
-    setDoc(undefined);
     docRef.current = null;
     pending.current = false;
-    setSaveState("saved");
+    // A page made a moment ago arrives in hand; any other is read. Both settle in a callback, so the
+    // page's state is set by the answer, never synchronously by the effect.
     const made = spaces.takeFresh(spaceId);
-    if (made) {
-      adopt(made);
-      setFocusTitle(spaces.takeFocusTitle(spaceId));
-      markVisited(spaceId);
-      return;
-    }
-    void store.get(spaceId).then(
+    void (made ? Promise.resolve(made) : store.get(spaceId)).then(
       (d) => {
         if (!live) return;
         if (d) adopt(d);
@@ -136,7 +142,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       live = false;
     };
     // markVisited / takeFocusTitle are fresh functions each render; loading is keyed on the id alone.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, spaceId]);
 
   useEffect(() => {
@@ -172,6 +177,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         toast.warning("This page was changed somewhere else. Showing the latest version; your last edit was not saved.");
       } else {
         pending.current = true;
+        setSaveError(err);
         setSaveState("failed");
         // The database's refusal (22023 "not a valid snapshot: …") can arrive as a plain error object.
         const raw = err instanceof Error ? err.message : err && typeof err === "object" && "message" in err ? String((err as { message: unknown }).message) : "";
@@ -214,7 +220,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       unsubscribe();
     };
     // adopt only touches refs and setters.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [store, spaceId, origin]);
 
   useEffect(() => {
@@ -231,7 +236,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       void flush();
     };
     // Flush on leaving this Space only.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [spaceId]);
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
@@ -335,6 +339,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         ) : null}
         <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
           {saveState === "saving" ? "Saving…" : saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
+          {saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
         <Popover>
           <PopoverTrigger asChild>
