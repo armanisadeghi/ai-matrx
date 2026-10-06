@@ -38,6 +38,7 @@ const SERVER_SENTENCES: Record<DirectiveReceiptOutcome, string> = {
   failed: "Could not run create project with tasks — the project name was already taken",
   blocked:
     "Not applied — nothing was written. Permission to run create project with tasks was refused: resolved apply policy is 'off'",
+  pending: "Building agent Listing Summarizer. It is kept only if it passes its proof.",
 };
 
 function renderReceipt(outcome: DirectiveReceiptOutcome, ids: string[] = []): string {
