@@ -183,8 +183,10 @@ describe("InteractionTimeline model-transfer seam", () => {
       (container.querySelector('[aria-label="Delete entry"]') as HTMLButtonElement).click();
     });
     const options = jest.mocked(confirm).mock.calls[0][0];
-    expect(options.description?.includes("Permanently")).toBe(erasesContent);
-    expect(options.description?.includes("Gmail is unchanged")).toBe(erasesContent);
+    expect(typeof options.description).toBe("string");
+    const description = String(options.description);
+    expect(description.includes("Permanently")).toBe(erasesContent);
+    expect(description.includes("Gmail is unchanged")).toBe(erasesContent);
     expect(options.description).toBeTruthy();
     expect(removeInteraction).not.toHaveBeenCalled();
   });
