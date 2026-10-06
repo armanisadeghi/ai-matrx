@@ -27,7 +27,7 @@ import {
   CAPABILITY_LABELS,
   CAPABILITY_GROUPS,
 } from "./auditTypes";
-import { mergeAuditRecordIntoCapabilities } from "../capabilities/parse";
+import { mergeAuditRecordIntoCapabilities } from "@ai-matrx/agents/models";
 import {
   ApiNameCell,
   IssueList,

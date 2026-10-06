@@ -17,7 +17,7 @@
  *    blanket "nothing is ever an error" regression).
  */
 
-import type { TransferOutcome } from "@ai-matrx/kit/content-transfer";
+import type { TransferOutcome } from "@ai-matrx/alchemy/operate";
 
 import { sendRowsToSheetOutcome } from "./useExportActions";
 import { NOTHING_CHANGED_YET, OPEN_APPROVAL_LABEL } from "@/features/google-workspace/export/proposedWrite";

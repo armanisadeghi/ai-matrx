@@ -968,6 +968,10 @@ export function ImageAssetUploader({
     onDrop: (acceptedFiles) => handleFiles(acceptedFiles),
     noClick: true,
     noKeyboard: true,
+    // This uploader takes a paste ANYWHERE on the page (its window listener
+    // below); react-dropzone's own paste-to-upload (v20+) would attach the
+    // same image a second time when focus is inside the zone.
+    noPaste: true,
     accept: acceptMap,
     maxSize,
     multiple: false,

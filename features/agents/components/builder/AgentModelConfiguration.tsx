@@ -29,7 +29,7 @@ import { AgentVariablesModal } from "@/features/agents/components/variables-mana
 import { AgentToolsModal } from "@/features/agents/components/tools-management/AgentToolsModal";
 import { AgentSkillsButton } from "@/features/agents/components/skills-management/AgentSkillsButton";
 import { Label } from "@/components/ui/label";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { cn } from "@/lib/utils";
 
 interface AgentModelConfigurationProps {

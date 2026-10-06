@@ -2,11 +2,11 @@ import {
   createBrowserTransport,
   createDraft,
   capture,
+  formatAdapter,
   normalizeTransferJson,
   serialize,
-  serializeMarkdownRich,
   type Payload,
-} from "@ai-matrx/kit/content-transfer";
+} from "@ai-matrx/alchemy/operate";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
@@ -59,8 +59,14 @@ export async function copyToClipboard(
     const rich =
       payload.kind === "markdown" &&
       (options.formatForGoogleDocs || options.formatForWordPress);
+    // "Copy formatted" is Alchemy's one Markdown→HTML engine (print's markdown-html), loaded at
+    // click time; Google Docs and Word profiles are byte-identical (alchemy CHANGELOG 0.12).
     const artifact = rich
-      ? await serializeMarkdownRich(draft)
+      ? await (await formatAdapter("rich-html").load()).build(
+          draft,
+          { profile: options.formatForGoogleDocs ? "google-docs" : "generic" },
+          signal,
+        )
       : serialize(
           draft,
           payload.kind === "json"

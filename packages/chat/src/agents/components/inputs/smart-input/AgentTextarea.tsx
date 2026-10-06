@@ -38,14 +38,12 @@ import {
   selectComposerHasSomethingToSend,
   selectIsExecuting,
 } from "../../../redux/execution-system/selectors/aggregate.selectors";
-import { useClipboardPaste } from "@ai-matrx/chat/host/ui-slots";
 import { focusUnlessTypingElsewhere } from "@ai-matrx/chat/utils/dom/focus-guard";
 import {
   composerKeyIntent,
   intentTakesTheKey,
 } from "@ai-matrx/chat/ui/composer/composerSubmit";
 import { readVerticalChrome, snapToLineGrid } from "./textarea-line-grid";
-import { usePasteImageResource } from "../resources/usePasteImageResource";
 import { useInstanceInputUndoRedo } from "../../../hooks/useInstanceInputUndoRedo";
 import { ComposerDraftNotice } from "./ComposerDraftNotice";
 import { ComposerToolsNotice } from "./ComposerToolsNotice";
@@ -69,7 +67,6 @@ interface AgentTextareaProps {
   singleRow?: boolean;
   uploadRoot?: string;
   uploadPath?: string;
-  enablePasteImages?: boolean;
   surfaceKey?: string;
   /**
    * The key an unsent draft is also kept under, so it survives a reload of a
@@ -124,7 +121,6 @@ export function AgentTextarea({
   singleRow = false,
   uploadRoot = "userContent",
   uploadPath = "agent-attachments",
-  enablePasteImages = true,
   surfaceKey,
   draftAlias,
   disableSend = false,
@@ -248,18 +244,9 @@ export function AgentTextarea({
     dispatch(interruptAndSend({ conversationId, surfaceKey }));
   }, [disableSend, conversationId, surfaceKey, dispatch]);
 
-  // ── Paste image ─────────────────────────────────────────────────────────────
-  // Canonical paste→upload→attach flow, shared by every composer.
-  const handlePasteImage = usePasteImageResource(conversationId, {
-    uploadRoot,
-    uploadPath,
-  });
-
-  useClipboardPaste({
-    textareaRef,
-    onPasteImage: handlePasteImage,
-    disabled: !enablePasteImages,
-  });
+  // ── Paste ───────────────────────────────────────────────────────────────
+  // Pasted files attach through the composer's drop target (react-dropzone
+  // owns paste-to-upload) — this textarea never catches a paste itself.
 
   // ── Text change ─────────────────────────────────────────────────────────────
   const handleTextChange = useCallback(

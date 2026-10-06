@@ -186,7 +186,7 @@ registerChatUi({
   ConfirmDialog: Host_ConfirmDialog,
 });
 
-import { ModelListDropdown as Host_ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown as Host_ModelListDropdown } from "@ai-matrx/agents/models/react";
 registerChatUi({
   ModelListDropdown: asSlot(Host_ModelListDropdown),
 });

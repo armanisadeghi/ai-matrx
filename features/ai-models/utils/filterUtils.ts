@@ -1,4 +1,4 @@
-import { parseCapabilities } from "../capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import type { AiModel } from "../types";
 import type { AiModelFilters } from "../hooks/useTabUrlState";
 

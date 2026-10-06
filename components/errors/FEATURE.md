@@ -52,6 +52,7 @@ Arman: an error must be copyable for AI with everything needed to act on it. One
 
 ## Change Log
 
+- 2026-10-06 — ALC-16: transfer imports moved off the retired `@ai-matrx/alchemy/core` / `@ai-matrx/kit/content-transfer` onto `@ai-matrx/alchemy/operate` (same functions, same bytes).
 - 2026-10-02 — **The inline menu never adds space around its tap button.** Its wrapper carried
   `ml-1` (and `pl-1` when truncating), which the design-system dev guard paints as "TAP BUTTON
   MISUSE — adds 4px around a tap button" beside every inline error (seen on the directive

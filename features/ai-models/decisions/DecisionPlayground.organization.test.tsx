@@ -59,7 +59,7 @@ jest.mock("@/components/official/ProTextarea", () => ({
     <textarea value={value} onChange={onChange} />
   ),
 }));
-jest.mock("@/features/ai-models/components/lab/ModelListDropdown", () => ({
+jest.mock("@ai-matrx/agents/models/react", () => ({
   ModelListDropdown: () => null,
 }));
 jest.mock("./DecisionQuestionEditor", () => ({

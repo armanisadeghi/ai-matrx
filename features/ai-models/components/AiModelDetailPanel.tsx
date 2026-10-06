@@ -49,7 +49,7 @@ import ModelRulesEditor from "./ModelRulesEditor";
 import ModelControlsEditor from "./controls/ModelControlsEditor";
 import ModelUsageAudit from "./ModelUsageAudit";
 import { aiModelService } from "../service";
-import { findNonCanonicalCapabilityValues } from "../capabilities/parse";
+import { findNonCanonicalCapabilityValues } from "@ai-matrx/agents/models";
 import type {
   AiModel,
   AiModelFormData,

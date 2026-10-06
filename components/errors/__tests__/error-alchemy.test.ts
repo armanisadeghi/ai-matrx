@@ -6,7 +6,7 @@
  * render shares (ErrorNotice, destructive Alert, route/section boundaries,
  * error toasts).
  */
-import { buildAgentPayload } from "@ai-matrx/kit/content-transfer";
+import { buildAgentPayload } from "@ai-matrx/alchemy/operate";
 import {
   buildErrorAlchemyPayload,
   buildErrorFixPrompt,

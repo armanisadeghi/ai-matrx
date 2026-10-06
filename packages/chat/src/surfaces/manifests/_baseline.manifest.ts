@@ -12,7 +12,7 @@
  * in `mergeBaselineValues`.
  */
 
-import type { SurfaceValue } from "../types";
+import type { SurfaceValue, SurfaceWriteTarget } from "../types";
 
 /**
  * THE PERSON'S POINTER (Arman, 2026-09-30). What someone highlighted — and the
@@ -171,10 +171,98 @@ export const PLATFORM_CONTEXT_VALUES = {
   },
 } as const satisfies Record<string, SurfaceValue>;
 
+/**
+ * THE BASELINE SURFACE — where the platform's own write targets are declared
+ * (Matrx Alchemy ALC-17). Every surface inherits it: the one write door reads
+ * it as the root ancestor of every surface (`surfaceWriteDeclarations` in
+ * `runtime/surface-writeback.ts`), so a write to a platform target from ANY
+ * surface resolves here, and the platform's headless handlers are registered
+ * on this name. It is not a page and is never mounted.
+ */
+export const BASELINE_SURFACE_NAME = "matrx-platform/baseline";
+
+/** `surface_feedback` value bounds — the description and the check read the same numbers. */
+export const SURFACE_FEEDBACK_KINDS = [
+  "missing_capability",
+  "wrong_or_unclear_description",
+  "bug",
+  "missing_data",
+  "suggestion",
+] as const;
+export const SURFACE_FEEDBACK_MESSAGE_MIN = 10;
+export const SURFACE_FEEDBACK_MESSAGE_MAX = 4000;
+/** At most this many custom fields per `custom_fields_add` write. */
+export const CUSTOM_FIELDS_MAX_PER_WRITE = 10;
+
+/**
+ * THE PLATFORM WRITE TARGETS, declared once on the baseline surface. Each has
+ * the apply policy it always had: window fields and custom fields are `ask`
+ * (an agent's write waits for the person's card; a person's own write is the
+ * approval); feedback is `auto` (it changes nothing on the page). The runtime
+ * files word the live offer from these (`customFieldsTarget()` adds the
+ * mounted sections), and register the handlers that apply them.
+ */
+export const PLATFORM_WRITE_TARGETS = {
+  window_form_fields: {
+    name: "window_form_fields",
+    label: "Fields in an open window",
+    description:
+      'Change fields in an open window that has no registered surface (listed in your context as window::<title>). Value: { "window": "<title exactly as listed>", "changes": [{ "field": "<field key>", "value": <new value> }] }. A text or number field takes a string or number, a checkbox or switch takes true/false, a list takes the text of one of its choices (a wrong choice is refused with the real ones). Every change is checked against the field\'s rules before anything lands; the person approves first, and the window\'s own Save still decides.',
+    valueType: "object",
+    mode: "draft",
+    applyPolicy: "ask",
+  },
+  surface_feedback: {
+    name: "surface_feedback",
+    label: "Feedback about this page",
+    description:
+      "Save feedback about this page (surface) for the team that builds it — it changes NOTHING on the page and nobody is asked. " +
+      "Use it when something about the page got in your way: a write you needed does not exist, a description was wrong or unclear, " +
+      "data you needed was missing or arrived in an awkward form, or something broke. Also use it when the person asks you to give feedback on this page. " +
+      `Value: { "kind": "${SURFACE_FEEDBACK_KINDS.join(" | ")}", "message": "<what happened and what would have helped, ${SURFACE_FEEDBACK_MESSAGE_MIN}-${SURFACE_FEEDBACK_MESSAGE_MAX} characters>", "target_or_value": "<optional: the write target or value name it concerns>" }. ` +
+      "It is filed for the surface named on this line; pass `surface` to file it for another open surface instead.",
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "auto",
+  },
+  custom_fields_add: {
+    name: "custom_fields_add",
+    label: "Add custom fields",
+    description:
+      "Add custom fields (new columns) to the kind of record shown on this page — SAVED immediately after the person approves, and every record of that kind gets the field (empty until filled in). " +
+      'Value: { "entity": "<entity token, required only when more than one section is listed>", "fields": [{ "label": "<the field\'s name as a person reads it>", "type": "<one of the types below; default text>" }] } — 1 to ' +
+      `${CUSTOM_FIELDS_MAX_PER_WRITE} fields. ` +
+      "Refused before the person is asked: a name already used, a name asked for twice, an unknown type, or a person who may not add fields (the store's reason is returned). " +
+      "This adds the FIELD only; it does not fill in a value.",
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+  },
+  custom_fields_set: {
+    name: "custom_fields_set",
+    label: "Fill in custom fields",
+    description:
+      "Set this record's custom-field values — SAVED immediately after the person approves; a field left out is left alone. " +
+      'Value: { "entity": "<entity token, only when more than one section is listed>", "values": { "<field name or key>": <value> } }. ' +
+      "A number field takes a number, a date field an ISO date (YYYY-MM-DD), text fields a string; null clears a value. " +
+      "Refused before the person is asked: a field that does not exist (the existing ones are named), or a person who may not fill them in. " +
+      "To add a NEW field use custom_fields_add.",
+    valueType: "object",
+    mode: "entity",
+    applyPolicy: "ask",
+  },
+} as const satisfies Record<string, SurfaceWriteTarget>;
+
+export type PlatformWriteTargetName = keyof typeof PLATFORM_WRITE_TARGETS;
+
+export function isPlatformWriteTarget(name: string): name is PlatformWriteTargetName {
+  return Object.prototype.hasOwnProperty.call(PLATFORM_WRITE_TARGETS, name);
+}
+
 /** Names only the platform writes — a manifest declaring one is refused. */
 export const PLATFORM_RESERVED_NAMES = {
   values: Object.keys(PLATFORM_CONTEXT_VALUES) as ReadonlyArray<string>,
-  writeTargets: ["window_form_fields", "surface_feedback", "custom_fields_add", "custom_fields_set"] as ReadonlyArray<string>,
+  writeTargets: Object.keys(PLATFORM_WRITE_TARGETS) as ReadonlyArray<string>,
 };
 
 /**

@@ -19,7 +19,7 @@
  */
 
 import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import { modelTakesDecisions } from "./budget";
 import { isDecisionQuestionsPart, partKind } from "./types";
 

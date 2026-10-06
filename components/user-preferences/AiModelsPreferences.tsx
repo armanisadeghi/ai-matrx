@@ -39,7 +39,7 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { setPreference } from "@/lib/redux/preferences/userPreferencesSlice";
 import { useModels } from "@/features/ai-models/hooks/useModels";
-import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
+import { useModelCatalog } from "@ai-matrx/agents/models/react";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   useSurfaceScopeContribution,

@@ -6,7 +6,7 @@ import type { AiModel } from "../types";
 import {
   parseCapabilities as parseCapabilitiesCanonical,
   toAuditRecord,
-} from "../capabilities/parse";
+} from "@ai-matrx/agents/models";
 
 // ── Capability definitions ─────────────────────────────────────────────────
 

@@ -516,7 +516,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "points_per_million_output", "is_deprecated", "retired_at", "successor_id", "controls", "constraints",
     ],
     why:
-"The anonymous model catalog — features/ai-models/hooks/useModelCatalog.ts: \"user → ai.model_public (anon + authenticated; masked, points pricing)\". A view with security_invoker OFF, so it does not consult RLS; kept because it is meant to be world-readable.",
+"The anonymous model catalog — @ai-matrx/agents/models (createModelCatalog): \"user → ai.model_public (anon + authenticated; masked, points pricing)\". A view with security_invoker OFF, so it does not consult RLS; kept because it is meant to be world-readable.",
   },
   {
     relation: "ai.provider",

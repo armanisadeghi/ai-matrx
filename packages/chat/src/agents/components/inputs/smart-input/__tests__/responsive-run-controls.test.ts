@@ -5,13 +5,14 @@ const stacked = readFileSync(join(__dirname, "../SmartAgentInputStacked.tsx"), "
 const buttons = readFileSync(join(__dirname, "../InputActionButtons.tsx"), "utf8");
 
 describe("responsive chat run controls", () => {
-  it("keeps every style — Form included — on the 44px touch-target floor", () => {
-    // Each style's root opts into the subtree touch floor (globals.css `.matrx-touch-targets`).
-    const form = stacked.slice(stacked.indexOf('data-composer-style="form"') - 600, stacked.indexOf('data-composer-style="form"'));
-    expect(form).toContain("matrx-touch-targets");
-    const roots = stacked.match(/"matrx-touch-targets mx-auto flex w-full/g) ?? [];
-    expect(roots.length).toBeGreaterThanOrEqual(2); // Form + Full/Compact (Launcher separately)
-    expect(stacked).toContain('className="matrx-touch-targets mx-auto flex w-full min-w-0 max-w-[420px]');
+  it("puts every style on the 44px touch floor on a TOUCH device only", () => {
+    // Every style's root (Form, Launcher, Full/Compact) opts into the subtree
+    // touch floor — but only when the device is touch-only. The shared class
+    // also fires under a 1024px viewport, which stretched a narrowed desktop
+    // window's buttons and pills to 44px (2026-10-06).
+    expect(stacked).toContain("const touchOnly = useTouchOnlyDevice();");
+    expect(stacked.match(/touchOnly && "matrx-touch-targets"/g) ?? []).toHaveLength(3);
+    expect(stacked).not.toMatch(/["`]matrx-touch-targets /);
   });
 
   it("draws Stop and Send as the composer's own control (the one Button), not a hand-sized box", () => {

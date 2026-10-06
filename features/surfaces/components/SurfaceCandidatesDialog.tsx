@@ -1,5 +1,6 @@
 "use client";
 
+import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { useState } from "react";
 import { Loader2, Zap, CheckSquare, Square, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,8 @@ export function SurfaceCandidatesDialog({
         .map((c) => ({
           name: c.name,
           client_name: c.client_name,
+          // A surface registered here is a platform (code) surface; the platform owns it.
+          organization_id: SYSTEM_ORGANIZATION_ID,
           description: c.description,
           sort_order: c.sort_order,
           is_active: activateAll ? true : c.is_active,

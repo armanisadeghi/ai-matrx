@@ -363,7 +363,7 @@ export type AiModelFormData = {
   name: string;
   common_name: string;
   // Registry prose shown to USERS as the secondary line of a model picker row
-  // (features/ai-models/components/lab/ModelListDropdown.tsx). Empty string =
+  // (@ai-matrx/agents/models/react ModelListDropdown). Empty string =
   // NULL in the DB. This field is also the human correction path for the
   // `model_description` surface write target — do not drop it without also
   // dropping that target (see the writeTargets block in

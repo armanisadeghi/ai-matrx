@@ -16,7 +16,7 @@
 // Arman, 2026-09-20: the default decision model comes from the system knobs,
 // never from code.
 
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import { isDecisionModelCapability } from "@ai-matrx/agents/models";
 import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import {

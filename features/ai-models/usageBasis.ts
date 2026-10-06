@@ -11,7 +11,7 @@
  * which price field is billed and what real-world unit the price is in.
  */
 
-import { parseCapabilities } from "./capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import type { ModelCapabilities } from "@ai-matrx/agents/models";
 
 export type UsageBasis =

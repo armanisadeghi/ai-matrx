@@ -1,4 +1,4 @@
-import type { Artifact, TransferOutcome } from "@ai-matrx/kit/content-transfer";
+import type { Artifact, TransferOutcome } from "@ai-matrx/alchemy/operate";
 
 const EMAIL_FORMATS = new Set(["csv", "json", "markdown"]);
 const EMAIL_MIME_BY_FORMAT = {

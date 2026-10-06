@@ -15,7 +15,7 @@
  * network — the suite drives it directly.
  */
 
-import type { AgentPayloadInput } from "@ai-matrx/kit/content-transfer";
+import type { AgentPayloadInput } from "@ai-matrx/alchemy/operate";
 import type {
   AlchemyDetail,
   AlchemyGroomerConfig,

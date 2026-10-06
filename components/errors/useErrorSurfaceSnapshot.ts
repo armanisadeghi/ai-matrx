@@ -22,7 +22,7 @@
  */
 import { useEffect, useRef } from "react";
 import { useContentTransferSurface } from "@ai-matrx/design-system/content-transfer";
-import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
+import type { SurfaceHandle } from "@ai-matrx/alchemy/operate";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import {
   getSurfaceRuntime,

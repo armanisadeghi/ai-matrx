@@ -25,7 +25,7 @@
  * needs different numbers, the fix is its catalog row — never an edit here.
  */
 
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import { isDecisionModelCapability } from "@ai-matrx/agents/models";
 import type { AIModelRecord } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { estimateTokensForText } from "@ai-matrx/kit/tokens";

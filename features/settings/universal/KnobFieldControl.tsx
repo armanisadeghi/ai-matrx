@@ -46,7 +46,7 @@ import {
 import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { useVoiceSample } from "@/features/audio/service/useVoiceSample";
 import {
   voiceDisplayName,

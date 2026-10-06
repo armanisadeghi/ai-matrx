@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ai-matrx/design-system";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import {
   AlertDialog,
   AlertDialogAction,

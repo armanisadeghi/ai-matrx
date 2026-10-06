@@ -274,6 +274,9 @@ if $STRICT; then
         "Record-naming toasts carry their record|pnpm check:record-toasts:strict"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts --strict"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
+        # Only ONE version of anything (Arman, 2026-10-05); advisory — shrink-only baseline.
+        "One version of each canonical piece|pnpm check:one-version"
+        "One-version guard proves it can fail|pnpm check:one-version:self-test"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
         "Univer document page is legible in both themes|pnpm check:univer-doc-theme"
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
@@ -1115,6 +1118,10 @@ else
         "Record-naming toasts carry their record|pnpm check:record-toasts"
         "UI primitives check|pnpm exec tsx scripts/check-ui-primitives.ts"
         "Canonical agent/model pickers|pnpm check:canonical-pickers"
+        # Only ONE version of anything (Arman, 2026-10-05): a second chat input / Enter-send /
+        # paste handler / variables renderer / chip / Mac detection fails; shrink-only baseline.
+        "One version of each canonical piece|pnpm check:one-version"
+        "One-version guard proves it can fail|pnpm check:one-version:self-test"
         "Archived-items law (every list has an archive control)|pnpm check:archived-items-law"
         "Univer document page is legible in both themes|pnpm check:univer-doc-theme"
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"

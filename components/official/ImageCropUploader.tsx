@@ -146,6 +146,9 @@ function SourcePicker({ onFile, onError, disabled }: SourcePickerProps) {
       "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif", ".heic", ".avif"],
     },
     maxFiles: 1,
+    // A paste anywhere on the page is handled by the window listener above;
+    // react-dropzone's own paste (v20+) would deliver the same image twice.
+    noPaste: true,
     disabled: disabled || fetching || libraryBusy,
     onDropAccepted: (files) => {
       if (files[0]) onFile(files[0]);

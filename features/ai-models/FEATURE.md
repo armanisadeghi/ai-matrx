@@ -17,7 +17,7 @@ must obey.
 
 ## 🚨 Rules
 
-- **There is ONE platform model picker: `components/lab/ModelListDropdown.tsx`.** Every UI that
+- **There is ONE platform model picker: `ModelListDropdown` in `@ai-matrx/agents/models/react` (mounted once by `providers/ModelCatalogHost.tsx`).** Every UI that
   chooses an `ai.model_definition` row renders that component, directly or through a thin settings/
   run-control adapter. Constrain it with `allowedModelIds`, `catalogVariant`, `inputModalities`,
   `outputModalities`, `emptyOptionLabel`/`onClear`, `priorityModelIds`, and trigger styling — never

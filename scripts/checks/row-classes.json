@@ -5,8 +5,8 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 149,
-    "live-db": 63
+    "repo-only": 155,
+    "live-db": 65
   },
   "rows": {
     "every-ai-matrx-package-is-declared-and-installed-at-npm-late": {
@@ -617,6 +617,20 @@
       "reason": "no database access in 3 file(s) reached",
       "evidence": []
     },
+    "one-version-of-each-canonical-piece": {
+      "label": "One version of each canonical piece",
+      "class": "repo-only",
+      "cmd": "pnpm check:one-version",
+      "reason": "no database access in 4 file(s) reached",
+      "evidence": []
+    },
+    "one-version-guard-proves-it-can-fail": {
+      "label": "One-version guard proves it can fail",
+      "class": "repo-only",
+      "cmd": "pnpm check:one-version:self-test",
+      "reason": "no database access in 4 file(s) reached",
+      "evidence": []
+    },
     "archived-items-law-every-list-has-an-archive-control": {
       "label": "Archived-items law (every list has an archive control)",
       "class": "repo-only",
@@ -650,6 +664,20 @@
       "class": "repo-only",
       "cmd": "pnpm check:chat-package-boundary:self-test",
       "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "chat-public-subpaths-app-imports-only-the-package-s-public-s": {
+      "label": "Chat public subpaths (app imports only the package's public surface)",
+      "class": "repo-only",
+      "cmd": "pnpm check:chat-public-subpaths",
+      "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "chat-public-subpaths-self-test": {
+      "label": "Chat public subpaths — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:chat-public-subpaths:self-test",
+      "reason": "no database access in 1 file(s) reached",
       "evidence": []
     },
     "a-run-never-fetches-the-agent-definition-run-tier": {
@@ -1423,6 +1451,30 @@
         }
       ]
     },
+    "no-orphan-surface-rows": {
+      "label": "No orphan surface rows",
+      "class": "live-db",
+      "cmd": "pnpm check:surface-orphans",
+      "reason": "reaches code that can open the live database",
+      "evidence": [
+        {
+          "file": "scripts/check-surface-orphans.ts",
+          "signal": "service-role / secret key"
+        }
+      ]
+    },
+    "and-the-orphan-check-can-still-fail": {
+      "label": "…and the orphan check can still fail",
+      "class": "live-db",
+      "cmd": "pnpm check:surface-orphans:self-test",
+      "reason": "reaches code that can open the live database",
+      "evidence": [
+        {
+          "file": "scripts/check-surface-orphans.ts",
+          "signal": "service-role / secret key"
+        }
+      ]
+    },
     "and-its-archive-revive-planner-can-still-fail": {
       "label": "…and its archive/revive planner can still fail",
       "class": "repo-only",
@@ -1806,7 +1858,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 216 file(s) reached",
+      "reason": "no database access in 218 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -2037,6 +2089,20 @@
       "label": "Cursor law guard self-test",
       "class": "repo-only",
       "cmd": "pnpm check:cursor-law:self-test",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "raw-clipboard-download-format-lib-door-bypass-in-app-code-al": {
+      "label": "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)",
+      "class": "repo-only",
+      "cmd": "pnpm check:alchemy-doors",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "alchemy-doors-guard-self-test": {
+      "label": "Alchemy doors guard self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:alchemy-doors:self-test",
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },

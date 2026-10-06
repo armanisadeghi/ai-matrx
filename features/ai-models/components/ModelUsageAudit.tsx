@@ -5,7 +5,7 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import {
   RefreshCcw,
   ArrowRightLeft,

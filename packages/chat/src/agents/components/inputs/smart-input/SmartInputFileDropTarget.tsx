@@ -20,6 +20,13 @@ interface SmartInputFileDropTargetProps extends Omit<
   conversationId: string;
   uploadRoot?: string;
   uploadPath?: string;
+  /**
+   * Pasted files (a screenshot, Cmd/Ctrl+V of a copied file) attach through
+   * the same upload as a drop. react-dropzone OWNS paste-to-upload (v20+,
+   * on by default); nothing else in the input may also catch the paste, or
+   * every pasted image attaches twice (2026-10-06). False = paste stays text.
+   */
+  pasteFiles?: boolean;
   children: React.ReactNode;
 }
 
@@ -27,6 +34,7 @@ export function SmartInputFileDropTarget({
   conversationId,
   uploadRoot,
   uploadPath,
+  pasteFiles = true,
   className,
   children,
   ...rootProps
@@ -39,6 +47,7 @@ export function SmartInputFileDropTarget({
     onDrop: (files) => void uploadResources(files),
     noClick: true,
     noKeyboard: true,
+    noPaste: !pasteFiles,
   });
 
   return (

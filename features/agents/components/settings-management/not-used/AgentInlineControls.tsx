@@ -24,7 +24,7 @@ import {
   selectAgentSettings,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useCallback } from "react";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import { Label } from "@/components/ui/label";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";

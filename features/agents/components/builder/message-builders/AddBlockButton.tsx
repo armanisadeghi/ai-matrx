@@ -69,7 +69,7 @@ import {
   readTurns,
   speechScriptCompatibility,
 } from "@ai-matrx/chat/agents/speech-script/types";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import { ImageRoleSelector } from "@ai-matrx/chat/agents/image-roles/ImageRoleSelector";
 import { useImageRoleLimits } from "@ai-matrx/chat/agents/image-roles/useImageRoleLimits";
 import {
