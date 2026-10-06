@@ -145,6 +145,13 @@ function DatabaseFrame({
   const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
   const shown: SpaceDbView = { ...active, sorts: shownSorts(active, choice), filters: shownFilters(active, filterChoices[active.id]) };
   const sortOverride = choice ?? null;
+  // The viewer's search (the table's magnifier), per view, beside the sort and filter: never saved,
+  // asked of the store's search by the grid (records-ui searchOverride).
+  const [searchChoices, setSearchChoices] = useState<Record<string, string>>({});
+  const search = {
+    value: searchChoices[active.id] ?? "",
+    onChange: (term: string) => setSearchChoices((prev) => (prev[active.id] === term ? prev : { ...prev, [active.id]: term })),
+  };
 
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
   const saveView = (patch: Partial<SpaceDbView>) => save({ views: views.map((v) => (v.id === active.id ? { ...v, ...patch } : v)), activeViewId: active.id });
@@ -169,6 +176,7 @@ function DatabaseFrame({
       editable={editable}
       sample={sample}
       sortOverride={sortOverride}
+      search={search}
     />
   );
 
@@ -259,7 +267,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} sortOverride={sortOverride} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} sortOverride={sortOverride} search={search} />
         </DialogContent>
       </Dialog>
     </div>
@@ -307,6 +315,7 @@ function DatabaseBody({
   editable,
   sample,
   sortOverride,
+  search,
 }: {
   tableId: string;
   view: SpaceDbView;
@@ -315,6 +324,7 @@ function DatabaseBody({
   editable: boolean;
   sample: boolean;
   sortOverride: { field: string; direction: "asc" | "desc" } | null;
+  search: { value: string; onChange: (term: string) => void };
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
@@ -336,6 +346,8 @@ function DatabaseBody({
         embedded
         newRowLabel={editable ? "New page" : undefined}
         sortOverride={sortOverride}
+        searchOverride={search.value || null}
+        onSearchChange={search.onChange}
         onOpenRecord={onOpenRecord}
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
       />

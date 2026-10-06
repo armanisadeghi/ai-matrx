@@ -15,7 +15,7 @@ import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/dat
 import { EntityChartBlock, RecordsMount, TablePage, type ChartKind, type EntityColumn, type EntityRow } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
 import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, SlidersHorizontal, Square, Table2, X } from "lucide-react";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -40,7 +40,8 @@ const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof T
 /** Spaces' chart types as records-ui's chart kinds (Notion's vertical bar = a column chart). */
 const CHART_KIND: Record<string, ChartKind> = { donut: "donut", bar: "column", hbar: "bar", line: "line" };
 
-const PAGE = 100;
+/** Rows per read: the first page, and each "Load more" asks only the NEXT page (offset = rows held). */
+const PAGE = 50;
 /** How long a read may go unanswered before it is asked again (once), then named. */
 const STALL_MS = 15000;
 
@@ -62,7 +63,7 @@ function sentence(e: unknown, fallback: string): string {
  * One built-in source's presented columns and one page of rows for the view's question — the filter
  * and the sort are asked of the store (never applied to a page here), so a count and a page agree.
  */
-function useEntityRows(token: string, view: SpaceDbView, limit: number) {
+function useEntityRows(token: string, view: SpaceDbView) {
   const client = useRecordsClient();
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null });
@@ -71,7 +72,15 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
   // A read that never answers (a stalled session in a long-lived tab) must not leave blank skeleton
   // rows forever: past STALL_MS the read is asked once more, then the block says so with Try again.
   const [stalls, setStalls] = useState(0);
+  // How many rows a re-read asks for (after a write, Try again): what is held, so nothing loaded vanishes.
+  const held = useRef(PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const asked = useRef("");
   useEffect(() => {
+    // A new question (filter, sort, source) starts again at one page; a re-read keeps what is held.
+    const question = `${token}|${where}|${sortKey}`;
+    if (asked.current !== question) held.current = PAGE;
+    asked.current = question;
     let cancelled = false;
     let settled = false;
     const stall = setTimeout(() => {
@@ -88,7 +97,7 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
         source,
         ...(Object.keys(filters).length ? { where: filters } : {}),
         ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
-        limit,
+        limit: held.current,
       }),
     ]).then(
       ([def, page]) => {
@@ -117,13 +126,46 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
       cancelled = true;
       clearTimeout(stall);
     };
-  }, [client, token, where, sortKey, limit, tick, stalls]);
+  }, [client, token, where, sortKey, tick, stalls]);
+
   const reload = () => {
     setStalls(0);
     setState((s) => ({ ...s, loading: true, error: null }));
     setTick((t) => t + 1);
   };
   const rows = state.rows;
+  const hasMore = !state.loading && !state.error && state.total > rows.length;
+  /** "Load more": ONE read of the next page (offset = rows held), appended — never the whole source again. */
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const filters = JSON.parse(where) as Record<string, unknown>;
+    const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
+    try {
+      const page = await client.drillRows({
+        source: { kind: "entity", token },
+        ...(Object.keys(filters).length ? { where: filters } : {}),
+        ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
+        limit: PAGE,
+        offset: rows.length,
+      });
+      if (!page.ok) {
+        toast.error(sentence(page.error, "More rows could not be read."));
+        return;
+      }
+      const next = (page.data.rows ?? []) as EntityRow[];
+      setState((s) => {
+        const seen = new Set(s.rows.map((r) => r.id));
+        const merged = [...s.rows, ...next.filter((r) => !seen.has(r.id))];
+        held.current = Math.max(PAGE, merged.length);
+        return { ...s, rows: merged, total: Number(page.data.total ?? s.total) };
+      });
+    } catch (thrown) {
+      toast.error(sentence(thrown, "More rows could not be read."));
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const write = async (rowId: string, apiName: string, value: unknown): Promise<string | null> => {
     const seen = rows.find((r) => r.id === rowId)?.["version"];
     const done = await client.entityRowWrite({ token, record_id: rowId, columns: { [apiName]: value }, ...(typeof seen === "number" ? { expected_version: seen } : {}) });
@@ -131,7 +173,7 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
     setTick((t) => t + 1);
     return null;
   };
-  return { ...state, write, reload };
+  return { ...state, write, reload, loadMore, hasMore, loadingMore };
 }
 
 type Entity = ReturnType<typeof useEntityRows>;
@@ -197,14 +239,13 @@ export function EntityDatabase(p: EntityDatabaseProps) {
 function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabaseProps) {
   const views: SpaceDbView[] = props.views?.length ? props.views : [{ id: "view-all", name: "All", layout: "grid" }];
   const active = views.find((v) => v.id === props.activeViewId) ?? views[0];
-  const [limit, setLimit] = useState(PAGE);
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion); the store is
   // asked with it, so the page and the count agree.
   const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
   // The toolbar filter is the viewer's own the same way, until an editor saves it for everyone.
   const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
   const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]), filters: shownFilters(active, filterChoices[active.id]) };
-  const entity = useEntityRows(token, shown, limit);
+  const entity = useEntityRows(token, shown);
   const [open, setOpen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
@@ -238,7 +279,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   };
   const sourceName = props.title || entity.label || known || token;
 
-  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} limit={limit} onMore={() => setLimit((n) => n + PAGE)} />;
+  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} />;
 
   return (
     <div className="spaces-db-frame" data-layout={active.layout} data-source="entity">
@@ -329,7 +370,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   );
 }
 
-function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; limit: number; onMore: () => void }) {
+function EntityBody({ token, entity, view, onOpen }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void }) {
   const hidden = new Set(view.hiddenFields ?? []);
   const shown = entity.columns.filter((c) => !hidden.has(c.api_name));
   const title = titleColumn(entity.columns);
@@ -368,7 +409,6 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
       </div>
     );
   }
-  const more = entity.total > entity.rows.length && entity.rows.length >= limit;
   // The default grouping is a choice the module names in words (a project's Status), never a lookup
   // the door answers as bare ids (Created by) — those drew a legend of uuids.
   const choice = entity.columns.find((c) => c.type === "choice") ?? entity.columns.find((c) => c.lookup && c.lookup.replaces);
@@ -418,9 +458,9 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
       )}
       <div className="spaces-entity-count type-secondary text-muted-foreground">
         {entity.loading && !entity.rows.length ? "" : `${entity.total.toLocaleString()} ${entity.total === 1 ? "row" : "rows"}`}
-        {more ? (
-          <Button variant="quiet" onClick={onMore}>
-            Load more
+        {entity.hasMore ? (
+          <Button variant="quiet" disabled={entity.loadingMore} onClick={() => void entity.loadMore()}>
+            {entity.loadingMore ? "Loading…" : "Load more"}
           </Button>
         ) : null}
       </div>
