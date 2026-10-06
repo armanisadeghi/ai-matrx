@@ -226,6 +226,14 @@ export function buildCensus(opts: CensusOptions): Census {
             dir = dirname(dir);
           }
         }
+        // LINKED RECORDS (AP-4): a record view that carries its fields through a StandardRecordForm
+        // (not <EntityCustomFields>, which renders <EntityBackLinks> itself) must mount the section.
+        const formRe = new RegExp(`<StandardRecordForm\\b[^>]*?\\btoken=["'](?:entity:)?${token}["']`, "s");
+        if ([rel, ...layouts].some((f) => reaches(f, (t) => formRe.test(t)))) {
+          const backRe = new RegExp(`<EntityBackLinks\\b[^>]*?entityToken=["']${token}["']`, "s");
+          if (![rel, ...layouts].some((f) => reaches(f, (t) => backRe.test(t))))
+            problems.push(`${key}: record view without Linked records — "${token}" renders no <EntityBackLinks entityToken="${token}"> (${rel} and what it imports).`);
+        }
         if (![rel, ...layouts].some((f) => reaches(f, (t) => re.test(t))))
           problems.push(
             `${key}: declares "${token}" but renders no <EntityCustomFields entityToken="${token}"> (${rel} and what it imports).`,
@@ -292,6 +300,8 @@ export function buildCensus(opts: CensusOptions): Census {
 
   // ── the Detail host binds the port ──
   if (units.some((u) => u.declaration.kind === "host")) {
+    if (!/<EntityBackLinks\b/.test(read("features/unified-data/components/EntityCustomFields.tsx") ?? ""))
+      problems.push("features/unified-data/components/EntityCustomFields.tsx renders no <EntityBackLinks>, so every record view that mounts the custom-fields line shows no Linked records.");
     const host = read("features/window-panels/detail/DetailHost.tsx") ?? "";
     if (!/\bcustomFields\s*:/.test(host))
       problems.push(

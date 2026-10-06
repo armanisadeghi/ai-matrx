@@ -43,6 +43,7 @@ import { CustomFieldsSection, RecordsMount, recordsDataSource } from "@ai-matrx/
 import { Button } from "@ai-matrx/design-system";
 import { entityRecordHome } from "@/features/unified-data/hub/doors";
 import { cn } from "@/lib/utils";
+import { EntityBackLinks } from "@/features/unified-data/components/EntityBackLinks";
 import { useCustomFieldsHost } from "@/features/unified-data/components/useCustomFieldsHost";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { createClient } from "@/utils/supabase/client";
@@ -216,7 +217,7 @@ function SectionLine({
   );
 }
 
-export function EntityCustomFields({
+function EntityCustomFieldsSection({
   entityToken,
   recordId,
   title,
@@ -323,5 +324,21 @@ export function EntityCustomFields({
       </div>
       {dialog}
     </RecordsMount>
+  );
+}
+
+/**
+ * THE ONE LINE: the organization's custom fields AND the custom rows that link to this record
+ * ("Linked records"). Every record view that mounts this line inherits both; the back-links are the
+ * store's answer for the ROW's organization, so they ride the same home read (one request, kept).
+ */
+export function EntityCustomFields(props: EntityCustomFieldsProps) {
+  const { home } = useRecordHome(props.entityToken, props.recordId, props.organizationId ?? null);
+  const organizationId = home.state === "home" ? home.organizationId : null;
+  return (
+    <>
+      <EntityCustomFieldsSection {...props} />
+      <EntityBackLinks entityToken={props.entityToken} recordId={props.recordId} organizationId={organizationId} />
+    </>
   );
 }

@@ -34,6 +34,8 @@ jest.mock("@ai-matrx/records-ui", () => ({
   personActor: () => ({ actor: "user" }),
   recordsDataSource: () => ({}),
 }));
+// Linked records have their own test (entity-back-links.test.tsx); this one is about the fields.
+jest.mock("@/features/unified-data/components/EntityBackLinks", () => ({ EntityBackLinks: () => null }));
 jest.mock("@/features/unified-data/hub/doors", () => ({
   entityRecordHome: async () => ({ ok: true, data: { organization_id: CEDAR_RIDGE } }),
   entityRecordReadable: async () => ({ ok: true, data: null }),

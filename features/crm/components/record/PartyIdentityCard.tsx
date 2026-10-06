@@ -39,6 +39,7 @@ import {
   type CrmRecordCopyParent,
 } from "./record-copy";
 import { SectionCard } from "./SectionCard";
+import { EntityBackLinks } from "@/features/unified-data/components/EntityBackLinks";
 import { RecordsMount, StandardRecordForm } from "@ai-matrx/records-ui";
 import type { StandardColumn } from "@ai-matrx/records-ui";
 import { useCustomFieldsHost } from "@/features/unified-data/components/useCustomFieldsHost";
@@ -369,6 +370,7 @@ export function PartyIdentityCard({ party, onChanged }: Props) {
         </StandardRecordForm>
         {customDialog}
       </RecordsMount>
+      <EntityBackLinks entityToken="party" recordId={party.id} organizationId={party.organization_id} />
     </SectionCard>
   );
 }

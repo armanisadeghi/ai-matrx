@@ -13,6 +13,8 @@ const dispatched: unknown[] = [];
 const formCustom: Array<Record<string, any>> = [];
 const registered: Array<{ isLive: () => boolean }> = [];
 
+// Linked records have their own test (entity-back-links.test.tsx); this one is about the custom host.
+jest.mock("@/features/unified-data/components/EntityBackLinks", () => ({ EntityBackLinks: () => null }));
 jest.mock("@ai-matrx/records-ui", () => ({
   RecordsMount: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   StandardRecordForm: ({ custom, children }: { custom: Record<string, any>; children: React.ReactNode }) => {
