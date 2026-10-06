@@ -261,6 +261,15 @@ export const MARKETING_SEO_SECTIONS = [
     group: "Programs",
   },
   {
+    slug: "reports",
+    name: "Reports",
+    titlePrefix: "SEO Reports",
+    description:
+      "Saved SEO reports for this site, their versions, and the report template in use.",
+    letter: "Rs",
+    group: "Programs",
+  },
+  {
     slug: "automations",
     name: "Automations",
     titlePrefix: "Automations",
@@ -268,6 +277,15 @@ export const MARKETING_SEO_SECTIONS = [
       "Run the keyword-coverage engines by hand for this site, and author the schedule that overrides the organization and system defaults.",
     letter: "Am",
     group: "Programs",
+  },
+  {
+    slug: "context",
+    name: "Context",
+    titlePrefix: "Site Context",
+    description:
+      "What agents know about this site — goals, key pages, competitors, voice — and where each is edited.",
+    letter: "Cx",
+    group: "Setup",
   },
   {
     slug: "capabilities",

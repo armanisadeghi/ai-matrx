@@ -242,6 +242,8 @@ const GOOGLE_SCOPE_LANGUAGE: Record<string, string> = {
   [GOOGLE_SCOPE.youtubeAnalyticsReadonly]:
     "Read your channel's performance reports",
   [GOOGLE_SCOPE.contactsReadonly]: "Read your Google Contacts",
+  [GOOGLE_SCOPE.contactsOtherReadonly]:
+    "Read suggested Other Contacts from this Google account. No changes to Google contacts",
   [GOOGLE_SCOPE.contactsWrite]:
     "Google permits viewing, editing, downloading and permanently deleting your contacts. AI Matrx currently offers reviewed, name-only edits to existing contacts",
   [GOOGLE_SCOPE.calendarEventsOwnedReadonly]:

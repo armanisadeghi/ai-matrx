@@ -23,7 +23,9 @@ import { storedBlockSpecs } from "./stored-blocks";
 const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
   defaultLanguage: "text",
   supportedLanguages: {
-    text: { name: "Plain text", aliases: ["plaintext", "txt"] },
+    // "" too: BlockNote's "``` " shortcut asks for the language typed after the fence (none), and a
+    // language the list does not know is refused — the fence then stayed a paragraph of literal "```".
+    text: { name: "Plain text", aliases: ["plaintext", "txt", ""] },
     bash: { name: "Bash", aliases: ["sh", "shell", "zsh"] },
     c: { name: "C" },
     cpp: { name: "C++", aliases: ["c++"] },

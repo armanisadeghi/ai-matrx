@@ -44,7 +44,16 @@ const locations: BusinessProfileLocationsPreview = {
   connection_id: "connection-harbor",
   account_label: "Harbor Dental",
   account_name: "accounts/harbor-dental",
-  locations: [{ name: "locations/downtown", title: "Harbor Dental Downtown" }],
+  locations: [
+    {
+      name: "locations/downtown",
+      title: "Harbor Dental Downtown",
+      metadata: {
+        mapsUri:
+          "https://www.google.com/maps/place/?q=place_id:harbor-dental-downtown",
+      },
+    },
+  ],
   page_token: "locations-2",
   next_page_token: null,
   state: "terminal",
@@ -132,5 +141,23 @@ describe("Business Profile reviewer provider boundary", () => {
         "org-harbor",
       ),
     ).rejects.toThrow("invalid review page");
+  });
+  it.each([
+    ["string metadata", "not-an-object"],
+    ["array metadata", []],
+    ["non-string maps URI", { mapsUri: 42 }],
+  ])("rejects malformed location %s", async (_label, metadata) => {
+    postGoogleBackend.mockResolvedValue({
+      json: async () => ({
+        ...locations,
+        locations: [{ ...locations.locations[0], metadata }],
+      }),
+    });
+    await expect(
+      googleBusinessProfileReviewService.previewLocations(
+        locationRequest,
+        "org-harbor",
+      ),
+    ).rejects.toThrow("invalid location page");
   });
 });

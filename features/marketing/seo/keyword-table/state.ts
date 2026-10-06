@@ -58,6 +58,9 @@ export const KEYWORD_CORE_COLUMNS = [
   // saved views; this is the map (placement §7 #1).
   { id: "map_topic", label: "Map topic" },
   { id: "traffic_class", label: "Class" },
+  // Every tag the person put on the keyword (the site's multi-value Tags
+  // dimension) as chips.
+  { id: "tags", label: "Tags" },
   // C10 — WHICH branch a local search belongs to. Opt-in, because a
   // single-location business has one answer for every row and a column that
   // repeats itself is a column that costs width for nothing.
@@ -84,6 +87,7 @@ export const WORKBENCH_DEFAULT_COLUMNS: KeywordCoreColumnId[] = [
   "topic",
   "map_topic",
   "traffic_class",
+  "tags",
   "clicks",
   "impressions",
   "value_score",

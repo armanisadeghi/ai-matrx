@@ -21,10 +21,12 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
-import { FieldList, MenuRow, ViewerSortButton, ViewTab, shownSorts, type SortChoice } from "./menu-parts";
+import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { BUILT_IN_SOURCES, newViewId, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
 /** The layouts a built-in source draws today. */
@@ -180,7 +182,9 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   // The toolbar sort is this viewer's own, per view, never written to the view (Notion); the store is
   // asked with it, so the page and the count agree.
   const [sortChoices, setSortChoices] = useState<Record<string, SortChoice>>({});
-  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]) };
+  // The toolbar filter is the viewer's own the same way, until an editor saves it for everyone.
+  const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
+  const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]), filters: shownFilters(active, filterChoices[active.id]) };
   const entity = useEntityRows(token, shown, limit);
   const [open, setOpen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -189,16 +193,27 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const known = BUILT_IN_SOURCES.find((b) => b.token === token)?.name;
   const client = useRecordsClient();
   // "New" (F7): one row added in place through the module's write door, then opened in the peek.
-  const addRow = () => {
-    void client.entityRowWrite({ token, record_id: null }).then((res) => {
-      if (!res.ok) {
-        toast.error(sentence(res.error, "A row could not be added here."));
-        return;
-      }
-      entity.reload();
-      const id = (res.data as unknown as { id?: string }).id;
-      if (id) setOpen(id);
-    });
+  // A new row is filed in the organization the person is working in (the write target, never a filter).
+  const activeOrganizationId = useAppSelector(selectActiveOrganizationId);
+  const addRow = async () => {
+    let organization_id: string;
+    try {
+      console.log('R9DBG ensure', activeOrganizationId);
+      organization_id = await ensureOrgId(activeOrganizationId);
+      console.log('R9DBG got', organization_id);
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) toast.error(sentence(err, "A row could not be added here."));
+      return;
+    }
+    const res = await client.entityRowWrite({ token, record_id: null, organization_id });
+    console.log('R9DBG res', JSON.stringify(res).slice(0, 300));
+    if (!res.ok) {
+      toast.error(sentence(res.error, "A row could not be added here."));
+      return;
+    }
+    entity.reload();
+    const id = (res.data as unknown as { id?: string }).id;
+    if (id) setOpen(id);
   };
   const sourceName = props.title || entity.label || known || token;
 
@@ -253,7 +268,14 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
           ) : null}
         </div>
         <div className="spaces-db-tools">
-          <EntityFilter view={active} columns={entity.columns} onView={saveView} editable={editable} />
+          <EntityFilter
+            view={active}
+            columns={entity.columns}
+            choice={filterChoices[active.id]}
+            onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
+            canSave={editable}
+            onSave={(filters) => saveView({ filters })}
+          />
           <ViewerSortButton
             view={active}
             fields={asFields(entity.columns.filter((c) => !c.lookup))}
@@ -266,7 +288,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
           <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
           <EntitySettings view={active} columns={entity.columns} props={props} onView={saveView} onBlock={save} editable={editable} />
           {editable ? (
-            <Button variant="primary" onClick={addRow}>
+            <Button variant="primary" onClick={() => void addRow()}>
               New
             </Button>
           ) : null}
@@ -383,10 +405,26 @@ function EntityBody({ token, entity, view, onOpen, limit, onMore }: { token: str
   );
 }
 
-function EntityFilter({ view, columns, onView, editable }: { view: SpaceDbView; columns: EntityColumn[]; onView: (p: Partial<SpaceDbView>) => void; editable: boolean }) {
+/** The toolbar filter (Notion): anyone may filter for themselves; an editor may save it for everyone. */
+function EntityFilter({
+  view,
+  columns,
+  choice: viewerChoice,
+  onChoice,
+  canSave,
+  onSave,
+}: {
+  view: SpaceDbView;
+  columns: EntityColumn[];
+  choice: FilterChoice;
+  onChoice: (next: FilterChoice) => void;
+  canSave: boolean;
+  onSave: (filters: NonNullable<SpaceDbView["filters"]>) => void;
+}) {
   const [field, setField] = useState<string | null>(null);
   const [value, setValue] = useState("");
-  const filters = view.filters ?? {};
+  const filters = shownFilters(view, viewerChoice);
+  const onView = (p: { filters: NonNullable<SpaceDbView["filters"]> }) => onChoice(p.filters);
   const count = Object.keys(filters).length;
   const col = columns.find((c) => c.api_name === field);
   const labelOf = (k: string) => columns.find((c) => c.api_name === k)?.name ?? k;
@@ -400,15 +438,14 @@ function EntityFilter({ view, columns, onView, editable }: { view: SpaceDbView; 
           <MenuRow
             key={k}
             label={Array.isArray(v) ? `${labelOf(k)} is any of ${v.join(", ")}` : `${labelOf(k)} is ${String(v)}`}
-            end={editable ? <X size={14} /> : undefined}
+            end={<X size={14} />}
             onClick={() => {
-              if (!editable) return;
               const { [k]: _gone, ...rest } = filters;
               onView({ filters: rest });
             }}
           />
         ))}
-        {!editable ? null : col?.choices?.length ? (
+        {col?.choices?.length ? (
           <div className="flex flex-col p-1">
             <span className="px-1 pb-1 type-secondary text-muted-foreground">{col.name} is any of</span>
             {col.choices.map((choice) => {
@@ -449,6 +486,16 @@ function EntityFilter({ view, columns, onView, editable }: { view: SpaceDbView; 
         ) : (
           <FieldList fields={asFields(columns.filter((c) => !c.lookup))} onPick={setField} />
         )}
+        {filtersDiffer(view, viewerChoice) ? (
+          <ViewerSaveBar
+            canSave={canSave}
+            onReset={() => onChoice(undefined)}
+            onSave={() => {
+              onSave(filters);
+              onChoice(undefined);
+            }}
+          />
+        ) : null}
       </PopoverContent>
     </Popover>
   );
@@ -551,12 +598,7 @@ function EntityPeek({ entity, rowId, as, editable, onClose }: { entity: Entity; 
   );
   if (as === "side") {
     return (
-      <aside className="spaces-peek-side" aria-label="Side peek">
-        <div className="spaces-peek-bar">
-          <Button variant="quiet" icon={<X size={16} />} aria-label="Close" onClick={onClose} />
-        </div>
-        <div className="spaces-peek-body">{content}</div>
-      </aside>
+<SidePeek onClose={onClose}>{content}</SidePeek>
     );
   }
   return (

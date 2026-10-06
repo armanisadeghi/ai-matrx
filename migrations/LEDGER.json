@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-06T02:10:14.664Z",
+  "generated_at": "2026-10-06T02:58:05.817Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -800,6 +800,12 @@
       "checksum": "4fa707b38ba107b9edcc3c5efe0886282a3ad7b6d6cce30ce6d6f908b8cdcb10",
       "applied_at": "2026-10-06 01:28:52.902204+00"
     },
+    "migrations/campaign/chairnotion_a_a_highlight_may_wear_notions_ten_colours.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairnotion_a_a_highlight_may_wear_notions_ten_colours.sql",
+      "checksum": "afe6e2bc7eb68625d514c2bba9875b80520f6e47043d9b4bcce3e1fa645182d7",
+      "applied_at": "2026-10-06 02:45:10.453296+00"
+    },
     "migrations/campaign/chairperf2_a_the_data_home_asks_who_changed_a_table_once.sql": {
       "source": "matrx-frontend",
       "filename": "chairperf2_a_the_data_home_asks_who_changed_a_table_once.sql",
@@ -961,6 +967,24 @@
       "filename": "chairworld_c_the_address_door_opens_a_public_table.sql",
       "checksum": "84adf71e96404cec12ac312317e42028d2bc418ed12e9b58111d2e420fe7941b",
       "applied_at": "2026-10-06 02:10:13.39248+00"
+    },
+    "migrations/campaign/chairworld_d_a_public_table_opens_whole_for_reading.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairworld_d_a_public_table_opens_whole_for_reading.sql",
+      "checksum": "62d2fda14a7dd20ac4f9b7b4236fb1352b0b933bc4f95b4c1bff91a78f75d096",
+      "applied_at": "2026-10-06 02:43:54.993399+00"
+    },
+    "migrations/campaign/chairworld_e_the_table_page_reads_whole_for_a_public_reader.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairworld_e_the_table_page_reads_whole_for_a_public_reader.sql",
+      "checksum": "30a325d665b0c3df75ef20842549a69e4aa69767725c138ed1d45eed9de61fad",
+      "applied_at": "2026-10-06 02:51:40.75863+00"
+    },
+    "migrations/campaign/chairworld_f_a_public_reader_gets_row_headers_and_live_updates.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairworld_f_a_public_reader_gets_row_headers_and_live_updates.sql",
+      "checksum": "2f3383b3e70b76689b75ffc67914ff688c4eff80ae5e01ac123611a53b97a40a",
+      "applied_at": "2026-10-06 02:58:04.613411+00"
     },
     "migrations/campaign/checklists_a_checklist_is_a_template_of_work.sql": {
       "source": "matrx-frontend",

@@ -74,6 +74,9 @@ const FILTER_PARAMS: Array<[keyof GscFilters, string]> = [
   ["placement", "pl"],
   // C10 — which business location a local search belongs to.
   ["location", "lo"],
+  // Keyword tags — the tag control's own pairs, and its any/all switch.
+  ["tags", "tg"],
+  ["tags_match", "tm"],
   ["query_word", "qw"],
   ["clicks_min", "cmin"],
   ["clicks_max", "cmax"],
@@ -409,6 +412,9 @@ const QUERY_PAGE_FILTER_KEYS: readonly (keyof GscFilters)[] = [
   // GSC's `country` facet is where the SEARCHER was, which is a different
   // question from which branch of the business the search is about.
   "location",
+  // Keyword tags ride the stamp predicate, so they are keyword-level too.
+  "tags",
+  "tags_match",
   ...PROFILE_NEUTRAL_FILTER_KEYS,
 ];
 const COUNTRY_DEVICE_FILTER_KEYS: readonly (keyof GscFilters)[] = [

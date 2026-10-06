@@ -15,7 +15,8 @@
  *   • `gsc_keyword_value_for` — class, score and level.
  *   • `gsc_keyword_offerings_for` — which of this site's offerings each keyword
  *     maps to, who placed it and how sure they were.
- *   • `gsc_keyword_stamps_for` — the dimension columns the user added.
+ *   • `gsc_keyword_stamps_for` — the dimension columns the user added, and the
+ *     Tags column (every value of the site's multi-value Tags dimension).
  *   • `facet_dimension_catalog` + the site's offerings — the filter options.
  *
  * SoR: common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md (P26 + P28)
@@ -42,11 +43,15 @@ import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
 import { buildBandMeta, type BandMeta } from "@/features/marketing/seo/value-system/lib";
 import {
   getKeywordOfferings,
-  getKeywordStamps,
+  getKeywordStampLists,
   KEYWORD_OFFERINGS_KEY,
   type KeywordOfferingPlacement,
   type KeywordStamp,
 } from "@/features/marketing/seo/keyword-workbench/data";
+import {
+  getSiteTagDimensionSlug,
+  SITE_TAG_DIMENSION_KEY,
+} from "@/features/marketing/seo/keyword-workbench/tags";
 import {
   getKeywordLocations,
   keywordLocationsQueryKey,
@@ -99,6 +104,8 @@ export interface UseKeywordRowsInput {
   pageSize: number;
   /** Dimension slugs currently rendered as columns. */
   dimensions: string[];
+  /** True when the Tags column is showing, so its values are read too. */
+  withTags?: boolean;
 }
 
 export interface KeywordRowsResult {
@@ -110,6 +117,12 @@ export interface KeywordRowsResult {
   refetch: () => void;
   /** Everything a cell needs, keyed by the row's keyword id. */
   stampFor: (row: GscBreakdownRow, slug: string) => KeywordStamp | undefined;
+  /** Every tag on the row, in a stable order. Empty is a real answer. */
+  tagsFor: (row: GscBreakdownRow) => KeywordStamp[];
+  /** The site's Tags dimension slug; null when the site has no tags yet. */
+  tagSlug: string | null;
+  /** The site's Tags dimension from the catalog (its values are the tag list). */
+  tagDimension: FacetDimension | undefined;
   valueFor: (row: GscBreakdownRow) => GscKeywordValueRow | undefined;
   offeringFor: (row: GscBreakdownRow) => KeywordOfferingPlacement | undefined;
   /**
@@ -153,6 +166,7 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     page,
     pageSize,
     dimensions,
+    withTags = false,
   } = input;
   const queryClient = useQueryClient();
 
@@ -196,6 +210,18 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     staleTime: 60_000,
   });
 
+  const tagDimensionSlug = useQuery({
+    queryKey: [...SITE_TAG_DIMENSION_KEY, siteId],
+    queryFn: ({ signal }) => getSiteTagDimensionSlug(siteId, signal),
+    staleTime: 5 * 60_000,
+  });
+  const tagSlug = tagDimensionSlug.data ?? null;
+
+  // The Tags column rides the SAME stamp read as the dimension columns.
+  const stampSlugs =
+    withTags && tagSlug && !dimensions.includes(tagSlug)
+      ? [...dimensions, tagSlug]
+      : dimensions;
   const stamps = useQuery({
     queryKey: [
       "marketing",
@@ -203,11 +229,11 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
       "keyword-stamps",
       siteId,
       keywordIds,
-      dimensions,
+      stampSlugs,
     ],
     queryFn: ({ signal }) =>
-      getKeywordStamps(siteId, keywordIds, dimensions, signal),
-    enabled: keywordIds.length > 0 && dimensions.length > 0,
+      getKeywordStampLists(siteId, keywordIds, stampSlugs, signal),
+    enabled: keywordIds.length > 0 && stampSlugs.length > 0,
     staleTime: 60_000,
   });
 
@@ -247,6 +273,10 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     await queryClient.invalidateQueries({
       queryKey: ["marketing", "seo", "dimension-catalog", siteId],
     });
+    // The first tag write creates the site's Tags dimension.
+    await queryClient.invalidateQueries({
+      queryKey: [...SITE_TAG_DIMENSION_KEY, siteId],
+    });
     await queryClient.invalidateQueries({
       queryKey: [...KEYWORD_OFFERINGS_KEY, siteId],
     });
@@ -273,7 +303,15 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     error: breakdown.isError ? breakdown.error : null,
     refetch: () => void breakdown.refetch(),
     stampFor: (row, slug) =>
-      row.keyword_id ? stamps.data?.get(row.keyword_id)?.get(slug) : undefined,
+      row.keyword_id ? stamps.data?.get(row.keyword_id)?.get(slug)?.[0] : undefined,
+    tagsFor: (row) =>
+      row.keyword_id && tagSlug
+        ? (stamps.data?.get(row.keyword_id)?.get(tagSlug) ?? [])
+        : [],
+    tagSlug,
+    tagDimension: tagSlug
+      ? dimensionCatalog.find((d) => d.slug === tagSlug)
+      : undefined,
     valueFor: (row) =>
       row.keyword_id ? values.data?.get(row.keyword_id) : undefined,
     offeringFor: (row) =>

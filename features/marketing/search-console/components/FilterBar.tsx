@@ -102,6 +102,10 @@ const FILTER_LABELS: Record<GscFilterKey, string> = {
   traffic_classes: "Class",
   value_score_min: "Score",
   value_score_max: "Score",
+  // KEYWORD TAGS — set and shown by the keyword table's own tag control, which
+  // holds the site's tag names; see SKIPPED_KEYS below.
+  tags: "Tags",
+  tags_match: "Tags",
 };
 
 const FILTER_CHIP_LABELS: Record<GscFilterKey, string> = {
@@ -150,6 +154,8 @@ const QUERY_PAGE_KEYS: GscFilterKey[] = [
   // like the stamps, so it lives in this group; it is NOT `country`, which is
   // where the searcher was.
   "location",
+  "tags",
+  "tags_match",
 ];
 const COUNTRY_DEVICE_KEYS: GscFilterKey[] = ["country", "device"];
 /** Keys that hold a LIST (several chips, several adds) rather than one value. */
@@ -160,7 +166,7 @@ const MULTI_KEYS: GscFilterKey[] = ["stamps", "levels"];
  * surface owns the control AND the chip, because only that surface can turn
  * the stored id into a name a person recognizes.
  */
-const SKIPPED_KEYS: GscFilterKey[] = ["topic", "placement"];
+const SKIPPED_KEYS: GscFilterKey[] = ["topic", "placement", "tags", "tags_match"];
 
 function activeGroup(
   filters: GscFilters,

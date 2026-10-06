@@ -15,6 +15,8 @@ export type BusinessProfileReviewsPreview =
   components["schemas"]["BusinessProfileReviewsPreview"];
 type BusinessProfileAccount = components["schemas"]["BusinessProfileAccount"];
 type BusinessProfileLocation = components["schemas"]["BusinessProfileLocation"];
+type BusinessProfileLocationMetadata =
+  components["schemas"]["BusinessProfileLocationMetadata"];
 type BusinessProfileReview = components["schemas"]["BusinessProfileReview"];
 
 export interface BusinessProfileReviewService {
@@ -78,8 +80,18 @@ function isAccount(value: unknown): value is BusinessProfileAccount {
     optionalText(value.role)
   );
 }
+function isLocationMetadata(
+  value: unknown,
+): value is BusinessProfileLocationMetadata {
+  return record(value) && optionalText(value.mapsUri);
+}
 function isLocation(value: unknown): value is BusinessProfileLocation {
-  return record(value) && text(value.name) && optionalText(value.title);
+  return (
+    record(value) &&
+    text(value.name) &&
+    optionalText(value.title) &&
+    (value.metadata == null || isLocationMetadata(value.metadata))
+  );
 }
 function isReview(value: unknown): value is BusinessProfileReview {
   return (

@@ -34,7 +34,7 @@
 import { useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Network, Tag } from "lucide-react";
+import { Loader2, Network, Tag, Tags } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -392,6 +392,7 @@ export function KeywordWorkbench() {
           keywordIds,
           openAssign,
           openServiceAssign,
+          openTagAssign,
           quickAssign,
           lastUsed,
           clear,
@@ -422,6 +423,19 @@ export function KeywordWorkbench() {
               }
             >
               Offering…
+            </Button>
+            <Button
+              icon={<Tags />}
+              variant="outline"
+              disabled={keywordIds.length === 0}
+              onClick={() =>
+                openTagAssign(
+                  keywordIds,
+                  `${keywordIds.length.toLocaleString()} keyword${keywordIds.length === 1 ? "" : "s"}`,
+                )
+              }
+            >
+              Tags…
             </Button>
             {lastUsed ? (
               <Button
@@ -490,6 +504,23 @@ export function KeywordWorkbench() {
                         },
                       ]
                     : []),
+                  {
+                    kind: "item" as const,
+                    id: "kw-tags",
+                    label: "Tags…",
+                    icon: Tags,
+                    onSelect: () => {
+                      const row = clickedRow.current;
+                      if (!row?.keyword_id) {
+                        toast.error("Right-click a keyword row to tag it.");
+                        return;
+                      }
+                      view.current?.openTagAssign(
+                        [row.keyword_id],
+                        `“${row.key}”`,
+                      );
+                    },
+                  },
                   ...keywordSection.items,
                 ],
               },

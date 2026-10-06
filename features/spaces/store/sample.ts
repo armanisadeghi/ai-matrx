@@ -26,7 +26,7 @@ function remap(blocks: SpaceBlock[], ids: Map<string, SpaceId>): SpaceBlock[] {
 function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: boolean } {
   let changed = false;
   const walk = (list: SpaceBlock[]): SpaceBlock[] =>
-    list.map((blk) => {
+    list.map((blk): SpaceBlock | null => {
       const label = typeof blk.props?.label === "string" ? blk.props.label : "";
       if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings());
       if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase());
@@ -50,13 +50,18 @@ function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: bo
         const { bold: _bold, ...plain } = only;
         return { ...blk, type: "heading", text: [plain], props: { ...blk.props, level: 3, toggleable: true }, children: blk.children ? walk(blk.children) : undefined };
       }
+      // Round 9: a line holding only a code fence ("```") is stray markdown, never content.
+      if (blk.type === "text" && !blk.children?.length && /^\s*`{3,}\s*$/.test((blk.text ?? []).map((x) => x.text).join(""))) {
+        changed = true;
+        return null;
+      }
       // Round 4: the page's two columns at the reference's measured split.
       if (blk.type === "columnList" && blk.children?.length === 2 && blk.children[0].props?.width === 0.3) {
         changed = true;
         return { ...blk, children: blk.children.map((c, i) => ({ ...c, props: { ...c.props, width: SAMPLE_COLUMNS[i] }, children: c.children ? walk(c.children) : undefined })) };
       }
       return blk.children ? { ...blk, children: walk(blk.children) } : blk;
-    });
+    }).filter((blk): blk is SpaceBlock => blk !== null);
   return { blocks: walk(blocks), changed };
 }
 

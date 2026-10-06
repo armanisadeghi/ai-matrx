@@ -9,6 +9,7 @@ import {
   Building2,
   Check,
   Copy,
+  Grid3x3,
   MapPin,
   Plus,
   Star,
@@ -423,6 +424,19 @@ function LocationWorkspace({ location }: { location: BusinessLocation }) {
 
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <div className="flex justify-end">
+        <Button asChild variant="outline">
+          <Link
+            href={marketingRoutes.brandLocationGrid(
+              location.brand_id,
+              location.id,
+            )}
+          >
+            <Grid3x3 className="size-3.5" aria-hidden />
+            Rank grid
+          </Link>
+        </Button>
+      </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <KpiTile
           label="Citation coverage"

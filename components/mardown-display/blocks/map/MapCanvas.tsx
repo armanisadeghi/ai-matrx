@@ -13,6 +13,7 @@
 import "leaflet/dist/leaflet.css";
 import React, { useEffect, useMemo } from "react";
 import L from "leaflet";
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 
 export interface MapMarker {
@@ -20,6 +21,19 @@ export interface MapMarker {
   lng: number;
   label?: string;
   description?: string;
+  /** Draw a round labelled bubble (a rank, a mark) instead of the pin.
+   *  `className` colours it; it is set on a plain element inside the map. */
+  bubble?: { text: string; className: string };
+}
+
+function bubbleIcon(bubble: { text: string; className: string }): L.DivIcon {
+  return L.divIcon({
+    className: "",
+    html: `<span class="flex size-7 items-center justify-center rounded-full border-2 text-xs font-semibold tabular-nums shadow-sm ${escapeHtml(bubble.className)}">${escapeHtml(bubble.text)}</span>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+    popupAnchor: [0, -14],
+  });
 }
 
 // A self-contained SVG pin — avoids leaflet's default-marker asset (which 404s
@@ -111,7 +125,7 @@ export default function MapCanvas({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {markers.map((m, i) => (
-        <Marker key={i} position={[m.lat, m.lng]} icon={PIN}>
+        <Marker key={i} position={[m.lat, m.lng]} icon={m.bubble ? bubbleIcon(m.bubble) : PIN}>
           {(m.label || m.description) && (
             <Popup>
               {m.label && <span className="font-semibold">{m.label}</span>}

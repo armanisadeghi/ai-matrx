@@ -70,7 +70,16 @@ const locations: BusinessProfileLocationsPreview = {
   connection_id: "connection-harbor",
   account_label: "Harbor Dental",
   account_name: "accounts/harbor",
-  locations: [{ name: "locations/downtown", title: "Harbor Dental Downtown" }],
+  locations: [
+    {
+      name: "locations/downtown",
+      title: "Harbor Dental Downtown",
+      metadata: {
+        mapsUri:
+          "https://www.google.com/maps/place/?q=place_id:harbor-dental-downtown",
+      },
+    },
+  ],
   page_token: null,
   next_page_token: null,
   state: "terminal",
@@ -292,6 +301,16 @@ describe("BusinessProfileReviewBody", () => {
     await act(async () => {
       button(host, "Harbor Dental").click();
     });
+    const mapsLink = host.querySelector(
+      'a[aria-label="Open Harbor Dental Downtown in Google Maps"]',
+    );
+    expect(mapsLink?.getAttribute("href")).toBe(
+      "https://www.google.com/maps/place/?q=place_id:harbor-dental-downtown",
+    );
+    expect(mapsLink?.closest("button")).toBeNull();
+    expect(
+      button(host, "Harbor Dental Downtown").querySelector("a"),
+    ).toBeNull();
     await act(async () => {
       button(host, "Harbor Dental Downtown").click();
     });
@@ -319,5 +338,45 @@ describe("BusinessProfileReviewBody", () => {
       "org-harbor",
     );
     expect(host.textContent).toContain("Business reply");
+  });
+  it("does not synthesize Maps links when provider metadata is absent or null", async () => {
+    host = document.createElement("div");
+    document.body.append(host);
+    root = createRoot(host);
+    const locationsWithoutMaps: BusinessProfileLocationsPreview = {
+      ...locations,
+      locations: [
+        { name: "locations/north", title: "Harbor Dental North" },
+        {
+          name: "locations/south",
+          title: "Harbor Dental South",
+          metadata: null,
+        },
+        {
+          name: "locations/east",
+          title: "Harbor Dental East",
+          metadata: { mapsUri: null },
+        },
+      ],
+    };
+    const service: BusinessProfileReviewService = {
+      previewAccounts: jest.fn(async () => accounts()),
+      previewLocations: jest.fn(async () => locationsWithoutMaps),
+      previewReviews: jest.fn(async () => reviews),
+    };
+    act(() =>
+      root.render(
+        <BusinessProfileReviewBody context={context()} service={service} />,
+      ),
+    );
+    act(() => button(host, "Choose connection-harbor").click());
+    await act(async () => {
+      button(host, "View accounts").click();
+    });
+    await act(async () => {
+      button(host, "Harbor Dental").click();
+    });
+    expect(host.querySelector('a[aria-label$="in Google Maps"]')).toBeNull();
+    expect(host.innerHTML).not.toContain("google.com/maps");
   });
 });
