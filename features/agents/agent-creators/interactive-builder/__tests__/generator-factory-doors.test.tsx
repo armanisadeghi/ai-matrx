@@ -86,6 +86,7 @@ jest.mock("../AgentJsonDisplay", () => ({ AgentStreamingResponse: () => null }))
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
 jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({ confirm: jest.fn() }));
+jest.mock("@/lib/organizations/ensureOrgId", () => ({ ensureOrgId: async () => "org-active" }));
 
 import { AgentGenerator } from "../AgentGenerator";
 
@@ -149,7 +150,8 @@ describe("door #6 — /agents/new/generate", () => {
     await act(async () => button(host, "Build agent").click());
     expect(trigger).not.toHaveBeenCalled();
     expect(started).toHaveLength(1);
-    expect(started[0]).toMatchObject({ door: "generate", mandateKey: null, builtin: false });
+    // No owner org on this door: the active organization (asked for when none is selected).
+    expect(started[0]).toMatchObject({ door: "generate", mandateKey: null, builtin: false, organizationId: "org-active" });
     const spec = started[0].spec as Record<string, unknown>;
     expect(spec.purpose).toBe("Summarize rental listings");
     expect(JSON.parse(spec.sample_inputs as string)).toEqual(["2br in Austin, $1,900", "Studio in Reno, $1,100"]);

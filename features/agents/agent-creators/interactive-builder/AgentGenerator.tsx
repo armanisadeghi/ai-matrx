@@ -49,6 +49,7 @@ import {
   isOrganizationSelectionCancelled,
 } from "@/lib/organization/organization-gate";
 import { extractErrorMessage } from "@/utils/errors";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useFactoryDoor } from "@/features/agents/factory/door";
 import { startAgentBuild } from "@/features/agents/factory/service";
@@ -176,6 +177,8 @@ interface AgentGeneratorProps {
 }
 
 const HOLDER_DRAFT_MANDATE_KEY = MANDATE_KEYS.mandates__holder_draft;
+/** Words a factory build's derived name never ends on. */
+const TRAILING_JOINERS = new Set(["a", "an", "the", "for", "of", "to", "and", "or", "in", "on", "with", "from", "by"]);
 // Disclosure (the Agents menu): in mandate mode this component RUNS a fixed
 // job, so it registers it; the free-form generator runs a chosen builder and
 // registers nothing. Renders no UI either way.
@@ -552,6 +555,8 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
       .split(" ")
       .filter(Boolean)
       .slice(0, 6);
+    // A name never ends on a joining word ("… For A").
+    while (words.length > 1 && TRAILING_JOINERS.has(words[words.length - 1])) words.pop();
     const name = words.join("_") || "new_agent";
     const examplesGiven = examples.map((e) => e.trim()).filter(Boolean);
     const spec: Record<string, unknown> = mandate
@@ -568,16 +573,20 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
         };
     setStartingBuild(true);
     try {
+      // The organization the agent is born in: the owner's (an org rung), else the active
+      // one — with none selected the person is asked to pick (never picked for them).
+      const organizationId = ownerOrganizationId ?? (await ensureOrgId(null));
       const id = await startAgentBuild({
         spec,
         mandateKey: mandate?.mandateKey ?? null,
         door: mandate ? "mandate_holder_draft" : "generate",
         builtin: mandate?.owner.kind === "system",
-        ...(ownerOrganizationId ? { organizationId: ownerOrganizationId } : {}),
+        organizationId,
       });
       setBuildOver(false);
       setBuildId(id);
     } catch (err) {
+      if (isOrganizationSelectionCancelled(err)) return;
       toast.error("The build did not start", {
         description: extractErrorMessage(err, "Unknown error"),
         position: TOAST_POSITION,
