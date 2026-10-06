@@ -24,6 +24,13 @@ export type Finding = { file: string; line: number; rule: Rule; text: string };
 
 const IMPORT_FROM = /\bfrom\s+["']([^"']+)["']|import\(\s*["']([^"']+)["']\s*\)/;
 
+// An entity source (`{kind: "entity", token}` — tasks, projects, deals…) is not a store table: it has no
+// table id for the one table page to open, so mounting `TablePage` on it directly is the sanctioned door.
+function mountsOnlyEntitySources(text: string): boolean {
+  const mounts = [...text.matchAll(/<TablePage\b[\s\S]*?\/?>/g)].map((m) => m[0]);
+  return mounts.length > 0 && mounts.every((tag) => /source=\{\{\s*kind:\s*["']entity["']/.test(tag));
+}
+
 export function scan(files: ReadonlyArray<{ path: string; text: string }>): Finding[] {
   const out: Finding[] = [];
   for (const { path, text } of files) {
@@ -43,7 +50,8 @@ export function scan(files: ReadonlyArray<{ path: string; text: string }>): Find
         /^@ai-matrx\/records-ui$/.test(from) &&
         !/^import\s+type\b/.test(stmt) &&
         /[{,]\s*TablePage\s*[,}]/.test(stmt.replace(/\btype\s+TablePage\b/g, "")) &&
-        path !== THE_TABLE_PAGE
+        path !== THE_TABLE_PAGE &&
+        !mountsOnlyEntitySources(text)
       ) {
         out.push({ file: path, line, rule: "table-page", text: say });
       }
@@ -71,15 +79,17 @@ function selfTest(): void {
     { path: "features/canvas/T.tsx", text: 'import { SheetLayout } from "@/features/data-tables/components/SheetLayout";' },
     { path: "features/chat/Block.tsx", text: 'import {\n  RecordsMount,\n  TablePage,\n} from "@ai-matrx/records-ui";' },
     { path: "features/data-tables/records-ui-host/h.tsx", text: "export function RecordStoreTableHost() {}" },
+    { path: "features/spaces/Mixed.tsx", text: 'import { TablePage } from "@ai-matrx/records-ui";\n<TablePage source={{ kind: "entity", token }} />\n<TablePage source={{ kind: "table", tableId }} />' },
   ]);
   const green = scan([
     { path: THE_TABLE_PAGE, text: 'import { RecordsMount, TablePage } from "@ai-matrx/records-ui";' },
+    { path: "features/spaces/E.tsx", text: 'import { TablePage } from "@ai-matrx/records-ui";\nconst x = <TablePage source={{ kind: "entity", token }} layout="board" />;' },
     { path: "features/x/a.tsx", text: 'import type { TablePageActionHost } from "@ai-matrx/records-ui";\nimport { TablesHome, type TablePage } from "@ai-matrx/records-ui";' },
     { path: "features/x/__tests__/a.test.tsx", text: 'jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({ RecordStoreTableHost: () => null }));' },
     { path: "features/x/b.tsx", text: 'import { LocatedTableViewer } from "@/features/data-tables/components/LocatedTableViewer";' },
   ]);
-  const ok = red.length === 5 && green.length === 0;
-  console.log(ok ? "self-test: PASS (5 red, 0 green)" : `self-test: FAIL red=${JSON.stringify(red)} green=${JSON.stringify(green)}`);
+  const ok = red.length === 6 && green.length === 0;
+  console.log(ok ? "self-test: PASS (6 red, 0 green)" : `self-test: FAIL red=${JSON.stringify(red)} green=${JSON.stringify(green)}`);
   process.exit(ok ? 0 : 1);
 }
 
