@@ -17,9 +17,9 @@
 import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import type {
   KindActionContext,
+  KindActionDefinition,
   KindActionResult,
-} from "../kind-action-registry";
-import { registerKindAction } from "../kind-action-registry";
+} from "../kind-action-context";
 
 interface TriggerAgentInput {
   agentId: string;
@@ -78,9 +78,10 @@ async function triggerAgentHandler(
   return { ok: true, result };
 }
 
-registerKindAction({
+export const triggerAgentAction: KindActionDefinition = {
+  label: "Trigger agent",
   key: "trigger_agent",
   description:
     "Launch an agent with variables mapped from this component's data (runs as the viewing user; agent access is enforced).",
   handler: triggerAgentHandler,
-});
+};

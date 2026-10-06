@@ -7,12 +7,13 @@
 
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const launchAgentAssistAction: AssistActionDefinition = {
+  label: "Open agent",
   kind: "launch_agent",
   description:
     "Open the floating agent-run window pre-filled with the assist's intent (agentId or mandateKey).",
@@ -56,4 +57,4 @@ registerAssistAction({
     });
     return { ok: true, result: { agentId: resolvedAgentId } };
   },
-});
+};

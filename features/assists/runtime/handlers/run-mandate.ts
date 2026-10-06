@@ -1,11 +1,12 @@
 /** `run_mandate` — the executable, one-click AI Assist action. */
 
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const runMandateAssistAction: AssistActionDefinition = {
+  label: "Run job",
   kind: "run_mandate",
   description:
     "Run a governed mandate immediately and show canonical progress in a minimized LiveRunWindow.",
@@ -22,4 +23,4 @@ registerAssistAction({
       completeMessage: assist.action.completeMessage,
     });
   },
-});
+};

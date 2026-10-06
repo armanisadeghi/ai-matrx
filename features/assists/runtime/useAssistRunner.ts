@@ -5,11 +5,12 @@
  *
  * Safety posture (mirrors useKindActionRunner): never throws into UI code;
  * unknown action kind → toast + captureError + {ok:false}; handler rejection
- * caught. On success the ledger row is decided with a receipt; an assist with
+ * caught. The action runs through the app's ONE action registry
+ * (`@ai-matrx/alchemy`, provider `assists.actions`, id `assist.<kind>`). On success the ledger row is decided with a receipt; an assist with
  * no id (an inline, ephemeral chip) runs its action and skips persistence.
  */
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useLayoutEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -25,25 +26,18 @@ import type { Json } from "@/types/database.types";
 import { decideAssist, snoozeAssist, suppressAssistSource } from "../service";
 import { snoozeUntilIso, type SnoozeWindowKey } from "../constants";
 import { assistDecided, assistsSourceSuppressed } from "../redux/assistsSlice";
+import type {
+  AssistActionContext,
+  AssistActionResult,
+} from "./assist-action-types";
+import { assistActionId, assistActionProvider } from "./assist-action-provider";
 import {
-  getAssistAction,
-  type AssistActionContext,
-  type AssistActionResult,
-} from "./assist-action-registry";
+  ensureInvokedProvider,
+  invokeRegisteredAction,
+} from "@/features/content-ir/react/actions/invoked-actions";
+import { useOptionalAlchemyActions } from "@/features/content-ir/react/actions/useOptionalAlchemyActions";
 import { resolveAssistNavigation } from "./navigation";
 import type { Assist } from "../types";
-
-// Built-in capabilities register by side-effect import. New handlers are
-// added by importing them here.
-import "./handlers/apply-keyword-meaning";
-import "./handlers/apply-page-meta";
-import "./handlers/launch-agent";
-import "./handlers/run-mandate";
-import "./handlers/navigate";
-import "./handlers/open-in-own-browser";
-import "./handlers/open-approval-queue";
-import "./handlers/server-action";
-import "./handlers/surface-write";
 
 export interface AssistRunnerApi {
   /**
@@ -82,6 +76,12 @@ export function useAssistRunner(): AssistRunnerApi {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const openAgentRun = useOpenAgentRunWindow();
+  const actions = useOptionalAlchemyActions();
+  const registry = actions?.registry ?? null;
+  const ports = actions?.ports ?? null;
+  useLayoutEffect(() => {
+    if (registry) ensureInvokedProvider(registry, assistActionProvider);
+  }, [registry]);
 
   const ctx: AssistActionContext = useMemo(
     () => ({
@@ -202,8 +202,26 @@ export function useAssistRunner(): AssistRunnerApi {
 
   const acceptAssist = useCallback(
     async (assist: Assist, note?: string): Promise<AssistActionResult> => {
-      const def = getAssistAction(assist.action.kind);
-      if (!def) {
+      if (!registry || !ports) {
+        // Rendered outside the app's action host: honest, never a crash.
+        const message = "Assists can't run here: actions aren't available on this page.";
+        toast.error(message);
+        captureError({
+          source: "assists",
+          message: `Assist ${assist.sourceKey} invoked outside <AlchemyActionsProvider>`,
+          details: `assist=${assist.id}`,
+        });
+        return { ok: false, error: message };
+      }
+      ensureInvokedProvider(registry, assistActionProvider);
+      const run = await invokeRegisteredAction<AssistActionResult>(
+        registry,
+        ports,
+        assistActionId(assist.action.kind),
+        assist,
+        ctx,
+      );
+      if (run.status === "not-registered") {
         const message = `Assist action "${assist.action.kind}" is not registered`;
         toast.error(message);
         captureError({
@@ -213,14 +231,20 @@ export function useAssistRunner(): AssistRunnerApi {
         });
         return { ok: false, error: message };
       }
-      let outcome: AssistActionResult;
-      try {
-        outcome = await def.handler(assist, ctx);
-      } catch (error) {
+      if (run.status === "failed") {
         const message =
-          error instanceof Error ? error.message : "Assist action failed";
-        outcome = { ok: false, error: message };
+          run.error instanceof Error ? run.error.message : "Assist action failed";
+        // A handler throw is already captured + announced by alchemy's run
+        // path (ports.notify); only announce here when that port is absent.
+        if (!ports.notify) toast.error(message);
+        captureError({
+          source: "assists",
+          message: `Assist ${assist.sourceKey} failed: ${message}`,
+          details: `assist=${assist.id}`,
+        });
+        return { ok: false, error: message };
       }
+      const outcome = run.value;
       if (!outcome.ok) {
         toast.error(outcome.error);
         captureError({
@@ -250,7 +274,7 @@ export function useAssistRunner(): AssistRunnerApi {
       }
       return outcome;
     },
-    [ctx, dispatch],
+    [ctx, dispatch, registry, ports],
   );
 
   const dismissAssist = useCallback(

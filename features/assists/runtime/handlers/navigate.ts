@@ -3,12 +3,13 @@
  * thing happens (a savior page, a fix surface, a wizard).
  */
 
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const navigateAssistAction: AssistActionDefinition = {
+  label: "Open page",
   kind: "navigate",
   description: "Client-side navigate to the assist's href.",
   handler: async (assist, ctx): Promise<AssistActionResult> => {
@@ -18,4 +19,4 @@ registerAssistAction({
     ctx.navigate(assist.action.href);
     return { ok: true, result: { href: assist.action.href } };
   },
-});
+};
