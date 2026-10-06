@@ -45,6 +45,10 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-06 — AP-3 U7: from `@ai-matrx/records-ui` 0.102.0 the built-in boards (`TablePage source={{kind:"entity"}}`)
+  read and write through `@ai-matrx/entity-data`'s one engine (keyset pages, a card move drawn at once and rolled back
+  with the store's sentence, live updates); `EntityDatabase.tsx` keeps the drill shapes `EntityColumn` / `EntityRow`.
+  Takes effect when 0.102.0 and `@ai-matrx/entity-data` 0.3.0 are on npm and `pnpm sync-types` installs them.
 - 2026-10-05 — `embed/RecordBodySpace.tsx` is a cheap shell (row_body lookup + ONE `dynamic(ssr:false)` edge to
   `embed/RecordBodySpaceImpl.tsx`, editor + SpacesProvider), loaded only once a body Space is found; a chunk failure draws `fallback`.
 - 2026-10-05 — Cmd+\ collapses the sidebar only: `workspace/useSpacesSidebarShortcut.ts` takes the key in the
