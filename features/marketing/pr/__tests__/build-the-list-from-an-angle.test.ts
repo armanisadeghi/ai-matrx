@@ -12,6 +12,8 @@ import { join } from "node:path";
 import {
   defaultListName,
   prefillFromAngle,
+  PRESS_LIST_CHANNEL_KNOB,
+  pressListKind,
 } from "../components/BuildMediaListFromAngle";
 
 const WORKSPACE = join(__dirname, "..", "PressRoomWorkspace.tsx");
@@ -54,4 +56,21 @@ test("an angle with nothing but a headline still prefills the angle", () => {
 test("a new list is named after the angle", () => {
   expect(defaultListName("Shredders miss 1 in 5 drives")).toBe("Media list — Shredders miss 1 in 5 drives");
   expect(defaultListName("x".repeat(80)).length).toBeLessThanOrEqual(73);
+});
+
+describe("a new press list's channel is the knob pr.new_press_list_channel", () => {
+  const SOURCE = readFileSync(join(__dirname, "..", "components", "BuildMediaListFromAngle.tsx"), "utf8");
+
+  test("the door reads the knob, never a hard-coded email", () => {
+    expect(PRESS_LIST_CHANNEL_KNOB).toEqual({ feature: "pr", key: "new_press_list_channel" });
+    expect(SOURCE).not.toMatch(/kind:\s*"email"/);
+    expect(SOURCE).toMatch(/ensureEffectiveKnob\(/);
+  });
+
+  test("each register choice becomes that list kind; anything else is a named failure", () => {
+    expect(pressListKind("email")).toBe("email");
+    expect(pressListKind("call")).toBe("call");
+    expect(pressListKind("mixed")).toBe("mixed");
+    expect(() => pressListKind(undefined)).toThrow(/pr\.new_press_list_channel/);
+  });
 });

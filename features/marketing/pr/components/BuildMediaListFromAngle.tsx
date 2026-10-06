@@ -7,7 +7,9 @@
  * spent until the person previews and runs it.
  *
  * A new list is born in the ANGLE's organization (the object's org, never the
- * active one), as an email list: a press list is pitched by email.
+ * active one), on the channel the knob `pr.new_press_list_channel` resolves
+ * for this person in that organization (admin default email; organization and
+ * personal overrides).
  */
 
 import { useState } from "react";
@@ -24,6 +26,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import {
   OutreachListPickerFields,
   useOutreachListChoice,
@@ -32,7 +37,10 @@ import {
   MediaResearchDialog,
   type MediaResearchPrefill,
 } from "@/features/crm/media-research/MediaResearchDialog";
-import type { OutreachListWithCount } from "@/features/crm/outreach-lists/types";
+import type {
+  OutreachListKind,
+  OutreachListWithCount,
+} from "@/features/crm/outreach-lists/types";
 import {
   ENDOWMENT_COPY,
   OUTLET_KIND_LABELS,
@@ -72,6 +80,27 @@ export function prefillFromAngle(
   };
 }
 
+/** The knob that decides a new press list's channel. */
+export const PRESS_LIST_CHANNEL_KNOB = {
+  feature: "pr",
+  key: "new_press_list_channel",
+} as const;
+
+const PRESS_LIST_CHANNELS = ["email", "call", "mixed"] as const;
+
+/** The knob's resolved value as a list kind — a value outside the register's own choices is a named failure, never a guess. */
+export function pressListKind(value: unknown): OutreachListKind {
+  if (
+    typeof value === "string" &&
+    (PRESS_LIST_CHANNELS as readonly string[]).includes(value)
+  ) {
+    return value as OutreachListKind;
+  }
+  throw new Error(
+    `The new press list channel setting (pr.new_press_list_channel) is "${String(value)}", which is not email, call or mixed.`,
+  );
+}
+
 export function defaultListName(headline: string): string {
   const trimmed = headline.trim();
   const short = trimmed.length > 60 ? `${trimmed.slice(0, 57)}…` : trimmed;
@@ -82,6 +111,7 @@ export function BuildMediaListFromAngle({ angle }: { angle: StoryAngle }) {
   const [picking, setPicking] = useState(false);
   const [list, setList] = useState<OutreachListWithCount | null>(null);
   const [busy, setBusy] = useState(false);
+  const userId = useAppSelector(selectUserId);
   const choice = useOutreachListChoice(picking);
   const router = useRouter();
 
@@ -94,9 +124,16 @@ export function BuildMediaListFromAngle({ angle }: { angle: StoryAngle }) {
   const proceed = async () => {
     setBusy(true);
     try {
+      const kind = pressListKind(
+        await ensureEffectiveKnob(
+          angle.organization_id,
+          userId ?? null,
+          PRESS_LIST_CHANNEL_KNOB,
+        ),
+      );
       const resolved = await choice.resolve({
         orgId: angle.organization_id,
-        kind: "email",
+        kind,
       });
       setPicking(false);
       setList(resolved);
