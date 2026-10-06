@@ -113,6 +113,13 @@ function declaredPairs(): { pairs: Set<string>; files: number } {
       }
     }
   }
+  // The LIVE register. Rows are created live through the Supabase MCP, never as migration
+  // files, so the `.sql` scan above cannot see them; `npx tsx scripts/refresh-knob-snapshot.ts` commits
+  // the live keys. A read matching neither source still fails by name.
+  const snapshot = JSON.parse(
+    readFileSync(join(__dirname, "..", "knob-keys.snapshot.json"), "utf8"),
+  ) as { knobs: [string, string][] };
+  for (const [feature, key] of snapshot.knobs) pairs.add(`${feature} ${key}`);
   return { pairs, files };
 }
 
@@ -280,6 +287,8 @@ const COMPUTED_REFS: Record<string, string> = {
   "app/(dev)/demos/composer/ComposerPlayground.tsx":
     "dev demo: reads `COMPOSER_KNOBS.compactInputMaxHeightPct`, a member access on the composer's " +
     "own declared COMPOSER_KNOBS table; the same knob the composer itself reads",
+  "components/official/drill-explorer/drillKnob.ts":
+    "reads `drillKnobAddress(name)`, the door's own last-segment split; names are passed by the explorer's callers",
   "features/audio/limits.ts":
     "reads one address per limit out of its own declared AUDIO_LIMITS table; every entry is a pair in that file",
   "features/masterwork/capture-plan/useCapturePlanSettings.ts":

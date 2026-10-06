@@ -456,3 +456,15 @@ if (typeof globalThis.CSS === "undefined" || typeof globalThis.CSS?.escape !== "
     }) as Parameters<typeof computeSeam.registerChatComputeTargets>[0],
   );
 }
+
+/**
+ * ── ResizeObserver: jsdom has none ───────────────────────────────────────────
+ * Components that observe their own size (menu scroll fades, composer heights)
+ * die on `ResizeObserver is not defined`. A no-op stub, applied only where jsdom
+ * left it missing, so suites that install their own keep theirs.
+ */
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
