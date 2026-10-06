@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
   X,
   AlertCircle,
+  Building2,
   Info,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -82,7 +83,11 @@ export function IntegrationDirectory({
     filters.category === "all" &&
     !filters.query.trim() &&
     filters.status === "all";
-  const featured = visible.filter((item) => item.featured);
+  // The featured row leads with the deepest first-party integrations, in a
+  // deliberate order; anything else featured follows by name.
+  const featured = visible
+    .filter((item) => item.featured)
+    .sort((a, b) => featuredRank(a) - featuredRank(b));
   const change = (patch: Partial<DirectoryFilters>) =>
     onFiltersChange({ ...filters, ...patch });
   const clearFilters = () =>
@@ -122,6 +127,43 @@ export function IntegrationDirectory({
       ))}
     </div>
   );
+  const featuredGrid = (entries: IntegrationDirectoryItem[]) => (
+    <div className="grid grid-cols-1 gap-3 @[38rem]/integrations:grid-cols-2 @[58rem]/integrations:grid-cols-3">
+      {entries.map((item) => (
+        <FeaturedIntegrationTile
+          key={item.id}
+          item={item}
+          onOpen={() => onSelect(item.id)}
+        />
+      ))}
+    </div>
+  );
+  const mine = items.filter((item) => item.saved);
+  const sharedOnly = items.filter(
+    (item) => !item.saved && (item.sharedBy?.length ?? 0) > 0,
+  );
+  const yourConnections = (mine.length > 0 || sharedOnly.length > 0) && (
+    <section aria-label="Your connections" className="space-y-2.5">
+      <h2 className="text-sm font-semibold">Your connections</h2>
+      <div className="flex flex-wrap gap-2">
+        {mine.map((item) => (
+          <ConnectionChip
+            key={item.id}
+            item={item}
+            onOpen={() => onSelect(item.id)}
+          />
+        ))}
+        {sharedOnly.map((item) => (
+          <ConnectionChip
+            key={item.id}
+            item={item}
+            shared
+            onOpen={() => onSelect(item.id)}
+          />
+        ))}
+      </div>
+    </section>
+  );
   const section = (
     title: string,
     entries: IntegrationDirectoryItem[],
@@ -146,7 +188,9 @@ export function IntegrationDirectory({
             <ArrowRight className="h-3.5 w-3.5" aria-hidden />
           </button>
         </div>
-        {grid(entries.slice(0, title === "Featured" ? 8 : 4))}
+        {title === "Featured"
+          ? featuredGrid(entries.slice(0, 9))
+          : grid(entries.slice(0, 4))}
       </section>
     );
 
@@ -278,7 +322,7 @@ export function IntegrationDirectory({
                 {loading
                   ? "Checking integrations…"
                   : filters.view === "yours"
-                    ? `${visible.length} saved integration${visible.length === 1 ? "" : "s"}${readFailed ? " loaded" : ""}`
+                    ? `${visible.filter((item) => item.saved).length} saved${readFailed ? " integrations loaded" : ""}${visible.some((item) => !item.saved) ? ` · ${visible.filter((item) => !item.saved).length} shared with you` : ""}`
                     : filters.query.trim()
                       ? `${visible.length} result${visible.length === 1 ? "" : "s"}${readFailed ? " loaded" : ""}`
                       : (categoryLabel ??
@@ -390,12 +434,30 @@ export function IntegrationDirectory({
                 </Button>
               </div>
             ) : filters.view === "yours" ? (
+              <div className="space-y-6">
+              {[
+                {
+                  label: "Yours",
+                  listLabel: "Your integrations",
+                  entries: visible.filter((item) => item.saved),
+                },
+                {
+                  label: "Shared with you",
+                  listLabel: "Shared with you",
+                  entries: visible.filter((item) => !item.saved),
+                },
+              ].map(({ label, listLabel, entries }) =>
+                entries.length === 0 ? null : (
+              <section key={label} className="space-y-2">
+              <h2 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {label}
+              </h2>
               <div
                 role="list"
-                aria-label="Your integrations"
+                aria-label={listLabel}
                 className="divide-y divide-border rounded-lg border border-border"
               >
-                {visible.map((item) => (
+                {entries.map((item) => (
                   <div role="listitem" key={item.id}>
                     <button
                       type="button"
@@ -411,29 +473,40 @@ export function IntegrationDirectory({
                         <span className="block text-sm font-medium">
                           {item.name}
                         </span>
-                        {item.accountSummary && (
+                        {item.saved && item.accountSummary ? (
                           <span className="block truncate text-xs text-muted-foreground">
                             {item.accountSummary}
                           </span>
-                        )}
+                        ) : !item.saved && item.sharedBy?.length ? (
+                          <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                            <Building2 className="h-3 w-3 shrink-0" aria-hidden />
+                            Shared by {item.sharedBy.join(", ")}
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         className={cn(
                           "flex shrink-0 items-center gap-1.5 text-xs",
-                          item.attention
+                          item.saved && item.attention
                             ? "text-warning"
                             : "text-muted-foreground",
                         )}
                       >
-                        {item.attention ? (
-                          <AlertCircle className="h-3.5 w-3.5" aria-hidden />
-                        ) : item.connected && item.status === "Connected" ? (
-                          <Check
-                            className="h-3.5 w-3.5 text-success"
-                            aria-hidden
-                          />
-                        ) : null}
-                        {item.status}
+                        {!item.saved ? (
+                          "Connect your own"
+                        ) : (
+                          <>
+                            {item.attention ? (
+                              <AlertCircle className="h-3.5 w-3.5" aria-hidden />
+                            ) : item.connected && item.status === "Connected" ? (
+                              <Check
+                                className="h-3.5 w-3.5 text-success"
+                                aria-hidden
+                              />
+                            ) : null}
+                            {item.status}
+                          </>
+                        )}
                       </span>
                       <ChevronRight
                         className="h-4 w-4 shrink-0 text-muted-foreground"
@@ -443,8 +516,13 @@ export function IntegrationDirectory({
                   </div>
                 ))}
               </div>
+              </section>
+                ),
+              )}
+              </div>
             ) : grouped ? (
-              <div className="space-y-7">
+              <div className="space-y-8">
+                {yourConnections}
                 {section("Featured", featured, () =>
                   change({ browse: "featured" }),
                 )}
@@ -500,7 +578,9 @@ export function IntegrationCard({
           !item.available ||
           item.status === "Status unavailable"
             ? ` · ${item.status}`
-            : ""}
+            : item.sharedBy?.length
+              ? ` · Shared by ${item.sharedBy.join(", ")}`
+              : ""}
         </span>
       </span>
       <span
@@ -522,6 +602,161 @@ export function IntegrationCard({
           <Plus className="h-4 w-4" aria-hidden />
         )}
       </span>
+    </button>
+  );
+}
+
+const FEATURED_ORDER = [
+  "google",
+  "microsoft",
+  "github",
+  "slack",
+  "notion",
+  "dropbox",
+  "box",
+  "linear",
+];
+
+function featuredRank(item: IntegrationDirectoryItem): number {
+  const rank = FEATURED_ORDER.indexOf(item.artwork.id);
+  return rank === -1 ? FEATURED_ORDER.length : rank;
+}
+
+/** The one sentence a tile's foot says about the viewer's own standing with it. */
+function tileState(item: IntegrationDirectoryItem): {
+  label: string;
+  tone: "success" | "warning" | "muted" | "action";
+} {
+  if (item.saved && item.attention) return { label: item.status, tone: "warning" };
+  if (item.saved && item.connected) return { label: item.status, tone: "success" };
+  if (item.saved) return { label: item.status, tone: "muted" };
+  if (item.comingSoon || !item.available) return { label: item.status, tone: "muted" };
+  return { label: "Connect", tone: "action" };
+}
+
+/**
+ * A FEATURED INTEGRATION, AS A TILE — the brand mark large on its own plate,
+ * the promise in one line, and a foot that says where the viewer stands: their
+ * own account connected, one shared by an organization, or Connect.
+ */
+export function FeaturedIntegrationTile({
+  item,
+  onOpen,
+}: {
+  item: IntegrationDirectoryItem;
+  onOpen: () => void;
+}) {
+  const state = tileState(item);
+  const shared = !item.saved && (item.sharedBy?.length ?? 0) > 0;
+  return (
+    <button
+      type="button"
+      data-integration-id={item.id}
+      onClick={onOpen}
+      className="group flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-foreground/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="flex items-start gap-3">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background shadow-xs">
+          <ConnectorMark
+            connector={item.artwork}
+            className="h-7 w-7 rounded object-contain"
+          />
+        </span>
+        <span className="min-w-0 flex-1 pt-0.5">
+          <span className="block truncate text-sm font-semibold text-foreground">
+            {item.name}
+          </span>
+          <span className="block truncate text-xs text-muted-foreground">
+            {item.vendor}
+          </span>
+        </span>
+      </span>
+      <span className="line-clamp-2 min-h-10 text-sm leading-5 text-muted-foreground">
+        {item.description}
+      </span>
+      <span className="mt-auto flex items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs">
+        <span className="flex min-w-0 items-center gap-1.5 truncate text-muted-foreground">
+          {item.saved && item.accountSummary ? (
+            item.accountSummary
+          ) : shared ? (
+            <>
+              <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              Shared by {item.sharedBy?.join(", ")}
+            </>
+          ) : null}
+        </span>
+        <span
+          title={shared && state.tone === "action" ? "Connect your own" : state.label}
+          className={cn(
+            "flex max-w-[60%] shrink-0 items-center gap-1 truncate rounded-full px-2 py-0.5 font-medium",
+            state.tone === "success" && "bg-success/10 text-success",
+            state.tone === "warning" && "bg-warning/10 text-warning",
+            state.tone === "muted" && "bg-muted text-muted-foreground",
+            state.tone === "action" &&
+              "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground",
+          )}
+        >
+          {state.tone === "success" ? (
+            <Check className="h-3 w-3" aria-hidden />
+          ) : state.tone === "warning" ? (
+            <AlertCircle className="h-3 w-3" aria-hidden />
+          ) : state.tone === "action" ? (
+            <Plus className="h-3 w-3" aria-hidden />
+          ) : null}
+          {shared && state.tone === "action" ? "Connect your own" : state.label}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/** One of the viewer's connections — or one an organization shares — as a chip. */
+function ConnectionChip({
+  item,
+  shared = false,
+  onOpen,
+}: {
+  item: IntegrationDirectoryItem;
+  shared?: boolean;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      data-integration-id={item.id}
+      onClick={onOpen}
+      title={
+        shared
+          ? `Shared by ${item.sharedBy?.join(", ")}`
+          : item.accountSummary || item.status
+      }
+      className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-sm transition-colors hover:border-foreground/20 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    >
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-background">
+        <ConnectorMark
+          connector={item.artwork}
+          className="h-4 w-4 rounded-sm object-contain"
+        />
+      </span>
+      <span className="truncate font-medium">{item.name}</span>
+      {shared ? (
+        <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
+          <Building2 className="h-3 w-3" aria-hidden />
+          {item.sharedBy?.join(", ")}
+        </span>
+      ) : (
+        <span
+          aria-label={item.status}
+          className={cn(
+            "h-2 w-2 shrink-0 rounded-full",
+            item.attention
+              ? "bg-warning"
+              : item.connected
+                ? "bg-success"
+                : "bg-muted-foreground/40",
+          )}
+        />
+      )}
     </button>
   );
 }

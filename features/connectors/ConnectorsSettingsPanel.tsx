@@ -22,8 +22,8 @@
 // two each account is. A list of served organizations would be a second, weaker
 // copy of the access rule.
 
-import { useState } from "react";
-import { Loader2, Plug } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Building2, ChevronDown, Loader2, Plug } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -72,6 +72,10 @@ import {
   type ConnectorProviderConfig,
 } from "./provider-config";
 import { confirmGmailChangesDisclosure, confirmGmailReadDisclosure } from "./gmail-read-disclosure";
+import { splitConnectionsByOwnership } from "./connection-ownership";
+import { useConnectionViewer } from "./useConnectionViewer";
+import { ConnectorMark } from "./ConnectorMark";
+import { getConnector } from "./registry";
 
 export function ConnectorsSettingsPanel({
   className,
@@ -104,6 +108,20 @@ function ProviderConnectorsPanel({
   const runner = useGoogleConsentRunner();
   const disconnect = useDisconnectGoogle();
   const organizations = useAppSelector(selectOrganizationsList);
+  /**
+   * 🚨 YOURS AND SHARED ARE TWO LISTS (Arman, 2026-10-05). The inventory holds
+   * the person's own Google accounts AND every account an organization they
+   * belong to connected. Rendered as one list, AI Matrx's shared Google — the
+   * one Search Console runs on — read as Arman's personal account, hid the
+   * offer to connect his own, and invited a Disconnect that would have cut the
+   * whole organization off. Your accounts lead; an organization's sit below,
+   * named by whose they are, and managing one is a deliberate step.
+   */
+  const viewer = useConnectionViewer();
+  const { mine: myAccounts, shared: sharedAccounts } = splitConnectionsByOwnership(
+    state.accounts,
+    viewer,
+  );
   /**
    * 🚨 THE FOURTH STATE IS SAID OUT LOUD HERE (V-24 NEW-3, 2026-09-18). With
    * every Supabase read aborted, this page said NOTHING about the organization
@@ -364,7 +382,7 @@ function ProviderConnectorsPanel({
       {organizationNotice}
       {failure ? <ConsentFailureNotice failure={failure} /> : null}
 
-      {state.accounts.length === 0 ? (
+      {myAccounts.length === 0 ? (
         <ConnectorPromptCard
           provider={provider}
           connected={false}
@@ -375,7 +393,7 @@ function ProviderConnectorsPanel({
           }}
         />
       ) : (
-        state.accounts.map((account) => {
+        myAccounts.map((account) => {
           const org = organizations.find(
             (candidate) => candidate.id === account.organizationId,
           );
@@ -403,9 +421,50 @@ function ProviderConnectorsPanel({
         })
       )}
 
+      {sharedAccounts.length > 0 ? (
+        <section aria-label="Shared with you" className="flex flex-col gap-2">
+          <h3 className="px-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Shared with you
+          </h3>
+          {sharedAccounts.map((account) => {
+            const org = organizations.find(
+              (candidate) => candidate.id === account.organizationId,
+            );
+            return (
+              <SharedAccountRow
+                key={account.id}
+                provider={provider}
+                account={account}
+                organizationName={org?.name ?? null}
+                canManage={org?.role === "owner" || org?.role === "admin"}
+              >
+                <AccountCard
+                  provider={provider}
+                  account={account}
+                  health={accountHealth({
+                    provider,
+                    account,
+                    rollout: state.rollout,
+                  })}
+                  organizationName={org?.name ?? null}
+                  orgRole={org?.role ?? null}
+                  onReconnect={(productKey) =>
+                    void reconnect(account.id, productKey)
+                  }
+                  onReconnectAccount={() => reconnectAccount(account.id)}
+                  onRevoke={() => void revoke(account.id)}
+                  busy={busy}
+                  revoking={revokingId === account.id}
+                />
+              </SharedAccountRow>
+            );
+          })}
+        </section>
+      ) : null}
+
       <section
         id="connector-consent-body"
-        className="border-t border-border bg-textured px-1 py-3 sm:rounded-xl sm:border sm:p-3"
+        className="flex flex-col border-t border-border bg-textured px-1 py-3 sm:rounded-xl sm:border sm:p-3"
       >
         <header className="mb-2.5 flex items-start gap-2">
           <Plug className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -427,7 +486,14 @@ function ProviderConnectorsPanel({
           provider={provider}
           rowAnchorPrefix="integration-google-product-"
           searchFocus={searchFocus}
-          accounts={state.accounts}
+          // Your own accounts — plus a shared one only while its own card's
+          // Reconnect is the press being run — so "Connect" never defaults to
+          // an organization's credential.
+          accounts={state.accounts.filter(
+            (account) =>
+              myAccounts.includes(account) ||
+              account.id === cardConsent?.accountId,
+          )}
           rollout={state.rollout}
           isLoading={false}
           rolloutUnavailable={state.rolloutUnavailable}
@@ -518,5 +584,63 @@ function AccountCard({
       </p>
     ) : null}
     </>
+  );
+}
+
+/**
+ * AN ORGANIZATION'S ACCOUNT, AS ONE QUIET ROW. Whose it is leads; the full
+ * health card — and, for that organization's owners and admins, Reconnect and
+ * Disconnect — opens only on a deliberate press, because acting on it acts for
+ * everyone in the organization.
+ */
+function SharedAccountRow({
+  provider,
+  account,
+  organizationName,
+  canManage,
+  children,
+}: {
+  provider: ConnectorProviderConfig;
+  account: ConnectorAccount;
+  organizationName: string | null;
+  canManage: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const connector = getConnector(provider.markConnectorId);
+  const org = organizationName ?? "your organization";
+  return (
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+          {connector ? <ConnectorMark connector={connector} className="h-4 w-4" /> : null}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-foreground">
+            {account.label}
+          </span>
+          <span className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+            <Building2 className="h-3 w-3 shrink-0" aria-hidden />
+            Connected by {org} · {account.statusLabel}
+          </span>
+        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {canManage ? `Manage for ${org}` : "Details"}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+      {open ? <div className="border-t border-border p-2">{children}</div> : null}
+    </div>
   );
 }
