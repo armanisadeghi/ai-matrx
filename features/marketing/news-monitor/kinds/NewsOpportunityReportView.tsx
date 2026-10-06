@@ -28,6 +28,16 @@ import {
 import { KindCard, Pill, formatWhen } from "./shared";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
+/** Funnel stages whose bare name reads as a different count than the one it is. */
+const FUNNEL_LABELS: Record<string, string> = {
+  watching_unverified: "unverified (part of the watch list)",
+  stale: "stale (part of the watch list)",
+};
+
+function stageLabel(stage: string): string {
+  return FUNNEL_LABELS[stage] ?? humanizeIdentifier(stage).toLowerCase();
+}
+
 function sectionCount(value: unknown): number {
   // A section entry with only a marker is a placeholder, not a story.
   return records(value).filter(hasContentFields).length;
@@ -51,7 +61,7 @@ export function NewsOpportunityReportView({
   const big = num(read.big_stories) || sectionCount(sections.big_stories);
   const watched = watchedCount ?? (num(read.watched) || sectionCount(sections.watch));
   const funnel = records(value.funnel);
-  const markdown = cleanReportMarkdown(str(value.rendered_markdown), formatWhen);
+  const markdown = cleanReportMarkdown(str(value.rendered_markdown), formatWhen, watchedCount);
   // The report's markdown carries its own Disclosures / Monitor notes; never print them twice.
   const disclosures = markdownHasSection(markdown, "Disclosures") ? [] : strings(value.disclosures);
   const monitorNotes = markdownHasSection(markdown, "Monitor notes") ? [] : strings(value.monitor_notes);
@@ -78,12 +88,12 @@ export function NewsOpportunityReportView({
                   onClick={() => onOpen(funnelOpenTarget(str(step.stage)))}
                 >
                   <span className="font-medium text-primary">{num(step.count)}</span>
-                  <span className="text-muted-foreground">{humanizeIdentifier(str(step.stage)).toLowerCase()}</span>
+                  <span className="text-muted-foreground">{stageLabel(str(step.stage))}</span>
                 </button>
               ) : (
                 <>
                   <span className="font-medium text-foreground">{num(step.count)}</span>
-                  <span className="text-muted-foreground">{humanizeIdentifier(str(step.stage)).toLowerCase()}</span>
+                  <span className="text-muted-foreground">{stageLabel(str(step.stage))}</span>
                 </>
               )}
             </span>

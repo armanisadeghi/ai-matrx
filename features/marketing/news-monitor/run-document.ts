@@ -157,7 +157,8 @@ export type SetAsideListId =
   | "over_limit"
   | "url_overlap"
   | "s2_dropped"
-  | "seen_skipped";
+  | "seen_skipped"
+  | "clustered_away";
 
 /**
  * What a count on the run view opens. Every count is a door (spec §7.5, "a
@@ -170,6 +171,7 @@ export type OpenTarget =
   | { kind: "set_aside"; list: SetAsideListId | "all" };
 
 const SET_ASIDE_IDS: SetAsideListId[] = [
+  "clustered_away",
   "rejected",
   "withheld",
   "pre_gated",
@@ -249,6 +251,8 @@ export interface RunParts {
   diagnostics: Record<string, unknown> | null;
   rejected: unknown;
   preGated: unknown;
+  /** The duplicates grouping folded into another story (`clustered.clustered_duplicates`). */
+  clusteredAway?: unknown;
   notices: RunNotice[];
   stages: Record<string, unknown>[];
 }
@@ -259,6 +263,7 @@ export function readSetAside(parts: RunParts): SetAsideList[] {
   const rejected = readSignalSummaries(parts.rejected);
   const withheld = readSignalSummaries(parts.withheld);
   const preGated = readSignalSummaries(parts.preGated);
+  const clusteredAway = readSignalSummaries(parts.clusteredAway);
   const belowFloorIds = strings(d.below_floor);
   const belowFloorByLane = counts(d.below_floor_by_lane ?? summaryCounts.below_floor_by_lane);
   const s2 = counts(d.s2_dropped ?? summaryCounts.s2_dropped);
@@ -271,6 +276,16 @@ export function readSetAside(parts: RunParts): SetAsideList[] {
   const total = (m: Record<string, number>) =>
     Object.values(m).reduce((a, b) => a + b, 0);
   return [
+    {
+      id: "clustered_away",
+      label: "Folded into the same story",
+      explain: "Duplicates of a story already on this run; each one's story is kept.",
+      count: Math.max(clusteredAway.length, num(summaryCounts.clustered_away)),
+      byReason: {},
+      items: clusteredAway,
+      ids: [],
+      listed: true,
+    },
     {
       id: "rejected",
       label: "Rejected as not relevant",
@@ -433,11 +448,26 @@ const MD_LINK = /\[((?:[^\]\\]|\\.)*)\]\(([^)\s]+)\)/g;
  * link rendered as raw text); and every ISO timestamp is shown in the app's
  * date format (`formatDate`).
  */
-export function cleanReportMarkdown(markdown: string, formatDate: (iso: string) => string): string {
+const PROSE_NONE = /(\*\*([^*\n]+)\*\*\s*:\s*)None\b/g;
+const WATCHED = /\b\d+ watched\b/g;
+
+/** A prose label the report job filled with a bare "None": the plain words for that label. */
+function noneFor(label: string): string {
+  if (/standing/i.test(label)) return "no standing";
+  if (/brief/i.test(label)) return "no brief rule applied";
+  return "none recorded";
+}
+
+export function cleanReportMarkdown(
+  markdown: string,
+  formatDate: (iso: string) => string,
+  watchCount: number | null = null,
+): string {
   return markdown
     .split("\n")
     .map((line) => {
-      let out = line;
+      let out = line.replace(PROSE_NONE, (_m, lead: string, label: string) => `${lead}${noneFor(label)}`);
+      if (watchCount !== null) out = out.replace(WATCHED, `${watchCount} watched`);
       if (out.trimStart().startsWith("|")) {
         out = out.replace(MD_LINK, (_m, text: string, url: string) =>
           `[${text.replace(/(?<!\\)\|/g, "\\|")}](${url})`,

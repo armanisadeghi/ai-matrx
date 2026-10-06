@@ -33,8 +33,15 @@ describe("cleanReportMarkdown", () => {
     );
   });
 
-  it("leaves prose 'None' alone (it is the report's word, not an empty cell)", () => {
-    expect(cleanReportMarkdown("- **Standing**: None — no overlap", fmt)).toBe("- **Standing**: None — no overlap");
+  it("turns a prose label's bare None into plain words", () => {
+    expect(cleanReportMarkdown("- **Standing**: None — no overlap", fmt)).toBe("- **Standing**: no standing — no overlap");
+    expect(cleanReportMarkdown("**Brief Applied**: None (no rules)", fmt)).toBe("**Brief Applied**: no brief rule applied (no rules)");
+  });
+
+  it("states the run's one watch-list count wherever the markdown says 'N watched'", () => {
+    expect(cleanReportMarkdown("**0 pitch-ready · 2 big stories · 0 watched**", fmt, 16)).toBe(
+      "**0 pitch-ready · 2 big stories · 16 watched**",
+    );
   });
 });
 
@@ -57,6 +64,7 @@ describe("every funnel count opens its list", () => {
     ["s2_dropped: older_than_max_age", { kind: "set_aside", list: "s2_dropped" }],
     ["below_floor_by_lane: profile_relevance_weak", { kind: "set_aside", list: "below_floor" }],
     ["over_limit", { kind: "set_aside", list: "over_limit" }],
+    ["clustered_away", { kind: "set_aside", list: "clustered_away" }],
     ["collected", { kind: "run_steps" }],
     ["scored", { kind: "run_steps" }],
   ])("%s", (stage, target) => {

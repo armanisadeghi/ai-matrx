@@ -520,12 +520,16 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                   </p>
                   {quietSources.length ? (
                     <ul className="mt-1 flex flex-col gap-0.5">
-                      {quietSources.map((h) => (
-                        <li key={h.source} className="text-xs text-muted-foreground" data-source-status={h.status}>
-                          <span className="font-medium text-warning">{humanizeIdentifier(h.source)}</span>: {humanizeIdentifier(h.status).toLowerCase()}
-                          {h.error ? ` — ${h.error.slice(0, 280)}${h.error.length > 280 ? "…" : ""}` : ""}
-                        </li>
-                      ))}
+                      {/* Sources that failed for the same reason (X and X News share one token) say it once. */}
+                      {[...Map.groupBy(quietSources, (h) => `${h.status}|${h.error ?? ""}`).values()].map((group) => {
+                        const h = group[0];
+                        return (
+                          <li key={group.map((g) => g.source).join(",")} className="text-xs text-muted-foreground" data-source-status={h.status}>
+                            <span className="font-medium text-warning">{group.map((g) => humanizeIdentifier(g.source)).join(", ")}</span>: {humanizeIdentifier(h.status).toLowerCase()}
+                            {h.error ? ` — ${h.error.slice(0, 280)}${h.error.length > 280 ? "…" : ""}` : ""}
+                          </li>
+                        );
+                      })}
                     </ul>
                   ) : null}
                 </section>

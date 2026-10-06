@@ -121,6 +121,7 @@ const RUN_PARTS_SELECT = [
   "diagnostics:output->run->candidates->diagnostics",
   "rejected:output->run->relevant->coarse_relevance->rejected_signals",
   "pre_gated:output->run->clustered->pre_gated_stale",
+  "clustered_away:output->run->clustered->clustered_duplicates",
   "notices:output->run->notices",
   "stages:output->run->stages",
 ].join(", ");
@@ -166,6 +167,7 @@ export async function getRunParts(
     diagnostics: rec(row.diagnostics),
     rejected: row.rejected,
     preGated: row.pre_gated,
+    clusteredAway: row.clustered_away,
     notices: readNotices(row.notices),
     stages: records(row.stages),
   };

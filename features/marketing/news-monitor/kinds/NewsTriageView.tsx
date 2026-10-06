@@ -16,7 +16,7 @@ const TIER_ORDER = ["pitch_ready", "big_story", "watch"] as const;
 const TIER_LABEL: Record<string, string> = {
   pitch_ready: "Pitch-ready",
   big_story: "Big stories worth a look",
-  watch: "Watch / context",
+  watch: "Context (not the watch list)",
 };
 
 function standingTone(standing: string): "good" | "info" | "neutral" {
@@ -38,7 +38,7 @@ export function NewsTriageView({
   return (
     <KindCard
       testId="news-triage"
-      title={`Triage — ${num(summary.pitch_ready_count)} pitch-ready · ${num(summary.big_story_count)} big · ${num(summary.watch_count)} watch`}
+      title={`Triage — ${num(summary.pitch_ready_count)} pitch-ready · ${num(summary.big_story_count)} big · ${num(summary.watch_count)} context`}
       subtitle={
         Object.keys(standing).length
           ? `Standing: ${Object.entries(standing).map(([k, n]) => `${n} ${k}`).join(" · ")}`
