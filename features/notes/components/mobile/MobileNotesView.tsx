@@ -41,6 +41,7 @@ import {
   type NotesFilterState,
 } from "./NotesFilterSheet";
 import type { Note } from "@/features/notes/types";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type MobileView = "list" | "editor";
 
@@ -203,31 +204,7 @@ export default function MobileNotesView({
                 like the current state). Icon-labelled (Type / PenLine, named
                 for assistive tech and in the tooltip) so the TITLE keeps the
                 row; each segment is a 44px touch target. */}
-            <div
-              role="radiogroup"
-              aria-label="Note view"
-              className="flex flex-shrink-0 items-center rounded-full bg-muted p-0.5"
-            >
-              {NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => (
-                <button
-                  key={mode}
-                  type="button"
-                  role="radio"
-                  aria-checked={editorMode === mode}
-                  aria-label={label}
-                  title={`${label} — ${hint}`}
-                  onClick={() => setEditorMode(mode)}
-                  className={cn(
-                    "flex h-11 w-11 items-center justify-center rounded-full transition-colors",
-                    editorMode === mode
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground",
-                  )}
-                >
-                  <Icon className="h-4 w-4" aria-hidden />
-                </button>
-              ))}
-            </div>
+            <SegmentedControl aria-label="Note view" value={editorMode} onValueChange={setEditorMode} data={NOTE_PHONE_VIEW_MODES.map(({ mode, label, hint, icon: Icon }) => ({ value: mode, ariaLabel: label, title: `${label} — ${hint}`, label: <Icon className="h-4 w-4" aria-hidden /> }))} />
 
             <PageHeaderRightPortal>
               {/* Clean up content — mutates the note, so viewers don't get it.

@@ -9,6 +9,7 @@ import { MediaTab } from "../modals/media/MediaTab";
 import { LinksTab } from "../modals/media/LinksTab";
 import { DocsTab } from "../modals/media/DocsTab";
 import { GalleryToolbar } from "../modals/media/GalleryToolbar";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 const OVERLAY_ID = "whatsappMedia";
 const WINDOW_ID = "whatsapp-media";
@@ -61,27 +62,7 @@ export function WhatsAppMediaWindow({
       onClose={onClose}
       actionsRight={
         <div className="flex items-center gap-2">
-          <div
-            role="tablist"
-            className="flex items-center rounded-lg bg-muted p-1"
-          >
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={tab.id === activeId}
-                onClick={() => setActiveId(tab.id)}
-                className={cn(
-                  "rounded-md px-3 py-1 text-[13px] font-medium transition-colors",
-                  tab.id === activeId
-                    ? "bg-card text-foreground shadow"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl aria-label="Media" value={activeId} onValueChange={setActiveId} data={tabs.map((tab) => ({ value: tab.id, label: tab.label }))} />
           <GalleryToolbar />
         </div>
       }

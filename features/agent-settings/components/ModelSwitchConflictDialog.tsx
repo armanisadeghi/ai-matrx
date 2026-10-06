@@ -44,6 +44,7 @@ import type {
   ConflictItem,
   ResolutionMode,
 } from "@ai-matrx/chat/agents/redux/agent-settings/types";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // ── Resolution mode tabs ───────────────────────────────────────────────────────
 
@@ -306,32 +307,7 @@ export function ModelSwitchConflictDialog({
                     <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground shrink-0">
                       Resolve by:
                     </span>
-                    <div className="flex items-center gap-1 p-0.5 rounded-md bg-muted/50 border border-border">
-                      {RESOLUTION_MODES.map((m) => (
-                        <button
-                          key={m.id}
-                          type="button"
-                          onClick={() => handleModeChange(m.id)}
-                          className={cn(
-                            "relative text-[11px] px-2.5 py-1 rounded font-medium transition-all whitespace-nowrap",
-                            pendingSwitch.mode === m.id
-                              ? "bg-background border border-border text-foreground shadow-sm"
-                              : "text-muted-foreground hover:text-foreground",
-                          )}
-                        >
-                          {m.label}
-                          {m.recommended && pendingSwitch.mode !== m.id && (
-                            <>
-                              <Star
-                                className="ml-1 inline size-2.5 fill-current text-primary"
-                                aria-hidden="true"
-                              />
-                              <span className="sr-only">Recommended</span>
-                            </>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                    <SegmentedControl aria-label="Resolution" value={pendingSwitch.mode} onValueChange={handleModeChange} data={RESOLUTION_MODES.map((m) => ({ value: m.id, label: m.label }))} />
 
                     {/* Live tally */}
                     <div className="flex items-center gap-2 text-[11px] ml-auto">

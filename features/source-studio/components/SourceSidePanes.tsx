@@ -50,6 +50,7 @@ function entitiesEmptySentence(state: EntitiesState, notSearchable: boolean): st
 }
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export type SideTab = "chunks" | "entities" | "associations";
 
@@ -97,35 +98,7 @@ export function SourceSidePanes(props: SourceSidePanesProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex h-9 shrink-0 items-center border-b border-border px-2">
-        <div
-          role="tablist"
-          aria-label="Chunks, entities and attachments"
-          className="grid w-full grid-cols-3 rounded-md bg-muted p-0.5"
-        >
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={tab === t.key}
-              onClick={() => onTabChange(t.key)}
-              className={cn(
-                "h-7 truncate rounded-sm px-2 text-xs font-medium transition-colors",
-                tab === t.key
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {t.label}
-              {t.key === "chunks" && !props.chunksLoading
-                ? ` (${props.chunkTotal})`
-                : ""}
-              {t.key === "entities" && !props.entitiesLoading && !props.entitiesError
-                ? ` (${props.entities.length})`
-                : ""}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl aria-label="Chunks, entities and attachments" fill value={tab} onValueChange={onTabChange} data={TABS.map((t) => ({ value: t.key, label: `${t.label}${t.key === "chunks" && !props.chunksLoading ? ` (${props.chunkTotal})` : ""}${t.key === "entities" && !props.entitiesLoading && !props.entitiesError ? ` (${props.entities.length})` : ""}` }))} />
       </div>
       <div className="min-h-0 flex-1">
         {tab === "chunks" && <ChunksTab {...props} />}

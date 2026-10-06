@@ -1,7 +1,7 @@
 "use client";
 
 import { GripVertical, Plus, Trash2 } from "lucide-react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { isDecisionQuestionType, type DecisionQuestion } from "./decision-form";
@@ -89,5 +89,5 @@ function CriteriaEditor({ question, onChange }: { question: DecisionQuestion; on
 }
 
 function EditorMode<M extends "text" | "rows">({ value, textLabel, jsonLabel, onChange, textValue }: { value: M | "json"; textLabel: string; jsonLabel: string; textValue: M; onChange: (value: M | "json") => void }) {
-  return <div className="inline-flex rounded-md border border-border bg-muted p-0.5 text-xs"><button type="button" onClick={() => onChange(textValue)} className={`rounded px-2 py-1 ${value === textValue ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{textLabel}</button><button type="button" onClick={() => onChange("json")} className={`rounded px-2 py-1 ${value === "json" ? "bg-background shadow-sm" : "text-muted-foreground"}`}>{jsonLabel}</button></div>;
+  return <SegmentedControl aria-label="Editor mode" value={value} onValueChange={onChange} data={[{ value: textValue, label: textLabel }, { value: "json", label: jsonLabel }]} />;
 }

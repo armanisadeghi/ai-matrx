@@ -103,6 +103,7 @@ import {
   type VaultPrincipal,
 } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type DestinationFeedback = {
   tone: "checking" | "success" | "warning" | "error";
@@ -327,28 +328,7 @@ function ModeToggle({
   onChange: (mode: CreateMode) => void;
 }) {
   return (
-    <div
-      className="flex items-center gap-1 rounded-md border border-border bg-muted/40 p-0.5"
-      role="group"
-      aria-label="Who this credential is for"
-    >
-      {(["self", "assign"] as const).map((value) => (
-        <button
-          key={value}
-          type="button"
-          aria-pressed={mode === value}
-          onClick={() => onChange(value)}
-          className={cn(
-            "flex-1 rounded px-2.5 py-1.5 text-xs font-medium transition-colors",
-            mode === value
-              ? "bg-card text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {value === "self" ? "For me / my organization" : "For someone else"}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl aria-label="Who this credential is for" fill value={mode} onValueChange={onChange} data={[{ value: "self", label: "For me / my organization" }, { value: "assign", label: "For someone else" }]} />
   );
 }
 

@@ -30,6 +30,7 @@ import { podcastService } from "@/features/podcasts/service";
 import { useShare } from "@/features/sharing/hooks/useShare";
 import type { PcDisplayMode } from "@/features/podcasts/types";
 import { episodeHref } from "../constants";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface ResultActionsProps {
   episodeId: string;
@@ -165,40 +166,7 @@ export function ResultActions({
         <span className="text-xs font-medium text-muted-foreground">
           Episode page style:
         </span>
-        <div className="inline-flex items-center rounded-lg border border-border bg-muted/40 p-0.5">
-          {DISPLAY_MODES.map((m) => {
-            const Icon = m.icon;
-            const disabled = m.value === "with_video" && !hasVideo;
-            const active = displayMode === m.value;
-            return (
-              <button
-                key={m.value}
-                type="button"
-                disabled={disabled || savingMode !== null}
-                onClick={() => changeDisplayMode(m.value)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors",
-                  active
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                  disabled && "cursor-not-allowed opacity-40",
-                )}
-                title={
-                  disabled ? "No video available for this episode" : undefined
-                }
-              >
-                {savingMode === m.value ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : active ? (
-                  <Check className="h-3.5 w-3.5 text-primary" />
-                ) : (
-                  <Icon className="h-3.5 w-3.5" />
-                )}
-                {m.label}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl aria-label="Display" value={displayMode} onValueChange={changeDisplayMode} data={DISPLAY_MODES.map((m) => { const Icon = m.icon; const disabled = m.value === "with_video" && !hasVideo; const active = displayMode === m.value; return { value: m.value, disabled: disabled || savingMode !== null, title: disabled ? "No video available for this episode" : undefined, label: <span className="inline-flex items-center gap-1.5">{savingMode === m.value ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : active ? <Check className="h-3.5 w-3.5 text-primary" /> : <Icon className="h-3.5 w-3.5" />}{m.label}</span> }; })} />
       </div>
 
       {fallbackDialog}

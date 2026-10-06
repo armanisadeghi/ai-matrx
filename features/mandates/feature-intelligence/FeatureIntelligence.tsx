@@ -46,6 +46,7 @@ import type {
 } from "./types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export interface FeatureIntelligenceProps {
   /** The registry target (`research`, `seo`, `education/unassigned`) — `placement.ts`. */
@@ -157,34 +158,7 @@ export function FeatureIntelligence({
         className="-mx-3 mb-2 px-3 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
       >
         {canManageOrg ? (
-          <div
-            role="radiogroup"
-            aria-label="Manage for"
-            className="inline-flex min-w-0 shrink rounded-lg border border-border bg-muted/40 p-0.5"
-          >
-            {(
-              [
-                ["person", "For me"],
-                ["organization", `For ${activeOrgName ?? "organization"}`],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={level === value}
-                onClick={() => setLevel(value)}
-                className={cn(
-                  "max-w-[10rem] truncate rounded-md px-2.5 py-1 text-[13px] transition-colors sm:max-w-[14rem] sm:px-3",
-                  level === value
-                    ? "bg-card font-medium text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl aria-label="Manage for" value={level} onValueChange={setLevel} data={([["person", "For me"], ["organization", `For ${activeOrgName ?? "organization"}`]] as const).map(([value, label]) => ({ value, label }))} />
         ) : null}
       </IntelligenceSearchBar>
 

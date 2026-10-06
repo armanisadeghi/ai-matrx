@@ -59,6 +59,7 @@ import {
 } from "./work-sources";
 import { titleToAdopt } from "./feature-items.logic";
 import { useChatStatus, useFileStatus, useNoteStatus } from "./item-status";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 
@@ -263,30 +264,7 @@ function FilePicker({ onPick, onCancel }: PickerProps) {
   const [busy, setBusy] = useState(false);
   return (
     <div className="flex h-[520px] min-h-0 flex-col gap-2">
-      <div className="flex shrink-0 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="File source">
-        {(
-          [
-            { id: "library", label: "File from your files", Icon: FolderOpen },
-            { id: "upload", label: "Upload from computer", Icon: Upload },
-          ] as const
-        ).map(({ id, label, Icon }) => (
-          <button
-            key={id}
-            type="button"
-            role="tab"
-            aria-selected={mode === id}
-            disabled={busy}
-            onClick={() => setMode(id)}
-            className={cn(
-              "flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors",
-              mode === id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      <SegmentedControl aria-label="File source" fill value={mode} onValueChange={setMode} data={([{ value: "library", label: "File from your files", Icon: FolderOpen }, { value: "upload", label: "Upload from computer", Icon: Upload }] as const).map(({ value, label, Icon }) => ({ value, disabled: busy, label: <span className="inline-flex items-center gap-1.5"><Icon className="size-3.5" />{label}</span> }))} />
       <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border">
         {mode === "library" ? (
           <FilesResourcePicker

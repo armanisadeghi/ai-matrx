@@ -51,7 +51,7 @@ import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextM
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { Button } from "@/components/ui/button";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -903,28 +903,7 @@ export default function PageEditor({
                   {/* Segmented buffer switcher — a pill group, not a second
                       underline row fighting the main tab strip for attention. */}
                   <div className="flex flex-none items-center border-b border-border/50 px-4 py-1.5">
-                    <div className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
-                      {CODE_SUB_TABS.map((sub) => {
-                        const SubIcon = sub.icon as React.FC<{
-                          className?: string;
-                        }>;
-                        const isSubActive = codeTab === sub.id;
-                        return (
-                          <button
-                            key={sub.id}
-                            onClick={() => setCodeTab(sub.id)}
-                            className={`flex items-center gap-1.5 rounded-md px-3 py-1 text-[11px] font-medium transition-colors ${
-                              isSubActive
-                                ? "bg-background text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`}
-                          >
-                            <SubIcon className="h-3 w-3" />
-                            {sub.label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <SegmentedControl aria-label="Code view" value={codeTab} onValueChange={setCodeTab} data={CODE_SUB_TABS.map((sub) => { const SubIcon = sub.icon as React.FC<{ className?: string }>; return { value: sub.id, label: <span className="inline-flex items-center gap-1.5"><SubIcon className="h-3 w-3" />{sub.label}</span> }; })} />
                   </div>
                   <div className="relative flex-1 min-h-0">
                     {codeTab === "html" && (

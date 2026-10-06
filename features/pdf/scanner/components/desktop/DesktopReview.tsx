@@ -49,6 +49,7 @@ import type { ScanItem } from "../../types";
 import type { UseScanSessionResult } from "../../useScanSession";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { DragCursorMonitor } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface DesktopReviewProps {
   session: UseScanSessionResult;
@@ -145,32 +146,7 @@ export function DesktopReview({
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-3.5">
-            <div className="flex w-36 rounded-xl bg-muted p-0.5">
-              <button
-                type="button"
-                onClick={() => setLayout("grid")}
-                className={cn(
-                  "flex-1 rounded-[10px] py-1.5 text-[13px] font-semibold transition-colors",
-                  layout === "grid"
-                    ? "bg-card shadow-sm"
-                    : "text-muted-foreground",
-                )}
-              >
-                Grid
-              </button>
-              <button
-                type="button"
-                onClick={() => setLayout("list")}
-                className={cn(
-                  "flex-1 rounded-[10px] py-1.5 text-[13px] font-semibold transition-colors",
-                  layout === "list"
-                    ? "bg-card shadow-sm"
-                    : "text-muted-foreground",
-                )}
-              >
-                List
-              </button>
-            </div>
+            <SegmentedControl aria-label="Layout" value={layout} onValueChange={setLayout} data={[{ value: "grid", label: "Grid" }, { value: "list", label: "List" }]} />
             <Button
               variant="primary"
               disabled={saveDisabled}

@@ -44,6 +44,7 @@ import { CoachReviewPanel } from "@/features/education/study/components/CoachRev
 import { parsedSessionReviewFromSummary } from "@/features/education/study/utils/parseSessionReview";
 import { FastFireReviewPlayer } from "./FastFireReviewPlayer";
 import { FastFireReviewPlaylist } from "./FastFireReviewPlaylist";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 const RESULT_META: Record<
   GradeResult,
@@ -140,29 +141,7 @@ export function FastFireScoreboard({
         {/* Filter tabs */}
         {/* One segmented control — the same shape as the setup's Speak /
             Type switch, not a row of colored pills. */}
-        <div
-          role="tablist"
-          aria-label="Show cards"
-          className="mb-3 grid grid-cols-4 gap-1 rounded-xl bg-muted p-1"
-        >
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              role="tab"
-              aria-selected={filter === f.id}
-              onClick={() => dispatch(setReviewFilter({ filter: f.id }))}
-              className={cn(
-                "min-h-11 truncate rounded-lg px-2 text-sm font-medium transition-colors sm:min-h-9",
-                filter === f.id
-                  ? "bg-card text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl aria-label="Show cards" fill value={filter} onValueChange={(id) => dispatch(setReviewFilter({ filter: id }))} data={FILTERS.map((f) => ({ value: f.id, label: f.label }))} />
 
         {/* Per-card review list */}
         <div className="space-y-2">

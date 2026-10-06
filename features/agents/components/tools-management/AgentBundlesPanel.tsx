@@ -29,6 +29,7 @@ import {
 } from "@/features/tool-registry/shared/toolRuntimes.service";
 import type { AgentBundleOption } from "@/features/tool-registry/bundles/services/bundles.service";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // Internal toolkits vs third-party MCP-server bundles are kept on separate tabs
 // so our own bundles aren't buried under dozens of MCP entries. "Internal" is
@@ -271,31 +272,7 @@ export function AgentBundlesPanel({ agentId }: { agentId: string }) {
           One tool slot covers many tools, saving context
         </p>
         {/* Internal vs MCP scope */}
-        <div className="inline-flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5">
-          {SCOPE_TABS.map((tab) => {
-            const isActive = scope === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setScope(tab.key)}
-                className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-medium transition-colors ${
-                  isActive
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-                <span
-                  className={`tabular-nums ${
-                    isActive ? "text-secondary" : "text-muted-foreground/70"
-                  }`}
-                >
-                  {counts[tab.key]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl aria-label="Scope" value={scope} onValueChange={setScope} data={SCOPE_TABS.map((tab) => ({ value: tab.key, label: tab.label, count: counts[tab.key] }))} />
       </div>
 
       {/* Search */}

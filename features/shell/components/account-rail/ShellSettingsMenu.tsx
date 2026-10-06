@@ -43,6 +43,7 @@ import {
   USER_MENU_PANEL_CLASS,
 } from "@/features/shell/components/header/header-right-menu/menuItemClass";
 import { RailMenuHeader, RAIL_MENU_DIVIDER } from "./RailMenuHeader";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // The account rail's one menu look: the account menu's own row class.
 const ROW = MENU_ITEM_CLASS;
@@ -64,22 +65,7 @@ function ThemeRow() {
     <div className={cn(ROW, "cursor-default hover:bg-transparent")}>
       <SunMoon />
       <span className="min-w-0 flex-1 truncate">Theme</span>
-      <div role="radiogroup" aria-label="Theme" className="flex items-center gap-0.5 rounded-full border border-border bg-muted p-0.5">
-        {THEME_CHOICES.map(({ mode: choice, label, Icon }) => (
-          <button
-            key={choice}
-            type="button"
-            role="radio"
-            aria-checked={mode === choice}
-            aria-label={label}
-            title={label}
-            onClick={() => dispatch(setMode(choice))}
-            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground aria-checked:bg-background aria-checked:text-foreground aria-checked:shadow-sm max-lg:h-11 max-lg:w-11"
-          >
-            <Icon aria-hidden="true" />
-          </button>
-        ))}
-      </div>
+      <SegmentedControl aria-label="Theme" value={mode} onValueChange={(choice) => dispatch(setMode(choice))} data={THEME_CHOICES.map(({ mode: choice, label, Icon }) => ({ value: choice, ariaLabel: label, title: label, label: <Icon aria-hidden="true" /> }))} />
     </div>
   );
 }

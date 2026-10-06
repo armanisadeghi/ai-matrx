@@ -21,7 +21,7 @@ import { ClientMetricsPanel } from "../../../agents/components/run-controls/pane
 import { cn } from "@ai-matrx/design-system";
 import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { CHAT_WINDOWS } from "../../../host/windows";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type TabId = "request" | "client" | "session";
 
@@ -164,10 +164,6 @@ function MessageAnalysisTabBar({
   onSelectTab: (tab: TabId) => void;
 }) {
   return (
-    <div className="flex items-center gap-0.5 rounded-md border border-border bg-muted/40 p-0.5">
-      {TABS.map((tab) => (
-        <Button variant="quiet" pressed={!!(activeTab === tab.id)} key={tab.id} onClick={() => onSelectTab(tab.id)}>{tab.label}</Button>
-      ))}
-    </div>
+    <SegmentedControl aria-label="Analysis" value={activeTab} onValueChange={onSelectTab} data={TABS.map((tab) => ({ value: tab.id, label: tab.label }))} />
   );
 }

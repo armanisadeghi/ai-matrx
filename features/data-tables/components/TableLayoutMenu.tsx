@@ -20,6 +20,7 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 import type { TableLayoutMode, TableRowDensity } from "../table-view-url";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type Props = {
   layoutMode: TableLayoutMode;
@@ -66,31 +67,7 @@ function Segmented<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <div
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className="grid gap-1 rounded-md bg-muted/50 p-1"
-      style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}
-    >
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          role="radio"
-          aria-checked={value === o.id}
-          title={o.hint}
-          onClick={() => onChange(o.id)}
-          className={cn(
-            "rounded px-2 py-1 text-xs transition-colors",
-            value === o.id
-              ? "bg-background font-medium text-foreground shadow-sm"
-              : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl aria-label={ariaLabel} fill value={value} onValueChange={onChange} data={options.map((o) => ({ value: o.id, label: o.label, title: o.hint }))} />
   );
 }
 

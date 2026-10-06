@@ -52,6 +52,7 @@ import {
 } from "../vault-backup-service";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { asClause } from "@ai-matrx/kit/text";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 const BACKUP_FILENAME = "matrx-vault-backup.matrxvault";
 
@@ -551,30 +552,7 @@ export function VaultBackupDialog({
           <CredenzaTitle>Encrypted Vault backup</CredenzaTitle>
         </CredenzaHeader>
         <CredenzaBody className="space-y-4 overflow-y-auto px-4 pb-6 md:px-0">
-          <div
-            className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted/40 p-1"
-            role="tablist"
-            aria-label="Backup action"
-          >
-            <Button
-              type="button"
-              variant={mode === "download" ? "outline" : "quiet"}
-              role="tab"
-              aria-selected={mode === "download"}
-              onClick={() => switchMode("download")}
-            >
-              Download backup
-            </Button>
-            <Button
-              type="button"
-              variant={mode === "restore" ? "outline" : "quiet"}
-              role="tab"
-              aria-selected={mode === "restore"}
-              onClick={() => switchMode("restore")}
-            >
-              Restore backup
-            </Button>
-          </div>
+          <SegmentedControl aria-label="Backup action" fill value={mode} onValueChange={switchMode} data={[{ value: "download", label: "Download backup" }, { value: "restore", label: "Restore backup" }]} />
 
           {identityConfirmation ? (
             <section className="space-y-3">

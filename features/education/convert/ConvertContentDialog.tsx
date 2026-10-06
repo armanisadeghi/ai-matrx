@@ -61,6 +61,7 @@ import { EntitlementMeter } from "@/features/entitlements/components/Entitlement
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { ConfidenceBadge } from "@/features/education/trust/components/ConfidenceBadge";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface TargetMeta {
   kind: TargetKind;
@@ -262,32 +263,7 @@ export function ConvertContentDialog({
   const body = (
     <div className="flex flex-col gap-4">
       {hasSelection && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
-            <button
-              type="button"
-              onClick={() => setUseSelection(false)}
-              className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                !useSelection
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Whole source
-            </button>
-            <button
-              type="button"
-              onClick={() => setUseSelection(true)}
-              className={cn(
-                "flex-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                useSelection
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              Selected passage
-            </button>
-          </div>
+          <SegmentedControl aria-label="Scope of the source" fill value={useSelection ? "selection" : "whole"} onValueChange={(v) => setUseSelection(v === "selection")} data={[{ value: "whole", label: "Whole source" }, { value: "selection", label: "Selected passage" }]} />
         )}
 
       <div className="flex flex-col gap-2">

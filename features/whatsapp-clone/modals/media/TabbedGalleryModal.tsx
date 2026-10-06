@@ -6,6 +6,7 @@ import * as VisuallyHidden from "@radix-ui/react-visually-hidden";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/styles/themes/utils";
 import type { GalleryTab, ModalShellFooter } from "../../types";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface TabbedGalleryModalProps {
   open: boolean;
@@ -62,27 +63,7 @@ export function TabbedGalleryModal({
             ) : null}
           </div>
           <div className="flex items-center gap-2">
-            <div
-              role="tablist"
-              className="flex items-center rounded-lg bg-muted p-1"
-            >
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  role="tab"
-                  aria-selected={tab.id === activeId}
-                  onClick={() => setActiveId(tab.id)}
-                  className={cn(
-                    "rounded-md px-4 py-1 text-[13px] font-medium transition-colors",
-                    tab.id === activeId
-                      ? "bg-card text-foreground shadow"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl aria-label="Gallery" value={activeId} onValueChange={setActiveId} data={tabs.map((tab) => ({ value: tab.id, label: tab.label }))} />
             {toolbarSlot ? <div className="ml-1">{toolbarSlot}</div> : null}
           </div>
         </header>

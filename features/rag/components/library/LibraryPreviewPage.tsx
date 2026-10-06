@@ -87,6 +87,7 @@ import { knowledgeAssetsInput } from "@/features/rag/canvas/knowledgeAssetsKind"
 import { PageContentHeader } from "./PageContentHeader";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { SOURCES_PATH } from "@/features/knowledge/modulePaths";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // Full-page payload — DERIVED from the generated contract (never hand-mirrored).
 type ApiFullPage = components["schemas"]["LibraryFullPage"];
@@ -915,40 +916,7 @@ function RightRail({
   return (
     <div className="flex flex-col min-h-0">
       <div className={COLUMN_HEADER}>
-        <div
-          role="tablist"
-          aria-label="Segments and search results"
-          className="grid w-full grid-cols-2 rounded-md bg-muted p-0.5"
-        >
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "chunks"}
-            onClick={() => setTab("chunks")}
-            className={cn(
-              "h-7 truncate rounded-sm px-2 text-xs font-medium transition-colors",
-              tab === "chunks"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {RAG_VOCAB.segmentsShort} (P.{activePageNumber})
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === "results"}
-            onClick={() => setTab("results")}
-            className={cn(
-              "h-7 truncate rounded-sm px-2 text-xs font-medium transition-colors",
-              tab === "results"
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            Results{resultCount != null ? ` (${resultCount})` : ""}
-          </button>
-        </div>
+        <SegmentedControl aria-label="Segments and search results" fill value={tab} onValueChange={setTab} data={[{ value: "chunks", label: `${RAG_VOCAB.segmentsShort} (P.${activePageNumber})` }, { value: "results", label: `Results${resultCount != null ? ` (${resultCount})` : ""}` }]} />
       </div>
 
       <div className="flex-1 min-h-0">

@@ -55,6 +55,7 @@ import { openOverlay, selectOpenInstances } from "@/lib/redux/slices/overlaySlic
 import { cn } from "@/lib/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export interface TopicalMapWindowProps {
   onClose: () => void;
@@ -139,30 +140,7 @@ export default function TopicalMapWindow({
       onCollectData={() => ({ mapId, screen, siteId })}
       actionsLeft={
         mapId ? (
-          <div
-            role="group"
-            aria-label="Map screen"
-            className="inline-flex items-center gap-0.5 rounded-md border border-border bg-muted/40 p-0.5"
-          >
-            {SCREENS.map(({ screen: candidate, label, icon: Icon }) => (
-              <button
-                key={candidate}
-                type="button"
-                aria-pressed={screen === candidate}
-                title={label}
-                onClick={() => setScreen(candidate)}
-                className={cn(
-                  "inline-flex h-6 items-center gap-1 rounded-sm px-1.5 text-xs transition-colors",
-                  screen === candidate
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" aria-hidden />
-                <span className="hidden lg:inline">{label}</span>
-              </button>
-            ))}
-          </div>
+          <SegmentedControl aria-label="Map screen" value={screen} onValueChange={setScreen} data={SCREENS.map(({ screen: candidate, label, icon: Icon }) => ({ value: candidate, ariaLabel: label, title: label, label: <span className="inline-flex items-center gap-1"><Icon className="h-3.5 w-3.5" aria-hidden /><span className="hidden lg:inline">{label}</span></span> }))} />
         ) : undefined
       }
       actionsRight={

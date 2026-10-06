@@ -61,6 +61,7 @@ import { seatCanManageMandate } from "@/features/mandates/status/can-manage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export interface MandateWindowNextProps {
   isOpen?: boolean;
@@ -224,30 +225,7 @@ function MandateWindowNextInner({
     <div className="flex h-full min-h-0 flex-col">
       <div className="shrink-0 space-y-1.5 border-b border-border px-2 py-1.5">
         {adminSeat ? null : (
-        <div
-          role="tablist"
-          aria-label="Whose mandates"
-          className="flex items-center gap-0.5 rounded-md bg-muted/60 p-0.5"
-        >
-          {PERSON_SCOPES.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              role="tab"
-              aria-selected={scope === s.id}
-              title={rows ? `${counts[s.id]} ${counts[s.id] === 1 ? "mandate" : "mandates"}` : undefined}
-              onClick={() => setScope(s.id)}
-              className={cn(
-                "flex-1 whitespace-nowrap rounded px-1 py-0.5 text-[10.5px] font-medium transition-colors",
-                scope === s.id
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl aria-label="Whose mandates" fill value={scope} onValueChange={setScope} data={PERSON_SCOPES.map((s) => ({ value: s.id, label: s.label, title: rows ? `${counts[s.id]} ${counts[s.id] === 1 ? "mandate" : "mandates"}` : undefined }))} />
         )}
         <div className="relative">
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />

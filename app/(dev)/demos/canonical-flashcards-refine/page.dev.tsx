@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/styles/themes/utils";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type DemoSource = "chat" | "education" | "canvas";
 type DisplayStyle = "focused" | "embedded" | "review";
@@ -564,43 +565,8 @@ export default function CanonicalFlashcardsRefineDemoPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div
-              className="flex rounded-lg border border-border bg-muted p-0.5"
-              aria-label="Fixture entry surface"
-            >
-              {(["chat", "education", "canvas"] as const).map((item) => (
-                <Button
-                  key={item}
-                  type="button"
-                  variant={source === item ? "primary" : "quiet"}
-                  onClick={() => setSource(item)}
-                >
-                  {item}
-                </Button>
-              ))}
-            </div>
-            <div
-              className="flex rounded-lg border border-border bg-muted p-0.5"
-              aria-label="Display style"
-            >
-              {(["focused", "embedded", "review"] as const).map((item) => (
-                <Button
-                  icon={item === "focused" ? (
-                    <Maximize2 />
-                  ) : item === "embedded" ? (
-                    <Minimize2 />
-                  ) : (
-                    <CircleHelp />
-                  )}
-                  key={item}
-                  type="button"
-                  variant={displayStyle === item ? "primary" : "quiet"}
-                  onClick={() => setDisplayStyle(item)}
-                >
-                  <span className="hidden sm:inline">{item}</span>
-                </Button>
-              ))}
-            </div>
+            <SegmentedControl aria-label="Fixture entry surface" value={source} onValueChange={setSource} data={(["chat", "education", "canvas"] as const).map((item) => ({ value: item, label: item }))} />
+            <SegmentedControl aria-label="Display style" value={displayStyle} onValueChange={setDisplayStyle} data={(["focused", "embedded", "review"] as const).map((item) => ({ value: item, label: <span className="inline-flex items-center gap-1.5">{item === "focused" ? <Maximize2 /> : item === "embedded" ? <Minimize2 /> : <CircleHelp />}<span className="hidden sm:inline">{item}</span></span>, ariaLabel: item, title: item }))} />
           </div>
         </div>
       </header>

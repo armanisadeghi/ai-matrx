@@ -10,6 +10,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 /** A numbered step of the build flow. */
 export function Section({
@@ -69,34 +70,7 @@ export function Segmented<T extends string>({
   ariaLabel: string;
 }) {
   return (
-    <div
-      role="radiogroup"
-      aria-label={ariaLabel}
-      className="inline-flex w-full rounded-lg border border-border bg-muted/40 p-0.5"
-    >
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "flex-1 truncate whitespace-nowrap rounded-md px-1.5 py-1.5 text-xs transition-colors",
-              // Selection carries a tint AND a ring AND a weight change: a
-              // raised card alone reads in light and disappears in dark.
-              selected
-                ? "bg-primary/10 font-semibold text-foreground ring-1 ring-primary/50"
-                : "font-medium text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
+    <SegmentedControl aria-label={ariaLabel} fill value={value} onValueChange={onChange} data={options.map((option) => ({ value: option.value, label: option.label }))} />
   );
 }
 

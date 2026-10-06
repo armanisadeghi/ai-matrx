@@ -57,6 +57,7 @@ import { addClientTool } from "@ai-matrx/chat/agents/redux/execution-system/inst
 import { SCRIBE_TOOL_NAMES } from "@ai-matrx/chat/agents/scribe-tools/tools/names";
 import { useStudioAutoLabel } from "../../hooks/useStudioAutoLabel";
 import { useStudioSession } from "../../hooks/useStudioSession";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type Screen = "capture" | "agent" | "live" | "agent2";
 
@@ -305,24 +306,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
             {/* Mode tabs — Record / Agent / Live. Centered on small screens
               (where the title is hidden to reclaim width), inline otherwise. */}
             <div className="flex flex-1 justify-center sm:flex-none sm:justify-start">
-              <div className="flex shrink-0 rounded-full bg-muted p-0.5">
-                {MODE_TABS.map(({ key, label, icon: Icon }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setScreen(key)}
-                    className={cn(
-                      "flex items-center gap-1 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors",
-                      screen === key
-                        ? "bg-card text-foreground shadow-sm"
-                        : "text-muted-foreground",
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    <span className="hidden sm:inline">{label}</span>
-                  </button>
-                ))}
-              </div>
+              <SegmentedControl aria-label="Screen" value={screen} onValueChange={setScreen} data={MODE_TABS.map(({ key, label, icon: Icon }) => ({ value: key, ariaLabel: label, label: <span className="inline-flex items-center gap-1"><Icon className="h-3.5 w-3.5" /><span className="hidden sm:inline">{label}</span></span> }))} />
             </div>
             {/* Voice playback stop — only renders while a voice reply is
               loading/playing, so audio can be stopped from any tab. */}

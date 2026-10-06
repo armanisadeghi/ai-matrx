@@ -76,6 +76,7 @@ import {
 } from "@/features/agents/decision-questions/name";
 import type { PartCompatibility } from "@/features/agents/decision-questions/compatibility";
 import { DragCursorMonitor } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 const TYPE_LABELS: Record<DecisionQuestionType, string> = {
   noul: "Yes/No",
@@ -675,34 +676,7 @@ function QuestionCard({
 
       {/* Settings row — type first, then the quiet details */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-2 pb-2 pt-1.5 @[30rem]/dq:pl-9">
-        <div
-          role="radiogroup"
-          aria-label={`Question ${index + 1} answer type`}
-          className="inline-flex rounded-md border border-border bg-muted p-0.5"
-        >
-          {TYPE_ORDER.map((type) => {
-            const on = question.type === type;
-            return (
-              <button
-                key={type}
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onClick={() =>
-                  !on && onPatch({ type, criteria: defaultCriteria(type) })
-                }
-                className={cn(
-                  "h-6 rounded px-2.5 text-xs font-medium transition-colors",
-                  on
-                    ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {TYPE_LABELS[type]}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl aria-label={`Question ${index + 1} answer type`} value={question.type} onValueChange={(type) => { if (type !== question.type) onPatch({ type, criteria: defaultCriteria(type) }); }} data={TYPE_ORDER.map((type) => ({ value: type, label: TYPE_LABELS[type] }))} />
 
         <label className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
           Field

@@ -27,6 +27,7 @@ import type {
 import { useSessionKnob } from "@/lib/scoped-config/sessionKnob";
 import { cn } from "@/lib/utils";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 const SIZES: ComposerSize[] = ["splash", "page", "compact"];
 const SURFACE_KEY = "demo:composer";
@@ -64,23 +65,7 @@ export function ComposerPlayground({ initialMode }: { initialMode: ComposerMode 
     <div className="flex h-[calc(100dvh-var(--shell-header-h,2.75rem))] min-h-0 flex-col bg-background pt-[var(--shell-header-h,2.75rem)]">
       <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-b border-border px-4 py-2.5">
         <ComposerModeSwitch initialMode={initialMode} />
-        <div role="tablist" aria-label="Composer size" className="inline-flex items-center gap-0.5 rounded-lg bg-muted p-0.5">
-          {SIZES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              role="tab"
-              aria-selected={value === size}
-              onClick={() => setSize(value)}
-              className={cn(
-                "h-7 whitespace-nowrap rounded-md px-3 text-sm font-medium capitalize",
-                value === size ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
+        <SegmentedControl aria-label="Composer size" value={size} onValueChange={setSize} data={SIZES.map((value) => ({ value, label: <span className="capitalize">{value}</span> }))} />
       </div>
 
       <div className="flex min-h-0 flex-1 justify-center overflow-hidden">

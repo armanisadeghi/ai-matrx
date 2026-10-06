@@ -68,6 +68,7 @@ import { FastFireSetPicker } from "./FastFireSetPicker";
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { loadFastFireSets } from "./fastfire-initial-load";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export function FastFireSetup() {
   const dispatch = useAppDispatch();
@@ -380,40 +381,7 @@ export function FastFireSetup() {
                 button that fails) when the browser has no usable mic. */}
             <div className="mt-4">
               {voicePossible ? (
-                <div
-                  role="radiogroup"
-                  aria-label="Answer by"
-                  className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1"
-                >
-                  {(
-                    [
-                      { value: "voice", label: "Speak", Icon: Mic },
-                      { value: "typed", label: "Type", Icon: Keyboard },
-                    ] as const
-                  ).map(({ value, label, Icon }) => {
-                    const selected = config.answerMode === value;
-                    return (
-                      <button
-                        key={value}
-                        type="button"
-                        role="radio"
-                        aria-checked={selected}
-                        className={cn(
-                          "flex min-h-11 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors",
-                          selected
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                        onClick={() =>
-                          dispatch(updateConfig({ answerMode: value }))
-                        }
-                      >
-                        <Icon className="h-4 w-4" />
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <SegmentedControl aria-label="Answer by" fill value={config.answerMode} onValueChange={(value) => dispatch(updateConfig({ answerMode: value }))} data={([{ value: "voice", label: "Speak", Icon: Mic }, { value: "typed", label: "Type", Icon: Keyboard }] as const).map(({ value, label, Icon }) => ({ value, label: <span className="inline-flex items-center gap-2"><Icon className="h-4 w-4" />{label}</span> }))} />
               ) : (
                 <p className="flex items-center gap-2 rounded-xl bg-muted px-3 py-2.5 text-sm text-muted-foreground">
                   <Keyboard className="h-4 w-4 shrink-0" />

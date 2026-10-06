@@ -17,6 +17,7 @@ import {
   MobileWindowTitle,
   MobileWindowTitleRow,
 } from "./MobileTitleRow";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface MobileWindowHeaderProps {
   title?: ReactNode;
@@ -77,23 +78,7 @@ export function MobileWindowHeader({
     ) : null;
 
   const paneToggle = hasSidebar ? (
-    <div className="inline-flex shrink-0 rounded-lg bg-muted/60 p-0.5 text-xs">
-      {(["sidebar", "main"] as const).map((pane) => (
-        <button
-          key={pane}
-          type="button"
-          className={cn(
-            "min-h-10 cursor-pointer whitespace-nowrap rounded-md px-3 py-1 transition-colors",
-            activePaneMobile === pane
-              ? "bg-background text-foreground shadow-sm"
-              : "text-muted-foreground",
-          )}
-          onClick={() => onSetActivePane(pane)}
-        >
-          {pane === "sidebar" ? "Sidebar" : "Content"}
-        </button>
-      ))}
-    </div>
+    <SegmentedControl aria-label="Pane" value={activePaneMobile} onValueChange={onSetActivePane} data={[{ value: "sidebar", label: "Sidebar" }, { value: "main", label: "Content" }]} />
   ) : null;
 
   return (

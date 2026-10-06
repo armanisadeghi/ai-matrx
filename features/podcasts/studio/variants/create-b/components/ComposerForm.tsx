@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
@@ -105,33 +105,7 @@ export function ComposerForm({ onGenerate }: { onGenerate: () => void }) {
       {/* ── HERO: SOURCE ─────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-glass-edge bg-glass p-1.5 shadow-glass backdrop-blur-glass backdrop-saturate-glass">
         {/* Segmented source picker — every source is first-class, scrolls on small screens. */}
-        <div className="flex gap-1 overflow-x-auto scrollbar-hide rounded-xl bg-muted/40 p-1">
-          {SOURCE_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const selected = sourceKind === opt.kind;
-            return (
-              <button
-                key={opt.kind}
-                type="button"
-                onClick={() => setSourceKind(opt.kind)}
-                className={cn(
-                  "group flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-all",
-                  selected
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                <Icon
-                  className={cn(
-                    "h-4 w-4",
-                    selected ? "text-primary" : "text-muted-foreground",
-                  )}
-                />
-                {opt.label.replace(/^From an? /i, "")}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl aria-label="Source" value={sourceKind} onValueChange={setSourceKind} data={SOURCE_OPTIONS.map((opt) => { const Icon = opt.icon; return { value: opt.kind, label: <span className="inline-flex items-center gap-1.5"><Icon className="h-4 w-4" />{opt.label.replace(/^From an? /i, "")}</span> }; })} />
 
         {/* The composer for the selected source. */}
         <div className="p-3">

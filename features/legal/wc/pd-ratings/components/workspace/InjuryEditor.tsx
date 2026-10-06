@@ -31,6 +31,7 @@ import type {
   Side,
   WcImpairmentDefinitionRead,
 } from "../../api/types";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 interface InjuryEditorProps {
   open: boolean;
@@ -156,23 +157,7 @@ function InjuryEditorBody({
 
       {attributeAccepts(attrs, "side") && (
         <Field label="Side" required={Boolean(attrs?.side)}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 rounded-lg border border-border bg-muted/40 p-1">
-            {SIDES.map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => onChange({ side: opt.value })}
-                className={cn(
-                  "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  injury.side === opt.value
-                    ? "bg-card text-foreground shadow-sm border border-border"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl aria-label="Side" fill value={injury.side} onValueChange={(side) => onChange({ side })} data={SIDES.map((opt) => ({ value: opt.value, label: opt.label }))} />
         </Field>
       )}
 

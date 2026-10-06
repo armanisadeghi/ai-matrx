@@ -53,6 +53,7 @@ import {
   TileActionsProvider,
   useTileActionsTarget,
 } from "@/components/mardown-display/blocks/generic/tile-actions-slot";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 /** nodeId → human label from the definition (label ?? id). */
 export function definitionNodeLabels(
@@ -389,29 +390,7 @@ export function RunSurfaceView({
       {pages.length > 1 ? (
         // A segmented control, not a row of loose outlines: the pages are one
         // choice, and the run moves through them on its own.
-        <div className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/50 p-0.5">
-          {pages.map((page) => {
-            const active = page.id === activePageId;
-            return (
-              <button
-                key={page.id}
-                type="button"
-                aria-current={active ? "page" : undefined}
-                onClick={() =>
-                  setManual({ pageId: page.id, atFiredIdx: firedIdx })
-                }
-                className={cn(
-                  "min-h-8 rounded-md px-3 text-xs font-medium transition-colors",
-                  active
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {page.title}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl aria-label="Page" value={activePageId} onValueChange={(pageId) => setManual({ pageId, atFiredIdx: firedIdx })} data={pages.map((page) => ({ value: page.id, label: page.title }))} />
       ) : null}
 
       {hideRunStatusCards ? null : (

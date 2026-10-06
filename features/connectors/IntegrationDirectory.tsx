@@ -16,7 +16,7 @@ import {
   Info,
 } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MCP_CATEGORY_META } from "@ai-matrx/chat/agents/types/mcp.types";
@@ -160,31 +160,7 @@ export function IntegrationDirectory({
           <h1 className="mr-1 text-xl font-semibold tracking-tight">
             Integrations
           </h1>
-          <div
-            role="group"
-            aria-label="Integrations view"
-            className="inline-flex items-center rounded-lg bg-muted/70 p-0.5"
-          >
-            {(["discover", "yours"] as const).map((view) => (
-              <button
-                key={view}
-                type="button"
-                aria-pressed={filters.view === view}
-                onClick={() => {
-                  onSelect(null);
-                  change({ view });
-                }}
-                className={cn(
-                  "rounded-md px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  filters.view === view
-                    ? "bg-background font-medium text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {view === "discover" ? "Discover" : "Yours"}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl aria-label="Integrations view" value={filters.view} onValueChange={(view) => { onSelect(null); change({ view }); }} data={[{ value: "discover", label: "Discover" }, { value: "yours", label: "Yours" }]} />
           <div className="ml-auto flex items-center gap-1">
             {exportControl}
             <Button

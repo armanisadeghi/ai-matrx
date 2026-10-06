@@ -23,6 +23,7 @@ import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
 import { SectionShell, StatusChip, announcePrintOutcome } from "@/features/print/components/shared";
 import { SAMPLE_CHEAT_SHEET, SAMPLE_GLOSSARY, SAMPLE_STUDY_CALENDAR } from "./sample-data";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type ArtifactId = "cheat-sheet" | "glossary" | "study-calendar";
 
@@ -211,25 +212,7 @@ export function EducationSection() {
                 </Button>
             }
         >
-            <div className="mb-4 flex flex-wrap gap-1 rounded-md border border-border bg-muted/40 p-1">
-                {ARTIFACTS.map(({ id, label, icon: Icon, summary }) => (
-                    <button
-                        key={id}
-                        type="button"
-                        onClick={() => setArtifactId(id)}
-                        className={cn(
-                            "inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition-colors",
-                            artifactId === id
-                                ? "bg-background text-foreground shadow-sm"
-                                : "text-muted-foreground hover:text-foreground",
-                        )}
-                    >
-                        <Icon className="h-3.5 w-3.5" />
-                        {label}
-                        <span className="font-normal text-[10px] text-muted-foreground">{summary}</span>
-                    </button>
-                ))}
-            </div>
+            <SegmentedControl aria-label="Artifact" value={artifactId} onValueChange={setArtifactId} data={ARTIFACTS.map(({ id, label, icon: Icon, summary }) => ({ value: id, title: summary, label: <span className="inline-flex items-center gap-1.5"><Icon className="h-3.5 w-3.5" />{label}</span> }))} />
 
             <div className="grid gap-4 lg:grid-cols-2">
                 {artifactId === "cheat-sheet" ? <CheatSheetPreview /> : null}

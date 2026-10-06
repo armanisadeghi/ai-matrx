@@ -23,6 +23,7 @@ import {
   type ImageRoleLimits,
   type ReferenceRole,
 } from "@ai-matrx/agents";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export interface ImageRoleSelectorProps {
   value: ReferenceRole | null;
@@ -62,39 +63,7 @@ export function ImageRoleSelector({
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <div
-        role="radiogroup"
-        aria-label="Reference image role"
-        // One row, never a ragged wrap: on a phone it scrolls sideways.
-        className="inline-flex w-fit max-w-full overflow-x-auto rounded-md border border-border bg-muted p-0.5 [scrollbar-width:none]"
-      >
-        {roles.map((role) => {
-          const meta = IMAGE_ROLE_META[role];
-          const verdict = limits ? imageRoleVerdict(role, limits, modelLabel) : null;
-          const refused = verdict?.verdict === "refused";
-          const active = value === role;
-          return (
-            <button
-              key={role}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              data-refused={refused || undefined}
-              title={refused && verdict ? verdict.reason : meta.explanation}
-              onClick={() => onChange(active ? null : role)}
-              className={cn(
-                "shrink-0 whitespace-nowrap rounded px-2 py-0.5 text-[11px] font-medium transition-colors",
-                active
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border"
-                  : "text-muted-foreground hover:text-foreground",
-                refused && "opacity-40 line-through decoration-muted-foreground/60",
-              )}
-            >
-              {meta.label}
-            </button>
-          );
-        })}
-      </div>
+      <SegmentedControl aria-label="Reference image role" value={value} onValueChange={(role) => onChange(value === role ? null : role)} data={roles.map((role) => { const meta = IMAGE_ROLE_META[role]; const verdict = limits ? imageRoleVerdict(role, limits, modelLabel) : null; const refused = verdict?.verdict === "refused"; return { value: role, label: meta.label, title: refused && verdict ? verdict.reason : meta.explanation }; })} />
       <p
         className={cn(
           "text-[11px] leading-snug",

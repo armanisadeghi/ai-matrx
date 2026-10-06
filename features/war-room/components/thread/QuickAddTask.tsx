@@ -39,6 +39,7 @@ import { ProInput } from "@/components/official/ProInput";
 import { XTapButton } from "@ai-matrx/tap-target/buttons";
 import { WarRoomRoomThreadPicker } from "../shared/WarRoomRoomThreadPicker";
 import { cn } from "@/lib/utils";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export type QuickAddTaskTarget = "room" | "thread";
 
@@ -210,36 +211,7 @@ export function QuickAddTask({
     <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-2.5 shadow-sm">
       {/* Target selector — only useful when the room already has threads. */}
       {canTargetExisting ? (
-        <div
-          role="group"
-          aria-label="Add task to"
-          className="flex items-center gap-1 rounded-lg bg-muted/50 p-0.5"
-        >
-          {[
-            { value: "room" as const, label: "New thread" },
-            { value: "thread" as const, label: "Existing thread" },
-          ].map((opt) => {
-            const active = effectiveTarget === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setTarget(opt.value)}
-                disabled={busy}
-                aria-pressed={active}
-                className={cn(
-                  "inline-flex flex-1 items-center justify-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                  active
-                    ? "bg-card text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div>
+        <SegmentedControl aria-label="Add task to" fill value={effectiveTarget} onValueChange={setTarget} data={[{ value: "room" as const, label: "New thread", disabled: busy }, { value: "thread" as const, label: "Existing thread", disabled: busy }]} />
       ) : null}
 
       {effectiveTarget === "thread" ? (
