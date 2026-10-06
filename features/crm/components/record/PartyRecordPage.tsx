@@ -704,6 +704,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                       until somebody confirms a row here. */}
                   <ContactCandidatesCard
                     partyId={party.id}
+                    organizationId={party.organization_id}
                     onChanged={refresh}
                     onStateChange={(rows, loadError) => {
                       setContactCandidates(rows);
@@ -717,6 +718,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
                         what do they cover?" */}
                     <JournalistIntelligenceCard
                       partyId={party.id}
+                      organizationId={party.organization_id}
                       storedActivity={storedJournalistActivity(party)}
                     />
                   </div>

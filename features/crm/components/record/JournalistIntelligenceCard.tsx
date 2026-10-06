@@ -41,6 +41,8 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface Props {
   partyId: string;
+  /** The organization that owns this party; every write names it. */
+  organizationId: string;
   /** Read straight off the party record so the card renders with no request. */
   storedActivity?: ActivityVerdict | null;
 }
@@ -101,7 +103,7 @@ function fitBadge(fit: BeatProfile["campaign_fit"]): {
   }
 }
 
-export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
+export function JournalistIntelligenceCard({ partyId, organizationId, storedActivity }: Props) {
   const [activity, setActivity] = useState<ActivityVerdict | null>(
     storedActivity ?? null,
   );
@@ -139,7 +141,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const check = async () => {
     setChecking(true);
     try {
-      const verdict = await checkJournalistActivity(partyId);
+      const verdict = await checkJournalistActivity(partyId, organizationId);
       setActivity(verdict);
       toast.success(verdict.summary);
     } catch (cause) {
@@ -152,7 +154,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
   const derive = async () => {
     setDeriving(true);
     try {
-      const profile = await deriveJournalistBeat(partyId);
+      const profile = await deriveJournalistBeat(partyId, organizationId);
       setBeat(profile);
       toast.success(profile.summary);
     } catch (cause) {
@@ -166,7 +168,7 @@ export function JournalistIntelligenceCard({ partyId, storedActivity }: Props) {
     if (!pitch.trim()) return;
     setPitchChecking(true);
     try {
-      const profile = await deriveJournalistBeat(partyId, pitch);
+      const profile = await deriveJournalistBeat(partyId, organizationId, pitch);
       setBeat(profile);
       const stored = isJsonObject(profile.journalist_fit) ? profile.journalist_fit : null;
       const verdict = typeof stored?.verdict === "string" ? stored.verdict : null;

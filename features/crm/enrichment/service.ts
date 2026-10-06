@@ -23,6 +23,13 @@ const FIND = "/crm/parties/{party_id}/contacts/find";
 const CONFIRM = "/crm/parties/{party_id}/contacts/{candidate_id}/confirm";
 const REJECT = "/crm/parties/{party_id}/contacts/{candidate_id}/reject";
 const VERIFY = "/crm/parties/{party_id}/contacts/verify";
+/*
+ * 🚨 Every WRITE below names the PARTY's organization (`organizationId`). A write
+ * that relied on the selected organization refused with "Select an organization
+ * before sending this request" whenever none was selected, and sent nothing: the
+ * journalist card's "Check fit" did exactly that (2026-10-06). Same class as the
+ * outreach single-send fix of 2026-09-28.
+ */
 const ACTIVITY = "/crm/parties/{party_id}/journalist-activity";
 const BEAT = "/crm/parties/{party_id}/journalist-beat";
 
@@ -40,12 +47,13 @@ export async function fetchContactCandidates(
 /** Run the waterfall. Produces candidates only — never a contact. */
 export async function findContacts(
   partyId: string,
+  organizationId: string,
   input?: { personName?: string; usePaidProviders?: boolean },
 ): Promise<WaterfallResult> {
   const { data } = await apiPost(buildPath(FIND, { party_id: partyId }), {
     person_name: input?.personName ?? null,
     use_paid_providers: input?.usePaidProviders ?? true,
-  });
+  }, { organizationId });
   return data;
 }
 
@@ -56,6 +64,7 @@ export async function findContacts(
  */
 export async function confirmCandidate(
   partyId: string,
+  organizationId: string,
   candidateId: string,
   input: { acceptRoleAddress: boolean; acceptUnverified: boolean },
 ): Promise<ContactCandidateView> {
@@ -65,6 +74,7 @@ export async function confirmCandidate(
       accept_role_address: input.acceptRoleAddress,
       accept_unverified: input.acceptUnverified,
     },
+    { organizationId },
   );
   return data;
 }
@@ -72,12 +82,14 @@ export async function confirmCandidate(
 /** Refuse a candidate. The verdict survives every later re-discovery. */
 export async function rejectCandidate(
   partyId: string,
+  organizationId: string,
   candidateId: string,
   reason?: string,
 ): Promise<ContactCandidateView> {
   const { data } = await apiPost(
     buildPath(REJECT, { party_id: partyId, candidate_id: candidateId }),
     { reason: reason ?? null },
+    { organizationId },
   );
   return data;
 }
@@ -85,25 +97,27 @@ export async function rejectCandidate(
 /** Free syntax/MX/disposable filter, then the paid final mile if it passed. */
 export async function verifyAddress(
   partyId: string,
+  organizationId: string,
   mediumId: string,
 ): Promise<FinalMileResult> {
   const { data } = await apiPost(buildPath(VERIFY, { party_id: partyId }), {
     medium_id: mediumId,
     force: false,
-  });
+  }, { organizationId });
   return data;
 }
 
 /** Is this person still publishing where we think they are? (D10 / ListIQ.) */
 export async function checkJournalistActivity(
   partyId: string,
+  organizationId: string,
   input?: { windowDays?: number; useSearch?: boolean },
 ): Promise<ActivityVerdict> {
   const { data } = await apiPost(buildPath(ACTIVITY, { party_id: partyId }), {
     // Omitted = the organization's `pr.beat_recency_days` knob (E9, default 90).
     ...(input?.windowDays ? { window_days: input.windowDays } : {}),
     use_search: input?.useSearch ?? true,
-  });
+  }, { organizationId });
   return data;
 }
 
@@ -118,12 +132,13 @@ export async function fetchJournalistBeat(
 /** Work out what they cover, from pages we already crawled. */
 export async function deriveJournalistBeat(
   partyId: string,
+  organizationId: string,
   pitch?: string,
 ): Promise<BeatProfile> {
   // The server's field is `pitch` (aidream 90ea9a2874 renamed it from
   // campaign_context; the old name is only an input alias).
   const { data } = await apiPost(buildPath(BEAT, { party_id: partyId }), {
     pitch: pitch?.trim() ? pitch.trim() : null,
-  });
+  }, { organizationId });
   return data;
 }
