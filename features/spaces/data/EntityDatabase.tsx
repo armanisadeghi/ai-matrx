@@ -41,6 +41,8 @@ const ENTITY_LAYOUTS: Array<{ id: SpaceViewLayout; label: string; icon: typeof T
 const CHART_KIND: Record<string, ChartKind> = { donut: "donut", bar: "column", hbar: "bar", line: "line" };
 
 const PAGE = 100;
+/** How long a read may go unanswered before it is asked again (once), then named. */
+const STALL_MS = 15000;
 
 interface EntityState {
   label: string | null;
@@ -66,8 +68,17 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
   const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null });
   const where = JSON.stringify(view.filters ?? {});
   const sortKey = JSON.stringify(view.sorts?.[0] ?? null);
+  // A read that never answers (a stalled session in a long-lived tab) must not leave blank skeleton
+  // rows forever: past STALL_MS the read is asked once more, then the block says so with Try again.
+  const [stalls, setStalls] = useState(0);
   useEffect(() => {
     let cancelled = false;
+    let settled = false;
+    const stall = setTimeout(() => {
+      if (cancelled || settled) return;
+      if (stalls === 0) setStalls(1);
+      else setState((s) => ({ ...s, loading: false, error: "This database is taking too long to answer." }));
+    }, STALL_MS);
     const source = { kind: "entity" as const, token };
     const filters = JSON.parse(where) as Record<string, unknown>;
     const sort = JSON.parse(sortKey) as { field: string; direction: "asc" | "desc" } | null;
@@ -81,6 +92,7 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
       }),
     ]).then(
       ([def, page]) => {
+        settled = true;
         if (cancelled) return;
         if (!def.ok) return setState((s) => ({ ...s, loading: false, error: sentence(def.error, "This database could not be read.") }));
         if (!page.ok) return setState((s) => ({ ...s, loading: false, error: sentence(page.error, "This database’s rows could not be read.") }));
@@ -97,14 +109,20 @@ function useEntityRows(token: string, view: SpaceDbView, limit: number) {
         });
       },
       (thrown: unknown) => {
+        settled = true;
         if (!cancelled) setState((s) => ({ ...s, loading: false, error: sentence(thrown, "This database could not be read.") }));
       },
     );
     return () => {
       cancelled = true;
+      clearTimeout(stall);
     };
-  }, [client, token, where, sortKey, limit, tick]);
-  const reload = () => setTick((t) => t + 1);
+  }, [client, token, where, sortKey, limit, tick, stalls]);
+  const reload = () => {
+    setStalls(0);
+    setState((s) => ({ ...s, loading: true, error: null }));
+    setTick((t) => t + 1);
+  };
   const rows = state.rows;
   const write = async (rowId: string, apiName: string, value: unknown): Promise<string | null> => {
     const seen = rows.find((r) => r.id === rowId)?.["version"];

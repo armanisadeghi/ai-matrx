@@ -45,6 +45,7 @@ import { useSpaceRoom } from "../collab/useSpaceRoom";
 import { useSpaceCollab } from "../collab/useSpaceCollab";
 import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
+import { trashedByList } from "./trash-state";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -311,7 +312,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       if (docRef.current) docRef.current = { ...docRef.current, version: saved.version, updatedAt: saved.updatedAt };
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
-      setSaveState(pending.current ? "saving" : "saved");
+      setSaveState("saved");
     } catch (err) {
       pending.current = true;
       setSaveError(err);
@@ -340,7 +341,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
     const cadence = collab.cadence;
     if (!collab.hostRef.current || !cadence) return;
-    if (contentKey(docRef.current) !== savedKey.current) setSaveState("saving");
+    // "Saving…" is the write in flight only (Notion): changes waiting for the cadence read as edited.
     const wait = Math.max(0, Math.min(cadence.debounceMs, dirtySince.current + cadence.maxWaitMs - now));
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => void flush(), wait);
@@ -431,8 +432,10 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
 
   const locked = doc.settings.locked;
   // A person without edit (viewer, commenter) reads the live page; nothing editable is drawn for them.
-  const editable = canEdit && !locked && !doc.isArchived;
-  const path = doc.isArchived ? [] : pathTo(doc.id);
+  // In Trash by the store's read, or by the list (trashed from the sidebar while open, or an ancestor).
+  const inTrash = doc.isArchived || trashedByList(doc.id, doc.parentId, spaces.archived, spaces.byId);
+  const editable = canEdit && !locked && !inTrash;
+  const path = inTrash ? [] : pathTo(doc.id);
   const isFavorite = favorites.includes(doc.id);
   const setSettings = (patch: Partial<SpaceDoc["settings"]>) => update({ settings: { ...doc.settings, ...patch } });
 
@@ -598,7 +601,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
           </span>
         ) : null}
         <PresenceAvatars viewers={room.viewers} me={room.me} />
-        {!doc.isArchived ? <AskPageButton page={pageForAi} /> : null}
+        {!inTrash ? <AskPageButton page={pageForAi} /> : null}
         <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
           {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
           {collab.isHost && saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
@@ -661,7 +664,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       <div className="spaces-body">
       <div className="spaces-scroll" data-matrx-page-scroll="" ref={scrollRef}>
         <TocRail blocks={doc.blocks} scrollerRef={scrollRef} anchorRef={headerRef} />
-        {doc.isArchived ? (
+        {inTrash ? (
           <div className="spaces-trash-banner">
             <span>This page is in Trash.</span>
             <button
@@ -692,7 +695,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
                 </button>
               </IconPicker>
             ) : null}
-            {!doc.isArchived ? (
+            {!inTrash ? (
               <div className="spaces-header-controls">
                 {editable && !doc.icon ? (
                   <button type="button" className="spaces-header-control" onClick={() => update({ icon: randomIcon() })}>
