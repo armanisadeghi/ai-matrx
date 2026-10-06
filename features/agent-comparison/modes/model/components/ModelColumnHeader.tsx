@@ -22,7 +22,7 @@ import {
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { selectModelColumnTitle } from "../columnTitle";
 import { selectActiveBattleColumns } from "../../../shared/activeBattleColumns";
 import { selectInstanceOverrideState } from "@ai-matrx/chat/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";

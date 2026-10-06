@@ -1,5 +1,5 @@
 import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
-import { requireCanonicalCapabilities } from "@/features/ai-models/capabilities/parse";
+import { requireCanonicalCapabilities } from "@ai-matrx/agents/models";
 import { NextResponse } from "next/server";
 
 // Prevent build-time prerendering - this route requires Supabase at runtime

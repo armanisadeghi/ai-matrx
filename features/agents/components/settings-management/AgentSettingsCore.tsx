@@ -66,9 +66,8 @@ import {
   selectModelRegistryError,
   selectModelRegistryLoading,
 } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown, useModelCatalog } from "@ai-matrx/agents/models/react";
 import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
-import { useModelCatalog } from "@/features/ai-models/hooks/useModelCatalog";
 import type {
   LLMParams,
   FeLlmParams,

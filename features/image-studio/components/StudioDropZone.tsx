@@ -36,6 +36,9 @@ export function StudioDropZone({
         multiple: true,
         noClick: false,
         noKeyboard: false,
+        // Paste anywhere on the page is this zone's document listener;
+        // react-dropzone's own paste (v20+) would add every image twice.
+        noPaste: true,
     });
 
     // Paste support at the document level

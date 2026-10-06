@@ -17,7 +17,7 @@
 // returns null silently (nothing to resolve yet, not a defect).
 
 import { createSelector } from "@reduxjs/toolkit";
-import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import { isConversationalModelCapability } from "@ai-matrx/agents/models";
 import {
   selectActiveModels,

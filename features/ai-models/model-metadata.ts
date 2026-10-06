@@ -35,7 +35,7 @@
  * `text`/`varchar`). The caps below are PRODUCT bounds, not schema bounds:
  * `common_name` renders on one line in the model pickers and the admin table,
  * and `description` renders as the secondary line of a picker row
- * (`features/ai-models/components/lab/ModelListDropdown.tsx`), so an
+ * (`@ai-matrx/agents/models/react` ModelListDropdown), so an
  * unbounded string is a layout break rather than a database error.
  */
 

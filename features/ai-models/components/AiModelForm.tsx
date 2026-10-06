@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2 } from 'lucide-react';
 import { MODEL_DESCRIPTION_MAX_CHARS } from '../model-metadata';
-import { ModelListDropdown } from '@/features/ai-models/components/lab/ModelListDropdown';
+import { ModelListDropdown } from '@ai-matrx/agents/models/react';
 import type { AiModelFormData, AiProvider, AiModel } from '../types';
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { hasCompatibleDecisionInteraction } from "@ai-matrx/agents/models";

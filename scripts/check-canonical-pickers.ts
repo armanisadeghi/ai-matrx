@@ -19,7 +19,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 const MODEL_CANONICAL_IMPORT =
-  "@/features/ai-models/components/lab/ModelListDropdown";
+  "@ai-matrx/agents/models/react";
 // 🚨 THE ONE AGENT PICKER LIVES IN THE PACKAGE (2026-09-08, ruling D1).
 // `@ai-matrx/agents/catalog/react` ships `AgentListDropdown` and
 // `AgentListInlinePicker` and every piece of their logic; matrx-frontend's

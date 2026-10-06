@@ -51,10 +51,8 @@ jest.mock("@ai-matrx/chat/agents/model-registry/modelRegistrySlice", () => {
 jest.mock("@/lib/scoped-config/sessionKnob", () => ({
   useSessionKnob: () => undefined,
 }));
-jest.mock("@/features/ai-models/hooks/useModelCatalog", () => ({
+jest.mock("@ai-matrx/agents/models/react", () => ({
   useModelCatalog: () => ({ models: [] }),
-}));
-jest.mock("@/features/ai-models/components/lab/ModelListDropdown", () => ({
   ModelListDropdown: ({
     onValueChange,
   }: {

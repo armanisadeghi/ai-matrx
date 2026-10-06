@@ -43,7 +43,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 
 interface Props {
   conversationId: string;

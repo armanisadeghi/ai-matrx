@@ -6,7 +6,7 @@ import { Settings2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import {
   selectEffectiveModelId,

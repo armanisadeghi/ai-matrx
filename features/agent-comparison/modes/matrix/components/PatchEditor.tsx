@@ -27,7 +27,7 @@ import {
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { REASONING_EFFORT_OPTIONS } from "@ai-matrx/agents/generated/llm-enums";
 import SearchableSelect, { type Option } from "@/components/matrx/SearchableSelect";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { cn } from "@/lib/utils";
 import { ToolNamesInput } from "./ToolNamesInput";
 import type { MatrixPatch, MatrixSettings } from "../types";

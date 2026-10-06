@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import { SettingsRow } from "../SettingsRow";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { useModels } from "@/features/ai-models/hooks/useModels";
 import {
   selectPlatformDefaultImageModelName,

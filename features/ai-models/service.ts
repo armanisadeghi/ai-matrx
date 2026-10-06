@@ -60,7 +60,7 @@ import type { LLMParams } from "@ai-matrx/chat/agents/types/agent-api-types";
 import {
   requireCanonicalCapabilities,
   DEFAULT_CAPABILITIES,
-} from "./capabilities/parse";
+} from "@ai-matrx/agents/models";
 import type { ModelCapabilities } from "@ai-matrx/agents/models";
 
 type ReplaceModelReferencesResult = {

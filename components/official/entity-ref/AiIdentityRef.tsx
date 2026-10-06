@@ -13,7 +13,7 @@ import { useEffect, useMemo } from "react";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { isUuidValue } from "@/components/official/entity-ref/doors";
 import { aiModelHref } from "@/features/ai-models/doors";
-import { withModelClass } from "@/features/ai-models/utils/model-classes";
+import { withModelClass } from "@ai-matrx/agents/models";
 import {
   fetchModelClasses,
   fetchModelIdentityById,

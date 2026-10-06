@@ -80,6 +80,8 @@ import { DetailHost } from "@/features/window-panels/detail/DetailHost";
 // StoreProvider because the catalog's identity and transport ports read Redux.
 // See providers/AgentCatalogHost.tsx + lib/agents/catalog.ts.
 import { AgentCatalogHost } from "@/providers/AgentCatalogHost";
+// THE ONE model-picker mount (`@ai-matrx/agents/models/react`). See providers/ModelCatalogHost.tsx.
+import { ModelCatalogHost } from "@/providers/ModelCatalogHost";
 // THE ONE `@ai-matrx/chat` host mount (ports wired to this app). See providers/ChatHostAdapter.tsx.
 import { ChatHostAdapter } from "@/providers/ChatHostAdapter";
 // The app's surface manifests, handed to `@ai-matrx/chat` (P19): the side-effect
@@ -189,6 +191,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
         <AssociationsHost>
           <DetailHost>
             <AgentCatalogHost>
+            <ModelCatalogHost>
             <MatrxDataTableHost>
               <WindowPersistenceManager>
                 <PersistentComponentProvider>
@@ -316,6 +319,7 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                 </PersistentComponentProvider>
               </WindowPersistenceManager>
             </MatrxDataTableHost>
+            </ModelCatalogHost>
             </AgentCatalogHost>
           </DetailHost>
         </AssociationsHost>

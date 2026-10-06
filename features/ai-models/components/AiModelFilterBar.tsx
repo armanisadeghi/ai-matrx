@@ -29,7 +29,7 @@ import {
 import type { AiModel } from "../types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { aiModelSummary, AI_MODELS_LOCATION } from "../format";
-import { parseCapabilities } from "../capabilities/parse";
+import { parseCapabilities } from "@ai-matrx/agents/models";
 import { isContentType } from "@ai-matrx/agents/models";
 
 interface AiModelFilterBarProps {

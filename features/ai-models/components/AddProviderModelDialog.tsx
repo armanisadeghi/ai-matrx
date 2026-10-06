@@ -14,7 +14,7 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { Loader2, Plus, AlertCircle } from "lucide-react";
 import { extractErrorMessage } from "@/utils/errors";
 import { aiModelService } from "../service";

@@ -64,7 +64,7 @@ import { useModelClassControls } from "@/features/ai-models/hooks/useModelClassC
 import { buildSettingsRows } from "@ai-matrx/chat/agents/redux/agent-settings/settings-catalogue";
 import type { ControlDefinition } from "@ai-matrx/chat/agents/redux/agent-settings/types";
 import { SettingControlInput } from "@/features/agents/components/settings-management/controls/SettingControlInput";
-import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { ModelListDropdown } from "@ai-matrx/agents/models/react";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { fetchMandateLadder } from "@/features/mandates/workspace/useMandateLadder";

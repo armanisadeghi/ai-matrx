@@ -40,3 +40,28 @@ it("the drop target hands paste to react-dropzone and lets a host turn it off", 
   expect(targets.length).toBeGreaterThanOrEqual(3);
   for (const target of targets) expect(target).toContain("pasteFiles={enablePasteImages}");
 });
+
+/**
+ * THE CLASS, repo-wide: since react-dropzone v20 every dropzone also uploads
+ * pasted files. A component that ALSO listens for paste itself must switch the
+ * library's paste off (`noPaste: true`), or every pasted image lands twice —
+ * the image uploader, the crop uploader and the image studio all did.
+ */
+it("no component both uses react-dropzone's paste and catches the paste itself", () => {
+  const repo = join(__dirname, "../../../../../../../..");
+  const roots = ["components", "features", "app", "packages/chat/src"].map((r) => join(repo, r));
+  const walk = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (name === "node_modules" || name === "__tests__" || name.startsWith(".")) return [];
+      if (statSync(path).isDirectory()) return walk(path);
+      return /\.tsx?$/.test(name) && !/\.test\.tsx?$/.test(name) ? [path] : [];
+    });
+  const offenders = roots.flatMap(walk).filter((file) => {
+    const text = readFileSync(file, "utf8");
+    if (!text.includes("useDropzone(")) return false;
+    const ownPaste = /addEventListener\(\s*["']paste|onPaste=|useClipboardPaste\(/.test(text);
+    return ownPaste && !/noPaste:\s*true/.test(text);
+  });
+  expect(offenders.map((f) => f.slice(repo.length + 1))).toEqual([]);
+});
