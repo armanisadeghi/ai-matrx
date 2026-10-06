@@ -45,7 +45,7 @@ import { useSpaceRoom } from "../collab/useSpaceRoom";
 import { useSpaceCollab } from "../collab/useSpaceCollab";
 import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
-import { trashedByList } from "./trash-state";
+import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepUnsaved, readUnsaved } from "./unsaved";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -145,7 +145,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const trashedRef = useRef(trashedNow);
   trashedRef.current = trashedNow;
   const canEditRef = useRef(canEdit);
-  canEditRef.current = canEdit && !trashedNow;
+  canEditRef.current = roomCanEdit(canEdit, trashedNow);
   useSpacesAiDisclosure();
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -192,7 +192,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     userId: room.me,
     name: fullName || email || "Someone",
     room,
-    canEdit: canEdit && !trashedNow,
+    canEdit: roomCanEdit(canEdit, trashedNow),
     onMeta: applyMeta,
     // Only real edits the room holds (pending) are saved on handover — opening a page never writes one.
     onBecameHost: () => {
@@ -316,11 +316,10 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = null;
     refused.current = null;
-    // In Trash: nothing is written (the database refuses it); what is pending saves after Restore.
-    if (trashedRef.current) return;
-    if (inFlight.current || !pending.current || !docRef.current) return;
-    // Leaving: the session is already torn down, so the host status of the last render decides.
-    if (!(leaving ? hostAtLastRender.current : collab.hostRef.current)) return;
+    // In Trash nothing is written; what is pending saves after Restore. Leaving: the session is already
+    // torn down, so the host status of the last render decides.
+    const host = leaving ? hostAtLastRender.current : collab.hostRef.current;
+    if (!docRef.current || !mayWrite({ trashed: trashedRef.current, host, pending: pending.current, inFlight: inFlight.current })) return;
     const sent = docRef.current;
     const key = contentKey(sent);
     pending.current = false;

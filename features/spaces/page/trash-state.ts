@@ -21,3 +21,17 @@ export function trashedByList(docId: string, docParentId: string | null, archive
   }
   return false;
 }
+
+/**
+ * May this member write the open page now? Never while it is in Trash (the database refuses every
+ * write, and a refusal retried on the cadence repeated "Not saved" forever); only the room's host, with
+ * something pending and no write in flight. What is pending stays pending and saves after Restore.
+ */
+export function mayWrite(s: { trashed: boolean; host: boolean; pending: boolean; inFlight: boolean }): boolean {
+  return !s.trashed && s.host && s.pending && !s.inFlight;
+}
+
+/** Edit rights as the co-editing room sees them: a page in Trash takes no edits and elects no host. */
+export function roomCanEdit(canEdit: boolean, trashed: boolean): boolean {
+  return canEdit && !trashed;
+}
