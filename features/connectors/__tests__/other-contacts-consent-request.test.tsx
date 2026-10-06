@@ -95,12 +95,13 @@ test("the canonical dialog selects and requests only Other Contacts", async () =
   );
   expect(otherContacts?.getAttribute("data-state")).toBe("checked");
 
-  const otherContactsRow = otherContacts!.parentElement!.parentElement!;
+  const otherContactsRow = otherContacts?.parentElement?.parentElement;
+  if (!otherContactsRow) throw new Error("Other Contacts row is missing");
   const disclosure = otherContactsRow.querySelector<HTMLButtonElement>(
     'button[aria-expanded="false"]',
   );
-  expect(disclosure).not.toBeNull();
-  await act(async () => disclosure!.click());
+  if (!disclosure) throw new Error("Other Contacts disclosure is missing");
+  await act(async () => disclosure.click());
   const permission = Array.from(otherContactsRow.querySelectorAll("li")).find(
     (item) => item.textContent?.includes(GOOGLE_SCOPE.contactsOtherReadonly),
   );
