@@ -150,7 +150,9 @@ export function useChartData(tableId: string, settings: ChartSettings, overRows 
   if (!answered) return { data: null, error: state.error, fields };
   const groupCount = answered.rows.length;
   const points = answered.rows.map((row, i) => {
-    const raw = group ? (row.groups[group] ?? null) : null;
+    // A number or yes/no group key comes back typed (@ai-matrx/records AggregateGroupValue); a chart names it as text.
+    const g = group ? row.groups[group] : null;
+    const raw = g === null || g === undefined ? null : String(g);
     const choice = choices.find((c) => c.value === raw || choiceSlug(c.value) === raw);
     const label = raw === null ? (group ? "No value" : "All") : (choice?.value ?? raw);
     const value = typeof row.measures[mKey] === "number" ? (row.measures[mKey] as number) : 0;
