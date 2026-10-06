@@ -5,7 +5,7 @@ import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../co
 import { agencyTokenByName, viewOnInstalledKeys, type AgencyTables } from "../data/agency-install";
 import type { SpaceDbView } from "../data/sources";
 import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
-import { b, RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_GAP_RULES, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
+import { b, RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_GAP_RULES, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SAMPLE_LINK_LINES, SEED_ROOT_ID, sampleLinkLine, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -134,6 +134,25 @@ function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: Spa
 }
 
 /** The phase-1 cover and icon (a CSS gradient, a palm glyph) become the bundled landscape and portrait. */
+/** An older sample's link lines (another link after "Claude Skills - " / "Auto posting …") read as
+ *  screenshot 3 writes them. */
+export function upgradeLinkLines(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: boolean } {
+  let changed = false;
+  const walk = (all: SpaceBlock[]): SpaceBlock[] =>
+    all.map((blk) => {
+      const kids = blk.children?.length ? walk(blk.children) : blk.children;
+      const spans = blk.type === "text" ? (blk.text ?? []) : [];
+      const line = spans.length ? SAMPLE_LINK_LINES.find((l) => spans[0]?.text === l.lead) : undefined;
+      if (line && (spans.length !== 2 || spans[1]?.link !== line.url || spans[1]?.text !== line.url)) {
+        changed = true;
+        return { ...blk, text: sampleLinkLine(line), ...(kids ? { children: kids } : {}) };
+      }
+      return kids === blk.children ? blk : { ...blk, children: kids };
+    });
+  const out = walk(blocks);
+  return { blocks: changed ? out : blocks, changed };
+}
+
 function upgradeMedia(doc: SpaceDoc): Partial<SpaceDoc> | null {
   const oldCover = doc.cover && "url" in doc.cover && doc.cover.url === "gallery:gradient-sunset";
   const oldIcon = doc.icon && "icon" in doc.icon && doc.icon.icon === "TreePalm";
@@ -167,9 +186,10 @@ export async function addTravelingSmmSample(
     const doc = await store.get(existing.id);
     if (doc) {
       const tables = await targets.install(await targets.orgOf(doc.id));
-      const up = upgradeSlots(doc.blocks, tables);
+      const slots = upgradeSlots(doc.blocks, tables);
+      const up = upgradeLinkLines(slots.blocks);
       const media = upgradeMedia(doc);
-      return up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
+      return slots.changed || up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
     }
   }
   const organizationId = await targets.writeOrg();

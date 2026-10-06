@@ -11,7 +11,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { DashboardCanvas, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { DashboardCanvas, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
@@ -30,6 +30,7 @@ import {
   ListFilter,
   Maximize2,
   PanelRight,
+  Zap,
   PieChart,
   Plus,
   Square,
@@ -237,6 +238,7 @@ function DatabaseFrame({
               onSave={(sorts) => saveView({ sorts })}
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
+            <AutomationsButton tableId={tableId} sample={sample} />
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
             <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
             <NewButton onNew={addRow} />
@@ -338,6 +340,33 @@ function DatabaseBody({
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
       />
     </div>
+  );
+}
+
+/**
+ * Notion's lightning (F3): the table's automations — records-ui's rule editor ("when a row …, tell …")
+ * over this table, and the table's own page for the rest. The in-memory sample has no store to keep a
+ * rule in, and says so.
+ */
+function AutomationsButton({ tableId, sample }: { tableId: string; sample: boolean }) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="quiet" icon={<Zap size={15} strokeWidth={1.8} />} aria-label="Automations" title="Automations" />
+      </PopoverTrigger>
+      <PopoverContent surface="solid" align="end" width="md" padding="sm">
+        {sample ? (
+          <p className="type-secondary text-muted-foreground">This preview keeps no automations.</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <NotifyRuleEditor tableId={tableId} />
+            <a className="type-secondary text-muted-foreground underline-offset-2 hover:underline" href={`/data/${tableId}?rail=notifications`}>
+              Open the table’s automations
+            </a>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 

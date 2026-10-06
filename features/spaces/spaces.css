@@ -1486,3 +1486,11 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   width: 13px;
   height: 13px;
 }
+
+/* The open view's tab: Notion's grey pill at toolbar size (screenshot 1 "All"). */
+.spaces-view-pill {
+  height: 28px;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}

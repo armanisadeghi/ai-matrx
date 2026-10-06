@@ -75,6 +75,15 @@ export const RING_NAMES: Record<string, string> = {
 };
 
 /** The page's cover and icon: a warm landscape and a portrait, from the bundled gallery (page/gallery.ts). */
+/** The two link lines of screenshot 3, as written there (lead words, then the link drawn as its URL). */
+export const SAMPLE_LINK_LINES = [
+  { lead: "Claude Skills - ", url: "https://youtube.com/shorts/jDtLcMOLjIQ?si=6HfkEJE1NmPe6jv6" },
+  { lead: "Auto posting for social media: ", url: "https://www.instagram.com/reel/Dc31jlbxT-T/?stkn=MXhmYnZjejBrMnN5bQ==" },
+] as const;
+export function sampleLinkLine(line: { lead: string; url: string }): RichSpan[] {
+  return [t(line.lead), t(line.url, { link: line.url })];
+}
+
 export const SAMPLE_COVER = { url: "gallery:photo-golden-palms", offsetY: 62 };
 export const SAMPLE_ICON = { url: "gallery:portrait-founder" };
 /** The page's two columns, measured on the reference: 348px beside 1070px. */
@@ -378,9 +387,9 @@ export function seedSpaces(tables: AgencyTables): SpaceDoc[] {
     b.text(""),
     b.text("The Quote Pages (Cora, JetQuest, Viva)"),
     b.text("The reporting system (finish it for organic - monthly and quarterly)"),
-    b.text([t("Claude Skills - "), t("https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills", { link: "https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills" })]),
+    b.text(sampleLinkLine(SAMPLE_LINK_LINES[0])),
     ...SAMPLE_GAPS.afterClaudeSkills(),
-    b.text([t("Auto posting for social media: "), t("https://www.instagram.com/creators/", { link: "https://www.instagram.com/creators/" })]),
+    b.text(sampleLinkLine(SAMPLE_LINK_LINES[1])),
     b.text(""),
     b.toggleH3("Other To Dos", [b.todo("Renew the Metricool plan"), b.todo("Update the Offers page pricing")]),
     b.toggleH3("Gina Notes", [b.text("Gina wants a weekly Loom instead of the Friday call.")]),
