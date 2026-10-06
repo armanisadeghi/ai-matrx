@@ -149,3 +149,13 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   `subscribe()` is on `subscribeToRealtimeManager`. Column widths follow the editor's change feed (a room's body never reached
   BlockNoteView's onChange, so columns drew 50/50); an unfocused block selection shows no selection toolbar; relation links in
   embedded grids read in body ink.
+- 2026-10-06 — builder round 17: a block dropped on another's left / right edge makes columns (`editor/column-drop.ts`:
+  BlockNote's `dropCursor.hooks.computeDropPosition` draws the vertical guide, a window-capture drop takes it before
+  ProseMirror's move; inside a column it adds a column). The block menu opens on a click only (the handle's press never
+  reaches the menu trigger). "/" items land where the "/" was typed — the block is named at the click and the insert goes by
+  id after the picker's await (`editor/slash-insert.ts`; proof `run-editor-proof.sh slash-insert`). A page trashed from the
+  sidebar while open shows the Trash banner (`page/trash-state.ts` + test). "Saving…" only while a write is in flight. A
+  built-in read that never answers is retried once, then named with Try again. Built-in charts group by a choice by
+  default. Slash menu fits the page's scroll area. Sample: thinner rings, dashed many-group ring, grey pill on the open
+  view tab, lightning → the table's automations (`NotifyRuleEditor`), Claude Skills / Auto posting lines as the reference
+  (`upgradeLinkLines` on Add the sample).
