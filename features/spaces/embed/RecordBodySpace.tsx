@@ -5,15 +5,19 @@
 // For records-ui's `renderRecordBody` port (@ai-matrx/records-ui ≥ 0.101.15): a row's body is the Space
 // linked to it by the association `record → document`, label `row_body` (BLOCK-SCHEMA § Row body). When
 // the row has one, this draws it with full Notion editing and autosave (compare-and-swap on the Space's
-// version, exactly like a Space page); when it has none — or the reader cannot open it — it draws
-// NOTHING, so the record page keeps its own body. The database decides access; this reads, never gates.
+// version, exactly like a Space page); when it has none — while the lookup is loading, when it fails, or
+// when the reader cannot open it — it draws `fallback` (the record page's own body), so the record page
+// always shows a body. A failed lookup is also reported to the error capture. The database decides
+// access; this reads, never gates. It mounts no QuickFind: Cmd+K stays the host page's.
 //
 // `renderRecordBody` is called synchronously, so a host that must return `null` for a row with no body
 // before the lookup lands uses `useRowBodySpace(recordId)` itself and mounts <RecordBodySpace> only for
 // `state === "found"`.
 
 import { RegionSkeleton } from "@ai-matrx/design-system/controls";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
+import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 import { toast } from "@/lib/toast";
 import { createClient } from "@/utils/supabase/client";
@@ -25,7 +29,6 @@ import type { SpaceDoc } from "../contract";
 import { useSourcePicker } from "../data/SourcePicker";
 import type { SpacesEditor } from "../editor/schema";
 import { SpaceEditor } from "../editor/SpaceEditor";
-import { QuickFind } from "../nav/QuickFind";
 import { SpacesProvider, useSpaces } from "../state/SpacesProvider";
 
 export const ROW_BODY_LABEL = "row_body";
@@ -50,7 +53,20 @@ export function useRowBodySpace(recordId: string): RowBodyState {
         .is("deleted_at", null)
         .maybeSingle();
       if (!live) return;
-      if (error) setFound({ state: "failed", message: error.message });
+      if (error) {
+        captureError({
+          source: "supabase-postgrest",
+          operation: "select",
+          schema: "platform",
+          relation: "associations",
+          code: error.code,
+          message: `Row body Space lookup failed: ${error.message}`,
+          details: error.details ?? undefined,
+          hint: error.hint ?? undefined,
+          callSite: "features/spaces/embed/RecordBodySpace.tsx useRowBodySpace",
+        });
+        setFound({ state: "failed", message: error.message });
+      }
       else setFound(data ? { state: "found", spaceId: data.target_id } : { state: "none" });
     })();
     return () => {
@@ -66,26 +82,27 @@ export interface RecordBodySpaceProps {
   /** The record as the record page read it (unused today; the body is found by the record's id). */
   record?: unknown;
   readOnly: boolean;
+  /** The record page's own body: drawn while the lookup loads, when it fails, and when there is no body Space. */
+  fallback?: ReactNode;
 }
 
-/** The row's body Space in the Spaces editor, or `null` when the row has no body Space. */
-export function RecordBodySpace({ recordId, readOnly }: RecordBodySpaceProps) {
+/** The row's body Space in the Spaces editor, or `fallback` (default nothing) when the row has no body Space. */
+export function RecordBodySpace({ recordId, readOnly, fallback = null }: RecordBodySpaceProps) {
   const body = useRowBodySpace(recordId);
-  // A failed lookup is the record page's own body, not an empty one: the page keeps working.
-  if (body.state !== "found") return null;
+  // Loading, failed (reported above) or none: the record page's own body, never an empty one.
+  if (body.state !== "found") return <>{fallback}</>;
   return (
     <SpacesProvider>
       {/* .spaces-root carries the Spaces palette and type the editor draws with. */}
       <div className="spaces-root spaces-row-body">
-        <BodyEditor spaceId={body.spaceId} readOnly={readOnly} />
+        <BodyEditor spaceId={body.spaceId} readOnly={readOnly} fallback={fallback} />
       </div>
-      <QuickFind />
     </SpacesProvider>
   );
 }
 
-function BodyEditor({ spaceId, readOnly }: { spaceId: string; readOnly: boolean }) {
-  const { store, createSpace, openQuickFind } = useSpaces();
+function BodyEditor({ spaceId, readOnly, fallback }: { spaceId: string; readOnly: boolean; fallback: ReactNode }) {
+  const { store, createSpace } = useSpaces();
   const [doc, setDoc] = useState<SpaceDoc | null | undefined>(undefined);
   const [round, setRound] = useState(0);
   const [sourcePicker, pickSource] = useSourcePicker();
@@ -155,7 +172,8 @@ function BodyEditor({ spaceId, readOnly }: { spaceId: string; readOnly: boolean 
   );
 
   if (doc === undefined) return <RegionSkeleton shape="rows" count={4} aria-label="Loading the page" />;
-  if (doc === null) return null;
+  // The reader cannot open the body Space (or it is gone): the record page's own body.
+  if (doc === null) return <>{fallback}</>;
   const editable = !readOnly && !doc.settings.locked && !doc.isArchived;
 
   return (
@@ -177,7 +195,11 @@ function BodyEditor({ spaceId, readOnly }: { spaceId: string; readOnly: boolean 
         }}
         slash={{
           createSubpage: async () => (await createSpace(doc.id, { open: false })).id,
-          pickPage: () => new Promise((resolve) => openQuickFind("pick", (id) => resolve(id))),
+          // No page picker here (no QuickFind on a record page: Cmd+K stays the host's).
+          pickPage: async () => {
+            toast.info("Open this page in Spaces to link another page.");
+            return null;
+          },
           pickSource,
         }}
         menu={{
