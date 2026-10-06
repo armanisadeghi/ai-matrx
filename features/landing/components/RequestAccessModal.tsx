@@ -336,7 +336,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-destructive-ink bg-destructive/10 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>{error}</span>
                 <ErrorAlchemyMenu error={error} />
@@ -454,7 +454,7 @@ export function RequestAccessModal({ open, onOpenChange }: RequestAccessModalPro
             </div>
 
             {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-destructive-ink bg-destructive/10 p-3 rounded-lg">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 <span>{error}</span>
                 <ErrorAlchemyMenu error={error} />

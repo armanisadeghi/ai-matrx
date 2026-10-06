@@ -54,7 +54,7 @@ export function OvertimeQueuePage() {
         </header>
 
         {watchlistQueue.failure ? (
-          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
+          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive-ink">
             {watchlistQueue.failure.userMessage}
             <ErrorAlchemyMenu error={watchlistQueue.failure.userMessage} />
           </p>
@@ -139,7 +139,7 @@ export function OvertimeRequestPage({ requestId }: { requestId: string }) {
     <div className="h-full overflow-y-auto bg-textured pt-[var(--shell-header-h)]">
       <div className="mx-auto max-w-[900px] space-y-4 px-4 py-6 sm:px-6 lg:px-8">
         {failure ? (
-          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive">
+          <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive-ink">
             {failure.userMessage}
             <ErrorAlchemyMenu error={failure.userMessage} />
           </p>

@@ -184,7 +184,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
 
         {/* Errors */}
         {decodeError && input.trim() && (
-          <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <p className="flex-1">{decodeError}</p>
             <ErrorAlchemyMenu error={decodeError} />
@@ -201,7 +201,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
             <MetadataRow decoded={decoded} />
             {decoded.declaredMimeType &&
               decoded.declaredMimeType !== decoded.mimeType && (
-                <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning">
+                <div className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning-ink">
                   <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
                   <p className="flex-1">
                     The data URL header said{" "}
@@ -260,7 +260,7 @@ or just paste the raw base64 payload — we'll detect the format from the bytes.
             </div>
 
             {saveError && (
-              <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                 <p className="flex-1">{saveError}</p>
                 <ErrorAlchemyMenu error={saveError} />

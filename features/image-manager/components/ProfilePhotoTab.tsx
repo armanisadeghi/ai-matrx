@@ -117,7 +117,7 @@ export function ProfilePhotoTab() {
       ) : null}
 
       {persistError ? (
-        <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+        <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
           <ShieldAlert className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
           <span>{persistError}</span>
           <ErrorAlchemyMenu error={persistError} />
@@ -125,7 +125,7 @@ export function ProfilePhotoTab() {
       ) : null}
 
       {savedUrl ? (
-        <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success">
+        <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success-ink">
           Profile photo saved. The new avatar will appear everywhere on next
           page-load — sign out and back in to refresh other tabs.
         </div>

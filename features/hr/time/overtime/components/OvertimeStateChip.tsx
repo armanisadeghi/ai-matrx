@@ -23,7 +23,7 @@ import {
 
 const TONE_CLASS: Record<OtTone, string> = {
   neutral: "bg-muted text-muted-foreground border-border",
-  attention: "bg-primary/10 text-primary border-primary/30",
+  attention: "bg-primary/10 text-primary-ink border-primary/30",
   positive: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
   negative: "bg-secondary text-secondary-foreground border-border",
   // Amber, never red: the pay is correct; only the review is open.

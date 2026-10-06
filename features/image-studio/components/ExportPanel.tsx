@@ -167,7 +167,7 @@ export function ExportPanel({
             className={cn(
               "w-full h-9 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors",
               isPreviewOpen
-                ? "bg-primary/10 border border-primary text-primary"
+                ? "bg-primary/10 border border-primary text-primary-ink"
                 : canOpenPreview
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted text-muted-foreground cursor-not-allowed",
@@ -204,7 +204,7 @@ export function ExportPanel({
                 className={cn(
                   "rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
                   format === f.id
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary-ink"
                     : "border-border bg-background hover:bg-muted/40",
                 )}
               >
@@ -328,7 +328,7 @@ export function ExportPanel({
             className={cn(
               "w-full h-9 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors",
               filesCount > 0 && !isDescribing
-                ? "border border-primary/40 bg-primary/5 text-primary hover:bg-primary/10"
+                ? "border border-primary/40 bg-primary/5 text-primary-ink hover:bg-primary/10"
                 : "bg-muted text-muted-foreground border border-border cursor-not-allowed",
             )}
             title={
@@ -430,7 +430,7 @@ export function ExportPanel({
             className={cn(
               "mt-1.5 w-full h-9 rounded-md text-xs font-medium flex items-center justify-center gap-1.5 transition-colors",
               canSave && !isSaving
-                ? "bg-success/10 border border-success/40 text-success hover:bg-success/20"
+                ? "bg-success/10 border border-success/40 text-success-ink hover:bg-success/20"
                 : "bg-muted text-muted-foreground border border-border cursor-not-allowed",
             )}
           >
@@ -480,7 +480,7 @@ export function ExportPanel({
                     .join("/")}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-success/40 bg-success/10 hover:bg-success/20 px-2 py-1 text-[11px] font-medium text-success transition-colors"
+                  className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-success/40 bg-success/10 hover:bg-success/20 px-2 py-1 text-[11px] font-medium text-success-ink transition-colors"
                   title="Open this folder in your Files browser (new tab)"
                 >
                   <FolderOpen className="h-3 w-3" />

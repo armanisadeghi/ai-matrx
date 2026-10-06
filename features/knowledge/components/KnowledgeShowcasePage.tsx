@@ -232,12 +232,12 @@ const STATE_META: Record<
 > = {
   built: {
     label: "Live",
-    cls: "bg-success/10 text-success border-success/20",
+    cls: "bg-success/10 text-success-ink border-success/20",
     Icon: CheckCircle2,
   },
   partial: {
     label: "Partial",
-    cls: "bg-warning/10 text-warning border-warning/20",
+    cls: "bg-warning/10 text-warning-ink border-warning/20",
     Icon: Circle,
   },
   planned: {
@@ -338,7 +338,7 @@ export function KnowledgeShowcasePage() {
       {/* Worked example — the ask */}
       <section className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-24">
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full border border-warning/20 bg-warning/5 px-3 py-1 text-xs font-medium text-warning mb-3">
+          <div className="inline-flex items-center gap-2 rounded-full border border-warning/20 bg-warning/5 px-3 py-1 text-xs font-medium text-warning-ink mb-3">
             <ShieldCheck className="h-3 w-3" />
             The ask — what it&apos;s all for
           </div>
@@ -392,7 +392,7 @@ export function KnowledgeShowcasePage() {
       <section className="bg-card/50 border-y border-border">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-16 sm:py-24">
           <div className="text-center mb-10 sm:mb-14">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary mb-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary-ink mb-3">
               <ListChecks className="h-3 w-3" />
               Try it yourself — a guided run
             </div>
@@ -423,7 +423,7 @@ export function KnowledgeShowcasePage() {
                       "hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5",
                   )}
                 >
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold text-sm">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink font-bold text-sm">
                     {step.n}
                   </div>
                   <div className="min-w-0 flex-1">

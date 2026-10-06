@@ -191,7 +191,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
         "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
         "outline-none focus-visible:ring-2 focus-visible:ring-ring",
         active
-          ? "border-primary/40 bg-primary/10 font-medium text-primary"
+          ? "border-primary/40 bg-primary/10 font-medium text-primary-ink"
           : "border-border bg-card text-foreground/80 shadow-sm hover:border-foreground/30 hover:bg-muted hover:text-foreground",
       )}
     >

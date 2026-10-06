@@ -43,7 +43,7 @@ export function EnableCard({
   return (
     <Card className="mx-auto max-w-2xl p-6">
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
           <Telescope className="h-5 w-5" />
         </span>
         <div>

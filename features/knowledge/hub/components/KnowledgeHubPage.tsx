@@ -1771,7 +1771,7 @@ export function KnowledgeHubPage({
       {(Object.keys(LAYOUT_ICON) as HubLayout[]).map((l) => {
         const Icon = LAYOUT_ICON[l];
         return (
-          <ToggleGroupItem key={l} value={l} aria-label={LAYOUT_LABEL[l]} title={LAYOUT_LABEL[l]} className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary">
+          <ToggleGroupItem key={l} value={l} aria-label={LAYOUT_LABEL[l]} title={LAYOUT_LABEL[l]} className="h-8 w-8 p-0 text-muted-foreground hover:bg-muted hover:text-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink">
             <Icon className="h-4 w-4" />
           </ToggleGroupItem>
         );

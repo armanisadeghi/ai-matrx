@@ -623,7 +623,7 @@ function RuleSnapshotDialog({
             </dl>
 
             {entry.calc === null ? (
-              <p className="rounded-md border border-destructive/60 bg-destructive/5 p-3 text-sm text-destructive/90">
+              <p className="rounded-md border border-destructive/60 bg-destructive/5 p-3 text-sm text-destructive-ink/90">
                 No calculation was stored with this entry. That is the defect
                 the &ldquo;Unexplained entry&rdquo; mark reports — the figure
                 exists and the working behind it does not.

@@ -838,7 +838,7 @@ export default function KnowledgeCommandBar({
               <span
                 key={chipKey(chip)}
                 data-testid="knowledge-chip"
-                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs text-primary"
+                className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-xs text-primary-ink"
               >
                 {chipLabel(chip)}
                 <button

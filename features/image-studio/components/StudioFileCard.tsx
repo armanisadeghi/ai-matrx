@@ -232,13 +232,13 @@ export function StudioFileCard({
                 {/* Status / actions */}
                 <div className="flex flex-wrap items-center justify-end gap-1 shrink-0 ml-auto">
                     {variantList.length > 0 && (
-                        <span className="rounded-full bg-primary/10 border border-primary/30 text-primary px-2 py-0.5 text-[11px] font-medium">
+                        <span className="rounded-full bg-primary/10 border border-primary/30 text-primary-ink px-2 py-0.5 text-[11px] font-medium">
                             {variantList.length}{" "}
                             {variantList.length === 1 ? "variant" : "variants"}
                         </span>
                     )}
                     {hasError && (
-                        <span className="rounded-full bg-destructive/10 border border-destructive/30 text-destructive px-2 py-0.5 text-[11px] font-medium flex items-center gap-1">
+                        <span className="rounded-full bg-destructive/10 border border-destructive/30 text-destructive-ink px-2 py-0.5 text-[11px] font-medium flex items-center gap-1">
                             <AlertCircle className="h-3 w-3" /> Error
                           <ErrorAlchemyMenu />
                         </span>
@@ -249,7 +249,7 @@ export function StudioFileCard({
                             onClick={onPreviewRequested}
                             className={
                                 isPreviewActive
-                                    ? "h-7 rounded-md border border-primary bg-primary/10 text-primary px-2 text-[11px] font-medium flex items-center gap-1"
+                                    ? "h-7 rounded-md border border-primary bg-primary/10 text-primary-ink px-2 text-[11px] font-medium flex items-center gap-1"
                                     : "h-7 rounded-md border border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground px-2 text-[11px] font-medium flex items-center gap-1"
                             }
                             title={
@@ -270,7 +270,7 @@ export function StudioFileCard({
                             className={cn(
                                 "h-7 rounded-md border px-2 text-[11px] font-medium flex items-center gap-1 transition-colors",
                                 file.imageMetadata
-                                    ? "border-success/40 bg-success/10 text-success hover:bg-success/15"
+                                    ? "border-success/40 bg-success/10 text-success-ink hover:bg-success/15"
                                     : "border-border hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground",
                                 isDescribing && "cursor-wait opacity-70",
                             )}
@@ -307,7 +307,7 @@ export function StudioFileCard({
                     <button
                         type="button"
                         onClick={onRemove}
-                        className="h-8 w-8 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex items-center justify-center"
+                        className="h-8 w-8 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive-ink flex items-center justify-center"
                         title="Remove this file"
                     >
                         <Trash2 className="h-4 w-4" />
@@ -319,7 +319,7 @@ export function StudioFileCard({
             {!collapsed && (
                 <div className="p-3">
                     {hasError && (
-                        <p className="mb-3 rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-xs text-destructive flex items-center gap-1.5">
+                        <p className="mb-3 rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-xs text-destructive-ink flex items-center gap-1.5">
                             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                             {file.error}
                           <ErrorAlchemyMenu error={file.error} />

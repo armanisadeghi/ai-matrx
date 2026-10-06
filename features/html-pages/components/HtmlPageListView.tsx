@@ -355,7 +355,7 @@ export default function HtmlPageListView({
               onClick={() => setViewPersist("grid")}
               className={`h-8 w-8 inline-flex items-center justify-center ${
                 viewMode === "grid"
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "text-muted-foreground hover:bg-muted/50"
               }`}
               aria-label="Grid view"
@@ -489,7 +489,7 @@ export default function HtmlPageListView({
                   onClick={() => setViewPersist("table")}
                   className={`h-8 w-8 inline-flex items-center justify-center ${
                     viewMode === "table"
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-muted-foreground hover:bg-muted/50"
                   }`}
                   aria-label="Table view"

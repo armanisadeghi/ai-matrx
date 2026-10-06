@@ -152,7 +152,7 @@ export function OrgIndustriesSection({ orgId }: { orgId: string }) {
                       <Link
                         key={lib.id}
                         href={`/knowledge/library-catalog?type=data_store&id=${lib.id}`}
-                        className="rounded-full bg-primary/10 px-2 py-0.5 text-primary hover:underline"
+                        className="rounded-full bg-primary/10 px-2 py-0.5 text-primary-ink hover:underline"
                       >
                         {lib.name}
                       </Link>

@@ -130,7 +130,7 @@ export function SuggestionsFilterBar({
               className={cn(
                 "rounded-full border px-2.5 py-0.5 text-[11px] transition-colors",
                 active
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "border-primary/40 bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:bg-accent",
               )}
             >

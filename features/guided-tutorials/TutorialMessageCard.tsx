@@ -29,7 +29,7 @@ export function TutorialMessageCard({ payload }: { payload: GuidedTutorialAction
 
   return (
     <div className="flex w-full max-w-sm items-center gap-3 rounded-lg border border-border bg-card p-2.5 text-card-foreground">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
         <GraduationCap className="h-5 w-5" aria-hidden />
       </span>
       <div className="min-w-0 flex-1">

@@ -135,7 +135,7 @@ export function VersionLadder({
                       </span>
                       {i === 0 && <Badge variant="secondary" className="text-[10px]">current</Badge>}
                       {from && (
-                        <Badge className="border-0 bg-primary/10 text-[10px] text-primary">
+                        <Badge className="border-0 bg-primary/10 text-[10px] text-primary-ink">
                           from review
                         </Badge>
                       )}

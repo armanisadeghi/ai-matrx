@@ -50,8 +50,8 @@ import {
 import { asClause } from "@ai-matrx/kit/text";
 
 const HEALTH_TONE: Record<RowHealth, string> = {
-  awaiting: "bg-primary/10 text-primary border-primary/30",
-  stuck: "bg-destructive/10 text-destructive border-destructive/40",
+  awaiting: "bg-primary/10 text-primary-ink border-primary/30",
+  stuck: "bg-destructive/10 text-destructive-ink border-destructive/40",
   no_flow: "bg-muted text-muted-foreground border-border",
   /*
    * Amber, not the destructive red of `stuck`. Nothing has FAILED here — the flow is intact and no
@@ -127,7 +127,7 @@ export function WorkflowHealthPanel({ workflow, hrefForEmployment }: WorkflowHea
         </dl>
 
         {stuck > 0 ? (
-          <p className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
+          <p className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive-ink">
             <ShieldAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
             <span>
               {stuck === 1

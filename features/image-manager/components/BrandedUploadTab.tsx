@@ -214,7 +214,7 @@ export function BrandedUploadTab() {
       />
 
       {lastResult ? (
-        <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success">
+        <div className="rounded-lg border border-success/30 bg-success/5 px-3 py-2 text-xs text-success-ink">
           Variants saved — added to your selection.{lastResult.asset.folder ? (
             <>
               {" "}Find them under{" "}

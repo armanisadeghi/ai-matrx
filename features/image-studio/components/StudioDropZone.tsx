@@ -124,7 +124,7 @@ export function StudioDropZone({
                     "h-16 w-16 rounded-2xl flex items-center justify-center transition-transform",
                     isDragActive
                         ? "bg-primary text-primary-foreground scale-110"
-                        : "bg-primary/10 text-primary",
+                        : "bg-primary/10 text-primary-ink",
                 )}
             >
                 {isDragActive ? (

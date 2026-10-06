@@ -67,7 +67,7 @@ export function MiniFocalPointPicker({
                     className={cn(
                         "flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                         typeof position === "string" && position === "attention"
-                            ? "border-primary bg-primary/10 text-primary"
+                            ? "border-primary bg-primary/10 text-primary-ink"
                             : "border-border hover:bg-muted/40 text-muted-foreground",
                     )}
                 >
@@ -81,7 +81,7 @@ export function MiniFocalPointPicker({
                     className={cn(
                         "flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                         typeof position === "string" && position === "entropy"
-                            ? "border-primary bg-primary/10 text-primary"
+                            ? "border-primary bg-primary/10 text-primary-ink"
                             : "border-border hover:bg-muted/40 text-muted-foreground",
                     )}
                 >

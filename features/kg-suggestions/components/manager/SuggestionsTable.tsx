@@ -348,7 +348,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
           <div className="flex flex-wrap items-center gap-1">
             <BulkAction
               label="Accept"
-              className="text-success hover:bg-success/10"
+              className="text-success-ink hover:bg-success/10"
               onClick={() => void runBulk("Accepted", ids, accept)}
               icon={<Check className="h-3 w-3" />}
             />
@@ -360,7 +360,7 @@ export function SuggestionsTable(props: SuggestionsTableProps) {
             />
             <BulkAction
               label="Reject"
-              className="text-destructive hover:bg-destructive/10"
+              className="text-destructive-ink hover:bg-destructive/10"
               onClick={() => void runBulk("Rejected", ids, reject)}
               icon={<X className="h-3 w-3" />}
             />
@@ -672,7 +672,7 @@ function SuggestionActions({
             title="Accept"
             busy={busy}
             onClick={() => void accept(row.id)}
-            className="text-success hover:bg-success/10"
+            className="text-success-ink hover:bg-success/10"
           >
             <Check className="h-3.5 w-3.5" />
           </IconAction>
@@ -688,7 +688,7 @@ function SuggestionActions({
             title="Reject"
             busy={busy}
             onClick={() => void reject(row.id)}
-            className="text-destructive hover:bg-destructive/10"
+            className="text-destructive-ink hover:bg-destructive/10"
           >
             <X className="h-3.5 w-3.5" />
           </IconAction>

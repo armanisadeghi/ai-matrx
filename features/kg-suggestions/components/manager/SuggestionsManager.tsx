@@ -168,7 +168,7 @@ export function SuggestionsManager() {
             <button
               type="button"
               onClick={() => void dismissAllLowQuality()}
-              className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-background px-2 py-0.5 text-[11px] text-destructive hover:bg-destructive/10 transition-colors"
+              className="inline-flex shrink-0 items-center gap-1 rounded border border-border bg-background px-2 py-0.5 text-[11px] text-destructive-ink hover:bg-destructive/10 transition-colors"
             >
               <X className="h-3 w-3" />
               Dismiss all

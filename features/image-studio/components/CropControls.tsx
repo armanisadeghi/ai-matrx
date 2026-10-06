@@ -85,7 +85,7 @@ export function CropControls({
                         className={cn(
                             "flex flex-col items-center justify-center gap-1 rounded-md border px-2 py-2 text-[11px] font-medium transition-colors",
                             fit === opt.id
-                                ? "border-primary bg-primary/10 text-primary"
+                                ? "border-primary bg-primary/10 text-primary-ink"
                                 : "border-border bg-background hover:bg-muted/40",
                         )}
                     >
@@ -175,7 +175,7 @@ export function CropControls({
                                         "flex items-center gap-1.5 rounded-md border px-2 py-1.5 text-[11px] font-medium transition-colors",
                                         typeof position === "string" &&
                                             position === opt.id
-                                            ? "border-primary bg-primary/10 text-primary"
+                                            ? "border-primary bg-primary/10 text-primary-ink"
                                             : "border-border bg-background hover:bg-muted/40",
                                     )}
                                 >

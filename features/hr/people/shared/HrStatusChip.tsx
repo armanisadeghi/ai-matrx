@@ -49,7 +49,7 @@ const LABELS: Record<string, string> = {
 /** Semantic tokens only. `prehire` and `on_leave` are FACTS, never warnings. */
 const TONES: Record<string, string> = {
   prehire: "border-border bg-muted/60 text-muted-foreground",
-  active: "border-transparent bg-success/15 text-success",
+  active: "border-transparent bg-success/15 text-success-ink",
   on_leave: "border-border bg-muted/60 text-muted-foreground",
   terminated: "border-border bg-muted/60 text-muted-foreground",
 };
@@ -90,7 +90,7 @@ export function HrStatusChip({
         "gap-1 px-1.5 py-0 text-[0.6875rem] font-normal",
         known
           ? TONES[status]
-          : "border-destructive bg-destructive/10 text-destructive",
+          : "border-destructive bg-destructive/10 text-destructive-ink",
         className,
       )}
       title={known ? undefined : `Unrecognised status "${status}" — server bug (hr_l1_63).`}

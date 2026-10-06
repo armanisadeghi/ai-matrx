@@ -212,7 +212,7 @@ export function GeneratePeriodsPanel({
       </div>
 
       {refusal ? (
-        <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive">
+        <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] leading-relaxed text-destructive-ink">
           {refusal.userMessage}
           <ErrorAlchemyMenu error={refusal.userMessage} />
         </p>

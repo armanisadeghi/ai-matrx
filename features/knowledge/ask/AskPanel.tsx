@@ -370,7 +370,7 @@ export function AskPanel({
                                     onClick={(e) => openCitation(e, c)}
                                     title={`${c.source_title ?? "Source"}${c.locator ? `, ${c.locator}` : ""}: ${c.quote}`}
                                     aria-label={`Citation ${n}: ${c.source_title ?? "Source"}`}
-                                    className="rounded bg-primary/10 px-1 font-medium text-primary hover:bg-primary/20"
+                                    className="rounded bg-primary/10 px-1 font-medium text-primary-ink hover:bg-primary/20"
                                   >
                                     {n}
                                   </a>

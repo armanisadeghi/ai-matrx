@@ -53,7 +53,7 @@ export function KgSuggestionsChip({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/20 transition-colors",
+            "inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary-ink hover:bg-primary/20 transition-colors",
             className,
           )}
           aria-label={`${count} pending knowledge-graph ${text}`}

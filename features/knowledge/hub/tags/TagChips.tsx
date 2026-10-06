@@ -39,7 +39,7 @@ export function TagChips({
             </button>
             <button
               type="button"
-              className="rounded-r px-1 py-px hover:bg-destructive/15 hover:text-destructive"
+              className="rounded-r px-1 py-px hover:bg-destructive/15 hover:text-destructive-ink"
               aria-label={`Remove the tag ${t}`}
               title="Remove tag"
               onClick={(e) => {

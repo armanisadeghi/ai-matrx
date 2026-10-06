@@ -752,7 +752,7 @@ export default function HtmlPageEditor({
 
       <div className="h-full overflow-hidden pt-12 flex flex-col">
         {error && (
-          <div className="shrink-0 px-4 sm:px-6 py-2 bg-destructive/10 text-destructive text-xs flex items-center gap-2">
+          <div className="shrink-0 px-4 sm:px-6 py-2 bg-destructive/10 text-destructive-ink text-xs flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             {error}
             <ErrorAlchemyMenu error={error} />
@@ -771,7 +771,7 @@ export default function HtmlPageEditor({
                   onClick={() => setActiveTab(tab.id)}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                     active
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   }`}
                 >

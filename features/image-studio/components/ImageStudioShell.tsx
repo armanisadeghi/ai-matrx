@@ -864,7 +864,7 @@ export function ImageStudioShell({ defaultFolder }: ImageStudioShellProps) {
             </>
           )}
           {studio.error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink">
               {studio.error}
               <ErrorAlchemyMenu error={studio.error} />
             </div>

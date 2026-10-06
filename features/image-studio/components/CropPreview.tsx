@@ -380,7 +380,7 @@ export function CropPreview({
                         </p>
                     )}
                     {smartCrop && (
-                        <p className="text-[11px] rounded-md bg-primary/5 border border-primary/30 text-primary px-2 py-1 flex items-center gap-1.5">
+                        <p className="text-[11px] rounded-md bg-primary/5 border border-primary/30 text-primary-ink px-2 py-1 flex items-center gap-1.5">
                             {position === "attention" ? (
                                 <Zap className="h-3 w-3 shrink-0" />
                             ) : (

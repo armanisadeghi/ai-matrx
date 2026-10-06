@@ -167,7 +167,7 @@ export function StudioVariantTile({
 
       {/* Saved indicator */}
       {variant.savedAt && (
-        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-success/10 border border-success/30 px-2 py-0.5 text-[10px] font-medium text-success">
+        <div className="absolute top-2 right-2 z-10 flex items-center gap-1 rounded-full bg-success/10 border border-success/30 px-2 py-0.5 text-[10px] font-medium text-success-ink">
           <CheckCircle2 className="h-3 w-3" />
           Saved
         </div>

@@ -175,17 +175,17 @@ const toneRing: Record<Tone, string> = {
 };
 
 const toneBadge: Record<Tone, string> = {
-  flow: "bg-primary/10 text-primary border-primary/20",
+  flow: "bg-primary/10 text-primary-ink border-primary/20",
   hub: "bg-secondary/10 text-secondary border-secondary/20",
-  gate: "bg-warning/10 text-warning border-warning/20",
-  ask: "bg-warning/10 text-warning border-warning/20",
+  gate: "bg-warning/10 text-warning-ink border-warning/20",
+  ask: "bg-warning/10 text-warning-ink border-warning/20",
 };
 
 const toneIconTile: Record<Tone, string> = {
-  flow: "bg-primary/10 text-primary",
+  flow: "bg-primary/10 text-primary-ink",
   hub: "bg-secondary/10 text-secondary",
-  gate: "bg-warning/10 text-warning",
-  ask: "bg-warning/10 text-warning",
+  gate: "bg-warning/10 text-warning-ink",
+  ask: "bg-warning/10 text-warning-ink",
 };
 
 export function KnowledgePipelineDiagram() {
@@ -381,7 +381,7 @@ function FlowArrow({ label }: { label?: string }) {
     <div className="flex items-center justify-center gap-2 py-2">
       <ArrowDown className="h-4 w-4 text-muted-foreground/60" />
       {label && (
-        <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning">
+        <span className="rounded-full border border-warning/40 bg-warning/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-warning-ink">
           {label}
         </span>
       )}

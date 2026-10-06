@@ -24,7 +24,7 @@ import {
 
 const TONE_CLASS: Record<StateTone, string> = {
   neutral: "bg-muted text-muted-foreground border-border",
-  progress: "bg-primary/10 text-primary border-primary/30",
+  progress: "bg-primary/10 text-primary-ink border-primary/30",
   positive: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30",
   locked: "bg-secondary text-secondary-foreground border-border",
   warning: "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/40",

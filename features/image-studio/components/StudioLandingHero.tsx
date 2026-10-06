@@ -153,7 +153,7 @@ function FeatureCard({
 }) {
   const inner = (
     <>
-      <div className="h-10 w-10 rounded-lg md:rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-0 md:mb-3 shrink-0">
+      <div className="h-10 w-10 rounded-lg md:rounded-xl bg-primary/10 text-primary-ink flex items-center justify-center mb-0 md:mb-3 shrink-0">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
@@ -205,7 +205,7 @@ function WorkflowStep({
         <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center font-semibold text-sm tabular-nums">
           {number}
         </div>
-        <div className="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+        <div className="h-7 w-7 rounded-md bg-primary/10 text-primary-ink flex items-center justify-center">
           {icon}
         </div>
       </div>

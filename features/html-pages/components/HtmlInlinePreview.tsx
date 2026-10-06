@@ -270,7 +270,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       <div className={cn("h-full overflow-auto px-3", className)}>
         {renderCodeBlock()}
         {phase === "error" && errorMessage ? (
-          <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <div className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
             {errorMessage}
             <ErrorAlchemyMenu error={errorMessage} />
           </div>
@@ -323,7 +323,7 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
             <span>{showError ? "Hide details" : "Preview unavailable"}</span>
           </button>
           {showError && errorMessage && (
-            <div className="mt-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <div className="mt-1 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
               {errorMessage}
               <ErrorAlchemyMenu error={errorMessage} />
             </div>
