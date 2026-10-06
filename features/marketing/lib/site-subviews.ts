@@ -83,6 +83,10 @@ export const AI_VISIBILITY_SUBVIEWS = [
   // A different question, a different table, and its own recurring spend — so a
   // sub-view, not a filter over the one-off runs.
   { id: "panels", label: "Panels" },
+  // How AI answers mention a brand or domain, from a provider's AI-mentions
+  // index (seo_ai_visibility brand_mentions + share_of_voice). An index sample,
+  // not a measurement — its own view, never beside the panels' metrics.
+  { id: "brand", label: "Brand lookup" },
 ] as const satisfies readonly MarketingSubView[];
 
 export const MARKETING_SITE_SUBVIEWS = [
