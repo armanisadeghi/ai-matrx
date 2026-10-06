@@ -263,7 +263,7 @@ export function DecisionPlayground() {
             </section>
           )}
           {error && (
-            <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+            <section className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink">
               {error}
               <ErrorAlchemyMenu error={error} />
             </section>

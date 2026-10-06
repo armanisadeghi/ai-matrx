@@ -355,7 +355,7 @@ export function ReviewQueue({
       </div>
 
       {error && (
-        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 type-secondary text-destructive">
+        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 type-secondary text-destructive-ink">
           <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
           <span className="flex-1">{error}</span>
           <button type="button" className="underline" onClick={() => { setError(null); setReloadKey((k) => k + 1); }}>

@@ -65,7 +65,7 @@ function AgreementCell({ group, minLabels }: { group: GroupCalibration; minLabel
           "ml-1 rounded px-1 py-0.5 type-meta",
           a.band === "production" && "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
           a.band === "usable" && "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-          a.band === "not_usable" && "bg-destructive/10 text-destructive",
+          a.band === "not_usable" && "bg-destructive/10 text-destructive-ink",
         )}
       >
         {(a.band && BAND_LABEL[a.band]) ?? a.band}
@@ -163,7 +163,7 @@ export function CalibrationView({ agentId }: { agentId: string }) {
       </div>
 
       {error && (
-        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 type-secondary text-destructive">
+        <p className="flex items-start gap-1.5 border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 type-secondary text-destructive-ink">
           <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
           {error}
           <ErrorAlchemyMenu className="ml-auto" error={error} />

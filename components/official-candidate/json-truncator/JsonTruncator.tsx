@@ -427,7 +427,7 @@ function ValuePreview({ value, opts }: { value: string; opts: TruncateOpts }) {
   return (
     <div className="w-full font-mono text-[10px] bg-muted/40 rounded border border-border px-2 py-1.5 leading-relaxed break-all">
       <span className="text-primary">{leadText}</span>
-      <span className="text-destructive/80 bg-destructive/10 px-0.5 rounded mx-0.5 text-[9px] font-sans not-italic">
+      <span className="text-destructive-ink/80 bg-destructive/10 px-0.5 rounded mx-0.5 text-[9px] font-sans not-italic">
         <Scissors className="mr-0.5 inline size-3" aria-hidden="true" />
         {removedCount.toLocaleString()} chars removed
       </span>
@@ -516,7 +516,7 @@ function TruncateRow({
 
   const typeBadge =
     entry.type === "string"
-      ? "bg-primary/15 text-primary"
+      ? "bg-primary/15 text-primary-ink"
       : entry.type === "array"
         ? "bg-secondary/15 text-secondary"
         : "bg-muted text-muted-foreground";
@@ -613,7 +613,7 @@ function TruncateRow({
                   e.stopPropagation();
                   onRemove(entry.pathStr);
                 }}
-                className="p-0.5 rounded text-success hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="p-0.5 rounded text-success hover:text-destructive-ink hover:bg-destructive/10 transition-colors"
               >
                 <Trash2 size={11} />
               </button>
@@ -624,7 +624,7 @@ function TruncateRow({
                   e.stopPropagation();
                   onApply(entry.pathStr, local);
                 }}
-                className="p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                className="p-0.5 rounded text-muted-foreground hover:text-primary-ink hover:bg-primary/10 transition-colors"
               >
                 <Scissors size={11} />
               </button>
@@ -673,7 +673,7 @@ function TruncateRow({
                   e.stopPropagation();
                   onApplyStub(entry.pathStr, "");
                 }}
-                className="p-0.5 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="p-0.5 rounded text-muted-foreground hover:text-destructive-ink hover:bg-destructive/10 transition-colors"
               >
                 <PackageX size={11} />
               </button>
@@ -1460,7 +1460,7 @@ function InputPanel({
         spellCheck={false}
       />
       {parseError && (
-        <div className="px-2 py-1 bg-destructive/10 border-t border-destructive/30 text-destructive text-[10px] flex items-center gap-1 flex-shrink-0">
+        <div className="px-2 py-1 bg-destructive/10 border-t border-destructive/30 text-destructive-ink text-[10px] flex items-center gap-1 flex-shrink-0">
           <AlertCircle size={10} /> {parseError}
           <ErrorAlchemyMenu error={parseError} />
         </div>
