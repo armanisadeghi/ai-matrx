@@ -76,3 +76,12 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   (`.spaces-page-end`, page-rhythm clean); Esc drops the selection toolbar; "+ New page" writes a row in place;
   select/status filter picklist; linked-view picker draws its list once. `embed/RecordBodySpace.tsx` — a row's
   `row_body` Space in the Spaces editor (null when none; `useRowBodySpace` for a host that must decide synchronously).
+- 2026-10-05 — builder round 5 (phase 3): built-in sources (F10). The source picker lists a "Built-in" group (Tasks,
+  Projects, Deals, Employees) above "Your tables"; the block stores `{kind:"entity", token}` and `data/EntityDatabase.tsx`
+  draws it under `RecordsMount` + `useAppRecordsConfig` (active organization = write target only): its own describe +
+  `drillRows` call with the view's filter (`filters[field]` scalar = is, list = is any of) and sort asked of the store,
+  table (one data table, title cell opens the row), read-only board, side / center / full-page peek whose writable
+  properties save through `entityRowWrite`. Shared toolbar pieces moved to `data/menu-parts.tsx`. The database host
+  (`editor/stored-blocks.tsx` `DatabaseHost`) stops mouse / key events natively — ProseMirror listens on the editor element,
+  so React's stopPropagation came too late and a row click became a block selection. Page history (A13,
+  `page/PageHistory.tsx`, `store.history`), code block language picker (C10).
