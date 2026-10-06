@@ -13,8 +13,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { oracleTableGrid } from "@/scripts/lib/gfm-table-oracle";
-import { parseMarkdownTables } from "@/components/mardown-display/markdown-classification/processors/bock-processors/parse-markdown-table";
-import { parseMarkdownTable as tableDataParser } from "@/components/mardown-display/markdown-classification/processors/utils/table-data-parser";
+import { parseMarkdownTables } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
+import { parseMarkdownTable as tableDataParser } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/table-data-parser";
 import { parseMarkdownContent } from "@/components/mardown-display/markdown-classification/processors/custom/dynamic-markdown";
 import { parseFirstMarkdownTable } from "@/features/rich-document/actions/markdownTable";
 import { hasConvertibleContent } from "@ai-matrx/chat/agents/components/messages-display/message-options/convertibleContent";

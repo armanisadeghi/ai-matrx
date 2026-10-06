@@ -10,7 +10,7 @@ import {
     ResourcePickerSubViewHeader,
 } from "./ResourcePickerSubViewHeader";
 import { usePickerInputFocus } from "./usePickerInputFocus";
-import { parseYouTubeUrl } from "@/lib/media/youtube";
+import { parseYouTubeUrl } from "@ai-matrx/rich-content/utils/youtube";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface FileUrlResourcePickerProps {

@@ -1,7 +1,7 @@
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/pick-lists", {
-  title: "Picklists",
+  title: "Pick lists",
   description:
     "Create and manage reusable option sets for dropdowns, dependent pickers, and forms.",
   letter: "Li",

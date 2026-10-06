@@ -10,7 +10,7 @@ import {
 } from "@/features/canvas/hooks/useCanvasItem";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { canvasItemsService } from "@/features/canvas/services/canvasItemsService";
-import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { deriveDatasetNameForChatTable, isPlaceholderTableTitle } from "@/features/data-tables/derive-dataset-name";
 import { readTableDetails } from "@/features/data-tables/service";
 import { useOpenUserTableWindow } from "@/features/overlays/openers/userTableWindow";

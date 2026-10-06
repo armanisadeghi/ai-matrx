@@ -63,16 +63,16 @@ import type {
   ServerShapeRenderBlock,
   ServerOpaqueRenderBlock,
 } from "@ai-matrx/agents/generated/stream-events";
-import type { ClientOnlyBlockType } from "@/components/mardown-display/markdown-classification/processors/utils/client-blocks";
+import type { ClientOnlyBlockType } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/client-blocks";
 import { isUnifiedImageBlock } from "@/features/files/blocks/image/guards";
-import { parseYouTubeUrl } from "@/lib/media/youtube";
+import { parseYouTubeUrl } from "@ai-matrx/rich-content/utils/youtube";
 import AudioOutputBlockRenderer from "@/components/mardown-display/blocks/audio/AudioOutputBlockRenderer";
 import VideoOutputBlockRenderer from "@/components/mardown-display/blocks/videos/VideoOutputBlockRenderer";
 import { isInlineDecision } from "@/components/mardown-display/blocks/inline-decision/types";
 import {
   DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
-} from "@/features/content-ir/react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
 import WebAnalysisItemBlock from "@/components/mardown-display/blocks/web-analysis/WebAnalysisItemBlock";
 import FlowStepResultBlock from "@/components/mardown-display/blocks/result-kinds/FlowStepResultBlock";
@@ -121,8 +121,8 @@ import { FENCE_META_KEY } from "@ai-matrx/content-ir/source";
 import {
   detectImageMarkdown,
   detectVideoMarkdown,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import {
   isRenderableStructuredAgentAnswer,
   parseStructuredAgentAnswer,

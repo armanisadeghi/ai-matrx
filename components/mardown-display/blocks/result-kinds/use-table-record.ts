@@ -21,7 +21,7 @@ import type { Field, HiddenFieldNotice, RecordDocument, TableKindFacts } from "@
 import { useRecordsClient } from "@ai-matrx/records/react";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { refusalForPeople } from "@/features/content-ir/registry/table-kind-refusal";
-import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
 
 /** The control keys a value may carry beside its Fields (wave 2 §1.4) — never columns. */
 const CONTROL_KEYS = new Set(["__kind", "_record_id", "_records", "_replaces", "_new"]);

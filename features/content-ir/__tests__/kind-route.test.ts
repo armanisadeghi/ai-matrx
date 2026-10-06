@@ -5,7 +5,7 @@
  * genuinely kind-less content passes through by reference.
  */
 
-import { applyIrKindRoute } from "../react/kind-route";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";

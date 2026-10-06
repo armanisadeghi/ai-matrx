@@ -1,4 +1,4 @@
-import { AstNode, NodeType } from '../types';
+import { AstNode, NodeType } from '@ai-matrx/rich-content/display/markdown-classification/processors/types';
 import type { JsonValue } from '@/types/json';
 
 // Update MarkdownConfig to use NodeType for type fields

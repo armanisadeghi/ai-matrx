@@ -56,7 +56,7 @@ import type { UserMarkdownSample } from "./user-samples-service";
 import { STUDIO_TEMPLATES } from "./templates";
 import { getBuiltinSamples } from "./builtin-samples";
 import { getBlockTypeStyle } from "./block-type-colors";
-import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import type { SplitterBlock } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatCount } from "@ai-matrx/kit/format";

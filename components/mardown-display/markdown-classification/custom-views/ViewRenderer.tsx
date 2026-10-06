@@ -2,7 +2,7 @@
 
 import { ViewId, getDefaultViewComponent, getViewComponent } from "./view-registry";
 import { getDefaultViewId } from "../markdown-coordinator";
-import type { AstNode } from "../processors/types";
+import type { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 
 interface DefaultViewRendererProps {
     data: unknown;

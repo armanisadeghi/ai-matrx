@@ -8,7 +8,7 @@
 // stored text, never from one editor's model.
 
 import { tokenizeSource } from "@ai-matrx/content-ir/source";
-import { isGfmDelimiterRow } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { isGfmDelimiterRow } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface TextMetrics {
   words: number;

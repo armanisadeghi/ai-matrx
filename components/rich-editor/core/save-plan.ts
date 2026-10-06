@@ -38,7 +38,7 @@ import {
   type SourceIsland,
   type SpliceIntegrity,
 } from "@ai-matrx/content-ir/source";
-import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 export interface SaveRegion {
   /** Range in the stored text (block-aligned). */

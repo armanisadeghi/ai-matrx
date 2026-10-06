@@ -29,11 +29,11 @@ import "server-only";
 // ─────────────────────────────────────────────────────────────────────────
 
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
-import MarkdownCoreServer from "@/components/markdown-core/MarkdownCoreServer";
+import MarkdownCoreServer from "@ai-matrx/rich-content/markdown-core/MarkdownCoreServer";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 import { StaticStandard } from "../standard/static-standard";
-import type { DocumentNumbering } from "@/components/markdown-core/syntax/document-numbering";
+import type { DocumentNumbering } from "@ai-matrx/rich-content/markdown-core/syntax/document-numbering";
 import {
   DEFAULT_RICH_CONTENT_DEPTH_CAP,
   type RichContentVariant,

@@ -7,7 +7,7 @@ import ProcessorExtractor from "@/components/official/processor-extractor/Proces
 import { ViewRenderer, AstViewRenderer } from "@/components/mardown-display/markdown-classification/custom-views/ViewRenderer";
 import { getCoordinatorConfig } from "@/components/mardown-display/markdown-classification/markdown-coordinator";
 import { ViewId } from "./custom-views/view-registry";
-import { AstNode } from "./processors/types";
+import { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 
 
 interface MarkdownProcessingTabsProps {

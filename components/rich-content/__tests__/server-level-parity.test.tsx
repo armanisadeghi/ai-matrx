@@ -32,9 +32,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 
 jest.mock("server-only", () => ({}));
 // The client edge, rendered synchronously (next/dynamic has no loader in jest).
-jest.mock("@/components/markdown-core/MarkdownCore", () => ({
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
   __esModule: true,
-  default: jest.requireActual("@/components/markdown-core/MarkdownCoreImpl")
+  default: jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl")
     .default,
 }));
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({

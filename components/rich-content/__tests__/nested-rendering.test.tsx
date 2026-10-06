@@ -51,7 +51,7 @@ jest.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
     const source = String(loader);
     if (source.includes("MarkdownCoreImpl")) {
-      return jest.requireActual("@/components/markdown-core/MarkdownCoreImpl")
+      return jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl")
         .default;
     }
     if (source.includes("block-registry/BlockRenderer")) {

@@ -51,8 +51,8 @@ import { stringifyCompact } from "@/components/mardown-display/blocks/json/json-
 import { CodeBlockWithContextAttach } from "@/features/canvas/materialization/CodeBlockWithContextAttach";
 import { useOpenConvertToShapeWindow } from "@/features/overlays/openers/convertToShapeWindow";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
-import { findEscapedKindMarkers } from "@/features/content-ir/react/kind-problems";
-import KindEscapedNotice from "@/features/content-ir/react/KindEscapedNotice";
+import { findEscapedKindMarkers } from "@ai-matrx/rich-content/kinds/react/kind-problems";
+import KindEscapedNotice from "@ai-matrx/rich-content/kinds/react/KindEscapedNotice";
 import { KindValueFrontDoor } from "@/components/official/structured-value/KindValueFrontDoor";
 import { textCarriesKind, valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
 import { Button } from "@ai-matrx/design-system/controls";

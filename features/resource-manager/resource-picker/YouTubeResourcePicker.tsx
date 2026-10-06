@@ -11,7 +11,7 @@ import {
     ResourcePickerSubViewHeader,
 } from "./ResourcePickerSubViewHeader";
 import { usePickerInputFocus } from "./usePickerInputFocus";
-import { youtubeId } from "@/lib/media/youtube";
+import { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 interface YouTubeResourcePickerProps {

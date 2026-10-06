@@ -32,8 +32,8 @@ import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-sy
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
-import { isPartialReadyKind } from "@/features/content-ir/react/partial-kind-route";
-import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
+import { isPartialReadyKind } from "@ai-matrx/rich-content/kinds/react/partial-kind-route";
+import { resolveLoadingSlugForKind } from "@ai-matrx/rich-content/kinds/react/loading/resolve-loading-slug";
 import { useKindExamples } from "@/features/content-ir/studio/kind-examples";
 import {
   WIRE_MODE_LABEL,

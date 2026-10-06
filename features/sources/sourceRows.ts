@@ -13,7 +13,7 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
  * "Source".
  */
 
-import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import { withDisplayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 /** The columns the Sources list reads — nothing wider (no bodies). */

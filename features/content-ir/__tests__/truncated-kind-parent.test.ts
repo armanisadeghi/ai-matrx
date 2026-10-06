@@ -1,6 +1,6 @@
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { findEmbeddedKindJsonRegions } from "../surfaces/embedded-kind-json";
-import { readEnvelope } from "../redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 
 // Minimized from saved chat 6340dae7-6a04-497c-b4fb-2f2d294c7778:
 // the response ends inside segment 13, after twelve complete nested kinds.

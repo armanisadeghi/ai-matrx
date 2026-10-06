@@ -29,7 +29,7 @@
  * than leaking syntax.
  */
 
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import {
   BooleanNumber,
   createParagraphId,
@@ -50,7 +50,7 @@ import {
   rowCells,
   tableStartsAt,
   unescapeCellPipes,
-} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 import { codeSpanText, fenceLineKinds, mapCodeRanges } from "@ai-matrx/content-ir/source";
 
 // ─── inline parsing ──────────────────────────────────────────────────────────

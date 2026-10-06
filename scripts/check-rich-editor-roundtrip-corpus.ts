@@ -71,10 +71,10 @@ import {
   type VisualPlan,
 } from "../components/rich-editor/core/visual-document";
 import { planSave } from "../components/rich-editor/core/save-plan";
-import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "../components/rich-editor/core/table-source";
-import { parseMarkdownTable } from "../components/mardown-display/blocks/table/parseMarkdownTable";
+import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { oracleTableGrid } from "./lib/gfm-table-oracle";
-import { findTableEnd, tableStartsAt } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 const args = process.argv.slice(2);

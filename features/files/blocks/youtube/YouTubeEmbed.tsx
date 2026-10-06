@@ -7,7 +7,7 @@ import {
   youTubeEmbedUrl,
   youTubeThumbnail,
   youTubeWatchUrl,
-} from "@/lib/media/youtube";
+} from "@ai-matrx/rich-content/utils/youtube";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
 
 interface YouTubeEmbedProps {

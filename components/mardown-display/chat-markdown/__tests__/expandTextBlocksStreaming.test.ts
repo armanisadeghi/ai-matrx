@@ -1,4 +1,4 @@
-import { expandTextBlocksInList } from "@/components/mardown-display/markdown-classification/processors/utils/expand-text-blocks";
+import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 
 // Only ONE thinking trace may claim to be the thought currently coming in.

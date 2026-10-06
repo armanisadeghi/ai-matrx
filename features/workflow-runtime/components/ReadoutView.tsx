@@ -78,7 +78,7 @@ import { RUN_STATUS_LABEL, RUN_STATUS_PHASE } from "../run-status";
 import { ProgressRailReadout } from "./ProgressRailReadout";
 import { definitionNodeLabels, RunSurfaceView } from "./RunSurfaceView";
 import { nodeOutputKind } from "./run/node-presentation";
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import { WorkflowRunBoard } from "./WorkflowRunBoard";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /

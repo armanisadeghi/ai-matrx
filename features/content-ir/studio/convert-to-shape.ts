@@ -2,7 +2,7 @@ import { humanizeKind } from "@/features/content-ir/kinds/kind-markdown-utils";
 import { formatKindSchemaVariable } from "@/features/content-ir/studio/kind-agent-intents";
 import type { KindComponentProjection } from "@/features/content-ir/registry/schema-source-kind-components";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
-import { isKnownKindLoadingSlug } from "@/features/content-ir/react/loading/kind-loading-slugs";
+import { isKnownKindLoadingSlug } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-slugs";
 import type { Json } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 

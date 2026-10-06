@@ -14,17 +14,17 @@ import {
   selectHideReasoning,
   selectHideToolResults,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
-import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/react/kind-route";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import {
   routeBlockAtRegistryVersion,
   routeBlockNow,
-} from "@/features/content-ir/react/route-at-version";
-import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
-import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
-import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
-import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
-import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+} from "@ai-matrx/rich-content/kinds/react/route-at-version";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
+import { useEnsureKindRenderable } from "@ai-matrx/rich-content/kinds/react/ensure-kind-renderable";
+import { resolveKindLoadingComponent } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
+import { resolveLoadingSlugForKind } from "@ai-matrx/rich-content/kinds/react/loading/resolve-loading-slug";
+import { earlyKeysFromValue } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading.types";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import {
   firstKindSlug,
   hasKindKey,
@@ -36,16 +36,16 @@ import {
   jsonKindSignal,
   withoutLeadingJsonComments,
 } from "@/features/content-ir/surfaces/json-kind-signal";
-import { withIrEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
+import { withIrEnvelope } from "@ai-matrx/rich-content/kinds/registry/region-envelope-memo";
 import {
   resolveAnnouncedKindLoading,
   resolveProvisionalKindRender,
-} from "@/features/content-ir/react/partial-kind-route";
+} from "@ai-matrx/rich-content/kinds/react/partial-kind-route";
 import {
   ProvisionalKindBoundary,
   ProvisionalKindFrame,
-} from "@/features/content-ir/react/ProvisionalKindBoundary";
-import { applyIrKindRoute } from "@/features/content-ir/react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/ProvisionalKindBoundary";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import {
   IR_ENVELOPE_KEY,

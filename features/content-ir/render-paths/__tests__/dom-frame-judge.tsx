@@ -107,7 +107,7 @@ import { BlockRenderer, decideBlockRender } from "@/components/mardown-display/c
 // eslint-disable-next-line import/first
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 // eslint-disable-next-line import/first
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 // eslint-disable-next-line import/first
 import { TooltipProvider } from "@/components/ui/tooltip";
 // eslint-disable-next-line import/first

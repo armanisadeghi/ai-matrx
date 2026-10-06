@@ -43,7 +43,7 @@ import {
 } from "@/features/marketing/data/hooks";
 import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import { proxiedExternalImageUrl } from "@/lib/media/external-image";
-import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
+import { youTubeThumbnail, youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";

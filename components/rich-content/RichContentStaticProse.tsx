@@ -18,7 +18,7 @@ import type React from "react";
 // ─────────────────────────────────────────────────────────────────────────
 
 import { guardMarkdownDelimiters } from "@ai-matrx/kit/delimiter-guard";
-import MarkdownCoreImpl from "@/components/markdown-core/MarkdownCoreImpl";
+import MarkdownCoreImpl from "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl";
 import { cn } from "@/lib/utils";
 import { detectTextDirection, preprocessProse } from "./prose/prose-prepare";
 import {

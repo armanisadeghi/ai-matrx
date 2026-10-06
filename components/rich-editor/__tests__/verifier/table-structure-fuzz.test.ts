@@ -18,8 +18,8 @@
 import { Editor, getSchema } from "@tiptap/core";
 import { createRichEditorExtensions } from "../../core/extensions";
 import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../../core/visual-document";
-import { rewriteTableSource, TableWriteRefused } from "../../core/table-source";
-import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { rewriteTableSource, TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { oracleTableGrids } from "@/scripts/lib/gfm-table-oracle";
 
 const ALPHA = ["a", " ", "\\", "|", "`", "``", "*", "-", ">", "#", "1.", "<!--", "```", "~~~", "\t", " ", "&#124;", "\r", "\n", "<div>", "===", "---", ":", "[^1]", "$"];

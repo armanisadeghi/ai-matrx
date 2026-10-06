@@ -58,7 +58,7 @@ import {
   FAMILY_STYLE,
   type RunStepPresentation,
 } from "../../components/run/node-presentation";
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import { splitByPresentation } from "../../kind-emissions/emission-routing";
 import {
   panelDeliverables,

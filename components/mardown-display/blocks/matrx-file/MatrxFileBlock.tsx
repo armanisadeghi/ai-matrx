@@ -23,7 +23,7 @@
 
 import React, { useMemo } from "react";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
-import { detectMatrxFileMarkdown } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { detectMatrxFileMarkdown } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { UniversalInlineFile } from "./UniversalInlineFile";
 

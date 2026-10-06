@@ -14,9 +14,9 @@
 // shown rendered, edited as source, written back verbatim. A whole block with
 // CRLF line endings or Private Use characters is locked outright.
 
-import { splitRowSegments } from "./table-source";
-import { Lexer, Tokenizer, type Token, type Tokens } from "./gfm-lexer";
-import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { splitRowSegments } from "@ai-matrx/rich-content/utils/table-source";
+import { Lexer, Tokenizer, type Token, type Tokens } from "@ai-matrx/rich-content/utils/gfm-lexer";
+import { findTableEnd, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 import { isPageBreakLine } from "@ai-matrx/print/directives";
 import type { JSONContent } from "@tiptap/core";
 import type { Schema } from "@tiptap/pm/model";

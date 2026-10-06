@@ -26,7 +26,7 @@ import React from "react";
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import GenericStructuredBlock from "@/components/mardown-display/blocks/generic/GenericStructuredBlock";
-import { readEnvelope } from "../../redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import {
   componentRegistry,
@@ -47,12 +47,12 @@ import type {
   KindComponentUiOptions,
   ResolveKindValue,
 } from "./dbKindComponentCache";
-import { useContentIrKindVersion } from "../use-registry-repaint";
-import { readAtVersionForKey } from "../registry-versioned";
-import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
-import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
-import { earlyKeysFromValue } from "../loading/kind-loading.types";
-import { correctKindValue, kindCorrectionsOf } from "../../registry/kind-correctors";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
+import { readAtVersionForKey } from "@ai-matrx/rich-content/kinds/react/registry-versioned";
+import { resolveLoadingSlugForKind } from "@ai-matrx/rich-content/kinds/react/loading/resolve-loading-slug";
+import { resolveKindLoadingComponent } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
+import { earlyKeysFromValue } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading.types";
+import { correctKindValue, kindCorrectionsOf } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 import { KindCorrectionsNotice } from "./KindCorrectionsNotice";
 import { stableImageState, type ImageSources } from "./item-state-media";
 

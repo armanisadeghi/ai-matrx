@@ -60,7 +60,7 @@ jest.mock("@/features/overlays/openers/tableViewerWindow", () => ({
 };
 
 import { StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
-import { MarkdownStreamingProvider } from "@/components/markdown-core/streaming-context";
+import { MarkdownStreamingProvider } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import { RichContent } from "@/components/rich-content/RichContent";
 
 // A hauling dispatcher's route sheet: each row links the route page, names

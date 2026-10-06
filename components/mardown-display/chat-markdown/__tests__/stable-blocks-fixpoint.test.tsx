@@ -8,7 +8,7 @@
  */
 import React, { act } from "react";
 import { createRoot } from "react-dom/client";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { healStreamingTail } from "@/components/rich-content/standard/stream-holdback";
 import { reuseUnchangedBlocks } from "../stable-blocks";
 import { technicalReport, pathological, bigDataTable } from "@/components/markdown-studio/__fixtures__/stress-corpus";

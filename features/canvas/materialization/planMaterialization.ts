@@ -30,7 +30,7 @@ import type {
   CxContentBlock,
   CxTextContent,
 } from "@ai-matrx/chat/public-chat/types/cx-tables";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { reconstructBlockMarkdown } from "@ai-matrx/chat/agents/redux/execution-system/utils/assemble-cx-content-blocks";
 import { getCatalogEntry } from "@/components/mermaid/catalog";
 import {
@@ -45,7 +45,7 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import {
   readEnvelope,
   reconstructRegionValue,
-} from "@/features/content-ir/redux/render-block-envelope";
+} from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { wrapArtifactText } from "./artifactWire";
 import {
   detectKindInJsonText,

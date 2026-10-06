@@ -10,8 +10,8 @@
  * and the raw-JSON break the merge closed RE-OPENS. Today's misses are luck,
  * not protection — this test makes it protection.
  */
-import { MATRX_OWNED_BLOCK_TYPES } from "../host/route-env";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { MATRX_OWNED_BLOCK_TYPES } from "@ai-matrx/rich-content/kinds/host/route-env";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 const DIRECTIVE = {
   __kind: "directive_v1_reference_note",

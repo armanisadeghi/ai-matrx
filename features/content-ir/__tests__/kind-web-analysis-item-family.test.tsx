@@ -48,7 +48,7 @@ import {
   GENERIC_STRUCTURED_COMPONENT_KEY,
   IR_ROUTE_KEY,
   type IrRouteMarker,
-} from "../react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { componentRegistry } from "../registry/component-registry";
 import { kindRegistry } from "../registry/kind-registry";
 import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";

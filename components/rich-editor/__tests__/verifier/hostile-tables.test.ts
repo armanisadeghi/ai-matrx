@@ -18,8 +18,8 @@ import type { Node as PMNode } from "@tiptap/pm/model";
 import type { Transaction } from "@tiptap/pm/state";
 import { createRichEditorExtensions } from "../../core/extensions";
 import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../../core/visual-document";
-import { rewriteTableSource, TableWriteRefused } from "../../core/table-source";
-import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { rewriteTableSource, TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { oracleTableText } from "@/scripts/lib/gfm-table-oracle";
 
 const extensions = createRichEditorExtensions();

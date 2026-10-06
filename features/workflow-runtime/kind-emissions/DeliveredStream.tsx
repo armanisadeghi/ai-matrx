@@ -34,7 +34,7 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import {
   KindSlot,
   kindSlotPhase,
-} from "@/features/content-ir/react/slot/KindSlot";
+} from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import { cn } from "@/lib/utils";
 
 import {

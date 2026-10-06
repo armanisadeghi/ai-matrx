@@ -18,7 +18,7 @@ import {
   isRecordValue as isRecordValueShared,
   type KindInstanceRenderProps,
 } from "@ai-matrx/content-ir-react";
-import { correctKindValue } from "@/features/content-ir/registry/kind-correctors";
+import { correctKindValue } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 import { KindCorrectionsNotice } from "@/features/content-ir/react/db-component/KindCorrectionsNotice";
 import {
   ContentIrHostBoundary,

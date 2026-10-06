@@ -16,7 +16,7 @@ import {
   readCollectionList,
   repeatsProblem,
 } from "@ai-matrx/chat/surfaces/runtime/collection-write-targets";
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import {
   DEPTHS,
   DIFFICULTIES,

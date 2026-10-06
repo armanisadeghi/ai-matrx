@@ -6,7 +6,7 @@
  * the same path `remarkMatrxVariable` relies on for `{{tokens}}`.
  */
 
-import remarkMatrxCite from "../remarkMatrxCite";
+import remarkMatrxCite from "@ai-matrx/rich-content/display/chat-markdown/citations/remarkMatrxCite";
 
 interface MdastNode {
   type: string;

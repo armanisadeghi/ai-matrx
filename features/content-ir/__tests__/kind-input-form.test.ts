@@ -24,7 +24,7 @@ import {
 } from "../registry/component-registry";
 import { getSystemComponentEntries } from "../registry/system-components";
 import { SYSTEM_KIND_DEFINITIONS } from "../registry/system-kinds";
-import { GENERIC_STRUCTURED_COMPONENT_KEY } from "../react/kind-route";
+import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { validateStructuralLeg } from "@ai-matrx/content-ir";
 import { kindSchemaToJsonSchema } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";

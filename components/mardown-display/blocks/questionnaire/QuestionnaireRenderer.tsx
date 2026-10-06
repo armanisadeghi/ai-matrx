@@ -20,7 +20,7 @@ import { Button, Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Bug } from "lucide-react";
-import { THEMES } from "../../themes";
+import { THEMES } from "@ai-matrx/rich-content/display/themes";
 import {
   QuestionnaireProvider,
   useOptionalQuestionnaireContext,

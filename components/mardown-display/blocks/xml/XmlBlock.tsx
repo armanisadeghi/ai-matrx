@@ -6,7 +6,7 @@ import { NestedRichContent } from "@/components/rich-content/standard/NestedRich
 import { KindSourceView } from "@/components/mardown-display/chat-markdown/KindTextGate";
 import { cn } from "@/styles/themes/utils";
 import { tokenizeXml } from "./xml-tokenize";
-import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
+import { useMarkdownStreaming } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import { Button } from "@ai-matrx/design-system/controls";
 
 interface XmlBlockProps {

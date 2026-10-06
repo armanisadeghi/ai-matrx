@@ -14,7 +14,7 @@
 // is dropped before alignment. Every other character difference is drift.
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
-import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import type { SplitterBlock } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 export type ParserSource = "v2" | "redux" | "server";
 

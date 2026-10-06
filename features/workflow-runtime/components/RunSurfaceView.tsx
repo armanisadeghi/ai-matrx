@@ -48,7 +48,7 @@ import { useWorkflowRun } from "../hooks/useWorkflowRun";
 import { InterruptCard, RunErrorCard } from "./readout-parts";
 import { ReadoutView } from "./ReadoutView";
 import { nodeOutputKind } from "./run/node-presentation";
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import {
   TileActionsProvider,
   useTileActionsTarget,

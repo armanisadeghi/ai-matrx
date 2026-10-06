@@ -24,11 +24,10 @@ import { createClient } from "@/utils/supabase/client";
 import { createEntityRow } from "@/features/scopes/service/entityRows";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import type { WikiResolution } from "@ai-matrx/rich-content/host";
+import { splitHeading } from "@ai-matrx/rich-content/markdown-core/syntax/elements/wiki-target";
+import { sessionKnobPrincipals } from "@/lib/scoped-config/sessionKnob";
 
-export type WikiResolution =
-  | { status: "found"; token: string; id: string; title: string; href: string | null; typeLabel: string }
-  | { status: "missing"; title: string }
-  | { status: "unavailable"; title: string; message: string };
 
 const DIRECT = /^([a-z][a-z0-9_]*):([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
 const TITLE_TOKEN = "note";
@@ -39,11 +38,7 @@ let pending: Map<string, { target: string; settle: (r: WikiResolution) => void }
 /** Test hook: how many batches ran (a batch is one resolver round). */
 export const wikiResolverStats = { batches: 0 };
 
-export function splitHeading(target: string): { page: string; heading: string | null } {
-  const hash = target.indexOf("#");
-  if (hash < 0) return { page: target.trim(), heading: null };
-  return { page: target.slice(0, hash).trim(), heading: target.slice(hash + 1).trim() || null };
-}
+export { splitHeading };
 
 function slugify(text: string): string {
   return text.toLowerCase().trim().replace(/[^\p{L}\p{N}\s-]/gu, "").replace(/\s+/g, "-");
@@ -219,7 +214,7 @@ export function resolveWikiTarget(target: string): Promise<WikiResolution> {
 /** Create the missing page as a note named `title`; primes the cache so every link to it resolves. */
 export async function createWikiPage(
   title: string,
-  orgId: string | null,
+  orgId: string | null = sessionKnobPrincipals().organizationId,
 ): Promise<{ ok: true; href: string | null } | { ok: false; error: string }> {
   const token = TITLE_TOKEN as EntityTypeToken;
   const result = await createEntityRow(token, { title, orgId });
@@ -227,4 +222,16 @@ export async function createWikiPage(
   const resolution = found(token, result.data.id, result.data.title, null);
   cache.set(title.trim().toLowerCase(), Promise.resolve(resolution));
   return { ok: true, href: resolution.status === "found" ? resolution.href : null };
+}
+
+/** The body of a found note, for an `![[embed]]` on its own line. */
+export async function loadWikiBody(token: string, id: string): Promise<{ body: string } | { error: string }> {
+  if (token !== "note") return { error: "Only notes can be embedded here." };
+  try {
+    const { fetchNoteById } = await import("@/features/notes/service/notesService");
+    const note = await fetchNoteById(id, { failureMode: "throw" });
+    return note ? { body: note.content ?? "" } : { error: "This note is not available to you." };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : String(err) };
+  }
 }

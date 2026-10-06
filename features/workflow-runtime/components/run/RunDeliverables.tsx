@@ -20,7 +20,7 @@ import { AlertTriangle, ChevronDown, Loader2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { selectNodeAggregate } from "../../redux/workflow-runs.selectors";

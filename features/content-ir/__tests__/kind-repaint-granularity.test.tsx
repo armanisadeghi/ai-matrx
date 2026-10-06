@@ -11,7 +11,7 @@
 import React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { useContentIrKindVersion } from "../react/use-registry-repaint";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
 import { kindRegistry } from "../registry/kind-registry";
 
 // React 19: silence the environment flag warning for act().

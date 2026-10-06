@@ -44,10 +44,10 @@ jest.mock(
 // XmlBlock imports the MarkdownCore front door in production. Replace only
 // Next's dynamic boundary with its real implementation so these assertions
 // exercise react-markdown + GFM, rather than testing next/dynamic.
-jest.mock("@/components/markdown-core/MarkdownCore", () => {
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   const actual = jest.requireActual(
-    "@/components/markdown-core/MarkdownCoreImpl",
-  ) as typeof import("@/components/markdown-core/MarkdownCoreImpl");
+    "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl",
+  ) as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
   return { __esModule: true, default: actual.default };
 });
 

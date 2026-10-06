@@ -3,14 +3,14 @@ import { createRoot, type Root } from "react-dom/client";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/components/markdown-core/MarkdownCore", () => {
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   const actual = jest.requireActual(
-    "@/components/markdown-core/MarkdownCoreImpl",
-  ) as typeof import("@/components/markdown-core/MarkdownCoreImpl");
+    "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl",
+  ) as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
   return { __esModule: true, default: actual.default };
 });
 
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import BasicMarkdownContent from "../BasicMarkdownContent";
 
 const NOTE = `# Side by side comparison

@@ -1,5 +1,5 @@
-import { findTableEnd, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
-import { parseMarkdownTable } from "../bock-processors/parse-markdown-table";
+import { findTableEnd, opensTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import { fenceLineKinds, fenceOpenerOf } from "@ai-matrx/content-ir/source";
 
 export interface ListItem {

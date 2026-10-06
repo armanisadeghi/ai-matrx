@@ -16,7 +16,7 @@ import { getSchema, type Editor } from "@tiptap/core";
 import { TextSelection } from "@tiptap/pm/state";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
-import { TableWriteRefused } from "../core/table-source";
+import { TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
 import { createRichEditorExtensions } from "../core/extensions";
 import { replaceSelectionWithMarkdown } from "../core/paste-markdown";
 import { insertMarkdownBlock } from "../core/block-insert";

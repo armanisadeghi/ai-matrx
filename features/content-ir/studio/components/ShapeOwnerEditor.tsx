@@ -19,7 +19,7 @@ import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { KIND_KEY } from "@ai-matrx/content-ir";
-import { KIND_LOADING_COMPONENTS } from "@/features/content-ir/react/loading/kind-loading-registry";
+import { KIND_LOADING_COMPONENTS } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
 import type { ExamplesState } from "@/features/content-ir/studio/kind-examples";
 import ShapeActivationControl from "@/features/content-ir/studio/components/ShapeActivationControl";
 import type { ShapeActivationVerdict } from "@/features/content-ir/studio/shape-authoring-service";

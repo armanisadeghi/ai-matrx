@@ -9,7 +9,7 @@
  * remedy (save it, then upload it) — never a silent failure.
  */
 
-import { parseYouTubeUrl } from "@/lib/media/youtube";
+import { parseYouTubeUrl } from "@ai-matrx/rich-content/utils/youtube";
 import { fileNameFromUrl } from "@ai-matrx/data/files";
 
 // Normalize a URL by prepending https:// if no protocol is present

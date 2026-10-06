@@ -12,7 +12,7 @@
 // explicitly via `content_included: false` rather than silently omitting it.
 
 import { humanLines } from "@/features/marketing/lib/copy-payloads";
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import type { NoteListItem } from "@/features/notes/types";
 import type { NoteRecord } from "@/features/notes/redux/notes.types";
 

@@ -54,10 +54,10 @@ import {
   listKindComponentsFromTables,
 } from "../../registry/schema-source-kind-components";
 import { componentRegistry } from "../../registry/component-registry";
-import { routeBlockAtRegistryVersion } from "../route-at-version";
-import { useContentIrKindVersion } from "../use-registry-repaint";
-import { useEnsureKindRenderable } from "../ensure-kind-renderable";
-import { readEnvelope } from "../../redux/render-block-envelope";
+import { routeBlockAtRegistryVersion } from "@ai-matrx/rich-content/kinds/react/route-at-version";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
+import { useEnsureKindRenderable } from "@ai-matrx/rich-content/kinds/react/ensure-kind-renderable";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 
 const KIND = "keyword_relationship_research";
 const COMPILED_FLOOR_BLOCK_TYPE = "keyword_research";

@@ -14,7 +14,7 @@ import {
   isCanonicalBlockIR,
   type CanonicalBlockIR,
 } from "@ai-matrx/content-ir";
-import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
+import { envelopeFromCompleteValue } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import {
@@ -22,7 +22,7 @@ import {
   readIrRouteMarker,
   DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
-} from "@/features/content-ir/react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import {
   buildWireText,

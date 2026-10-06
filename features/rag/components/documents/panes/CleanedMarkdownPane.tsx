@@ -10,7 +10,7 @@
  * (the one react-markdown edge — see components/markdown-core/).
  */
 
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import type { PageDetail } from "@/features/rag/types/documents";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

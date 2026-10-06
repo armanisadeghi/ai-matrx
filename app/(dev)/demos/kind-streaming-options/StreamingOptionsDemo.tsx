@@ -31,8 +31,8 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
-import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
-import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
+import { resolveKindLoadingComponent } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
+import { earlyKeysFromValue } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading.types";
 import {
   buildWireText,
   chunkWireText,

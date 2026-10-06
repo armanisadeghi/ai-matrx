@@ -35,7 +35,7 @@ import { Braces, CircleCheck, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";
 import { ResultMarkdown } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultMarkdown";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 

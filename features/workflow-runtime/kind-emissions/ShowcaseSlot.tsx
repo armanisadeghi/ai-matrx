@@ -27,7 +27,7 @@
 import React from "react";
 import { Presentation } from "lucide-react";
 
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import { StructuredDocumentPresentationProvider } from "@ai-matrx/chat/tool-call-visualization/result-fields/document-presentation";
 import { fieldLabelsFromJsonSchema } from "@ai-matrx/chat/tool-call-visualization/result-fields/schema-labels";
 import { cn } from "@/lib/utils";

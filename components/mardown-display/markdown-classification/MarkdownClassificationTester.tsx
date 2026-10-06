@@ -12,7 +12,7 @@ import MarkdownInput from "./MarkdownInput";
 import MarkdownProcessingTabs from "./MarkdownProcessingTabs";
 import { ViewId, getViewSelectOptions } from "./custom-views/view-registry";
 import { processMarkdownForRendering } from "./markdown-processor-util";
-import { AstNode } from "./processors/types";
+import { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 import { PROCESSOR_CONFIG_TYPE_MAP } from "./processors/processor-registry";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";

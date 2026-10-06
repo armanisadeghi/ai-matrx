@@ -206,7 +206,7 @@ function selfTest(): number {
       mustFail: true,
       source: `
 import { useMemo } from "react";
-import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
 import { readIt } from "./registry";
 export function Broken({ subject }: { subject: { kind: string } }) {
   const version = useContentIrKindVersion(subject.kind);
@@ -222,7 +222,7 @@ export function Broken({ subject }: { subject: { kind: string } }) {
       name: "the other defect — the subscription's answer discarded outright",
       mustFail: true,
       source: `
-import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
 import { readIt } from "./registry";
 export function AlsoBroken({ subject }: { subject: { kind: string } }) {
   useContentIrKindVersion(subject.kind);
@@ -251,7 +251,7 @@ export function readAtVersion<T>(version: number, read: () => T): T {
       name: "the fix — the version is an argument to the read",
       mustFail: false,
       source: `
-import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
 import { readAtVersion } from "./registry";
 export function Fixed({ subject }: { subject: { kind: string } }) {
   const version = useContentIrKindVersion(subject.kind);

@@ -6,7 +6,7 @@
  * The rich description body keeps the pipeline (RichContentStaticInline).
  */
 import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 
 /** A resource title for a plain-text slot. */
 export function publicResourceTitle(title: string | null | undefined): string {

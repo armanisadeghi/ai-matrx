@@ -24,7 +24,7 @@
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 
 const PAYLOAD =
   '{"__kind": "study_summary", "title": "T", "key_points": ["a", "b", "c"], "summary_markdown": "## Body\\n\\nEnough text to carry the region well past any patience threshold used by the pending gate downstream of here."}';

@@ -17,7 +17,7 @@ import { useRichEditorContext } from "../../RichEditorContext";
 import { IslandCodeEditor } from "../../islands/IslandCodeEditor";
 import { IslandPreview } from "../../islands/IslandPreview";
 import { inlineIslandLabel, texOf } from "../../islands/island-meta";
-import { isEscapedBracketMath } from "@/components/markdown-core/math-normalizer";
+import { isEscapedBracketMath } from "@ai-matrx/rich-content/markdown-core/math-normalizer";
 import {
   VARIABLE_STATE_CLASS,
   classifyVariable,

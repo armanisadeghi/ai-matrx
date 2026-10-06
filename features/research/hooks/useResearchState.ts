@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { youtubeId } from "@/lib/media/youtube";
+import { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import * as service from "../service";
 import type {
   ResearchTopic,

@@ -43,7 +43,7 @@ import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
 import { classifyScrapeFailure } from "@/features/scraper/failure/scrapeFailure";
 import { transcribeCloudFile } from "@/features/audio/services/speechApi";
 import { fetchYouTubeTranscript } from "@/features/education/onboard/youtubeTranscript";
-import { youtubeId } from "@/lib/media/youtube";
+import { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import { keepSource, landSource, type SourceLandingBody } from "@/features/sources/api/sourcesApi";
 import { buildPastedTextLanding } from "@/features/sources/api/pastedText";
 // Every `ensureOrgId` the intake calls lands in a catch that fails the card with

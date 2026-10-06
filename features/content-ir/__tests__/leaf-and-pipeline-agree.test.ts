@@ -9,8 +9,8 @@
  *  - when the gate keeps a text, the pipeline lifts nothing from it.
  */
 
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import { readEnvelope } from "../redux/render-block-envelope";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { markdownCarriesKind } from "../surfaces/json-kind-signal";
 
 const KIND = '{"__kind":"flashcard_set","title":"Cells","cards":[{"__kind":"flashcard","front":"Q","back":"A"}]}';

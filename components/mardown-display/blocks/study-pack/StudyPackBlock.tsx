@@ -25,8 +25,8 @@ import {
   type StudyPackChild,
   type StudyPackData,
 } from "@/features/content-ir/kinds/study-pack";
-import { resolveKindLoadingComponent } from "@/features/content-ir/react/loading/kind-loading-registry";
-import { resolveLoadingSlugForKind } from "@/features/content-ir/react/loading/resolve-loading-slug";
+import { resolveKindLoadingComponent } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
+import { resolveLoadingSlugForKind } from "@ai-matrx/rich-content/kinds/react/loading/resolve-loading-slug";
 import { cn } from "@/lib/utils";
 
 function isRecord(value: unknown): value is Record<string, unknown> {

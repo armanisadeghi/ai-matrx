@@ -25,7 +25,7 @@ import {
   isGfmDelimiterRow,
   startsLikeTableRow,
   trailingTableStart,
-} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 const TEX_SIGNAL = /\\[A-Za-z]+|[\\^_{}]/;
 
 /** Offset where an open fenced code block starts, or -1 when none is open. */

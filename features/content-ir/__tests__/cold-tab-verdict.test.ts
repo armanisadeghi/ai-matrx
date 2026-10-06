@@ -18,7 +18,7 @@
  */
 
 import { componentRegistry } from "../registry/component-registry";
-import { applyIrKindRoute, readIrRouteMarker } from "../react/kind-route";
+import { applyIrKindRoute, readIrRouteMarker } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { normalizeJsonRegion } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";

@@ -8,13 +8,13 @@
 // Never fork this for a new surface; add a rule here and every level gets it.
 // ─────────────────────────────────────────────────────────────────────────
 
-import { ALLOWED_RAW_HTML_TAGS } from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
-import { splitFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
+import { ALLOWED_RAW_HTML_TAGS } from "@ai-matrx/rich-content/display/chat-markdown/rehypeSafeRawHtml";
+import { splitFrontmatter } from "@ai-matrx/rich-content/markdown-core/syntax/frontmatter";
 import { fenceLineKinds, lineIndent, opensStrippedHtmlBlock } from "@ai-matrx/content-ir/source";
 import { fromMarkdown } from "mdast-util-from-markdown";
 import { gfmFromMarkdown } from "mdast-util-gfm";
 import { gfm } from "micromark-extension-gfm";
-import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** Private-use sentinel for a standalone `===` line. The `p` renderer swaps a
  *  paragraph whose only child is this token for a thick blue rule. */

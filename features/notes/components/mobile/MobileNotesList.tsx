@@ -2,7 +2,7 @@
 
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { noteDisplayLabel } from "@/features/notes/format";
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import React, { useRef, useState, useMemo } from "react";
 import { noteCreateErrorMessage } from "../../utils/writeErrors";
 import { selectNotesListError, selectNotesListStatus } from "../../redux/selectors";

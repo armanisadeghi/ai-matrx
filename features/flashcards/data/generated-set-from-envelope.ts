@@ -17,7 +17,7 @@
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import {
   reconstructRegionValue,
-} from "@/features/content-ir/redux/render-block-envelope";
+} from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import type { GeneratedCardSet } from "./useGenerateCards";
 import { coerceCards, setTitleOf } from "./coerce-card";
 

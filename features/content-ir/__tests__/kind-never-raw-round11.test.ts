@@ -12,7 +12,7 @@
  *     reader carried string state across lines (a JSON string never holds a
  *     raw newline).
  */
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 type Block = { type: string; content?: string; language?: string };
 const split = (text: string) => splitContentIntoBlocksV2(text) as unknown as Block[];

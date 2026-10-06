@@ -1,5 +1,5 @@
 "use client";
-import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
+import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { RichContent } from "@/components/rich-content/RichContent";
@@ -26,7 +26,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToastManager } from "@/hooks/useToastManager";
-import { THEMES, type DisplayTheme } from "../themes";
+import { THEMES, type DisplayTheme } from "@ai-matrx/rich-content/display/themes";
 import { useOpenSaveToTable } from "@/features/overlays/openers/saveToTable";
 
 // Custom debounce hook

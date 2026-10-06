@@ -1,10 +1,10 @@
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
-import { expandTextBlocksInList } from "@/components/mardown-display/markdown-classification/processors/utils/expand-text-blocks";
+import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { applyIrKindRoute } from "../react/kind-route";
-import { readEnvelope } from "../redux/render-block-envelope";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import {
   findEmbeddedKindJsonRegions,
   splitAroundEmbeddedKindJson,

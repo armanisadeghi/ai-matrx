@@ -17,7 +17,7 @@ import { createRoot, type Root } from "react-dom/client";
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () =>
-    jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+    jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl").default,
 }));
 jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,

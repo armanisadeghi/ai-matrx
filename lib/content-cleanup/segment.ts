@@ -22,7 +22,7 @@ import type {
   ProtectionConfidence,
 } from "./types";
 import { fenceParts, findCodeRanges } from "@ai-matrx/content-ir/source";
-import { continuesTable, tableContainerIndent, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, tableContainerIndent, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 interface LineInfo {
   start: number;

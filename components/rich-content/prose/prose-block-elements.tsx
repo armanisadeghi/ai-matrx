@@ -14,7 +14,7 @@
 
 import React from "react";
 import type { Element } from "hast";
-import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
+import type { MarkdownComponents as Components } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import { MarkdownTableScrollArea } from "@/components/mardown-display/tables/MarkdownTableScrollArea";
 import {

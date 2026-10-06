@@ -44,7 +44,7 @@ import {
   listKindComponentsFromTables,
   type KindComponentProjection,
 } from "./schema-source-kind-components";
-import { installKindRegistryDebug } from "./registry-debug";
+import { installKindRegistryDebug } from "@ai-matrx/rich-content/kinds/registry/registry-debug";
 import { hasSession, whenSessionReady } from "./session-ready";
 import {
   getSystemComponentEntries,

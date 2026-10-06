@@ -19,7 +19,7 @@ import {
   youTubeEmbedUrl,
   youTubeThumbnail,
   youTubeWatchUrl,
-} from "@/lib/media/youtube";
+} from "@ai-matrx/rich-content/utils/youtube";
 import { vimeoEmbedUrl, vimeoId } from "@/lib/media/vimeo";
 import { videoPublishDateFromMetadata } from "@/lib/media/video-date";
 import {

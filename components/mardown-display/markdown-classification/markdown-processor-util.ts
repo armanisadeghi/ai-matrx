@@ -1,7 +1,7 @@
 "use client";
 
 import { getCoordinatorConfig } from "./markdown-coordinator";
-import { AstNode } from "./processors/types";
+import { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 import { ViewId } from "./custom-views/view-registry";
 import { executeProcessorWithConfigId } from "./processors/processor-registry";
 

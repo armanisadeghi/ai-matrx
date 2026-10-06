@@ -25,7 +25,7 @@ jest.mock("@ai-matrx/chat/agents/redux/execution-system/active-requests/active-r
 jest.mock("@ai-matrx/chat/agents/components/live-run/LiveRunDisplay", () => ({
   LiveRunDisplay: () => <div>Live agent words</div>,
 }));
-jest.mock("@/features/content-ir/react/slot/KindSlot", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/slot/KindSlot", () => ({
   KindSlot: ({ kind }: { kind: string }) => <div>Arriving {kind}</div>,
 }));
 

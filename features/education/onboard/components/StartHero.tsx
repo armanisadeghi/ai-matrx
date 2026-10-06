@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createSourceRef } from "@ai-matrx/agents/sources";
-import { youtubeId } from "@/lib/media/youtube";
+import { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import type { SourceTileId } from "@ai-matrx/agents/sources/runtime";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";

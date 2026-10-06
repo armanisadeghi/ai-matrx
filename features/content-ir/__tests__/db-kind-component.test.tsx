@@ -30,7 +30,7 @@ import {
   DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
   IR_ROUTE_KEY,
-} from "../react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import {
   ComponentRegistry,
   componentRegistry,

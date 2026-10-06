@@ -126,7 +126,7 @@ if (!(globalThis as { crypto?: Crypto }).crypto?.subtle) {
 }
 
 import { StreamingTableRenderer } from "@/components/mardown-display/blocks/table/StreamingTableRenderer";
-import { MarkdownStreamingProvider } from "@/components/markdown-core/streaming-context";
+import { MarkdownStreamingProvider } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import ComparisonTableBlock from "@/components/mardown-display/blocks/comparison/ComparisonTableBlock";
 import { createSampleComparisonTable } from "@/components/mardown-display/blocks/comparison/parseComparisonJSON";
 import StatsBlock from "@/components/mardown-display/blocks/stats/StatsBlock";

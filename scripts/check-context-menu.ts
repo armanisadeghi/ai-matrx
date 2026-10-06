@@ -114,7 +114,7 @@ import { basename, join } from "node:path";
 import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { aliasTarget, featureRegExp } from "./lib/source-roots.cjs";
-import { isGfmDelimiterRow, isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { isGfmDelimiterRow, isPipeLedRow, rowCells } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();
 const ARGV = process.argv.slice(2);

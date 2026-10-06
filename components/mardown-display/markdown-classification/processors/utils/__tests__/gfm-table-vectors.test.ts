@@ -9,7 +9,7 @@
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { computeGfmTableVectors } from "../gfm-table-vectors";
+import { computeGfmTableVectors } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-vectors";
 import { oracleTableGrid } from "@/scripts/lib/gfm-table-oracle";
 import { opensStrippedHtmlBlock } from "@ai-matrx/content-ir/source";
 

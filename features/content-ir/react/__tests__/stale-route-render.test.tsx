@@ -74,13 +74,13 @@ import {
   resetKindComponentIncidentDedupe,
   setKindComponentIncidentsEnabledForTests,
 } from "../db-component/kindComponentIncident";
-import { useContentIrKindVersion } from "../use-registry-repaint";
-import { useEnsureKindRenderable } from "../ensure-kind-renderable";
-import { readEnvelope } from "../../redux/render-block-envelope";
+import { useContentIrKindVersion } from "@ai-matrx/rich-content/kinds/react/use-registry-repaint";
+import { useEnsureKindRenderable } from "@ai-matrx/rich-content/kinds/react/ensure-kind-renderable";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import {
   resetStaleRouteReports,
   routeBlockAtRegistryVersion,
-} from "../route-at-version";
+} from "@ai-matrx/rich-content/kinds/react/route-at-version";
 
 const KIND = "keyword_relationship_research";
 const COMPILED_FLOOR_BLOCK_TYPE = "keyword_research";

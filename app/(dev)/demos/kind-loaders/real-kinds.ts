@@ -16,8 +16,8 @@ import "server-only";
  */
 
 import { createClient } from "@/utils/supabase/server";
-import { inferLoadingSlugFromJsonSchema } from "@/features/content-ir/react/loading/infer-loading-slug";
-import { isKnownKindLoadingSlug } from "@/features/content-ir/react/loading/kind-loading-slugs";
+import { inferLoadingSlugFromJsonSchema } from "@ai-matrx/rich-content/kinds/react/loading/infer-loading-slug";
+import { isKnownKindLoadingSlug } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-slugs";
 
 export interface RealKindRow {
   kind: string;

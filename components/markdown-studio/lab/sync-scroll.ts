@@ -1,5 +1,5 @@
 import { fenceLineKinds } from "@ai-matrx/content-ir/source";
-import { findTableEnd, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { findTableEnd, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 // components/markdown-studio/lab/sync-scroll.ts
 //
 // Block-paired scroll sync between a raw markdown textarea and its rendered

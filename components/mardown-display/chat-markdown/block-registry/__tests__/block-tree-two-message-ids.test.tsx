@@ -29,15 +29,15 @@ jest.mock(
   }),
 );
 
-jest.mock("@/features/content-ir/react/use-registry-repaint", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/use-registry-repaint", () => ({
   useContentIrKindVersion: () => 0,
 }));
 
-jest.mock("@/features/content-ir/react/ensure-kind-renderable", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/ensure-kind-renderable", () => ({
   useEnsureKindRenderable: () => {},
 }));
 
-jest.mock("@/features/content-ir/react/partial-kind-route", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/partial-kind-route", () => ({
   resolveAnnouncedKindLoading: () => null,
   resolveProvisionalKindRender: () => null,
   resolveSupersededKindRender: () => null,

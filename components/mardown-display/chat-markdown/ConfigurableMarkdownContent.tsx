@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import React from "react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { cn } from "@/styles/themes/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PencilIcon } from "lucide-react";

@@ -76,7 +76,7 @@ import {
   parseYouTubeUrl,
   youTubeChannelLabel,
   youTubeEmbedUrl,
-} from "@/lib/media/youtube";
+} from "@ai-matrx/rich-content/utils/youtube";
 import { extractErrorMessage } from "@/utils/errors";
 
 const TYPE_ICONS = {

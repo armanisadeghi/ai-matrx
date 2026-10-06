@@ -32,7 +32,7 @@ import { StructuredValueView } from "@/components/official/structured-value/Stru
 import { matrxDirectiveHost } from "@/features/matrx-envelope/directiveHost";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "../registry/component-registry";
-import { MATRX_CONTENT_IR_PLATFORM } from "./route-env";
+import { MATRX_CONTENT_IR_PLATFORM } from "@ai-matrx/rich-content/kinds/host/route-env";
 
 const noopReplaceBlockContent = (_original: string, _replacement: string) => {};
 const noopOpenEditor = () => {};

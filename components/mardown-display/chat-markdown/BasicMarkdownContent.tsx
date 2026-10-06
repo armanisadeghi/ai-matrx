@@ -16,7 +16,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import React from "react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { PencilIcon } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import {
@@ -29,7 +29,7 @@ import {
   TableRenderPathDiagnostic,
   type TableRenderDiagnosticContext,
 } from "@/components/mardown-display/blocks/table/TableRenderPathDiagnostic";
-import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
+import type { MarkdownComponents as Components } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
 import {
   detectTextDirection,
   preprocessProse,

@@ -21,7 +21,7 @@ import React from "react";
 import { SafeBlockRenderer } from "@/components/mardown-display/chat-markdown/internal-handlers/SafeBlockRenderer";
 import type { RenderBlock } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
-import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
+import { envelopeFromCompleteValue } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 import { resolveComponent } from "@/features/content-ir/registry/component-registry";
 import { SEO_RULING_ITEM_ROWS } from "./SeoRulingItemBlocks";
 import type { SeoRulingItemKind } from "./seo-ruling-shared";

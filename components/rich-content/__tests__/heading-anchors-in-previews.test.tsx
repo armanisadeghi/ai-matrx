@@ -30,7 +30,7 @@ jest.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
     const source = String(loader);
     if (source.includes("MarkdownCoreImpl"))
-      return jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default;
+      return jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl").default;
     if (source.includes("RichContentStandardImpl"))
       return jest.requireActual("@/components/rich-content/RichContentStandardImpl").default;
     return function Unloaded() {

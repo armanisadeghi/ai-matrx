@@ -17,8 +17,8 @@ import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 // Rendered through the ONE markdown core (same parser, math and page-break
 // rules as every other surface); fenced code gets the shared Shiki view.
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
-import type { MarkdownComponents } from "@/components/markdown-core/markdown-core-types";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
+import type { MarkdownComponents } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
 import { ShikiCodeView } from "@/features/code-editor/components/code-block/highlight/ShikiCodeView";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
 import { cn } from "@/lib/utils";

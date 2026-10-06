@@ -49,13 +49,13 @@ import {
   type InterruptPlacement,
 } from "../interrupt/InterruptQuestion";
 import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import {
   selectRequest,
   selectRequestCarriesKindEnvelope,
   selectRequestStreamingPartialValue,
 } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
-import { earlyKeysFromValue } from "@/features/content-ir/react/loading/kind-loading.types";
+import { earlyKeysFromValue } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading.types";
 import { explainRunFailure } from "../run-failure-explanation";
 import {
   selectRunError,

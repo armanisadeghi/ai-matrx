@@ -13,7 +13,7 @@ import {
   rowCells,
   tableStartsAt,
   unescapeCellPipes,
-} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 const FENCE = /^( {0,3})(`{3,}|~{3,})/;
 

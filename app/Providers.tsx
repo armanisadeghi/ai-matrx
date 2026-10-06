@@ -22,6 +22,8 @@
 // chunk first loads.
 
 import React from "react";
+// The formatted-text engine's host (@ai-matrx/rich-content): configured once, before any render.
+import "@/providers/richContentHost";
 // disaster
 import StoreProvider from "@/providers/StoreProvider";
 import { CanvasHostProvider } from "@/features/canvas/host/CanvasHostProvider";

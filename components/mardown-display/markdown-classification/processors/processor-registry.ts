@@ -1,5 +1,5 @@
 import { getConfigObject } from "./json-config-system/config-registry";
-import { AstNode } from "./types";
+import { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 import { parseMarkdownToAst } from "../markdown-processor-util";
 
 // Lazy-loaded processor functions

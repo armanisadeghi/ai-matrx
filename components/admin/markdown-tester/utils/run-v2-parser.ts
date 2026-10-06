@@ -9,7 +9,7 @@
 import {
   splitContentIntoBlocksV2,
   type SplitterBlock,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 export function runV2Parser(content: string): SplitterBlock[] {
   return splitContentIntoBlocksV2(content);

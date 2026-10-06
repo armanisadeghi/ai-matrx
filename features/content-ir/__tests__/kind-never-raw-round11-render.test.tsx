@@ -13,7 +13,7 @@ import React from "react";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { BlockRenderer } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
 import { inlineKindText, spelledKindsAsOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { kindTextToMarkdown, UNREADABLE_KIND_NOTE } from "@/features/content-ir/surfaces/kind-text-to-markdown";

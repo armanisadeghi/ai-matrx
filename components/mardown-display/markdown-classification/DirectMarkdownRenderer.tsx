@@ -7,7 +7,7 @@ import { ViewId } from "./custom-views/view-registry";
 import ViewRenderer from "./custom-views/ViewRenderer";
 import { getDefaultViewId } from "./markdown-coordinator";
 import { processMarkdownForRenderingWithCoordinator } from "./markdown-processor-util";
-import type { AstNode } from "./processors/types";
+import type { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 import { isJsonObject } from "@/types/json";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

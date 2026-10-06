@@ -44,7 +44,7 @@ import {
 } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { cn } from "@/lib/utils";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import PageCleaningReportBlock from "./PageCleaningReportBlock";
 import { ScraperKindNested } from "./ScraperKindNested";
 import {

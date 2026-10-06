@@ -21,7 +21,7 @@ import {
   resetPartialUnsafeKinds,
   resolveProvisionalKindRender,
   resolveSupersededKindRender,
-} from "../react/partial-kind-route";
+} from "@ai-matrx/rich-content/kinds/react/partial-kind-route";
 import fixture from "./partial-kind-events.generated.json";
 
 type Row = { event: Record<string, unknown> };
@@ -269,7 +269,7 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
 
   it("names the kind from the FIRST partial, before anything is renderable", async () => {
     const { resolveAnnouncedKindLoading } =
-      await import("../react/partial-kind-route");
+      await import("@ai-matrx/rich-content/kinds/react/partial-kind-route");
     const first = rows.find((r) => r.event.state === "partial");
     expect(first).toBeDefined();
     const announced = resolveAnnouncedKindLoading(blockFor(first!.event), {
@@ -281,7 +281,7 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
 
   it("keeps announcing through a WITHHELD kind — a skeleton cannot throw", async () => {
     const { resolveAnnouncedKindLoading } =
-      await import("../react/partial-kind-route");
+      await import("@ai-matrx/rich-content/kinds/react/partial-kind-route");
     // Withhold the kind the way a thrown component does. The VALUE is now
     // withheld (that decision stands) but the reader must still be told what
     // is coming instead of being shown raw text.
@@ -299,7 +299,7 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
 
   it("stops at the terminal and at a dead stream — never a stuck loader", async () => {
     const { resolveAnnouncedKindLoading } =
-      await import("../react/partial-kind-route");
+      await import("@ai-matrx/rich-content/kinds/react/partial-kind-route");
     const terminal = rows.find((r) => r.event.state !== "partial");
     expect(terminal).toBeDefined();
     expect(
@@ -318,7 +318,7 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
 
   it("never covers a region that already VERIFIED", async () => {
     const { resolveAnnouncedKindLoading } =
-      await import("../react/partial-kind-route");
+      await import("@ai-matrx/rich-content/kinds/react/partial-kind-route");
     const partial = rows.find((r) => r.event.state === "partial")!;
     const block = blockFor(partial.event);
     block.metadata[IR_ENVELOPE_KEY] = {
@@ -335,7 +335,7 @@ describe("resolveAnnouncedKindLoading — announced but not yet renderable", () 
 
   it("every Study Pack kind resolves a loader that is NOT the generic one", async () => {
     const { resolveKindLoadingComponent, KIND_LOADING_COMPONENTS } =
-      await import("../react/loading/kind-loading-registry");
+      await import("@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry");
     const generic = resolveKindLoadingComponent(null);
     for (const kind of [
       "flashcard_set",
@@ -369,7 +369,7 @@ describe("a kind-bound agent's unfenced answer", () => {
 
   it("announces flashcard_set on its FIRST partial, before any card exists", async () => {
     const { resolveAnnouncedKindLoading } =
-      await import("../react/partial-kind-route");
+      await import("@ai-matrx/rich-content/kinds/react/partial-kind-route");
     expect(rows.length).toBeGreaterThan(0);
     const first = rows[0]!.event;
     expect(first.state).toBe("partial");

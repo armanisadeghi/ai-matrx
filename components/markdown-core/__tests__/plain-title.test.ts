@@ -13,7 +13,7 @@ import {
   displayTitle,
   plainTitleFromMarkdown,
   withDisplayTitle,
-} from "@/components/markdown-core/plain-title";
+} from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { generateLabelFromContent } from "@/features/notes/hooks/useAutoLabel";
 import { pastedNotesTitle } from "@/features/education/onboard/pasted-notes-title";
 

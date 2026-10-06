@@ -45,7 +45,7 @@ import {
   useRichContentDepth,
 } from "@/components/rich-content/depth";
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";
 
 export interface MarkdownKindBlockProps {

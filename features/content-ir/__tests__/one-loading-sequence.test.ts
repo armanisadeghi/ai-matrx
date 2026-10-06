@@ -25,9 +25,9 @@ import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-sy
 import {
   applyIrKindRoute,
   GENERIC_STRUCTURED_COMPONENT_KEY,
-} from "../react/kind-route";
-import { ensureKindRenderable } from "../react/ensure-kind-renderable";
-import { readEnvelope } from "../redux/render-block-envelope";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
+import { ensureKindRenderable } from "@ai-matrx/rich-content/kinds/react/ensure-kind-renderable";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "../registry/component-registry";
 import { buildWireText, chunkWireText } from "../studio/stream-simulator";
