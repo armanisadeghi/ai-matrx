@@ -194,8 +194,13 @@ ran `run-release-gates.sh` sequentially into the terminal, or queued it through
 the after phase; the two things that made the build — migrations and the
 push — are the ship path.
 
+## Alchemy doors guard (`pnpm check:alchemy-doors`)
+
+Shrink-only census (ALC-20) of raw clipboard, hand-built downloads, direct format libraries, surface-write door bypass and private action registries in app code. Baseline `scripts/alchemy-doors-baseline.json` ({rule: {file: count}}) is ALC-19's work list; a file above its count or new to a rule fails; `--update` only ratchets down; `--list` names every offender with the canonical alternative; `--self-test` proves each rule red then green. Advisory in `run-release-gates.sh`.
+
 ## Change log
 
+- 2026-10-06 — added `check:alchemy-doors` (+ `:self-test`), advisory row in `run-release-gates.sh`.
 - 2026-10-03 — Arman: checks and tests run on live as `admin@admin.com`; the clone is only for destructive-migration rehearsal. The clone checks leg, `--db-only --target clone` and the heavy-checks-default-to-clone rule are retired (docs only; code lane removes the code).
 - 2026-09-30 — `run.mjs --db-only --target clone` + `clone-target-guard.cjs` (checks-run-in-the-app P3, the
   database-reading leg): the frontend's database rows run from aidream's private `clone-db-checks.yml`
