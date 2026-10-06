@@ -38,6 +38,7 @@ import { composerShows } from "./composer/composer-mode-visibility";
 import { ComposerChipsRow } from "./composer/ComposerChipsRow";
 import { ComposerMetaRow, ComposerPills, ComposerScopeCluster, ComposerValueGroupChip } from "./composer/ComposerMetaRow";
 import { useComposerFold } from "./composer/useComposerFold";
+import { useTouchOnlyDevice } from "../../../../ui/composer/useTouchOnlyDevice";
 interface SmartAgentInputStackedProps {
   conversationId: string | null | undefined;
   uploadRoot?: string;
@@ -91,6 +92,7 @@ export function SmartAgentInputStacked({
   const [expandRequestKey, setExpandRequestKey] = useState(0);
   // Scope and Output fold into + when the composer itself is narrow.
   const { ref: composerRootRef, folded } = useComposerFold();
+  const touchOnly = useTouchOnlyDevice();
   // Hooks must run unconditionally — `conversationId` may be null on
   // first render, but the selectors short-circuit when it is and the
   // early-return below renders the uninitialized shell instead.
@@ -121,7 +123,8 @@ export function SmartAgentInputStacked({
     return (
       <div
         className={cn(
-          "matrx-touch-targets mx-auto flex w-full min-w-0 shrink-0 flex-col",
+          touchOnly && "matrx-touch-targets",
+          "mx-auto flex w-full min-w-0 shrink-0 flex-col",
           formCompact ? undefined : "max-w-[768px]",
         )}
         data-composer-size={composer.size}
@@ -253,7 +256,7 @@ export function SmartAgentInputStacked({
     return (
       <div
         ref={composerRootRef}
-        className="matrx-touch-targets mx-auto flex w-full min-w-0 max-w-[420px] shrink-0 flex-col"
+        className={cn(touchOnly && "matrx-touch-targets", "mx-auto flex w-full min-w-0 max-w-[420px] shrink-0 flex-col")}
         data-composer-size={composer.size}
         data-composer-mode={composer.mode}
         data-assist-dock-avoid=""
@@ -320,9 +323,11 @@ export function SmartAgentInputStacked({
     <div
       ref={composerRootRef}
       className={cn(
-        // THE 44px FLOOR for every control on a touch layout (globals.css);
-        // desktop density is untouched.
-        "matrx-touch-targets mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1",
+        // THE 44px FLOOR on a TOUCH device only. The shared class also fires
+        // on any viewport under 1024px, which stretched every button and pill
+        // of a narrowed desktop window to 44px (2026-10-06).
+        touchOnly && "matrx-touch-targets",
+        "mx-auto flex w-full min-w-0 shrink-0 flex-col gap-1",
         isCompact ? undefined : "max-w-[768px]",
       )}
       data-composer-size={composer.size}

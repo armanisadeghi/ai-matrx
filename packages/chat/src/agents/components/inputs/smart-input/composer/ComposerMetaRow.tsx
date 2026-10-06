@@ -145,7 +145,7 @@ export function ComposerMetaRow({
   return (
     // One line, always: a narrow column scrolls the row sideways, never wraps it.
     // Every gap is the tap-target 6px; the clusters sit at the two ends.
-    <div className={cn(COMPOSER_ROW_CLASS, "justify-between gap-1.5 px-1")}>
+    <div data-composer-row="" className={cn(COMPOSER_ROW_CLASS, "justify-between gap-1.5 px-1")}>
       <ComposerScopeCluster conversationId={conversationId} composer={composer} folded={folded} />
       <ComposerPills conversationId={conversationId} composer={composer} menuSide={menuSide} folded={folded} />
     </div>
