@@ -156,7 +156,17 @@ export class SpaceCollabSession {
    * Join the room, then make sure the body exists: the room's copy when someone holds it, else the seed
    * built from `snapshot` (the latest stored version). `othersHere` reads the presence channel at call time.
    */
-  async start(snapshot: SpaceDoc, othersHere: () => boolean): Promise<void> {
+  async start(snapshot: SpaceDoc, othersHere: () => boolean, made = false): Promise<void> {
+    if (made) {
+      // A page this tab just made (new, duplicate): nobody can hold its room yet, so the body is the seed
+      // now and the room is joined behind it — the page opens with its content, never blank while the
+      // room answers. Seeds are identical for every member (client id from page + version).
+      Y.applyUpdateV2(this.doc, seedUpdate(snapshot), SEED);
+      this.seededBlocks = yXmlFragmentToBlocks(seedEditor(), this.fragment);
+      this.provider = this.makeProvider();
+      void this.provider.connect().catch((e: unknown) => console.error("[spaces] room join", e));
+      return;
+    }
     this.provider = this.makeProvider();
     await this.provider.connect();
     await this.provider.ready();

@@ -186,9 +186,12 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     schedule();
   };
   const hostAtLastRender = useRef(false);
+  /** The page was made by this tab a moment ago (its room cannot hold anything yet). */
+  const [madeHere, setMadeHere] = useState(false);
   const collab = useSpaceCollab({
     spaceId,
     snapshot: doc,
+    made: madeHere,
     userId: room.me,
     name: fullName || email || "Someone",
     room,
@@ -232,6 +235,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     void (made ? Promise.resolve(made) : store.get(spaceId)).then(
       (d) => {
         if (!live) return;
+        setMadeHere(Boolean(made));
         if (d) adopt(d);
         else setDoc(null);
         setFocusTitle(Boolean(d) && spaces.takeFocusTitle(spaceId));

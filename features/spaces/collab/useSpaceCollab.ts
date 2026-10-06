@@ -48,6 +48,8 @@ export function useSpaceCollab(args: {
   spaceId: string;
   /** The stored page once read (undefined while loading; null when missing). */
   snapshot: SpaceDoc | null | undefined;
+  /** The snapshot was made by this tab a moment ago (new page, duplicate): seed at once, join behind. */
+  made?: boolean;
   userId: string | null;
   name: string;
   canEdit: boolean;
@@ -88,7 +90,7 @@ export function useSpaceCollab(args: {
       if (host) latest.current.onBecameHost();
     };
     void s
-      .start(snapshot, () => (latest.current.room.viewers.some((v) => v.userId !== userId)))
+      .start(snapshot, () => (latest.current.room.viewers.some((v) => v.userId !== userId)), latest.current.made === true)
       .then(() => {
         if (!live) return;
         setSession(s);

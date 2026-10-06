@@ -333,6 +333,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const restoreSpace = (id: SpaceId) => store.restore(id);
   const duplicateSpace = async (id: SpaceId) => {
     const copy = await store.duplicate(id, { withChildren: true });
+    // The copy opens with its content at once (the duplicate already read it), never blank while re-read.
+    fresh.current.set(copy.id, copy);
     return copy;
   };
   const moveSpace: SpacesContextValue["moveSpace"] = async (id, targetId, placement) => {
