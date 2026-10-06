@@ -1068,6 +1068,13 @@
 .spaces-column-resizer:active {
   background: hsl(var(--primary) / 0.25);
 }
+/* A column or column list holding ProseMirror's node selection (a click in the gutter, the caret
+   landing at a list's edge) draws no selection box: between two columns its 4px ring read as a
+   permanent blue bar. Notion marks columns only on hover (the resize gutter above). */
+.spaces-editor [data-content-type="column"] > ::after,
+.spaces-editor [data-content-type="columnList"] > ::after {
+  content: none !important;
+}
 
 /* ---------- slot (phase-2 placeholder) ---------- */
 
@@ -1477,10 +1484,10 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   display: none;
 }
 
-/* Toggle triangles at Notion's size and weight: a ~6 × 8 px triangle in the body ink. */
+/* Toggle triangles at Notion's size and weight: a ~6 × 8 px triangle in Notion's grey (not the text ink). */
 .spaces-editor .bn-toggle-button {
   padding: 5px;
-  color: var(--spaces-ink, currentColor);
+  color: var(--spaces-ink-soft);
 }
 .spaces-editor .bn-toggle-button > svg {
   width: 13px;
