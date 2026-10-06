@@ -228,6 +228,13 @@ if (typeof window.matchMedia !== "function") {
   })) as unknown as typeof window.matchMedia;
 }
 
+// jsdom has no ResizeObserver; the workspace only uses it to detect clipping.
+(globalThis as { ResizeObserver?: unknown }).ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 if (typeof HTMLElement.prototype.scrollIntoView !== "function") {
   HTMLElement.prototype.scrollIntoView = () => undefined;
 }
