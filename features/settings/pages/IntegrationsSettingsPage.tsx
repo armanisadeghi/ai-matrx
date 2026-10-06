@@ -1,8 +1,11 @@
 "use client";
 
 import { failureLine } from "@/lib/failure/transport";
-import React, { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { Suspense, useEffect, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Bot, Laptop } from "lucide-react";
+import { lucideMark } from "@/features/connectors/marks";
+import { useBingConnectionInventory } from "@/features/marketing/bing/hooks";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   fetchCatalog,
@@ -231,6 +234,18 @@ export function connectionsSummaryLabel(
 /** The directory card that opens Settings → API keys (personal keys). */
 const API_KEYS_ITEM_ID = "native:api-keys";
 
+/**
+ * Connections that have their own full screen elsewhere in the app. The
+ * directory lists them beside everything else so it is the ONE place to find
+ * a connection; choosing one opens its existing screen (never a second copy).
+ */
+const DOOR_HREFS: Record<string, string> = {
+  "native:bing": "/marketing/operations/connections/bing",
+  "native:database": "/data/connect",
+  "native:computer": "/connect-computer",
+  "native:your-ai": "/bring-your-work",
+};
+
 export function IntegrationsWorkspace({
   embedded = false,
 }: { embedded?: boolean } = {}) {
@@ -340,9 +355,17 @@ export function IntegrationsWorkspace({
     refreshMcpConnections();
     void github.reload();
     void googleInventory.refetch();
+    void bingInventory.refetch();
     setRefreshVersion((value) => value + 1);
   };
+  const router = useRouter();
+  const [, startNavigation] = useTransition();
   const selectDetail = (id: string | null) => {
+    const door = id ? DOOR_HREFS[id] : undefined;
+    if (door) {
+      startNavigation(() => router.push(door));
+      return;
+    }
     // API keys are not a connection to open here: they live on their own
     // settings tab, so the card goes there (in place inside the settings
     // shell, by URL everywhere else).
@@ -360,6 +383,27 @@ export function IntegrationsWorkspace({
   // Only the viewer's OWN Google accounts make Google "yours"; an
   // organization's shared account is named as shared, never counted as theirs
   // (`features/connectors/connection-ownership.ts`, Arman 2026-10-05).
+  // Bing Webmaster, judged by the same ownership rule as Google.
+  const bingInventory = useBingConnectionInventory();
+  const { mine: myBingConnections, shared: sharedBingConnections } =
+    splitConnectionsByOwnership(
+      (bingInventory.data?.connections ?? []).map((row) => ({
+        ...row,
+        ownerKind: row.owner_type === "organization" ? ("organization" as const) : ("person" as const),
+        ownerUserId: row.owner_user_id,
+        organizationId: row.organization_id,
+      })),
+      connectionViewer,
+    );
+  const bingSharedBy = [
+    ...new Set(
+      sharedBingConnections.map(
+        (row) =>
+          organizations.find((org) => org.id === row.organization_id)?.name ??
+          "Your organization",
+      ),
+    ),
+  ];
   const { mine: myGoogleConnections, shared: sharedGoogleConnections } =
     splitConnectionsByOwnership(
       (googleInventory.data?.connections ?? []).map((row) => ({
@@ -485,6 +529,74 @@ export function IntegrationsWorkspace({
       savedAccountSummary([], false, false),
       "api key token developer personal key bearer programmatic",
     ),
+    {
+      ...nativeItem(
+        "bing",
+        "Bing Webmaster Tools",
+        "Search performance and site health from Bing.",
+        "Microsoft",
+        "analytics",
+        "https://www.google.com/s2/favicons?domain=bing.com&sz=128",
+        savedAccountSummary(
+          myBingConnections.map((account) => ({
+            identity: account.provider_subject || "Bing account",
+            status: account.status,
+          })),
+          bingInventory.isLoading,
+          bingInventory.isError,
+        ),
+        "bing webmaster seo search console indexing",
+      ),
+      sharedBy: bingSharedBy,
+    },
+    nativeItem(
+      "database",
+      "Your own database",
+      "Connect a Postgres or Supabase database you run.",
+      "AI Matrx",
+      "database",
+      "https://cdn.simpleicons.org/postgresql",
+      savedAccountSummary([], false, false),
+      "postgres supabase database sql connection string",
+    ),
+    {
+      ...nativeItem(
+        "computer",
+        "This computer",
+        "Let agents work through your own computer and network.",
+        "AI Matrx",
+        "developer",
+        null,
+        savedAccountSummary([], false, false),
+        "local computer desktop home connection matrx local",
+      ),
+      artwork: {
+        id: "computer",
+        name: "This computer",
+        blurb: "",
+        surfaces: ["directory"],
+        logo: lucideMark(Laptop),
+      },
+    },
+    {
+      ...nativeItem(
+        "your-ai",
+        "Connect your AI",
+        "Use AI Matrx from Claude, ChatGPT, Claude Code or Cursor.",
+        "AI Matrx",
+        "ai",
+        null,
+        savedAccountSummary([], false, false),
+        "claude chatgpt cursor claude code mcp bring your work",
+      ),
+      artwork: {
+        id: "your-ai",
+        name: "Connect your AI",
+        blurb: "",
+        surfaces: ["directory"],
+        logo: lucideMark(Bot),
+      },
+    },
     ...(["dropbox", "box"] as const).map((provider) =>
       nativeItem(
         provider,

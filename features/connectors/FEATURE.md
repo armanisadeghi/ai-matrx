@@ -314,6 +314,8 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- 2026-10-05 — The directory is the one place to find a connection: Bing Webmaster (yours/shared via the ownership rule), your own database, this computer and Connect your AI are listed as door items (`DOOR_HREFS` in `IntegrationsSettingsPage.tsx`) that open their existing screens. Main menu "Integrations" now lands on Connectors.
+
 - 2026-10-05 — Every provider has a legible mark in both themes: `ConnectorTile` (white brand plate, xs–lg) is the ONE way a logo sits on a card/row/chip; artwork chain reordered (Simple Icons → Google 128px site icon → catalogue art → raw favicon); `ConnectorMark` skips rasters under 32px and images that failed before hydration (`decode()`), ending at a monogram. All 139 live catalog entries resolve to a real logo. ServerCard's hand-rolled image chain replaced by the tile.
 
 - 2026-10-05 — Yours vs shared: an organization's Google account no longer reads as the viewer's own (it hid "connect your own" and invited a Disconnect that would cut the organization off). New `connection-ownership.ts` + `useConnectionViewer`; directory gains `sharedBy`, a "Your connections" chip row, featured tiles (`FeaturedIntegrationTile`, curated order) and Yours/Shared sections; lab preview at `/lab/connectors-directory`.
