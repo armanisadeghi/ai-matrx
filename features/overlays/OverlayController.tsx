@@ -1,4 +1,3 @@
-import { readGoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
 /**
  * OverlayController.tsx
  *
@@ -14,6 +13,7 @@ import { readGoogleAgendaWindowLaunchData } from "@/features/google-workspace/ca
  */
 "use client";
 
+import { readGoogleAgendaWindowLaunchData } from "@/features/google-workspace/calendar/window-types";
 import { isValueMappingMap } from "@ai-matrx/chat/surfaces/types";
 import { isPreparedResourceIdentity } from "@ai-matrx/chat/agents/components/chat/usePreparedResourceSeed";
 import type { ResourcePickerViewId } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
