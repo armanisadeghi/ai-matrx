@@ -393,6 +393,13 @@ export interface ConnectorConsentBodyProps {
   refetch: () => Promise<unknown>;
   /** Seed the account being added to; defaults to the first usable one. */
   initialAccountId?: string | null;
+  /**
+   * The accounts the body may pick BY ITSELF when nobody named one. Settings
+   * passes only the viewer's own accounts, so an organization's shared account
+   * is never the silent default (`connection-ownership.ts`); every account in
+   * `accounts` stays choosable and a returned organization grant still resolves.
+   */
+  defaultAccountIds?: readonly string[];
   /** Pre-switch-on these rows (a surface that knows what the person is using). */
   initialProductKeys?: readonly string[];
   /** Stable anchors for Settings search; omitted inside the dialog. */
@@ -547,6 +554,7 @@ export function ConnectorConsentBody({
   errorMessage,
   refetch,
   initialAccountId,
+  defaultAccountIds,
   initialProductKeys,
   rowAnchorPrefix,
   searchFocus,
@@ -576,7 +584,9 @@ export function ConnectorConsentBody({
   );
   const accountId = chosenAccountId ?? preferredAccountId({
     provider,
-    accounts,
+    accounts: defaultAccountIds
+      ? accounts.filter((row) => defaultAccountIds.includes(row.id))
+      : accounts,
     rollout,
   }) ?? NEW_ACCOUNT;
   const account = accounts.find((row) => row.id === accountId) ?? null;

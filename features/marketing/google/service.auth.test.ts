@@ -16,7 +16,7 @@ function pagedRelation(rows: readonly unknown[], pageSize = 1000) {
   const select = jest.fn((..._args: [string, unknown?]) => query);
   const query: Record<string, unknown> = {};
   let requested: [number, number] = [0, pageSize - 1];
-  for (const method of ["eq", "is", "in", "order", "returns", "abortSignal"]) {
+  for (const method of ["eq", "or", "is", "in", "order", "returns", "abortSignal"]) {
     query[method] = jest.fn(() => query);
   }
   query.range = jest.fn((from: number, to: number) => {
@@ -82,7 +82,7 @@ function mockSupabase(
   jest.mocked(createClient).mockReturnValue({
     auth: {
       getSession: jest.fn().mockResolvedValue({
-        data: { session: { access_token: "test-token" } },
+        data: { session: { access_token: "test-token", user: { id: "user-1" } } },
         error: null,
       }),
     },

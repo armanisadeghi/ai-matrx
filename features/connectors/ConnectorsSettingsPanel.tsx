@@ -216,9 +216,15 @@ function ProviderConnectorsPanel({
     setFailure(null);
     try {
       const disclosed = await confirmGmailReadDisclosure(plan.request);
-      if (!disclosed) return;
+      if (!disclosed) {
+        setCardConsent(null);
+        return;
+      }
       const changesDisclosed = await confirmGmailChangesDisclosure(plan.request);
-      if (!changesDisclosed) return;
+      if (!changesDisclosed) {
+        setCardConsent(null);
+        return;
+      }
       const result = await runner.run(plan.request, {
         owner:
           account.ownerKind === "organization" && account.organizationId
@@ -252,6 +258,9 @@ function ProviderConnectorsPanel({
       toast.success(verb === "Connect" ? "Connected." : "Reconnected.");
     } catch (cause) {
       if (isGoogleAuthorizationCancelled(cause)) {
+        // A cancelled press leaves no card focus behind: the body goes back
+        // to defaulting to the viewer's own account.
+        setCardConsent(null);
         toast.info("Authorization cancelled — nothing changed.");
         return;
       }
@@ -486,14 +495,10 @@ function ProviderConnectorsPanel({
           provider={provider}
           rowAnchorPrefix="integration-google-product-"
           searchFocus={searchFocus}
-          // Your own accounts — plus a shared one only while its own card's
-          // Reconnect is the press being run — so "Connect" never defaults to
-          // an organization's credential.
-          accounts={state.accounts.filter(
-            (account) =>
-              myAccounts.includes(account) ||
-              account.id === cardConsent?.accountId,
-          )}
+          accounts={state.accounts}
+          // Only your own accounts are ever the silent default, so "Connect"
+          // never lands on an organization's credential.
+          defaultAccountIds={myAccounts.map((account) => account.id)}
           rollout={state.rollout}
           isLoading={false}
           rolloutUnavailable={state.rolloutUnavailable}
