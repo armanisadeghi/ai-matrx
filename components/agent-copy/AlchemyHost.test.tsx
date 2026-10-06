@@ -2,7 +2,7 @@ import { act, useEffect, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { AlchemyHost, guardAiPreparation } from "./AlchemyHost";
-import type { AiPreparation } from "@ai-matrx/kit/content-transfer";
+import type { AiPreparation } from "@ai-matrx/alchemy/operate";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useContentTransferCapabilities } from "@ai-matrx/alchemy/react/workspace";
 
