@@ -2,8 +2,8 @@
 type: Feature
 title: "Keyword Workbench"
 description: "The one surface where a subject-matter expert finds exactly the keywords they mean and tells the system what those keywords ARE — with the reason, in their own words, at the moment they decide."
-tags: [seo, keywords, stamps, assignment, gsc, topics, offerings]
-timestamp: 2026-08-24
+tags: [seo, keywords, stamps, assignment, gsc, topics, offerings, tags]
+timestamp: 2026-10-05
 ---
 
 # Keyword Workbench (C14)
@@ -100,6 +100,20 @@ Two deliberate choices worth knowing:
   `tp: 47a36caa-…` is not a filter a person can understand (**P22** — shared
   machinery never obligates a shared UI).
 
+## KEYWORD TAGS
+
+A tag is a value of the site's ONE Tags dimension (`site_tags_<site8>`), a
+multi-value stamp dimension, so a keyword holds any number of tags. The rows
+belong to the site's organization (the database stamps it). The agent tool
+(`aidream/services/seo/keyword_data.py` → `write_tags`) writes through the same
+functions, so a tag made in chat and one made here are the same row.
+
+| Gesture | How |
+|---|---|
+| See tags | The **Tags** core column (on by default here): every tag as a chip, `+N` past three. The Tags dimension is kept out of the Columns chooser — as a dimension column it would show one tag. |
+| Filter | The **Tags** control beside the filter bar: pick tags, then **Any of** or **All of**. Server-side: `tags` (`tg=`) + `tags_match` (`tm=any`) fold into the RPC's `stamps` array, elements marked `mode: 'any'` for Any of. A chip click and the column funnel write the same filter. |
+| Tag / untag | **Tags…** in the bulk bar and the right-click menu, and the pencil in a cell → `TagAssignPanel`. Add keeps existing tags; Remove takes off only the chosen ones (`p_remove`). A typed name that is not a tag yet is created on save. |
+
 ## What it is made of
 
 | File | Job |
@@ -114,7 +128,12 @@ Two deliberate choices worth knowing:
 | `components/OfferingAssignPanel.tsx` | Bulk placement + the reason, over the ONE placement write (`setKeywordOffering`). |
 | `components/ServiceFilterControl.tsx` | The Offering filter chip and picker (`offering` in the shared filter dialect, `of=` in the URL). |
 | `hooks/useSiteOfferings.ts` | This site's offerings (`web.site_offerings`) flattened parent → child, their keyword counts (`seo.gsc_offering_stats`), and the site's organization every offering write carries. `useSiteOrganizationId` and `requireOfferingOrganization` live here. |
-| `data.ts` | The stamp and placement RPC callers — `getKeywordOfferings` reads this site's placements (`seo.gsc_keyword_offerings_for`, ≤2,000 ids); `setKeywordOffering` is THE placement write (`seo.gsc_set_keyword_offering`); `confirmKeywordOfferings`, `listOfferingProposals` and `getOfferingPlacementDrift` serve the approval queue. Contract: `features/marketing/FEATURE.md` § Canonical offering writers. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
+| `tags.ts` | THE tag write — `writeKeywordTags` (ensure the Tags dimension, create new tags through `facet_value_upsert`, then `keyword_facet_set` per tag, `p_remove` to untag) — plus `getSiteTagDimensionSlug` and `tagValueKey` (the agent tool's naming rule). |
+| `tagFilter.ts` | Pure helpers over the `tags` / `tags_match` filter keys. |
+| `components/TagsCell.tsx` | The Tags column's chip cell. |
+| `components/TagFilterControl.tsx` | The Tags filter chip and its Any of / All of popover. |
+| `components/TagAssignPanel.tsx` | Add or remove tags on a row or the checked rows. |
+| `data.ts` | The stamp and placement RPC callers — `getKeywordStampLists` reads EVERY value per dimension (`getKeywordStamps` is its one-per-dimension view); `getKeywordOfferings` reads this site's placements (`seo.gsc_keyword_offerings_for`, ≤2,000 ids); `setKeywordOffering` is THE placement write (`seo.gsc_set_keyword_offering`); `confirmKeywordOfferings`, `listOfferingProposals` and `getOfferingPlacementDrift` serve the approval queue. Contract: `features/marketing/FEATURE.md` § Canonical offering writers. Saved views moved out (KI-021, 2026-08-25) — that CRUD is `keyword-table/savedViews.ts`. |
 
 > Deleted 2026-08-25 (dead since the 2026-08-24 grid extraction): this
 > folder's own `state.ts` and `components/ColumnChooser.tsx` — both were
@@ -189,6 +208,9 @@ write for a PLACEMENT is `seo.gsc_set_keyword_topic`, the same way.
 | `seo.gsc_keyword_value_for` | Class · Score · Level · reasons for the rows on screen. |
 | `seo.gsc_quick_add_value` | P23 (via `quickAddDimensionValue`). |
 | `seo.gsc_set_keyword_stamps` | P24. Human stamps are pinned. |
+| `seo.gsc_stamp_keyword_set` | The ONE stamp predicate behind every stamp and tag filter. Plain pairs are all-of; elements marked `mode: 'any'` form one any-of group (`migrations/seo_keyword_tags_any_of_stamp_filter.sql`). |
+| `seo.keyword_tag_dimension_slug` / `keyword_tag_dimension_ensure` | The site's Tags dimension; ensured on the first tag write. |
+| `seo.keyword_facet_set` | THE tag write — add one tag (other tags kept) or `p_remove` one. |
 | `seo.gsc_saved_views` / `gsc_save_view` / `gsc_delete_saved_view` | Saved views (site-editor guarded). |
 | `seo.gsc_keyword_topics_for` | THE OFFERING COLUMN's data — name, root, lineage, who placed it, which ancestor its worth comes from, plus `scope_tier` / `scope_organization_id`. Its candidates come from `seo.keyword_placement_resolve`, so WHAT and WHO are one answer from one ladder. THE SCOPE RULE: ≤2,000 ids. |
 | `seo.keyword_placement_resolve` | THE ONE LADDER — site > brand > organization > system, nearest primary row wins. Called by `gsc_keyword_topics_for` inside the database, never a second read from the client. |
