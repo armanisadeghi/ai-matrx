@@ -19,7 +19,7 @@ export interface UserList {
   group_count?: number;
 }
 
-/** Shape returned by get_pick_list_with_items RPC */
+/** Shape returned by get_user_list_with_items RPC */
 export interface UserListWithItems {
   list_id: string;
   list_name: string;

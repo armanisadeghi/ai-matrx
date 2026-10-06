@@ -12,6 +12,8 @@
 
 export type ReferenceContainerType =
   | "dataset"
+  | "pick_list"
+  // "structured_list" is the retired spelling of "pick_list": still read from stored sources.
   | "structured_list"
   | "dataset_template";
 
@@ -35,7 +37,7 @@ export interface ReferenceSourceFilter {
 }
 
 export interface BoundContainerReferenceSource {
-  container_type: "dataset" | "structured_list";
+  container_type: "dataset" | "pick_list" | "structured_list";
   /** The fixed dataset table_id / structured-list list_id. */
   container_id: string;
   dimension: ReferenceDimension;
@@ -72,6 +74,7 @@ export function parseReferenceSource(raw: unknown): ReferenceSource | null {
   }
   if (
     (o.container_type !== "dataset" &&
+      o.container_type !== "pick_list" &&
       o.container_type !== "structured_list") ||
     typeof o.container_id !== "string"
   ) {

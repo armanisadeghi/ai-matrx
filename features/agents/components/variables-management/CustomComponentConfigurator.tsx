@@ -4,7 +4,7 @@
  * CustomComponentConfigurator
  *
  * The canonical, Redux-free editor for a `VariableCustomComponent` — the same
- * component-type + options + picklist-binding + number/toggle config used by
+ * component-type + options + pick list-binding + number/toggle config used by
  * agent variables in the Agent Builder. It operates purely on a
  * `value`/`onChange` pair so it can be embedded anywhere a custom component is
  * authored (Agent Builder variables, scope Context Items, …).
@@ -41,7 +41,7 @@ import {
   type BuildCustomComponentInput,
 } from "@ai-matrx/chat/agents/utils/variable-customcomponent";
 import { OptionsEditor } from "./OptionsEditor";
-import { StructuredListBindingEditor } from "./StructuredListBindingEditor";
+import { PickListBindingEditor } from "./PickListBindingEditor";
 import { hasRandomOptionSource } from "@ai-matrx/chat/agents/utils/auto-assignment";
 import { normalizeFileResourceId } from "@/features/files/api/resource-family";
 import { ResourceFamilyPolicyEditor } from "@ai-matrx/chat/agents/components/inputs/resources/ResourceFamilyPolicyEditor";
@@ -123,8 +123,8 @@ export function CustomComponentConfigurator({
         </Select>
       </div>
 
-      {/* ── Picklist binding ─────────────────────────────────────────────── */}
-      <StructuredListBindingEditor
+      {/* ── Pick list binding ─────────────────────────────────────────────── */}
+      <PickListBindingEditor
         binding={effective.structuredList}
         onChange={handleStructuredListChange}
         allowOther={effective.allowOther}
@@ -167,7 +167,7 @@ export function CustomComponentConfigurator({
         </div>
       )}
 
-      {/* ── Options — static list editor, replaced by the picklist binding when bound ── */}
+      {/* ── Options — static list editor, replaced by the pick list binding when bound ── */}
       {!isPicklistBound && (
         <div className="space-y-2 border-t border-border/60 pt-3">
           <Label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">

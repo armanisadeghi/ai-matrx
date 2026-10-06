@@ -56,12 +56,12 @@ re-export the canonical generated wire types (see `types.ts` + `features/matrx-e
 
 ## Agent-writable surface
 
-`matrx-user/list-manager` (the List Manager window) declares four targets — `add_list_items`,
+`matrx-user/pick-list-manager` (the List Manager window) declares four targets — `add_list_items`,
 `update_list_item`, `active_list_name`, `active_list_description` — defined once in
 [`surface-write-targets.ts`](./surface-write-targets.ts), handled once in
 [`surface-write-handlers.ts`](./surface-write-handlers.ts) (the same doors as the table above). There is
 no draft layer, so every target is `mode: "entity"`, `applyPolicy: "ask"`; never `auto`, and never a
-delete or visibility target. `lists.manifest.ts` (`matrx-user/lists`) imports the same targets; its
+delete or visibility target. `lists.manifest.ts` (`matrx-user/pick-lists`) imports the same targets; its
 route mount is now the store's table page. Read
 [`features/surfaces/FEATURE.md`](../surfaces/FEATURE.md) § "The 360 loop" before changing them.
 
@@ -76,7 +76,7 @@ route mount is now the store's table page. Read
 - `2026-08-27` — **The `/pick-lists` sidebar now exposes the same universal list-row menu on touch.** Every picklist row is the `structured_list` entity context and carries a visible 44px Actions control at tablet/mobile widths; it opens the canonical v3 menu/sheet without replacing the existing select, quick-look, or open-in-new-tab doors.
 - `2026-08-27` — **The deterministic review list is ownership-safe for both authorized admin identities.** The original `Countries by Continent` fixture remains at `/pick-lists/9f9241bc-7046-479a-a883-2133ef03cba8` for `admin@admin.com`; the in-app Browser admin identity owns an idempotent clone at `/pick-lists/3c5a879d-69b0-7d36-827a-c49760e4ff98`. Both contain the same 15 grouped items, including `Africa`, so `/pick-lists` search and list-specific owner actions can be verified without widening RLS or transferring the original fixture.
 - `2026-08-26` — **List/group actions are discoverable on touch.** Canonical `/pick-lists` cards, `/pick-lists/[id]` group headings, and the tree-layout nodes expose a visible 44px overflow control at tablet/mobile widths. Each dispatches into its existing universal v3 context-menu scope, so Copy, Agents, Quick Actions, and list-specific actions stay one implementation rather than drifting into a second mobile menu. Deterministic review target: `/pick-lists/9f9241bc-7046-479a-a883-2133ef03cba8` (`Countries by Continent`, including the `Africa` group).
-- `2026-08-22` — claude: **surface-check `matrx-user/lists` — pass-with-arman-items
+- `2026-08-22` — claude: **surface-check `matrx-user/pick-lists` — pass-with-arman-items
   (checklist v1, 4 fixes).** S2: five values added
   (`active_list_url`, `active_list_group_count`, `active_list_created_at`,
   `active_list_updated_at`, `list_group_names`); `selected_item_*` now also
@@ -110,7 +110,7 @@ route mount is now the store's table page. Read
   can reach; chipped, NOT deleted. Header/mobile/theme were checked
   statically only (no browser in that session) — clean, but unverified by eye.
 - `2026-08-11` — claude: **The `/pick-lists/[id]` ROUTE is now agent-writable too
-  (`matrx-user/lists`), sharing ONE vocabulary with the List Manager window.**
+  (`matrx-user/pick-lists`), sharing ONE vocabulary with the List Manager window.**
   The two are mounts of the same state, so the three targets and their
   handlers moved into `surface-write-targets.ts` / `surface-write-handlers.ts`
   and both manifests + both mounts import them — nothing renamed, list-manager's

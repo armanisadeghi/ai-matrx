@@ -3,7 +3,7 @@
 // Every pick list lives in the record store as a Table of choices (one Record per choice). A list
 // has one address, `/pick-lists/<id>`, which opens the store's table page for it; every list read goes
 // through THE LIST INDEX (`pick-list-index.ts`) or the list doors that answer from the store
-// (`get_pick_list_with_items`, `get_pick_list_for_selection`, `update_pick_list`).
+// (`get_user_list_with_items`, `get_pick_list_for_selection`, `update_user_list`).
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 

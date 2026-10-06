@@ -5739,7 +5739,7 @@
       "failures": []
     },
     {
-      "kind": "picklist_tool_result",
+      "kind": "pick_list_tool_result",
       "isActive": false,
       "detectedWhileStreaming": true,
       "kindResolvedWhileStreaming": true,

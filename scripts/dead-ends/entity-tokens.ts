@@ -69,7 +69,7 @@ const NOUN_TO_TOKEN: Record<string, string> = {
   app: "app",
   skill: "skill",
   workflow: "workflow",
-  picklist: "structured_list",
+  picklist: "pick_list",
   file: "file",
   folder: "folder",
   transcript: "transcript",

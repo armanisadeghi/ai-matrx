@@ -62,6 +62,7 @@ const RESOURCE_ICONS: Record<string, LucideIcon> = {
   research_topic: Search,
   skill: FlaskConical,
   udt_documents: FileText,
+  pick_list: ListChecks,
   structured_list: ListChecks,
   udt_workbooks: Table,
   // Registry TOKENS for the same (the keys above are table names). The

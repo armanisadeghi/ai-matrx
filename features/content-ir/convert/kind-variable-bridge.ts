@@ -18,7 +18,7 @@
  *     (`string[].values` + `open`), and toggleValues (a 2-value enum — the
  *     labels ARE the wire values).
  *   - PROVENANCE lives on the OUT-OF-BAND SIDECAR (`VariableBridgeSidecar`):
- *     picklist bindings (`customComponent.structured_list`), scope-context
+ *     picklist bindings (`customComponent.pick_list`), scope-context
  *     bindings (`VariableDefinition.binding`), and WHICH input component
  *     renders the value (media / datetime / slider / …). These shape the
  *     editor or the runtime fill, never the value's JSON structure, so they
@@ -38,7 +38,7 @@
  * fields, `required` either `true` or absent, plus any sidecar entries),
  * kindFields → variables → kindFields is the identity with zero losses, and
  * variables → kindFields → variables reproduces the variable modulo the
- * documented normalizations (legacy `picklist` key → `structured_list`,
+ * documented normalizations (legacy `picklist` / `structured_list` keys → `pick_list`,
  * stash dropped, zero-value defaults omitted). Documented one-way
  * flattenings: `number[]`/`boolean[]` and all structured fields (array /
  * object / inline_object / record / union / json) become textareas on the
@@ -184,7 +184,7 @@ export type KindFieldsToVariablesOptions = {
  * - `nullable` has no VariableDefinition home — documented flattening (an
  *   empty value plays the null role in variable space).
  * - Sidecar: `scopeBinding` → `binding` (customComponent omitted — inherited
- *   from the bound context item); `structuredList` → `customComponent.structured_list`;
+ *   from the bound context item); `structuredList` → `customComponent.pick_list`;
  *   `component` → `customComponent.type` when shape-compatible.
  *
  * The structured rows are the HONEST flattening per R5: nested fields render
@@ -281,7 +281,7 @@ function withStructuredList(
   sidecar: VariableFieldSidecar,
 ): VariableCustomComponent {
   return sidecar.structuredList !== undefined
-    ? { ...cc, structured_list: sidecar.structuredList }
+    ? { ...cc, pick_list: sidecar.structuredList }
     : cc;
 }
 
@@ -705,8 +705,8 @@ function convertVariable(v: VariableDefinition): VariableConversion {
 
   const structuredList = readStructuredList(cc);
   if (structuredList) {
-    // Normalized to the canonical `structured_list` key on the way out —
-    // the legacy `picklist` alias is read-only.
+    // Normalized to the canonical `pick_list` key on the way out —
+    // the legacy `structured_list` / `picklist` keys are read-only.
     sidecarEntry.structuredList = structuredList;
     const staticOptions = cc?.options ?? [];
     if (staticOptions.length > 0 && !structuredList.multiple) {

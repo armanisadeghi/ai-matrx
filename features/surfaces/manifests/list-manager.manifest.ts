@@ -1,10 +1,10 @@
 /**
- * Surface manifest — List Manager (`matrx-user/list-manager`).
+ * Surface manifest — List Manager (`matrx-user/pick-list-manager`).
  *
  * The floating List Manager window (overlay `listManagerWindow`) — a
  * sidebar-of-lists + active-list-detail workspace
  * (`ListManagerFloatingWorkspace`). Distinct from the `/pick-lists` route surface
- * (`matrx-user/lists`): same domain, different home — this one is a window
+ * (`matrx-user/pick-lists`): same domain, different home — this one is a window
  * openable anywhere; value names deliberately reuse the `lists` vocabulary
  * so generic list agents bind identically on both.
  *
@@ -157,7 +157,7 @@ const surfaceSpecific: SurfaceValue[] = [
  * The targets themselves now live in
  * `features/data-tables/pick-lists/surface-write-targets.ts`, because this surface is one
  * of TWO mounts of the same editable list state — the other is the
- * `/pick-lists/[id]` route (`matrx-user/lists`). This surface's vocabulary shipped
+ * `/pick-lists/[id]` route (`matrx-user/pick-lists`). This surface's vocabulary shipped
  * first and remains authoritative; it was lifted into the shared module
  * unchanged (same names, same semantics, same prose) so the route mount reuses
  * it instead of inventing a competing set, and so the two can no longer drift.
@@ -176,7 +176,7 @@ const surfaceSpecific: SurfaceValue[] = [
 const writeTargets = LIST_SURFACE_WRITE_TARGETS;
 
 export const listManagerManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/list-manager",
+  surfaceName: "matrx-user/pick-list-manager",
   client: "matrx-user",
   executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",

@@ -43,8 +43,8 @@
  *
  * `matrx-user/agent-advanced-editor` already ships `editor_catalog_profile`
  * over these same three columns on the same `agent.definition` row. Two target
- * definitions over the same fields is a defect (the `matrx-user/lists` /
- * `matrx-user/list-manager` precedent), so the CONTRACT is defined once in
+ * definitions over the same fields is a defect (the `matrx-user/pick-lists` /
+ * `matrx-user/pick-list-manager` precedent), so the CONTRACT is defined once in
  * `features/agents/surface-catalog-profile.ts` — accepted keys, per-field
  * bounds (from the canonical `agent-identity-metadata.ts` validators), the
  * replace-vs-patch semantics, and the prose below — and BOTH manifests import

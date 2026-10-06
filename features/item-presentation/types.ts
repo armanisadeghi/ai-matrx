@@ -35,9 +35,10 @@ export type KnownItemType =
   // A stored transcript — `transcripts.transcripts` (2026-09-30).
   | "transcript"
   | "table"
+  | "pick_list"
+  // "structured_list" and "picklist" retained read-only for historical payloads; new
+  // payloads use "pick_list".
   | "structured_list"
-  // "picklist" retained read-only for pre-rename historical payloads; new
-  // payloads use "structured_list". See common-docs/projects/structured-lists-rename.
   | "picklist"
   | "workbook"
   | "document"

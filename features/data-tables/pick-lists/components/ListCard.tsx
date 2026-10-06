@@ -78,7 +78,7 @@ export function ListCard({
         content: [list.list_name, list.description].filter(Boolean).join("\n"),
       }}
       entity={{
-        type: "structured_list",
+        type: "pick_list",
         id: list.id,
         title: list.list_name,
         resourceType: "structured_list",

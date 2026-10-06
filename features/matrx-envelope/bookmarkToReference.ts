@@ -49,9 +49,9 @@ const BOOKMARK_TYPE_TO_REFERENCE: Record<string, ReferenceType> = {
   table_column: "table_column",
   table_row: "table_row",
   table_cell: "table_cell",
-  full_list: "structured_list",
-  list_group: "structured_list_group",
-  list_item: "structured_list_item",
+  full_list: "pick_list",
+  list_group: "pick_list_group",
+  list_item: "pick_list_item",
 };
 
 /**

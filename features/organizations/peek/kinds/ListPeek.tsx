@@ -1,8 +1,8 @@
-// record-view: none — structured_list is a Deprecated table, which takes no custom fields
+// record-view: none — a pick list is a Deprecated table, which takes no custom fields
 "use client";
 
 /**
- * ListPeek — peek preview of a list, read through the list door (`get_pick_list_with_items`).
+ * ListPeek — peek preview of a list, read through the list door (`get_user_list_with_items`).
  */
 
 import React from "react";
@@ -25,7 +25,7 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const read = await supabase.rpc("get_pick_list_with_items", { p_list_id: id });
+      const read = await supabase.rpc("get_user_list_with_items", { p_list_id: id });
       const doc = (read.data ?? null) as { description?: string | null; list_name?: string | null; created_at?: string } | null;
       const found: ListRow | null =
         !read.error && doc ? { description: doc.list_name ?? doc.description ?? null, created_at: doc.created_at ?? null } : null;
@@ -45,7 +45,7 @@ export default function ListPeek({ id, open, onClose }: PeekProps) {
       onClose={onClose}
       title={row?.description || "List"}
       icon={<List className="h-4 w-4 text-sky-600 dark:text-sky-400" />}
-      href={peekHref("structured_list", id)}
+      href={peekHref("pick_list", id)}
       loading={loading}
     >
       {row ? (

@@ -10,7 +10,7 @@
  * Every field change dispatches directly to Redux. No controlled-mode,
  * no local mirror of the variable's state, no drafting.
  *
- * The component configuration (input type, options, picklist binding, number
+ * The component configuration (input type, options, pick list binding, number
  * settings) is delegated to the shared, Redux-free
  * {@link CustomComponentConfigurator} — the same control used to author Context
  * Items, so the two surfaces never drift.
@@ -274,12 +274,12 @@ export function AgentVariableEditor({
 
   const handleConvertOptionsToPicklist = async () => {
     if (!userId) {
-      toast.error("Sign in before creating a picklist.");
+      toast.error("Sign in before creating a pick list.");
       return;
     }
     if (!organizationId || organizationState !== "ready") {
       toast.error(
-        "Choose an organization before creating a picklist. A list has to live in one.",
+        "Choose an organization before creating a pick list. A list has to live in one.",
       );
       return;
     }
@@ -309,7 +309,7 @@ export function AgentVariableEditor({
 
       if (!listId) {
         throw new Error(
-          "The picklist was created, but no list id was returned.",
+          "The pick list was created, but no list id was returned.",
         );
       }
 
@@ -329,12 +329,12 @@ export function AgentVariableEditor({
         customComponent: nextCustomComponent,
         defaultValue: "",
       });
-      toast.success("Picklist created and linked to this variable.", {
+      toast.success("Pick list created and linked to this variable.", {
         description:
           "Each option was copied as both the label and injected text.",
       });
     } catch (error) {
-      toast.error("Could not convert options to a picklist.", {
+      toast.error("Could not convert options to a pick list.", {
         description:
           error instanceof Error ? error.message : "Please try again.",
       });
@@ -469,7 +469,7 @@ export function AgentVariableEditor({
           {/* Each option is copied as both the public label and the injected text, refinable in Lists. */}
           <div className="min-w-0">
             <Label className="text-sm font-medium">
-              Convert options to picklist
+              Convert options to pick list
             </Label>
             <p className="mt-0.5 type-secondary text-muted-foreground">
               {/* read-gate-exempt: options typed into this variable's editor, not rows fetched from a read */}
@@ -489,7 +489,7 @@ export function AgentVariableEditor({
             ) : (
               <WandSparkles className="h-4 w-4" />
             )}
-            Convert to picklist
+            Convert to pick list
           </Button>
         </div>
       )}

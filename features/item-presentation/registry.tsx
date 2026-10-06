@@ -153,7 +153,7 @@ export type ItemOpenKind =
   | { kind: "agent" }
   | { kind: "note" }
   | { kind: "file" }
-  | { kind: "structured_list" }
+  | { kind: "pick_list" }
   // Legacy read-only alias for pre-rename payloads (routes to the same opener).
   | { kind: "picklist" }
   // Wired as openers ship for these types (an agent is building them). Each
@@ -227,7 +227,7 @@ async function fetchRow(
 //
 // A table and a list live in the record store. A table names its OWN organization
 // (`locateTable` → `custom.where_id_opens`) and is read through the data seam; a list
-// through the list door (`get_pick_list_with_items`). Loaded on demand: the registry
+// through the list door (`get_user_list_with_items`). Loaded on demand: the registry
 // reaches every surface, the seam does not need to.
 
 type StoreRow = { id: string; name: string | null; description: string | null };
@@ -246,7 +246,7 @@ async function readStoreTable(id: string): Promise<StoreRow | "unopenable"> {
 }
 
 async function readStoreList(client: SupabaseClient, id: string): Promise<StoreRow | "unopenable"> {
-  const { data, error } = await client.rpc("get_pick_list_with_items", { p_list_id: id });
+  const { data, error } = await client.rpc("get_user_list_with_items", { p_list_id: id });
   if (error) throw new Error(error.message);
   const doc = (data ?? null) as { list_name?: string | null; description?: string | null } | null;
   if (!doc) return "unopenable";
@@ -697,33 +697,46 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     refineDetail: STORE_TABLE_DETAIL,
     enrich: storeEnrich((_client, id) => readStoreTable(id)),
   },
-  structured_list: {
-    type: "structured_list",
-    label: "Structured List",
+  pick_list: {
+    type: "pick_list",
+    label: "Pick list",
     icon: ListChecks,
     accent: {
       text: "text-lime-600 dark:text-lime-400",
       bg: "bg-lime-500/10",
       ring: "ring-lime-500/20",
     },
-    open: { kind: "structured_list" },
+    open: { kind: "pick_list" },
     refineDetail: STORE_LIST_DETAIL,
     enrich: storeEnrich(readStoreList),
   },
-  // Legacy read-only alias: pre-rename payloads with type "picklist" still open.
-  // New payloads use "structured_list". See common-docs/projects/structured-lists-rename.
-  picklist: {
-    type: "picklist",
-    // The pre-rename spelling of the `structured_list` token.
-    entityToken: "structured_list",
-    label: "Structured List",
+  // Legacy read-only aliases: payloads stored before the rename carry "structured_list" or
+  // "picklist" and still open. New payloads use "pick_list".
+  structured_list: {
+    type: "structured_list",
+    entityToken: "pick_list",
+    label: "Pick list",
     icon: ListChecks,
     accent: {
       text: "text-lime-600 dark:text-lime-400",
       bg: "bg-lime-500/10",
       ring: "ring-lime-500/20",
     },
-    open: { kind: "structured_list" },
+    open: { kind: "pick_list" },
+    refineDetail: STORE_LIST_DETAIL,
+    enrich: storeEnrich(readStoreList),
+  },
+  picklist: {
+    type: "picklist",
+    entityToken: "pick_list",
+    label: "Pick list",
+    icon: ListChecks,
+    accent: {
+      text: "text-lime-600 dark:text-lime-400",
+      bg: "bg-lime-500/10",
+      ring: "ring-lime-500/20",
+    },
+    open: { kind: "pick_list" },
     refineDetail: STORE_LIST_DETAIL,
     enrich: storeEnrich(readStoreList),
   },
@@ -1009,6 +1022,7 @@ const OWN_WINDOW_OPEN_KINDS: ReadonlySet<ItemOpenKind["kind"]> = new Set([
   "task",
   "conversation",
   "file",
+  "pick_list",
   "structured_list",
   "picklist",
   "web_site",
@@ -1094,9 +1108,9 @@ export function entityTokenForItemType(
 const RECORD_TABLE_TO_ITEM_TYPE: ReadonlyMap<string, KnownItemType> = (() => {
   const map = new Map<string, KnownItemType>();
   const add = (key: string, type: KnownItemType): void => {
-    // FIRST registration wins, which is the canonical one: `structured_list` is
-    // declared before its legacy read-only alias `picklist`, and both carry the
-    // same entity token.
+    // FIRST registration wins, which is the canonical one: `pick_list` is
+    // declared before its legacy read-only aliases `structured_list` and `picklist`, and all
+    // carry the same entity token.
     if (!map.has(key.toLowerCase())) map.set(key.toLowerCase(), type);
   };
   for (const [type, config] of Object.entries(REGISTRY) as [

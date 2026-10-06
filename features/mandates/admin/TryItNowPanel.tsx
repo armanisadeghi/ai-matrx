@@ -684,6 +684,7 @@ export function TryItNowPanel({
                   (["textarea", "markdown"].includes(
                     definition.customComponent.type,
                   ) &&
+                    !definition.customComponent.pick_list &&
                     !definition.customComponent.structured_list &&
                     !definition.customComponent.picklist &&
                     !definition.customComponent.assignment)) ? (

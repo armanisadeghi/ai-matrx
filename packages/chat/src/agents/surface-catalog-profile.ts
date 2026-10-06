@@ -16,7 +16,7 @@
  *     `settings_catalog_profile`.
  *
  * Two target definitions over the same fields is a defect, not a coincidence:
- * the campaign's own precedent is `matrx-user/lists` / `matrx-user/list-manager`,
+ * the campaign's own precedent is `matrx-user/pick-lists` / `matrx-user/pick-list-manager`,
  * whose shared targets were lifted into `features/data-tables/pick-lists/`. So the CONTRACT
  * — the accepted keys, the per-field bounds, the replace-vs-patch semantics,
  * and the model-facing prose that states them — is defined exactly once, here.

@@ -124,7 +124,7 @@ export const SURFACE_ROUTE_MAPPINGS: readonly SurfaceRouteMapping[] = [
   { prefix: "/work", surface: "matrx-user/ai-work" },
   { prefix: "/files", surface: "matrx-user/files" },
   { prefix: "/projects", surface: "matrx-user/projects" },
-  { prefix: "/pick-lists", surface: "matrx-user/lists" },
+  { prefix: "/pick-lists", surface: "matrx-user/pick-lists" },
   { prefix: "/tools/pdf-extractor", surface: "matrx-user/pdf-extractor" },
   { prefix: "/tools/scanner", surface: "matrx-user/scanner" },
   { prefix: "/documents", surface: "matrx-user/documents" },
