@@ -106,10 +106,10 @@ export const BreadcrumbLine: React.FC<{
 };
 
 const TONE_CLASSES = {
-  ok: "border-success/40 bg-success/10 text-success",
-  redirect: "border-warning/40 bg-warning/10 text-warning",
-  warn: "border-warning/40 bg-warning/10 text-warning",
-  error: "border-destructive/40 bg-destructive/10 text-destructive",
+  ok: "border-success/40 bg-success/10 text-success-ink",
+  redirect: "border-warning/40 bg-warning/10 text-warning-ink",
+  warn: "border-warning/40 bg-warning/10 text-warning-ink",
+  error: "border-destructive/40 bg-destructive/10 text-destructive-ink",
   unknown: "border-border bg-muted/40 text-muted-foreground",
   neutral: "border-border bg-muted/40 text-muted-foreground",
 } as const;

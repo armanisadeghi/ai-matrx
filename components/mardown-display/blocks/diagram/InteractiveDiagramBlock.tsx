@@ -2018,7 +2018,7 @@ const DiagramFlow: React.FC<{
           }
         >
           <div className="mb-3 flex items-center gap-2.5">
-            <div className="rounded-lg bg-primary/10 p-2 text-primary">
+            <div className="rounded-lg bg-primary/10 p-2 text-primary-ink">
               <Pencil className="h-4 w-4" />
             </div>
             <div className="min-w-0 flex-1">
@@ -2498,7 +2498,7 @@ const DiagramFlow: React.FC<{
                   })
                 }
                 aria-pressed={diagram.renderHints?.snapToGrid === true}
-                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.snapToGrid ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                className={`rounded-md border px-2 py-1.5 text-[11px] font-medium ${diagram.renderHints?.snapToGrid ? "border-primary/40 bg-primary/10 text-primary-ink" : "border-border text-muted-foreground"}`}
               >
                 Snap {diagram.renderHints?.snapToGrid ? "on" : "off"}
               </button>

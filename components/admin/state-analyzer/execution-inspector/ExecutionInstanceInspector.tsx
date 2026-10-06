@@ -101,7 +101,7 @@ function statusClasses(status: string) {
       return "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20";
     case "error":
     case "failed":
-      return "bg-destructive/15 text-destructive border-destructive/20";
+      return "bg-destructive/15 text-destructive-ink border-destructive/20";
     case "draft":
       return "bg-muted text-muted-foreground border-border";
     case "pending":
@@ -793,7 +793,7 @@ function ModelTab({ data }: { data: InstanceModelOverrideState | undefined }) {
             {data.removals.map((r) => (
               <StatusBadge
                 key={r}
-                className="bg-destructive/15 text-destructive border-destructive/20"
+                className="bg-destructive/15 text-destructive-ink border-destructive/20"
               >
                 {r}
               </StatusBadge>

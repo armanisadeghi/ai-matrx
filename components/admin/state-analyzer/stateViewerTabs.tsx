@@ -190,7 +190,7 @@ function OrphanSlicesViewer({
                 className={cn(
                   "w-full text-left px-2 py-1 rounded text-xs transition-colors truncate",
                   selected === key
-                    ? "bg-primary/20 text-primary font-medium"
+                    ? "bg-primary/20 text-primary-ink font-medium"
                     : "hover:bg-primary/10 text-muted-foreground hover:text-foreground",
                 )}
               >

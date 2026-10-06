@@ -74,7 +74,7 @@ export function MentionChip(props: { "data-kind"?: string; "data-id"?: string; "
         onClick={() => setPeekOpen(true)}
         data-mention="person"
         title={`${settled.name}${settled.role ? ` · ${settled.role}` : ""}`}
-        className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 align-baseline text-primary hover:bg-primary/20"
+        className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 align-baseline text-primary-ink hover:bg-primary/20"
       >
         {chip}
       </button>

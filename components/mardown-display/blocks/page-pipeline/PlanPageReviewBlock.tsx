@@ -55,7 +55,7 @@ const SEVERITY_COPY: Record<
     label: "Must fix",
     hint: "Do not publish the page with this in it.",
     className:
-      "border-destructive/40 bg-destructive/5 text-destructive dark:text-red-400",
+      "border-destructive/40 bg-destructive/5 text-destructive-ink dark:text-red-400",
     dot: "bg-destructive",
   },
   important: {

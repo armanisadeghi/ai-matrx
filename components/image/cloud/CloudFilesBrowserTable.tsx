@@ -977,7 +977,7 @@ function AccessCell({ visibility }: { visibility: Visibility }) {
 
 function TypeBadge({ label }: { label: string }) {
   return (
-    <span className="inline-flex rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-info">
+    <span className="inline-flex rounded border border-info/40 bg-info/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-info-ink">
       {label}
     </span>
   );

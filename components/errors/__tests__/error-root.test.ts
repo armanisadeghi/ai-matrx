@@ -43,7 +43,7 @@ const menu = '<span data-error-alchemy-menu=""><button>Copy</button></span>';
 it("/crm: a short error strip copies itself, not the toolbar and saved-views row around it", () => {
   document.body.innerHTML = `<section><nav><a>Duplicates</a><a>Outreach lists</a><a>Inbox</a><a>Chasebox</a><a>Import</a></nav>
     <div><h3>Views</h3><p>None yet — filter the list, then save it as a view your team can work.</p></div>
-    <div class="mt-2 rounded-md border border-destructive/20 bg-destructive/10 text-destructive">forced failure (RC-B12 verify) (XX500)${menu}</div></section>`;
+    <div class="mt-2 rounded-md border border-destructive/20 bg-destructive/10 text-destructive-ink">forced failure (RC-B12 verify) (XX500)${menu}</div></section>`;
   const read = readRenderedError(errorRootFor(document.querySelector("[data-error-alchemy-menu]")));
   expect(read.title).toBeUndefined();
   expect(read.message).toBe("forced failure (RC-B12 verify) (XX500)");

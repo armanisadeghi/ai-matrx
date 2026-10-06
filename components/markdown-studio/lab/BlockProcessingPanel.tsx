@@ -195,7 +195,7 @@ export function BlockProcessingPanel({
         </div>
       )}
       {error && (
-        <div className="rounded border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive">
+        <div className="rounded border border-destructive/20 bg-destructive/10 p-2 text-xs text-destructive-ink">
           The block processor refused this request: {asClause(error)}. Check the server
           selection in the API test config, then Re-run.
           <ErrorAlchemyMenu />

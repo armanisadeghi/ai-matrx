@@ -843,7 +843,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
                 className={cn(
                   "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors",
                   "max-md:w-9 max-md:justify-center max-md:px-0",
-                  "text-destructive hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50",
+                  "text-destructive-ink hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50",
                 )}
               >
                 {bulkBusy === "delete" ? (

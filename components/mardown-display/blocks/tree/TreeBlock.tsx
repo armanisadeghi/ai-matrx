@@ -194,7 +194,7 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
                   </span>
                   <span className="text-muted-foreground">{arrowMatch[0]}</span>
                   {line.hasHighlight && line.highlightText ? (
-                    <span className="font-semibold text-primary bg-primary/10 px-1 rounded">
+                    <span className="font-semibold text-primary-ink bg-primary/10 px-1 rounded">
                       {line.highlightText}
                     </span>
                   ) : (

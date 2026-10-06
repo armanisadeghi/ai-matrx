@@ -267,7 +267,7 @@ function AudioTestModalContent({
         </div>
 
         {connectionState === 'disconnected' && (
-          <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">
+          <div className="bg-destructive/10 text-destructive-ink text-sm p-3 rounded-lg">
             Audio system disconnected. Please close and reopen this dialog to reconnect.
           </div>
         )}

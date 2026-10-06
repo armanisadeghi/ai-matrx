@@ -37,11 +37,11 @@ type Candidate = Partial<MediaCandidateVerdict> & Record<string, unknown>;
 const STATUS_ORDER: Status[] = ["fit", "soft_fit", "research_needed", "cut"];
 
 const STATUS_META: Record<Status, { label: string; tone: string; dot: string }> = {
-  fit: { label: "Fit", tone: "border-success/40 bg-success/10 text-success", dot: "bg-success" },
-  soft_fit: { label: "Soft fit", tone: "border-warning/40 bg-warning/10 text-warning", dot: "bg-warning" },
+  fit: { label: "Fit", tone: "border-success/40 bg-success/10 text-success-ink", dot: "bg-success" },
+  soft_fit: { label: "Soft fit", tone: "border-warning/40 bg-warning/10 text-warning-ink", dot: "bg-warning" },
   research_needed: {
     label: "Research needed",
-    tone: "border-primary/40 bg-primary/10 text-primary",
+    tone: "border-primary/40 bg-primary/10 text-primary-ink",
     dot: "bg-primary",
   },
   cut: { label: "Cut", tone: "border-border bg-muted text-muted-foreground", dot: "bg-muted-foreground" },

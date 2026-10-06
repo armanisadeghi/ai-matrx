@@ -100,7 +100,7 @@ export default async function LandingPage({ searchParams }: LandingPageProps) {
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24 lg:py-32">
           {/* Status Badge */}
           <div className="flex justify-center mb-8">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary-ink">
               <Lock className="h-4 w-4" />
               <span className="text-sm font-medium">
                 AI Matrx · Invitation Only
@@ -197,7 +197,7 @@ function FeatureCard({
           (cramped 3-col range, not mobile) the description drops to a full
           row below the icon+title instead of squishing beside the icon. */}
       <div className="grid grid-cols-[auto_1fr] items-start gap-x-4 gap-y-2">
-        <div className="flex-shrink-0 p-3 rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300 @[19rem]:row-span-2">
+        <div className="flex-shrink-0 p-3 rounded-xl bg-primary/10 text-primary-ink group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300 @[19rem]:row-span-2">
           {icon}
         </div>
         <h3 className="text-lg font-semibold self-center @[19rem]:self-auto">

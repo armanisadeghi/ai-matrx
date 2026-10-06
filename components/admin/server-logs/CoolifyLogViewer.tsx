@@ -175,10 +175,10 @@ type ViewMode = "log-only" | "split" | "json-only" | "raw";
 
 const LEVEL_COLORS: Record<LogLevel, string> = {
   DEBUG: "bg-muted text-muted-foreground",
-  INFO: "bg-info/15 text-info",
-  WARNING: "bg-warning/15 text-warning",
-  ERROR: "bg-destructive/15 text-destructive",
-  CRITICAL: "bg-destructive/20 text-destructive font-semibold",
+  INFO: "bg-info/15 text-info-ink",
+  WARNING: "bg-warning/15 text-warning-ink",
+  ERROR: "bg-destructive/15 text-destructive-ink",
+  CRITICAL: "bg-destructive/20 text-destructive-ink font-semibold",
   UNKNOWN: "bg-muted text-muted-foreground",
 };
 
@@ -217,9 +217,9 @@ const URGENCY_LABELS: Record<LogUrgency, string> = {
 
 const URGENCY_COLORS: Record<LogUrgency, string> = {
   low: "bg-muted text-muted-foreground",
-  medium: "bg-warning/15 text-warning",
-  high: "bg-destructive/15 text-destructive",
-  critical: "bg-destructive/20 text-destructive font-semibold",
+  medium: "bg-warning/15 text-warning-ink",
+  high: "bg-destructive/15 text-destructive-ink",
+  critical: "bg-destructive/20 text-destructive-ink font-semibold",
   unknown: "bg-muted text-muted-foreground",
 };
 
@@ -388,10 +388,10 @@ const LogLine = React.memo(function LogLine({
                 <span
                   className={`text-[10px] px-1 rounded font-medium ${
                     line.httpStatus >= 500
-                      ? "bg-destructive/15 text-destructive"
+                      ? "bg-destructive/15 text-destructive-ink"
                       : line.httpStatus >= 400
-                        ? "bg-warning/15 text-warning"
-                        : "bg-success/15 text-success"
+                        ? "bg-warning/15 text-warning-ink"
+                        : "bg-success/15 text-success-ink"
                   }`}
                 >
                   {line.httpStatus}
@@ -452,14 +452,14 @@ function ToggleGroup<T extends string>({
       <button
         onClick={onAll}
         className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all
-          ${isAll ? "border-primary bg-primary/10 text-primary" : "border-border bg-card text-foreground hover:bg-accent"}`}
+          ${isAll ? "border-primary bg-primary/10 text-primary-ink" : "border-border bg-card text-foreground hover:bg-accent"}`}
       >
         ALL
       </button>
       <button
         onClick={onClear}
         className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all
-          ${isClear ? "border-destructive bg-destructive/10 text-destructive" : "border-border bg-card text-foreground hover:bg-accent"}`}
+          ${isClear ? "border-destructive bg-destructive/10 text-destructive-ink" : "border-border bg-card text-foreground hover:bg-accent"}`}
       >
         CLEAR
       </button>
@@ -520,7 +520,7 @@ function NoiseExcludeToggles({
             className={`px-2 py-0.5 rounded text-[10px] font-medium border transition-all whitespace-nowrap
               ${
                 showing
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-primary-ink"
                   : "border-border bg-muted text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
           >
@@ -701,7 +701,7 @@ function FilterPanel({
               colorMap={Object.fromEntries(
                 availableEndpoints.map((ep) => [
                   ep,
-                  "bg-info/15 text-info border-border",
+                  "bg-info/15 text-info-ink border-border",
                 ]),
               )}
               onToggle={(ep) => {
@@ -1232,7 +1232,7 @@ export default function CoolifyLogViewer({
           </Button>
 
           {isLivePolling && (
-            <Badge className="h-6 text-[10px] bg-success/15 text-success border-success/40">
+            <Badge className="h-6 text-[10px] bg-success/15 text-success-ink border-success/40">
               <span className="w-1.5 h-1.5 rounded-full bg-success mr-1.5 animate-pulse" />
               Live
             </Badge>
@@ -1382,7 +1382,7 @@ export default function CoolifyLogViewer({
 
         {/* ── Error banner ── */}
         {error && (
-          <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs">
+          <div className="shrink-0 flex items-center gap-3 px-4 py-2 bg-destructive/10 border-b border-destructive/30 text-destructive-ink text-xs">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
             <ErrorAlchemyMenu error={error} />

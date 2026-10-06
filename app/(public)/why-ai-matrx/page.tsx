@@ -251,7 +251,7 @@ export default function WhyAiMatrxPage() {
                 key={beat.n}
                 className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-5"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-semibold text-primary">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-semibold text-primary-ink">
                   {beat.n}
                 </span>
                 <h3 className="text-pretty text-base font-semibold leading-snug tracking-tight">
@@ -265,7 +265,7 @@ export default function WhyAiMatrxPage() {
           </ol>
 
           <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-card/60 p-5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
               <TrendingUp className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
             </span>
             <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
@@ -395,7 +395,7 @@ export default function WhyAiMatrxPage() {
                   key={win.name}
                   className="flex h-full flex-col gap-3 rounded-2xl border border-border bg-card p-5"
                 >
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                     <Icon className="h-4.5 w-4.5" strokeWidth={2} aria-hidden />
                   </span>
                   <h3 className="text-balance text-base font-semibold tracking-tight">

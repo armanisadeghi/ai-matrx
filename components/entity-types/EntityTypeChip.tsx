@@ -70,10 +70,10 @@ export function EntityTypeChip({
 
   const chipClass = cn(
     "inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-xs font-medium",
-    variant === "container" && "border-primary/30 bg-primary/10 text-primary",
+    variant === "container" && "border-primary/30 bg-primary/10 text-primary-ink",
     variant === "default" && "border-border bg-card text-foreground",
     variant === "muted" && "border-border bg-muted text-muted-foreground",
-    unknown && "border-destructive/40 bg-destructive/10 text-destructive",
+    unknown && "border-destructive/40 bg-destructive/10 text-destructive-ink",
     href && "transition-colors hover:border-primary/50 hover:bg-accent",
     className,
   );
