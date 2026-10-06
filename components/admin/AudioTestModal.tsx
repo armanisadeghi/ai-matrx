@@ -1,5 +1,6 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useState } from 'react';
 import {
   Dialog,
@@ -74,6 +75,10 @@ function AudioTestModalContent({
   copied: boolean;
   setCopied: (copied: boolean) => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const {
     connectionState,
     playerState,
@@ -132,7 +137,7 @@ function AudioTestModalContent({
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(speechText);
+    copyText(speechText);
     setCopied(true);
     toast.success('Copied to clipboard');
     setTimeout(() => setCopied(false), 2000);

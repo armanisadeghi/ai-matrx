@@ -1,6 +1,8 @@
 // components/ui/JsonComponents/JsonEditor.tsx
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { isJsonObject, type JsonObject } from "@/types/json";
@@ -89,6 +91,10 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
   sampleEntry = SAMPLE_ENTRY,
   ...props
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [originalValue, setOriginalValue] = useState<object | string | null | undefined>(data);
   const [parsedData, setParsedData] = useState<JsonObject>({});
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set());
@@ -215,7 +221,7 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
 
   const copyToClipboard = () => {
     const stringified = jsonUtils.stringify(parsedData);
-    navigator.clipboard.writeText(stringified);
+    copyText(stringified);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

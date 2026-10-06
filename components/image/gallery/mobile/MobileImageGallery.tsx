@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useRef, useCallback, useState, useEffect } from "react";
 import { AnimatePresence } from "motion/react";
 import { MobileImageCard } from "@/components/image/shared/MobileImageCard";
@@ -19,6 +21,10 @@ export function MobileImageGallery({
 }: {
   imageUrls?: string[];
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [photos, setPhotos] = useState<SimplePhoto[]>([]);
   const [filteredPhotos, setFilteredPhotos] = useState<SimplePhoto[]>([]);
   const [loading, setLoading] = useState(false);
@@ -132,7 +138,7 @@ export function MobileImageGallery({
 
   const handleShare = async (photo: SimplePhoto) => {
     try {
-      await navigator.clipboard.writeText(photo.url);
+      await copyText(photo.url);
       toast({
         title: "Link copied",
         description: "The image link has been copied to your clipboard.",

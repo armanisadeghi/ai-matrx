@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check } from "lucide-react";
@@ -115,6 +117,10 @@ const DEPTH_COLORS = [
 ];
 
 const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const lines = parseTreeLines(content);
   // A portrait canvas pane grows the tree downward: long lines wrap under
@@ -122,7 +128,7 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
   const wrap = treeWrapsLines(useCanvasPresentation());
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

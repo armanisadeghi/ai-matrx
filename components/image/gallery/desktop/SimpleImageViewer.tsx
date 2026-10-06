@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
@@ -71,6 +73,10 @@ export function SimpleImageViewer({
   onRelatedPhotoClick,
   loadMorePhotos,
 }: SimpleImageViewerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [[page, direction], setPage] = useState([initialIndex, 0]);
   const [buffer, setBuffer] = useState<string[]>([]);
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -134,7 +140,7 @@ export function SimpleImageViewer({
 
   const handleShare = async (photo: SimplePhoto) => {
     try {
-      await navigator.clipboard.writeText(photo.url);
+      await copyText(photo.url);
       setIsSharing(true);
       setTimeout(() => setIsSharing(false), 2000);
     } catch (err) {

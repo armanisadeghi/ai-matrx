@@ -13,6 +13,7 @@
  * The component owns no write path: `save` is the feature's own service call, so each table keeps its
  * one writer and this owns only the words, the choices and the honest pending/error state.
  */
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Copy, Globe2, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,10 @@ export function RowAccessControl({
    */
   staged?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [saving, setSaving] = useState(false);
 
   const apply = async (patch: RowAccessPatch, done: string) => {
@@ -89,8 +94,7 @@ export function RowAccessControl({
   const copyLink = async () => {
     if (!publicUrl) return;
     try {
-      await navigator.clipboard.writeText(publicUrl);
-      toast.success("Link copied");
+      await copyText(publicUrl, "Link copied");
     } catch {
       toast.error("Couldn't copy the link", { description: publicUrl });
     }

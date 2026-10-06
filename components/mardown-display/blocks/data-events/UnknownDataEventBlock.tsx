@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Button, Chip } from "@ai-matrx/design-system/controls";
 import React, { useState } from "react";
 import { HelpCircle, ChevronDown, ChevronUp, Copy, Check } from "lucide-react";
@@ -31,6 +33,10 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
   conversationId,
   messageId,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isCopied, setIsCopied] = useState(false);
   const [aiCopied, setAiCopied] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -47,7 +53,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(pretty);
+      await copyText(pretty);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
@@ -72,7 +78,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
       `</artifact_failure>`,
     ].join("\n");
     try {
-      await navigator.clipboard.writeText(payload);
+      await copyText(payload);
       setAiCopied(true);
       setTimeout(() => setAiCopied(false), 2000);
     } catch {

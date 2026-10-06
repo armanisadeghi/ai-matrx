@@ -10,6 +10,7 @@
  *   immediately — the user doesn't have to click Process.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { Brush, Loader2, Play, RotateCcw } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -49,6 +50,10 @@ interface TranscriptionCleanupProps {
 export default function TranscriptionCleanup({
   instanceId,
 }: TranscriptionCleanupProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const entries = useAppSelector((s) =>
@@ -226,8 +231,7 @@ export default function TranscriptionCleanup({
     if (transcript) parts.push(transcript);
     if (response) parts.push(response);
     try {
-      await navigator.clipboard.writeText(parts.join("\n\n---\n\n"));
-      toast.success("Both copied to clipboard");
+      await copyText(parts.join("\n\n---\n\n"), "Both copied to clipboard");
     } catch {
       toast.error("Copy failed — try selecting the text and copying manually");
     }

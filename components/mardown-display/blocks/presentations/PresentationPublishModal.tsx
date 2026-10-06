@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect } from 'react';
 import { X, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
 import { PresentationData } from './Slideshow';
@@ -18,6 +20,10 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
     publishedUrl,
     isPublishing
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
     const [copiedUrl, setCopiedUrl] = useState(false);
     const [iframeKey, setIframeKey] = useState(0);
 
@@ -29,7 +35,7 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
 
     const handleCopyUrl = async () => {
         if (publishedUrl) {
-            await navigator.clipboard.writeText(publishedUrl);
+            await copyText(publishedUrl);
             setCopiedUrl(true);
             setTimeout(() => setCopiedUrl(false), 2000);
         }

@@ -31,6 +31,8 @@
  * meant nobody could check what actually arrived.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { Braces, Check, Copy, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -98,6 +100,10 @@ export function StructuredValueTabs({
   problems?: KindProblem[];
   children: React.ReactNode;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [tab, setTab] = useState<Tab>("preview");
   const [copied, setCopied] = useState(false);
   const hasSlot = useHasTileActionsSlot();
@@ -109,7 +115,7 @@ export function StructuredValueTabs({
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(json);
+      await copyText(json);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

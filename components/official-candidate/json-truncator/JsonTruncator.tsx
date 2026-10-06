@@ -19,6 +19,8 @@
  *   allowLayoutToggle   – show a column/tab toggle button in the header (default false)
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { BasicInput } from "@ai-matrx/design-system";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1825,6 +1827,10 @@ export function JsonTruncator({
   defaultMaxDepth = null,
   allowLayoutToggle = false,
 }: JsonTruncatorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isTabbed, setIsTabbed] = useState(tabbed);
   const [inputText, setInputText] = useState(initialValue);
   const [parsed, setParsed] = useState<JsonValue | null>(null);
@@ -2074,7 +2080,7 @@ export function JsonTruncator({
     });
   }, []);
   const handleCopy = useCallback(async () => {
-    await navigator.clipboard.writeText(outputText);
+    await copyText(outputText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [outputText]);

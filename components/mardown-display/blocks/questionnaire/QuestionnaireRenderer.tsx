@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Card,
@@ -779,6 +781,10 @@ const DebugDisplay = ({
   formState: Record<string, unknown>;
   questionData: Record<string, unknown>;
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   if (!debugMode) return null;
 
   const debugData = {
@@ -788,7 +794,7 @@ const DebugDisplay = ({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(debugData, null, 2));
+      await copyText(JSON.stringify(debugData, null, 2));
     } catch (err) {
       console.error("Failed to copy", err);
     }

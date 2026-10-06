@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { Copy, Check, ChevronRight, ChevronDown } from "lucide-react";
@@ -108,6 +110,10 @@ function renderTomlValue(value: string): React.ReactNode {
 }
 
 const TomlBlock: React.FC<TomlBlockProps> = ({ content, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<number>>(
     new Set(),
@@ -115,7 +121,7 @@ const TomlBlock: React.FC<TomlBlockProps> = ({ content, className }) => {
   const lines = parseTomlLines(content);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

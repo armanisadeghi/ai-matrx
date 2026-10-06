@@ -5,6 +5,7 @@
  * The host owns agent selection, execution, comparison, and applying the result.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   Check,
@@ -15,7 +16,6 @@ import {
 } from "lucide-react";
 import { CheckTapButton, CopyTapButton } from "@ai-matrx/tap-target/buttons";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { toast } from "@/lib/toast";
 import type { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -55,6 +55,10 @@ export function ProTextAgentActionPopoverBody({
   onBack: () => void;
   onCancel: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [resultCopied, setResultCopied] = useState(false);
   const isError = phase === "error" || phase === "timeout";
   const isComplete = phase === "complete";
@@ -62,7 +66,7 @@ export function ProTextAgentActionPopoverBody({
   const hasRun = phase !== "idle";
 
   const handleCopyResult = async () => {
-    await writeClipboard(kindTextToMarkdown(result));
+    await copyText(kindTextToMarkdown(result));
     setResultCopied(true);
     toast.success(`${title} result copied to clipboard`);
     window.setTimeout(() => setResultCopied(false), 1500);

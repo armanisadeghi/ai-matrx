@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
 import { cleanJson } from '@ai-matrx/kit/json-format';
@@ -16,6 +18,10 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({
   indentLevel = 2,
   maxHeight,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   
   const cleanedData = cleanJson(data);
@@ -23,7 +29,7 @@ const JsonDisplay: React.FC<JsonDisplayProps> = ({
   const formattedJson = JSON.stringify(cleanedData, null, indentLevel);
   
   const handleCopy = () => {
-    navigator.clipboard.writeText(formattedJson);
+    copyText(formattedJson);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

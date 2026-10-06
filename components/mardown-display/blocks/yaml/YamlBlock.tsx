@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { cn } from "@/styles/themes/utils";
 import { ChevronRight, ChevronDown, Copy, Check } from "lucide-react";
@@ -109,12 +111,16 @@ function renderValue(value: string): React.ReactNode {
 }
 
 const YamlBlock: React.FC<YamlBlockProps> = ({ content, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
   const lines = parseYamlLines(content);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

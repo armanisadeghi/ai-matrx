@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { Input } from "@ai-matrx/design-system/controls";
 import { X, Copy, Check } from "lucide-react";
@@ -29,6 +31,10 @@ const TextArrayInput = ({
   shouldCleanUrl = false,
   auxiliaryControlsTabIndex,
 }: TextArrayInputProps) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [internalValue, setInternalValue] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [copied, setCopied] = useState(false);
@@ -38,7 +44,7 @@ const TextArrayInput = ({
   const handleCopy = async () => {
     const textToCopy = value.join(", ");
     try {
-      await navigator.clipboard.writeText(textToCopy);
+      await copyText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {

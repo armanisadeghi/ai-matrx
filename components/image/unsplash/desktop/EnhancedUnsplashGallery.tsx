@@ -1,4 +1,6 @@
 'use client';
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useRef, useCallback, useState, useEffect } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useUnsplashGallery, type SortOrder, type ImageOrientation, type PremiumFilter } from '@/hooks/images/useUnsplashGallery';
@@ -40,6 +42,10 @@ export interface EnhancedUnsplashGalleryProps {
 }
 
 export function EnhancedUnsplashGallery({ initialSearchTerm }: EnhancedUnsplashGalleryProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
     const {
         photos,
         loading,
@@ -84,7 +90,7 @@ export function EnhancedUnsplashGallery({ initialSearchTerm }: EnhancedUnsplashG
     const handleShare = async (photo: Photo) => {
         try {
             const imageUrl = photo.urls.full || photo.urls.regular;
-            await navigator.clipboard.writeText(imageUrl);
+            await copyText(imageUrl);
             setIsSharing(true);
             toast({
                 title: 'Image link copied',

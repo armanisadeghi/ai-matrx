@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
 import React, {
   useState,
@@ -313,6 +315,10 @@ const StreamingTableRendererCore: React.FC<
   expanded = false,
   parsedTable,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const toast = useToastManager();
   const isMobile = useIsMobile();
   // In the canvas the PANE decides, not the viewport: a narrow pane reads as
@@ -395,8 +401,7 @@ const StreamingTableRendererCore: React.FC<
   const copyTableToClipboard = async () => {
     try {
       const formattedTable = generateMarkdownTable();
-      await navigator.clipboard.writeText(formattedTable);
-      toast.success("Table copied to clipboard");
+      await copyText(formattedTable, "Table copied to clipboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to copy table");
     }
@@ -404,7 +409,7 @@ const StreamingTableRendererCore: React.FC<
 
   const copyJsonToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         JSON.stringify(tableData.normalizedData, null, 2),
       );
       toast.success("JSON copied to clipboard");
@@ -416,8 +421,7 @@ const StreamingTableRendererCore: React.FC<
   const copyMarkdownToClipboard = async () => {
     try {
       if (content) {
-        await navigator.clipboard.writeText(content);
-        toast.success("Markdown copied to clipboard");
+        await copyText(content, "Markdown copied to clipboard");
       } else {
         copyTableToClipboard();
       }

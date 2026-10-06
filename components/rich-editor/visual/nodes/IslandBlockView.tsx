@@ -8,6 +8,7 @@
 // which writes the new bytes through the one explicit island edit and tells
 // the save gate the change was on purpose.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { AlertTriangle, Check, Copy, GripVertical, Lock, Pencil, Trash2 } from "lucide-react";
@@ -32,6 +33,10 @@ import { consumeAutoEdit } from "../auto-edit";
 const PLAIN_TEXT = "__plain_text";
 
 export function IslandBlockView({ node, updateAttributes, deleteNode, selected, editor, getPos }: NodeViewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const context = useRichEditorContext();
   const raw = String(node.attrs.raw ?? "");
   const islandType = String(node.attrs.islandType ?? "fence");
@@ -63,7 +68,7 @@ export function IslandBlockView({ node, updateAttributes, deleteNode, selected, 
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(raw);
+      await copyText(raw);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1200);
     } catch {

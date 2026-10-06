@@ -12,6 +12,7 @@
  *  - The original source is never mutated; fixes affect only what renders.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useId, useRef, useState } from "react";
 
 console.log(
@@ -270,11 +271,14 @@ function MermaidErrorCard({
   originalSource: string;
   className?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [showSource, setShowSource] = useState(false);
 
   const copyOriginal = async () => {
-    await navigator.clipboard.writeText(originalSource);
-    toast.success("Diagram source copied");
+    await copyText(originalSource, "Diagram source copied");
   };
 
   return (

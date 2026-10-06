@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { Suspense, lazy, useState } from "react";
 import { useKindSourceView } from "@/components/mardown-display/chat-markdown/kind-source-view";
 import {
@@ -103,6 +105,10 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
   isStreamActive = false,
   showSource = false,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const sourceView = useKindSourceView();
   // The never-raw law at the compact path (X1): settled kind JSON is its kind.
@@ -132,7 +138,7 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(code);
+      await copyText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

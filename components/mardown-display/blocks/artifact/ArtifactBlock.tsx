@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { Suspense, lazy, useMemo } from "react";
 import { Copy, Maximize2, Unlink } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -81,6 +82,10 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
   conversationId,
   taskId,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { open } = useCanvas();
   const { openArtifact } = useOpenArtifactInCanvas();
   const { isCanvasAvailable } = useCanvasOpenGuard();
@@ -136,7 +141,7 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
    */
   const handleCopyMarkdown = async () => {
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         artifactContentToMarkdown(content, artifactType),
       );
       toast.success("Copied as Markdown");

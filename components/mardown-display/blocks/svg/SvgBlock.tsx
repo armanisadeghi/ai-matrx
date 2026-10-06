@@ -13,6 +13,7 @@
  * skeleton while the fence is still open and the finished illustration on close.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Copy, Download, Expand, Image as ImageIcon, X } from "lucide-react";
@@ -54,6 +55,10 @@ function toSrcDoc(svg: string): string {
 }
 
 export const SvgBlock: React.FC<SvgBlockProps> = ({ content = "", isStreamActive = false, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const svg = content.trim();
   const { aspect, title } = useMemo(() => readSvgMeta(svg), [svg]);
   const srcDoc = useMemo(() => toSrcDoc(svg), [svg]);
@@ -62,7 +67,7 @@ export const SvgBlock: React.FC<SvgBlockProps> = ({ content = "", isStreamActive
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(svg);
+      await copyText(svg);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

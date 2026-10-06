@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useRef, useCallback } from "react";
 import { AlertCircle, AlignLeft } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -42,6 +44,10 @@ interface ConfigBuilderProps {
 }
 
 const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuilderProps) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
     const [config, setConfig] = useState<Config>(initialConfig || {});
     const [field, setField] = useState("");
     const [type, setType] = useState<ConfigType>("string");
@@ -132,7 +138,7 @@ const ConfigBuilder = ({ initialConfig, onConfigChange, className }: ConfigBuild
     };
 
     const copyToClipboard = () => {
-        navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+        copyText(JSON.stringify(config, null, 2));
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

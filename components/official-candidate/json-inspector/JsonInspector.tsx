@@ -2,6 +2,8 @@
 
 // CANONICAL: This is the canonical application-wide JSON Display component.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
@@ -185,6 +187,10 @@ function JsonInspectorBody({
   agentCopy,
   className,
 }: JsonInspectorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const editable = typeof onUpdate === "function";
   const showEditOnly = editOnly && editable;
 
@@ -263,7 +269,7 @@ function JsonInspectorBody({
   const handleCopy = async () => {
     const text = value === "json" ? rawJsonText : prettyJson;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -275,7 +281,7 @@ function JsonInspectorBody({
     if (!agentCopy) return;
     const input = typeof agentCopy === "function" ? agentCopy() : agentCopy;
     try {
-      await navigator.clipboard.writeText(buildAgentPayload(input));
+      await copyText(buildAgentPayload(input));
       setAgentCopied(true);
       setTimeout(() => setAgentCopied(false), 1500);
     } catch (err) {

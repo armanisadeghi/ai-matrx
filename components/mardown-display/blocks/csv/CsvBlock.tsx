@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect } from "react";
 import { cn } from "@/styles/themes/utils";
 import {
@@ -90,6 +91,10 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
   className,
   onInnerContentChange,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const [sortCol, setSortCol] = useState<number | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>(null);
@@ -109,7 +114,7 @@ const CsvBlock: React.FC<CsvBlockProps> = ({
   const bodyRows = data.slice(1);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

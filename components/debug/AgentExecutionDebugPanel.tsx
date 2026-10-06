@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, { useState } from "react";
 import {
@@ -235,6 +237,10 @@ function RoleBadge({ role }: { role: string }) {
 export const AgentExecutionDebugPanel: React.FC<
   AgentExecutionDebugPanelProps
 > = ({ instanceId, onClose }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [expandedSection, setExpandedSection] = useState<SectionId>("overview");
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
 
@@ -243,7 +249,7 @@ export const AgentExecutionDebugPanel: React.FC<
   };
 
   const copyToClipboard = async (content: string, section: string) => {
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopiedSection(section);
     setTimeout(() => setCopiedSection(null), 2000);
   };

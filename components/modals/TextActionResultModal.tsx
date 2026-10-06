@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from 'react';
 import { RichContent } from "@/components/rich-content/RichContent";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
@@ -47,10 +49,14 @@ export function TextActionResultModal({
   onInsertAfter,
   promptName,
 }: TextActionResultModalProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(kindTextToMarkdown(aiResponse));
+    await copyText(kindTextToMarkdown(aiResponse));
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
