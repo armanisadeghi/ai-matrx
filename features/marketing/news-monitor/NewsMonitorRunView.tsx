@@ -82,6 +82,8 @@ import {
   records,
   reportIsReadable,
   str,
+  watchListCount,
+  type FunnelTarget,
   type OpenTarget,
   type SetAsideList,
   type SetAsideListId,
@@ -606,7 +608,19 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
 
               <div id="report" className={cn(viewParam === "report" && "ring-2 ring-primary/40 rounded-md")}>
                 {reportIsReadable(run.report) && run.report ? (
-                  <NewsOpportunityReportView value={run.report} />
+                  <NewsOpportunityReportView
+                    value={run.report}
+                    watchedCount={watchListCount(run.digest)}
+                    onOpen={(target: FunnelTarget) => {
+                      if (target.kind === "run_steps") {
+                        router.push(`/workflows/runs/${run.runId}`);
+                        return;
+                      }
+                      setParam("open", openTargetParam(target));
+                      openedFromLink.current = openTargetParam(target);
+                      openList(target);
+                    }}
+                  />
                 ) : (
                   <p className="rounded-md border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
                     {run.report

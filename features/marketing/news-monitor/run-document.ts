@@ -137,7 +137,8 @@ export function readSignalSummaries(value: unknown): SignalSummaryView[] {
       (isRecord(s.withheld) ? str(s.withheld.detail) : "") ||
       str(s.detail) ||
       null,
-    urls: strings(s.evidence_urls).length ? strings(s.evidence_urls) : strings(s.urls),
+    // Each address once: a URL list keys its links, and an engine list can repeat an address.
+    urls: [...new Set(strings(s.evidence_urls).length ? strings(s.evidence_urls) : strings(s.urls))],
     sources: strings(s.sources),
   }));
 }
@@ -216,7 +217,8 @@ export function readSetAsideItems(diagnostics: Record<string, unknown>, reasons:
       title: str(i.title),
       reason: str(i.reason) || null,
       rationale: str(i.detail) || null,
-      urls: strings(i.urls),
+      // An item can name one address several times (one per source that saw it): each once.
+      urls: [...new Set(strings(i.urls))],
       sources: [],
     }));
 }
@@ -384,4 +386,76 @@ export function readStages(stages: unknown): { name: string; status: string; det
     status: str(s.status),
     detail: str(s.detail),
   }));
+}
+
+// ── one watch-list count; every funnel count a door; a readable report (2026-10-05) ──
+
+/**
+ * How many stories are on the run's watch list — THE one count, read from the
+ * digest (its listed entries plus what its cap left off). The report's
+ * "Today's read" and the digest's heading both use it, so they cannot disagree.
+ */
+export function watchListCount(digest: Record<string, unknown> | null): number | null {
+  if (!digest) return null;
+  return records(digest.watch).length + num(digest.watch_overflow);
+}
+
+/** A funnel stage's door: the list it counts, or the run's own step view (`run_steps`). */
+export type FunnelTarget = OpenTarget | { kind: "run_steps" };
+
+/**
+ * What a funnel count opens (`collected`, `s2_dropped: older_than_max_age`,
+ * `unverified_by_status: unverified_no_timestamp`, …). Stages with a list on
+ * this page open it; stages whose items live only in the run's step outputs
+ * (collected, scored, emitted, …) open the run step by step.
+ */
+export function funnelOpenTarget(stage: string): FunnelTarget {
+  const [key, detail] = stage.split(":").map((part) => part.trim());
+  if (key === "surfaced") return { kind: "surfaced" };
+  if (key === "stale") return { kind: "watch", group: "stale" };
+  if (key === "watching_unverified") return { kind: "watch", group: "freshness_unverified" };
+  if (key === "unverified_by_status" && detail) return { kind: "watch", group: detail };
+  if (key === "hygiene_withheld" || key === "safety_withheld") return { kind: "set_aside", list: "withheld" };
+  if (key === "below_floor_by_lane") return { kind: "set_aside", list: "below_floor" };
+  if (key === "url_overlap_dropped") return { kind: "set_aside", list: "url_overlap" };
+  const list = setAsideListOf(key);
+  if (list !== "all") return { kind: "set_aside", list };
+  return { kind: "run_steps" };
+}
+
+const ISO_DATETIME = /\b\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?\b/g;
+const MD_LINK = /\[((?:[^\]\\]|\\.)*)\]\(([^)\s]+)\)/g;
+
+/**
+ * The report job's markdown, made readable without changing what it says:
+ * an empty table cell written as `None`/`null` reads "unknown"; a `|` inside a
+ * link's text in a table row is escaped (unescaped, it split the cell and the
+ * link rendered as raw text); and every ISO timestamp is shown in the app's
+ * date format (`formatDate`).
+ */
+export function cleanReportMarkdown(markdown: string, formatDate: (iso: string) => string): string {
+  return markdown
+    .split("\n")
+    .map((line) => {
+      let out = line;
+      if (out.trimStart().startsWith("|")) {
+        out = out.replace(MD_LINK, (_m, text: string, url: string) =>
+          `[${text.replace(/(?<!\\)\|/g, "\\|")}](${url})`,
+        );
+        out = out.replace(/\|\s*(?:None|null|undefined)\s*(?=\|)/g, "| unknown ");
+      }
+      // Never rewrite a date inside a link address.
+      return out.replace(ISO_DATETIME, (match, offset: number, whole: string) => {
+        const before = whole.slice(0, offset);
+        const openParen = before.lastIndexOf("](");
+        if (openParen !== -1 && before.indexOf(")", openParen) === -1) return match;
+        return formatDate(match);
+      });
+    })
+    .join("\n");
+}
+
+/** The report's markdown already carries a section with this heading. */
+export function markdownHasSection(markdown: string, heading: string): boolean {
+  return new RegExp(`^#{1,6}\\s+${heading}\\s*$`, "im").test(markdown);
 }

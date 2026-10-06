@@ -13,8 +13,19 @@
 
 import { RichContent } from "@/components/rich-content/RichContent";
 
-import { hasContentFields, isRecord, num, records, str, strings } from "../run-document";
-import { KindCard, Pill } from "./shared";
+import {
+  cleanReportMarkdown,
+  funnelOpenTarget,
+  hasContentFields,
+  isRecord,
+  markdownHasSection,
+  num,
+  records,
+  str,
+  strings,
+  type FunnelTarget,
+} from "../run-document";
+import { KindCard, Pill, formatWhen } from "./shared";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 function sectionCount(value: unknown): number {
@@ -22,15 +33,28 @@ function sectionCount(value: unknown): number {
   return records(value).filter(hasContentFields).length;
 }
 
-export function NewsOpportunityReportView({ value }: { value: Record<string, unknown> }) {
+export function NewsOpportunityReportView({
+  value,
+  watchedCount = null,
+  onOpen,
+}: {
+  value: Record<string, unknown>;
+  /** The run's ONE watch-list count (the digest's, `watchListCount`); the report's own when absent. */
+  watchedCount?: number | null;
+  /** Opens what a funnel count counts. Without it the counts are plain text. */
+  onOpen?: (target: FunnelTarget) => void;
+}) {
   const read = isRecord(value.todays_read) ? value.todays_read : {};
   const sections = isRecord(value.sections) ? value.sections : {};
   const gated = isRecord(sections.gated_out) ? sections.gated_out : {};
   const pitch = num(read.pitch_ready) || sectionCount(sections.pitch_ready);
   const big = num(read.big_stories) || sectionCount(sections.big_stories);
-  const watched = num(read.watched) || sectionCount(sections.watch);
+  const watched = watchedCount ?? (num(read.watched) || sectionCount(sections.watch));
   const funnel = records(value.funnel);
-  const markdown = str(value.rendered_markdown);
+  const markdown = cleanReportMarkdown(str(value.rendered_markdown), formatWhen);
+  // The report's markdown carries its own Disclosures / Monitor notes; never print them twice.
+  const disclosures = markdownHasSection(markdown, "Disclosures") ? [] : strings(value.disclosures);
+  const monitorNotes = markdownHasSection(markdown, "Monitor notes") ? [] : strings(value.monitor_notes);
   const gatedEntries = Object.entries(gated)
     .map(([k, v]) => [k, strings(v).length] as const)
     .filter(([, n]) => n > 0);
@@ -45,8 +69,23 @@ export function NewsOpportunityReportView({ value }: { value: Record<string, unk
           {funnel.map((step, i) => (
             <span key={`${str(step.stage)}-${i}`} className="inline-flex items-center gap-1">
               {i > 0 ? <span className="text-muted-foreground">→</span> : null}
-              <span className="font-medium text-foreground">{num(step.count)}</span>
-              <span className="text-muted-foreground">{humanizeIdentifier(str(step.stage)).toLowerCase()}</span>
+              {onOpen ? (
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-1 rounded hover:underline"
+                  data-funnel-stage={str(step.stage)}
+                  title={`Open the ${humanizeIdentifier(str(step.stage)).toLowerCase()} list`}
+                  onClick={() => onOpen(funnelOpenTarget(str(step.stage)))}
+                >
+                  <span className="font-medium text-primary">{num(step.count)}</span>
+                  <span className="text-muted-foreground">{humanizeIdentifier(str(step.stage)).toLowerCase()}</span>
+                </button>
+              ) : (
+                <>
+                  <span className="font-medium text-foreground">{num(step.count)}</span>
+                  <span className="text-muted-foreground">{humanizeIdentifier(str(step.stage)).toLowerCase()}</span>
+                </>
+              )}
             </span>
           ))}
         </div>
@@ -73,21 +112,21 @@ export function NewsOpportunityReportView({ value }: { value: Record<string, unk
           ))}
         </div>
       ) : null}
-      {strings(value.disclosures).length ? (
+      {disclosures.length ? (
         <div>
           <p className="text-xs font-medium text-foreground">Disclosures</p>
           <ul className="ml-4 list-disc text-xs text-muted-foreground">
-            {strings(value.disclosures).map((d) => (
+            {disclosures.map((d) => (
               <li key={d}>{d}</li>
             ))}
           </ul>
         </div>
       ) : null}
-      {strings(value.monitor_notes).length ? (
+      {monitorNotes.length ? (
         <div>
           <p className="text-xs font-medium text-foreground">Monitor notes</p>
           <ul className="ml-4 list-disc text-xs text-muted-foreground">
-            {strings(value.monitor_notes).map((d) => (
+            {monitorNotes.map((d) => (
               <li key={d}>{d}</li>
             ))}
           </ul>

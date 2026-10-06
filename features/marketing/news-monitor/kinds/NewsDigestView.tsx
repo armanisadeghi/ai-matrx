@@ -26,6 +26,7 @@ import {
   setAsideListOf,
   str,
   strings,
+  watchListCount,
   type OpenTarget,
 } from "../run-document";
 import { FactRow, KindCard, Pill, SmartLink, formatWhen } from "./shared";
@@ -133,7 +134,7 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
   return (
     <KindCard
       testId="news-digest"
-      title={`Run digest — ${num(headline.surfaced)} surfaced · ${watch.length + overflow} on the watch list`}
+      title={`Run digest — ${num(headline.surfaced)} surfaced · ${watchListCount(value) ?? 0} on the watch list`}
       subtitle={
         <>
           Run {formatWhen(str(value.run_generated_at))}
