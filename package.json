@@ -462,6 +462,8 @@
     "check:archived-items-law": "tsx scripts/check-archived-items-law.ts",
     "check:archived-items-law:self-test": "tsx scripts/check-archived-items-law.ts --self-test",
     "check:canonical-pickers": "tsx scripts/check-canonical-pickers.ts",
+    "check:one-version": "tsx scripts/check-one-version.ts",
+    "check:one-version:self-test": "tsx scripts/check-one-version.ts --self-test",
     "check:signout-scope": "tsx scripts/check-signout-scope.ts",
     "check:t13-row-column": "node scripts/check-t13-row-column-source.mjs",
     "check:t13-row-column:self-test": "node scripts/check-t13-row-column-source.mjs --self-test",
