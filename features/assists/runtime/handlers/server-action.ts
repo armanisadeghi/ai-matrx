@@ -19,10 +19,10 @@
  * like any other capability — adding one is a single line.
  */
 
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
 /**
  * Bare aidream paths a `server_action` chip may call. Bare, never `/api/...`
@@ -41,7 +41,8 @@ export const ALLOWED_SERVER_ACTION_ENDPOINTS: ReadonlySet<string> = new Set([
   "/masterworks/rulebook/restore-write",
 ]);
 
-registerAssistAction({
+export const serverActionAssistAction: AssistActionDefinition = {
+  label: "Run server action",
   kind: "server_action",
   description:
     "POST an allow-listed aidream endpoint that performs a durable domain write.",
@@ -64,4 +65,4 @@ registerAssistAction({
     }
     return { ok: true, result: outcome.data };
   },
-});
+};

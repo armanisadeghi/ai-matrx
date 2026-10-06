@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * useKindActionRunner — binds the host runtime into the pure action registry
- * and returns the ONE function a kind component calls to trigger a capability:
+ * useKindActionRunner — binds the host runtime into the app's ONE action
+ * registry (`@ai-matrx/alchemy`, provider `content-ir.kind-actions`) and
+ * returns the ONE function a kind component calls to trigger a capability:
  * `runAction(key, input) => Promise<KindActionResult>`.
  *
  * This is the safety choke point that makes "trigger anything" safe to hand to
@@ -18,11 +19,11 @@
  *  - It guards duplicate in-flight calls per action key, so a double-click or a
  *    re-render storm can't fire an agent (spend) twice.
  *
- * Importing this module also registers the built-in handlers (side-effect
- * imports below) — that is how the registry is populated on the client.
+ * The provider is registered on the registry from a layout effect (and again,
+ * idempotently, at run time); `key` runs the registry Action `kind.<key>`.
  */
 
-import { useCallback, useRef } from "react";
+import { useCallback, useLayoutEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -32,16 +33,13 @@ import {
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import type { KindActionContext, KindActionResult } from "./kind-action-context";
+import { kindActionId, kindActionProvider } from "./kind-action-provider";
 import {
-  getKindAction,
-  type KindActionResult,
-} from "./kind-action-registry";
-
-// Side-effect: register the built-in capabilities. New handlers are added by
-// importing them here — the seam and the component contract never change.
-import "./handlers/trigger-agent";
-import "./handlers/apply-surface-write";
-import "./handlers/list-surface-write-targets";
+  ensureInvokedProvider,
+  invokeRegisteredAction,
+} from "./invoked-actions";
+import { useOptionalAlchemyActions } from "./useOptionalAlchemyActions";
 
 export type RunKindAction = (
   key: string,
@@ -82,21 +80,27 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
   const { launchAgent } = useAgentLauncher();
   const userId = useAppSelector(selectUserId);
   const inFlight = useRef<Set<string>>(new Set());
+  const actions = useOptionalAlchemyActions();
+  const registry = actions?.registry ?? null;
+  const ports = actions?.ports ?? null;
+  useLayoutEffect(() => {
+    if (registry) ensureInvokedProvider(registry, kindActionProvider);
+  }, [registry]);
 
   return useCallback<RunKindAction>(
     async (key, input) => {
-      const def = getKindAction(key);
-      if (!def) {
-        const error = `No action registered for "${key}".`;
+      if (!registry || !ports) {
+        // Rendered outside the app's action host: honest, never a crash.
+        const error = `"${key}" can't run here: actions aren't available on this page.`;
         toast.error(error);
         captureError({
           source: "content-ir",
-          message: `[kind-action] component invoked unknown action "${key}"`,
+          message: `[kind-action] "${key}" invoked outside <AlchemyActionsProvider>`,
           raw: { key },
         });
         return { ok: false, error };
       }
-
+      ensureInvokedProvider(registry, kindActionProvider);
       const guardKey = inFlightKey(key, input);
       if (inFlight.current.has(guardKey)) {
         return { ok: false, error: `"${key}" is already running.` };
@@ -104,7 +108,39 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
       inFlight.current.add(guardKey);
 
       try {
-        const result = await def.handler(input, { launchAgent, userId });
+        const context: KindActionContext = { launchAgent, userId };
+        const outcome = await invokeRegisteredAction<KindActionResult>(
+          registry,
+          ports,
+          kindActionId(key),
+          input,
+          context,
+        );
+        if (outcome.status === "not-registered") {
+          const error = `No action registered for "${key}".`;
+          toast.error(error);
+          captureError({
+            source: "content-ir",
+            message: `[kind-action] component invoked unknown action "${key}"`,
+            raw: { key },
+          });
+          return { ok: false, error };
+        }
+        if (outcome.status === "failed") {
+          const err = outcome.error;
+          const message =
+            err instanceof Error ? err.message : `Action "${key}" failed.`;
+          // A handler throw is already captured + announced by alchemy's run
+          // path (ports.notify); only announce here when that port is absent.
+          if (!ports.notify) toast.error(message);
+          captureError({
+            source: "content-ir",
+            message: `[kind-action] action "${key}" threw: ${message}`,
+            raw: { key, error: err },
+          });
+          return { ok: false, error: message };
+        }
+        const result = outcome.value;
         const at = originRef.current;
         if (result.ok && key === "apply_surface_write" && at) {
           const written = result.result as { surfaceName?: string } | undefined;
@@ -123,6 +159,7 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
         }
         return result;
       } catch (err) {
+        // invokeRegisteredAction never throws; this guards the guard.
         const message =
           err instanceof Error ? err.message : `Action "${key}" failed.`;
         toast.error(message);
@@ -136,6 +173,6 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
         inFlight.current.delete(guardKey);
       }
     },
-    [launchAgent, userId, dispatch],
+    [launchAgent, userId, dispatch, registry, ports],
   );
 }

@@ -7,12 +7,13 @@
  */
 
 import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const surfaceWriteAssistAction: AssistActionDefinition = {
+  label: "Apply to page",
   kind: "surface_write",
   description:
     "Apply the assist's prepared value to a declared surface write target (origin: user — the chip click is the gesture).",
@@ -31,4 +32,4 @@ registerAssistAction({
     }
     return { ok: true, result: outcome };
   },
-});
+};

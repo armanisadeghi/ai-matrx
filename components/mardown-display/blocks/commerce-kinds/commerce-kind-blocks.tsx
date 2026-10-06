@@ -29,10 +29,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
-import { KindHeaderBar } from "@/components/kind-kit/KindHeaderBar";
-import { KindPanel } from "@/components/kind-kit/KindPanel";
-import { KindPanelGrid } from "@/components/kind-kit/KindPanelGrid";
-import { TagList } from "@/components/kind-kit/TagList";
+import "@/lib/code-runtime/kind-kit-host";
+import { KindHeaderBar } from "@ai-matrx/content-ir-react/kind-kit";
+import { KindPanel } from "@ai-matrx/content-ir-react/kind-kit";
+import { KindPanelGrid } from "@ai-matrx/content-ir-react/kind-kit";
+import { TagList } from "@ai-matrx/content-ir-react/kind-kit";
 import {
   readSearchKindValue,
   strings,

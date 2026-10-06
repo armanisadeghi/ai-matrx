@@ -26,8 +26,10 @@
  */
 
 import { listLiveWriteTargets } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import type { KindActionResult } from "../kind-action-registry";
-import { registerKindAction } from "../kind-action-registry";
+import type {
+  KindActionDefinition,
+  KindActionResult,
+} from "../kind-action-context";
 
 export const LIST_SURFACE_WRITE_TARGETS_ACTION = "list_surface_write_targets";
 
@@ -71,9 +73,10 @@ async function listSurfaceWriteTargetsHandler(
   return { ok: true, result: { targets } };
 }
 
-registerKindAction({
+export const listSurfaceWriteTargetsAction: KindActionDefinition = {
+  label: "List page write targets",
   key: LIST_SURFACE_WRITE_TARGETS_ACTION,
   description:
     "List the surface write targets reachable RIGHT NOW (declared on a mounted surface). Optional filters { surfaceName, target }. A read — use it to decide whether to render an apply control at all; a target with hasHandler:false is not reachable.",
   handler: listSurfaceWriteTargetsHandler,
-});
+};

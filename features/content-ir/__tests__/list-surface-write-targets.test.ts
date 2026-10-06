@@ -6,16 +6,21 @@
  * handler's contract (filters, the hasHandler pass-through, the safe
  * envelope on bad input) without mounting a page.
  */
-import type { KindActionContext } from "../react/actions/kind-action-registry";
-import { getKindAction } from "../react/actions/kind-action-registry";
+import type {
+  KindActionContext,
+  KindActionDefinition,
+} from "../react/actions/kind-action-context";
 
 const listLiveWriteTargets = jest.fn();
 jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({
   listLiveWriteTargets: () => listLiveWriteTargets(),
 }));
 
-// Registers on import.
-import "../react/actions/handlers/list-surface-write-targets";
+import { KIND_ACTIONS } from "../react/actions/kind-action-provider";
+
+function getKindAction(key: string): KindActionDefinition | undefined {
+  return KIND_ACTIONS.find((d) => d.key === key);
+}
 
 const ctx: KindActionContext = {
   launchAgent: async () => ({ conversationId: "c", requestId: "r" }) as never,

@@ -1,54 +1,61 @@
 ---
 name: build-an-app-on-their-tables
-description: "Recipe for an agent building a small custom web app for one person or business on THEIR OWN store tables, live at aimatrx.com/apps/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineAppTable)."
+description: "Recipe for an agent building a small custom web app (an Applet) for one person or business on THEIR OWN store tables, live at aimatrx.com/apps/<slug>. Use when asked to build an app, portal, calendar, tracker, dashboard screen or client view on someone's tables/data in AI Matrx. NOT for platform features (use build-sub-feature) or tables the platform keeps for itself (defineAppTable)."
 ---
 
-# Build an app on a person's tables
+# Build an Applet on a person's tables
 
 The person's data already lives in the store (tables they made in /data, imported from Notion, or made
-through the Table API). The app is code in this repo, typed off those tables, running under the
-**viewer's own seat** — the store decides who reads and changes what. Never copy data, never add a
-table the app needs "for itself" when the person's table can hold it, never read with a service key.
+through the Table API). The app is an **Applet**: one `app.definition` row holding its files, pages,
+data sources and jobs. **No app code goes in this repo.** `/apps/<slug>` reads the row and renders it
+through `@ai-matrx/applets` under the **viewer's own seat** — the store decides who reads and changes
+what. Never copy data, never add a table the app needs "for itself" when the person's table can hold
+it, never read with a service key.
 
-Proven on Holloway Creative (social-media agency): `features/person-apps/holloway-content/` —
-posting calendar, approvals, per-client review, on their Posts and Clients tables.
+Proven on Holloway Creative (social-media agency, org `344cfaa8-2b0c-4971-854a-9694614816f2`): Applet
+`holloway-content` — posting calendar, approvals, per-client review on their Posts and Clients tables,
+plus a "Polish caption" job. Read its row (`select files, pages, sources, mandates from app.definition
+where slug = 'holloway-content'`) as the worked example.
+
+Contract: `common-docs/projects/applets/CONTRACTS.md` (§2 hooks, §8 record). Host:
+`features/applets-host/FEATURE.md`.
 
 ## Steps
 
-1. **Find the tables.** Their ids and columns — Supabase MCP on live (read-only), or the person's
-   /data page. Use realistic names from their data in everything you write.
-2. **Type them.** In `aidream/apps/shared/records`:
-   `pnpm tables:types <table id> --out ../../../../matrx-frontend/features/person-apps/<slug>/tables/<name>.ts`
-   One file per table. It emits `export const posts = storeTable<PostsRow, PostsInsert>({…})`: column
-   names are the snake_case of each label, a choice column is the union of its words, a link column
-   is `Uuid[]`. Re-run when their columns change; never hand-edit.
-3. **Register the app** in `features/person-apps/registry.ts`: slug (the URL), name, who it is for,
-   the organization the tables live in (where writes go), `load: () => import("./<slug>/App")`.
-4. **Write the screen** (`"use client"`, default export taking `{ path }` — the URL below
-   `/apps/<slug>`). Read and write with `useStoreTable(table, { where, sort, search })` from
-   `@ai-matrx/records/react`:
-   ```ts
-   const { rows, update, write, archive, error, loading, truncated } = useStoreTable(posts, { sort: [{ column: "publish_date", as: "date" }] });
-   await update(row._id, { status: "Scheduled", approved: true });   // a misspelled column or choice fails tsc
+1. **Find the tables.** Their ids, organization and columns — Supabase MCP on live (read-only), or the
+   person's /data page. Use realistic names from their data in everything you write.
+2. **Write the files** (TSX, plain JS types are fine). Imports allowed: `react`,
+   `@ai-matrx/applets/react`, `@ai-matrx/design-system/controls`, `lucide-react`, and the Applet's own
+   files by relative path (`./shared`). Data and jobs ONLY through the hooks:
+   ```tsx
+   const posts = useRows("posts", { sort: [{ column: "publish_date", direction: "asc" }], pageSize: 500 });
+   const answer = await posts.update(row._id, { status: "Scheduled", approved: true }); // shows at once
+   if (!answer.ok) show(answer.error.message);   // refused → rolled back; the store's own sentence
+   const job = useJob("polish"); job.run({ draft: row.caption }); // job.text streams, job.result is the kind
+   <Kind kind={job.result.__kind} value={job.result} />
    ```
-   Headless (no React): `listTableRows / writeTableRow / updateTableRow / archiveTableRow` from
-   `@ai-matrx/records/app-table`. Show `error.message` as given (the store's own sentence) and say
-   when `truncated`. A link column holds ids: read the linked table and map ids to names.
-5. **Controls:** `@ai-matrx/design-system/controls` only (Button, Select, Tabs, Badge, Field…), semantic
-   color tokens, short in-app text (`interface-text` skill). Phone width works.
-6. **Check:** `pnpm type-check`; open `http://<your-host>:3001/apps/<slug>` after `pnpm dev-login
-   /apps/<slug>`; change one real value through the app and see it in the table at /data. Commit by
-   pathspec; the release train puts it live at `https://aimatrx.com/apps/<slug>`.
+   Rows are keyed by column key; a link column answers ids or `{ token, id, label }` refs — read both.
+   Pages: `<Pages layout="tabs" />` in the entry file, `usePage().params`, `<Link to="/clients/123">`.
+3. **Insert the record** in the person's organization (explicit `organization_id`, a slug that is free
+   — slugs are unique platform-wide): `files` (name → source), `entry`, `pages`
+   (`[{ path, title, file, parent? }]`, `:name` segments capture params), `sources`
+   (`[{ alias, table_id, organization_id }]`), `mandates` (`[{ alias, key }]` — an existing mandate;
+   check `mandate.definition.output_kind`), `allowed_imports`. Live today `agent_id` and
+   `component_code` are still NOT NULL (AP-0 drops them): set `agent_id` to the mandate's
+   `default_holder_id` and `component_code` to `''`.
+4. **Save its surface** as a member of the organization: `select ui.save_applet_surface('<id>',
+   '{"actions":[…]}')` — one mandate Action per job is enough.
+5. **Check in a browser:** `/apps/<slug>` signed in as a member (test@test.com is a member of the proof
+   organization); switch pages, change one real value and re-read it from a second session, run the
+   job. Restore any value you changed.
 
 ## Who can open it
 
 Signed-in people only (`app/(link)/apps/[app]/[[...path]]`): a signed-out visitor is sent to sign in
-and brought back. Each viewer sees what the store lets them see: members of the business see their
-tables; an outside client sees the rows shared with them (share the client's records, or their
-table, to that person). The app never decides access.
+and brought back; a slug they cannot read gets the access gate. Each viewer sees what the store lets
+them see. The Applet never decides access.
 
 ## Not here
 
 - A table the PLATFORM keeps for one of its own features → `defineAppTable` (records README `/app-table`).
 - A brand-new table for the person → make it first (Table API / MCP `tables` / the SQL door), then step 2.
-- Running AI inside the app → call their agents through the platform's agent surfaces, not from here.

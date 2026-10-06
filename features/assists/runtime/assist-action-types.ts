@@ -1,9 +1,9 @@
 /**
- * The assist ACTION REGISTRY — the one extensible seam through which an
- * accepted assist chip executes a platform capability.
- *
- * Same design (and the same two non-negotiables) as content-ir's
- * kind-action-registry, which this deliberately mirrors:
+ * The assist ACTION contract — what a capability an accepted assist chip
+ * executes receives and returns. The capabilities are contributed to the app's
+ * ONE action registry (`@ai-matrx/alchemy`) by `assist-action-provider.ts`,
+ * the same way content-ir's kind actions are (`invoked-actions.ts`), and
+ * `useAssistRunner` runs them by id. The two non-negotiables:
  *
  *  1. A handler NEVER throws into UI code — the runner wraps every call and
  *     always returns an envelope. A malformed assist degrades to a toast +
@@ -79,33 +79,9 @@ export type AssistActionHandler = (
 export interface AssistActionDefinition {
   /** Matches `AssistAction["kind"]`, e.g. "launch_agent". */
   kind: string;
+  /** Short name (alchemy's run path names it when the handler throws). */
+  label: string;
   /** One line for authoring surfaces + docs; never user-facing chrome. */
   description: string;
   handler: AssistActionHandler;
-}
-
-const registry = new Map<string, AssistActionDefinition>();
-
-/** Idempotent-by-replace; throws on an empty kind. */
-export function registerAssistAction(def: AssistActionDefinition): void {
-  if (!def.kind || !def.kind.trim()) {
-    throw new Error("registerAssistAction: kind must be a non-empty string");
-  }
-  registry.set(def.kind, def);
-}
-
-export function getAssistAction(
-  kind: string,
-): AssistActionDefinition | undefined {
-  return registry.get(kind);
-}
-
-/** Enumerate registered capabilities — for authoring UIs, docs, the doctor. */
-export function listAssistActions(): AssistActionDefinition[] {
-  return [...registry.values()];
-}
-
-/** Test/HMR reset. */
-export function clearAssistActionRegistry(): void {
-  registry.clear();
 }

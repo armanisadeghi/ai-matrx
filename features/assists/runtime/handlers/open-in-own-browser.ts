@@ -14,12 +14,13 @@
  * says what to do next.
  */
 
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const openInOwnBrowserAssistAction: AssistActionDefinition = {
+  label: "Open in your browser",
   kind: "open_in_own_browser",
   description:
     "Hand the organization's queued capture pages to the person's own Chrome via the Matrx extension.",
@@ -42,4 +43,4 @@ registerAssistAction({
 
     return { ok: true, result: outcome };
   },
-});
+};

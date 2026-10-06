@@ -19,12 +19,13 @@
  */
 
 import { applyKeywordMeaningProposal } from "@/features/marketing/seo/value-system/suggestions/apply";
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const applyKeywordMeaningAssistAction: AssistActionDefinition = {
+  label: "Apply keyword meaning",
   kind: "apply_keyword_meaning",
   description:
     "Approve an agent's keyword-meaning proposal (matcher / worth / stamp / guidelines) by replaying it through the ordinary human write path.",
@@ -57,4 +58,4 @@ registerAssistAction({
       };
     }
   },
-});
+};

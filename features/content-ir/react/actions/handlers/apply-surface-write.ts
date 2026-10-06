@@ -40,8 +40,10 @@
  */
 
 import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
-import type { KindActionResult } from "../kind-action-registry";
-import { registerKindAction } from "../kind-action-registry";
+import type {
+  KindActionDefinition,
+  KindActionResult,
+} from "../kind-action-context";
 
 async function applySurfaceWriteHandler(
   input: unknown,
@@ -100,9 +102,10 @@ async function applySurfaceWriteHandler(
   return { ok: false, error: result.error };
 }
 
-registerKindAction({
+export const applySurfaceWriteAction: KindActionDefinition = {
+  label: "Apply to page",
   key: "apply_surface_write",
   description:
     "Write a value into the current page via a surface-manifest write target (draft/entity/ui per the target's declared mode). Pass origin:'user' ONLY for a real click; anything else is gated by the target's applyPolicy.",
   handler: applySurfaceWriteHandler,
-});
+};

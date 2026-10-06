@@ -15,12 +15,13 @@
  * manager, a deep link, a history view.
  */
 
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const openApprovalQueueAssistAction: AssistActionDefinition = {
+  label: "Open approval",
   kind: "approval_proposal",
   description:
     "Open THE approval queue at this proposal. Never applies the change — the queue's review body is the authorization.",
@@ -32,4 +33,4 @@ registerAssistAction({
     ctx.navigate(href);
     return { ok: true, result: { href, applied: false } };
   },
-});
+};

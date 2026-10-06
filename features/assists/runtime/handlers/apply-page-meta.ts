@@ -19,12 +19,13 @@
 
 import { applyFindingFix } from "@/features/marketing/lib/finding-fix-apply";
 import { getPageWorkspace, getSite } from "@/features/marketing/data/service";
-import {
-  registerAssistAction,
-  type AssistActionResult,
-} from "../assist-action-registry";
+import type {
+  AssistActionDefinition,
+  AssistActionResult,
+} from "../assist-action-types";
 
-registerAssistAction({
+export const applyPageMetaAssistAction: AssistActionDefinition = {
+  label: "Apply page meta",
   kind: "apply_page_meta",
   description:
     "Save the proposed title/description as the page's desired metadata and write it into the linked CMS page's DRAFT. Never publishes.",
@@ -74,4 +75,4 @@ registerAssistAction({
       };
     }
   },
-});
+};

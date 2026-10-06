@@ -23,7 +23,8 @@ import {
 } from "lucide-react";
 
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { KindHeaderBar } from "@/components/kind-kit/KindHeaderBar";
+import "@/lib/code-runtime/kind-kit-host";
+import { KindHeaderBar } from "@ai-matrx/content-ir-react/kind-kit";
 import { mediaCandidateLine } from "@/features/content-ir/kinds/media-list";
 import type { MediaCandidateVerdict } from "@/features/content-ir/kinds/generated/kinds.generated";
 import { cn } from "@/lib/utils";
