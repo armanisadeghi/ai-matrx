@@ -1436,19 +1436,21 @@ async function countPicksThatFollowedRole(
  * (`plan.keys`) — never by (surface_name, name) alone, which would also hit an
  * item row that shares a screen row's name. Delete means archive: the row gets
  * deleted_at; a later sync that finds it declared again revives it. Restrict
- * the archive to code-owned rows as a final race-safe ownership guard.
+ * the archive to code-owned rows and the observed update time as final
+ * race-safe ownership and concurrency guards.
  */
 async function deleteByPlanKey(
   sb: Sb,
   plan: SurfaceSyncPlan,
   table: MirrorTable,
   row: Record<string, unknown>,
-): Promise<void> {
+): Promise<boolean> {
   const key = plan.keys[`ui.${table}`];
   if (!key) throw new Error(`Sync plan declares no key for ui.${table}`);
   type Filterable = PromiseLike<{ error: unknown }> & {
     eq(column: string, value: unknown): Filterable;
     is(column: string, value: null): Filterable;
+    select(columns: string): PromiseLike<{ data: unknown[] | null; error: unknown }>;
   };
   let query = sb
     .schema("ui")
@@ -1456,8 +1458,10 @@ async function deleteByPlanKey(
     .update({ deleted_at: new Date().toISOString() }) as unknown as Filterable;
   for (const column of key) query = query.eq(column, row[column] ?? "");
   query = query.eq("declared_by", "code");
-  const archived = await query.is("deleted_at", null);
+  query = query.eq("updated_at", row.updated_at ?? "");
+  const archived = await query.is("deleted_at", null).select("name");
   if (archived.error) throw archived.error;
+  return (archived.data?.length ?? 0) > 0;
 }
 
 /**
@@ -1641,8 +1645,9 @@ export async function applyManifestSync(
     );
     skippedRecentRows.push(...skipped);
     for (const row of toDelete) {
-      await deleteByPlanKey(sb, plan, "ui_surface_value", row);
-      deleted.push({ surfaceName: row.surface_name, valueName: row.name });
+      if (await deleteByPlanKey(sb, plan, "ui_surface_value", row)) {
+        deleted.push({ surfaceName: row.surface_name, valueName: row.name });
+      }
     }
   }
 
@@ -1675,9 +1680,10 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedRoles);
     for (const row of rolesToDelete) {
-      await deleteByPlanKey(sb, plan, "ui_surface_agent_role", row);
-      sweptPrefCount += await countPicksThatFollowedRole(sb, row.surface_name, row.name);
-      roleDeleted.push({ surfaceName: row.surface_name, roleName: row.name });
+      if (await deleteByPlanKey(sb, plan, "ui_surface_agent_role", row)) {
+        sweptPrefCount += await countPicksThatFollowedRole(sb, row.surface_name, row.name);
+        roleDeleted.push({ surfaceName: row.surface_name, roleName: row.name });
+      }
     }
   }
 
@@ -1710,11 +1716,12 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedTargets);
     for (const row of targetsToDelete) {
-      await deleteByPlanKey(sb, plan, "ui_surface_write_target", row);
-      writeTargetDeleted.push({
-        surfaceName: row.surface_name,
-        targetName: row.name,
-      });
+      if (await deleteByPlanKey(sb, plan, "ui_surface_write_target", row)) {
+        writeTargetDeleted.push({
+          surfaceName: row.surface_name,
+          targetName: row.name,
+        });
+      }
     }
   }
 
@@ -1746,11 +1753,12 @@ export async function applyManifestSync(
       );
     skippedRecentRows.push(...skippedTools);
     for (const row of toolsToDelete) {
-      await deleteByPlanKey(sb, plan, "ui_surface_client_tool", row);
-      clientToolDeleted.push({
-        surfaceName: row.surface_name,
-        toolName: row.name,
-      });
+      if (await deleteByPlanKey(sb, plan, "ui_surface_client_tool", row)) {
+        clientToolDeleted.push({
+          surfaceName: row.surface_name,
+          toolName: row.name,
+        });
+      }
     }
   }
 

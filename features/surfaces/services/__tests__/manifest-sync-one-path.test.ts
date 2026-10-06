@@ -59,7 +59,10 @@ type Row = Record<string, unknown>;
 type Call = { table: string; op: string; payload?: unknown; filters: [string, unknown][] };
 
 /** A filter-aware fake: `.eq`/`.is` narrow reads; every write is recorded. */
-export function recordingClient(tables: Record<string, Row[]>) {
+export function recordingClient(
+  tables: Record<string, Row[]>,
+  options: { archiveAffected?: boolean } = {},
+) {
   const calls: Call[] = [];
   const client = {
     schema: (schemaName: string) => ({
@@ -110,7 +113,11 @@ export function recordingClient(tables: Record<string, Row[]>) {
           single: () => Promise.resolve({ data: matches()[0] ?? null, error: matches()[0] ? null : { message: "no row" } }),
           maybeSingle: () => Promise.resolve({ data: matches()[0] ?? null, error: null }),
           then: (resolve: any, reject?: any) => {
-            const data = call.op === "upsert" ? (call.payload as Row[]) : matches();
+            const data = call.op === "upsert"
+              ? (call.payload as Row[])
+              : call.op === "update" && (call.payload as Row).deleted_at && options.archiveAffected === false
+                ? []
+                : matches();
             return Promise.resolve({ data, error: null, count: data.length }).then(resolve, reject);
           },
         };
@@ -175,10 +182,30 @@ describe("applyManifestSync writes only what the package plan declares", () => {
         ["item_type", "pickup"],
         ["name", "pickup_address"],
         ["declared_by", "code"],
+        ["updated_at", old],
         ["deleted_at", null],
       ],
     ]);
     expect(result.deleted).toEqual([{ surfaceName: DECLARED, valueName: "pickup_address" }]);
+  });
+
+  it("does not report a stale row as deleted when its guarded archive misses", async () => {
+    const old = new Date(Date.now() - 48 * 3_600_000).toISOString();
+    const tables = baseTables();
+    tables["ui.ui_surface_value"] = [
+      {
+        surface_name: DECLARED,
+        item_type: "pickup",
+        name: "concurrently_changed",
+        updated_at: old,
+        declared_by: "code",
+      },
+    ];
+    const { client } = recordingClient(tables, { archiveAffected: false });
+
+    const result = await applyManifestSync(client as any, { deleteStale: true });
+
+    expect(result.deleted).toEqual([]);
   });
 
   it("leaves database-declared rows out of a stale sweep", async () => {
