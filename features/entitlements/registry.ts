@@ -33,6 +33,7 @@ export type Capability =
   | "platform.points"
   | "platform.messages"
   | "platform.active_agents"
+  | "platform.organizations"
   | "platform.storage_bytes"
   | "outreach.send"
   | "outreach.send_volume"
@@ -111,6 +112,15 @@ export const CAPABILITY_REGISTRY: Record<Capability, CapabilityDefinition> = {
     scope: "org",
     upgradeMessage:
       "You've reached the number of active agents your plan includes. Upgrade to run more at once.",
+  }),
+  "platform.organizations": def({
+    id: "platform.organizations",
+    label: "Organizations",
+    description:
+      "How many organizations one person may belong to. A standing quota, counted from the person's memberships, never metered.",
+    scope: "org",
+    upgradeMessage:
+      "You've reached the number of organizations your plan includes. Leave or archive one, or upgrade.",
   }),
   "platform.storage_bytes": def({
     id: "platform.storage_bytes",

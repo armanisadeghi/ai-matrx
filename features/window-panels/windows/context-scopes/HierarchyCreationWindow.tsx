@@ -13,6 +13,8 @@ import { Input } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { useOrganizationCap } from "@/features/organizations/limits/useOrganizationCap";
+import { OrganizationCapReached } from "@/features/organizations/limits/OrganizationCapReached";
 
 export interface HierarchyCreationWindowData {
   entityType?: "organization" | "project" | "task";
@@ -43,6 +45,12 @@ export default function HierarchyCreationWindow({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // The organization cap is enforced here, in the interface only.
+  const organizationCap = useOrganizationCap();
+  const capReached =
+    entityType === "organization" &&
+    organizationCap.atCap &&
+    organizationCap.cap !== null;
 
   const getTitle = () => {
     switch (entityType) {
@@ -58,7 +66,7 @@ export default function HierarchyCreationWindow({
   };
 
   const handleCreate = async () => {
-    if (!name.trim()) return;
+    if (!name.trim() || capReached) return;
     setIsSubmitting(true);
 
     try {
@@ -125,13 +133,22 @@ export default function HierarchyCreationWindow({
           <Button
             variant="primary"
             onClick={handleCreate}
-            disabled={!name.trim() || isSubmitting}
+            disabled={!name.trim() || isSubmitting || capReached}
           >
             {isSubmitting ? "Creating..." : "Create"}
           </Button>
         </div>
       }
     >
+      {capReached && organizationCap.cap !== null ? (
+        <div className="flex flex-1 min-h-0 flex-col items-center justify-center p-4">
+          <OrganizationCapReached
+            count={organizationCap.count}
+            cap={organizationCap.cap}
+            onNavigate={onClose}
+          />
+        </div>
+      ) : (
       <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-auto p-4">
         <div className="text-sm text-muted-foreground mb-2">
           {entityType === "project" &&
@@ -168,6 +185,7 @@ export default function HierarchyCreationWindow({
           )}
         </div>
       </div>
+      )}
     </WindowPanel>
     </NonEditableContextMenu>
   );

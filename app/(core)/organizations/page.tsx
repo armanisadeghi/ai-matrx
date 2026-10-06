@@ -12,7 +12,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
   Crown,
@@ -407,7 +407,11 @@ export default function OrganizationsPage() {
     Boolean(o.archivedAt),
   );
   const suggestions = useScopeSuggestions();
-  const [createOpen, setCreateOpen] = React.useState(false);
+  // The shell's "New Org" action lands here as `?create=1` and opens the dialog.
+  const searchParams = useSearchParams();
+  const [createOpen, setCreateOpen] = React.useState(
+    () => searchParams?.get("create") === "1",
+  );
   const [query, setQuery] = React.useState("");
   const isMobile = useIsMobile();
   const store = useAppStore();
