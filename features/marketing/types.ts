@@ -123,6 +123,19 @@ export interface BrandProfile {
   target_keywords?: string[];
   content_guidelines?: string;
   notes?: string;
+  /**
+   * The press expertise profile — what the source-request (HARO) responder reads
+   * to decide whether this brand should answer a reporter at all. Who speaks,
+   * what they can credibly speak on and why, and what they never comment on.
+   */
+  spokesperson_name?: string;
+  spokesperson_title?: string;
+  expertise_areas?: string[];
+  credentials?: string[];
+  do_not_comment_on?: string[];
+  outlets_to_skip?: string[];
+  /** Signed exactly as written at the end of every reply. */
+  contact_block?: string;
 }
 
 const BRAND_PROFILE_STRING_FIELDS = [
@@ -132,6 +145,9 @@ const BRAND_PROFILE_STRING_FIELDS = [
   "service_area",
   "content_guidelines",
   "notes",
+  "spokesperson_name",
+  "spokesperson_title",
+  "contact_block",
 ] as const;
 
 const BRAND_PROFILE_LIST_FIELDS = [
@@ -139,6 +155,10 @@ const BRAND_PROFILE_LIST_FIELDS = [
   "offerings",
   "competitors",
   "target_keywords",
+  "expertise_areas",
+  "credentials",
+  "do_not_comment_on",
+  "outlets_to_skip",
 ] as const;
 
 /**

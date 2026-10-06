@@ -10,8 +10,16 @@
 // (validation-offers-never-blocks). Guard:
 // `__tests__/every-activation-shows-the-advisory.test.ts`.
 
+import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
-import { activateOutreachList } from "@/features/crm/outreach-lists/service";
+import { activateOutreachList, scheduleMember } from "@/features/crm/outreach-lists/service";
+import {
+  OutletSendStep,
+  defaultPicks,
+  membersToHold,
+  type OutletPicks,
+} from "@/features/crm/pre-send-check/OutletSendStep";
+import { usePreSendCheck } from "@/features/crm/pre-send-check/usePreSendCheck";
 import type { OutreachListRow } from "@/features/crm/outreach-lists/types";
 import { PitchAdvisoryConfirmDialog } from "./PitchAdvisoryConfirmDialog";
 
@@ -25,6 +33,25 @@ export function ActivateOutreachListDialog({
   onOpenChange: (open: boolean) => void;
   onActivated: (list: OutreachListRow) => void;
 }) {
+  // THE SEND STEP: recipients grouped by outlet, one "Pitch first" each, the
+  // others held (the one-per-outlet rule). The cheap pre-send check — stored
+  // fit only, no critique or fact check — proposes the picks.
+  const outlets = usePreSendCheck(list?.organization_id ?? "");
+  const [picks, setPicks] = useState<OutletPicks>({ firstByOutlet: {}, holdOthers: true });
+  const listId = list?.id ?? null;
+  const runOutlets = outlets.run;
+  useEffect(() => {
+    if (!listId) return;
+    void runOutlets({
+      surface: "list_send",
+      outreach_list_id: listId,
+      run_critique: false,
+      run_fact_check: false,
+    }).then((report) => {
+      if (report) setPicks(defaultPicks(report.outlets ?? []));
+    });
+  }, [listId, runOutlets]);
+
   if (!list) return null;
   const resuming = list.status === "paused";
   const confirmLabel = resuming ? "Resume" : "Start outreach";
@@ -50,12 +77,18 @@ export function ActivateOutreachListDialog({
       entityId={list.id}
       onConfirm={async () => {
         try {
+          const report = outlets.report;
+          const held = report ? membersToHold(report.outlets ?? [], report.recipients ?? [], picks) : [];
+          for (const { memberId, until } of held) await scheduleMember(memberId, until);
+          if (held.length > 0) toast.success(`Held ${held.length} at shared outlets`);
           await activateOutreachList(list);
           onActivated(list);
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "Could not start the outreach list");
         }
       }}
-    />
+    >
+      <OutletSendStep state={outlets} picks={picks} onPicksChange={setPicks} />
+    </PitchAdvisoryConfirmDialog>
   );
 }
