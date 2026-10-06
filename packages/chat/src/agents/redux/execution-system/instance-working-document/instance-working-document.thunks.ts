@@ -1183,7 +1183,7 @@ export function applyAgentWorkingDocDelta({
 
     // ── Scribe: the doc lives in the transcript-studio slice ────────────────
     if (delta.source_kind === "studio_document" && delta.source_id) {
-      const docsBySession = state.transcriptStudio.documentsById;
+      const docsBySession = state.transcriptStudio?.documentsById ?? {};
       for (const sessionId of Object.keys(docsBySession)) {
         const doc = docsBySession[sessionId]?.[delta.source_id];
         if (!doc) continue;

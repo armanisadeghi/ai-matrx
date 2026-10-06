@@ -106,8 +106,11 @@ export type { AgentVersionSnapshot };
 // ---------------------------------------------------------------------------
 
 type AgentRow = Database["agent"]["Tables"]["definition"]["Row"];
+// `created_via` is typed required (NOT NULL, no column default) but is never sent: the database
+// derives it on insert (`_created_via_from`), so a client value would only be overwritten.
 type AgentInsert = Omit<
   Database["agent"]["Tables"]["definition"]["Insert"],
+  | "created_via"
   | "id"
   | "created_at"
   | "updated_at"

@@ -1139,7 +1139,7 @@ export const executeInstance = createAsyncThunk<
           agentId: instance.agentId,
           pinnedVersionId: instance.initialAgentVersionId ?? null,
           mandateKey: instance.mandateKey ?? null,
-          overrideConfig,
+          overrideConfig: overrideConfig ?? undefined,
         });
         url = `${baseUrl}${start.path}`;
         routedPayload = {

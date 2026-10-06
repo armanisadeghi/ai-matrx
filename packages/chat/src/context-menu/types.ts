@@ -35,7 +35,17 @@ type HostType<K extends string, Fallback = unknown> = K extends keyof ContextMen
   : Fallback;
 export type ContentSource = HostType<"contentSource">;
 export type RichDocumentAction = HostType<"richDocumentAction">;
-export type RichDocumentActionContext = HostType<"richDocumentActionContext">;
+export type RichDocumentActionContext = HostType<
+  "richDocumentActionContext",
+  {
+    callbacks?: unknown;
+    extensions?: unknown;
+    metadata?: unknown;
+    isCreator?: boolean;
+    surfaceKey?: string;
+    [field: string]: unknown;
+  }
+>;
 export type ResourceType = HostType<"resourceType", string>;
 import type { SelectionRange } from "./utils/selection-tracking";
 

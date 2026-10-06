@@ -32,6 +32,19 @@ import {
   type MatrxQueryParams,
 } from "@ai-matrx/agents/matrx";
 import type { MatrxStreamEnvelope } from "@ai-matrx/agents/stream/ndjson";
+import type { TypedStreamEvent } from "@ai-matrx/agents/generated/stream-events";
+import type {
+  ApiPaths,
+  ApiSchemas as Schemas,
+  DefaultBrokeredCredential,
+  DefaultRequestOptions,
+  GetResult,
+  PatchBody,
+  PatchResult,
+  PathWith,
+  PostBody,
+  PostResult,
+} from "./typed-paths";
 import type {
   ChatIdentityPort,
   ChatOrgPort,
@@ -73,7 +86,7 @@ export interface DefaultApiCallConfig {
   body?: unknown;
   stream?: boolean;
   onStreamStart?: (requestId: string | null, conversationId: string | null) => void;
-  onStreamEvent?: (event: MatrxStreamEnvelope) => void;
+  onStreamEvent?: (event: TypedStreamEvent) => void;
   consumeStream?: (
     response: Response,
     ids: { requestId: string | null; conversationId: string | null },
@@ -84,6 +97,10 @@ export interface DefaultApiCallConfig {
   scopeOverrides?: Partial<DefaultCallScope>;
   organizationFreeRead?: true;
   interactiveOrganization?: boolean;
+  /** Abort the connect phase after this many ms (the stream itself is unbounded). */
+  connectTimeoutMs?: number;
+  /** Abort the whole call after this many ms. */
+  totalTimeoutMs?: number | null;
 }
 
 /** The request/response types of the default client. */
@@ -91,25 +108,38 @@ export interface DefaultChatServerTypes {
   ApiCallError: DefaultApiCallError;
   ApiCallResult: DefaultApiCallResult;
   CallScope: DefaultCallScope;
-  LLMParams: Record<string, unknown>;
-  LLMParamsBody: Record<string, unknown>;
-  MemoryCostSummary: Record<string, unknown>;
-  MessageSelector: Record<string, unknown>;
-  BatchDeleteResult: Record<string, unknown>;
-  ReplaceMessagesResult: Record<string, unknown>;
-  HideMessagesResult: Record<string, unknown>;
-  RestoreCompactionResult: Record<string, unknown>;
-  CompactTurnsResult: Record<string, unknown>;
-  ConversationForkBody: Record<string, unknown>;
-  ConversationForkAndRunBody: Record<string, unknown>;
+  LLMParams: Schemas["LLMParams"];
+  LLMParamsBody: Schemas["LLMParams"];
+  MemoryCostSummary: Schemas["MemoryCostSummary"];
+  MessageSelector: Schemas["MessageSelector"];
+  BatchDeleteResult: Schemas["BatchDeleteResponse"];
+  ReplaceMessagesResult: Schemas["ReplaceResponse"];
+  HideMessagesResult: Schemas["HideResponse"];
+  RestoreCompactionResult: Schemas["aidream__services__conversation_context__compaction__RestoreResponse"];
+  CompactTurnsResult: Schemas["CompactTurnsResponse"];
+  ConversationForkBody: Schemas["ForkRequest"];
+  ConversationForkAndRunBody: Schemas["ForkAndRunRequest"];
   MatrxTransportOptions: { expectedErrorStatuses?: readonly number[]; source?: string };
   OrganizationAdmission: "ready" | "unresolved" | "timed-out" | "unavailable";
 }
 
+/** What one browser-extension tool call answered (the app's `MatrxExtendInvocation`). */
+export type DefaultMatrxExtendInvocation =
+  | { handled: false; reason: string }
+  | { handled: true; ok: true; output: Record<string, unknown> }
+  | { handled: true; ok: false; error: string };
+
 export interface DefaultLocalEngine {
-  url: string;
+  /** e.g. "http://127.0.0.1:22140" — no trailing slash. */
+  baseUrl: string;
   capabilities?: readonly string[];
 }
+
+/** No health probe in a bare host; one stable object so selectors never re-render on it. */
+const UNKNOWN_SERVER_HEALTH: { readonly status: "unknown"; readonly latencyMs: number | null } = Object.freeze({
+  status: "unknown",
+  latencyMs: null,
+});
 
 interface ServerHostView {
   server: ChatServerPort;
@@ -238,14 +268,14 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     return buildMatrxRequestBody(body, scope);
   }
 
-  function callApi(config: DefaultApiCallConfig): DefaultServerThunk<Promise<DefaultApiCallResult>> {
+  function callApi<T = unknown>(config: DefaultApiCallConfig): DefaultServerThunk<Promise<DefaultApiCallResult<T>>> {
     // THE shared request pipeline (`@ai-matrx/agents/matrx` `call`, P9b) — the
     // same one matrx-frontend's `lib/api` `callApi` runs; this host supplies
     // only its base URL and policy headers.
     return async () => {
       try {
         const scope = resolveScope(undefined, config.scopeOverrides);
-        return await executeMatrxCall({
+        return (await executeMatrxCall({
           url: buildMatrxRequestUrl(baseUrl(), config.path, config.pathParams, config.queryParams),
           method: config.method,
           headers: {
@@ -257,11 +287,13 @@ export function createDefaultServerApi(host: () => ServerHostView) {
           stream: !!config.stream,
           ...(config.signal ? { signal: config.signal } : {}),
           ...(config.onStreamStart ? { onStreamStart: config.onStreamStart } : {}),
-          ...(config.onStreamEvent ? { onStreamEvent: config.onStreamEvent } : {}),
+          ...(config.onStreamEvent
+            ? { onStreamEvent: config.onStreamEvent as (event: MatrxStreamEnvelope) => void }
+            : {}),
           ...(config.consumeStream ? { consumeStream: config.consumeStream } : {}),
           ...(config.onStreamComplete ? { onStreamComplete: config.onStreamComplete } : {}),
           ...(config.onStreamError ? { onStreamError: config.onStreamError } : {}),
-        });
+        })) as DefaultApiCallResult<T>;
       } catch (error) {
         const callError = normalizeMatrxError(error);
         if (config.stream) config.onStreamError?.(callError);
@@ -271,7 +303,7 @@ export function createDefaultServerApi(host: () => ServerHostView) {
   }
 
   const call =
-    (method: HttpMethod, path: string, stream = false) =>
+    <R = unknown>(method: HttpMethod, path: string, stream = false) =>
     (options: {
       conversationId: string;
       body?: unknown;
@@ -282,7 +314,7 @@ export function createDefaultServerApi(host: () => ServerHostView) {
       onStreamComplete?: DefaultApiCallConfig["onStreamComplete"];
       onStreamError?: DefaultApiCallConfig["onStreamError"];
     }) =>
-      callApi({
+      callApi<R>({
         path,
         method,
         pathParams: { conversation_id: options.conversationId },
@@ -325,7 +357,7 @@ export function createDefaultServerApi(host: () => ServerHostView) {
       conversationId: string,
       options?: { signal?: AbortSignal; scopeOverrides?: Partial<DefaultCallScope> },
     ) =>
-      callApi({
+      callApi<Schemas["MemoryCostSummary"]>({
         path: "/ai/conversations/{conversation_id}/memory_cost",
         method: "GET",
         pathParams: { conversation_id: conversationId },
@@ -333,13 +365,13 @@ export function createDefaultServerApi(host: () => ServerHostView) {
         ...(options?.signal ? { signal: options.signal } : {}),
         ...(options?.scopeOverrides ? { scopeOverrides: options.scopeOverrides } : {}),
       }),
-    callConversationFork: call("POST", "/cx/conversations/{conversation_id}/fork"),
-    callConversationForkAndRun: call("POST", "/ai/conversations/{conversation_id}/fork-and-run", true),
-    callBatchDeleteMessages: call("POST", "/cx/conversations/{conversation_id}/messages/delete"),
-    callReplaceMessages: call("POST", "/cx/conversations/{conversation_id}/messages/replace"),
-    callHideMessages: call("POST", "/cx/conversations/{conversation_id}/messages/hide"),
-    callRestoreCompaction: call("POST", "/cx/conversations/{conversation_id}/messages/restore"),
-    callCompactTurns: call("POST", "/cx/conversations/{conversation_id}/compact"),
+    callConversationFork: call<Schemas["ForkConversationResponse"]>("POST", "/cx/conversations/{conversation_id}/fork"),
+    callConversationForkAndRun: call<unknown>("POST", "/ai/conversations/{conversation_id}/fork-and-run", true),
+    callBatchDeleteMessages: call<Schemas["BatchDeleteResponse"]>("POST", "/cx/conversations/{conversation_id}/messages/delete"),
+    callReplaceMessages: call<Schemas["ReplaceResponse"]>("POST", "/cx/conversations/{conversation_id}/messages/replace"),
+    callHideMessages: call<Schemas["HideResponse"]>("POST", "/cx/conversations/{conversation_id}/messages/hide"),
+    callRestoreCompaction: call<Schemas["aidream__services__conversation_context__compaction__RestoreResponse"]>("POST", "/cx/conversations/{conversation_id}/messages/restore"),
+    callCompactTurns: call<Schemas["CompactTurnsResponse"]>("POST", "/cx/conversations/{conversation_id}/compact"),
 
     // matrx-transport
     createMatrxTransport: (
@@ -392,26 +424,42 @@ export function createDefaultServerApi(host: () => ServerHostView) {
 
     // context state (cold start)
     fetchContextState:
-      (args: { conversationId: string; signal?: AbortSignal }): DefaultServerThunk<Promise<unknown>> =>
-      async () =>
-        (await json<unknown>("GET", `/cx/conversations/${encodeURIComponent(args.conversationId)}/context-state`, undefined, args.signal ? { signal: args.signal } : {})).data,
+      (args: {
+        conversationId: string;
+        signal?: AbortSignal;
+      }): DefaultServerThunk<Promise<unknown> & { unwrap: () => Promise<unknown> }> =>
+      () => {
+        // Same shape as the app's async thunk: the dispatched value is a promise with `unwrap()`.
+        const pending = json<unknown>(
+          "GET",
+          `/cx/conversations/${encodeURIComponent(args.conversationId)}/context-state`,
+          undefined,
+          args.signal ? { signal: args.signal } : {},
+        ).then((result) => result.data);
+        return Object.assign(pending, { unwrap: () => pending });
+      },
 
     // typed client + python client
-    buildPath: (template: string, params: Record<string, string | number>): string =>
-      fillPath(template, params),
-    apiGet: <T = unknown>(
-      path: string,
-      opts?: { signal?: AbortSignal; query?: Record<string, string | number | boolean | null | undefined | readonly unknown[]> },
+    buildPath: <P extends keyof ApiPaths>(template: P, params: Record<string, string | number>): P =>
+      fillPath(template as string, params) as P,
+    apiGet: <P extends PathWith<"get">>(
+      path: P,
+      opts?: DefaultRequestOptions & {
+        query?: Record<string, string | number | boolean | null | undefined | readonly unknown[]>;
+      },
     ) =>
-      json<T>("GET", path, undefined, {
+      json<GetResult<P>>("GET", path, undefined, {
         ...(opts?.signal ? { signal: opts.signal } : {}),
         ...(opts?.query ? { query: queryParams(opts.query) } : {}),
       }),
-    apiPost: <T = unknown>(path: string, body: unknown, opts?: { signal?: AbortSignal }) =>
-      json<T>("POST", path, body, opts?.signal ? { signal: opts.signal } : {}),
-    apiPatch: <T = unknown>(path: string, body: unknown, opts?: { signal?: AbortSignal }) =>
-      json<T>("PATCH", path, body, opts?.signal ? { signal: opts.signal } : {}),
-    postJson: <T = unknown>(path: string, body: unknown, opts?: { signal?: AbortSignal }) =>
+    apiPost: <P extends PathWith<"post">>(
+      path: P,
+      body: PostBody<P> extends never ? undefined : PostBody<P>,
+      opts?: DefaultRequestOptions,
+    ) => json<PostResult<P>>("POST", path, body, opts?.signal ? { signal: opts.signal } : {}),
+    apiPatch: <P extends PathWith<"patch">>(path: P, body: PatchBody<P>, opts?: DefaultRequestOptions) =>
+      json<PatchResult<P>>("PATCH", path, body, opts?.signal ? { signal: opts.signal } : {}),
+    postJson: <T, B = unknown>(path: string, body: B, opts?: DefaultRequestOptions) =>
       json<T>("POST", path, body, opts?.signal ? { signal: opts.signal } : {}),
     requestRaw: async (
       path: string,
@@ -434,9 +482,9 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     mintCredential: (
       audience: string,
       tierPolicy: unknown,
-      opts: { model?: string; scopes?: string[]; ttlSeconds?: number; signal?: AbortSignal } = {},
-    ) =>
-      json<unknown>(
+      opts: { model?: string; scopes?: string[]; ttlSeconds?: number; signal?: AbortSignal; captureErrors?: boolean } = {},
+    ): Promise<DefaultBrokeredCredential> =>
+      json<DefaultBrokeredCredential>(
         "POST",
         "/broker/tokens",
         {
@@ -462,13 +510,15 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     // the NDJSON stream every run reads
     // THE shared parser: a body that breaks mid-run is a TRANSPORT loss (the
     // run may still finish and is reattachable), never a failed run.
-    parseNdjsonStream: (response: Response, signal?: AbortSignal) =>
-      parseMatrxNdjsonResponse(response, signal),
+    parseNdjsonStream: (response: Response, signal?: AbortSignal) => {
+      const parsed = parseMatrxNdjsonResponse(response, signal);
+      return { ...parsed, events: parsed.events as AsyncGenerator<TypedStreamEvent, void, undefined> };
+    },
 
     // the server selection (no admin server switcher in a bare host)
     selectResolvedBaseUrl: (_state: unknown): string | undefined => baseUrl(),
     selectActiveServer: (_state: unknown): string => "production",
-    selectActiveServerHealth: (_state: unknown): null => null,
+    selectActiveServerHealth: (_state: unknown): typeof UNKNOWN_SERVER_HEALTH => UNKNOWN_SERVER_HEALTH,
     selectAiApiVersion: (_state: unknown): "v1" | "v2" => "v2",
     selectApiVersion: (_state: unknown): string | null => null,
     selectPathOverrides: (_state: unknown): Record<string, string> => ({}),
@@ -487,11 +537,13 @@ export function createDefaultServerApi(host: () => ServerHostView) {
     getCachedLocalEngine: (): DefaultLocalEngine | null => null,
     discoverLocalEngine: async (_options?: unknown): Promise<DefaultLocalEngine | null> => null,
     supportsLocalAgentExecution: (_engine: DefaultLocalEngine): boolean => false,
-    invokeMatrxExtendTool: async (..._args: unknown[]): Promise<never> => {
+    invokeMatrxExtendTool: async (
+      _toolName: string,
+      _args: Record<string, unknown>,
+    ): Promise<DefaultMatrxExtendInvocation> => {
       unhosted("The browser extension");
-      throw new Error(
-        "The Matrx browser extension is not reachable from this app. Supply `server.api` on the chat host to enable it.",
-      );
+      // Same answer the app gives when no extension is reachable: the model is told, nothing throws.
+      return { handled: false, reason: "matrx_extend_unavailable" };
     },
   };
 }
