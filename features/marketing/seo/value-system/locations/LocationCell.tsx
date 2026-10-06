@@ -98,7 +98,7 @@ export function LocationCell({
             onClick={() => onFilter?.("unresolved")}
             className={cn(
               "inline-flex max-w-full items-center gap-1 rounded px-1 py-0.5 text-left text-[11px] transition-colors",
-              "text-warning hover:bg-warning/10",
+              "text-warning-ink hover:bg-warning/10",
             )}
           >
             <MapPinOff className="h-3 w-3 shrink-0" aria-hidden />

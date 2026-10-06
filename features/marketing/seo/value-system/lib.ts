@@ -173,13 +173,13 @@ export interface BandMeta {
 const TONE_LADDER = [
   {
     tone: "text-success",
-    chip: "border-success/40 bg-success/10 text-success",
+    chip: "border-success/40 bg-success/10 text-success-ink",
   },
   {
     tone: "text-primary",
-    chip: "border-primary/40 bg-primary/10 text-primary",
+    chip: "border-primary/40 bg-primary/10 text-primary-ink",
   },
-  { tone: "text-info", chip: "border-info/40 bg-info/10 text-info" },
+  { tone: "text-info", chip: "border-info/40 bg-info/10 text-info-ink" },
   {
     tone: "text-foreground",
     chip: "border-border bg-muted/50 text-foreground",
@@ -192,11 +192,11 @@ const TONE_LADDER = [
 
 const NEGATIVE_META = {
   tone: "text-destructive",
-  chip: "border-destructive/40 bg-destructive/10 text-destructive",
+  chip: "border-destructive/40 bg-destructive/10 text-destructive-ink",
 };
 const UNVALUED_META = {
   tone: "text-warning",
-  chip: "border-warning/50 bg-warning/10 text-warning",
+  chip: "border-warning/50 bg-warning/10 text-warning-ink",
 };
 
 function isNegativeDef(def: ValueBandDef): boolean {

@@ -134,7 +134,7 @@ function TemplateBadge({ show }: { show: boolean }) {
   return (
     <Badge
       variant="outline"
-      className="border-info/40 bg-info/10 text-[10px] font-normal text-info"
+      className="border-info/40 bg-info/10 text-[10px] font-normal text-info-ink"
       title="This site has not adopted its own rows yet, so the platform starter template applies. Adopting and renaming these is the site owner's call — nothing is hardcoded."
     >
       using platform defaults

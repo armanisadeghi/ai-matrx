@@ -47,7 +47,7 @@ function Chip({
       ? "border-border bg-muted/60 text-foreground"
       : tone === "unknown"
         ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
-        : "border-primary/40 bg-primary/10 text-primary";
+        : "border-primary/40 bg-primary/10 text-primary-ink";
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] leading-4 ${cls}`}

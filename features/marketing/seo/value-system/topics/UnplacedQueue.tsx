@@ -117,7 +117,7 @@ export function UnplacedQueue({
       </div>
 
       {assigner.error ? (
-        <p className="border-b border-border bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive">
+        <p className="border-b border-border bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive-ink">
           {assigner.error}
           <ErrorAlchemyMenu error={assigner.error} />
         </p>

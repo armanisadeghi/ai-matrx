@@ -396,7 +396,7 @@ export function ValueComboEditor({
                         className={cn(
                           "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[11px]",
                           "unknown" in item
-                            ? "border-warning/40 bg-warning/10 text-warning"
+                            ? "border-warning/40 bg-warning/10 text-warning-ink"
                             : "border-border bg-card text-foreground",
                         )}
                       >

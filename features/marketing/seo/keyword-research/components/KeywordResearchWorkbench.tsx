@@ -207,7 +207,7 @@ function DossierCompletenessCell({
           className={cn(
             "flex h-4 w-4 items-center justify-center rounded-[3px] text-[9px] font-semibold",
             flags[key]
-              ? "bg-success/15 text-success"
+              ? "bg-success/15 text-success-ink"
               : "bg-muted text-muted-foreground/40",
           )}
         >
@@ -1295,7 +1295,7 @@ export default function KeywordResearchWorkbench() {
                       )
                     }
                     disabled={archiving}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive-ink transition-colors hover:bg-destructive/10 disabled:opacity-50"
                   >
                     {archiving ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" />

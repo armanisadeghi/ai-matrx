@@ -197,7 +197,7 @@ export function WorthConvertDialog({
           {/* ── The proposal, with its working ── */}
           <div className="min-h-0 space-y-3 overflow-y-auto overscroll-contain border-border p-4 scrollbar-thin md:border-r">
             {row.relative_qualifier ? (
-              <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] leading-4 text-warning">
+              <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] leading-4 text-warning-ink">
                 This one reads like a <strong>relative qualifier</strong> — the
                 same family as free, cheap and DIY. Those are the values that
                 are <em>supposed</em> to multiply, because they modify something
@@ -334,7 +334,7 @@ export function WorthConvertDialog({
                 ×{factor}
               </span>
               <ArrowRight className="h-3 w-3 text-muted-foreground" aria-hidden />
-              <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-medium tabular-nums text-primary">
+              <span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 font-medium tabular-nums text-primary-ink">
                 {amountOk ? `${signed(parsed)} points` : "—"}
               </span>
               {preview.data ? (

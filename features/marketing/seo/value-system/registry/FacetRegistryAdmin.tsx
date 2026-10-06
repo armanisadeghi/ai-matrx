@@ -446,7 +446,7 @@ export function FacetRegistryAdmin() {
                             ) : (
                               <Badge
                                 variant="outline"
-                                className="border-warning/50 bg-warning/10 text-[9px] font-normal text-warning"
+                                className="border-warning/50 bg-warning/10 text-[9px] font-normal text-warning-ink"
                                 title="seo.keyword's CHECK constraint does not accept this value, so the classifier can never write it."
                               >
                                 not enforced

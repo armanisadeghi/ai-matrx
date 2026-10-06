@@ -226,7 +226,7 @@ export function GazetteerPlaceDetectionConsole({
             </div>
 
             {status.isError ? (
-              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
+              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive-ink">
                 Could not read the place-detection scoreboard:{" "}
                 {extractErrorMessage(status.error)}
                 <ErrorAlchemyMenu />

@@ -87,7 +87,7 @@ export function RemoveOfferingDialog({
               <Skeleton className="h-24 w-full" />
             </div>
           ) : impact.error || !data ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
               <p>
                 {impact.error
                   ? `Could not measure what removing it would change: ${extractErrorMessage(impact.error)}`

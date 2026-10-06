@@ -32,7 +32,7 @@ const KNOWN = {
     // marks share one circle grammar — dotted-dashed = provisional, dashed =
     // retired, slashed = rejected — so they read as one set at 12px.
     icon: CircleDotDashed,
-    classes: "text-info border-info/40 bg-info/10",
+    classes: "text-info-ink border-info/40 bg-info/10",
     title: "Proposed — not part of the map until it is accepted.",
   },
   retired: {
@@ -44,7 +44,7 @@ const KNOWN = {
   rejected: {
     label: "Rejected",
     icon: CircleSlash,
-    classes: "text-destructive border-destructive/40 bg-destructive/10",
+    classes: "text-destructive-ink border-destructive/40 bg-destructive/10",
     title: "Rejected — turned down, no longer part of the live map.",
   },
 } as const;

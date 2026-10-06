@@ -1651,7 +1651,7 @@ export function SourceRows({
                 title="Detach this source"
                 disabled={busyKey === key}
                 onClick={() => void onDetach(link.token, link.resourceId)}
-                className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive-ink disabled:opacity-50"
               >
                 {busyKey === key ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -1711,7 +1711,7 @@ export function SourceRows({
               type="button"
               title="Remove this link"
               onClick={() => onRemoveUrl(staged.url)}
-              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive"
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive-ink"
             >
               <X className="size-3.5" />
             </button>
@@ -1806,7 +1806,7 @@ function FailedUploadRow({
               title="Dismiss this failed upload"
               disabled={retrying}
               onClick={() => onDismiss?.()}
-              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive-ink disabled:opacity-50"
             >
               <X className="size-3.5" />
             </button>

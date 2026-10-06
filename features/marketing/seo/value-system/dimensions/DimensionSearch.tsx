@@ -340,7 +340,7 @@ export function DimensionSearchResults({
                   ) : (
                     // The single most useful thing this search surfaces: a rule
                     // that exists, looks right, and is doing nothing.
-                    <span className="rounded border border-warning/50 bg-warning/10 px-1 text-warning">
+                    <span className="rounded border border-warning/50 bg-warning/10 px-1 text-warning-ink">
                       Off — matching nothing
                     </span>
                   )}

@@ -652,7 +652,7 @@ export function OfferingsWorkbench() {
       </div>
 
       {!error && tree.orphaned.length > 0 ? (
-        <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-warning">
+        <p className="rounded-md border border-warning/40 bg-warning/10 px-3 py-1.5 text-xs text-warning-ink">
           {tree.orphaned.length} offering{tree.orphaned.length === 1 ? "" : "s"} point at a parent that is no
           longer in this brand; they are drawn at the top level so nothing is hidden. Move them where they
           belong.

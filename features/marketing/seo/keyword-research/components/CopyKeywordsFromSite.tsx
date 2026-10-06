@@ -145,7 +145,7 @@ export function CopyKeywordsFromSite({ siteId }: { siteId: string }) {
 
           {preview.dryRun ? (
             preview.copied === 0 ? (
-              <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] text-warning">
+              <p className="rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] text-warning-ink">
                 This site already tracks everything that site could give it —
                 nothing to copy.
               </p>
@@ -164,7 +164,7 @@ export function CopyKeywordsFromSite({ siteId }: { siteId: string }) {
               </Button>
             )
           ) : (
-            <p className="rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-[11px] text-success">
+            <p className="rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-[11px] text-success-ink">
               Copied.
             </p>
           )}

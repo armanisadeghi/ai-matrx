@@ -262,7 +262,7 @@ export function ValueCombosPanel({
                   type="button"
                   onClick={() => void askRemove(combo)}
                   disabled={archive.isPending}
-                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+                  className="rounded p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-ink disabled:opacity-50"
                   title="Remove this combination"
                   aria-label={`Remove ${comboName(combo)}`}
                 >

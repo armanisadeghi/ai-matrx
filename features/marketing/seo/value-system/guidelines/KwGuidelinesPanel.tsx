@@ -261,7 +261,7 @@ export function KwGuidelinesPanel({
       ) : null}
 
       {stale ? (
-        <p className="flex items-start gap-1.5 rounded-md border border-warning/60 bg-warning/10 px-2 py-1.5 text-[11px] leading-snug text-warning">
+        <p className="flex items-start gap-1.5 rounded-md border border-warning/60 bg-warning/10 px-2 py-1.5 text-[11px] leading-snug text-warning-ink">
           <TriangleAlert className="mt-px h-3 w-3 shrink-0" />
           <span>
             Not edited in {age} days. The AI is still ruling on every keyword

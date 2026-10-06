@@ -904,7 +904,7 @@ export function NewRulebookFlow() {
           </div>
 
           {approachError ? (
-            <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+            <div className="space-y-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive-ink">
               <p>{approachError}</p>
               <Button
                 variant="outline"

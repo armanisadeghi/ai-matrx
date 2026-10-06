@@ -457,7 +457,7 @@ function SituationalEngineView({
       </header>
 
       {knobs.isSuccess && capCeiling === 0 ? (
-        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
+        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive-ink">
           The <code>{engine.knobFeature}</code> knob{" "}
           <code>{engine.capKnobKey}</code> has no row, so this console cannot
           know its own ceiling. Add it in Limits &amp; Knobs.
@@ -820,7 +820,7 @@ function TopicPlacementConsole({
       </header>
 
       {knobsBroken ? (
-        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive">
+        <p className="rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1.5 text-[11px] text-destructive-ink">
           The <code>{engine.knobFeature}</code> knob{" "}
           <code>{engine.capKnobKey}</code> has no row, so this console cannot
           know its own ceiling and refuses to guess one. Add it in Limits &amp;
@@ -833,7 +833,7 @@ function TopicPlacementConsole({
         </p>
       ) : null}
       {pass.error ? (
-        <p className="block rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-[11px] text-destructive">
+        <p className="block rounded-md border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-[11px] text-destructive-ink">
           {pass.error}
           <ErrorAlchemyMenu error={pass.error} />
         </p>

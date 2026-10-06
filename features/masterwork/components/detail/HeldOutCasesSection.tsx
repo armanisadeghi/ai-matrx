@@ -158,7 +158,7 @@ export function HeldOutCasesSection({ rulebookId }: { rulebookId: string }) {
       </p>
 
       {state.status === "error" ? (
-        <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive">
+        <div className="mt-2 rounded-md border border-destructive/40 bg-destructive/5 p-2.5 text-xs text-destructive-ink">
           <p>{state.message}</p>
           <Button
             icon={<RefreshCw />}

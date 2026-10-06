@@ -86,12 +86,12 @@ const STATUS_META: Record<
   ratified: {
     label: "Expert-ratified",
     hint: "A domain expert has signed off on these defaults.",
-    tone: "border-success/40 bg-success/10 text-success",
+    tone: "border-success/40 bg-success/10 text-success-ink",
   },
   proposed: {
     label: "Proposed",
     hint: "Built from real demand, awaiting expert ratification. Safe to adopt — every row is editable.",
-    tone: "border-warning/40 bg-warning/10 text-warning",
+    tone: "border-warning/40 bg-warning/10 text-warning-ink",
   },
   draft: {
     label: "Draft",
@@ -199,7 +199,7 @@ function PackCard({
           {adoption ? (
             <Badge
               variant="outline"
-              className="border-info/40 bg-info/10 text-[10px] text-info"
+              className="border-info/40 bg-info/10 text-[10px] text-info-ink"
               title={`Adopted ${formatWhen(adoption.adopted_at)}${adoption.adopted_by_label ? ` by ${adoption.adopted_by_label}` : ""}`}
             >
               <BadgeCheck className="mr-0.5 size-3" aria-hidden />

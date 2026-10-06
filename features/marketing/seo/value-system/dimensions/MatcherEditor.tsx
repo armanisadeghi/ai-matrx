@@ -515,7 +515,7 @@ function AddMatcherForm({
           organizationId={site.organization_id ?? null}
         />
       ) : reachError ? (
-        <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
+        <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive-ink">
           {reachError}
           <ErrorAlchemyMenu error={reachError} />
         </p>
@@ -634,7 +634,7 @@ export function MatcherEditor({
           {matchers.isPending ? (
             <p className="text-xs text-muted-foreground">Loading matchers…</p>
           ) : matchers.isError ? (
-            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+            <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs text-destructive-ink">
               {extractErrorMessage(matchers.error)}
               <ErrorAlchemyMenu />
             </p>

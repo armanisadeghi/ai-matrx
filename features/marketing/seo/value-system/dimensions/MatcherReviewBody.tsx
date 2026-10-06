@@ -77,7 +77,7 @@ const OUTCOME: Record<
     label: "Applied",
     blurb: "your answer is the one on this keyword",
     edge: "border-l-primary",
-    chip: "border-primary/40 bg-primary/10 text-primary",
+    chip: "border-primary/40 bg-primary/10 text-primary-ink",
     icon: Check,
   },
   lost: {
@@ -85,7 +85,7 @@ const OUTCOME: Record<
     blurb:
       "it matches, but another answer on this same dimension holds the keyword — only one is allowed, and it is not yours",
     edge: "border-l-warning",
-    chip: "border-warning/50 bg-warning/10 text-warning",
+    chip: "border-warning/50 bg-warning/10 text-warning-ink",
     icon: AlertTriangle,
   },
   blocked: {

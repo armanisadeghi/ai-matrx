@@ -137,7 +137,7 @@ export function KeywordCompetitionBadge({
 }
 
 const INTENT_CHIP_CLASSES: Record<string, string> = {
-  transactional: "border-primary/50 bg-primary/10 text-primary",
+  transactional: "border-primary/50 bg-primary/10 text-primary-ink",
   commercial_investigation: "border-primary/30 bg-primary/5 text-foreground",
   informational: "border-border bg-muted text-muted-foreground",
   navigational: "border-border bg-muted text-muted-foreground",

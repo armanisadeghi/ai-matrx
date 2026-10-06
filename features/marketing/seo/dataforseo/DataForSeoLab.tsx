@@ -360,7 +360,7 @@ export function DataForSeoLab() {
         {error ? (
           <pre
             role="alert"
-            className="whitespace-pre-wrap rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive"
+            className="whitespace-pre-wrap rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive-ink"
           >
             {error}
             <ErrorAlchemyMenu className="ml-auto" />

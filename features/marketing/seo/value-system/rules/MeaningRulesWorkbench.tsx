@@ -189,14 +189,14 @@ function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
       label: "changes no score",
       title:
         "This rule mints no matcher and no worth, so the scoring system has never heard of it. Reconnect it with the button above.",
-      className: "border-destructive/50 bg-destructive/10 text-destructive",
+      className: "border-destructive/50 bg-destructive/10 text-destructive-ink",
       warn: true,
     },
     unresolved: {
       label: "no such value",
       title:
         "It scores a dimension value that does not exist on this site, so nothing can ever carry it.",
-      className: "border-destructive/50 bg-destructive/10 text-destructive",
+      className: "border-destructive/50 bg-destructive/10 text-destructive-ink",
       warn: true,
     },
     shadowed: {
@@ -205,7 +205,7 @@ function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
         : "another rule wins",
       title:
         "Another live rule already sets what this value is worth here. Two multipliers on one value is a contradiction, so the first one keeps it — edit or archive that rule to hand this one the value.",
-      className: "border-warning/40 bg-warning/10 text-warning",
+      className: "border-warning/40 bg-warning/10 text-warning-ink",
       warn: true,
     },
     held: {
@@ -226,7 +226,7 @@ function RuleStateChip({ health }: { health: ValueRuleHealthRow | undefined }) {
       label: "nothing to apply",
       title:
         "The row carries neither a class nor a multiplier, so there is nothing to score.",
-      className: "border-warning/40 bg-warning/10 text-warning",
+      className: "border-warning/40 bg-warning/10 text-warning-ink",
       warn: true,
     },
   }[health.state];

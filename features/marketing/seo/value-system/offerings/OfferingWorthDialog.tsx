@@ -145,7 +145,7 @@ export function OfferingWorthDialog({
           />
 
           {negative ? (
-            <p className="flex items-start gap-1.5 rounded border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] leading-snug text-destructive">
+            <p className="flex items-start gap-1.5 rounded border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] leading-snug text-destructive-ink">
               <TriangleAlert className="mt-0.5 h-3 w-3 shrink-0" />
               <span>
                 Keywords under this never count as wins. This ruling forces
@@ -263,7 +263,7 @@ function Chip({
         "min-h-9 rounded border px-2 py-1 text-xs transition-colors sm:min-h-0",
         selected
           ? guard
-            ? "border-destructive bg-destructive/10 text-destructive"
+            ? "border-destructive bg-destructive/10 text-destructive-ink"
             : "border-primary bg-primary/10 text-foreground"
           : "border-border bg-card text-muted-foreground hover:bg-muted/60",
       )}

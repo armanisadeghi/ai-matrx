@@ -173,7 +173,7 @@ export function CopyMeaningFromSite({ siteId }: { siteId: string }) {
 
           {preview.dry_run ? (
             preview.total_copied === 0 ? (
-              <p className="flex items-start gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] text-warning">
+              <p className="flex items-start gap-1.5 rounded-md border border-warning/40 bg-warning/10 px-2.5 py-2 text-[11px] text-warning-ink">
                 <TriangleAlert className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
                 This site already has everything that one could give it — nothing
                 to copy.
@@ -196,7 +196,7 @@ export function CopyMeaningFromSite({ siteId }: { siteId: string }) {
           ) : (
             <p
               className={cn(
-                "rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-[11px] text-success",
+                "rounded-md border border-success/40 bg-success/10 px-2.5 py-2 text-[11px] text-success-ink",
               )}
             >
               Copied. {preview.next_step}

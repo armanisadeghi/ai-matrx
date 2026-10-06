@@ -498,9 +498,9 @@ function ProposedSetupView({ a }: { a: Record<string, unknown> }) {
                   add == null
                     ? "bg-muted text-muted-foreground"
                     : add > 0
-                      ? "bg-success/15 text-success"
+                      ? "bg-success/15 text-success-ink"
                       : add < 0
-                        ? "bg-destructive/10 text-destructive"
+                        ? "bg-destructive/10 text-destructive-ink"
                         : "bg-muted text-muted-foreground",
                 )}
               >
@@ -556,7 +556,7 @@ function BusinessModelView({ a }: { a: Record<string, unknown> }) {
   return (
     <div className="flex flex-col gap-2">
       <p>
-        <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold uppercase text-primary">
+        <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold uppercase text-primary-ink">
           {String(a.business_model ?? "?")}
         </span>{" "}
         · money flows: <span className="font-medium">{String(a.revenue_direction ?? "?")}</span>
@@ -645,11 +645,11 @@ function IdealCustomerView({ a }: { a: Record<string, unknown> }) {
 }
 
 const TIER_TONE: Record<string, string> = {
-  major_earner: "bg-success/15 text-success",
-  solid: "bg-primary/10 text-primary",
+  major_earner: "bg-success/15 text-success-ink",
+  solid: "bg-primary/10 text-primary-ink",
   minor: "bg-muted text-muted-foreground",
-  loss_leader: "bg-warning/15 text-warning",
-  noise: "bg-destructive/10 text-destructive",
+  loss_leader: "bg-warning/15 text-warning-ink",
+  noise: "bg-destructive/10 text-destructive-ink",
   unclear: "bg-muted text-muted-foreground",
 };
 
@@ -719,9 +719,9 @@ function OfferingValuesView({ a }: { a: Record<string, unknown> }) {
               className={cn(
                 "mt-0.5 w-14 shrink-0 rounded px-1.5 py-0.5 text-center text-[11px] font-semibold tabular-nums",
                 add > 0
-                  ? "bg-success/15 text-success"
+                  ? "bg-success/15 text-success-ink"
                   : add < 0
-                    ? "bg-destructive/10 text-destructive"
+                    ? "bg-destructive/10 text-destructive-ink"
                     : "bg-muted text-muted-foreground",
               )}
             >

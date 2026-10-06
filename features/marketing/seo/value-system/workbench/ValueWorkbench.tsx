@@ -201,7 +201,7 @@ const SOURCE_META: Record<
   override: {
     label: "Your ruling",
     description: "An explicit expert ruling — beats every computed signal.",
-    tone: "border-primary/40 bg-primary/10 text-primary",
+    tone: "border-primary/40 bg-primary/10 text-primary-ink",
   },
   computed: {
     label: "Computed",
@@ -213,7 +213,7 @@ const SOURCE_META: Record<
     label: "Unvalued",
     description:
       "No meaning reaches this keyword yet — the honest bucket and the work queue.",
-    tone: "border-warning/50 bg-warning/10 text-warning",
+    tone: "border-warning/50 bg-warning/10 text-warning-ink",
   },
 };
 

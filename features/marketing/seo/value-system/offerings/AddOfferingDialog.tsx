@@ -171,7 +171,7 @@ export function AddOfferingDialog({
                   <Skeleton className="h-10 w-full" />
                 </div>
               ) : suggestions.error ? (
-                <p className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                <p className="rounded border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
                   Could not look up suggestions: {asClause(extractErrorMessage(suggestions.error))}. You can still
                   add “{typed}” above.
                   <ErrorAlchemyMenu />

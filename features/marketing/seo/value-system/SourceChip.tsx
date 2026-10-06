@@ -28,13 +28,13 @@ const META: Record<
 > = {
   pack: {
     icon: Boxes,
-    tone: "border-info/40 bg-info/10 text-info",
+    tone: "border-info/40 bg-info/10 text-info-ink",
     label: (pack) => (pack ? `From ${pack}` : "From pack"),
     title: "Adopted from an industry pack and still exactly what the pack proposes. Edit it and it becomes yours.",
   },
   changed: {
     icon: Pencil,
-    tone: "border-primary/40 bg-primary/10 text-primary",
+    tone: "border-primary/40 bg-primary/10 text-primary-ink",
     label: (pack) => (pack ? `Changed from ${pack}` : "Changed from pack"),
     title: "Adopted from a pack, then edited here. Open it to see what the pack says beside what you set — and to revert if you want.",
   },

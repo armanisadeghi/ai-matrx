@@ -227,7 +227,7 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
         className={cn(
           "inline-flex h-4 items-center gap-0.5 rounded-sm border px-1 text-[10px] tabular-nums leading-none",
           open
-            ? "border-primary/40 bg-primary/10 text-primary"
+            ? "border-primary/40 bg-primary/10 text-primary-ink"
             : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
         )}
       >

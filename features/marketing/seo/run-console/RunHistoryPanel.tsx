@@ -266,7 +266,7 @@ function AiCallCard({ call, index }: { call: RunAiCall; index: number }) {
                   mounts at the brand tier too, not just for developers. The
                   sentence goes on screen; the exact object stays on `title`. */}
               <p
-                className="max-h-40 overflow-auto whitespace-pre-wrap rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive"
+                className="max-h-40 overflow-auto whitespace-pre-wrap rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive-ink"
                 title={JSON.stringify(call.error, null, 2)}
               >
                 {humanizeBackendError(
@@ -349,7 +349,7 @@ function RunDetail({
         </span>
       </div>
       {run.error_text ? (
-        <p className="mx-2 mt-2 block rounded border border-destructive/50 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+        <p className="mx-2 mt-2 block rounded border border-destructive/50 bg-destructive/10 px-2 py-1 text-[11px] text-destructive-ink">
           {run.error_text}
           <ErrorAlchemyMenu error={run.error_text} />
         </p>

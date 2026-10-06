@@ -374,14 +374,14 @@ export function BandVocabularyEditor({
             {isTemplate ? (
               <Badge
                 variant="outline"
-                className="border-info/40 bg-info/10 text-[10px] font-normal text-info"
+                className="border-info/40 bg-info/10 text-[10px] font-normal text-info-ink"
               >
                 platform defaults
               </Badge>
             ) : (
               <Badge
                 variant="outline"
-                className="border-success/40 bg-success/10 text-[10px] font-normal text-success"
+                className="border-success/40 bg-success/10 text-[10px] font-normal text-success-ink"
               >
                 yours
               </Badge>
@@ -678,7 +678,7 @@ export function BandVocabularyEditor({
                       className={cn(
                         "rounded-md border px-2.5 py-2 text-[11px]",
                         movedTotal > 0
-                          ? "border-info/40 bg-info/10 text-info"
+                          ? "border-info/40 bg-info/10 text-info-ink"
                           : "border-border bg-muted/30 text-muted-foreground",
                       )}
                     >
@@ -739,7 +739,7 @@ export function BandVocabularyEditor({
               .map((issue) => (
                 <p
                   key={issue.message}
-                  className="flex items-start gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-[11px] text-destructive"
+                  className="flex items-start gap-1 rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-[11px] text-destructive-ink"
                 >
                   <TriangleAlert className="mt-px h-3 w-3 shrink-0" />
                   {issue.message}

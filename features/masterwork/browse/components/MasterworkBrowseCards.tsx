@@ -121,7 +121,7 @@ export function MasterworkBrowseCards({
             className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4"
           >
             <div className="flex items-start gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                 <BookOpen className="h-5 w-5" />
               </span>
               <div className="min-w-0 flex-1">
