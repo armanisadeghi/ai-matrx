@@ -13,6 +13,7 @@ import { consumeChatDraftTransfer } from "@ai-matrx/chat/agents/components/chat/
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { pushMarkdownToDocument } from "@/features/data-tables/export-targets";
 import { createAlchemyDestinationPorts } from "./alchemy-destinations";
+import { registerHeadlessDestinations } from "./alchemy-door";
 
 const signal = new AbortController().signal;
 const content = {
@@ -90,6 +91,8 @@ describe("Alchemy destination ports", () => {
   });
 
   it("returns the created document target when its snapshot save partially fails", async () => {
+    // "Save to document" lands through the one write door's headless `create_documents` handler.
+    registerHeadlessDestinations(() => ({ userAuth: { id: "user-1" }, organizationId: "org-1" }) as never);
     jest.mocked(pushMarkdownToDocument).mockResolvedValue({
       ok: false,
       id: "document-42",
@@ -102,5 +105,6 @@ describe("Alchemy destination ports", () => {
       target: { kind: "document", id: "document-42", label: "Prepared content", href: "/documents/document-42" },
       message: expect.stringMatching(/created.*do not create another copy/i),
     }));
+    expect(pushMarkdownToDocument).toHaveBeenCalledWith("First line\n\nSecond line — exact bytes.", "Prepared content", "org-1");
   });
 });

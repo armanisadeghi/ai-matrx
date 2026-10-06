@@ -8,9 +8,10 @@
  * that page could add a custom field; an agent on the same page could not —
  * nothing offered it. Declaring a target on every manifest would be 643 copies
  * of one sentence, so this is a PLATFORM target like `surface_feedback` and
- * `window_form_fields`: declared here once, belonging to no manifest, offered
- * whenever at least one custom-fields section is mounted, and routed by the
- * writeback seam (`surface-writeback.ts`) to the section's own door.
+ * `window_form_fields`: declared once on the baseline surface every surface
+ * inherits (`_baseline.manifest.ts`), offered whenever at least one
+ * custom-fields section is mounted, and written through the one write door
+ * (`surface-writeback.ts` `applyPlatformWrite`) to the section's own door.
  *
  * The section owns the write: it hands its host a door (records-ui
  * `agentDoor` prop → `CustomFieldsAgentDoor`), which checks the whole request
@@ -22,13 +23,13 @@
  * never depends on a package version; `EntityCustomFields` passes the real one.
  */
 import type { SurfaceWriteTarget } from "../types";
+import { CUSTOM_FIELDS_MAX_PER_WRITE, PLATFORM_WRITE_TARGETS } from "../manifests/_baseline.manifest";
 import type { SurfaceWriteOutcome } from "./SurfaceRuntimeContext";
 
-export const CUSTOM_FIELDS_TARGET_NAME = "custom_fields_add";
-export const CUSTOM_FIELDS_SET_TARGET_NAME = "custom_fields_set";
+export const CUSTOM_FIELDS_TARGET_NAME = PLATFORM_WRITE_TARGETS.custom_fields_add.name;
+export const CUSTOM_FIELDS_SET_TARGET_NAME = PLATFORM_WRITE_TARGETS.custom_fields_set.name;
 /** The surface value a section contributes when its surface declares it (baseline `custom_fields`). */
 export const CUSTOM_FIELDS_VALUE_NAME = "custom_fields";
-export const CUSTOM_FIELDS_MAX_PER_WRITE = 10;
 
 /**
  * Surfaces whose PROVIDER answers `custom_fields` itself (the one owner of the value, so it is
@@ -132,13 +133,6 @@ function describeDoor(door: CustomFieldsAgentDoor): string {
   return `entity "${s.entityToken}" (${what}, record ${s.recordId}) — fields: ${held}; ${may}`;
 }
 
-const BASE_DESCRIPTION =
-  "Add custom fields (new columns) to the kind of record shown on this page — SAVED immediately after the person approves, and every record of that kind gets the field (empty until filled in). " +
-  'Value: { "entity": "<entity token, required only when more than one section is listed>", "fields": [{ "label": "<the field\'s name as a person reads it>", "type": "<one of the types below; default text>" }] } — 1 to ' +
-  `${CUSTOM_FIELDS_MAX_PER_WRITE} fields. ` +
-  "Refused before the person is asked: a name already used, a name asked for twice, an unknown type, or a person who may not add fields (the store's reason is returned). " +
-  "This adds the FIELD only; it does not fill in a value.";
-
 /** The target, worded with the sections that are mounted right now. */
 export function customFieldsTarget(): SurfaceWriteTarget {
   const mounted = listCustomFieldsDoors();
@@ -146,14 +140,9 @@ export function customFieldsTarget(): SurfaceWriteTarget {
   const typeLine = types.length > 0 ? ` Types: ${types.map((t) => `${t.value} (${t.label})`).join(", ")}.` : "";
   const sections =
     mounted.length > 0 ? ` Sections on this page: ${mounted.map(describeDoor).join(" | ")}.` : "";
-  return {
-    name: CUSTOM_FIELDS_TARGET_NAME,
-    label: "Add custom fields",
-    description: `${BASE_DESCRIPTION}${typeLine}${sections}`,
-    valueType: "object",
-    mode: "entity",
-    applyPolicy: "ask",
-  };
+  // The declaration is the baseline's; the live offer adds what is mounted.
+  const declared = PLATFORM_WRITE_TARGETS.custom_fields_add;
+  return { ...declared, description: `${declared.description}${typeLine}${sections}` };
 }
 
 // ── the value ─────────────────────────────────────────────────────────────────
@@ -293,19 +282,8 @@ export function customFieldsSetTarget(): SurfaceWriteTarget {
   const mounted = listCustomFieldsDoors().filter((d) => typeof d.setValues === "function");
   const sections =
     mounted.length > 0 ? ` Sections on this page: ${mounted.map(describeDoor).join(" | ")}.` : "";
-  return {
-    name: CUSTOM_FIELDS_SET_TARGET_NAME,
-    label: "Fill in custom fields",
-    description:
-      "Set this record's custom-field values — SAVED immediately after the person approves; a field left out is left alone. " +
-      'Value: { "entity": "<entity token, only when more than one section is listed>", "values": { "<field name or key>": <value> } }. ' +
-      "A number field takes a number, a date field an ISO date (YYYY-MM-DD), text fields a string; null clears a value. " +
-      "Refused before the person is asked: a field that does not exist (the existing ones are named), or a person who may not fill them in. " +
-      `To add a NEW field use ${CUSTOM_FIELDS_TARGET_NAME}.${sections}`,
-    valueType: "object",
-    mode: "entity",
-    applyPolicy: "ask",
-  };
+  const declared = PLATFORM_WRITE_TARGETS.custom_fields_set;
+  return { ...declared, description: `${declared.description}${sections}` };
 }
 
 export function customFieldsSetProblems(
