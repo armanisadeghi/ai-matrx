@@ -13,6 +13,7 @@
 import "leaflet/dist/leaflet.css";
 import React, { useEffect, useMemo } from "react";
 import L from "leaflet";
+import { escapeHtml } from "@ai-matrx/kit/html-escape";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 
 export interface MapMarker {
@@ -23,10 +24,6 @@ export interface MapMarker {
   /** Draw a round labelled bubble (a rank, a mark) instead of the pin.
    *  `className` colours it; it is set on a plain element inside the map. */
   bubble?: { text: string; className: string };
-}
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 }
 
 function bubbleIcon(bubble: { text: string; className: string }): L.DivIcon {

@@ -32,7 +32,7 @@ export function RankGridMap({
           {LEGEND.map((item) => (
             <li key={item.tone} className="flex items-center gap-1">
               <span
-                className={`flex size-5 items-center justify-center rounded-full border-2 text-[10px] font-semibold ${BUBBLE_CLASS[item.tone]}`}
+                className={`flex h-5 min-w-5 items-center justify-center rounded-full border-2 px-0.5 text-xs font-semibold ${BUBBLE_CLASS[item.tone]}`}
               >
                 {item.text}
               </span>
