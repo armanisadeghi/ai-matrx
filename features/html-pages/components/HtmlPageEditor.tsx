@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { HtmlPageRecord } from "@/features/html-pages/types";
@@ -209,6 +210,10 @@ export default function HtmlPageEditor({
   initialTab,
   listReturnQuery,
 }: HtmlPageEditorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const isMobile = useIsMobile();
   const themeMode = useThemeMode();
@@ -450,8 +455,7 @@ export default function HtmlPageEditor({
 
   const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(page.url);
-      toast.success("URL copied");
+      await copyText(page.url, "URL copied");
     } catch {
       toast.error("Failed to copy URL");
     }

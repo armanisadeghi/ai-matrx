@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect } from "react";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -129,6 +131,10 @@ function roleClasses(role: string) {
 // ---------------------------------------------------------------------------
 
 function IdWithTooltip({ id, label }: { id: string; label?: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <TooltipProvider delayDuration={200}>
@@ -142,7 +148,7 @@ function IdWithTooltip({ id, label }: { id: string; label?: string }) {
               className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
               onClick={(e) => {
                 e.stopPropagation();
-                navigator.clipboard.writeText(id);
+                copyText(id);
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
               }}

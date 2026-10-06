@@ -20,6 +20,7 @@
  *     query cache, or a URL. Revealed restricted values auto-clear in ~30s;
  *     visible values stay for the lifetime of the mounted row.
  */
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState } from "react";
 import {
   Check,
@@ -89,6 +90,10 @@ export function useFieldSecret(
   field: VaultField,
   onRecentAuthRequired?: () => void,
 ) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // Standard values are ordinary authorized display data: keep them for this
   // mounted row instead of hiding them on the restricted-value timer.
   const held = useTransientSecret(
@@ -292,7 +297,7 @@ export function useFieldSecret(
     if (!isCurrent(operation) || value === null) return;
     try {
       if (!isCurrent(operation)) return;
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
     } catch {
       if (isCurrent(operation))
         toast.error("Your browser blocked clipboard access");

@@ -6,6 +6,7 @@
  * is the chrome — the tab carries the directive's name.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import type { CanvasKindProps } from "@ai-matrx/canvas/react";
@@ -20,6 +21,10 @@ import {
 import { readDirectiveShapeData } from "./directiveShapeKind";
 
 export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [exampleKind, setExampleKind] = useState<SchemaExampleKind>("minimum");
   const [copied, setCopied] = useState<"example" | "schema" | null>(null);
   const shape = readDirectiveShapeData(data);
@@ -30,7 +35,7 @@ export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
 
   async function copy(value: unknown, target: "example" | "schema") {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(value, null, 2));
+      await copyText(JSON.stringify(value, null, 2));
       setCopied(target);
       toast.success(
         target === "schema" ? "JSON Schema copied" : "Example copied",

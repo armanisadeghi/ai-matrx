@@ -8,6 +8,7 @@
 // come from the registries; the ⋯ menu carries only what EntityRef does not:
 // association actions (detach / pin) and the destructive entity delete.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, type ReactNode } from "react";
 import {
   Check,
@@ -660,11 +661,15 @@ function DefaultResourceRow({
 }
 
 function ResourceIdCopy({ id }: { id: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(id);
+      await copyText(id);
       setCopied(true);
       toast.success("ID copied");
       setTimeout(() => setCopied(false), 1500);

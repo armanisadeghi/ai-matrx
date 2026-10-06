@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useMemo, useEffect, useRef } from "react";
 import {
   Save,
@@ -292,13 +293,17 @@ interface HighlightedJsonProps {
 }
 
 function HighlightedJson({ value, highlightKeys = {} }: HighlightedJsonProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const raw = useMemo(() => JSON.stringify(value, null, 2), [value]);
   const lines = useMemo(() => raw.split("\n"), [raw]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(raw).then(() => {
+    copyText(raw).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

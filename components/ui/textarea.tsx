@@ -18,6 +18,8 @@
  * elevation); set it to `none` to go back to flat.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -48,13 +50,17 @@ function useCopy(
   ref: React.RefObject<HTMLTextAreaElement | null>,
   props: PackageTextareaProps,
 ) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [hasCopied, setHasCopied] = React.useState(false);
 
   const handleCopy = async () => {
     const value =
       ref.current?.value || String(props.value || props.defaultValue || "");
     if (!value) return;
-    await navigator.clipboard.writeText(value);
+    await copyText(value);
     setHasCopied(true);
     setTimeout(() => setHasCopied(false), 450);
   };

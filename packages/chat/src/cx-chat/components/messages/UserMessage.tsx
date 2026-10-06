@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Check,
@@ -124,6 +126,10 @@ export function UserMessage({
   onContentChange,
   compact = false,
 }: UserMessageProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isCopied, setIsCopied] = useState(false);
   const [shouldBeCollapsible, setShouldBeCollapsible] = useState(false);
@@ -184,7 +190,7 @@ export function UserMessage({
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(message.content).then(() => {
+    copyText(message.content).then(() => {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     });

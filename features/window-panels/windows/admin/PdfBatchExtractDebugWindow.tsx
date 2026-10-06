@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useCallback,
   useEffect,
@@ -31,9 +32,13 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 // context-menu-exempt: entity — an in-memory Redux debug session (the raw NDJSON stream of one batch-extract call), not a persisted record
 
 function useCopyText(text: string) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const copy = useCallback(() => {
-    void navigator.clipboard.writeText(text).then(() => {
+    void copyText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

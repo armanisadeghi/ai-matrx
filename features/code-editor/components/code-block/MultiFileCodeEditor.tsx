@@ -1,4 +1,5 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
@@ -59,6 +60,10 @@ export default function MultiFileCodeEditor({
   showSidebar: initialShowSidebar = true,
   height = "600px",
 }: MultiFileCodeEditorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [ref, { height: measuredHeight }] = useMeasure();
   // Measures the exact height of the Monaco editor wrapper div so we can give
   // Monaco an explicit pixel height whether or not the toolbar shows.
@@ -198,7 +203,7 @@ export default function MultiFileCodeEditor({
       textToCopy = paddedLines.join("\n");
     }
 
-    await navigator.clipboard.writeText(textToCopy);
+    await copyText(textToCopy);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

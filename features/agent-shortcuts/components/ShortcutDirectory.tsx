@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -63,6 +65,10 @@ export function ShortcutDirectory({
   manageLabel,
   hideTitleBar = false,
 }: ShortcutDirectoryProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const router = useRouter();
   const [, startTransition] = useTransition();
   const { toast } = useToast();
@@ -165,7 +171,7 @@ export function ShortcutDirectory({
   };
   const copyId = async (id: string) => {
     try {
-      await navigator.clipboard.writeText(id);
+      await copyText(id);
       setCopiedId(id);
       toast({ title: "Copied", description: "Shortcut ID copied" });
       setTimeout(

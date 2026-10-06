@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect, useRef } from "react";
 import { Save, X, Loader2, Copy, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,10 @@ export function GeneralSettings({
   userRole,
   onOrganizationUpdated,
 }: GeneralSettingsProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatchThunk = useDispatchThunk();
   const refreshLayoutOrganization = useOrgSettingsLayoutRefresh();
   const fieldId = React.useId();
@@ -184,8 +189,7 @@ export function GeneralSettings({
   // Handle copy URL
   const handleCopyUrl = () => {
     const orgUrl = `https://aimatrx.com/organizations/${organization.slug}`;
-    navigator.clipboard.writeText(orgUrl);
-    toast.success("Organization URL copied to clipboard");
+    copyText(orgUrl, "Organization URL copied to clipboard");
   };
 
   return (

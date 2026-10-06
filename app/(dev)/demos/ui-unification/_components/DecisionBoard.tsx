@@ -10,6 +10,7 @@
  *   header actions are tap-target buttons; no raw styled <button>.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState } from "react";
 import { RecordsProvider, useAppTable } from "@ai-matrx/records/react";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -311,14 +312,17 @@ export function DecisionBoardView({
   error: string | null;
   onChange: (id: string, patch: (prev: DecisionState) => DecisionState) => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const update = onChange;
 
   const decidedCount = DECISIONS.filter((d) => picks[d.id]?.winner).length;
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(toMarkdown(picks));
-      toast.success("Decisions copied");
+      await copyText(toMarkdown(picks), "Decisions copied");
     } catch {
       toast.error("Clipboard blocked — use Download");
     }

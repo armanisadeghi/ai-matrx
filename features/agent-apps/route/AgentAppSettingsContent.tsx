@@ -9,6 +9,7 @@
  * explanations of what an agent or version is.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Loader2, Save, Trash2 } from "lucide-react";
@@ -101,6 +102,10 @@ function requireOpenApp(app: unknown, target: string): void {
 export function AgentAppSettingsContent({
   appId,
 }: AgentAppSettingsContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
   // What this app RUNS — pinned today, the mandate's Holder after the cutover.
@@ -271,8 +276,7 @@ export function AgentAppSettingsContent({
   const handleCopyUrl = async () => {
     if (!app) return;
     try {
-      await navigator.clipboard.writeText(`${siteConfig.url}/p/${app.slug}`);
-      toast.success("Public URL copied");
+      await copyText(`${siteConfig.url}/p/${app.slug}`, "Public URL copied");
     } catch {
       toast.error("Copy failed");
     }

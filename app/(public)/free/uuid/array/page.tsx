@@ -1,5 +1,6 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState } from 'react';
 import { X, Plus, Copy, Check, Zap, ChevronDown, ChevronUp, ListFilter } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,10 @@ import { toast } from "@/lib/toast";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
 const UUIDArrayField = () => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
     const [inputValue, setInputValue] = useState('');
     const [uuids, setUuids] = useState<string[]>([]);
     const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -56,7 +61,7 @@ const UUIDArrayField = () => {
   const copyToClipboard = async (uuid: string, e?: React.SyntheticEvent) => {
     e?.stopPropagation();
         try {
-            await navigator.clipboard.writeText(uuid);
+            await copyText(uuid);
             setCopiedId(uuid);
             setTimeout(() => setCopiedId(null), 2000);
         } catch (err) {

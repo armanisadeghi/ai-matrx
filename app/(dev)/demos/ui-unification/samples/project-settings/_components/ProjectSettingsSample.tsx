@@ -12,6 +12,7 @@
  * danger zone.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -200,6 +201,10 @@ function General({
   memberCount: number;
   linked: number;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const initial = {
     name: project.name,
     description: project.description ?? "",
@@ -267,7 +272,7 @@ function General({
             variant="quiet"
             aria-label="Copy project ID"
             icon={<Copy aria-hidden />}
-            onClick={() => void navigator.clipboard.writeText(project.id).then(() => toast.success("Project ID copied"))}
+            onClick={() => void copyText(project.id, "Project ID copied")}
           />
         </SettingRow>
         <SettingRow label="Slug" line={project.slug ?? "None"} />

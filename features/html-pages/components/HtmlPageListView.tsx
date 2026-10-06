@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -87,6 +88,10 @@ export default function HtmlPageListView({
   scrollContainerRef,
   restoreScrollTop,
 }: HtmlPageListViewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -268,7 +273,7 @@ export default function HtmlPageListView({
 
   const copyUrl = async (page: HtmlPageSummary) => {
     try {
-      await navigator.clipboard.writeText(page.url);
+      await copyText(page.url);
       setCopiedId(page.id);
       toast.success("URL copied");
       setTimeout(() => setCopiedId(null), 1500);

@@ -13,6 +13,7 @@
  * KindInputForm pulls in ajv + the production input stack.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Check, Copy, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -23,12 +24,16 @@ interface KindTryInputTabProps {
 }
 
 export default function KindTryInputTab({ kind }: KindTryInputTabProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [submitted, setSubmitted] = useState<string | null>(null);
 
   async function copySubmitted(): Promise<void> {
     if (submitted === null) return;
     try {
-      await navigator.clipboard.writeText(submitted);
+      await copyText(submitted);
       toast.success(`Copied ${kind} instance`);
     } catch (error) {
       toast.error(

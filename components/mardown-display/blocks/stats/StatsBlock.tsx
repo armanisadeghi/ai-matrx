@@ -9,6 +9,7 @@
  * headline figures). Streaming → skeleton; invalid JSON → contained error.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useMemo, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check, Copy, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -80,6 +81,10 @@ const TREND = {
 };
 
 export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamActive = false, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const parsed = useMemo(() => (isStreamActive ? null : parseStats(content)), [content, isStreamActive]);
   const spec = parsed && !("error" in parsed) ? parsed : null;
   const error = parsed && "error" in parsed ? parsed.error : null;
@@ -93,7 +98,7 @@ export const StatsBlock: React.FC<StatsBlockProps> = ({ content = "", isStreamAc
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content.trim());
+      await copyText(content.trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

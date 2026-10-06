@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { DynamicIcon } from "@ai-matrx/icons";
@@ -634,6 +635,10 @@ function ServerToolsTab({
   readError?: unknown;
   onRetryRead?: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const selectedTools = useAppSelector((state) =>
     selectAgentTools(state, agentId),
@@ -765,7 +770,7 @@ function ServerToolsTab({
       );
       const text = formatEnabledTools(tools, format);
       try {
-        await navigator.clipboard.writeText(text);
+        await copyText(text);
         setCopiedFormat(format);
         setTimeout(() => setCopiedFormat(null), 1500);
       } catch (err) {
@@ -4172,6 +4177,10 @@ function ToolCard({
 }
 
 function ToolDetailPanel({ toolId }: { toolId: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<any>(null);
   const [copied, setCopied] = useState(false);
@@ -4236,7 +4245,7 @@ function ToolDetailPanel({ toolId }: { toolId: string }) {
       null,
       2,
     );
-    navigator.clipboard.writeText(json).then(() => {
+    copyText(json).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

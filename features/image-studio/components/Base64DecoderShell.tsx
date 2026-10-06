@@ -14,6 +14,7 @@
  * uses, so the resulting URL is persistent (not a 60-min signed URL).
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useCallback, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -467,6 +468,10 @@ function SaveResultPanel({
   shareUrl: string;
   fileId: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -475,7 +480,7 @@ function SaveResultPanel({
       return;
     }
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await copyText(shareUrl);
       setCopied(true);
       toast.success("URL copied");
       setTimeout(() => setCopied(false), 1500);

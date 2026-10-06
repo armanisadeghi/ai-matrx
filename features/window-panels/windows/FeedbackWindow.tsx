@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -394,6 +395,10 @@ function useFeedbackForm({
   onClose: () => void;
   subject?: FeedbackSubject;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const pathname = usePathname();
   const draftKey = subject
     ? subject.kind === "text_passage"
@@ -1038,7 +1043,7 @@ function useFeedbackForm({
     if (!submittedItem) return;
     const prompt = buildAgentPrompt(submittedItem);
     try {
-      await navigator.clipboard.writeText(prompt);
+      await copyText(prompt);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {

@@ -2,6 +2,7 @@
 
 // THE SHAPES COME FROM THE REGISTRY, via the parser that produces them —
 // this renderer never re-declares them (`check:kind-type-twins`).
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Button, Chip, Tile } from "@ai-matrx/design-system/controls";
 import type {
   TroubleshootingStep,
@@ -82,6 +83,10 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
   initialState,
   onStateChange,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isFullScreen, setIsFullScreen] = useState(false);
   const blockContentRef = useRef<HTMLDivElement>(null);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -258,7 +263,7 @@ const TroubleshootingBlock: React.FC<TroubleshootingBlockProps> = ({
 
   const copyCommand = async (command: string, commandId: string) => {
     try {
-      await navigator.clipboard.writeText(command);
+      await copyText(command);
       setCopiedCommands(new Set([...copiedCommands, commandId]));
       setTimeout(() => {
         setCopiedCommands((prev) => {

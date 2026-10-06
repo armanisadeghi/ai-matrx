@@ -11,6 +11,7 @@
  * configuration.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -32,6 +33,10 @@ export function EmbedSnippet({
   origin,
   defaultHeight = 600,
 }: EmbedSnippetProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [height, setHeight] = useState<number>(defaultHeight);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -59,7 +64,7 @@ export function EmbedSnippet({
 
   const copy = async (text: string, key: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 2000);
     } catch (err) {

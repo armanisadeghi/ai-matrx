@@ -15,6 +15,7 @@
 // tabs, like the notes editor's tab strip), so it stays in the body — but only
 // inside the instance-detail view branch, never as a window-level header bar.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useState } from "react";
 import { LayoutDashboard, X, Code2, Copy, Check } from "lucide-react";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -42,9 +43,13 @@ type TabId = string;
 // ─── Copy helper ──────────────────────────────────────────────────────────────
 
 function useCopyText(text: string) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const copy = () => {
-    navigator.clipboard.writeText(text).then(() => {
+    copyText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

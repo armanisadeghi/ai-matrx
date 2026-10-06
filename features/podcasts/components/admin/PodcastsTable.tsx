@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useMemo } from "react";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import {
@@ -69,12 +71,16 @@ interface PodcastsTableProps {
 }
 
 function CopyLinkButton({ slug }: { slug: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     const url = `${window.location.origin}/podcast/${slug}`;
-    navigator.clipboard.writeText(url).then(() => {
+    copyText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

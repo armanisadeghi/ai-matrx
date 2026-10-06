@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useCallback,
   useEffect,
@@ -1278,12 +1279,16 @@ const CopyButton: React.FC<{ value: string; label?: string }> = ({
   value,
   label,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
       onClick={() => {
-        void navigator.clipboard.writeText(value).then(() => {
+        void copyText(value).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 1200);
         });

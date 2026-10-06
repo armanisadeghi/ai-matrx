@@ -6,6 +6,7 @@
 // the person types. Click to jump; the link icon copies a link to that
 // heading (its id is the slug the rendered page uses).
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Link2, ListTree } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -20,11 +21,15 @@ export function OutlinePanel({
   onJump: (entry: OutlineEntry) => void;
   className?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const minLevel = Math.min(...entries.map((entry) => entry.level), 6);
   const copyLink = async (entry: OutlineEntry) => {
     const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${entry.slug}`;
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       toast.success(`Link to “${entry.text}” copied.`);
     } catch {
       toast.error("Copy failed — your browser blocked clipboard access.");

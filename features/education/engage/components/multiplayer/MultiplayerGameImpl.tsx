@@ -15,6 +15,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -78,6 +79,10 @@ export function MultiplayerGameImpl({
   roomId: string;
   code: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const { userId, displayName } = useCurrentPlayer();
   const [room, setRoom] = useState<JoinableRoom | null>(null);
@@ -205,8 +210,7 @@ export function MultiplayerGameImpl({
 
   const copyCode = async (): Promise<void> => {
     try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Join code copied");
+      await copyText(code, "Join code copied");
     } catch {
       toast.error("Copy failed");
     }

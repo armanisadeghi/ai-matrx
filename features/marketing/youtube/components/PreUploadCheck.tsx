@@ -20,6 +20,7 @@
  * it on a phone — unanswered.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { ClipboardCopy, Eye } from "lucide-react";
 
@@ -66,6 +67,10 @@ export interface PreUploadCheckProps {
 }
 
 export function PreUploadCheck({ className }: PreUploadCheckProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [clipboardFallback, setClipboardFallback] = useState<string | null>(null);
   const knob = useTargetKeywordRequired();
@@ -94,8 +99,7 @@ export function PreUploadCheck({ className }: PreUploadCheckProps) {
   async function copyForStudio(): Promise<void> {
     const text = studioClipboardText(scoredDraft);
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Copied — paste it into YouTube Studio.");
+      await copyText(text, "Copied — paste it into YouTube Studio.");
     } catch {
       setClipboardFallback(text);
     }

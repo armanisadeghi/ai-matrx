@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useRef, useEffect } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -109,13 +110,17 @@ function TimelineEntry({
   startTimestamp: number | null;
   index: number;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const hasData = Object.keys(event.data).length > 0;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(event.data, null, 2));
+      await copyText(JSON.stringify(event.data, null, 2));
       setCopied(true);
       toast.success("Copied event data");
       setTimeout(() => setCopied(false), 2000);

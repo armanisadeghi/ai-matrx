@@ -6,6 +6,7 @@
  * already loaded into the tasks slice.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -63,6 +64,10 @@ interface TaskPreviewContentProps {
 }
 
 export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const task = useAppSelector(
     (state) =>
       selectTaskById(state as Parameters<typeof selectTaskById>[0], taskId) as
@@ -73,7 +78,7 @@ export function TaskPreviewContent({ taskId, onOpen }: TaskPreviewContentProps) 
 
   const handleCopyId = async () => {
     try {
-      await navigator.clipboard.writeText(taskId);
+      await copyText(taskId);
       setCopied(true);
       toast.success("Task ID copied");
       setTimeout(() => setCopied(false), 1500);

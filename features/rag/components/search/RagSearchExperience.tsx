@@ -20,6 +20,7 @@
  * feel polished enough for any normal user.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -397,6 +398,10 @@ function JsonInspector({
   value: unknown;
   collapsed?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [open, setOpen] = useState(!collapsed);
   const pretty = useMemo(() => {
     try {
@@ -418,8 +423,7 @@ function JsonInspector({
         <button
           type="button"
           onClick={() => {
-            navigator.clipboard.writeText(pretty);
-            toast.success("Copied to clipboard");
+            copyText(pretty, "Copied to clipboard");
           }}
           className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
         >
@@ -1833,6 +1837,10 @@ function AgentToolPanel({ scope }: { scope: Scope }) {
 // ===========================================================================
 
 function AgentSimulationTab({ scope }: { scope: Scope }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [query, setQuery] = useState("");
   const [running, setRunning] = useState(false);
   const [diag, setDiag] = useState<DiagnoseResponse | null>(null);
@@ -2288,8 +2296,7 @@ function AgentSimulationTab({ scope }: { scope: Scope }) {
                       type="button"
                       className="p-1 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
                       onClick={() => {
-                        navigator.clipboard.writeText(assembledPrompt);
-                        toast.success("Prompt copied");
+                        copyText(assembledPrompt, "Prompt copied");
                       }}
                     >
                       <Copy className="h-3 w-3" />

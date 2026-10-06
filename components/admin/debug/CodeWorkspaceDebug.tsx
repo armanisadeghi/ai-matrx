@@ -26,6 +26,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useState } from "react";
 import { createSelector } from "@reduxjs/toolkit";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -474,12 +476,16 @@ function CopyableMono({ value }: { value: string }) {
 }
 
 function CopyButton({ value, label }: { value: string; label?: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <button
       type="button"
       onClick={() => {
-        void navigator.clipboard.writeText(value).then(() => {
+        void copyText(value).then(() => {
           setCopied(true);
           setTimeout(() => setCopied(false), 1200);
         });

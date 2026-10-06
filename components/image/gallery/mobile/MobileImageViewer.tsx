@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { wrap } from "popmotion";
@@ -29,6 +31,10 @@ export function MobileImageViewer({
   onShare,
   isFavorite,
 }: MobileImageViewerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [[page, direction], setPage] = useState([initialIndex, 0]);
   const [buffer, setBuffer] = useState<string[]>([]);
   const [isSharing, setIsSharing] = useState(false);
@@ -77,7 +83,7 @@ export function MobileImageViewer({
   // Handle share with clipboard
   const handleShare = async () => {
     try {
-      await navigator.clipboard.writeText(photos[imageIndex]?.url);
+      await copyText(photos[imageIndex]?.url);
       setIsSharing(true);
       setTimeout(() => setIsSharing(false), 2000);
       onShare(photos[imageIndex]);

@@ -7,6 +7,7 @@
  * pretty-printed payload in a scrollable code block with a copy button.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Copy, Check, Code2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,10 @@ interface Props {
 }
 
 export function PdfJsonResult({ data, title = "Response" }: Props) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   if (data == null) return null;
@@ -26,7 +31,7 @@ export function PdfJsonResult({ data, title = "Response" }: Props) {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(json);
+      await copyText(json);
       setCopied(true);
       toast.success("Copied JSON.");
       setTimeout(() => setCopied(false), 1500);

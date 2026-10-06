@@ -27,6 +27,7 @@
  * `pnpm check:lint-debt:write` and commit — the page says so, with the age.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -154,6 +155,10 @@ export function LintDebtConsole({
   history,
   problems,
 }: LintDebtConsoleProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [bucket, setBucket] = useState<BucketFilter>({ kind: "none" });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [clickedFinding, setClickedFinding] = useState<LintDebtFinding | null>(null);
@@ -172,7 +177,7 @@ export function LintDebtConsole({
 
   const copy = async (key: string, text: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopiedKey(key);
       window.setTimeout(
         () => setCopiedKey((k) => (k === key ? null : k)),

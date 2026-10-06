@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -20,6 +21,10 @@ import type { RulebookListRow } from "../types";
 export function useRulebookRowActions(
   list: EntityListController<RulebookListRow>,
 ): EntityRowActionsResult<RulebookListRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const [deleting, setDeleting] = useState<RulebookListRow | null>(null);
@@ -101,7 +106,7 @@ export function useRulebookRowActions(
               label: "Copy link",
               icon: Link2,
               onSelect: () => {
-                void navigator.clipboard.writeText(
+                void copyText(
                   `${window.location.origin}/masterwork/${row.id}`,
                 );
                 toast.success("Link copied");

@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
@@ -19,6 +21,10 @@ import type {
 } from "@/types/canvas-social";
 
 export function useCanvasShare() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const displayName = useAppSelector(selectDisplayName);
@@ -115,7 +121,7 @@ export function useCanvasShare() {
 
   const copyToClipboard = async (url: string) => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       return true;
     } catch (err) {
       console.error("Failed to copy:", err);

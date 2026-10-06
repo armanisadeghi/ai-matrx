@@ -1,4 +1,5 @@
 // Task Item Component
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React from "react";
 import { toastWriteFailure } from "@/lib/errors/toastWriteFailure";
 import {
@@ -42,6 +43,10 @@ export default function TaskItem({
   task: TaskWithProject;
   depth?: number;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const showAllProjects = useAppSelector(selectShowAllProjects);
   const expandedTasks = useAppSelector(selectExpandedTasks);
@@ -89,7 +94,7 @@ export default function TaskItem({
       task.dueDate ? `\nDue: ${task.dueDate}` : ""
     }`;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
     } catch {
       /* ignore */
     }

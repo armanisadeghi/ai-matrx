@@ -14,6 +14,7 @@
  * colored, streaming live. It used to fall to "needs a JSON object".
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, Columns2, Copy, GitCompareArrows, Rows3, TriangleAlert } from "lucide-react";
@@ -104,6 +105,10 @@ export const DiffBlock: React.FC<DiffBlockProps> = (props) => {
 };
 
 const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive = false, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const parsed = useMemo(() => (isStreamActive ? null : parseDiff(content)), [content, isStreamActive]);
   const spec = parsed && !("error" in parsed) ? parsed : null;
   const error = parsed && "error" in parsed ? parsed.error : null;
@@ -122,7 +127,7 @@ const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive 
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content.trim());
+      await copyText(content.trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

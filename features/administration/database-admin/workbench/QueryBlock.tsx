@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState } from "react";
@@ -107,6 +108,10 @@ export function QueryBlock({
   onDuplicate,
   onMove,
 }: QueryBlockProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [resultExpanded, setResultExpanded] = useState(true);
   const [showResolved, setShowResolved] = useState(false);
 
@@ -121,8 +126,7 @@ export function QueryBlock({
 
   const copyResolved = () => {
     if (!interpolation.resolved) return;
-    navigator.clipboard.writeText(interpolation.resolved);
-    toast.success("Copied resolved query");
+    copyText(interpolation.resolved, "Copied resolved query");
   };
 
   const displayQuery = showResolved ? interpolation.resolved : block.query;

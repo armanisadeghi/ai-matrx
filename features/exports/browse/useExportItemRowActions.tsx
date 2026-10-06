@@ -15,6 +15,7 @@
 // was attached) and says in one sentence that the text itself was never read
 // in. Metadata, completely, and nothing else.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { ClipboardCopy, Filter, Info, User } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -33,6 +34,10 @@ import { partyLabel } from "./columns";
 export function useExportItemRowActions(
   list: EntityListController<ExportItem>,
 ): EntityRowActionsResult<ExportItem> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [detailed, setDetailed] = useState<ExportItem | null>(null);
 
   // No manual memoization — the React Compiler owns it (CLAUDE.md).
@@ -93,7 +98,7 @@ export function useExportItemRowActions(
               icon: ClipboardCopy,
               onSelect: () => {
                 // Metadata only — the same fields the details dialog shows.
-                void navigator.clipboard.writeText(
+                void copyText(
                   [
                     row.title?.trim() || "(no subject)",
                     author ? `From: ${author}` : null,

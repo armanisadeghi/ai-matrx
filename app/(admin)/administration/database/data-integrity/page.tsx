@@ -9,6 +9,7 @@
 // with the findings sample. Read-only — checks never mutate data. The
 // /administration layout already gates the whole tree to super admins.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -336,6 +337,10 @@ function CheckDetail({
 }
 
 export default function DataIntegrityPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [checks, setChecks] = useState<CheckMeta[] | null>(null);
   const [report, setReport] = useState<Report | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -487,8 +492,7 @@ export default function DataIntegrityPage() {
 
   const copyReport = useCallback(() => {
     if (!report) return;
-    void navigator.clipboard.writeText(JSON.stringify(report, null, 2));
-    toast.success("Report copied as JSON");
+    void copyText(JSON.stringify(report, null, 2), "Report copied as JSON");
   }, [report]);
 
   const rows = useMemo((): IntegrityRow[] => {

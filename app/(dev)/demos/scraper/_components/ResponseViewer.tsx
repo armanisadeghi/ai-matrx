@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, {
   useState,
   useCallback,
@@ -190,11 +192,15 @@ function JsonNode({
 }
 
 function JsonExplorer({ data }: { data: unknown }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      await copyText(JSON.stringify(data, null, 2));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -230,12 +236,16 @@ function JsonExplorer({ data }: { data: unknown }) {
 // =============================================================================
 
 function RawJsonView({ data }: { data: unknown }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const jsonString = JSON.stringify(data, null, 2);
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(jsonString);
+      await copyText(jsonString);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -298,6 +308,10 @@ export function ResponseViewer({
   title = "Response",
   className,
 }: ResponseViewerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [activeTab, setActiveTab] = useState<string>(
     renderContent ? "rendered" : "explorer",
   );
@@ -312,7 +326,7 @@ export function ResponseViewer({
   const copyDiagnostics = useCallback(async () => {
     if (!diagnosticsText) return;
     try {
-      await navigator.clipboard.writeText(diagnosticsText);
+      await copyText(diagnosticsText);
       setDiagnosticsCopied(true);
       setTimeout(() => setDiagnosticsCopied(false), 2000);
     } catch {

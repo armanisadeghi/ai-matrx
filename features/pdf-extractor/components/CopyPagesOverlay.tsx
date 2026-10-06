@@ -32,6 +32,8 @@
  *                 that predate per-page persistence.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, {
   useCallback,
   useEffect,
@@ -373,6 +375,10 @@ export function CopyPagesOverlay({
   pages,
   pagesLoading = false,
 }: CopyPagesOverlayProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [pageRange, setPageRange] = useState("");
   const [pagesPerSection, setPagesPerSection] = useState(
     DEFAULT_PAGES_PER_SECTION,
@@ -544,7 +550,7 @@ export function CopyPagesOverlay({
   const handleCopySection = useCallback(
     async (idx: number) => {
       try {
-        await navigator.clipboard.writeText(sections[idx].text);
+        await copyText(sections[idx].text);
         setCopiedIdx(idx);
         setTimeout(() => setCopiedIdx(null), 1800);
       } catch {
@@ -565,7 +571,7 @@ export function CopyPagesOverlay({
       source,
     );
     try {
-      await navigator.clipboard.writeText(combined);
+      await copyText(combined);
       setCopiedAll(true);
       setTimeout(() => setCopiedAll(false), 1800);
     } catch {

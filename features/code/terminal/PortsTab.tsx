@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { extractErrorMessage } from "@/utils/errors";
@@ -43,6 +45,10 @@ interface PortsResponse {
 const POLL_INTERVAL_MS = 5000;
 
 export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const activeSandboxId = useAppSelector(selectActiveSandboxId);
   const [ports, setPorts] = useState<PortEntry[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +106,7 @@ export const PortsTab: React.FC<PortsTabProps> = ({ className }) => {
   }, [activeSandboxId, fetchPorts]);
 
   const copy = useCallback((key: string, text: string) => {
-    void navigator.clipboard.writeText(text).then(() => {
+    void copyText(text).then(() => {
       setCopiedKey(key);
       setTimeout(() => {
         setCopiedKey((cur) => (cur === key ? null : cur));

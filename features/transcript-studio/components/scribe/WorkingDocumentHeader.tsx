@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   Check,
@@ -41,6 +42,10 @@ export function WorkingDocumentHeader({
   sessionId,
   compact,
 }: WorkingDocumentHeaderProps) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const assistant = useStudioAssistant(sessionId);
   const [focusOpen, setFocusOpen] = useState(false);
   // Collapsed by default — the screen below owns the focus; the document is
@@ -113,7 +118,7 @@ export function WorkingDocumentHeader({
     const text = draft || docContent;
     if (!text.trim()) return;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyTextKit(text);
       setHasCopied(true);
       setTimeout(() => setHasCopied(false), 450);
     } catch {

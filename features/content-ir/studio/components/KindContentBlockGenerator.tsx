@@ -12,6 +12,7 @@
  * are the same call — re-running never duplicates.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useMemo, useState } from "react";
 import { Braces, Check, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,10 @@ export default function KindContentBlockGenerator({
   onStored,
   storeLabel,
 }: KindContentBlockGeneratorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [tier, setTier] = useState<ContentBlockTier>("detailed");
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -113,7 +118,7 @@ export default function KindContentBlockGenerator({
 
   async function copyTemplate(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(block.template);
+      await copyText(block.template);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
       toast.success("Content block copied");

@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useRouter } from "next/navigation";
 import {
   ClipboardCopy,
@@ -25,6 +26,10 @@ import type { ShapeBrowseRow } from "./types";
 export function useShapeRowActions(
   list: EntityListController<ShapeBrowseRow>,
 ): EntityRowActionsResult<ShapeBrowseRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
 
   const menuFor = (row: ShapeBrowseRow) => (): ItemMenuConfig => {
@@ -66,7 +71,7 @@ export function useShapeRowActions(
               label: "Copy link",
               icon: Link2,
               onSelect: async () => {
-                await navigator.clipboard.writeText(
+                await copyText(
                   `${window.location.origin}${href}`,
                 );
                 toast.success("Shape link copied");
@@ -77,7 +82,7 @@ export function useShapeRowActions(
               label: "Copy reference",
               icon: ClipboardCopy,
               onSelect: async () => {
-                await navigator.clipboard.writeText(
+                await copyText(
                   buildRecordReferenceFence({
                     type: "content_ir_kind",
                     id: row.id,

@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Check, Copy } from "lucide-react";
 import { useId, useState } from "react";
 import { SettingsRow } from "../SettingsRow";
@@ -29,6 +31,10 @@ export function SettingsReadOnlyValue({
   last,
   ...rowProps
 }: SettingsReadOnlyValueProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const generatedId = useId().replace(/:/g, "");
   const id = rowProps.id ?? `settings-${generatedId}`;
 
@@ -36,7 +42,7 @@ export function SettingsReadOnlyValue({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {

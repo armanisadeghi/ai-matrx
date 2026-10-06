@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useMemo, useState } from "react";
 import { CheckCircle2, Copy, ExternalLink, Globe2, Loader2, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,10 @@ const PROVIDERS = {
 type ProviderKey = keyof typeof PROVIDERS;
 
 export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRefresh: () => Promise<void> }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const traffic = site.settings?.domain_traffic;
   const activeDomain = activeSiteDomain(site);
   const [checking, setChecking] = useState(false);
@@ -105,8 +110,7 @@ export function SiteDomainSettings({ site, onRefresh }: { site: ClientSite; onRe
   };
 
   const copy = async (value: string) => {
-    await navigator.clipboard.writeText(value);
-    toast.success("Copied");
+    await copyText(value, "Copied");
   };
 
   return (

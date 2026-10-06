@@ -15,6 +15,7 @@
  * omits it and gets the plain email form — identical to what shipped before.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   Mail,
@@ -202,6 +203,10 @@ export function InvitationsPanel({
   inviteLabel,
   copyContainer,
 }: InvitationsPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const container: MembershipCopyContainer = {
     noun: copyContainer?.noun ?? "organization",
     id: copyContainer?.id,
@@ -510,7 +515,7 @@ export function InvitationsPanel({
                 variant="outline"
                 onClick={async () => {
                   try {
-                    await navigator.clipboard.writeText(
+                    await copyText(
                       deliveryNotice.acceptUrl,
                     );
                     toast.success("Invitation link copied to clipboard");
@@ -603,8 +608,7 @@ export function InvitationsPanel({
 
               const handleCopyLink = async () => {
                 try {
-                  await navigator.clipboard.writeText(invitationLink);
-                  toast.success("Invitation link copied to clipboard");
+                  await copyText(invitationLink, "Invitation link copied to clipboard");
                 } catch {
                   toast.error("Failed to copy link");
                 }

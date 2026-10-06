@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Copy, Check, X } from 'lucide-react';
@@ -24,11 +26,15 @@ export function CodeEditErrorCanvas({
   rawResponse,
   onClose,
 }: CodeEditErrorCanvasProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isCopied, setIsCopied] = useState(false);
 
   const handleCopyResponse = async () => {
     try {
-      await navigator.clipboard.writeText(rawResponse);
+      await copyText(rawResponse);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch (err) {

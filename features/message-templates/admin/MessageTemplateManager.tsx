@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { AutoResizeTextarea } from "@/features/message-templates/components/AutoResizeTextarea";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
@@ -105,6 +107,10 @@ const MESSAGE_ROLES: { value: MessageRole; label: string }[] = [
 export function MessageTemplateManager({
   className,
 }: MessageTemplateManagerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   // State
   const [templates, setTemplates] = useState<MessageTemplateDB[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -141,7 +147,7 @@ export function MessageTemplateManager({
 
   const copyRawApiData = useCallback(() => {
     if (!rawApiDataRef.current) return;
-    navigator.clipboard.writeText(rawApiDataRef.current).catch(() => {});
+    copyText(rawApiDataRef.current);
     setRawCopied(true);
     setTimeout(() => setRawCopied(false), 1500);
   }, []);

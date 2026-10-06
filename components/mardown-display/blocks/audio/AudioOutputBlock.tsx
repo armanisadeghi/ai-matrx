@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Button } from "@ai-matrx/design-system/controls";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
@@ -231,6 +233,10 @@ function useAudioEngine(url: string) {
 ───────────────────────────────────────────────────────────────────────────── */
 
 function useFileActions(url: string, mimeType?: string) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isDownloading, setIsDownloading] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
@@ -258,7 +264,7 @@ function useFileActions(url: string, mimeType?: string) {
 
   const copyLink = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {

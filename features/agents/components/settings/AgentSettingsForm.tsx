@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -79,6 +81,10 @@ export function AgentSettingsForm({
   agentId,
   writeSurfaceName,
 }: AgentSettingsFormProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const modelId = agent?.modelId || "";
@@ -441,7 +447,7 @@ export function AgentSettingsForm({
                         icon={<Copy />} aria-label="Copy ID"
                         variant="quiet"
                         className="ml-1"
-                        onClick={() => navigator.clipboard.writeText(agent.id)}
+                        onClick={() => copyText(agent.id)}
                         title="Copy ID"
                       />
                     </div>

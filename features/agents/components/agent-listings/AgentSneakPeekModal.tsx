@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -743,6 +744,10 @@ function JsonBlock({ json }: { json: string }) {
  * reused in both the modal and the hover popover.
  */
 export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const record = useAppSelector((state) => selectAgentById(state, agentId));
   const definition = useAppSelector((state) =>
     selectAgentDefinition(state, agentId),
@@ -751,7 +756,7 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       toast.success(`${label} copied to clipboard`);
       setTimeout(() => setCopied(false), 2000);

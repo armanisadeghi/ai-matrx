@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useTransition } from "react";
 import { SqlFunction } from "@/types/sql-functions";
 import { ParsedArgument } from "../utils/parseArguments";
@@ -305,6 +307,10 @@ function ArgRow({
 // ─── ResultDisplay ───────────────────────────────────────────────────────────
 
 function ResultDisplay({ result }: { result: ExecuteResult }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [sqlCopied, setSqlCopied] = useState(false);
 
   if (!result) return null;
@@ -312,7 +318,7 @@ function ResultDisplay({ result }: { result: ExecuteResult }) {
   const { data, error, sql } = result;
 
   const handleCopySql = () => {
-    navigator.clipboard.writeText(sql);
+    copyText(sql);
     setSqlCopied(true);
     setTimeout(() => setSqlCopied(false), 1500);
   };

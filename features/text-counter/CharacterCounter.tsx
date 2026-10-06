@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   BrushCleaning,
@@ -75,6 +76,10 @@ export function CharacterCounter({
   className,
   compact = false,
 }: CharacterCounterProps) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [text, setText] = useState(initialText);
   const [limit, setLimit] = useState<number | null>(null);
   const [preset, setPreset] = useState("custom");
@@ -89,7 +94,7 @@ export function CharacterCounter({
 
   const copyText = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyTextKit(text);
       setCopied(true);
       toast.success("Text copied to clipboard");
       window.setTimeout(() => setCopied(false), 1400);

@@ -24,6 +24,8 @@
  * auto-commits and the hook watches the request status to detect it.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -73,6 +75,10 @@ export function useSmartCodeEditor({
   streamingText: string;
   setState: (s: CodeEditorState) => void;
 } {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // Keep the consumer in a ref so the effect below doesn't re-fire on
   // identity churn — the caller re-creates the fn on every render.
   const consumeWidgetEditsRef = useRef(consumeWidgetEdits);
@@ -228,7 +234,7 @@ export function useSmartCodeEditor({
 
   const handleCopyResponse = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(rawAIResponse);
+      await copyText(rawAIResponse);
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {

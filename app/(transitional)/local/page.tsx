@@ -8,6 +8,8 @@
  * engine's public tunnel URL in a new tab (web) or connects via WebSocket.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useEffect, useState, useCallback } from "react";
 import { UntrustedCount, type CountRead } from "@/components/official/stale-data/UntrustedCount";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
@@ -50,6 +52,10 @@ function PlatformIcon({ platform }: { platform: string | null }) {
 }
 
 export default function LocalDevicesPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [instances, setInstances] = useState<LocalInstance[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -225,7 +231,7 @@ export default function LocalDevicesPage() {
                   {inst.tunnel_url}
                 </code>
                 <button
-                  onClick={() => navigator.clipboard.writeText(inst.tunnel_url!)}
+                  onClick={() => copyText(inst.tunnel_url!)}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 >
                   Copy

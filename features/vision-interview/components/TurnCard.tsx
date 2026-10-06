@@ -10,6 +10,7 @@
 // no box); the human's turns get the subtle primary-tinted bubble user
 // messages get in /chat. Never a hand-rolled markdown/stream parser here.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { AudioLines, Check, Copy, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,10 @@ function displayContent(turn: InterviewTurnRow): string {
 }
 
 export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const isHuman = turn.speaker === "human";
   const isScribe = turn.speaker === "scribe";
   const role = isHuman ? null : ROLES[turn.speaker as RoleKey];
@@ -98,7 +103,7 @@ export function TurnCard({ turn }: { turn: InterviewTurnRow }) {
 
   const copyTurn = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 900);
     } catch {

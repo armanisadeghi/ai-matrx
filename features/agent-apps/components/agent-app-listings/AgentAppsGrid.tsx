@@ -12,6 +12,7 @@
  * tags, agents (by id; name shown in UI), archive, published to the web.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
 import {
   useCallback,
@@ -131,6 +132,10 @@ export function AgentAppsGrid({
   consumerId = "apps-main",
   newAppHref = "/agent-apps/new",
 }: AgentAppsGridProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -217,8 +222,7 @@ export function AgentAppsGrid({
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/p/${app.slug}`;
     try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Public URL copied to clipboard.");
+      await copyText(url, "Public URL copied to clipboard.");
     } catch {
       toast.error(
         "Could not copy to clipboard. URL: " + url.slice(0, 80) + "…",

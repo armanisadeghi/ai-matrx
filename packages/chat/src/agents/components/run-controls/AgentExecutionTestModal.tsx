@@ -16,6 +16,8 @@
  * proving programmatic execution works identically to UI-driven execution.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useState, useEffect, useCallback } from "react";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { useAppSelector } from "../../../store/hooks";
@@ -90,6 +92,10 @@ export function DirectTestMode({
   userInput: string;
   apiEndpointMode: ApiEndpointMode;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const { launchAgent, close } = useAgentLauncher();
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -152,7 +158,7 @@ export function DirectTestMode({
     if (responseText) {
       // The button is a plain "Copy" beside a drawn answer: a person gets what
       // they see (a kind as its markdown), never raw `{"__kind":…}` JSON.
-      navigator.clipboard.writeText(kindTextToMarkdown(responseText));
+      copyText(kindTextToMarkdown(responseText));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

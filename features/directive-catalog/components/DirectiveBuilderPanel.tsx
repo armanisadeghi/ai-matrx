@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * DirectiveBuilderPanel — "trigger via a few dropdowns".
@@ -211,6 +212,10 @@ export function DirectiveBuilderPanel({
   catalog: DirectiveCatalog;
   pick?: DirectiveBuilderPick | null;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const verbs = DIRECTIVE_VERBS.filter(isDirectiveVerb);
   const nouns = catalog.nouns;
   const nounByToken = useMemo(
@@ -557,7 +562,7 @@ export function DirectiveBuilderPanel({
   const handleCopy = async () => {
     if (!displayedEnvelope) return;
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         JSON.stringify(displayedEnvelope, null, 2),
       );
       setCopied(true);

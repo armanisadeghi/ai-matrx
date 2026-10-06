@@ -18,6 +18,8 @@
  * back after a reload, matching the per-conversation nature of the feature.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useCallback, useMemo, useState } from "react";
 import {
   Brain,
@@ -72,9 +74,13 @@ interface SidebarRowData {
 }
 
 function useCopyText(text: string) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const copy = useCallback(() => {
-    navigator.clipboard.writeText(text).then(() => {
+    copyText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

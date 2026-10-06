@@ -13,6 +13,7 @@
  * initial bundle; it loads on demand the first time a chart actually draws.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
@@ -48,6 +49,10 @@ export interface ChartBlockProps {
 }
 
 export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamActive = false, className }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const source = content.trim();
   const parsed = useMemo(() => (isStreamActive ? null : parseChartSpec(source)), [source, isStreamActive]);
   const spec = parsed && !("error" in parsed) ? (parsed as ChartSpec) : null;
@@ -66,7 +71,7 @@ export const ChartBlock: React.FC<ChartBlockProps> = ({ content = "", isStreamAc
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(source);
+      await copyText(source);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

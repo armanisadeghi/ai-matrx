@@ -13,6 +13,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import { Braces, Check, Copy, Download, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,6 +41,10 @@ export function RawView({
   defaultRaw = false,
   className,
 }: RawViewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [raw, setRaw] = useState<boolean>(defaultRaw);
   const [copied, setCopied] = useState(false);
 
@@ -51,7 +57,7 @@ export function RawView({
   })();
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(jsonText);
+    await copyText(jsonText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

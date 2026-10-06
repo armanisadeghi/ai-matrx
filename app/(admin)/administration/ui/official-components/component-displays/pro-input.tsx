@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState } from "react";
 import { ComponentEntry } from "../parts/component-list";
 import { ComponentDisplayWrapper } from "../component-usage";
@@ -52,6 +53,10 @@ function Variant({
 }
 
 export default function ProInputDisplay({ component }: ComponentDisplayProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [bare, setBare] = useState("");
   const [floating, setFloating] = useState("");
   const [fieldVal, setFieldVal] = useState("");
@@ -378,7 +383,7 @@ import { Field } from '@/components/official/Field';
             <Button
               variant="outline"
               onClick={() => {
-                navigator.clipboard.writeText(
+                copyText(
                   `import { ProInput } from "@/components/official/ProInput";`,
                 );
                 toast.success("Import copied");

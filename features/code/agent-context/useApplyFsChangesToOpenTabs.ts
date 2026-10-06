@@ -48,6 +48,7 @@
  * change, so subsequent renders don't keep firing on the same row.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useMemo, useRef } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -112,6 +113,10 @@ function findTabsForPath(
 export function useApplyFsChangesToOpenTabs(
   opts: UseApplyFsChangesOptions = {},
 ): void {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { silent = false } = opts;
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -338,7 +343,7 @@ export function useApplyFsChangesToOpenTabs(
           // Best-effort — clipboard write may be denied silently. The
           // user still has the new content on screen; this just rescues
           // their work-in-progress.
-          void navigator.clipboard.writeText(previous).catch(() => {});
+          void copyText(previous);
         }
       } catch (err) {
         if (!silent) {

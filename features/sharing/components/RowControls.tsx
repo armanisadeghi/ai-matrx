@@ -17,6 +17,8 @@
  * A person who cannot change sharing sees the current state as text, never as dead buttons.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useCallback, useEffect, useState } from "react";
 import { Check, Copy, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
@@ -71,6 +73,10 @@ export function RowControls({
   onPublish,
   onStopPublishing,
 }: RowControlsProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const { toast } = useToast();
   const [caps, setCaps] = useState<ShareCapabilities | null>(null);
   const [capsError, setCapsError] = useState<string | null>(null);
@@ -93,7 +99,7 @@ export function RowControls({
   const copyAddress = useCallback(async () => {
     if (!publicUrl) return;
     try {
-      await navigator.clipboard.writeText(publicUrl);
+      await copyText(publicUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

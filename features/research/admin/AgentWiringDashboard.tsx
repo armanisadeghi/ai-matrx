@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { SurfaceRuntimeProvider } from '@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext';
 import { ADMIN_KNOWLEDGE_SURFACE_NAME, createAdminKnowledgeScope } from '@/features/surfaces/manifests/admin-knowledge.manifest';
@@ -38,6 +40,10 @@ import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotic
 const SYSTEM_AGENT_TAB = ['system'] as const;
 
 export function AgentWiringDashboard() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
     const dispatch = useAppDispatch();
     const [templates, setTemplates] = useState<ResearchTemplate[]>([]);
     const [builtinNames, setBuiltinNames] = useState<Record<string, string>>({});
@@ -105,7 +111,7 @@ export function AgentWiringDashboard() {
     };
 
     const copyId = (id: string) => {
-        navigator.clipboard.writeText(id);
+        copyText(id);
         setCopiedId(id);
         setTimeout(() => setCopiedId(null), 2000);
     };

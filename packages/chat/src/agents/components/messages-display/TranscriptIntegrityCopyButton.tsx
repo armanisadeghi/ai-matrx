@@ -7,13 +7,14 @@
  * debug context so "Copy Full Context" carries the same facts.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useEffect } from "react";
 import { usePathname } from "../../../host/navigation";
 import { Stethoscope } from "lucide-react";
 import { useAppSelector, useAppStore } from "../../../store/hooks";
 import { selectMessageCount } from "../../redux/execution-system/messages/messages.selectors";
 import { selectStreamPhase } from "../../redux/execution-system/selectors/aggregate.selectors";
-import { writeClipboard } from "../../../agent-copy/clipboard";
 import { toast } from "../../../host/notify";
 import { useDebugContext } from "../../../host/prefs-react";
 import { cn } from "@ai-matrx/design-system";
@@ -43,6 +44,10 @@ function TranscriptIntegrityCopyButtonInner({
   surfaceKey,
   effectiveVisibleGroupLimit,
 }: TranscriptIntegrityCopyButtonProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const store = useAppStore();
   const pathname = usePathname() ?? "";
   const messageCount = useAppSelector(selectMessageCount(conversationId));
@@ -84,7 +89,7 @@ function TranscriptIntegrityCopyButtonInner({
       effectiveVisibleGroupLimit,
     });
     try {
-      await writeClipboard(formatTranscriptIntegrityReport(report));
+      await copyText(formatTranscriptIntegrityReport(report));
       toast.success(
         report.anomalies.length === 0
           ? "Transcript report copied — no anomalies detected"

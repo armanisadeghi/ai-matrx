@@ -13,6 +13,8 @@
  * buttons, and the button that re-checks.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import { Check, Copy, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -43,6 +45,10 @@ const REGISTRAR_GUIDES: { name: string; href: string }[] = [
 ];
 
 function CopyField({ label, value }: { label: string; value: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <div className="min-w-0">
@@ -53,7 +59,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
         type="button"
         className="flex w-full min-w-0 items-center justify-between gap-2 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-left transition-colors hover:bg-muted"
         onClick={() => {
-          void navigator.clipboard.writeText(value).then(() => {
+          void copyText(value).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 1600);
           });

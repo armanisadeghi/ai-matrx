@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useState, useEffect, useCallback } from "react";
 import {
   MatrxDataTable,
@@ -40,11 +42,15 @@ interface ToolTestSamplesViewerProps {
 // ─── Copy Button ─────────────────────────────────────────────────────────────
 
 function CopyButton({ content, label = "Copy" }: { content: string; label?: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
     const [copied, setCopied] = useState(false);
     const handleCopy = async () => {
         if (!content) return;
         try {
-            await navigator.clipboard.writeText(content);
+            await copyText(content);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {

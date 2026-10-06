@@ -16,6 +16,7 @@ let params = new URLSearchParams();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({ replace, push: jest.fn() }),
   useSearchParams: () => params,
+  usePathname: () => "/board",
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: (sel: () => unknown) => sel() }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => "org-1" }));

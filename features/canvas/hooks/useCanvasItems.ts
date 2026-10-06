@@ -1,3 +1,4 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useCallback, useRef } from 'react';
 import {
   canvasItemsService,
@@ -28,6 +29,10 @@ import { isOrganizationRequiredError } from "@/lib/organizations/organizationReq
  * ```
  */
 export function useCanvasItems(initialFilters?: CanvasItemFilters) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [items, setItems] = useState<CanvasItemSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<any>(null);
@@ -222,8 +227,7 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
       return { shareUrl: null, error: result.error ?? 'Failed to share' };
     }
 
-    await navigator.clipboard.writeText(result.url);
-    toast.success('Share link copied to clipboard!');
+    await copyText(result.url, 'Share link copied to clipboard!');
     return { shareUrl: result.url, error: null };
   }, []);
 

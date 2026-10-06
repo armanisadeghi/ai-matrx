@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Button as SurfaceButton, } from "@ai-matrx/design-system";
@@ -33,6 +35,10 @@ export default function LSIMarkdownGenerator({
   error,
   rateLimitInfo,
 }: AgentAppComponentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [variables, setVariables] = useState({
     primary_keyword: "Bike Shop",
   });
@@ -112,7 +118,7 @@ export default function LSIMarkdownGenerator({
   };
 
   const copyToClipboard = (text: string, categoryName: string) => {
-    navigator.clipboard.writeText(text);
+    copyText(text);
     setCopiedCategory(categoryName);
     setTimeout(() => setCopiedCategory(null), 2000);
   };

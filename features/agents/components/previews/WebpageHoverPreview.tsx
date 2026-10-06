@@ -7,6 +7,7 @@
  * scraped it).
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   HoverCard,
@@ -39,12 +40,16 @@ export function WebpagePreviewContent({
   title,
   snippet,
 }: WebpagePreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const domain = parseDomain(url);
 
   const handleCopyUrl = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setCopied(true);
       toast.success("URL copied");
       setTimeout(() => setCopied(false), 1500);

@@ -7,6 +7,7 @@
  * for "attached" chips and inline links.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { useState } from "react";
 import Link from "next/link";
@@ -87,6 +88,10 @@ export function MessagePreviewContent({
   messageId,
   onOpen,
 }: MessagePreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const message = useAppSelector(
     selectMessageById(conversationId, messageId),
   );
@@ -103,7 +108,7 @@ export function MessagePreviewContent({
   const handleCopy = async () => {
     if (!text) return;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       toast.success("Message text copied");
       setTimeout(() => setCopied(false), 1500);

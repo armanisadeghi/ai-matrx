@@ -1,4 +1,5 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { toast } from "@/lib/toast";
@@ -36,6 +37,10 @@ export function useCodeEditorBasics({
   showSidebar: initialShowSidebar = true,
   height = "600px",
 }: UseCodeEditorBasicsProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // Measures the exact height of the Monaco editor wrapper div so we can give
   // Monaco an explicit pixel height whether or not the toolbar shows.
   const [editorWrapperRef, { height: editorWrapperHeight }] =
@@ -155,7 +160,7 @@ export function useCodeEditorBasics({
       textToCopy = paddedLines.join("\n");
     }
 
-    await navigator.clipboard.writeText(textToCopy);
+    await copyText(textToCopy);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

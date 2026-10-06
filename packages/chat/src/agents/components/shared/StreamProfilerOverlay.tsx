@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { Activity, X, Copy } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
@@ -31,6 +33,10 @@ type WindowWithStreamReports = typeof window & {
 };
 
 export function StreamProfilerOverlay() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isOpen, setIsOpen] = useState(false);
   const [reports, setReports] = useState<StreamProfilerReport[]>([]);
 
@@ -72,7 +78,7 @@ export function StreamProfilerOverlay() {
         ) : (
           reports.map((r, i) => (
              <div key={r.RequestId || i} className="bg-slate-900 border border-slate-800 rounded-lg p-3 space-y-2 relative group">
-                <Button variant="quiet" icon={<Copy />} onClick={() => navigator.clipboard.writeText(JSON.stringify(r, null, 2))} title="Copy JSON" aria-label="Copy JSON" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" />
+                <Button variant="quiet" icon={<Copy />} onClick={() => copyText(JSON.stringify(r, null, 2))} title="Copy JSON" aria-label="Copy JSON" className="absolute top-2 right-2 opacity-0 group-hover:opacity-100" />
                 <div className="text-blue-400 font-bold mb-2">{r.Test}</div>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                   <div className="text-slate-500">Client Duration:</div>

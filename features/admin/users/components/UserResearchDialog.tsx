@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -16,6 +17,10 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
   row: AdminUserRow; ownerId: string; existing: UserResearch | null; sharedOrganizations: string[];
   onClose: () => void; onSaved: (record: UserResearch) => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [category, setCategory] = useState<Relationship>(existing?.category ?? "unknown");
   const [contactState, setContactState] = useState<ContactState>(existing?.contact_state ?? (row.banned ? "hold" : "not_contacted"));
   const [notes, setNotes] = useState(existing?.notes ?? "");
@@ -66,7 +71,7 @@ export function UserResearchDialog({ row, ownerId, existing, sharedOrganizations
             if (!chosenPlan) { toast.error("Choose an available plan first."); return; }
             setDraft(feedbackInvitation(row.display_name ?? row.full_name ?? "", chosenPlan.name, feature));
           }}>Draft invitation</Button>
-          {draft && <><ProTextarea aria-label="Invitation draft" value={draft} onChange={e => setDraft(e.target.value)} className="min-h-48" /><Button variant="outline" onClick={async () => { await navigator.clipboard.writeText(draft); toast.success("Invitation copied"); }}>Copy draft</Button></>}
+          {draft && <><ProTextarea aria-label="Invitation draft" value={draft} onChange={e => setDraft(e.target.value)} className="min-h-48" /><Button variant="outline" onClick={async () => { await copyText(draft); toast.success("Invitation copied"); }}>Copy draft</Button></>}
         </div>
       </div>
       <DialogFooter><Button variant="outline" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={() => void save()} disabled={saving}>{saving ? "Saving…" : "Save notes"}</Button></DialogFooter>

@@ -12,6 +12,7 @@
  * for "copy a whole record for an AI agent", not for copying a single id.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React from "react";
 import { format } from "date-fns";
 import { Check, Copy, Fingerprint, CalendarDays } from "lucide-react";
@@ -26,11 +27,15 @@ function CopyValue({
   value: string;
   label: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = React.useState(false);
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
       setCopied(true);
       toast.success("Copied");
       window.setTimeout(() => setCopied(false), 1500);

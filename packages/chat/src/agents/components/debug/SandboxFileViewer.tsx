@@ -13,6 +13,8 @@
  * assistant message. The path input here makes it usable/testable on its own.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { Button } from "@ai-matrx/design-system/controls";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, Loader2, RefreshCw, Copy, Check } from "lucide-react";
@@ -40,6 +42,10 @@ export function SandboxFileViewer({
   initialPath = "",
   lockPath = false,
 }: SandboxFileViewerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [path, setPath] = useState(initialPath);
   const [content, setContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -79,7 +85,7 @@ export function SandboxFileViewer({
 
   const handleCopy = async () => {
     if (content == null) return;
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopied(true);
     toast.success("File contents copied");
     setTimeout(() => setCopied(false), 1500);

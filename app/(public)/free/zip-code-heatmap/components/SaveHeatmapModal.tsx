@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Share2, Loader2, Copy, Check, Globe2, Lock, LogIn } from 'lucide-react';
@@ -42,6 +44,10 @@ export default function SaveHeatmapModal({
   data,
   viewSettings,
 }: SaveHeatmapModalProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [isPublic, setIsPublic] = useState(true);
@@ -161,7 +167,7 @@ export default function SaveHeatmapModal({
 
   const handleCopyUrl = async () => {
     if (shareUrl) {
-      await navigator.clipboard.writeText(shareUrl);
+      await copyText(shareUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

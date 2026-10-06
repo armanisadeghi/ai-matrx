@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import * as React from "react";
 import { Pencil, Trash2, Copy, AlertTriangle } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -160,6 +161,10 @@ function InjuryTableRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { injury, definition, warnings } = row;
   const acceptsSide = definition?.attributes?.side ?? true;
   const incomplete = !definition;
@@ -167,7 +172,7 @@ function InjuryTableRow({
   const handleCopy = async () => {
     const tsv = rowToTsv(row, index);
     try {
-      await navigator.clipboard.writeText(tsv);
+      await copyText(tsv);
       toast.success(`Row ${index + 1} copied`, {
         description: "Tab-separated — paste into Excel or Sheets.",
       });

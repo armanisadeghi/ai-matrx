@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useRef, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { useUnsplashSearch } from '@/hooks/images/useUnsplashSearch';
@@ -34,6 +36,10 @@ function isFullPhoto(value: unknown): value is Photo {
 }
 
 export function EnhancedSearchDemo() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [viewMode, setViewMode] = React.useState<'grid' | 'natural'>('grid');
   const { toast } = useToast();
   const [isSharing, setIsSharing] = React.useState(false);
@@ -86,7 +92,7 @@ export function EnhancedSearchDemo() {
   const handleShare = async (photo: Photo) => {
     try {
       const imageUrl = photo.urls.full || photo.urls.regular;
-      await navigator.clipboard.writeText(imageUrl);
+      await copyText(imageUrl);
       setIsSharing(true);
       toast({
         title: 'Image link copied',

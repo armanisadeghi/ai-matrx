@@ -3,6 +3,7 @@
 // features/spaces/sidebar/SpacesSidebar.tsx — the Notion sidebar (§D): header, Search, Favorites and
 // Private sections, the page tree (expand, hover + and •••, drag to reorder / nest), Trash.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, SearchField } from "@ai-matrx/design-system/controls";
 import {
@@ -49,6 +50,10 @@ function scrollIntoViewOnce(el: HTMLDivElement | null) {
 }
 
 function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => void }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const spaces = useSpaces();
   const [open, setOpen] = useState(false);
   const fav = spaces.favorites.includes(space.id);
@@ -73,7 +78,7 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
           type="button"
           className="spaces-menu-row"
           onClick={act(() => {
-            void navigator.clipboard.writeText(`${window.location.origin}/spaces/${space.id}`).then(() => toast.success("Copied link"));
+            void copyText(`${window.location.origin}/spaces/${space.id}`, "Copied link");
           })}
         >
           <span className="spaces-menu-row-icon">

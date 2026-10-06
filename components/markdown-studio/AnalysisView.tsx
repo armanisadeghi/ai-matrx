@@ -7,6 +7,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useEffect, useEffectEvent, useState } from "react";
 import {
   AlertTriangle,
@@ -109,6 +110,10 @@ export function AnalysisView({
   userSamples = [],
   sharedSamples = [],
 }: AnalysisViewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const apiConfig = useApiTestConfig({ defaultServerType: "local" });
   const [sourceId, setSourceId] = useState(CURRENT);
   const catalog = sourceCatalog(content, contentLabel, userSamples, sharedSamples);
@@ -195,7 +200,7 @@ export function AnalysisView({
   const handleCopyFullReport = async () => {
     if (!result) return;
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         buildDriftReportXml(result, {
           route: typeof window !== "undefined" ? window.location.pathname : "/markdown-studio",
           tool: "Block Parser Comparison (V2 local · Redux accumulator · Python server)",
@@ -245,8 +250,7 @@ export function AnalysisView({
       lines.push(`  ${row.summary}`);
     }
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
-      toast.success("Report copied to clipboard");
+      await copyText(lines.join("\n"), "Report copied to clipboard");
     } catch {
       toast.error("Clipboard copy failed");
     }

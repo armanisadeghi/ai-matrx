@@ -12,6 +12,7 @@
 // Invitations survive signup: the accept page bounces through auth with the
 // destination preserved, and the token matches on the invited email.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useRef, useState } from "react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,10 @@ export function InviteStudentsSheet({
   /** Called after sends so the roster panel can refresh pending state. */
   onRosterChanged?: () => void;
 }) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const inv = useClassInvites(classId, open);
   const [emailText, setEmailText] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +66,7 @@ export function InviteStudentsSheet({
 
   async function copyText(value: string, what: string) {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyTextKit(value);
       toast.success(`${what} copied.`);
     } catch {
       setClipboardFallback({ value, what });

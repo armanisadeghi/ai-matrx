@@ -18,6 +18,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useMemo } from "react";
 import {
   useAppDispatch,
@@ -60,6 +62,10 @@ export interface FolderActionHandlers {
 }
 
 export function useFolderActions(folderId: string): FolderActionHandlers {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const folder = useAppSelector((s) => selectFolderById(s, folderId));
@@ -164,7 +170,7 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
     const url = `${origin}/s/${token}`;
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       try {
-        await navigator.clipboard.writeText(url);
+        await copyText(url);
       } catch {
         /* ignore clipboard failures (non-secure contexts) */
       }

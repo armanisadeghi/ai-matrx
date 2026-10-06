@@ -11,6 +11,7 @@
  * Loud-by-design: Always-declared keys with no supplied value render red.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -97,9 +98,13 @@ function charCount(v: unknown): number {
 }
 
 function useCopyText() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const copy = useCallback((text: string, key: string) => {
-    void navigator.clipboard.writeText(text).then(() => {
+    void copyText(text).then(() => {
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 1200);
     });

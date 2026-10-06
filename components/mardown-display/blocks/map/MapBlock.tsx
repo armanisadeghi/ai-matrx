@@ -9,6 +9,7 @@
  * `next/dynamic ssr:false` so it never enters the server build.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Check, Copy, List, MapPin, TriangleAlert } from "lucide-react";
@@ -125,6 +126,10 @@ export const MapBlock: React.FC<MapBlockProps> = ({
   isStreamActive = false,
   className,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const parsed = useMemo(
     () => (isStreamActive ? null : parseMap(content)),
     [content, isStreamActive],
@@ -146,7 +151,7 @@ export const MapBlock: React.FC<MapBlockProps> = ({
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content.trim());
+      await copyText(content.trim());
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

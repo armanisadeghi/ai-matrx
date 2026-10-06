@@ -8,6 +8,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useState, useEffect } from "react";
 import {
@@ -75,6 +76,10 @@ interface RecoveryItemProps {
 }
 
 function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { getAudioBlob } = useAudioRecovery();
   const dispatch = useAppDispatch();
   const router = useRouter();
@@ -100,7 +105,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
 
   const handleCopyText = async () => {
     if (!localText) return;
-    await navigator.clipboard.writeText(localText);
+    await copyText(localText);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
     toast.success("Text copied to clipboard");
@@ -128,8 +133,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
   const handleOpenInChat = async () => {
     if (localText.trim()) {
       try {
-        await navigator.clipboard.writeText(localText.trim());
-        toast.success("Transcription copied — paste it into your conversation");
+        await copyText(localText.trim(), "Transcription copied — paste it into your conversation");
       } catch {
         toast.info("Navigate to chat and paste your transcription");
       }
@@ -171,8 +175,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
     ].join("\n");
 
     try {
-      await navigator.clipboard.writeText(report);
-      toast.success("Bug report copied — paste it into the description below");
+      await copyText(report, "Bug report copied — paste it into the description below");
     } catch {
       toast.info("Opening feedback form — please describe what happened");
     }

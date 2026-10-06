@@ -4,6 +4,7 @@
 // to receive, see delivery health. CRUD is direct against the files schema
 // (owner RLS); delivery runs DB-side (files.webhook_* pipeline).
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import { presentOrganizationRefusal } from "@ai-matrx/chat/host/org";
@@ -71,6 +72,10 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 function SecretReveal({ secret }: { secret: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-center gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
@@ -85,7 +90,7 @@ function SecretReveal({ secret }: { secret: string }) {
       <Button
         variant="outline"
         onClick={() => {
-          void navigator.clipboard.writeText(secret);
+          void copyText(secret);
           setCopied(true);
           toast.success("Secret copied");
           setTimeout(() => setCopied(false), 1500);

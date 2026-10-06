@@ -20,6 +20,8 @@
  * instead of leaving the panes empty.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, {
   useCallback,
   useEffect,
@@ -294,12 +296,16 @@ function CopyIconButton({
   label: string;
   hoverReveal?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       try {
-        await navigator.clipboard.writeText(getText());
+        await copyText(getText());
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } catch {

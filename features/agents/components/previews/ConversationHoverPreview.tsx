@@ -9,6 +9,7 @@
  * dismisses on mouse leave with a small grace delay.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { RichContentPreview } from "@/components/rich-content/RichContentPreview";
 import Link from "next/link";
@@ -65,6 +66,10 @@ export function ConversationPreviewContent({
   conversationId,
   onOpen,
 }: ConversationPreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const conv = useAppSelector(selectInstance(conversationId));
   const agentName = useAppSelector((state) =>
     selectAgentName(state, conv?.agentId ?? ""),
@@ -79,7 +84,7 @@ export function ConversationPreviewContent({
 
   const handleCopyId = async () => {
     try {
-      await navigator.clipboard.writeText(conversationId);
+      await copyText(conversationId);
       setCopied(true);
       toast.success("Conversation ID copied");
       setTimeout(() => setCopied(false), 1500);

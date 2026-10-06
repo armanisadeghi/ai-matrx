@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useScraperApi } from "@/features/scraper/hooks/useScraperApi";
@@ -36,6 +38,10 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 export default function QuickScrapePage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const searchParams = useSearchParams();
   const {
     scrapeUrl,
@@ -153,7 +159,7 @@ export default function QuickScrapePage() {
 
   const handleCopy = async () => {
     if (data?.textContent) {
-      await navigator.clipboard.writeText(data.textContent);
+      await copyText(data.textContent);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

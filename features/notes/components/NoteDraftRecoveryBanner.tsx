@@ -25,12 +25,12 @@
  * lose work.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Copy, Eye, LifeBuoy, Trash2, Undo2 } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
 import {
   useOpenDiffViewerWindow,
   type DiffViewerWindowHandle,
@@ -107,6 +107,10 @@ export function NoteDraftRecoveryBanner({
   noteId,
   onRestore,
 }: NoteDraftRecoveryBannerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const userId = useAppSelector((state) => state.userAuth.id);
   const content = useAppSelector(selectNoteContent(noteId)) ?? "";
   const fetchStatus = useAppSelector(selectNoteFetchStatus(noteId));
@@ -217,8 +221,7 @@ export function NoteDraftRecoveryBanner({
   };
 
   const handleCopy = async () => {
-    await writeClipboard(draft.content);
-    toast.success("Recovered text copied.");
+    await copyText(draft.content, "Recovered text copied.");
   };
 
   const handleView = () => {

@@ -2,6 +2,7 @@
 
 // TODO: Fix loading inefficiency.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import { toast } from "@/lib/toast";
@@ -96,6 +97,10 @@ function HtmlPreviewModalBody({
   user: { id?: string | null; email?: string | null } | null;
   hasReduxProvider: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const [copiedNoBullets, setCopiedNoBullets] = useState(false);
   const [copiedCSS, setCopiedCSS] = useState(false);
@@ -838,7 +843,7 @@ ${wordPressCSS}
                     <button
                       onClick={() => {
                         const completeHtml = getCurrentHtmlContent();
-                        navigator.clipboard.writeText(completeHtml);
+                        copyText(completeHtml);
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded transition-colors"
                     >

@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useMemo, useState } from "react";
 import { Copy, ExternalLink, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,10 @@ export default function MediaDebugPanel({
   scope,
   className,
 }: MediaDebugPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const payload = useMemo(
@@ -48,7 +53,7 @@ export default function MediaDebugPanel({
 
   const handleCopyAll = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(json);
+      await copyText(json);
       setCopied(true);
       toast.success("Copied media debug summary");
       window.setTimeout(() => setCopied(false), 2000);

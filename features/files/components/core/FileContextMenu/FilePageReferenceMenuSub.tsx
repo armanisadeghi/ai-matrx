@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Bookmark } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
@@ -20,9 +21,13 @@ export function FilePageReferenceMenuSub({
   fileId: string;
   fileName?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const copyPage = async (pageNumber: number) => {
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         buildFilePageReferenceFence({
           fileId,
           pageNumber,

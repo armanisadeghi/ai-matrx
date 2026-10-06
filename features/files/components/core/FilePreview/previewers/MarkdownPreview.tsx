@@ -13,6 +13,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import { AlertCircle, Check, Copy, Loader2 } from "lucide-react";
 // Rendered through the ONE markdown core (same parser, math and page-break
@@ -39,6 +41,10 @@ export function MarkdownPreview({
   maxBytes = 1024 * 1024,
   className,
 }: MarkdownPreviewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // Same-origin blob via the Python download endpoint — no S3 CORS to fight.
   const { blob, loading: blobLoading, error: blobError } = useFileBlob(fileId);
   const mode = useThemeMode() === "dark" ? "dark" : "light";
@@ -70,7 +76,7 @@ export function MarkdownPreview({
   const onCopy = useCallback(async () => {
     if (content == null) return;
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

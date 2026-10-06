@@ -9,6 +9,8 @@
  * same state. Body renders content only; everything else is a slot.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { WindowPanel } from "../../../host/ui-slots";
 import { Brain, Copy, RefreshCw } from "lucide-react";
 import { useAgentMemories } from "../../../agents/components/memory/hooks/useAgentMemories";
@@ -33,6 +35,10 @@ export default function AgentMemoryWindow({
   isOpen,
   onClose,
 }: AgentMemoryWindowProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const state = useAgentMemories();
 
   if (!isOpen) return null;
@@ -58,8 +64,7 @@ export default function AgentMemoryWindow({
         disabled: !selected,
         onSelect: () => {
           if (!selected) return;
-          void navigator.clipboard.writeText(selected.id);
-          toast.success("Memory ID copied");
+          void copyText(selected.id, "Memory ID copied");
         },
       },
       {
@@ -70,8 +75,7 @@ export default function AgentMemoryWindow({
         disabled: !selected,
         onSelect: () => {
           if (!selected) return;
-          void navigator.clipboard.writeText(selected.content);
-          toast.success("Memory content copied");
+          void copyText(selected.content, "Memory content copied");
         },
       },
       {

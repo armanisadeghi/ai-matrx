@@ -6,6 +6,7 @@
  * and adds extractor-specific affordances on top.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Link as LinkIcon, Archive } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
@@ -26,6 +27,10 @@ export function PdfStudioFileMenuExtras({
   doc,
   onRemoveFromExtractor,
 }: PdfStudioFileMenuExtrasProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const studioHref = `/knowledge/sources/${encodeURIComponent(doc.id)}`;
 
   return (
@@ -34,7 +39,7 @@ export function PdfStudioFileMenuExtras({
         onClick={() => {
           void (async () => {
             try {
-              await navigator.clipboard.writeText(
+              await copyText(
                 resolveAbsoluteHref(studioHref),
               );
               toast.success("Link copied");

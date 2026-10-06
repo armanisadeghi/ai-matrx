@@ -2,6 +2,8 @@
 
 /** The exact submitted webpage snapshot. The live page is never the truth. */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { Check, Copy, ExternalLink } from "lucide-react";
 import {
@@ -59,6 +61,10 @@ export function WebpageBody({ item, setTitle }: ContextItemBodyProps) {
 }
 
 export function WebpageFooter({ item }: ContextItemBodyProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const webpage = firstWebpage(item);
   const url = webpage ? webpageUrl(webpage) : null;
   const [copied, setCopied] = useState(false);
@@ -66,7 +72,7 @@ export function WebpageFooter({ item }: ContextItemBodyProps) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

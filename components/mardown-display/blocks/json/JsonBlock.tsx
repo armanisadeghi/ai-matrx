@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import React, {
   Suspense,
@@ -736,13 +737,17 @@ const JsonViewHeader: React.FC<JsonViewHeaderProps> = ({
   caption,
   content,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const menu = useAdvancedMenu();
   const kebabRef = useRef<HTMLDivElement>(null);
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopied(true);
       toast.success("Copied JSON to clipboard");
       setTimeout(() => setCopied(false), 1500);

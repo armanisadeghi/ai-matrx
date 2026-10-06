@@ -10,6 +10,7 @@
  * the sibling, more-discoverable <SendToMenu>.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import {
   Braces,
   ClipboardCopy,
@@ -62,12 +63,16 @@ export function ExportMenu({
   /** Shell header mode — icon tap target, no text label. */
   iconOnly?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const slug = fileSlug(name);
   const empty = rows.length === 0 || columns.length === 0;
 
   const copy = async (text: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       toast.success(`${label} copied`, {
         description: `${rows.length} row${rows.length === 1 ? "" : "s"}`,
       });

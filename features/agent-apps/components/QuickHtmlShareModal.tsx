@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useCallback, useMemo } from 'react';
 import { X, Copy, Check, Download, ExternalLink } from 'lucide-react';
 import { markdownToHtml } from '@ai-matrx/print/markdown';
@@ -78,6 +80,10 @@ ${bodyHtml}
 }
 
 export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title = 'AI Response' }: QuickHtmlShareModalProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
     const [copied, setCopied] = useState(false);
 
     const bodyHtml = useMemo(() => markdownToHtml(markdown), [markdown]);
@@ -85,7 +91,7 @@ export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title =
 
     const handleCopy = useCallback(async () => {
         try {
-            await navigator.clipboard.writeText(standaloneHtml);
+            await copyText(standaloneHtml);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {

@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { SqlFunction } from "@/types/sql-functions";
 import { parseArguments } from "../utils/parseArguments";
@@ -37,9 +39,13 @@ function CopyButton({
   text: string;
   label?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    navigator.clipboard.writeText(text);
+    copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -65,6 +71,10 @@ export default function SqlFunctionDetail({
   onEdit,
   onDelete,
 }: SqlFunctionDetailProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [defCopied, setDefCopied] = useState(false);
   const [rightPanel, setRightPanel] = useUrlState(
     "panel",
@@ -92,7 +102,7 @@ export default function SqlFunctionDetail({
 
   const handleCopyCode = () => {
     if (func.definition) {
-      navigator.clipboard.writeText(func.definition);
+      copyText(func.definition);
       setDefCopied(true);
       setTimeout(() => setDefCopied(false), 1500);
     }

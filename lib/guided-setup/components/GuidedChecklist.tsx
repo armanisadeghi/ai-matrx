@@ -17,6 +17,7 @@
  *    record by hand is how a non-technical expert gets a silent typo.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { useState } from "react";
 import Link from "next/link";
@@ -65,10 +66,14 @@ function StepIcon({ step }: { step: ResolvedStep }) {
 }
 
 function CopyRow({ value }: { value: CopyValue }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(value.value);
+      await copyText(value.value);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

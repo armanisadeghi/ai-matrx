@@ -22,6 +22,8 @@
  * fetch lifecycle. No shared state, no race conditions.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Copy, Check, Trash2, Square as StopIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -62,6 +64,10 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
   visible = true,
   className,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [history, setHistory] = useState<TerminalLine[]>([]);
   const [commandInput, setCommandInput] = useState("");
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
@@ -117,7 +123,7 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
       })
       .join("\n");
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

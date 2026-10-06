@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState } from "react";
 import {
   AlignLeft,
@@ -83,6 +84,10 @@ const MODE_TABS: ModeTab[] = [
 ];
 
 export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const session = useAppSelector(selectSessionById(sessionId));
   const [screen, setScreen] = useState<Screen>("capture");
@@ -158,7 +163,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
       icon: <Bookmark className="h-4 w-4" />,
       onSelect: async () => {
         try {
-          await navigator.clipboard.writeText(
+          await copyText(
             buildRecordReferenceFence({
               type: "transcript_session",
               id: sessionId,
@@ -183,7 +188,7 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
             icon: <Bookmark className="h-4 w-4" />,
             onSelect: async () => {
               try {
-                await navigator.clipboard.writeText(
+                await copyText(
                   buildSessionTranscriptReferenceFence({
                     sessionId,
                     transcriptId: session.transcriptId!,

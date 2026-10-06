@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { cn } from "@/lib/utils";
@@ -78,6 +80,10 @@ const TableControls: React.FC<TableControlsProps> = ({
   handleSave,
   handleCancel,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const toast = useToastManager();
   const debouncedTableData = useDebounce(tableData, 500);
   const isUpdating = tableData !== debouncedTableData;
@@ -107,8 +113,7 @@ const TableControls: React.FC<TableControlsProps> = ({
   const copyTableToClipboard = useCallback(async () => {
     try {
       const formattedTable = generateMarkdownTable();
-      await navigator.clipboard.writeText(formattedTable);
-      toast.success("Table copied to clipboard");
+      await copyText(formattedTable, "Table copied to clipboard");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to copy table");
     }
@@ -116,7 +121,7 @@ const TableControls: React.FC<TableControlsProps> = ({
 
   const copyJsonToClipboard = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         JSON.stringify(debouncedTableData.normalizedData, null, 2),
       );
       toast.success("JSON copied to clipboard");
@@ -128,8 +133,7 @@ const TableControls: React.FC<TableControlsProps> = ({
   const copyMarkdownToClipboard = useCallback(async () => {
     try {
       if (content) {
-        await navigator.clipboard.writeText(content);
-        toast.success("Markdown copied to clipboard");
+        await copyText(content, "Markdown copied to clipboard");
       } else {
         copyTableToClipboard();
       }

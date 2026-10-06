@@ -7,6 +7,8 @@
  * Contracts: @ai-matrx/content-ir-react kind-kit/README.md.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import {
   ArrowUpFromDot,
@@ -21,7 +23,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
 import "@/lib/code-runtime/kind-kit-host";
 import { SortableList } from "@ai-matrx/content-ir-react/kind-kit";
 import { KindPanelGrid } from "@ai-matrx/content-ir-react/kind-kit";
@@ -101,6 +102,10 @@ const INITIAL_STEPS: Step[] = [
 ];
 
 export default function KindKitDemoPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [buckets, setBuckets] = useState<Bucket[]>(INITIAL_BUCKETS);
   const [selected, setSelected] = useState<string[]>(["kanban board"]);
   const [steps, setSteps] = useState<Step[]>(INITIAL_STEPS);
@@ -184,7 +189,7 @@ export default function KindKitDemoPage() {
                   {
                     label: "Copy bucket",
                     icon: Copy,
-                    onSelect: () => void writeClipboard(bucket.keywords.join("\n")),
+                    onSelect: () => void copyText(bucket.keywords.join("\n")),
                   },
                   {
                     label: bucket.complete ? "Mark streaming" : "Mark complete",

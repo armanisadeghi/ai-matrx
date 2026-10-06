@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useEffect, useEffectEvent, useState } from "react";
 import {
   ArrowRight,
@@ -158,6 +160,10 @@ export function WebpageResourcePickerCore({
   initialUrl,
   onBack,
 }: WebpageResourcePickerCoreProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [url, setUrl] = useState(initialUrl || "");
   const [showPreview, setShowPreview] = useState(false);
   const [suggestedType, setSuggestedType] = useState<
@@ -332,7 +338,7 @@ export function WebpageResourcePickerCore({
 
   const handleCopy = async () => {
     if (!effectiveContent) return;
-    await navigator.clipboard.writeText(effectiveContent);
+    await copyText(effectiveContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

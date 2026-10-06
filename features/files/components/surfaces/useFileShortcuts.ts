@@ -33,6 +33,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { surfaceOwnsKey } from "@ai-matrx/kit/keyboard-scope";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -90,6 +92,10 @@ export function useFileShortcuts({
   clearPendingDelete: () => void;
   confirmDelete: () => Promise<void>;
 } {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const getState = () => store.getState();
@@ -193,7 +199,7 @@ export function useFileShortcuts({
                 ? pythonShareUrl(token)
                 : `${window.location.origin}/s/${token}`;
             if (navigator.clipboard) {
-              await navigator.clipboard.writeText(url);
+              await copyText(url);
             }
           } catch {
             /* swallow — user can fall back to the action menu */

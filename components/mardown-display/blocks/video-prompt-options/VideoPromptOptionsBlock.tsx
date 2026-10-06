@@ -16,6 +16,8 @@
  * button.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Check, Clapperboard, Clock, Copy, Proportions } from "lucide-react";
 import { useCallback, useState } from "react";
 import { KindAgentActionButton } from "@/features/content-ir/react/actions/KindAgentActionButton";
@@ -104,9 +106,13 @@ function variationOverrides(
 }
 
 function CopyPromptButton({ prompt }: { prompt: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    void navigator.clipboard.writeText(prompt).then(() => {
+    void copyText(prompt).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

@@ -12,6 +12,7 @@
  * one-time reveal is on screen, and is dropped when the person closes it.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import { Check, Copy, KeyRound, Plus } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -49,6 +50,10 @@ function errorMessage(e: unknown): string {
 }
 
 export default function ApiKeysTab() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { organizations, loading: orgsLoading, error: orgsError } =
     useUserOrganizations();
 
@@ -130,7 +135,7 @@ export default function ApiKeysTab() {
   const handleCopy = async () => {
     if (!created) return;
     try {
-      await navigator.clipboard.writeText(created.api_key);
+      await copyText(created.api_key);
       setCopied(true);
       toast.success("Key copied");
       setTimeout(() => setCopied(false), 2000);

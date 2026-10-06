@@ -15,6 +15,7 @@
 //                    the computed feed URL with copy + directory-submit helpers.
 //   3. Episodes    — list + an "Upload an episode" entry point (UploadEpisodeDialog).
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -83,10 +84,14 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 
 function CopyButton({ value, label }: { value: string; label: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
       setCopied(true);
       toast.success(`${label} copied`);
       setTimeout(() => setCopied(false), 2000);

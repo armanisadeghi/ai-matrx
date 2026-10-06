@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useCallback, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -87,6 +89,10 @@ export function SetContextValueCore({
   onCancel,
   className,
 }: SetContextValueCoreProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const safeInitialContent =
     typeof initialContent === "string" ? initialContent : "";
   const router = useRouter();
@@ -150,7 +156,7 @@ export function SetContextValueCore({
 
   const handleCopy = useCallback(() => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
-      navigator.clipboard.writeText(workingContent).catch(() => {});
+      copyText(workingContent);
     }
   }, [workingContent]);
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
   Database,
@@ -52,6 +53,10 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
   conversationId,
   onClose,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const instance = useAppSelector((state) =>
     selectInstance(conversationId)(state),
   );
@@ -138,7 +143,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
 
   const copyToClipboard = async (data: unknown, index: number) => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      await copyText(JSON.stringify(data, null, 2));
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
@@ -150,7 +155,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
 
   const copyAll = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(resources, null, 2));
+      await copyText(JSON.stringify(resources, null, 2));
       setCopiedIndex(-1);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
@@ -282,7 +287,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                   <Button
                     variant="quiet"
                     onClick={async () => {
-                      await navigator.clipboard.writeText(
+                      await copyText(
                         previewData.fullMessage,
                       );
                       setCopiedIndex(-2);

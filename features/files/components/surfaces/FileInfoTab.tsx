@@ -24,6 +24,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useMemo, useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -450,11 +452,15 @@ function CopyableRow({
   mono?: boolean;
   disabled?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const onCopy = useCallback(async () => {
     if (disabled || !copyValue) return;
     try {
-      await navigator.clipboard.writeText(copyValue);
+      await copyText(copyValue);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1400);
     } catch {

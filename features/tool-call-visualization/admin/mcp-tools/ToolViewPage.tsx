@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -70,11 +72,15 @@ function toolAnnotationsToArray(
 // ─── JSON Display ─────────────────────────────────────────────────────────────
 
 function JsonDisplay({ data, label }: { data: unknown; label: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const json = JSON.stringify(data, null, 2);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(json);
+    await copyText(json);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

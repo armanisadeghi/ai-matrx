@@ -12,6 +12,8 @@
 // Dense, dark, monospace — a diagnostic tool, not a product surface. Gated to
 // admins by the caller.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { Badge, Button, Tile } from "@ai-matrx/design-system/controls";
 import { useEffect, useReducer, useState } from "react";
 import { Bug, Check, ChevronDown, ChevronUp, Copy, Trash2 } from "lucide-react";
@@ -57,6 +59,10 @@ export function VoiceDebugPanel({
   instanceId,
   defaultOpen = false,
 }: VoiceDebugPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [open, setOpen] = useState(defaultOpen);
   const [copied, setCopied] = useState(false);
   const [, force] = useReducer((n: number) => n + 1, 0);
@@ -114,7 +120,7 @@ export function VoiceDebugPanel({
       ),
     ];
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await copyText(lines.join("\n"));
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       toast.success("Voice debug copied");
