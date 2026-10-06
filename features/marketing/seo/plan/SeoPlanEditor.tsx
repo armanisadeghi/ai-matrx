@@ -251,6 +251,7 @@ export function SeoPlanEditor({
       />
 
       <SeoPlanRoleFields
+        organizationId={page.organization_id}
         pageRole={draft.pageRole}
         supportsRoutes={draft.supportsRoutes}
         reason={draft.reason}

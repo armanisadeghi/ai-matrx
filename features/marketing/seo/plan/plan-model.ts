@@ -18,21 +18,11 @@ import {
   type PlannedLinkEntry,
 } from "@/features/marketing/types";
 
-/**
- * The page roles the Keyword Strategist assigns. ONE list — the strategist's
- * response parser (`content-plan/setup/ai.ts`) and the SEO plan editor both
- * consume it, so a role can never be valid in one half and rejected in the
- * other.
- */
-export const PAGE_ROLES = ["money", "supporting", "navigational"] as const;
-export type PageRole = (typeof PAGE_ROLES)[number];
-
-/** Human labels for the roles — the editor's picker renders these. */
-export const PAGE_ROLE_LABELS: Record<PageRole, string> = {
-  money: "Money page — the page that should convert",
-  supporting: "Supporting page — feeds authority to a money page",
-  navigational: "Navigational page — brand/utility, not a ranking target",
-};
+// Page roles are not listed here. The allowed words are the organization's
+// knob `seo.site.page_roles` (older words via `seo.site.page_role_aliases`),
+// read by every picker through `seo/site-context/page-roles.ts`
+// (`pageRoleOptions`) — the same knobs aidream's agents read, so the editor,
+// the context page and the agent never disagree.
 
 /** The editor's working shape: every field present, never undefined. */
 export interface SeoPlanDraft {

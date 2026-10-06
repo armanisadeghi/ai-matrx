@@ -23,11 +23,6 @@ import { useRef, useState } from "react";
 import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";
 
 import type { MarketingSite } from "@/features/marketing/types";
-import {
-  PAGE_ROLES,
-  type PageRole,
-} from "@/features/marketing/seo/plan/plan-model";
-
 import type { PlanNodeRow } from "../types";
 import type { Archetype, ExpandedArchetype } from "./archetypes";
 import type { CommittedArchetype } from "./service";
@@ -87,14 +82,14 @@ export interface FamilyNamesResult {
 // assigned easier terms that support a NAMED money page, with the internal
 // links to carry authority there.
 
-// ONE list of page roles, owned by the SEO plan model (the store the
-// strategist's assignments land in) and re-exported here for this parser's
-// existing consumers.
-export { PAGE_ROLES, type PageRole };
+// A page role is the strategist's word, stored as recorded. Which words are
+// allowed is the organization's knob `seo.site.page_roles` (pickers read it
+// through `seo/site-context/page-roles.ts`); a word outside it is kept and
+// offered a replacement, never refused here.
 
 export interface KeywordAssignment {
   route: string;
-  pageRole: PageRole;
+  pageRole: string;
   primaryKeyword: string | null;
   /** The phrase is not in the existing library — flag it for review. */
   primaryIsNew: boolean;
@@ -319,10 +314,10 @@ export function coerceKeywordStrategy(value: unknown): KeywordStrategyResult {
     if (typeof row.route !== "string" || !row.route.trim()) {
       throw new Error("Keyword Strategist returned an assignment with no route");
     }
-    const pageRole = PAGE_ROLES.find((role) => role === row.page_role);
+    const pageRole = typeof row.page_role === "string" ? row.page_role.trim() : "";
     if (!pageRole) {
       throw new Error(
-        `Keyword Strategist returned unknown page_role ${JSON.stringify(row.page_role)}`,
+        `Keyword Strategist returned an assignment with no page_role (${JSON.stringify(row.page_role)})`,
       );
     }
     const strings = (raw: unknown): string[] =>

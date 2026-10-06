@@ -53,6 +53,36 @@ export function readPageRole(stored: unknown, vocab: PageRoleVocabulary): PageRo
   return { kind: "outside", stored: raw, role: raw };
 }
 
+export interface PageRoleOption {
+  value: string;
+  label: string;
+  /** Why a recorded word is offered that is not in the list. */
+  meta?: string;
+}
+
+/**
+ * THE page-role choices every picker shows (the context page and the SEO plan
+ * editor): the organization's allowed list, plus the page's recorded word when
+ * it is outside that list — kept and selectable, never dropped (offer, never
+ * block). An older alias says what it reads as.
+ */
+export function pageRoleOptions(vocab: PageRoleVocabulary, stored: string): PageRoleOption[] {
+  const options: PageRoleOption[] = vocab.allowed.map((r) => ({ value: r, label: r }));
+  const reading = readPageRole(stored, vocab);
+  if (reading.kind === "alias") {
+    options.push({ value: reading.stored, label: reading.stored, meta: `reads as ${reading.role}` });
+  } else if (reading.kind === "outside") {
+    options.push({ value: reading.stored, label: reading.stored, meta: "as recorded" });
+  }
+  return options;
+}
+
+/** The value a picker selects for a recorded word: an allowed word in its list spelling, else as recorded. */
+export function pageRolePickerValue(stored: string, vocab: PageRoleVocabulary): string {
+  const reading = readPageRole(stored, vocab);
+  return reading.kind === "allowed" ? reading.role : reading.stored;
+}
+
 /** The stored keyword_plan slice of one page's desired_values, or `{}`. */
 export function keywordPlanOf(desiredValues: unknown): Record<string, unknown> {
   if (!desiredValues || typeof desiredValues !== "object" || Array.isArray(desiredValues)) return {};

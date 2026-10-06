@@ -50,6 +50,8 @@ import {
 import {
   keywordPlanOf,
   keywordPlanWithRole,
+  pageRoleOptions,
+  pageRolePickerValue,
   readPageRole,
   type PageRoleVocabulary,
 } from "./page-roles";
@@ -224,15 +226,7 @@ function GoalsSection({ brandId, brandRoute }: { brandId: string | null; brandRo
 // ── page roles ──────────────────────────────────────────────────────────────
 
 function roleOptions(vocab: PageRoleVocabulary, stored: string) {
-  const options = [
-    { value: NO_ROLE, label: "No role" },
-    ...vocab.allowed.map((r) => ({ value: r, label: r })),
-  ];
-  const word = stored.trim();
-  if (word && !vocab.allowed.includes(word.toLowerCase())) {
-    options.push({ value: word, label: word, meta: "as recorded" } as (typeof options)[number]);
-  }
-  return options;
+  return [{ value: NO_ROLE, label: "No role" }, ...pageRoleOptions(vocab, stored)];
 }
 
 export function PageRoleRow({
@@ -251,7 +245,7 @@ export function PageRoleRow({
   const mutation = useUpdatePageDesiredValues();
   const stored = String(keywordPlanOf(page.desired_values).page_role ?? "");
   const reading = readPageRole(stored, vocabulary);
-  const value = reading.kind === "none" ? NO_ROLE : reading.kind === "outside" ? reading.stored : reading.stored.toLowerCase();
+  const value = reading.kind === "none" ? NO_ROLE : pageRolePickerValue(stored, vocabulary);
 
   const save = async (next: string) => {
     const role = next === NO_ROLE ? null : next;

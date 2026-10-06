@@ -35,7 +35,11 @@ import { marketingPageManifest } from "@/features/surfaces/manifests/marketing-p
 import { surfaceValueLabels } from "@ai-matrx/chat/surfaces/utils/surface-display";
 import type { PlannedLinkEntry } from "@/features/marketing/types";
 
-import { PAGE_ROLES, PAGE_ROLE_LABELS, type PageRole } from "./plan-model";
+import { useSiteContextSettings } from "@/features/marketing/seo/site-context/hooks";
+import {
+  pageRoleOptions,
+  pageRolePickerValue,
+} from "@/features/marketing/seo/site-context/page-roles";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 // THE NAMING LAW: the desired-metadata fields render the declared labels of
@@ -187,6 +191,7 @@ export function SeoPlanSecondaryKeywordsField({
 
 /** The page's role in the site-wide strategy, what it feeds, and why. */
 export function SeoPlanRoleFields({
+  organizationId,
   pageRole,
   supportsRoutes,
   reason,
@@ -194,6 +199,8 @@ export function SeoPlanRoleFields({
   onSupportsRoutesChange,
   onReasonChange,
 }: {
+  /** The PAGE's organization — its page-role knob decides the list. */
+  organizationId: string;
   pageRole: string;
   supportsRoutes: string[];
   reason: string;
@@ -201,21 +208,27 @@ export function SeoPlanRoleFields({
   onSupportsRoutesChange: (value: string[]) => void;
   onReasonChange: (value: string) => void;
 }) {
+  const settings = useSiteContextSettings(organizationId);
+  const vocabulary = settings.data?.vocabulary ?? null;
+  const options = vocabulary ? pageRoleOptions(vocabulary, pageRole) : [];
   return (
     <>
       <div className="space-y-1.5" data-surface-value="seo_plan_page_role">
         <Label className="text-xs">Role in the site plan</Label>
         <Select
-          value={pageRole || undefined}
+          value={pageRole && vocabulary ? pageRolePickerValue(pageRole, vocabulary) : undefined}
           onValueChange={(next) => onPageRoleChange(next)}
+          disabled={!vocabulary}
         >
-          <SelectTrigger>
-            <SelectValue placeholder="Select role" />
+          <SelectTrigger aria-label="Role in the site plan">
+            <SelectValue
+              placeholder={settings.error ? "Role list did not load" : vocabulary ? "Select role" : "Loading roles…"}
+            />
           </SelectTrigger>
           <SelectContent>
-            {PAGE_ROLES.map((role: PageRole) => (
-              <SelectItem key={role} value={role}>
-                {PAGE_ROLE_LABELS[role]}
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.meta ? `${option.label} (${option.meta})` : option.label}
               </SelectItem>
             ))}
           </SelectContent>

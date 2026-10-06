@@ -25,7 +25,7 @@ import type {
   KeywordEffortTier,
   KeywordStrategyEstimate,
 } from "../../hooks/useSetupPasses";
-import type { KeywordAssignment, KeywordStrategyResult, PageRole } from "../ai";
+import type { KeywordAssignment, KeywordStrategyResult } from "../ai";
 import {
   PLAN_KEYWORD_STRATEGY_KIND,
   keywordStrategyValue,
@@ -35,19 +35,29 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Badge } from "@ai-matrx/design-system/controls";
 
-const ROLE_LABEL: Record<PageRole, string> = {
+// Presentation of the strategist's own words; any other recorded word shows as
+// itself (the allowed list is the knob seo.site.page_roles, never this map).
+const ROLE_LABEL: Record<string, string> = {
   money: "money",
   supporting: "supporting",
   navigational: "nav",
 };
 
-const ROLE_CLASS: Record<PageRole, string> = {
+const ROLE_CLASS: Record<string, string> = {
   money: "bg-success/15 text-success-ink",
   supporting: "bg-primary/15 text-primary-ink",
   navigational: "bg-muted text-muted-foreground",
 };
 
-const ROLE_ORDER: PageRole[] = ["money", "supporting", "navigational"];
+const ROLE_ORDER: string[] = ["money", "supporting", "navigational"];
+
+/** Known words first, then any other word in the order the strategist used it. */
+function roleOrder(byRole: Map<string, KeywordAssignment[]>): string[] {
+  return [
+    ...ROLE_ORDER.filter((role) => byRole.has(role)),
+    ...Array.from(byRole.keys()).filter((role) => !ROLE_ORDER.includes(role)),
+  ];
+}
 const EFFORT_TIERS: KeywordEffortTier[] = ["cheap", "thorough", "advanced"];
 
 export function KeywordStrategySection({
@@ -99,7 +109,7 @@ export function KeywordStrategySection({
     !tierEstimate ||
     tierEstimate.approximate_cost_usd == null;
 
-  const byRole = new Map<PageRole, KeywordAssignment[]>();
+  const byRole = new Map<string, KeywordAssignment[]>();
   for (const assignment of strategy?.assignments ?? []) {
     const list = byRole.get(assignment.pageRole) ?? [];
     list.push(assignment);
@@ -275,7 +285,7 @@ function KeywordStrategyFallbackBody({
   byRole,
 }: {
   strategy: KeywordStrategyResult;
-  byRole: Map<PageRole, KeywordAssignment[]>;
+  byRole: Map<string, KeywordAssignment[]>;
 }) {
   return (
     <div className="space-y-2">
@@ -291,7 +301,7 @@ function KeywordStrategyFallbackBody({
           ))}
         </ul>
       ) : null}
-      {ROLE_ORDER.filter((role) => (byRole.get(role) ?? []).length > 0).map(
+      {roleOrder(byRole).map(
         (role) => (
           <div key={role}>
             <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -299,7 +309,9 @@ function KeywordStrategyFallbackBody({
                 ? "Money pages"
                 : role === "supporting"
                   ? "Supporting pages"
-                  : "Navigational"}
+                  : role === "navigational"
+                    ? "Navigational"
+                    : `${role} pages`}
             </p>
             <ul className="divide-y divide-border overflow-hidden rounded-md border border-border">
               {(byRole.get(role) ?? []).map((assignment) => (
@@ -320,10 +332,10 @@ function AssignmentRow({ assignment }: { assignment: KeywordAssignment }) {
         <span
           className={cn(
             "mt-0.5 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium leading-none",
-            ROLE_CLASS[assignment.pageRole],
+            ROLE_CLASS[assignment.pageRole] ?? "bg-muted text-muted-foreground",
           )}
         >
-          {ROLE_LABEL[assignment.pageRole]}
+          {ROLE_LABEL[assignment.pageRole] ?? assignment.pageRole}
         </span>
         <div className="min-w-0 flex-1">
           <p className="truncate font-mono text-[11px] text-muted-foreground">
