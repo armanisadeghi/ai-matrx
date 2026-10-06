@@ -174,11 +174,7 @@ import { pushFullScreenLayer } from "@/features/shell/canvas-chrome/open-layer";
 import { appChatCanvasPort } from "@/features/canvas/host/chatCanvasPort";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { canvasItemId, type CanvasController } from "@ai-matrx/canvas";
-import {
-  canvasHoldsKind,
-  openToolInCanvas,
-  type ToolOpenInput,
-} from "@/features/canvas/host/toolCanvas";
+import { canvasHoldsKind, openToolInCanvas, type ToolOpenInput } from "@/features/canvas/host/toolCanvas";
 import {
   QUICK_CHAT_KIND,
   quickChatOpenInput,
@@ -287,9 +283,7 @@ const appKnobs: ChatKnobsPort = {
 function AppSettingDoor({ setting, ...rest }: ChatSettingDoorProps) {
   switch (setting) {
     case "live-conversation-voice":
-      return (
-        <SettingDoor target={VOICE_SETTING_DOORS.liveConversation} {...rest} />
-      );
+      return <SettingDoor target={VOICE_SETTING_DOORS.liveConversation} {...rest} />;
   }
 }
 
@@ -323,20 +317,13 @@ function reduxPrefs(store: AppStore): ChatPrefsPort {
 const CANVAS_HOSTED_WINDOWS = {
   quickChat: {
     kind: QUICK_CHAT_KIND,
-    input: (data: unknown) =>
-      quickChatOpenInput(data as OpenQuickChatOptions | undefined),
+    input: (data: unknown) => quickChatOpenInput(data as OpenQuickChatOptions | undefined),
   },
   contextPreviewPanel: {
     kind: CONTEXT_PREVIEW_KIND,
-    input: (data: unknown) =>
-      contextPreviewOpenInput(data as OpenContextPreviewOptions | undefined),
+    input: (data: unknown) => contextPreviewOpenInput(data as OpenContextPreviewOptions | undefined),
   },
-} as const satisfies Partial<
-  Record<
-    ChatWindowId,
-    { kind: string; input: (data: unknown) => ToolOpenInput }
-  >
->;
+} as const satisfies Partial<Record<ChatWindowId, { kind: string; input: (data: unknown) => ToolOpenInput }>>;
 
 type CanvasHostedWindow = keyof typeof CANVAS_HOSTED_WINDOWS;
 
@@ -345,16 +332,11 @@ function isCanvasHosted(id: ChatWindowId): id is CanvasHostedWindow {
 }
 
 /** Every other package window id is this app's overlay id — checked at compile time. */
-function chatWindowOverlay(
-  id: Exclude<ChatWindowId, CanvasHostedWindow>,
-): OverlayId {
+function chatWindowOverlay(id: Exclude<ChatWindowId, CanvasHostedWindow>): OverlayId {
   return id;
 }
 
-function reduxWindows(
-  store: AppStore,
-  canvas: CanvasController | null,
-): ChatWindowsPort {
+function reduxWindows(store: AppStore, canvas: CanvasController | null): ChatWindowsPort {
   return {
     open(id, data, instanceId) {
       if (isCanvasHosted(id)) {
@@ -370,11 +352,7 @@ function reduxWindows(
         if (!canvas) return;
         const kind = CANVAS_HOSTED_WINDOWS[id].kind;
         for (const item of Object.values(canvas.getState().items)) {
-          if (
-            item.kind === kind &&
-            (!instanceId || item.id === canvasItemId(kind, instanceId))
-          )
-            canvas.close(item.id);
+          if (item.kind === kind && (!instanceId || item.id === canvasItemId(kind, instanceId))) canvas.close(item.id);
         }
         return;
       }
@@ -386,11 +364,7 @@ function reduxWindows(
     isOpen: (id, instanceId) =>
       isCanvasHosted(id)
         ? canvasHoldsKind(canvas, CANVAS_HOSTED_WINDOWS[id].kind)
-        : selectIsOverlayOpen(
-            store.getState(),
-            chatWindowOverlay(id),
-            instanceId,
-          ),
+        : selectIsOverlayOpen(store.getState(), chatWindowOverlay(id), instanceId),
     managedWindowKeys: () =>
       selectAllWindows(store.getState()).map((entry) => entry.id),
     bringToFront(key) {
