@@ -341,7 +341,7 @@ function FeedbackProgressStepper({ status }: { status: FeedbackStatus }) {
                     "flex items-center justify-center w-5 h-5 rounded-full transition-all",
                     isCompleted && "bg-primary text-primary-foreground",
                     isActive &&
-                      "bg-primary/15 text-primary ring-2 ring-primary/30",
+                      "bg-primary/15 text-primary-ink ring-2 ring-primary/30",
                     isFuture && "bg-muted text-muted-foreground",
                     isAllComplete && "bg-primary text-primary-foreground",
                   )}

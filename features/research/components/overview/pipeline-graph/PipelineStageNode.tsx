@@ -263,7 +263,7 @@ export function PipelineStageNode({
               className={cn(
                 "flex h-5 w-5 shrink-0 items-center justify-center rounded-md",
                 status === "active"
-                  ? "bg-primary/15 text-primary"
+                  ? "bg-primary/15 text-primary-ink"
                   : status === "complete"
                     ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
                     : status === "partial" ||
@@ -271,7 +271,7 @@ export function PipelineStageNode({
                         status === "gated"
                       ? "bg-amber-500/12 text-amber-600 dark:text-amber-400"
                       : status === "failed"
-                        ? "bg-destructive/12 text-destructive"
+                        ? "bg-destructive/12 text-destructive-ink"
                         : "bg-muted text-muted-foreground",
               )}
             >

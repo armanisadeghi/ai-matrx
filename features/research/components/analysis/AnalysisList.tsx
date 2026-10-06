@@ -320,7 +320,7 @@ function DetailPanel({
               <button
                 onClick={handleRetry}
                 disabled={retrying}
-                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium border border-destructive/30 text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+                className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-medium border border-destructive/30 text-destructive-ink hover:bg-destructive/10 transition-colors disabled:opacity-40"
               >
                 {retrying ? (
                   <Loader2 className="h-3 w-3 animate-spin" />

@@ -219,7 +219,7 @@ export function SourceTagPicker({
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors disabled:opacity-50 min-h-[28px]",
                   on
-                    ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/15"
+                    ? "border-primary/40 bg-primary/10 text-primary-ink hover:bg-primary/15"
                     : "border-border/60 bg-muted/30 text-muted-foreground hover:bg-muted/60",
                 )}
               >

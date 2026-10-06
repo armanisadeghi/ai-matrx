@@ -162,7 +162,7 @@ export default function TopicAgentsPage() {
 
       {/* ── Role cards ─────────────────────────────────────────── */}
       {rolesError ? (
-        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 type-body text-destructive">
+        <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 type-body text-destructive-ink">
           Failed to load the system agent registry: {rolesError}
           <ErrorAlchemyMenu error={rolesError} />
         </div>

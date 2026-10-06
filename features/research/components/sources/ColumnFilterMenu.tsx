@@ -78,7 +78,7 @@ export function ColumnFilterMenu({
                 onClick={() => onSelect(isSelected ? null : opt.id)}
                 className={cn(
                   "flex w-full items-center rounded-md px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted",
-                  isSelected && "bg-primary/10 font-semibold text-primary",
+                  isSelected && "bg-primary/10 font-semibold text-primary-ink",
                 )}
               >
                 {opt.label}

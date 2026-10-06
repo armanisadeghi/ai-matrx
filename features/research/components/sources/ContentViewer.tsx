@@ -135,7 +135,7 @@ export function ContentViewer({
       )}
 
       {content.failure_reason && (
-        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 type-body text-destructive">
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3 type-body text-destructive-ink">
           <span className="font-medium">Failure reason: </span>
           {content.failure_reason}
           <ErrorAlchemyMenu error={content.failure_reason} />

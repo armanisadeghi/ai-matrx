@@ -31,7 +31,7 @@ export function SourceRankBadges({
       <div className="flex items-center gap-2 flex-wrap">
         <span
           title="Composite of this source's search ranks across all keywords — rewards ranking well for many keywords, so breadth can beat a single #1."
-          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 type-meta font-semibold text-primary"
+          className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 type-meta font-semibold text-primary-ink"
         >
           <TrendingUp className="h-3 w-3" />
           Importance {score}

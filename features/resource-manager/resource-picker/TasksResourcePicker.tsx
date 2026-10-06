@@ -39,7 +39,7 @@ const getPriorityColor = (priority?: "low" | "medium" | "high" | null) => {
   if (!priority) return "bg-muted text-muted-foreground";
   switch (priority) {
     case "high":
-      return "bg-destructive/15 text-destructive";
+      return "bg-destructive/15 text-destructive-ink";
     case "medium":
       return "bg-amber-500/15 text-amber-600 dark:text-amber-400";
     case "low":
@@ -141,7 +141,7 @@ export function TasksResourcePicker({ onBack, onSelect }: TasksResourcePickerPro
     const isOverdue = !!task.due_date && new Date(task.due_date) < new Date() && !isCompleted;
     const isExpanded = expandedTaskId === task.id;
     const isSelected = selectedTaskIds.has(task.id);
-    const dueClass = isOverdue ? "bg-destructive/15 text-destructive" : "bg-muted text-muted-foreground";
+    const dueClass = isOverdue ? "bg-destructive/15 text-destructive-ink" : "bg-muted text-muted-foreground";
 
     return (
       <div
@@ -247,7 +247,7 @@ export function TasksResourcePicker({ onBack, onSelect }: TasksResourcePickerPro
           </button>
           <button
             type="button"
-            className={cn(ACTION_BUTTON_CLASS, "text-primary hover:bg-primary/10")}
+            className={cn(ACTION_BUTTON_CLASS, "text-primary-ink hover:bg-primary/10")}
             onClick={addSelectedTasks}
           >
             Add ({selectedTaskIds.size})
@@ -264,7 +264,7 @@ export function TasksResourcePicker({ onBack, onSelect }: TasksResourcePickerPro
           </button>
           <button
             type="button"
-            className={cn(ACTION_BUTTON_CLASS, "text-primary hover:bg-primary/10")}
+            className={cn(ACTION_BUTTON_CLASS, "text-primary-ink hover:bg-primary/10")}
             onClick={() => onSelect({ type: "project", data: selectedProject })}
           >
             Add project

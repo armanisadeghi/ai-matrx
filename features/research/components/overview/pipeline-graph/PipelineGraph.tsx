@@ -743,7 +743,7 @@ export function PipelineGraph() {
         {stream.isStreaming ? (
           <button
             onClick={stream.cancel}
-            className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-medium bg-destructive/15 text-destructive hover:bg-destructive/25 transition-colors"
+            className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full text-[11px] font-medium bg-destructive/15 text-destructive-ink hover:bg-destructive/25 transition-colors"
           >
             <Square className="h-3 w-3 fill-current" />
             <span>Stop</span>
@@ -1272,7 +1272,7 @@ export function PipelineGraph() {
       {p.total_keywords === 0 && !stream.isStreaming && (
         <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary-ink">
               <Search className="h-4 w-4" />
             </div>
             <div className="flex-1 min-w-0">

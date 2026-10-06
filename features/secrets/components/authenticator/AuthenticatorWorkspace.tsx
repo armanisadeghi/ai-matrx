@@ -275,7 +275,7 @@ export function AuthenticatorWorkspace() {
               />
             </div>
           ) : error ? (
-            <div className="flex items-center justify-between gap-3 border-b border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive sm:border-x">
+            <div className="flex items-center justify-between gap-3 border-b border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive-ink sm:border-x">
               <span>{error}</span>
               <Button icon={<RefreshCw />} variant="quiet" onClick={refresh}>
                 Retry

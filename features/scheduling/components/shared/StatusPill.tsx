@@ -8,13 +8,13 @@ import type { RunStatus } from "../../types";
 
 const STATUS_STYLES: Record<RunStatus, string> = {
   queued: "border border-border bg-muted text-muted-foreground",
-  claimed: "border border-info/40 bg-info/10 text-info",
-  running: "border border-warning/40 bg-warning/10 text-warning",
-  success: "border border-success/40 bg-success/10 text-success",
-  failed: "border border-destructive/40 bg-destructive/10 text-destructive",
+  claimed: "border border-info/40 bg-info/10 text-info-ink",
+  running: "border border-warning/40 bg-warning/10 text-warning-ink",
+  success: "border border-success/40 bg-success/10 text-success-ink",
+  failed: "border border-destructive/40 bg-destructive/10 text-destructive-ink",
   cancelled: "border border-border bg-muted text-muted-foreground",
   skipped: "border border-border bg-muted/60 text-muted-foreground",
-  interrupted: "border border-info/40 bg-info/10 text-info",
+  interrupted: "border border-info/40 bg-info/10 text-info-ink",
 };
 
 const LABEL: Record<RunStatus, string> = {

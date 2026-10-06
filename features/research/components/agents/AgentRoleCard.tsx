@@ -47,11 +47,11 @@ type Tone = "neutral" | "primary" | "success" | "destructive" | "warning";
 const TONE_CLASSES: Record<Tone, string> = {
   neutral:
     "bg-muted/50 text-muted-foreground ring-1 ring-inset ring-border/60",
-  primary: "bg-primary/8 text-primary ring-1 ring-inset ring-primary/20",
+  primary: "bg-primary/8 text-primary-ink ring-1 ring-inset ring-primary/20",
   success:
     "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20",
   destructive:
-    "bg-destructive/8 text-destructive ring-1 ring-inset ring-destructive/20",
+    "bg-destructive/8 text-destructive-ink ring-1 ring-inset ring-destructive/20",
   warning:
     "bg-amber-500/10 text-amber-700 dark:text-amber-400 ring-1 ring-inset ring-amber-500/20",
 };
@@ -186,7 +186,7 @@ export function AgentRoleCard({
           className={cn(
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
             overrideActive
-              ? "bg-primary/10 text-primary ring-1 ring-inset ring-primary/15"
+              ? "bg-primary/10 text-primary-ink ring-1 ring-inset ring-primary/15"
               : "bg-muted/50 text-muted-foreground ring-1 ring-inset ring-border/60",
           )}
           aria-hidden

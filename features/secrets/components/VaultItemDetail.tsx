@@ -2721,7 +2721,7 @@ function SharePanel({
                 Loading current access…
               </div>
             ) : error ? (
-              <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+              <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive-ink">
                 {error}
                 <ErrorAlchemyMenu error={error} />
               </p>

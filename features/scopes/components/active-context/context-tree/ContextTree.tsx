@@ -663,7 +663,7 @@ export function ContextTree({
             collapse
           </button>
           {selectionCount(selection) > 0 && (
-            <span className="rounded-full bg-primary/10 px-1 font-mono text-[9px] text-primary">
+            <span className="rounded-full bg-primary/10 px-1 font-mono text-[9px] text-primary-ink">
               {selectionCount(selection)}
             </span>
           )}

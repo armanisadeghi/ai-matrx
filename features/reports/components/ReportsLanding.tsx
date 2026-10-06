@@ -36,7 +36,7 @@ export function ReportsLanding({ mode = "user" }: { mode?: "user" | "admin" }) {
             )}
           >
             <div className="flex items-center gap-2">
-              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <span className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                 <Icon className="h-4.5 w-4.5" aria-hidden />
               </span>
               <span className="text-sm font-semibold text-foreground">{report.title}</span>

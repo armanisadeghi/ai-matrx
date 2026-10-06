@@ -267,7 +267,7 @@ function StatusBadge({ status }: { status: RowStatus }) {
   return (
     <Badge
       variant="neutral"
-      className="gap-1 border-destructive/30 bg-destructive/10 text-[11px] font-normal text-destructive"
+      className="gap-1 border-destructive/30 bg-destructive/10 text-[11px] font-normal text-destructive-ink"
     >
       <XCircle className="h-3 w-3" aria-hidden="true" />
       Failed

@@ -76,7 +76,7 @@ function SuggestionRow({
       <div className="pt-0.5">
         {created ? (
           <span
-            className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-xs bg-primary/15 text-primary"
+            className="inline-flex h-3.5 w-3.5 items-center justify-center rounded-xs bg-primary/15 text-primary-ink"
             title="Already created"
           >
             <Check className="h-3 w-3" />

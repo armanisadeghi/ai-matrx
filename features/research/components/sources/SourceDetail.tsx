@@ -1726,7 +1726,7 @@ export default function SourceDetail({ topicId, sourceId }: SourceDetailProps) {
         {/* Content Section */}
         <div className="min-h-[220px]">
           {contentError ? (
-            <div className="mb-2 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 type-secondary text-destructive">
+            <div className="mb-2 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 type-secondary text-destructive-ink">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span className="flex-1">
                 This page&apos;s text could not be loaded: {contentError}

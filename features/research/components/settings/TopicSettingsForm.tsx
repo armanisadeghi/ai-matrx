@@ -488,7 +488,7 @@ export function TopicSettingsForm({
       />
 
       {error && (
-        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
+        <div className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

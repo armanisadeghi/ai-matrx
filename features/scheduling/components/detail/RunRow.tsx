@@ -90,7 +90,7 @@ export function RunRow({ run, task = null }: Props) {
       {open && (
         <div className="px-3 pb-3 pt-1 text-xs space-y-2 border-t border-border/60">
           {run.error_message && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-destructive">
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-2 text-destructive-ink">
               <div className="font-semibold text-[11px] uppercase tracking-wide mb-1">
                 Error
               </div>

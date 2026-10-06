@@ -596,7 +596,7 @@ function HierarchyTree({
                   {formatOrgDisplayName(o)}
                 </span>
                 {selectedInOrg > 0 && (
-                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                  <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary-ink">
                     {selectedInOrg}
                   </span>
                 )}
@@ -656,7 +656,7 @@ function HierarchyTree({
                           {t.scopes.length}
                         </span>
                         {selectedInType > 0 && (
-                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+                          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary-ink">
                             {selectedInType}
                           </span>
                         )}

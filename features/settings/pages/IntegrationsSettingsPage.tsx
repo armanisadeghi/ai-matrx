@@ -984,7 +984,7 @@ function ServerCard({
               />
             ) : (
               <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-sm font-semibold text-primary"
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-sm font-semibold text-primary-ink"
               >
                 {entry.name.charAt(0).toUpperCase()}
               </div>

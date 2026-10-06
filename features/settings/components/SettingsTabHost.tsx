@@ -102,7 +102,7 @@ function EmptyState() {
   return (
     <div className="flex h-full items-center justify-center p-8 text-center">
       <div className="max-w-sm">
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
           <SettingsIcon className="h-6 w-6" />
         </span>
         <h2 className="mt-3 text-base font-semibold text-foreground">

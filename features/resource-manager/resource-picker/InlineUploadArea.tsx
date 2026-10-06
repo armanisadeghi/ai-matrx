@@ -732,7 +732,7 @@ export function InlineUploadArea({
         </div>
 
         {displayError && (
-          <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/20 bg-destructive/10 px-2 py-1.5 text-xs text-destructive-ink">
             <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <span className="min-w-0 flex-1">{displayError}</span>
             <button
@@ -773,7 +773,7 @@ export function InlineUploadArea({
         className={cn(
           "rounded-lg border border-dashed p-1.5 transition-colors",
           isDragging
-            ? "border-primary bg-primary/5 text-primary"
+            ? "border-primary bg-primary/5 text-primary-ink"
             : "border-border hover:border-muted-foreground/40",
         )}
       >

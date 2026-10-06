@@ -141,7 +141,7 @@ export function AnnotationPanel({
               onClick={() => setFilter(f.id)}
               className={cn(
                 "shrink-0 rounded-md px-2 py-1 text-xs font-medium",
-                filter === f.id ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+                filter === f.id ? "bg-primary/10 text-primary-ink" : "text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >
               {f.label}
@@ -773,7 +773,7 @@ function CommentTokens({ body }: { body: string }) {
     <>
       {tokenizeMentions(body).map((t, i) =>
         t.type === "person" ? (
-          <span key={i} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-primary">
+          <span key={i} className="mx-0.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1 text-primary-ink">
             <AtSign className="h-3 w-3" aria-hidden />{t.label}
           </span>
         ) : t.type === "date" ? (

@@ -269,7 +269,7 @@ export function LivePipelineActivity({
           )}
           <button
             onClick={onCancel}
-            className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-destructive hover:bg-destructive/10 transition-colors"
+            className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-medium text-destructive-ink hover:bg-destructive/10 transition-colors"
           >
             Cancel
           </button>

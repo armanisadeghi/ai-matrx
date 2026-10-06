@@ -372,7 +372,7 @@ export default function TasksView() {
       </header>
 
       {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-ink flex items-start gap-2">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>{error}</span>
           <ErrorAlchemyMenu error={error} />

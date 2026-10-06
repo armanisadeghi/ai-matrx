@@ -586,7 +586,7 @@ export function ScraperFloatingWorkspace({
             className={cn(
               "flex-1 flex items-center justify-center gap-0.5 py-1 rounded text-[9px] font-semibold transition-colors",
               mode === id
-                ? "bg-primary/15 text-primary border border-primary/35"
+                ? "bg-primary/15 text-primary-ink border border-primary/35"
                 : "bg-muted/40 text-muted-foreground border border-transparent hover:bg-muted",
             )}
           >

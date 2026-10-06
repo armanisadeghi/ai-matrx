@@ -754,7 +754,7 @@ function SortableKeywordRow({
       <button
         type="button"
         onClick={onRemove}
-        className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground/50 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-destructive/10 hover:text-destructive transition-all shrink-0"
+        className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground/50 opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-destructive/10 hover:text-destructive-ink transition-all shrink-0"
         aria-label="Remove keyword"
       >
         <X className="h-3.5 w-3.5" />
@@ -933,7 +933,7 @@ function AiCanvas({
           )}
         >
           {hasQuotaConflict && (
-            <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 type-body text-destructive">
+            <div className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2.5 type-body text-destructive-ink">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
               <div className="space-y-1 min-w-0">
                 <p className="font-medium leading-snug">
@@ -2557,7 +2557,7 @@ export default function ResearchInitForm({ onCreated }: ResearchInitFormProps = 
 
       {/* ── Error ── */}
       {error && (
-        <div className="w-full max-w-2xl mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 type-body text-destructive">
+        <div className="w-full max-w-2xl mt-4 rounded-lg bg-destructive/10 border border-destructive/20 p-3 type-body text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

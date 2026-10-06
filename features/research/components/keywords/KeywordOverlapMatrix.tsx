@@ -231,7 +231,7 @@ const VERDICT_STYLE: Record<
   },
   balanced: {
     dot: "bg-primary",
-    chip: "text-primary bg-primary/10 border-primary/20",
+    chip: "text-primary-ink bg-primary/10 border-primary/20",
     Icon: Layers,
   },
   broad: {

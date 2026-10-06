@@ -264,7 +264,7 @@ function SynthesisCard({
             </div>
           ) : synthesis.error ? (
             // No content at all + an error → a real failure.
-            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 type-secondary text-destructive">
+            <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 px-2.5 py-1.5 type-secondary text-destructive-ink">
               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
               {synthesis.error}
               <ErrorAlchemyMenu error={synthesis.error} />

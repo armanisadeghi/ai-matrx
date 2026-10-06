@@ -653,7 +653,7 @@ function PodcastOutputCard({
                   className={cn(
                     "h-7 w-7 text-[11px] font-medium transition-colors disabled:opacity-50",
                     hostCount === n
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-muted-foreground hover:bg-accent/50",
                   )}
                 >
@@ -675,7 +675,7 @@ function PodcastOutputCard({
                   className={cn(
                     "h-7 px-2.5 text-[11px] font-medium transition-colors disabled:opacity-50",
                     podcastType === t.value
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-muted-foreground hover:bg-accent/50",
                   )}
                 >
@@ -1176,7 +1176,7 @@ function OutputCardShell({
   return (
     <div className="rounded-xl border border-border/60 bg-card/60 backdrop-blur-sm overflow-hidden">
       <div className="flex items-center gap-2.5 px-3.5 py-2.5 border-b border-border/50">
-        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary">
+        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 text-primary-ink">
           {icon}
         </div>
         <div className="flex-1 min-w-0">

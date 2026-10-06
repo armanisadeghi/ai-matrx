@@ -50,7 +50,7 @@ export default function ResearchLanding() {
             <section className="relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
                 <div className="relative mx-auto max-w-5xl px-4 @2xl:px-6 pt-16 @2xl:pt-24 pb-12 @2xl:pb-20 text-center">
-                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 type-title text-primary mb-6">
+                    <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 type-title text-primary-ink mb-6">
                         <Zap className="h-3.5 w-3.5" />
                         AI-Powered Research
                     </div>
@@ -102,7 +102,7 @@ export default function ResearchLanding() {
                                 'opacity-100 translate-y-0',
                             )}
                         >
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4 group-hover:scale-110 transition-transform duration-300">
                                 <feature.icon className="h-5 w-5" />
                             </div>
                             <h3 className="text-base font-semibold mb-2">{feature.title}</h3>
@@ -126,7 +126,7 @@ export default function ResearchLanding() {
                     <div className="grid grid-cols-1 @2xl:grid-cols-2 gap-6 @2xl:gap-8">
                         {STEPS.map((step) => (
                             <div key={step.number} className="flex gap-4">
-                                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
+                                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary-ink font-bold text-lg">
                                     {step.number}
                                 </div>
                                 <div>

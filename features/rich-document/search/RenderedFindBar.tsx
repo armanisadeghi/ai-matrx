@@ -109,5 +109,5 @@ export function RenderedFindBar({ rootRef, onClose, label = "Find in document", 
 }
 
 function OptionButton({ label, pressed, disabled, onClick, children }: { label: string; pressed?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
-  return <button type="button" aria-label={label} title={label} aria-pressed={pressed} disabled={disabled} onClick={onClick} className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground aria-pressed:bg-primary/10 aria-pressed:text-primary disabled:opacity-40">{children}</button>;
+  return <button type="button" aria-label={label} title={label} aria-pressed={pressed} disabled={disabled} onClick={onClick} className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground aria-pressed:bg-primary/10 aria-pressed:text-primary-ink disabled:opacity-40">{children}</button>;
 }

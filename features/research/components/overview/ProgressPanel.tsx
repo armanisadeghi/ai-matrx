@@ -92,7 +92,7 @@ export function ProgressPanel({ isStreaming, currentStep, messages, error, liveS
                             <div className={cn(
                                 'flex items-center gap-1.5 rounded-full px-2.5 py-1 type-secondary font-medium whitespace-nowrap transition-colors',
                                 isActive ? 'bg-primary text-primary-foreground' :
-                                isDone ? 'bg-primary/20 text-primary' :
+                                isDone ? 'bg-primary/20 text-primary-ink' :
                                 'bg-muted text-muted-foreground',
                             )}>
                                 <Icon className="h-3 w-3" />
