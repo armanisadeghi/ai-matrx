@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { GoogleAccountSelect } from "@/features/google-workspace/GoogleAccountSelect";
@@ -319,9 +320,7 @@ function BusinessProfileReviewBodyInner({
       className="rounded-xl border border-border bg-card p-4 shadow-sm space-y-3"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="type-title text-foreground">
-          Business Profile reviews
-        </h2>
+        <h2 className="type-title text-foreground">Business Profile reviews</h2>
         <span className="type-secondary text-muted-foreground">Read only</span>
         <a
           className="mt-2 inline-block type-body text-primary hover:underline"
@@ -423,21 +422,33 @@ function BusinessProfileReviewBodyInner({
         >
           {locations.locations.length ? (
             locations.locations.map((location) => (
-              <Button
-                key={location.name}
-                type="button"
-                variant="outline"
-                className="block h-auto w-full p-3 text-left"
-                disabled={busy !== null}
-                onClick={() => void loadReviews(location.name)}
-              >
-                <span className="block font-medium">
-                  {location.title ?? location.name}
-                </span>
-                <span className="block type-secondary text-muted-foreground">
-                  Source: {location.name}
-                </span>
-              </Button>
+              <div key={location.name} className="flex items-stretch gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="block h-auto min-w-0 flex-1 p-3 text-left"
+                  disabled={busy !== null}
+                  onClick={() => void loadReviews(location.name)}
+                >
+                  <span className="block font-medium">
+                    {location.title ?? location.name}
+                  </span>
+                  <span className="block type-secondary text-muted-foreground">
+                    Source: {location.name}
+                  </span>
+                </Button>
+                {location.metadata?.mapsUri ? (
+                  <a
+                    href={location.metadata.mapsUri}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Open ${location.title ?? location.name} in Google Maps`}
+                    className="inline-flex shrink-0 items-center justify-center rounded-md border border-border px-3 text-muted-foreground hover:border-primary/50 hover:text-primary"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                ) : null}
+              </div>
             ))
           ) : (
             <Empty label="No locations were returned for this page." />
