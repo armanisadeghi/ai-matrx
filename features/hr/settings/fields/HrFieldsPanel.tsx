@@ -54,6 +54,12 @@ export const VALIDATION_LABEL: Record<string, string> = {
 const UNRECOGNIZED = "Not recognized";
 const sensitivityWords = (v: string | null | undefined) =>
   v ? ((FIELD_SENSITIVITY_LABEL as Record<string, string>)[v] ?? UNRECOGNIZED) : "Not set";
+/** The ceiling's own vocabulary (`platform.custom_field_target.sensitivity_ceiling`): the most sensitive a field may be. */
+const CEILING_SENSITIVITY: Record<string, string> = {
+  standard: FIELD_SENSITIVITY_LABEL.internal,
+  confidential: FIELD_SENSITIVITY_LABEL.confidential,
+  restricted: FIELD_SENSITIVITY_LABEL.restricted,
+};
 const wordsFrom = (map: Record<string, string>, v: string | null | undefined) =>
   v ? (map[v] ?? UNRECOGNIZED) : "Not set";
 
@@ -149,7 +155,7 @@ export function HrFieldsPanel() {
                     <dl className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
                       {[
                         ["Field limit", target.max_fields == null ? "Unlimited" : String(target.max_fields)],
-                        ["Most sensitive a field may be, seen by", sensitivityWords(target.sensitivity_ceiling)],
+                        ["Most sensitive a field may be, seen by", wordsFrom(CEILING_SENSITIVITY, target.sensitivity_ceiling)],
                         ["AI access", wordsFrom(AI_CEILING_LABEL, target.ai_exposure_ceiling)],
                         ["Checking values", wordsFrom(VALIDATION_LABEL, target.validation_mode)],
                       ].map(([term, value]) => (
@@ -211,10 +217,8 @@ export function HrFieldsPanel() {
             </li>
             <li>
               <span className="font-medium text-foreground">
-                A restricted field is never given to an AI.
-              </span>{" "}
-              That is not a setting on the field — it is a ceiling on the tier. The AI
-              exposure control governs standard and confidential fields only.
+                A field only owners and administrators see is never given to an AI.
+              </span>
             </li>
             <li>
               <span className="font-medium text-foreground">
