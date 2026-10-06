@@ -88,12 +88,24 @@ export function sampleRings(tables: AgencyTables): SpaceBlock {
     );
 }
 
-/** The screenshot's client database shows five properties; the reverse links (surveys, wins, tasks) are hidden. */
-export const SAMPLE_CLIENT_HIDDEN = ["linked:nps_survey__client", "linked:client_win__client", "linked:task__client"];
+/** The screenshot's client database shows five properties; the reverse links (surveys, wins, tasks) are hidden.
+ *  The installed store keys a reverse column by its inverse key (the linking table's name); the gallery's
+ *  in-memory preview keys it `<token>__<field>` — both are listed so either world hides them. */
+export const SAMPLE_CLIENT_HIDDEN = [
+  "linked:nps_surveys",
+  "linked:client_wins",
+  "linked:tasks",
+  "linked:nps_survey__client",
+  "linked:client_win__client",
+  "linked:task__client",
+];
+
+/** The reference lists clients by the day they started. */
+export const SAMPLE_CLIENT_SORTS: NonNullable<SpaceDbView["sorts"]> = [{ field: "date_started", direction: "asc" }];
 
 /** The linked client database of the acceptance page. */
 export function sampleClientsDatabase(tables: AgencyTables): SpaceBlock {
-  return b.database(tables, "client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN }]);
+  return b.database(tables, "client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN, sorts: SAMPLE_CLIENT_SORTS }]);
 }
 
 interface PageSeed {

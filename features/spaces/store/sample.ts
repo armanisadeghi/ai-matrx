@@ -4,7 +4,7 @@
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
 import { agencyTokenByName, type AgencyTables } from "../data/agency-install";
 import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
-import { RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
+import { RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
 
@@ -40,6 +40,14 @@ function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: Spa
           const t = tables[token];
           const { sample: _sample, ...rest } = blk.props;
           blk = { ...blk, props: { ...rest, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
+        }
+      }
+      // Round 11: a client grid already on the installed table hides its reverse links and sorts by start date.
+      if (blk.type === "database" && !blk.props?.sample && blk.props?.title === "Clients") {
+        const vs = blk.props.views as Array<{ layout?: string; hiddenFields?: string[] }> | undefined;
+        if (vs?.some((v) => v.layout === "grid" && !v.hiddenFields?.includes("linked:nps_surveys"))) {
+          changed = true;
+          blk = { ...blk, props: { ...blk.props, views: vs.map((v) => (v.layout === "grid" ? { ...v, hiddenFields: SAMPLE_CLIENT_HIDDEN, sorts: SAMPLE_CLIENT_SORTS } : v)) } };
         }
       }
       const views = blk.type === "database" ? (blk.props?.views as Array<{ hiddenFields?: string[] }> | undefined) : undefined;

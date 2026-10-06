@@ -112,4 +112,6 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   (`data/agency-install.ts`: `template_declare` upsert on catalogue id `T-SPACES-1` + `runTemplateDoor("template_install")`,
   the same door as the template gallery's Install; a second add answers `already` with the same tables) and points the
   page's ring and client blocks at them (`{kind:"table", tableId, viewId}`, no `sample`); an older copy is repointed in
-  place. The source picker's "Sample agency" rows install too. Date fields carry `absoluteDates`.
+  place. The source picker's "Sample agency" rows install too. Date fields carry `absoluteDates`; title fields are not
+  required ("+ New page" writes an untitled row); the client grid hides the store's reverse links (`linked:<inverse key>`).
+  Type measured on the references: title 36px, blocks 15px/1.5 (`spaces.css`).

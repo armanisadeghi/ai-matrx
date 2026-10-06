@@ -1,6 +1,8 @@
 // features/spaces/data/agency-spec.ts — the sample agency the data blocks draw while the build runs:
-// a social-media agency's Clients, NPS surveys, Client wins and Tasks. Installed into memory by
-// `templatePreview` (@ai-matrx/records/memory) — read-only, nothing is written anywhere.
+// a social-media agency's Clients, NPS surveys, Client wins and Tasks. "Add the sample" installs it as real
+// store tables (data/agency-install.ts); the template gallery's preview reads it in memory (`templatePreview`).
+//
+// Title fields are not required: Notion's "+ New page" makes an untitled row, and so does the inline grid's.
 //
 // The Traveling SMM™ OS acceptance page reads it: Active clients (4), Client wins (10), Avg NPS score
 // (8.6) and YTD tasks completed (355), and the client database (screenshot 1).
@@ -104,7 +106,7 @@ export const AGENCY_SPEC = {
       describes: "Every client, the offer they bought and where they are.",
       subject: "thing",
       fields: [
-        { key: "client_name", label: "Client Name", parityType: "text", sensitivity: "internal", contextPolicy: "include", required: true },
+        { key: "client_name", label: "Client Name", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
         { key: "offer", label: "Offer Bought", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: OFFERS },
         { key: "date_started", label: "Date Started", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
         { key: "end_date", label: "End Date", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
@@ -134,7 +136,7 @@ export const AGENCY_SPEC = {
       describes: "What each client scored the agency, month by month.",
       subject: "thing",
       fields: [
-        { key: "survey", label: "Survey", parityType: "text", sensitivity: "internal", contextPolicy: "include", required: true },
+        { key: "survey", label: "Survey", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
         { key: "client", label: "Client", parityType: "relation", sensitivity: "internal", contextPolicy: "include", relationTarget: "client", relationMax: 1 },
         { key: "score", label: "Score", parityType: "number", sensitivity: "internal", contextPolicy: "include", rules: [{ kind: "min", value: 0 }, { kind: "max", value: 10 }] },
         { key: "sent_on", label: "Sent", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
@@ -158,7 +160,7 @@ export const AGENCY_SPEC = {
       describes: "Results delivered for clients, worth telling the next one about.",
       subject: "thing",
       fields: [
-        { key: "win", label: "Win", parityType: "text", sensitivity: "internal", contextPolicy: "include", required: true },
+        { key: "win", label: "Win", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
         { key: "client", label: "Client", parityType: "relation", sensitivity: "internal", contextPolicy: "include", relationTarget: "client", relationMax: 1 },
         {
           key: "kind",
@@ -187,7 +189,7 @@ export const AGENCY_SPEC = {
       describes: "Every piece of client work the team finished.",
       subject: "thing",
       fields: [
-        { key: "task", label: "Task", parityType: "text", sensitivity: "internal", contextPolicy: "include", required: true },
+        { key: "task", label: "Task", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
         { key: "client", label: "Client", parityType: "relation", sensitivity: "internal", contextPolicy: "include", relationTarget: "client", relationMax: 1 },
         { key: "kind", label: "Kind", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: TASK_KINDS },
         { key: "status", label: "Status", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: ["To do", "Doing", "Done"] },
