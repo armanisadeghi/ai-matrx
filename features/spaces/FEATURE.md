@@ -131,3 +131,13 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   `platform.comments` changes. "@" in the page lists people (`cmt_mention_candidates`) before pages and stores `mention {kind:"person"}`.
   A save from someone else while this person is typing shows "Page updated · Show latest" instead of replacing the page. Share opens
   the platform `ShareModal` on `document` (Invite) beside Copy link.
+- 2026-10-06 — builder round 15 (H3 live co-editing): `collab/space-collab.ts` + `collab/useSpaceCollab.ts`. The page body is a Yjs
+  fragment shared over Supabase broadcast through the workbook provider (`yjs:spaces:<id>`, imported as-is) and bound by BlockNote's
+  `CollaborationExtension` (named cursors in `personColor`, the same colour rings the top-bar avatar); title / icon / cover / settings
+  ride a Yjs map. An empty room is seeded from the stored version in a scratch doc whose client id hashes (page, version), so two
+  people opening at once write identical items (no duplicated blocks). Exactly one host saves: editors still on the page's presence
+  channel, lowest `uid:clientID`, the room's tab leader; it saves through `space_save` on knobs `spaces.collab.snapshot_debounce_ms` /
+  `snapshot_max_wait_ms` (page org; platform value for an outside sharee) and on leave; a save whose content is stored is skipped,
+  and the seed's own normalisation is the baseline (opening a page writes nothing). Others' saves only teach the version. Offline
+  marker in the top bar; on reconnect the provider is rebuilt and this member's state re-sent (works around the provider dropping
+  late `y-state` answers). Viewers / commenters (`useAccess` below edit) get the live room read-only and no Add icon / Add cover.

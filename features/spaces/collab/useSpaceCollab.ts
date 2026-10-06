@@ -25,7 +25,10 @@ const MAX_WAIT_KNOB = { feature: "spaces.collab", key: "snapshot_max_wait_ms" } 
 async function readCadence(spaceId: string, userId: string): Promise<SaveCadence> {
   // The page's own organization: its override governs every member's host, whoever's active org it is.
   const org = await pageOrganizationId(spaceId).catch(() => null);
-  const [d, m] = await Promise.all([ensureEffectiveKnob(org, userId, DEBOUNCE_KNOB), ensureEffectiveKnob(org, userId, MAX_WAIT_KNOB)]);
+  const read = (o: string | null) => Promise.all([ensureEffectiveKnob(o, userId, DEBOUNCE_KNOB), ensureEffectiveKnob(o, userId, MAX_WAIT_KNOB)]);
+  // A person the page is shared with from outside its organization cannot read that organization's
+  // settings (knob_snapshot refuses a non-member): they get the platform value and their own override.
+  const [d, m] = await read(org).catch(() => read(null));
   const debounceMs = Number(d);
   const maxWaitMs = Number(m);
   if (!Number.isFinite(debounceMs) || !Number.isFinite(maxWaitMs)) throw new Error("spaces.collab snapshot knobs are not numbers");

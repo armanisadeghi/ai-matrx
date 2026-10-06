@@ -15,6 +15,7 @@ import { ShareModal } from "@/features/sharing/components/ShareModal";
 
 import { pageOrganizationId } from "../data/agency-install";
 import { PersonAvatar } from "./CommentsPanel";
+import { personColor } from "./space-collab";
 import type { SpaceViewer } from "./useSpaceRoom";
 
 const SHOWN = 3;
@@ -27,7 +28,14 @@ export function PresenceAvatars({ viewers, me }: { viewers: SpaceViewer[]; me: s
   return (
     <div className="spaces-presence" aria-label="People viewing this page">
       {shown.map((v) => (
-        <span key={v.userId} className="spaces-presence-avatar" title={v.userId === me ? `${v.name} (you)` : v.name} data-viewer={v.userId}>
+        // The ring is the person's colour — the same colour as their cursor in the page (personColor).
+        <span
+          key={v.userId}
+          className="spaces-presence-avatar"
+          style={{ boxShadow: `0 0 0 2px var(--spaces-page-bg), 0 0 0 3.5px ${personColor(v.userId)}` }}
+          title={v.userId === me ? `${v.name} (you)` : v.name}
+          data-viewer={v.userId}
+        >
           <PersonAvatar name={v.name} url={v.avatarUrl} size={24} />
         </span>
       ))}
