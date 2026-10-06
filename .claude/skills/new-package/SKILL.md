@@ -78,6 +78,10 @@ raised single-topic — never embedded in a broader plan's approval. Interview f
 → your recommendation → options; at most two decisions per turn; record answers into
 DECISIONS.md immediately. No code before the go.
 
+This never conflicts with the PACKAGE-FIRST LAW (Arman, 2026-10-06): reusable code MUST become
+a package AND the new package needs his go first. Both, always. Growing an existing package
+needs no approval.
+
 ## Step 4 — build
 
 Author at `aidream/apps/shared/<name>`. The policy's Authoring rules section is the
