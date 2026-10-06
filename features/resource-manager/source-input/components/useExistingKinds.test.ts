@@ -9,8 +9,8 @@ jest.mock("@/features/unified-data/hub/doors", () => ({
   ...jest.requireActual("@/features/unified-data/hub/doors"),
   dataHomeTables: jest.fn(),
 }));
-jest.mock("@/features/user-lists/pick-list-index", () => ({
-  ...jest.requireActual("@/features/user-lists/pick-list-index"),
+jest.mock("@/features/data-tables/pick-lists/pick-list-index", () => ({
+  ...jest.requireActual("@/features/data-tables/pick-lists/pick-list-index"),
   readPickListIndexOrThrow: jest.fn(),
 }));
 
@@ -18,7 +18,7 @@ import { offeredKindsFrom } from "./UseExisting";
 import { sourceInputEntries, type SourceInputKindRow } from "../sourceInputKinds";
 import { fetchTablesPage, PICK_LIST_BADGE } from "../recordStoreKinds";
 import { dataHomeTables } from "@/features/unified-data/hub/doors";
-import { readPickListIndexOrThrow } from "@/features/user-lists/pick-list-index";
+import { readPickListIndexOrThrow } from "@/features/data-tables/pick-lists/pick-list-index";
 
 const LIVE: SourceInputKindRow[] = (
   [

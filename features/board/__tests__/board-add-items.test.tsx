@@ -13,8 +13,8 @@ jest.mock("@/features/unified-data/hub/doors", () => ({
   ...jest.requireActual("@/features/unified-data/hub/doors"),
   dataHomeTables: jest.fn(),
 }));
-jest.mock("@/features/user-lists/pick-list-index", () => ({
-  ...jest.requireActual("@/features/user-lists/pick-list-index"),
+jest.mock("@/features/data-tables/pick-lists/pick-list-index", () => ({
+  ...jest.requireActual("@/features/data-tables/pick-lists/pick-list-index"),
   readPickListIndex: jest.fn(),
 }));
 
@@ -22,7 +22,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { executeSurfaceClientTool } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
 import { dataHomeTables } from "@/features/unified-data/hub/doors";
-import { readPickListIndex } from "@/features/user-lists/pick-list-index";
+import { readPickListIndex } from "@/features/data-tables/pick-lists/pick-list-index";
 import { BoardStore } from "../board/board-store";
 import { planPlacement } from "../board/plan-placement";
 import { BoardSurface } from "../components/BoardSurface";

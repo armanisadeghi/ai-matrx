@@ -320,9 +320,7 @@ describe("URL hydration registry", () => {
   });
 
   const structuredListCases: ReadonlyArray<readonly [string, OverlayId]> = [
-    // A saved v1 address opens the one picklist window (the v1 twin is gone).
-    ["structuredListManagerV1", "structuredListManagerV2Window"],
-    ["structuredListManagerV2", "structuredListManagerV2Window"],
+    ["pickListManager", "pickListManagerWindow"],
   ];
 
   it.each(structuredListCases)(
@@ -336,13 +334,4 @@ describe("URL hydration registry", () => {
       );
     },
   );
-
-  // Breaks if the retired v1 window's own token, saved in an old address, is read as a list id.
-  it("opens a saved v1 window token as the picklist index, not a list", () => {
-    expect(
-      hydrate("structuredListManagerV1", "structuredListManagerV1Window"),
-    ).toHaveBeenCalledWith(
-      openOverlay({ overlayId: "structuredListManagerV2Window", data: null }),
-    );
-  });
 });

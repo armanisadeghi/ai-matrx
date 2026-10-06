@@ -3,7 +3,7 @@
  *
  * The floating List Manager window (overlay `listManagerWindow`) — a
  * sidebar-of-lists + active-list-detail workspace
- * (`ListManagerFloatingWorkspace`). Distinct from the `/lists` route surface
+ * (`ListManagerFloatingWorkspace`). Distinct from the `/pick-lists` route surface
  * (`matrx-user/lists`): same domain, different home — this one is a window
  * openable anywhere; value names deliberately reuse the `lists` vocabulary
  * so generic list agents bind identically on both.
@@ -19,7 +19,7 @@ import type {
   SurfaceValue,
   SurfaceValueGroup,
 } from "@ai-matrx/chat/surfaces/types";
-import { LIST_SURFACE_WRITE_TARGETS } from "@/features/user-lists/surface-write-targets";
+import { LIST_SURFACE_WRITE_TARGETS } from "@/features/data-tables/pick-lists/surface-write-targets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
@@ -155,9 +155,9 @@ const surfaceSpecific: SurfaceValue[] = [
  * Write half of the List Manager surface.
  *
  * The targets themselves now live in
- * `features/user-lists/surface-write-targets.ts`, because this surface is one
+ * `features/data-tables/pick-lists/surface-write-targets.ts`, because this surface is one
  * of TWO mounts of the same editable list state — the other is the
- * `/lists/[id]` route (`matrx-user/lists`). This surface's vocabulary shipped
+ * `/pick-lists/[id]` route (`matrx-user/lists`). This surface's vocabulary shipped
  * first and remains authoritative; it was lifted into the shared module
  * unchanged (same names, same semantics, same prose) so the route mount reuses
  * it instead of inventing a competing set, and so the two can no longer drift.

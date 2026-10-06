@@ -411,7 +411,7 @@
     "sentence-under-title|features/social-cards/PublicChatOpener.tsx",
     "sentence-under-title|features/source-library/components/SourceDetailPanel.tsx",
     "sentence-under-title|features/storage-connections/StorageConnectionsPanel.tsx",
-    "sentence-under-title|features/structured-lists/StructuredListLanding.tsx",
+    "sentence-under-title|features/data-tables/pick-lists/components/PickListsLanding.tsx",
     "sentence-under-title|features/tool-registry/tools-admin/components/RegistryTab.tsx",
     "sentence-under-title|features/transcript-studio/components/EmptySessionState.tsx",
     "sentence-under-title|features/vision-interview/components/NewInterviewExperience.tsx",

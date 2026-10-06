@@ -326,12 +326,12 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Message Templates",
     hrefFor: (id) => `/chat/message-templates/${id}`,
   },
-  // Pick Lists / user lists (`/lists`) — canonical token is structured_list
+  // Pick Lists / user lists (`/pick-lists`) — canonical token is structured_list
   // (legacy names picklist / udt_picklists / user_lists are dead).
   structured_list: {
     Icon: ListOrdered,
     labelPlural: "Lists",
-    hrefFor: (id) => `/lists/${id}`,
+    hrefFor: (id) => `/pick-lists/${id}`,
   },
 
   // ─── Sources ──────────────────────────────────────────────────────────────

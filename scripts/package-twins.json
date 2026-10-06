@@ -562,7 +562,7 @@
       "shapeWhy": "An integer becoming a grouped or abbreviated display string is this capability whatever it is called. The name lane read GREEN while features/admin/spend/format.ts exported a `count` body on its own `new Intl.NumberFormat(\"en-US\")`, UsageTableClient.tsx kept `const fmtInt = new Intl.NumberFormat()` behind thirteen call sites, and the lint-debt and dead-ends consoles each spelled `report.totals.filesScanned.toLocaleString()` beside the word \"files\". Pattern and its proof: scripts/count-shape.mjs. A DATE rendered with toLocaleString can never match (the receiver test and the date-fields test are each proven failing), a count used only in a comparison renders nothing and is not reported, a currency formatter is the money lane's, and a BYTE abbreviation is byte-size-shape.mjs's \u2014 the suffix vocabulary's word boundary is what keeps \" KB\" and \" MB\" out. The compact voice the fleet's seven abbreviators wanted is `formatCount(n, { style: \"compact\" })` as of kit 0.14.0.",
       "allow": [
         {
-          "file": "features/user-lists/components/CategoryPanel.tsx",
+          "file": "features/data-tables/pick-lists/components/CategoryPanel.tsx",
           "reason": "A DIFFERENT capability under the same name: this renders a COMPACT count (\"1.2k\") for a sidebar badge, and returns an EMPTY STRING for undefined rather than an em-dash, because the badge is absent when the count is unknown instead of showing a placeholder in a 20px chip. @ai-matrx/kit/format's `formatCount` is the grouped-integer voice (\"1,234\") and deliberately ships no compact voice yet. Collapse this the moment one exists \u2014 a waiting collapse target, not a permanent exemption. (Checked 2026-09-12.)"
         }
       ],
@@ -1765,7 +1765,7 @@
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
-          "file": "features/user-lists/calendar-age.ts",
+          "file": "features/data-tables/pick-lists/calendar-age.ts",
           "why": "IS the relative-time capability and has not been collapsed yet. The five bodies the tenth review named \u2014 the spend ledger's `staleness`, the dead-ends and lint-debt consoles' split `ageInDays` + \"scanned today\", the provider sync dashboard's `hoursSince` + \"verified today\", and the masterwork panel's `whenDate` \u2014 were collapsed in this session. The rest is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {

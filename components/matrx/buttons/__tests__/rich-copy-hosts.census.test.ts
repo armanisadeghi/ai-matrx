@@ -49,7 +49,6 @@ const RAW_ALLOWED: Record<string, string> = {
   "packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx": "a tool's raw arguments / result JSON",
   "packages/chat/src/tool-call-visualization/result-fields/ShortId.tsx": "an id",
   "features/chat-tool-renderers/renderers/note/NoteToolParts.tsx": "a note id",
-  "features/chat-tool-renderers/renderers/get-user-lists/UserListsOverlay.tsx": "a list id",
 };
 
 const RAW_WRITE = /navigator\.clipboard\s*\??\.\s*(?:write|writeText)\s*\(/;

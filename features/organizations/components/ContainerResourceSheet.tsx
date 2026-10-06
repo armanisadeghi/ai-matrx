@@ -14,7 +14,7 @@ import { CanvasPagePanel } from "@/features/canvas/host/pagePanel";
 import { Input } from "@ai-matrx/design-system/controls";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { supabase } from "@/utils/supabase/client";
-import { organizationPickListsInTheNewSystem } from "@/features/user-lists/where-lists-live";
+import { organizationPickListsInTheNewSystem } from "@/features/data-tables/pick-lists/where-lists-live";
 import { getResourceSharePath } from "@/utils/permissions/registry";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";

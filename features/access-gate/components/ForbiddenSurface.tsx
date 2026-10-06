@@ -29,7 +29,7 @@
  * THE PATTERN THAT WORKS: a route that wants the record-specific gate must not
  * call `forbidden()` at all — it renders `<AccessGate token id/>` itself and
  * returns it. `AccessGate` is a client component, so a Server Component can
- * return it directly; `app/(core)/lists/[id]/page.tsx` is the live example.
+ * return it directly; `app/(core)/pick-lists/[id]/page.tsx` is the live example.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 import "server-only";

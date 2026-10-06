@@ -20,7 +20,7 @@ const NOT_A_DROPDOWN: Record<string, string> = {
   "features/marketing/content-plan/components/PlanTreeToolbar.tsx": "expand all",
   "features/marketing/seo/topical-map/views/outline/OutlineToolbar.tsx": "expand all",
   "features/vision-interview/components/ExpertFeedPanel.tsx": "expand all",
-  "features/user-lists/components/ListsTreeNav.tsx": "expand all",
+  "features/data-tables/pick-lists/components/ListsTreeNav.tsx": "expand all",
   "features/window-panels/WindowTray.tsx": "restore window",
   "features/projects/components/ProjectsHub.tsx": "sortable column header",
   "features/tasks/components/TasksTableView.tsx": "sortable column header",

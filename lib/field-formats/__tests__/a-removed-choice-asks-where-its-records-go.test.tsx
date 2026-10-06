@@ -13,9 +13,9 @@ import type { FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("@/features/user-lists/service", () => ({ getAccessibleLists: async () => [] }));
-jest.mock("@/features/user-lists/hooks/useStructuredListForSelection", () => ({
-  useStructuredListForSelection: () => ({ groups: [], items: [], loading: false, error: null, unavailable: false }),
+jest.mock("@/features/data-tables/pick-lists/service", () => ({ getAccessibleLists: async () => [] }));
+jest.mock("@/features/data-tables/pick-lists/hooks/usePickListForSelection", () => ({
+  usePickListForSelection: () => ({ groups: [], items: [], loading: false, error: null, unavailable: false }),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 

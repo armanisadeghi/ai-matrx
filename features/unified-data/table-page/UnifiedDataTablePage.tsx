@@ -3,7 +3,7 @@
 // features/unified-data/table-page/UnifiedDataTablePage.tsx — THE TABLE PAGE, MOUNTABLE ANYWHERE.
 //
 // The screen /data/<id> renders, as a feature component so every other mount (/data/<id>,
-// /lists/<id>, the picklist windows) imports THIS and never the route's `page` module: a route
+// /pick-lists/<id>, the picklist windows) imports THIS and never the route's `page` module: a route
 // group is parked out of some Vercel builds (manage.aimatrx.com parks app/(core)), so a feature
 // that imports a page breaks that build. `pnpm check:page-imports` holds the line.
 //

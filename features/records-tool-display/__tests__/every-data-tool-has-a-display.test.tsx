@@ -53,7 +53,7 @@ describe("every common data tool draws its answer", () => {
     const planted = { ...toolRendererRegistry };
     delete planted.records;
     expect(toolsWithNoDisplay(planted)).toEqual(["records"]);
-    expect(toolsWithNoDisplay(planted, [...DATA_TOOLS, "picklist"])).toContain("records");
+    expect(toolsWithNoDisplay(planted, [...DATA_TOOLS, "pick_list"])).toContain("records");
   });
 });
 

@@ -333,7 +333,7 @@ const EXEMPT_RE =
  * which is worse than a false alarm. So the claim is recorded per-file instead,
  * and it names the carrier so the next reader can check it in one grep:
  *
- *   // context-menu: covered-by features/user-lists/components/ListDetailClient.tsx
+ *   // context-menu: covered-by features/data-tables/pick-lists/components/ListDetailClient.tsx
  */
 const COVERED_BY_RE = /context-menu:\s*covered-by\s+(\S+)/;
 

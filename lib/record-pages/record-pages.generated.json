@@ -3100,24 +3100,24 @@
    "file": "app/(core)/libraries/[id]/page.tsx",
    "pending": true
   },
-  "route:/lists": {
-   "file": "app/(core)/lists/page.tsx",
+  "route:/pick-lists": {
+   "file": "app/(core)/pick-lists/page.tsx",
    "pending": true
   },
-  "route:/lists/[id]": {
-   "file": "app/(core)/lists/[id]/page.tsx",
+  "route:/pick-lists/[id]": {
+   "file": "app/(core)/pick-lists/[id]/page.tsx",
    "pending": true
   },
-  "route:/lists/v1": {
-   "file": "app/(core)/lists/v1/page.tsx",
+  "route:/pick-lists": {
+   "file": "app/(core)/pick-lists/page.tsx",
    "pending": true
   },
-  "route:/lists/v2": {
-   "file": "app/(core)/lists/v2/page.tsx",
+  "route:/pick-lists": {
+   "file": "app/(core)/pick-lists/page.tsx",
    "pending": true
   },
-  "route:/lists/v3": {
-   "file": "app/(core)/lists/v3/page.tsx",
+  "route:/pick-lists": {
+   "file": "app/(core)/pick-lists/page.tsx",
    "pending": true
   },
   "route:/local": {
@@ -5676,8 +5676,8 @@
    "file": "features/window-panels/windows/ShareModalWindow.tsx",
    "pending": true
   },
-  "window:features/window-panels/windows/StructuredListManagerV2Window.tsx": {
-   "file": "features/window-panels/windows/StructuredListManagerV2Window.tsx",
+  "window:features/window-panels/windows/PickListManagerWindow.tsx": {
+   "file": "features/window-panels/windows/PickListManagerWindow.tsx",
    "pending": true
   },
   "window:features/window-panels/windows/TableViewerWindow.tsx": {

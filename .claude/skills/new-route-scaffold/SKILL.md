@@ -63,7 +63,7 @@ Create `lib/[feature]/data.ts`. This is the **only** place server-side DB querie
 **Critical rules:**
 - `import "server-only"` is mandatory — it prevents accidental client import
 - Every function must be wrapped in React `cache()` — layout, `generateMetadata`, and page all call the same function; `cache()` collapses them to one DB hit. **`'use cache'` is NOT available** (`cacheComponents` off; build error)
-- 🚨 **Never `notFound()` on an empty single-record read** (`authInterrupts` is ON) — under RLS, empty means deleted, missing, denied, or signed out. The single-record read returns `null`; the route renders `<AccessGate token id/>` (live: `app/(core)/lists/[id]/page.tsx`) or refuses with `requireAccess(type, id, level, { forbid: true })`. Read `features/access-gate/FEATURE.md` first
+- 🚨 **Never `notFound()` on an empty single-record read** (`authInterrupts` is ON) — under RLS, empty means deleted, missing, denied, or signed out. The single-record read returns `null`; the route renders `<AccessGate token id/>` (live: `app/(core)/pick-lists/[id]/page.tsx`) or refuses with `requireAccess(type, id, level, { forbid: true })`. Read `features/access-gate/FEATURE.md` first
 - The preload pattern starts a fetch before an await chain, eliminating waterfalls
 
 ---

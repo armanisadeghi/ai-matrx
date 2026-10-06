@@ -316,15 +316,15 @@ internal platform use — never a washed-down user variant beside a private one:
   RAG boost, and the Surface pane's bindings all stay human-only), and
   `matrx-user/list-manager` (3 ask-policy entity targets — `add_list_items`
   decomposition plus `active_list_name` / `active_list_description`, handlers
-  in `features/user-lists/components/ListManagerFloatingWorkspace.tsx` through
+  in `features/data-tables/pick-lists/components/ListManagerFloatingWorkspace.tsx` through
   the canonical `addItemAction` / `updateListAction` server actions; that
   surface has NO draft layer, so `auto` is barred on it and delete /
   visibility stay undeclared), and
-  `matrx-user/lists` (the SAME three targets on the `/lists/[id]` ROUTE mount
+  `matrx-user/lists` (the SAME three targets on the `/pick-lists/[id]` ROUTE mount
   of that same list state — `ListDetailClient asRoute`. THE shared-vocabulary
   reference: the List Manager window and this route render the SAME component
   over the same rows, so the targets and their handlers were lifted into
-  `features/user-lists/surface-write-targets.ts` +
+  `features/data-tables/pick-lists/surface-write-targets.ts` +
   `surface-write-handlers.ts` and BOTH manifests / BOTH mounts now import the
   one definition — two target sets over the same fields would be a defect, so
   there is only one set. Registration is gated on `asRoute`, because the

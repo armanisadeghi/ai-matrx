@@ -3846,29 +3846,29 @@
       "source": "app/(core)/libraries/[id]/page.tsx"
     },
     {
-      "pattern": "/lists",
+      "pattern": "/pick-lists",
       "status": "live",
-      "source": "app/(core)/lists/page.tsx"
+      "source": "app/(core)/pick-lists/page.tsx"
     },
     {
-      "pattern": "/lists/[id]",
+      "pattern": "/pick-lists/[id]",
       "status": "live",
-      "source": "app/(core)/lists/[id]/page.tsx"
+      "source": "app/(core)/pick-lists/[id]/page.tsx"
     },
     {
-      "pattern": "/lists/v1",
+      "pattern": "/pick-lists",
       "status": "live",
-      "source": "app/(core)/lists/v1/page.tsx"
+      "source": "app/(core)/pick-lists/page.tsx"
     },
     {
-      "pattern": "/lists/v2",
+      "pattern": "/pick-lists",
       "status": "live",
-      "source": "app/(core)/lists/v2/page.tsx"
+      "source": "app/(core)/pick-lists/page.tsx"
     },
     {
-      "pattern": "/lists/v3",
+      "pattern": "/pick-lists",
       "status": "live",
-      "source": "app/(core)/lists/v3/page.tsx"
+      "source": "app/(core)/pick-lists/page.tsx"
     },
     {
       "pattern": "/local",

@@ -7,7 +7,7 @@
       "date": "2026-08-08"
     },
     {
-      "file": "features/user-lists/types.ts",
+      "file": "features/data-tables/pick-lists/types.ts",
       "justification": "Per-domain dialect on user_lists ('public|authenticated|private'). Killing it requires a DB enum migration, so it is a deliberate DB change, not a rename \u2014 see FOUND_DEFECTS.md D106b.",
       "date": "2026-08-08"
     }

@@ -134,7 +134,7 @@
       "lines": 223
     },
     {
-      "key": "matrx-frontend:features/user-lists/components/ListItemsTableView.tsx",
+      "key": "matrx-frontend:features/data-tables/pick-lists/components/ListItemsTableView.tsx",
       "findings": 1,
       "lines": 218
     },
@@ -184,7 +184,7 @@
       "lines": 201
     },
     {
-      "key": "matrx-frontend:features/user-lists/components/ListsTableView.tsx",
+      "key": "matrx-frontend:features/data-tables/pick-lists/components/ListsTableView.tsx",
       "findings": 1,
       "lines": 200
     },
@@ -572,7 +572,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/user-lists/components/ListItemsTableView.tsx",
+      "file": "features/data-tables/pick-lists/components/ListItemsTableView.tsx",
       "line": 44,
       "column": 1,
       "symbol": "ListItemsTableView",
@@ -581,7 +581,7 @@
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 218 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/user-lists"
+      "feature": "features/data-tables/pick-lists"
     },
     {
       "repository": "matrx-frontend",
@@ -670,7 +670,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "react-component-unmounted",
-      "file": "features/user-lists/components/ListsTableView.tsx",
+      "file": "features/data-tables/pick-lists/components/ListsTableView.tsx",
       "line": 79,
       "column": 1,
       "symbol": "ListsTableView",
@@ -679,7 +679,7 @@
       "evidence": "no JSX tag in the runtime TypeScript graph resolves to this exported component",
       "intent": "an exported component with 200 implementation line(s)",
       "remains": "mount it from the page, panel, overlay, or parent surface it was built for, then exercise that user path",
-      "feature": "features/user-lists"
+      "feature": "features/data-tables/pick-lists"
     },
     {
       "repository": "matrx-frontend",
@@ -5528,20 +5528,6 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/overlays/openers/structuredListManagerV1Window.tsx",
-      "line": 29,
-      "column": 1,
-      "symbol": "useOpenStructuredListManagerV1Window",
-      "lines": 22,
-      "title": "useOpenStructuredListManagerV1Window appears unfinished — it is built but has no runtime consumer",
-      "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
-      "intent": "an exported hook with 22 implementation line(s)",
-      "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/overlays"
-    },
-    {
-      "repository": "matrx-frontend",
-      "detector": "export-unimported",
       "file": "lib/deepgram/hooks/useLocalStorage.ts",
       "line": 3,
       "column": 14,
@@ -8048,7 +8034,7 @@
     {
       "repository": "matrx-frontend",
       "detector": "export-unimported",
-      "file": "features/user-lists/service.ts",
+      "file": "features/data-tables/pick-lists/service.ts",
       "line": 25,
       "column": 1,
       "symbol": "getOwnedListsSummary",
@@ -8057,7 +8043,7 @@
       "evidence": "no runtime import resolves to this exported hook, service, or producer; tests and re-export barrels do not count",
       "intent": "an exported service with 11 implementation line(s)",
       "remains": "wire the runtime consumer it was built for, then prove a real page, action, producer, or workflow reaches it",
-      "feature": "features/user-lists"
+      "feature": "features/data-tables/pick-lists"
     },
     {
       "repository": "matrx-frontend",

@@ -16469,123 +16469,6 @@
       "message": "Error: Expected the first argument to be an inline function expression Expected the first argument to be an inline function expression. /Users/armanisadeghi/code/matrx-frontend/features/skills/hooks/useSkills.ts:62:38 60 | const grouped = …"
     },
     {
-      "file": "features/structured-lists/structured-list-manager-v3.tsx",
-      "line": 279,
-      "column": 3,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/structured-list-manager-v3.tsx",
-      "line": 388,
-      "column": 7,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/structured-list-manager-v3.tsx",
-      "line": 1039,
-      "column": 44,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/structured-list-manager-v3.tsx",
-      "line": 1150,
-      "column": 25,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV1.tsx",
-      "line": 269,
-      "column": 3,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV1.tsx",
-      "line": 424,
-      "column": 7,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV1.tsx",
-      "line": 990,
-      "column": 27,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV1.tsx",
-      "line": 1127,
-      "column": 25,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "line": 185,
-      "column": 5,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "line": 830,
-      "column": 7,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "line": 830,
-      "column": 7,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "line": 830,
-      "column": 7,
-      "rule": "react-hooks/refs",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
-    },
-    {
-      "file": "features/structured-lists/StructuredListManagerV2.tsx",
-      "line": 1051,
-      "column": 5,
-      "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/structured-lists",
-      "route": null,
-      "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
-    },
-    {
       "file": "features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx",
       "line": 228,
       "column": 10,
@@ -17846,83 +17729,83 @@
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/user-lists/components/EditItemDialog.tsx",
+      "file": "features/data-tables/pick-lists/components/EditItemDialog.tsx",
       "line": 65,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/user-lists/components/EditListDialog.tsx",
+      "file": "features/data-tables/pick-lists/components/EditListDialog.tsx",
       "line": 51,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/user-lists/components/LayoutToggle.tsx",
+      "file": "features/data-tables/pick-lists/components/LayoutToggle.tsx",
       "line": 73,
       "column": 50,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/user-lists/components/ListDetailClient.tsx",
+      "file": "features/data-tables/pick-lists/components/ListDetailClient.tsx",
       "line": 190,
       "column": 37,
       "rule": "react-hooks/refs",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/user-lists/components/ListManagerFloatingWorkspace.tsx",
+      "file": "features/data-tables/pick-lists/components/ListManagerFloatingWorkspace.tsx",
       "line": 43,
       "column": 5,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/user-lists/components/ListManagerFloatingWorkspace.tsx",
+      "file": "features/data-tables/pick-lists/components/ListManagerFloatingWorkspace.tsx",
       "line": 57,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/user-lists/components/ListManagerFloatingWorkspace.tsx",
+      "file": "features/data-tables/pick-lists/components/ListManagerFloatingWorkspace.tsx",
       "line": 136,
       "column": 37,
       "rule": "react-hooks/refs",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Cannot access refs during render React refs are values that are not needed for rendering. Refs should only be accessed outside of render, such as in event handlers or effects. Accessing a ref value (the `current` property) during re…"
     },
     {
-      "file": "features/user-lists/components/ListsTreeNav.tsx",
+      "file": "features/data-tables/pick-lists/components/ListsTreeNav.tsx",
       "line": 71,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },
     {
-      "file": "features/user-lists/hooks/useStructuredListForSelection.ts",
+      "file": "features/data-tables/pick-lists/hooks/usePickListForSelection.ts",
       "line": 148,
       "column": 7,
       "rule": "react-hooks/set-state-in-effect",
-      "feature": "features/user-lists",
+      "feature": "features/data-tables/pick-lists",
       "route": null,
       "message": "Error: Calling setState synchronously within an effect can trigger cascading renders Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platf…"
     },

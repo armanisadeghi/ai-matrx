@@ -41,9 +41,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { getAccessibleLists } from "@/features/user-lists/service";
-import { useStructuredListForSelection } from "@/features/user-lists/hooks/useStructuredListForSelection";
-import type { UserList } from "@/features/user-lists/types";
+import { getAccessibleLists } from "@/features/data-tables/pick-lists/service";
+import { usePickListForSelection } from "@/features/data-tables/pick-lists/hooks/usePickListForSelection";
+import type { UserList } from "@/features/data-tables/pick-lists/types";
 import { cn } from "@/utils/cn";
 
 import {
@@ -215,7 +215,7 @@ export function ChoiceOptionsEditor({
   }, [source, lists]);
 
   // Groups of the bound list — the tiers this column can narrow to.
-  const bound = useStructuredListForSelection(binding?.listId ?? null);
+  const bound = usePickListForSelection(binding?.listId ?? null);
   const groupNames = bound.groups
     .map((g) => g.group)
     .filter((g) => g && g !== "Ungrouped");

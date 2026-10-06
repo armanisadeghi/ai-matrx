@@ -15,11 +15,11 @@ import type { FieldFormatOptions } from "@ai-matrx/design-system/field-formats";
 
 const STATUS_LIST = "7d1c0a52-0000-4000-8000-0000000000a1";
 
-jest.mock("@/features/user-lists/service", () => ({
+jest.mock("@/features/data-tables/pick-lists/service", () => ({
   getAccessibleLists: async () => [{ id: "7d1c0a52-0000-4000-8000-0000000000a1", list_name: "Carrier status" }],
 }));
-jest.mock("@/features/user-lists/hooks/useStructuredListForSelection", () => ({
-  useStructuredListForSelection: () => ({ groups: [], items: [], loading: false, error: null, unavailable: false }),
+jest.mock("@/features/data-tables/pick-lists/hooks/usePickListForSelection", () => ({
+  usePickListForSelection: () => ({ groups: [], items: [], loading: false, error: null, unavailable: false }),
 }));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 // Radix Select does not open in jsdom; a native select drives the same `onValueChange`.

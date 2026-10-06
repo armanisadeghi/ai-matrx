@@ -1,9 +1,9 @@
 /**
  * Surface manifest — Custom lists (`matrx-user/lists`).
  *
- * The ROUTE home of a custom list: `/lists/[id]`, rendered by
+ * The ROUTE home of a custom list: `/pick-lists/[id]`, rendered by
  * `ListDetailClient` with `asRoute` — the canonical deep link a share button
- * copies and every list card navigates to. (`/lists` itself is a static
+ * copies and every list card navigates to. (`/pick-lists` itself is a static
  * landing page with no list state; see "WHERE THIS MOUNTS" below.)
  *
  * WHY THIS IS THE SAME SURFACE AS `matrx-user/list-manager`, NOT A RIVAL.
@@ -13,7 +13,7 @@
  * state — a window openable anywhere, and a route you can link to. So this
  * surface deliberately reuses list-manager's vocabulary rather than inventing
  * one: the write targets below are imported from
- * `features/user-lists/surface-write-targets.ts`, the single definition BOTH
+ * `features/data-tables/pick-lists/surface-write-targets.ts`, the single definition BOTH
  * manifests use, and the handlers come from the single builder both mounts
  * call. list-manager shipped first and its names win; nothing here renames or
  * redesigns them. Two target sets over the same fields would be a defect, so
@@ -23,10 +23,10 @@
  * with NO runtime emitter at all, and the emitter is the thing that was
  * missing:
  *
- *   - `/lists/[id]` → `ListDetailClient asRoute` mounts
+ *   - `/pick-lists/[id]` → `ListDetailClient asRoute` mounts
  *     `<SurfaceRuntimeProvider surfaceName="matrx-user/lists">` with the live
  *     scope AND the write handlers. This is the only mount.
- *   - `/lists` (index) → `StructuredListLanding` inside `MarketingPageShell`:
+ *   - `/pick-lists` (index) → `PickListsLanding` inside `MarketingPageShell`:
  *     a static explainer with no list open and nothing authored. It mounts
  *     NOTHING, and should not — a landing page owns no editable state.
  *   - Inside the List Manager window, `ListDetailClient` is rendered WITHOUT
@@ -58,7 +58,7 @@ import type {
 import {
   LIST_SURFACE_WRITE_TARGETS,
   LIST_VISIBILITY_ENUM_TEXT,
-} from "@/features/user-lists/surface-write-targets";
+} from "@/features/data-tables/pick-lists/surface-write-targets";
 import { mergeBaselineValues, pickBaseline } from "@ai-matrx/chat/surfaces/manifests/_baseline.manifest";
 import { MATRX_WEB_APP_EXECUTOR } from "@ai-matrx/chat/surfaces/executor";
 
@@ -83,7 +83,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_list_id",
     label: "Active list ID",
     description:
-      "UUID of the list open at this route — the `[id]` segment of /lists/[id]. Always present: the route 404s without a readable list.",
+      "UUID of the list open at this route — the `[id]` segment of /pick-lists/[id]. Always present: the route 404s without a readable list.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 36,
@@ -115,7 +115,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_list_url",
     label: "Link to this list",
     description:
-      "The canonical deep link to the list open at this route (…/lists/<id>) — exactly what the header's Copy link button puts on the clipboard. Use it when writing a reference to this list somewhere else.",
+      "The canonical deep link to the list open at this route (…/pick-lists/<id>) — exactly what the header's Copy link button puts on the clipboard. Use it when writing a reference to this list somewhere else.",
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 60,
@@ -273,11 +273,11 @@ export const listsManifest: SurfaceManifest = {
     "Custom lists organizer",
   readiness: "partial",
   readinessNote:
-    "surface-check 2026-08-22 (checklist v1): registration, values, write targets, context menu and text inputs all pass and are DB-synced; the original three write targets were live-verified with a real agent run. Still `partial` for two honest reasons: the new update_list_item target has not yet been exercised end-to-end in a live run, and header/mobile/theme were checked statically only. The /lists index is a static landing page and deliberately emits nothing, so values here describe the detail route only.",
+    "surface-check 2026-08-22 (checklist v1): registration, values, write targets, context menu and text inputs all pass and are DB-synced; the original three write targets were live-verified with a real agent run. Still `partial` for two honest reasons: the new update_list_item target has not yet been exercised end-to-end in a live run, and header/mobile/theme were checked statically only. The /pick-lists index is a static landing page and deliberately emits nothing, so values here describe the detail route only.",
   label: "Lists",
-  urlPattern: "/lists/[id]",
+  urlPattern: "/pick-lists/[id]",
   intro: `<surface_intro>
-You are on the ROUTE page for ONE custom list (/lists/[id]) — its name, description, and items, grouped under headings. Everything you can see is in active_list_* and all_items / items_grouped.
+You are on the ROUTE page for ONE custom list (/pick-lists/[id]) — its name, description, and items, grouped under headings. Everything you can see is in active_list_* and all_items / items_grouped.
 
 You can WRITE to this list through apply_surface_write: rename it, rewrite its description, add items, or edit one existing item in place (update_list_item, by the item's id from all_items — that is also how an item moves to another group). There is no draft here — each of those saves to the database as soon as the user approves, so propose the exact values you intend before applying, and read all_items first so you never re-add something that is already there.
 

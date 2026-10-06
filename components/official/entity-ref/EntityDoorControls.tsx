@@ -60,7 +60,7 @@
  *
  *     if (target?.closest?.('[role="dialog"], [role="alertdialog"]')) return;
  *
- * Shipped exactly this way on `/lists/v2` (2026-08-09) and caught by an
+ * Shipped exactly this way on `/pick-lists` (2026-08-09) and caught by an
  * adversarial pass, NOT by type-check — it is statically decidable, so do not
  * file it as "needs a browser". 25 hand-rolled dismissers exist across 23
  * files; each is this trap waiting for a door to be added to it.

@@ -741,7 +741,7 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     ownerColumn: "created_by",
     isPublicColumn: null,
     displayLabel: "Structured List",
-    urlPathTemplate: "/lists/{id}",
+    urlPathTemplate: "/pick-lists/{id}",
     rlsUsesHasPermission: true,
   },
   // Active DB registry row that predates this mirror; surfaced by the parity

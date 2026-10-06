@@ -26,7 +26,7 @@ const client = {
 };
 jest.mock("@/utils/supabase/client", () => ({ supabase: client, createClient: () => client }));
 jest.mock("@/features/scopes/service/kindInventory", () => ({ fetchKindCounts: async () => new Map() }));
-jest.mock("@/features/user-lists/where-lists-live", () => ({ organizationPickListsInTheNewSystem: async () => [] }));
+jest.mock("@/features/data-tables/pick-lists/where-lists-live", () => ({ organizationPickListsInTheNewSystem: async () => [] }));
 jest.mock("@/features/resource-manager/source-input/savedWebPages", () => ({
   countSavedSources: async (...args: unknown[]) => {
     savedCalls.push(args);

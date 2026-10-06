@@ -8,7 +8,7 @@
 
 import { dataHomeTables, type DataHomeTableRow } from "@/features/unified-data/hub/doors";
 import { tablesToPick } from "@/features/unified-data/hub/tablePicking";
-import { readPickListIndex } from "@/features/user-lists/pick-list-index";
+import { readPickListIndex } from "@/features/data-tables/pick-lists/pick-list-index";
 import type { FoundRecord } from "./types";
 import { MEETING_PHASE_LABEL, meetingPhase } from "./feature-items.logic";
 

@@ -20,8 +20,8 @@ import { resultAsObject, getArg } from "@ai-matrx/chat/tool-call-visualization/r
 import { SeoInline } from "./renderers/seo/SeoInline";
 import { SeoOverlay } from "./renderers/seo/SeoOverlay";
 import { resolveSeoVariant, seoVariantSub } from "./renderers/seo/resolve";
-import { PicklistInline } from "./renderers/picklist/PicklistInline";
-import { PicklistOverlay } from "./renderers/picklist/PicklistOverlay";
+import { PickListInline } from "./renderers/pick-list/PickListInline";
+import { PickListOverlay } from "./renderers/pick-list/PickListOverlay";
 import { TaskInline } from "./renderers/task/TaskInline";
 import { TaskOverlay } from "./renderers/task/TaskOverlay";
 import { TaskListInline } from "./renderers/task/TaskListInline";
@@ -29,7 +29,6 @@ import { DocumentInline } from "./renderers/document/DocumentInline";
 import { DocumentOverlay } from "./renderers/document/DocumentOverlay";
 import { DatasetInline } from "./renderers/dataset/DatasetInline";
 import { DatasetOverlay } from "./renderers/dataset/DatasetOverlay";
-import { UserListsInline, UserListsOverlay } from "./renderers/get-user-lists";
 import { KnowledgeSearchInline } from "./renderers/knowledge-search/KnowledgeSearchInline";
 import { KnowledgeSearchOverlay } from "./renderers/knowledge-search/KnowledgeSearchOverlay";
 import { DocumentSearchInline } from "./renderers/document-search/DocumentSearchInline";
@@ -207,18 +206,18 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
     getHeaderExtras: seoHeaderExtras,
   },
 
-  picklist: {
-    toolName: "picklist",
-    displayName: "Picklist",
+  pick_list: {
+    toolName: "pick_list",
+    displayName: "Pick list",
     chrome: "card",
     phaseLabels: {
-      running: "Building picklist",
-      complete: "Picklist ready",
-      errorPrefix: "Picklist action failed",
+      running: "Building pick list",
+      complete: "Pick list ready",
+      errorPrefix: "Pick list action failed",
     },
-    resultsLabel: "Picklist",
-    InlineComponent: PicklistInline,
-    OverlayComponent: PicklistOverlay,
+    resultsLabel: "Pick list",
+    InlineComponent: PickListInline,
+    OverlayComponent: PickListOverlay,
     keepExpandedOnStream: true,
     getHeaderSubtitle: (entry) => {
       const result = resultAsObject(entry);
@@ -357,42 +356,6 @@ const FEATURE_TOOL_RENDERERS: ToolRegistry = {
     keepExpandedOnStream: true,
   },
 
-  get_user_lists: {
-    toolName: "get_user_lists",
-    displayName: "User Lists",
-    phaseLabels: {
-      running: "Loading user lists",
-      complete: "Loaded user lists",
-      errorPrefix: "Failed to load user lists",
-    },
-    resultsLabel: "Lists",
-    InlineComponent: UserListsInline,
-    OverlayComponent: UserListsOverlay,
-    keepExpandedOnStream: true,
-    getHeaderSubtitle: (entry) => {
-      const search = getArg<string>(entry, "search_term");
-      const page = getArg<number>(entry, "page") ?? 1;
-      const parts: string[] = [];
-      if (typeof search === "string" && search) parts.push(`"${search}"`);
-      if (page > 1) parts.push(`Page ${page}`);
-      return parts.length > 0 ? parts.join(" · ") : null;
-    },
-    getHeaderExtras: (entry) => {
-      const result = resultAsObject(entry);
-      if (!result) return null;
-      const count = result.count as number | undefined;
-      const pageSize = result.page_size as number | undefined;
-      if (!count) return null;
-      return (
-        <div className="flex items-center gap-3 text-white/90 type-secondary mt-1">
-          <span>
-            {count} {count === 1 ? "list" : "lists"}
-          </span>
-          {pageSize && <span>{pageSize} per page</span>}
-        </div>
-      );
-    },
-  },
 
   knowledge_search: {
     toolName: "knowledge_search",

@@ -1,0 +1,125 @@
+"use client";
+
+import { useMemo } from "react";
+import {
+  ListChecks,
+  PanelRight,
+  ExternalLink,
+  Maximize2,
+  Loader2,
+  AlertTriangle,
+} from "lucide-react";
+import { GroupSection } from "@/features/data-tables/pick-lists/components/GroupSection";
+import type { GroupedItem } from "@/features/data-tables/pick-lists/types";
+import { useOpenPickListManagerWindow } from "@ai-matrx/chat/host/window-openers";
+import type { ToolRendererProps } from "@ai-matrx/chat/tool-call-visualization/types";
+import { parsePickList } from "./parsePickList";
+import { usePickListDetail } from "./usePickListDetail";
+import { EntityCard, type EntityAction } from "@ai-matrx/chat/tool-call-visualization/renderers/_shared-entity/EntityCard";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+
+/**
+ * Inline renderer for the `pick_list` tool — a polished entity card (glossy
+ * glyph · name · count · "Open in" menu) wrapping the REAL stored list rendered
+ * with the canonical `GroupSection`/`ListItem`.
+ */
+
+function orderedGroups(
+  grouped: Record<string, GroupedItem[]> | null | undefined,
+): Array<[string, GroupedItem[]]> {
+  return Object.entries(grouped ?? {})
+    .filter(([, items]) => (items?.length ?? 0) > 0)
+    .sort(([a], [b]) =>
+      a === "Ungrouped" ? 1 : b === "Ungrouped" ? -1 : a.localeCompare(b),
+    );
+}
+
+export function PickListInline({ entry, onOpenOverlay , expanded, onToggleExpanded }: ToolRendererProps) {
+  const summary = useMemo(() => parsePickList(entry), [entry]);
+  const listId = summary.listId;
+  const { list, loading } = usePickListDetail(listId);
+  const openWindow = useOpenPickListManagerWindow();
+
+  const groups = useMemo(
+    () => (list ? orderedGroups(list.items_grouped) : []),
+    [list],
+  );
+
+  if (!listId) {
+    return summary.message ? (
+      <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground">
+        {summary.message}
+      </div>
+    ) : null;
+  }
+
+  const href = `/pick-lists/${listId}`;
+  const name = summary.listName ?? list?.list_name ?? "Pick list";
+  const count =
+    summary.itemCount ??
+    (list ? groups.reduce((acc, [, items]) => acc + items.length, 0) : null);
+
+  const actions: EntityAction[] = [
+    {
+      label: "Open in window",
+      icon: PanelRight,
+      onSelect: () => openWindow({ forcedListId: listId, title: name }),
+    },
+    { label: "Open in new tab", icon: ExternalLink, href },
+    ...(onOpenOverlay
+      ? [
+          {
+            label: "Expand",
+            icon: Maximize2,
+            onSelect: () => onOpenOverlay(),
+            separatorBefore: true,
+          } satisfies EntityAction,
+        ]
+      : []),
+  ];
+
+  return (
+    <EntityCard
+      expanded={expanded}
+      onToggleExpanded={onToggleExpanded}
+      icon={ListChecks}
+      accent="violet"
+      title={name}
+      // read-gate-exempt: the tool result's own count or the loaded list's; unknown (null) reads 'Pick list', never 0
+      subtitle={
+        count != null
+          ? `${count} ${count === 1 ? "item" : "items"}${summary.alreadyExisted ? " · already existed" : ""}`
+          : "Pick list"
+      }
+      actions={actions}
+    >
+      <div className="max-h-[440px] overflow-y-auto p-2">
+        {loading && !list ? (
+          <div className="flex items-center justify-center gap-2 py-10 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading list…
+          </div>
+        ) : list && groups.length ? (
+          <div className="space-y-2">
+            {groups.map(([groupName, items], i) => (
+              <GroupSection
+                key={groupName}
+                groupName={groupName}
+                items={items}
+                listId={listId}
+                listName={name}
+                isOwner={false}
+                defaultOpen={i === 0}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
+            <AlertTriangle className="h-5 w-5 text-warning" />
+            <span>{summary.message ?? "Couldn't load this list's items."} <ErrorAlchemyMenu /></span>
+          </div>
+        )}
+      </div>
+    </EntityCard>
+  );
+}

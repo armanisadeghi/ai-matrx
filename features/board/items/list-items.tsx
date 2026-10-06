@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * Picklist on a board — the `/lists` feature. A list is a Table of choices in the record store
- * (`custom.*`, one Record per choice), and `/lists/<id>` opens it as the store's table page
+ * Picklist on a board — the `/pick-lists` feature. A list is a Table of choices in the record store
+ * (`custom.*`, one Record per choice), and `/pick-lists/<id>` opens it as the store's table page
  * (`UnifiedDataTablePage`). The tile body IS that page's body: `TableRecordBody`
  * (`useUnifiedTable` + `UnifiedTableBody`, the same component the Table item and the page render),
  * so every column, row action, Share and menu of the list's own page is here, and the
@@ -26,9 +26,9 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
-import { createList } from "@/features/user-lists/service";
-import { listAddress } from "@/features/user-lists/where-lists-live";
-import { readPickListIndex, type PickListEntry } from "@/features/user-lists/pick-list-index";
+import { createList } from "@/features/data-tables/pick-lists/service";
+import { listAddress } from "@/features/data-tables/pick-lists/where-lists-live";
+import { readPickListIndex, type PickListEntry } from "@/features/data-tables/pick-lists/pick-list-index";
 import { findPickLists } from "./record-finders";
 import { DATA_TABLES_SURFACE } from "@/features/unified-data/grid-agent-context/RecordStoreTableSurface";
 import type { NodeSource } from "../board/document";

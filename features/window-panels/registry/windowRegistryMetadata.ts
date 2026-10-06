@@ -821,15 +821,15 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "listManager" },
   },
 
-  // ── Picklist Manager V2 (compact switcher + flat table) ───────────────────
+  // ── Pick List Manager (compact switcher + flat table) ───────────────────
   {
-    slug: "picklist-manager-v2-window",
-    overlayId: "structuredListManagerV2Window",
+    slug: "pick-list-manager-window",
+    overlayId: "pickListManagerWindow",
     kind: "window",
-    label: "Picklists — v2",
+    label: "Pick lists",
     defaultData: { forcedListId: null, title: null },
     mobilePresentation: "fullscreen",
-    urlSync: { key: "structuredListManagerV2" },
+    urlSync: { key: "pickListManager" },
   },
 
   // ── Settings ──────────────────────────────────────────────────────────────

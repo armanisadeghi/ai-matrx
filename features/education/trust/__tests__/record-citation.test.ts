@@ -63,7 +63,7 @@ describe("a pick list citation targets the cited choice", () => {
       cite({ recordKind: "pick_list", sourceId: `${ID}:r3-3`, excerpt: "Aluminum: Light metal, recycled by weight" }),
     );
     expect(t?.label).toBe("Choice 3");
-    expect(t?.href).toBe(`/lists/${ID}?filter=${encodeURIComponent('{"name":"Aluminum"}')}`);
+    expect(t?.href).toBe(`/pick-lists/${ID}?filter=${encodeURIComponent('{"name":"Aluminum"}')}`);
   });
 });
 
@@ -76,7 +76,7 @@ describe("a pick list line written as cells finds the choice by its NAME, not th
         excerpt: "name: Delta Dental PPO | help_text: Verify frequency limits | group_name: PPO",
       }),
     );
-    expect(t?.href).toBe(`/lists/${ID}?filter=${encodeURIComponent('{"name":"Delta Dental PPO"}')}`);
+    expect(t?.href).toBe(`/pick-lists/${ID}?filter=${encodeURIComponent('{"name":"Delta Dental PPO"}')}`);
   });
 });
 

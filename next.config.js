@@ -939,12 +939,12 @@ const nextConfig = {
             },
             {
               source: "/lists-junk/:path*",
-              destination: "/lists",
+              destination: "/pick-lists",
               permanent: false,
             },
             {
               source: "/lists-junk",
-              destination: "/lists",
+              destination: "/pick-lists",
               permanent: false,
             },
             {
@@ -954,6 +954,22 @@ const nextConfig = {
             },
           ]
         : []),
+      // Pick lists moved from /lists to /pick-lists (data-tables > pick-lists).
+      {
+        source: "/lists/:path(v1|v2|v3)",
+        destination: "/pick-lists",
+        permanent: true,
+      },
+      {
+        source: "/lists/:path*",
+        destination: "/pick-lists/:path*",
+        permanent: true,
+      },
+      {
+        source: "/lists",
+        destination: "/pick-lists",
+        permanent: true,
+      },
       // Former public-demos lived at /demos/public/*; consolidated under (dev)/demos/*.
       {
         source: "/demos/public/:path*",

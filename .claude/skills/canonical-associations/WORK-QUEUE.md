@@ -42,7 +42,7 @@ The prioritized, file-anchored backlog for the canonicalization campaign. One su
 | 8 | ☐ | `public.content_blocks` | entity table, genuinely in `public` | **KEEP** — `content_block` registered, table verified live in `public.content_blocks`; the bare `.from("content_blocks")` is **correct**. Only migrate if a block↔category linking table surfaces. |
 | — | ☐ | `files.share_links` | `features/files/redux/thunks.ts` (428); `app/(core)/files/share/[token]/page.tsx` (26) | **KEEP** — sharing/access-control primitive, not a content edge. |
 | — | ☐ | `canvas.canvas_likes` | `hooks/canvas/useCanvasLike.ts` (20,38,96) | **KEEP** — engagement counter, not a content association. |
-| — | ☐ | `workbench.udt_picklist_items` | `features/user-lists/*`, `features/udt-picklist/*` | **KEEP** — parent→child containment, not M2M. |
+| — | ☐ | `workbench.udt_picklist_items` | `features/data-tables/pick-lists/*`, `features/udt-picklist/*` | **KEEP** — parent→child containment, not M2M. |
 
 ## B. Bespoke association-read RPCs (outside `assoc_*`)
 

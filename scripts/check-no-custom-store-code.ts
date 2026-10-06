@@ -258,9 +258,9 @@ export const TOUCHES_THE_STORE: Record<string, string> = {
     "move: work_inbox → RecordsClient.workInbox (exists); the document and cadence doors → new records doors",
   "features/unified-data/whereThisTableLives.ts":
     "move: a data-source adapter for where_id_opens → new records door whereIdOpens",
-  "features/user-lists/pick-list-index.ts":
+  "features/data-tables/pick-lists/pick-list-index.ts":
     "move: pick_list_index/pick_list_index_everywhere → new records pick-list doors",
-  "features/user-lists/service.ts":
+  "features/data-tables/pick-lists/service.ts":
     "move: pick_list_create → new records door pickListCreate",
   "lib/knobs/unifiedDataCampaign.register.ts":
     "justified: a register of campaign entry points; its `why` prose quotes store calls, it calls nothing",

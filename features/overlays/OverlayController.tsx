@@ -881,9 +881,9 @@ const ListManagerWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ListManagerWindow"),
   { ssr: false },
 );
-const StructuredListManagerV2Window = lazyOverlay(
+const PickListManagerWindow = lazyOverlay(
   () =>
-    import("@/features/window-panels/windows/StructuredListManagerV2Window"),
+    import("@/features/window-panels/windows/PickListManagerWindow"),
   { ssr: false },
 );
 const FullscreenMarkdownEditor = lazyOverlay(
@@ -1560,8 +1560,8 @@ export default function OverlayController() {
     pdfBatchExtractDebugWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "pdfBatchExtractDebugWindow"),
     ),
-    structuredListManagerV2Window: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "structuredListManagerV2Window"),
+    pickListManagerWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "pickListManagerWindow"),
     ),
     projectsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "projectsWindow"),
@@ -2018,8 +2018,8 @@ export default function OverlayController() {
     pdfBatchExtractDebugWindow: useAppSelector((s) =>
       selectOverlayData(s, "pdfBatchExtractDebugWindow"),
     ) as Record<string, unknown> | null,
-    structuredListManagerV2Window: useAppSelector((s) =>
-      selectOverlayData(s, "structuredListManagerV2Window"),
+    pickListManagerWindow: useAppSelector((s) =>
+      selectOverlayData(s, "pickListManagerWindow"),
     ) as Record<string, unknown> | null,
     projectsWindow: useAppSelector((s) =>
       selectOverlayData(s, "projectsWindow"),
@@ -6488,14 +6488,14 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* structuredListManagerV2Window */}
+      {/* pickListManagerWindow */}
       {(() => {
-        const isOpen = isOpenById.structuredListManagerV2Window;
-        const data = dataById.structuredListManagerV2Window as
+        const isOpen = isOpenById.pickListManagerWindow;
+        const data = dataById.pickListManagerWindow as
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <StructuredListManagerV2Window
+          <PickListManagerWindow
             title={typeof data?.title === "string" ? data.title : undefined}
             forcedListId={
               typeof data?.forcedListId === "string" ? data.forcedListId : null

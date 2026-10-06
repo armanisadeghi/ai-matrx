@@ -827,8 +827,6 @@
   "features/sms/hooks/useSmsAssistantProgram.ts": 3,
   "features/sms/hooks/useSmsEnrollment.ts": 4,
   "features/sms/hooks/useSmsTaskNotifications.ts": 2,
-  "features/structured-lists/StructuredListManagerV1.tsx": 1,
-  "features/structured-lists/useStructuredLists.ts": 6,
   "features/surfaces/admin-detail/SurfaceAdminDetailPage.tsx": 11,
   "features/surfaces/admin/batch/SurfaceBindingsBatchEditor.tsx": 1,
   "features/surfaces/components/bind/BindingSuggestionsTab.tsx": 1,

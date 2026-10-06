@@ -28,7 +28,7 @@
  * ADDING AN ENTITY: one entry in `TOOL_STATE_EFFECTS` — tool names + a `run`
  * that dispatches the feature's refetch thunk(s). Known not-yet-covered
  * writers (no canonical Redux refetch today, or their state is hook-local):
- * picklist (session-cached `usePicklistDetail`), dictionary, workbook,
+ * picklist (session-cached `usePickListDetail`), dictionary, workbook,
  * dataset/usertable, document. The working document is already reconciled by
  * its own `context_changed` re-read; the scratchpad is agent-readonly.
  */

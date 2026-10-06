@@ -62,7 +62,7 @@ So the table becomes **5 dimensions**: schema + full + column + row + cell.
 | One group | `list_group` | `picklist_group` | `list_id`, group key |
 | One item | `list_item` | `picklist_item` | `list_id`, `item_id` |
 
-Export via `BookmarkCopyButton` → `buildBookmarkReferenceFence`. Wired in **`features/user-lists/**`** (legacy). **Prod `/lists/v2` (`PicklistManagerV2`) — UI not modified yet**; full/group/item options documented in [AIDREAM_REFERENCE_IMPLEMENTATION.md](./AIDREAM_REFERENCE_IMPLEMENTATION.md#picklist-v2--options-documented-ui-not-modified).
+Export via `BookmarkCopyButton` → `buildBookmarkReferenceFence`. Wired in **`features/data-tables/pick-lists/**`** (legacy). **Prod `/pick-lists` (`PicklistManagerV2`) — UI not modified yet**; full/group/item options documented in [AIDREAM_REFERENCE_IMPLEMENTATION.md](./AIDREAM_REFERENCE_IMPLEMENTATION.md#picklist-v2--options-documented-ui-not-modified).
 
 ---
 
@@ -123,7 +123,7 @@ Track every change here. Status: `done` | `in progress` | `blocked` | `pending`.
 
 | # | Work item | Status | Files touched | Notes |
 |---|---|---|---|---|
-| 0 | List/picklist (legacy user-lists) | done | `features/user-lists/components/BookmarkCopyButton.tsx`, `ListMetaHeader`, `GroupSection`, `ListItem` | 3 dimensions in legacy UI. |
+| 0 | List/picklist (legacy user-lists) | done | `features/data-tables/pick-lists/components/BookmarkCopyButton.tsx`, `ListMetaHeader`, `GroupSection`, `ListItem` | 3 dimensions in legacy UI. |
 | 0 | Table dimensions (5/5) | FE done / BE pending | `TableReference*.tsx`, `bookmarkToReference.ts` | |
 | 1 | Shared RecordRef + file primitives | done | `recordReference.ts`, `fileReference.ts`, `ReferenceCopyButton.tsx`, `ReferenceCopyMenuItem.tsx`, `ReferencesBulkCopyButton.tsx` | Multi-record + file_id fences. |
 | 2 | FE resolver + chip infra | done | `envelope.ts`, `referenceResolvers.ts`, `registry.tsx`, `compoundReference.ts` | Compound + `agent_app`. |
