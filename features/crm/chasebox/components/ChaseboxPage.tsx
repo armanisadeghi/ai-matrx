@@ -308,7 +308,7 @@ export function ChaseboxPage() {
         </div>
 
         {error && (
-          <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
             <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
             <span className="flex-1">{error}</span>
             <Button variant="quiet" onClick={refresh}>

@@ -564,7 +564,7 @@ export function DealsPage() {
         </div>
       )}
       {pipelinesError && (
-        <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+        <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive-ink">
           {pipelinesError}
           <ErrorAlchemyMenu error={pipelinesError} />
         </div>
@@ -582,7 +582,7 @@ export function DealsPage() {
       <div className="mt-2 flex min-h-0 flex-1 flex-col">
         {mode === "board" && !inTrash ? (
           board.error ? (
-            <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+            <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
               {board.error}
               <ErrorAlchemyMenu error={board.error} />
             </div>

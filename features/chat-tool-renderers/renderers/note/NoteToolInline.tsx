@@ -138,7 +138,7 @@ export const NoteToolInline: React.FC<ToolRendererProps> = ({
                 title: data.label,
               })
             }
-            className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+            className="inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium text-primary-ink hover:bg-primary/10"
           >
             <PanelRight className="h-3.5 w-3.5" />
             Open in Notes

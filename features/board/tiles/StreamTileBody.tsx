@@ -101,7 +101,7 @@ export function StreamTileBody({
           ))
         )}
         {snapshot.error && (
-          <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          <p className="mt-3 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive-ink">
             This run failed: {snapshot.error}
             <ErrorAlchemyMenu error={snapshot.error} />
           </p>

@@ -61,7 +61,7 @@ function writtenByBadge(row: PartyListRow) {
   const who = system ? `Added by ${system}` : "Added by an agent";
   return (
     <span
-      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium leading-none text-primary"
+      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-medium leading-none text-primary-ink"
       title={
         edited
           ? `${who}, and a person has edited it since.`
@@ -110,7 +110,7 @@ export function expertBadge(status: ExpertStatus) {
         status === "vetted"
           ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
           : status === "approved"
-            ? "border-primary/20 bg-primary/15 text-primary"
+            ? "border-primary/20 bg-primary/15 text-primary-ink"
             : "border-border bg-muted text-muted-foreground",
       )}
     >
@@ -143,7 +143,7 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
         {row.do_not_contact && (
           <span
             title={row.do_not_contact_reason ?? "Do not contact"}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive-ink"
           >
             <PhoneOff className="h-3 w-3" />
             DNC
@@ -151,7 +151,7 @@ export const PARTY_COLUMNS: MatrxColumnDef<PartyListRow>[] = [
         )}
         <span
           aria-hidden="true"
-          className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-1 text-[11px] font-semibold text-primary sm:hidden"
+          className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-1 text-[11px] font-semibold text-primary-ink sm:hidden"
         >
           Open
           <ChevronRight className="h-3 w-3" />

@@ -56,20 +56,20 @@ const STATE_STYLE: Record<
   ConnectorProductHealth["state"],
   { chip: string; icon: typeof Check | null }
 > = {
-  connected: { chip: "bg-success/15 text-success", icon: Check },
-  scope_missing: { chip: "bg-warning/15 text-warning", icon: AlertTriangle },
+  connected: { chip: "bg-success/15 text-success-ink", icon: Check },
+  scope_missing: { chip: "bg-warning/15 text-warning-ink", icon: AlertTriangle },
   account_unusable: {
-    chip: "bg-destructive/15 text-destructive",
+    chip: "bg-destructive/15 text-destructive-ink",
     icon: AlertTriangle,
   },
   // Blocked with nothing to press — it wears the destructive chip so it is never
   // mistaken for a row that is working (V17-1).
   unavailable: {
-    chip: "bg-destructive/15 text-destructive",
+    chip: "bg-destructive/15 text-destructive-ink",
     icon: Ban,
   },
   not_connected: { chip: "bg-muted text-muted-foreground", icon: null },
-  refused: { chip: "bg-warning/15 text-warning", icon: AlertTriangle },
+  refused: { chip: "bg-warning/15 text-warning-ink", icon: AlertTriangle },
   pending_rollout: { chip: "bg-muted text-muted-foreground", icon: Clock },
 };
 
@@ -198,8 +198,8 @@ export function ConnectedAccountHealth({
                 className={cn(
                   "inline-flex items-center gap-1 rounded-full px-1.5 text-[10px] font-medium",
                   account.usable
-                    ? "bg-success/15 text-success"
-                    : "bg-destructive/15 text-destructive",
+                    ? "bg-success/15 text-success-ink"
+                    : "bg-destructive/15 text-destructive-ink",
                 )}
               >
                 {account.statusLabel}

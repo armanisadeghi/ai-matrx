@@ -212,7 +212,7 @@ export default function ShapeOwnerEditor({
       className="mx-auto mb-5 max-w-4xl scroll-mt-[calc(var(--shell-header-h)+0.75rem)] rounded-lg border border-primary/25 bg-card shadow-sm"
     >
       <div className="flex items-start gap-3 border-b border-border px-4 py-3">
-        <div className="rounded-md bg-primary/10 p-2 text-primary">
+        <div className="rounded-md bg-primary/10 p-2 text-primary-ink">
           <Settings2 className="h-4 w-4" />
         </div>
         <div className="min-w-0">

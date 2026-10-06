@@ -602,7 +602,7 @@ export function CallQueuePage({ listId }: { listId: string }) {
                               type="button"
                               disabled={busy}
                               onClick={() => void allowContact(t)}
-                              className="rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
+                              className="rounded px-1.5 py-0.5 text-[11px] font-medium text-primary-ink hover:bg-primary/10 disabled:opacity-50"
                             >
                               Allow contact
                             </button>

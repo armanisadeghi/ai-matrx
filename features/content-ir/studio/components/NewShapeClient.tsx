@@ -90,7 +90,7 @@ function FieldBlock({
   return (
     <section className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-baseline gap-2">
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary">
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-semibold text-primary-ink">
           {step}
         </span>
         <div className="min-w-0">

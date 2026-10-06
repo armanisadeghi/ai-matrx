@@ -676,7 +676,7 @@ function KindChip({
   if (!known) {
     return (
       <code
-        className="rounded bg-destructive/10 px-1.5 py-0.5 font-mono text-[11px] text-destructive"
+        className="rounded bg-destructive/10 px-1.5 py-0.5 font-mono text-[11px] text-destructive-ink"
         title="Not in the catalog — unresolved reference"
       >
         {kind}

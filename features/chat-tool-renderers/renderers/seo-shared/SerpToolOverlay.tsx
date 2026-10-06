@@ -184,12 +184,12 @@ export function SerpToolOverlay({
             >
               <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-3">
                 {entry.overallOk ? (
-                  <Badge className="gap-1 bg-success/15 text-success hover:bg-success/15">
+                  <Badge className="gap-1 bg-success/15 text-success-ink hover:bg-success/15">
                     <CheckCircle className="h-3.5 w-3.5" />
                     Optimized
                   </Badge>
                 ) : (
-                  <Badge className="gap-1 bg-warning/15 text-warning hover:bg-warning/15">
+                  <Badge className="gap-1 bg-warning/15 text-warning-ink hover:bg-warning/15">
                     <AlertTriangle className="h-3.5 w-3.5" />
                     Needs optimization
                   </Badge>

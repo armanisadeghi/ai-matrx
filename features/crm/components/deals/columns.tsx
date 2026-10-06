@@ -39,7 +39,7 @@ export function dealStatusBadge(status: string) {
         s === "won"
           ? "border-emerald-500/20 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
           : s === "lost"
-            ? "border-destructive/20 bg-destructive/15 text-destructive"
+            ? "border-destructive/20 bg-destructive/15 text-destructive-ink"
             : "border-sky-500/20 bg-sky-500/15 text-sky-600 dark:text-sky-400",
       )}
     >
@@ -92,7 +92,7 @@ export function buildDealColumns(args: {
           {row.status !== "open" && dealStatusBadge(row.status)}
           <span
             aria-hidden="true"
-            className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-1 text-[11px] font-semibold text-primary sm:hidden"
+            className="ml-1 inline-flex shrink-0 items-center gap-0.5 rounded-md bg-primary/10 px-1.5 py-1 text-[11px] font-semibold text-primary-ink sm:hidden"
           >
             Open
             <ChevronRight className="h-3 w-3" />

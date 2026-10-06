@@ -357,7 +357,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
               {row.party.display_name}
             </span>
             {row.party.do_not_contact && (
-              <span className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive">
+              <span className="inline-flex shrink-0 items-center rounded-full border border-destructive/20 bg-destructive/15 px-1.5 py-0.5 text-[11px] font-medium leading-none text-destructive-ink">
                 DNC
               </span>
             )}
@@ -856,7 +856,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
           </div>
         )}
         {error && (
-          <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+          <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </div>

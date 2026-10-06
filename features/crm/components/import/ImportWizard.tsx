@@ -72,7 +72,7 @@ const STATUS_META: Record<
 > = {
   create: {
     label: "New",
-    className: "bg-primary/10 text-primary border border-primary/30",
+    className: "bg-primary/10 text-primary-ink border border-primary/30",
   },
   exists: {
     label: "Exists",
@@ -86,7 +86,7 @@ const STATUS_META: Record<
   invalid: {
     label: "Invalid",
     className:
-      "bg-destructive/10 text-destructive border border-destructive/30",
+      "bg-destructive/10 text-destructive-ink border border-destructive/30",
   },
 };
 
@@ -649,7 +649,7 @@ export function ImportWizard() {
               <span className="rounded bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
                 {selectedPreviewCount} selected
               </span>
-              <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary-ink">
                 {plan.counts.create} new
               </span>
               <span className="rounded bg-muted px-2 py-0.5 text-xs text-muted-foreground">
@@ -661,7 +661,7 @@ export function ImportWizard() {
                 </span>
               )}
               {plan.counts.invalid > 0 && (
-                <span className="rounded bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
+                <span className="rounded bg-destructive/10 px-2 py-0.5 text-xs text-destructive-ink">
                   {plan.counts.invalid} invalid
                   <ErrorAlchemyMenu />
                 </span>

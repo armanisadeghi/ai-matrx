@@ -656,7 +656,7 @@ export function UserBoard({
                     aria-label="Layers"
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-                      layersOpen && "bg-primary/15 text-primary",
+                      layersOpen && "bg-primary/15 text-primary-ink",
                     )}
                   >
                     <PanelRight className="h-4 w-4" />

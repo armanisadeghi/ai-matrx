@@ -792,7 +792,7 @@ export function ConnectorConsentBody({
         {errorMessage ? (
           <div
             role="alert"
-            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink"
           >
             {errorMessage}{" "}
             <button
@@ -809,7 +809,7 @@ export function ConnectorConsentBody({
         {rolloutUnavailable ? (
           <div
             role="status"
-            className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning"
+            className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning-ink"
           >
             {activeOrganizationId
               ? `We could not reach ${provider.name}'s availability list, so no new row can be switched on right now.`
@@ -996,7 +996,7 @@ export function ConnectorConsentBody({
         {failure ? <ConsentFailureNotice failure={failure} /> : null}
 
         {resultAccountUnavailable ? (
-          <p role="alert" className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning">
+          <p role="alert" className="rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-sm text-warning-ink">
             {provider.name} approval finished, but we could not confirm this account in your connections. Refresh Settings → Connectors before trying again.
             <ErrorAlchemyMenu />
           </p>

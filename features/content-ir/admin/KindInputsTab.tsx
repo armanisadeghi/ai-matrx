@@ -290,7 +290,7 @@ export default function KindInputsTab({
                       {fieldTypeLabel(pair.field)}
                     </span>
                     <span className="text-[11px] text-muted-foreground">→</span>
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] text-primary">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] text-primary-ink">
                       {componentType}
                     </span>
                     {pair.field.required && (

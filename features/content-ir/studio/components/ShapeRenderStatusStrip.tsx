@@ -315,7 +315,7 @@ export default function ShapeRenderStatusStrip({
                   {!c.isActive ? " · off" : ""}
                 </span>
                 {c.isDefault ? (
-                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+                  <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary-ink">
                     default
                   </span>
                 ) : isOwnedByViewer && c.componentKey !== GENERIC_STRUCTURED_COMPONENT_KEY ? (

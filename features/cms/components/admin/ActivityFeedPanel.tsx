@@ -22,7 +22,7 @@ import { openFilePreview } from '@/features/files/components/preview/openFilePre
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const ACTOR_META = {
-    agent: { label: 'Agent', icon: Workflow, className: 'bg-primary/15 text-primary border-primary/30' },
+    agent: { label: 'Agent', icon: Workflow, className: 'bg-primary/15 text-primary-ink border-primary/30' },
     human: { label: 'Human', icon: User, className: 'bg-muted text-muted-foreground border-border' },
     system: { label: 'System', icon: Cog, className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' },
 } as const;
@@ -138,7 +138,7 @@ export default function ActivityFeedPanel({ sites }: { sites: ClientSiteSummary[
             </div>
 
             {error && (
-                <div className="flex-none flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md bg-destructive/10 text-destructive text-xs">
+                <div className="flex-none flex items-center gap-2 px-2 py-1.5 mb-1 rounded-md bg-destructive/10 text-destructive-ink text-xs">
                     <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                     {error}
                   <ErrorAlchemyMenu error={error} />

@@ -45,7 +45,7 @@ export const CodeWorkspaceRoute: React.FC<CodeWorkspaceRouteProps> = ({
       <div className="flex h-full w-full items-center justify-center p-6">
         <div
           role="alert"
-          className="max-w-md rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"
+          className="max-w-md rounded-md border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-ink"
         >
           <p>{connectionError}</p>
           <a href="/code" className="mt-3 inline-block font-medium underline">

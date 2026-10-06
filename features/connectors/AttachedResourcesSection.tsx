@@ -187,7 +187,7 @@ function AttachedChip({
       className={cn(
         "inline-flex h-6 items-center rounded-md border text-[11px]",
         item.pending
-          ? "border-dashed border-primary/40 bg-primary/5 text-primary"
+          ? "border-dashed border-primary/40 bg-primary/5 text-primary-ink"
           : "border-border bg-card text-foreground",
       )}
       title={
@@ -215,7 +215,7 @@ function AttachedChip({
         disabled={busy}
         aria-label={`Remove ${item.display_name} from this chat`}
         title={`Remove ${item.display_name} from this chat`}
-        className="flex h-6 w-5 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
+        className="flex h-6 w-5 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-ink focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:opacity-50"
       >
         {busy ? (
           <Loader2 className="h-3 w-3 animate-spin" aria-hidden />

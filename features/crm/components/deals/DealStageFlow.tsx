@@ -97,7 +97,7 @@ export function DealStageFlow({ deal, pipeline, onChanged }: Props) {
                       ? "bg-destructive text-destructive-foreground"
                       : "bg-primary text-primary-foreground"
                   : reached
-                    ? "bg-primary/15 text-primary hover:bg-primary/25"
+                    ? "bg-primary/15 text-primary-ink hover:bg-primary/25"
                     : "border border-border text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >

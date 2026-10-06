@@ -57,7 +57,7 @@ export const SHAPE_COLUMNS: EntityColumnSpec<ShapeBrowseRow>[] = [
           variant="outline"
           className={
             row.is_active
-              ? "border-primary/30 bg-primary/10 py-0 text-[11px] text-primary"
+              ? "border-primary/30 bg-primary/10 py-0 text-[11px] text-primary-ink"
               : "py-0 text-[11px] text-muted-foreground"
           }
         >

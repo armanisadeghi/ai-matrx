@@ -185,7 +185,7 @@ export default function KindIncidentsTab() {
               onClick={() => setScope(entry.id)}
               className={`rounded px-2 py-1 text-xs transition-colors ${
                 scope === entry.id
-                  ? "bg-primary/10 font-medium text-primary"
+                  ? "bg-primary/10 font-medium text-primary-ink"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
             >

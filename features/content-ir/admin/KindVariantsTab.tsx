@@ -258,7 +258,7 @@ export default function KindVariantsTab({ detail }: KindVariantsTabProps) {
                     <span className="text-sm text-foreground">
                       {variant.label}
                     </span>
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary">
+                    <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[11px] font-medium text-primary-ink">
                       {variant.component_type}
                     </span>
                     <div className="ml-auto flex items-center gap-1">

@@ -725,7 +725,7 @@ export function CollectionEditorDialog({
           </div>
 
           {error && (
-            <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
+            <div className="text-sm text-destructive-ink flex items-center gap-2 p-3 rounded-md bg-destructive/10">
               <AlertCircle className="h-4 w-4 shrink-0" />
               {error}
               <ErrorAlchemyMenu error={error} />

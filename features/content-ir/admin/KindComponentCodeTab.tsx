@@ -114,7 +114,7 @@ export default function KindComponentCodeTab({
 
   if (loadState.status === "error") {
     return (
-      <div className="mx-auto max-w-4xl rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+      <div className="mx-auto max-w-4xl rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive-ink">
         {loadState.message}
         <ErrorAlchemyMenu error={loadState.message} />
       </div>

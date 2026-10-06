@@ -91,7 +91,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
             data-toolbar-overflow
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground sm:hidden",
-              !PHONE_TOOLS.includes(active) && "bg-primary/15 text-primary",
+              !PHONE_TOOLS.includes(active) && "bg-primary/15 text-primary-ink",
             )}
           >
             <Ellipsis className="h-4 w-4" />
@@ -118,7 +118,7 @@ export function ToolBar({ leading, className }: { leading?: ReactNode; className
             aria-label="Shapes"
             className={cn(
               "flex h-8 items-center gap-0.5 rounded-md px-1.5 text-muted-foreground hover:bg-accent hover:text-foreground max-sm:hidden",
-              shapeActive && "bg-primary/15 text-primary",
+              shapeActive && "bg-primary/15 text-primary-ink",
             )}
           >
             <ShapeIcon className="h-4 w-4" />
@@ -168,7 +168,7 @@ function ToolButton({
       onClick={onPick}
       className={cn(
         "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground",
-        active && "bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary",
+        active && "bg-primary/15 text-primary-ink hover:bg-primary/20 hover:text-primary-ink",
         className,
       )}
     >

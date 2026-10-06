@@ -71,17 +71,17 @@ const MEMBER_STATUS_TONE: Record<MemberStatus, string> = {
   clicked: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/20",
   replied:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  bounced: "bg-destructive/15 text-destructive border-destructive/20",
+  bounced: "bg-destructive/15 text-destructive-ink border-destructive/20",
   connected:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   voicemail:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
   no_answer:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
-  not_interested: "bg-destructive/15 text-destructive border-destructive/20",
+  not_interested: "bg-destructive/15 text-destructive-ink border-destructive/20",
   meeting_booked:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  suppressed: "bg-destructive/15 text-destructive border-destructive/20",
+  suppressed: "bg-destructive/15 text-destructive-ink border-destructive/20",
   done: "bg-muted text-muted-foreground border-border",
 };
 
@@ -109,8 +109,8 @@ export function MemberStatusBadge({ status }: { status: string }) {
 const INBOUND_LABEL_TONE: Record<InboundLabel, string> = {
   interested:
     "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
-  not_interested: "bg-destructive/15 text-destructive border-destructive/20",
-  unsubscribe: "bg-destructive/15 text-destructive border-destructive/20",
+  not_interested: "bg-destructive/15 text-destructive-ink border-destructive/20",
+  unsubscribe: "bg-destructive/15 text-destructive-ink border-destructive/20",
   bounce:
     "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/20",
   ooo: "bg-muted text-muted-foreground border-border",

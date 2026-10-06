@@ -37,7 +37,7 @@ export function ConsentFailureNotice({
     <div
       role="alert"
       className={cn(
-        "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive",
+        "rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink",
         className,
       )}
     >

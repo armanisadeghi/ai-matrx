@@ -225,7 +225,7 @@ export default function ShapeStreamTab({
             <button
               type="button"
               onClick={interrupt}
-              className="inline-flex h-11 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+              className="inline-flex h-11 items-center gap-1.5 rounded-md border border-destructive/40 px-3 text-xs font-medium text-destructive-ink transition-colors hover:bg-destructive/10"
             >
               <CircleX className="h-3.5 w-3.5" />
               Simulate interruption
@@ -268,7 +268,7 @@ export default function ShapeStreamTab({
         {runState === "error" ? (
           <div
             role="alert"
-            className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+            className="mb-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink"
           >
             Simulated stream interruption. No data was written. The last valid
             partial render stays visible below with streaming disabled.

@@ -1140,7 +1140,7 @@ export function CrmListPage({
                   <Merge className="h-3.5 w-3.5" />
                   <span className="max-sm:sr-only">Duplicates</span>
                   {(dupCountFailed || (dupCount !== null && dupCount > 0)) && (
-                    <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary">
+                    <span className="ml-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold leading-none text-primary-ink">
                       <UntrustedCount
                         trustworthy={!dupCountFailed}
                         label="Pending duplicates"
@@ -1205,7 +1205,7 @@ export function CrmListPage({
             </div>
           )}
           {list.error && (
-            <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
+            <div className="mt-2 rounded-md border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs text-destructive-ink">
               {list.error}
               <ErrorAlchemyMenu error={list.error} />
             </div>
