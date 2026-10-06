@@ -64,7 +64,7 @@ jest.mock("@/features/unified-data/hub/doors", () => ({ tablesSharedWithMe: (...
 jest.mock("@/features/organizations/hooks", () => ({
   useUserOrganizations: () => ({ organizations: [{ id: ITS_ORG, name: "Cedar Ridge Physical Therapy" }], loading: false }),
 }));
-jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
+jest.mock("@ai-matrx/records/realtime", () => ({ createRecordsRealtimePort: () => undefined }));
 jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => {
   // The host's one data seam: the mocked records-ui seam, one per run (the real hook shares one).
   // eslint-disable-next-line @typescript-eslint/no-require-imports

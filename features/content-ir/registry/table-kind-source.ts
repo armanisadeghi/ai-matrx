@@ -32,7 +32,7 @@ import {
 } from "@ai-matrx/content-ir";
 import { createClient } from "@/utils/supabase/client";
 import { refusalForPeople } from "./table-kind-refusal";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
+import { createRecordsRealtimePort } from "@ai-matrx/records/realtime";
 
 export type TableKindAnswer =
   | { ok: true; facts: TableKindFacts; schema: KindSchema; facet: TableKindFacet }
@@ -103,7 +103,7 @@ export function joinTableLive(
   optionsTableIds: readonly string[],
   on: { shape: () => void; records: (ids: readonly string[] | null) => void },
 ): () => void {
-  const port = createRecordsRealtimePort(organizationId);
+  const port = createRecordsRealtimePort();
   const stops: Array<() => void> = [];
   stops.push(
     port.subscribeRecords(

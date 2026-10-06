@@ -56,7 +56,7 @@ import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
-import { createRecordsRealtimePort } from "@/features/unified-data/realtime/recordsRealtimePort";
+import { createRecordsRealtimePort } from "@ai-matrx/records/realtime";
 import type { DataBuildOrAskOffer } from "@ai-matrx/agents/generated/provision-offers";
 
 
@@ -349,6 +349,24 @@ export function useRecordsDataSource(): DataSource {
 }
 
 
+/**
+ * ONE PORT PER ORGANIZATION, SO THE SAME ORGANIZATION IS THE SAME PORT (lane PANEL-REMOUNT,
+ * 2026-09-24). `<RecordsProvider>` rebuilds its records client when `config.realtime` changes
+ * identity, and the /data pages build `config` on every render of the page, so a fresh port
+ * per call re-read the whole grid on any `?panels=` / `?view=` write. The package's port
+ * (`@ai-matrx/records/realtime`) binds the AMBIENT manager `providers/RealtimeHost.tsx` mounts.
+ */
+const realtimePortsByOrganization = new Map<string, ReturnType<typeof createRecordsRealtimePort>>();
+
+function realtimePortFor(organizationId: string): ReturnType<typeof createRecordsRealtimePort> {
+  let port = realtimePortsByOrganization.get(organizationId);
+  if (!port) {
+    port = createRecordsRealtimePort();
+    realtimePortsByOrganization.set(organizationId, port);
+  }
+  return port;
+}
+
 /** The `config` every records-ui mount takes (`RecordsMount` / `RecordsProvider`). */
 export interface AppRecordsConfig {
   dataSource: DataSource;
@@ -371,7 +389,7 @@ export function useAppRecordsConfig(organizationId: string | null): AppRecordsCo
       dataSource,
       actor: personActor(userId),
       organizationId,
-      ...(organizationId ? { realtime: createRecordsRealtimePort(organizationId) } : {}),
+      ...(organizationId ? { realtime: realtimePortFor(organizationId) } : {}),
     }),
     [dataSource, userId, organizationId],
   );

@@ -448,7 +448,7 @@ validations build).
 ## Realtime
 
 The Sheet listens through `useRecordStoreTableRealtime` (the store's broadcast port,
-`features/unified-data/realtime/recordsRealtimePort.ts`): record ids come down the wire and are
+`createRecordsRealtimePort` from `@ai-matrx/records/realtime`, bound once per organization in `records-ui-host/recordsUiHost.tsx`): record ids come down the wire and are
 re-read through the store's id door; "the shape moved" triggers a metadata read. This browser's
 own writes never arrive (every write carries an op id the port drops). Workbook collab rides
 `@ai-matrx/realtime` (`SupabaseYjsProvider` as a broadcast room; `collab/FEATURE.md`).

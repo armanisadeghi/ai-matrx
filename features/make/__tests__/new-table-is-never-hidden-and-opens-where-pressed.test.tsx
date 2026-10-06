@@ -67,7 +67,7 @@ jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   useAppRecordsConfig: () => ({}),
   useRecordsUiPorts: () => ({}),
 }));
-jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
+jest.mock("@ai-matrx/records/realtime", () => ({ createRecordsRealtimePort: () => undefined }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- loaded after the mocks above
 const { NewTableDialog } = require("../MakeMount") as typeof import("../MakeMount");

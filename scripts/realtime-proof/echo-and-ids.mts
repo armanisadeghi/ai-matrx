@@ -17,7 +17,7 @@
 //
 // WHAT IT IS NOT, SAID PLAINLY. It is not two Chromium windows. The clause under test is the
 // PORT's decision — drop this notice, or re-read exactly these ids — and that decision is made
-// in `recordsRealtimePort.ts` and `useRecords`, both of which are exercised here directly with
+// in `@ai-matrx/records/realtime` (`createRecordsRealtimePort`) and `useRecords`, both of which are exercised here directly with
 // the same inputs the socket delivers. A browser run additionally proves React re-rendered,
 // which is the part no realtime bug has ever been.
 //
