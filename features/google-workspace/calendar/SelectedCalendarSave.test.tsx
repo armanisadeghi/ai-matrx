@@ -1,6 +1,7 @@
 /** @jest-environment jsdom */
 
 import { act } from "react";
+import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { createRoot, type Root } from "react-dom/client";
 import { SelectedCalendarReview } from "./SelectedCalendarReview";
 
@@ -15,13 +16,14 @@ jest.mock("./selectedCalendarService", () => ({
   readSelectedCalendarEvents: (...args: unknown[]) => mockRead(...args),
   reconcileSelectedCalendar: (...args: unknown[]) => mockSave(...args),
 }));
+jest.mock("@/features/overlays/openers/connectorConsentDialog", () => ({ useOpenConnectorConsentDialog: () => jest.fn() }));
 jest.mock("@/features/organizations/useOrganizationRequired", () => ({
   useOrganizationRequired: () => ({ organizationId: "org-1", organizationState: "ready" }),
 }));
 jest.mock("@/features/marketing/google/hooks", () => ({
   useGoogleCapabilities: () => ({ data: [] }),
   useGoogleConnectionInventory: () => ({
-    data: { connections: [{ id: "account-1", health: "connected", account_name: "Test", account_email: "test@example.com" }] },
+    data: { connections: [{ id: "account-1", health: "connected", account_name: "Test", account_email: "test@example.com", scopes: [GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsReadonly] }] },
     isLoading: false, isError: false,
   }),
 }));
