@@ -67,6 +67,16 @@ function hostOf(answer: InstallAnswer) {
   };
 }
 
+/**
+ * The platform agent an answer's `agent` names. A fresh install spells it `platform_agent`; the
+ * `already` answer (custom.template_install: `'agent', v_t.plan -> 'agent'`) carries the plan's agent
+ * as declared, spelled `platformAgent`. Both are read; neither present is null (the caller says so).
+ */
+function platformAgentOf(agent: object): { id: string; name: string } | null {
+  const a = agent as { platform_agent?: { id: string; name: string } | null; platformAgent?: { id: string; name: string } | null };
+  return a.platform_agent ?? a.platformAgent ?? null;
+}
+
 /** True when the install answered an agent the host still has to copy. */
 export function agentStillToCopy(answer: InstallAnswer): boolean {
   if (!answer.agent || answer.agent.copied) return false;
@@ -191,16 +201,18 @@ export async function addInstalledAgent(
     // 1 — the template's agent.
     const agent = answer.agent;
     if (agent && agentStillToCopy(current)) {
+      const platform = platformAgentOf(agent);
+      if (!platform) throw new Error(`The template's assistant "${agent.name}" does not say which assistant to copy.`);
       const done = await copyAndNote(ports.copier, ports, installId, organizationId, {
-        platformAgent: agent.platform_agent.name,
-        platformAgentId: agent.platform_agent.id,
+        platformAgent: platform.name,
+        platformAgentId: platform.id,
         name: agent.name,
-        bindings: agent.bindings.map((b) => {
+        bindings: (agent.bindings ?? []).map((b) => {
           const full = b["binding"] as TemplatePlanBinding | undefined;
           return {
             variable: String(b["variable"] ?? ""),
             tableToken: String(b["tableToken"] ?? ""),
-            tableId: String(b["table_id"] ?? ""),
+            tableId: String(b["table_id"] ?? resolver.tableId(String(b["tableToken"] ?? "")) ?? ""),
             describes: String(b["describes"] ?? ""),
             ...(full ? { binding: installedBinding(full, resolver) } : {}),
           };
