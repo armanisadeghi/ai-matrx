@@ -433,7 +433,7 @@ function resolveTargets() {
   }
   if (FLAGS.has("--changed")) {
     const changed = execFileSync("git", ["diff", "--name-only", "HEAD"], { cwd: ROOT, encoding: "utf8" }).split("\n")
-      .concat(execFileSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: ROOT, encoding: "utf8" }).split("\n"))
+      .concat(execFileSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: ROOT, encoding: "utf8", maxBuffer: 512 << 20 }).split("\n"))
       .filter((f) => f.endsWith(".tsx"));
     files = files.filter((f) => changed.includes(f)).concat(changed.filter((f) => !files.includes(f) && existsSync(resolve(ROOT, f))));
   }

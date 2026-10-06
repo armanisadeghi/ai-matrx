@@ -418,7 +418,7 @@ function STATS(door, part, tok) {
 // ── run ──────────────────────────────────────────────────────────────────────────────────────
 const files = PATHS.length
   ? PATHS
-  : execFileSync("git", ["ls-files", "*.tsx"], { cwd: ROOT, encoding: "utf8" }).split("\n").filter(Boolean);
+  : execFileSync("git", ["ls-files", "*.tsx"], { cwd: ROOT, encoding: "utf8", maxBuffer: 512 << 20 }).split("\n").filter(Boolean);
 let changedFiles = 0;
 const STAGE_ONLY = args.includes("--stage-only");
 const headOf = (file) => {
