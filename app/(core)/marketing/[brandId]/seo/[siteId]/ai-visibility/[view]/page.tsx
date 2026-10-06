@@ -3,11 +3,13 @@ import { notFound } from "next/navigation";
 
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
 import {
+  isAiVisibilityBrandView,
   isAiVisibilityEvidenceView,
   isAiVisibilityPanelsView,
 } from "@/features/marketing/seo/ai-visibility/evidence-views";
 import { SiteAiVisibilityWorkspace } from "@/features/marketing/seo/ai-visibility/SiteAiVisibilityWorkspace";
 import { SiteAiVisibilityPanels } from "@/features/marketing/seo/ai-visibility/panels/SiteAiVisibilityPanels";
+import { SiteBrandLookup } from "@/features/marketing/seo/ai-visibility/brand-lookup/SiteBrandLookup";
 
 export default async function MarketingSeoAiVisibilityEvidencePage({
   params,
@@ -23,6 +25,14 @@ export default async function MarketingSeoAiVisibilityEvidencePage({
     return (
       <Suspense fallback={<LoadingSurface label="Loading prompt panels…" />}>
         <SiteAiVisibilityPanels />
+      </Suspense>
+    );
+  }
+
+  if (isAiVisibilityBrandView(view)) {
+    return (
+      <Suspense fallback={<LoadingSurface label="Loading brand lookup…" />}>
+        <SiteBrandLookup />
       </Suspense>
     );
   }

@@ -94,6 +94,34 @@ export function judgeDeclaredFlattening(args: {
 }
 
 /**
+ * The prose an answer carries OUTSIDE its embedded structured regions (fenced
+ * code blocks and tag-wrapped bodies such as `<artifact>`). An answer that is
+ * real prose with a shape embedded in it — the Fact Checker's three markdown
+ * sections plus one fenced `fact_check_report` — is a MARKDOWN answer, and
+ * asking for it as text is correct: the embedded kind still renders through
+ * the one pipeline. Only an answer that IS the shape is flattening.
+ */
+export function proseOutsideEmbeddedShapes(answerText: string): string {
+  const trimmed = answerText.trim();
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    try {
+      JSON.parse(trimmed);
+      return ""; // the whole answer is a bare JSON value — the shape itself
+    } catch {
+      // not a bare JSON answer; measure its prose below
+    }
+  }
+  return answerText
+    .replace(/```[\s\S]*?(```|$)/g, " ")
+    .replace(/<([a-z][\w-]*)\b[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Below this much surrounding prose, an answer is the shape itself, not prose that embeds one. */
+const MIN_PROSE_AROUND_SHAPE = 40;
+
+/**
  * Judge a run AFTER it settled, from what actually came back.
  * Returns null when there is nothing to scream about.
  */
@@ -102,10 +130,18 @@ export function judgeHarvestedFlattening(args: {
   harvested: unknown;
   agentRef: string;
   surfaceKey: string;
+  /** The answer text, when known: prose around an embedded shape is not flattening. */
+  answerText?: string;
 }): FlatteningVerdict | null {
   if (args.expect !== "text") return null;
   const kind = harvestedKindOf(args.harvested);
   if (!kind) return null;
+  if (
+    typeof args.answerText === "string" &&
+    proseOutsideEmbeddedShapes(args.answerText).length >= MIN_PROSE_AROUND_SHAPE
+  ) {
+    return null;
+  }
   return {
     signal: "harvested",
     kind,

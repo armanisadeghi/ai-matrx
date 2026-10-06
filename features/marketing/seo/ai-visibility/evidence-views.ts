@@ -16,7 +16,7 @@ type AiVisibilitySubView = (typeof AI_VISIBILITY_SUBVIEWS)[number]["id"];
  */
 export type AiVisibilityEvidenceView = Exclude<
   AiVisibilitySubView,
-  "overview" | "panels"
+  "overview" | "panels" | "brand"
 >;
 
 export function isAiVisibilityEvidenceView(
@@ -25,10 +25,16 @@ export function isAiVisibilityEvidenceView(
   return (
     value !== "overview" &&
     value !== "panels" &&
+    value !== "brand" &&
     isMarketingSubView("ai-visibility", value)
   );
 }
 
 export function isAiVisibilityPanelsView(value: string): boolean {
   return value === "panels";
+}
+
+/** The brand lookup reads a provider's AI-mentions index through the tool, not a saved table. */
+export function isAiVisibilityBrandView(value: string): boolean {
+  return value === "brand";
 }

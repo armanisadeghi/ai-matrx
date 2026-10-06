@@ -7,6 +7,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { DIRECTOR_CONVERSATION_PARAM } from "./director-context";
+
 export const DIRECTOR_DOCK_KEY = "matrx.pr.director-docked";
 /** The Director column is 420px; below this the angle list would drop under ~600px. */
 export const DIRECTOR_DOCK_MIN_WIDTH = 1440;
@@ -20,8 +22,14 @@ function storedChoice(): boolean | null {
   }
 }
 
-export function initialDirectorDocked(viewportWidth: number): boolean {
+/** A page holding a conversation (`?director=`) always reopens the Director it was in. */
+export function initialDirectorDocked(viewportWidth: number, holdsConversation = false): boolean {
+  if (holdsConversation) return true;
   return storedChoice() ?? viewportWidth >= DIRECTOR_DOCK_MIN_WIDTH;
+}
+
+export function pageHoldsDirectorConversation(): boolean {
+  return new URL(window.location.href).searchParams.has(DIRECTOR_CONVERSATION_PARAM);
 }
 
 export function useDirectorDock(): [boolean, (open: boolean) => void] {
@@ -29,7 +37,7 @@ export function useDirectorDock(): [boolean, (open: boolean) => void] {
   // would make the first client paint disagree with the server's.
   const [docked, setDocked] = useState(false);
   useEffect(() => {
-    setDocked(initialDirectorDocked(window.innerWidth));
+    setDocked(initialDirectorDocked(window.innerWidth, pageHoldsDirectorConversation()));
   }, []);
   const set = useCallback((open: boolean) => {
     setDocked(open);

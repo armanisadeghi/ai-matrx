@@ -35,12 +35,16 @@ export const ROW_BODY_LABEL = "row_body";
 
 export type RowBodyState = { state: "loading" } | { state: "none" } | { state: "found"; spaceId: string } | { state: "failed"; message: string };
 
+const LOADING: RowBodyState = { state: "loading" };
+
 /** The Space that is this row's body (one live body per row), as the reader may see it. */
 export function useRowBodySpace(recordId: string): RowBodyState {
-  const [found, setFound] = useState<RowBodyState>({ state: "loading" });
+  // The answer is kept with the row it answers: a new recordId reads as loading until its own answer
+  // lands, with no reset written from the effect.
+  const [answer, setAnswer] = useState<{ recordId: string; state: RowBodyState } | null>(null);
   useEffect(() => {
     let live = true;
-    setFound({ state: "loading" });
+    const setFound = (state: RowBodyState) => setAnswer({ recordId, state });
     void (async () => {
       const { data, error } = await createClient()
         .schema("platform")
@@ -73,7 +77,7 @@ export function useRowBodySpace(recordId: string): RowBodyState {
       live = false;
     };
   }, [recordId]);
-  return found;
+  return answer?.recordId === recordId ? answer.state : LOADING;
 }
 
 export interface RecordBodySpaceProps {

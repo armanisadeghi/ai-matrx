@@ -24,3 +24,15 @@ test("the person's own choice is remembered and wins over the width", () => {
   localStorage.setItem(DIRECTOR_DOCK_KEY, "closed");
   expect(initialDirectorDocked(1920)).toBe(false);
 });
+
+/*
+ * Final walk 2026-10-05: after a reload mid-conversation the panel stayed closed (1280px, below the
+ * dock width) and the conversation only showed after a manual click. A page holding a conversation
+ * (`?director=`) reopens the Director, whatever the width or the stored choice.
+ */
+test("a page holding a conversation reopens the Director", () => {
+  expect(initialDirectorDocked(1280, true)).toBe(true);
+  localStorage.setItem(DIRECTOR_DOCK_KEY, "closed");
+  expect(initialDirectorDocked(1024, true)).toBe(true);
+  expect(initialDirectorDocked(1024, false)).toBe(false);
+});

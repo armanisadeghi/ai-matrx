@@ -228,7 +228,10 @@ function AngleRow({
       ref={ref}
       data-angle-id={angle.id}
       className={cn(
-        "min-w-0 border-b border-border last:border-b-0",
+        // A size container: the detail below splits into two columns by ITS OWN width, never the
+        // viewport's — beside the docked PR Director at 1024px the list is ~600px, and a
+        // viewport breakpoint squeezed "What the story is" to one word per line (walk 2026-10-05).
+        "@container/angle min-w-0 border-b border-border last:border-b-0",
         expanded && "bg-muted/30",
       )}
     >
@@ -294,7 +297,7 @@ function AngleRow({
       </button>
 
       {expanded ? (
-        <div className="grid gap-4 border-t border-border px-3 py-3 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <div className="grid gap-4 border-t border-border px-3 py-3 @3xl/angle:grid-cols-[minmax(0,1fr)_280px]">
           <div className="min-w-0 space-y-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
