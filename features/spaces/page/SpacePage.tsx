@@ -28,6 +28,7 @@ import { PageHistory } from "./PageHistory";
 import type { SpaceBlock, SpaceDoc } from "../contract";
 import { fromEngine, plainText, toEngine, type EngineBlock } from "../editor/convert";
 import type { SpacesEditor } from "../editor/schema";
+import { blockIds, planStoredMerge } from "./merge-stored";
 import { SpaceEditor } from "../editor/SpaceEditor";
 import { useSpaces } from "../state/SpacesProvider";
 import { Cover, randomCover } from "./Cover";
@@ -153,11 +154,14 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const savedKey = useRef<string | null>(null);
   /** When the first unsaved change since the last save happened (the cadence's max wait runs from it). */
   const dirtySince = useRef<number | null>(null);
+  /** Every block id of that stored version — the merge base for a version written outside the room. */
+  const savedIds = useRef<Set<string>>(new Set());
 
   const adopt = (d: SpaceDoc) => {
     docRef.current = d;
     baseVersion.current = d.version;
     savedKey.current = contentKey(d);
+    savedIds.current = blockIds(d.blocks);
     setDoc(d);
   };
 
@@ -196,6 +200,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     if (!s || !d || !s.seededBlocks) return;
     docRef.current = { ...d, blocks: fromEngine(s.seededBlocks as EngineBlock[]) };
     savedKey.current = contentKey(docRef.current);
+    savedIds.current = blockIds(docRef.current.blocks);
   }, [collab.session]);
 
   // Another Space opened in this same page: drop the last one's state while rendering (React's
@@ -238,6 +243,27 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   }, []);
 
   const refused = useRef<string | null>(null);
+  /**
+   * A stored version the room did not write (a block moved here from another page while it is open): the
+   * host takes what that writer added or removed into the room (merge-stored.ts), so its next save carries
+   * it instead of overwriting it. Answers the room's page after the merge (null: not the host / no editor).
+   */
+  const mergeStored = (incoming: SpaceDoc): SpaceBlock[] | null => {
+    const editor = editorRef.current;
+    if (!editor || !collab.hostRef.current) return null;
+    const plan = planStoredMerge(savedIds.current, editor.document as unknown as EngineBlock[], incoming.blocks);
+    for (const id of plan.remove) {
+      if (editor.getBlock(id)) editor.removeBlocks([id]);
+    }
+    for (const { block, after } of plan.insert) {
+      const anchor = after && editor.getBlock(after) ? after : null;
+      const first = editor.document[0];
+      const engine = toEngine([block]) as never;
+      if (anchor) editor.insertBlocks(engine, anchor, "after");
+      else if (first) editor.insertBlocks(engine, first.id, "before");
+    }
+    return fromEngine(editor.document as unknown as EngineBlock[]);
+  };
   const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   /**
    * Write the page to the store — the host only (a member that is not host never writes; the host saves
@@ -265,18 +291,23 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     setSaveState("saving");
     try {
       let saved: SpaceDoc;
+      let wrote = sent;
       try {
         saved = await store.saveFrom(origin, sent, baseVersion.current);
       } catch (err) {
         // A version this member had not heard of yet (the last host's final save, a rename from the
-        // sidebar): the room already holds every edit, so save the room's copy over the newest version.
+        // sidebar, blocks moved here from another page): take what it added or removed into the room,
+        // then save the room's copy over the newest version.
         const latest = await store.get(spaceId).catch(() => null);
         if (!latest || latest.version === baseVersion.current) throw err;
+        const merged = mergeStored(latest);
+        if (merged) wrote = { ...(docRef.current ?? sent), blocks: merged };
         baseVersion.current = latest.version;
-        saved = await store.saveFrom(origin, sent, latest.version);
+        saved = await store.saveFrom(origin, wrote, latest.version);
       }
       baseVersion.current = saved.version;
-      savedKey.current = key;
+      savedKey.current = wrote === sent ? key : contentKey(wrote);
+      savedIds.current = blockIds(wrote.blocks);
       if (docRef.current) docRef.current = { ...docRef.current, version: saved.version, updatedAt: saved.updatedAt };
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
@@ -333,8 +364,15 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   useEffect(() => {
     const learn = (incoming: SpaceDoc) => {
       if (incoming.id !== spaceId || incoming.version <= baseVersion.current) return;
+      // A save in flight settles it: its compare-and-swap either wrote this version or is refused, and
+      // the refusal merges the newer version into the room before saving again.
+      if (inFlight.current) return;
+      // Written outside the room (Move to from another page): the host merges it in; the editor's change
+      // then schedules the save that carries it. A version the room wrote merges as a no-op.
+      mergeStored(incoming);
       baseVersion.current = incoming.version;
       savedKey.current = contentKey(incoming);
+      savedIds.current = blockIds(incoming.blocks);
       if (docRef.current) docRef.current = { ...docRef.current, version: incoming.version, updatedAt: incoming.updatedAt };
       setDoc((d) => (d ? { ...d, version: incoming.version, updatedAt: incoming.updatedAt } : d));
     };
