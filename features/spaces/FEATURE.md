@@ -159,3 +159,14 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   default. Slash menu fits the page's scroll area. Sample: thinner rings, dashed many-group ring, grey pill on the open
   view tab, lightning → the table's automations (`NotifyRuleEditor`), Claude Skills / Auto posting lines as the reference
   (`upgradeLinkLines` on Add the sample).
+- 2026-10-06 — builder round 18: column lists are always well formed across the store boundary (`editor/columns.ts`, run by
+  `convert.ts` on load and save: stray blocks get a column, a list in a list joins it, one-column lists and loose columns melt;
+  a list inside a column is valid and kept). The editor never nests: "/2 columns" in a column lands below the outer list, a
+  dragged column list keeps its above/below drop. A save that does not land never loses edits (`page/unsaved.ts`): a body the
+  database would refuse is not sent, a refused or failed save keeps the page on the device, a reload restores it ("Unsaved
+  changes restored"), a stored save clears it; the label reads "Not saved" for a refusal. A page in Trash writes nothing and
+  elects no host (`trash-state.ts` `mayWrite` / `roomCanEdit`). Use template on the sample copies it (`state/template-plan.ts`);
+  the sample is the oldest page with its title. Pages this tab made (new, duplicate) seed their room at once. Enter at the end
+  of an open toggle's title writes its first child (`editor/toggle-enter.ts`). Inline tables at natural widths, scrolling
+  sideways; grey toggle triangles; no selection ring between columns. Viewer search on table blocks (records-ui
+  `searchOverride`); built-in Load more reads one 50-row page by offset.
