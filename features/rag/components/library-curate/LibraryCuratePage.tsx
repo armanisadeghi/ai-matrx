@@ -167,7 +167,7 @@ export function LibraryCuratePage() {
       <>
         <RagHubHeader />
         <div className="h-full overflow-y-auto p-6 pt-[calc(var(--shell-header-h)+1.5rem)]">
-          <div className="max-w-2xl rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          <div className="max-w-2xl rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive-ink">
             {extractErrorMessage(curatorships.error)}
             <ErrorAlchemyMenu />
           </div>
@@ -222,7 +222,7 @@ export function LibraryCuratePage() {
                 <Skeleton className="h-12 w-full" />
               </div>
             ) : packs.isError ? (
-              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <div className="m-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
                 {extractErrorMessage(packs.error)}
                 <ErrorAlchemyMenu />
               </div>

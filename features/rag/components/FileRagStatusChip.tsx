@@ -74,7 +74,7 @@ function StateChip({
       );
     case "completed":
       return (
-        <span className={cn(PILL, "bg-primary/10 text-primary")}>
+        <span className={cn(PILL, "bg-primary/10 text-primary-ink")}>
           <Lightbulb className="h-3 w-3" aria-hidden="true" />
           Indexed
         </span>
@@ -82,7 +82,7 @@ function StateChip({
     case "failed":
       return (
         <span
-          className={cn(PILL, "bg-destructive/10 text-destructive")}
+          className={cn(PILL, "bg-destructive/10 text-destructive-ink")}
           title={errorMessage ?? "Knowledge processing failed"}
         >
           Failed

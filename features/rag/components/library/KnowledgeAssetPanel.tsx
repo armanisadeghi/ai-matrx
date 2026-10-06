@@ -628,7 +628,7 @@ function RepresentationCard({
               className={cn(
                 "flex h-6 w-6 items-center justify-center rounded-md shrink-0",
                 built || running
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "bg-muted text-muted-foreground",
               )}
             >
@@ -933,7 +933,7 @@ function LiveActivityRow({
       className="rounded-lg border border-primary/30 bg-card overflow-hidden"
     >
       <div className="flex items-center gap-2 px-3 py-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary-ink shrink-0">
           <Icon className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">

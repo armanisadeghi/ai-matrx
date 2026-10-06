@@ -28,7 +28,7 @@ import type { MockShow } from "../mock/shows";
 import type { EpisodeDraft } from "./types";
 
 const TINT: Record<MockShow["tint"], string> = {
-  primary: "bg-primary/15 text-primary",
+  primary: "bg-primary/15 text-primary-ink",
   sky: "bg-sky-500/15 text-sky-500",
   violet: "bg-violet-500/15 text-violet-500",
   emerald: "bg-emerald-500/15 text-emerald-500",

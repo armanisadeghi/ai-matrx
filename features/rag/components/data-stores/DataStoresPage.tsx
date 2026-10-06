@@ -869,7 +869,7 @@ function StoreDetailPanel({
             </span>
           )}
           {readOnly && (
-            <span className="type-meta px-1.5 py-0.5 rounded bg-primary/10 text-primary flex items-center gap-1">
+            <span className="type-meta px-1.5 py-0.5 rounded bg-primary/10 text-primary-ink flex items-center gap-1">
               <Lock className="h-3 w-3" /> Shared library ·{" "}
               {grantProvenanceLabel ?? "read-only"}
             </span>

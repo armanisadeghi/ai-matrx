@@ -80,7 +80,7 @@ export function EntitlementChip({
       className={cn(
         "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 type-meta font-medium",
         entitled
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "bg-muted text-muted-foreground",
         className,
       )}

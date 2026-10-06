@@ -122,12 +122,12 @@ function Field({
 function StatusChip({ status }: { status: string }) {
   const tone =
     status === "delivered" || status === "shipped"
-      ? "bg-success/15 text-success"
+      ? "bg-success/15 text-success-ink"
       : status === "rejected" || status === "fulfillment_failed" || status === "payment_expired"
-        ? "bg-destructive/15 text-destructive"
+        ? "bg-destructive/15 text-destructive-ink"
         : status === "refunded" || status === "refund_due" || status === "canceled"
           ? "bg-muted text-muted-foreground"
-          : "bg-primary/15 text-primary";
+          : "bg-primary/15 text-primary-ink";
   return (
     <span
       className={cn(
@@ -194,7 +194,7 @@ function PaymentModeBadge({
     return (
       <div
         data-testid="payment-mode-badge"
-        className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+        className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive-ink"
       >
         <ShieldAlert className="mt-px size-4 shrink-0" />
         <span>
@@ -225,7 +225,7 @@ function PaymentModeBadge({
       className={cn(
         "mt-3 flex items-start gap-2 rounded-lg border p-3 text-xs",
         refused
-          ? "border-destructive/40 bg-destructive/5 text-destructive"
+          ? "border-destructive/40 bg-destructive/5 text-destructive-ink"
           : live
             ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400"
             : "border-border bg-muted/40 text-muted-foreground",

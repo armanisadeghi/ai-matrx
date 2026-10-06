@@ -346,9 +346,9 @@ function Stepper({
           state === "done"
             ? "text-green-700 dark:text-green-400 border-green-500/40 bg-green-500/10"
             : state === "running"
-              ? "text-primary border-primary/50 bg-primary/10 ring-2 ring-primary/30"
+              ? "text-primary-ink border-primary/50 bg-primary/10 ring-2 ring-primary/30"
               : state === "error"
-                ? "text-destructive border-destructive/50 bg-destructive/10"
+                ? "text-destructive-ink border-destructive/50 bg-destructive/10"
                 : "text-muted-foreground border-border bg-muted/20";
         return (
           <li

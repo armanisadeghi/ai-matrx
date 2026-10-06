@@ -113,7 +113,7 @@ export function Composer() {
   if (!isAuthenticated) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
           <Mic className="h-7 w-7" />
         </span>
         <h1 className="text-xl font-semibold text-foreground">
@@ -455,8 +455,8 @@ function RecentRuns() {
                   done
                     ? "bg-emerald-500/10 text-emerald-500"
                     : failed
-                      ? "bg-destructive/10 text-destructive"
-                      : "bg-primary/10 text-primary",
+                      ? "bg-destructive/10 text-destructive-ink"
+                      : "bg-primary/10 text-primary-ink",
                 )}
               >
                 <StatusIcon className="h-4 w-4" />

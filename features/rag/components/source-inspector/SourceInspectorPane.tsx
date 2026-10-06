@@ -483,7 +483,7 @@ function PageSourceInspector({
       </span>
       {provenanceLabelText ? (
         <span
-          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary"
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary-ink"
           title="You can read this source through a shared-knowledge grant"
         >
           <BookMarked className="h-3 w-3" />
@@ -495,7 +495,7 @@ function PageSourceInspector({
           className={cn(
             "shrink-0 rounded-md px-1.5 py-0.5 type-meta font-medium tabular-nums",
             onMatchPage
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/10 text-primary-ink"
               : "bg-muted text-muted-foreground",
           )}
         >
@@ -506,7 +506,7 @@ function PageSourceInspector({
         <button
           type="button"
           onClick={() => setActivePage(targetPage)}
-          className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
+          className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium text-primary-ink transition-colors hover:bg-primary/10"
         >
           <Crosshair className="h-3.5 w-3.5" />
           Jump to match

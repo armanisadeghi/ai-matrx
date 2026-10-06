@@ -60,7 +60,7 @@ export function SourceRail({
                         className={cn(
                           "flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors",
                           selected
-                            ? "bg-primary/15 text-primary"
+                            ? "bg-primary/15 text-primary-ink"
                             : "bg-muted text-muted-foreground group-hover:text-foreground",
                         )}
                       >

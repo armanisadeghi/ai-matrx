@@ -101,7 +101,7 @@ export function AskTable({
           className={cn(
             "whitespace-nowrap rounded px-1.5 py-0.5 font-mono text-[10px] tracking-[0.09em] uppercase",
             question.door === "one_way"
-              ? "bg-destructive/10 text-destructive"
+              ? "bg-destructive/10 text-destructive-ink"
               : "bg-muted text-muted-foreground",
           )}
         >

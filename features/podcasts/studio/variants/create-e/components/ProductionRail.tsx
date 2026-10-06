@@ -277,7 +277,7 @@ export function ProductionRail({
             <Workflow className="h-4 w-4 text-muted-foreground" />
             Processing &amp; advanced
             {advancedCount > 0 && (
-              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary-ink">
                 {advancedCount}
               </span>
             )}
@@ -511,7 +511,7 @@ function ProcessingLayer({
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
                 on
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "border-primary/40 bg-primary/10 text-primary-ink"
                   : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
               )}
             >

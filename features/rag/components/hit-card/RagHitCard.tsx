@@ -388,7 +388,7 @@ function SourceIdentity({
         ) : null}
         {view.libraryProvenance ? (
           <span
-            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary"
+            className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 type-meta font-medium text-primary-ink"
             title="You can read this source through a shared-knowledge grant"
           >
             <BookMarked className="h-3 w-3" />
@@ -467,10 +467,10 @@ function ReferenceIconStrip({
             className={cn(
               "inline-flex h-7 w-7 items-center justify-center rounded-md border transition-colors",
               available
-                ? "border-primary/15 bg-primary/[0.045] text-primary/65 hover:border-primary/30 hover:bg-primary/10 hover:text-primary dark:text-primary/70"
+                ? "border-primary/15 bg-primary/[0.045] text-primary-ink/65 hover:border-primary/30 hover:bg-primary/10 hover:text-primary-ink dark:text-primary-ink/70"
                 : "cursor-default border-transparent bg-muted/25 text-muted-foreground/25",
               active &&
-                "border-primary/35 bg-primary/12 text-primary ring-1 ring-primary/15",
+                "border-primary/35 bg-primary/12 text-primary-ink ring-1 ring-primary/15",
             )}
           >
             <ResourceIcon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -617,7 +617,7 @@ export function RagHitCard({
                 }}
                 title="Review and repair this result from the physical PDF"
                 aria-label="Review and repair this result from the physical PDF"
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-primary/75 transition-colors hover:bg-primary/10 hover:text-primary"
+                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-primary-ink/75 transition-colors hover:bg-primary/10 hover:text-primary-ink"
               >
                 <Wrench className="h-4 w-4" />
               </button>
@@ -756,7 +756,7 @@ export function RagHitCard({
             <button
               type="button"
               onClick={onOpen}
-              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
+              className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium text-primary-ink transition-colors hover:bg-primary/10"
             >
               <PanelRight className="h-3.5 w-3.5" />
               {isDoc && view.pageNumber != null

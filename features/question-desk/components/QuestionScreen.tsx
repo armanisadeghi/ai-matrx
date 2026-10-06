@@ -67,9 +67,9 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
               tag.tone === "plain" &&
                 "border-border bg-muted text-muted-foreground",
               tag.tone === "door" &&
-                "border-transparent bg-destructive/10 text-destructive",
+                "border-transparent bg-destructive/10 text-destructive-ink",
               tag.tone === "accent" &&
-                "border-transparent bg-primary/10 text-primary",
+                "border-transparent bg-primary/10 text-primary-ink",
             )}
           >
             {tag.text}
@@ -186,7 +186,7 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
       <Provenance question={question} />
 
       {question.door_note ? (
-        <p className="mt-4 max-w-[66ch] rounded-md bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+        <p className="mt-4 max-w-[66ch] rounded-md bg-destructive/10 px-3 py-2 text-[13px] text-destructive-ink">
           {question.door === "one_way" ? "Cannot be undone: " : "Note on the door: "}
           {question.door_note}
         </p>

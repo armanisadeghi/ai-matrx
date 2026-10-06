@@ -152,9 +152,9 @@ function Stepper({
               state === "done" &&
                 "border-emerald-500/40 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400",
               state === "running" &&
-                "border-primary/50 bg-primary/5 text-primary",
+                "border-primary/50 bg-primary/5 text-primary-ink",
               state === "error" &&
-                "border-destructive/50 bg-destructive/5 text-destructive",
+                "border-destructive/50 bg-destructive/5 text-destructive-ink",
               state === "pending" &&
                 "border-border bg-muted/30 text-muted-foreground",
             )}

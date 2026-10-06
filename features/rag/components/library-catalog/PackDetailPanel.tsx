@@ -58,12 +58,12 @@ const STATUS_META: Record<string, { label: string; hint: string; tone: string }>
   ratified: {
     label: "Expert-ratified",
     hint: "A domain expert has signed off on these defaults.",
-    tone: "border-success/40 bg-success/10 text-success",
+    tone: "border-success/40 bg-success/10 text-success-ink",
   },
   proposed: {
     label: "Proposed",
     hint: "Built from real demand, awaiting expert ratification. Safe to use — every row stays editable on your site.",
-    tone: "border-warning/40 bg-warning/10 text-warning",
+    tone: "border-warning/40 bg-warning/10 text-warning-ink",
   },
   draft: {
     label: "Draft",

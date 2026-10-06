@@ -95,7 +95,7 @@ export function StageItemList({
                   {photoCount} photo{photoCount === 1 ? "" : "s"}
                 </span>
                 {openQuestions > 0 && (
-                  <span className="rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning">
+                  <span className="rounded-full bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning-ink">
                     {openQuestions} open
                   </span>
                 )}

@@ -25,11 +25,11 @@ import { ShieldCheck, ShieldAlert, ShieldQuestion } from "lucide-react";
 /** Tone for the assurance half. Neutral is the default for any unknown slug —
  *  a new tier must never render as if it were verified. */
 const ASSURANCE_TONE: Record<string, string> = {
-  expert_reviewed: "border-success/40 bg-success/10 text-success",
-  ai_fact_checked: "border-success/30 bg-success/5 text-success",
-  verbatim: "border-primary/30 bg-primary/5 text-primary",
+  expert_reviewed: "border-success/40 bg-success/10 text-success-ink",
+  ai_fact_checked: "border-success/30 bg-success/5 text-success-ink",
+  verbatim: "border-primary/30 bg-primary/5 text-primary-ink",
   ai_reviewed: "border-border bg-muted text-muted-foreground",
-  unverified: "border-warning/40 bg-warning/10 text-warning",
+  unverified: "border-warning/40 bg-warning/10 text-warning-ink",
 };
 
 function assuranceIcon(slug: string | null) {

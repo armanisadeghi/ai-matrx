@@ -152,7 +152,7 @@ function PaneTitle({
 }) {
   return (
     <div className="flex min-h-14 shrink-0 items-center gap-2 px-3 py-2">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
@@ -397,7 +397,7 @@ function RepairPane({
                   className={cn(
                     "flex min-h-16 flex-col items-start justify-center gap-1 rounded-lg border px-2.5 py-2 text-left text-xs transition-colors",
                     active
-                      ? "border-primary/40 bg-primary/10 text-primary"
+                      ? "border-primary/40 bg-primary/10 text-primary-ink"
                       : "border-border/70 bg-background/60 hover:bg-muted/50",
                   )}
                 >

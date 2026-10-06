@@ -372,7 +372,7 @@ function StageActionPanel({
       )}
 
       {action.error && !closed && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-2 type-secondary text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/5 p-2 type-secondary text-destructive-ink">
           <div className="font-medium">Action failed</div>
           <div className="break-words">{action.error}</div>
           <Button

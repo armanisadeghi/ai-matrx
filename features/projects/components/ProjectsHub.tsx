@@ -1606,7 +1606,7 @@ function ProjectsTable({
                 >
                   <TableCell className="py-2">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                         <FolderKanban className="h-4 w-4" />
                       </span>
                       {/* THE DOOR LAW: the whole-row click is a mouse
@@ -1777,7 +1777,7 @@ function ProjectHubCard({
             type="button"
             onClick={() => router.push(href)}
             aria-label={`Open ${project.name}`}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink"
           >
             <FolderKanban className="h-5 w-5" />
           </button>

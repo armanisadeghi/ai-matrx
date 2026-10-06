@@ -229,7 +229,7 @@ export function ChunkCard({
             type="button"
             onClick={onSelect}
             className={cn(
-              "rounded px-1.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10",
+              "rounded px-1.5 py-0.5 text-[11px] font-medium text-primary-ink hover:bg-primary/10",
               !scope && "ml-auto",
             )}
           >

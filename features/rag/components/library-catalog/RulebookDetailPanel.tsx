@@ -46,7 +46,7 @@ const STATUS_META: Record<string, { label: string; hint: string; tone: string }>
   active: {
     label: "Expert-approved",
     hint: "The Expert who wrote this has approved its rules.",
-    tone: "border-success/40 bg-success/10 text-success",
+    tone: "border-success/40 bg-success/10 text-success-ink",
   },
   draft: {
     label: "Draft",

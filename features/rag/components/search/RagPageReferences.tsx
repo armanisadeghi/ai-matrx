@@ -1042,7 +1042,7 @@ function ResourceButton({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-left transition-colors",
         active
-          ? "border-primary/40 bg-primary/10 text-primary"
+          ? "border-primary/40 bg-primary/10 text-primary-ink"
           : "border-border bg-card text-foreground hover:bg-muted",
       )}
     >

@@ -87,7 +87,7 @@ export function ListingPanel({
       title="Listing"
       badge={
         approved ? (
-          <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+          <span className="flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary-ink">
             <CheckCircle2 className="h-3 w-3" />
             Approved
           </span>

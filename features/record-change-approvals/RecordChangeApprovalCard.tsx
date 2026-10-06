@@ -291,7 +291,7 @@ export function RecordChangeApprovalCard({
         </p>
       )}
       {decision.state === "failed" && (
-        <p className="rounded-md bg-destructive/10 px-2.5 py-2 text-xs leading-relaxed text-destructive">
+        <p className="rounded-md bg-destructive/10 px-2.5 py-2 text-xs leading-relaxed text-destructive-ink">
           {decision.sentence}
           <ErrorAlchemyMenu />
         </p>

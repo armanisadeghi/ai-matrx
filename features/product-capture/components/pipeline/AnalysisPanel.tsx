@@ -62,7 +62,7 @@ export function AnalysisPanel({
       title="AI analysis"
       badge={
         composition === "mixed" ? (
-          <span className="flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
+          <span className="flex items-center gap-1 rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-ink">
             <TriangleAlert className="h-3 w-3" />
             Multiple products detected
           </span>
@@ -196,7 +196,7 @@ export function AnalysisPanel({
         <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           Needed but not visible
           {unseen.length > 0 && (
-            <span className="rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
+            <span className="rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning-ink">
               {unseen.length}
             </span>
           )}

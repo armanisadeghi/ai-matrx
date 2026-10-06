@@ -68,7 +68,7 @@ function ProjectNavItem({
         "flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors text-sm",
         "hover:bg-muted",
         isActive
-          ? "bg-primary/10 text-primary font-medium"
+          ? "bg-primary/10 text-primary-ink font-medium"
           : "text-muted-foreground hover:text-foreground",
       )}
     >

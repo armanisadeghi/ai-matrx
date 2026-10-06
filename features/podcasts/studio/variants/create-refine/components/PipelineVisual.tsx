@@ -146,7 +146,7 @@ export function PipelineVisual() {
                 >
                   <div className="flex flex-1 flex-col gap-1.5 rounded-xl border border-border bg-card p-3">
                     <div className="flex items-center gap-2">
-                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                         <Icon className="h-4 w-4" />
                       </span>
                       <span className="text-sm font-semibold text-foreground">

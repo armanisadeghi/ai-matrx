@@ -125,7 +125,7 @@ export function QuickSearchDialog({
         <ScrollArea className="flex-1 min-h-0">
           <div className="p-4 space-y-2">
             {error && (
-              <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 type-body text-destructive">
+              <div className="border border-destructive/50 bg-destructive/5 rounded-md p-3 type-body text-destructive-ink">
                 <strong>Error:</strong> {error}
                 <ErrorAlchemyMenu error={error} />
               </div>

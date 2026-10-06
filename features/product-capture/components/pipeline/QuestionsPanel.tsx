@@ -52,7 +52,7 @@ export function QuestionsPanel({
       title="Questions"
       badge={
         open.length > 0 ? (
-          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning">
+          <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[11px] font-medium text-warning-ink">
             {open.length} open
           </span>
         ) : undefined
@@ -148,7 +148,7 @@ function QuestionRow({
           className={cn(
             "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium",
             isOpen
-              ? "bg-warning/15 text-warning"
+              ? "bg-warning/15 text-warning-ink"
               : "bg-muted text-muted-foreground",
           )}
         >

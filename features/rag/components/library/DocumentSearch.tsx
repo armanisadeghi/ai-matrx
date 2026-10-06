@@ -114,7 +114,7 @@ export function DocumentSearchBar({
         href={fullSearchHref}
         target="_blank"
         rel="noreferrer"
-        className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 type-secondary font-medium text-primary hover:bg-primary/10 transition-colors whitespace-nowrap"
+        className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1 type-secondary font-medium text-primary-ink hover:bg-primary/10 transition-colors whitespace-nowrap"
         title="Open AI semantic search across all your documents, notes, and code"
       >
         <Telescope className="h-3.5 w-3.5" />
@@ -155,7 +155,7 @@ export function DocumentSearchSummary({
 
   if (error) {
     return (
-      <div className="border-b bg-destructive/5 px-3 py-2 type-secondary text-destructive">
+      <div className="border-b bg-destructive/5 px-3 py-2 type-secondary text-destructive-ink">
         <strong>Search failed:</strong> {error}
         <ErrorAlchemyMenu error={error} />
       </div>
@@ -199,7 +199,7 @@ export function DocumentSearchSummary({
               className={cn(
                 "rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums border transition-colors",
                 p === activePageNumber
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-primary-ink"
                   : "border-border bg-card hover:bg-accent/60 text-foreground",
               )}
               title={`${summary.pageHitCounts[p]} on page ${p}`}

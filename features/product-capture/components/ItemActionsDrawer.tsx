@@ -114,7 +114,7 @@ function ActionRow({
       className={
         "flex min-h-[52px] w-full items-center gap-3 rounded-lg px-3 text-base " +
         (destructive
-          ? "text-destructive hover:bg-destructive/10"
+          ? "text-destructive-ink hover:bg-destructive/10"
           : "text-foreground hover:bg-muted")
       }
     >

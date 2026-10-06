@@ -124,7 +124,7 @@ export function DataStoreBindPanel({
       )}
 
       {error && (
-        <div className="type-meta text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
+        <div className="type-meta text-destructive-ink border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

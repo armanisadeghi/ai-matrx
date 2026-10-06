@@ -316,7 +316,7 @@ export function LibraryCatalogPage() {
               className={cn(
                 "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
                 typeFilter === t
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "border-primary/40 bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:bg-muted",
               )}
             >
@@ -713,7 +713,7 @@ function StoreDetailPanel({
             {provenance.map((p, i) => (
               <span
                 key={`${p.audience}-${p.industryId ?? p.organizationId ?? i}`}
-                className="rounded-full bg-primary/10 px-2 py-0.5 text-primary"
+                className="rounded-full bg-primary/10 px-2 py-0.5 text-primary-ink"
               >
                 {p.audience === "industry"
                   ? `Your organization belongs to ${p.industryName ?? "an industry"}`
@@ -820,7 +820,7 @@ function StoreDetailPanel({
                               href={`/files/f/${m.sourceId}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-meta font-medium text-primary transition-colors hover:bg-primary/10"
+                              className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 type-meta font-medium text-primary-ink transition-colors hover:bg-primary/10"
                             >
                               <BookOpenText className="h-3.5 w-3.5" /> Preview
                               <ExternalLink className="h-3 w-3" />
