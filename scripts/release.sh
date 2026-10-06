@@ -394,6 +394,22 @@ ship_build_commit() {  # uses CURRENT_VERSION NEW_VERSION RELEASE_COMMIT_MSG; se
 # `--target production` is an assertion the applier must agree with (2026-09-16:
 # a `-- target: branch` file reached production through an applier that had no
 # such flag); an applier too old to know it exits non-zero, which is a finding.
+# `timeout` is GNU coreutils; a stock Mac has neither it nor `gtimeout`, and
+# a missing bound made every release on such a Mac skip migrations with exit
+# 127. Same fallback as scripts/worktree-janitor.sh: poll, kill, return 124.
+ship_bounded() {  # $1 = seconds, rest = command
+    local secs="$1"; shift
+    if command -v timeout >/dev/null 2>&1; then timeout "$secs" "$@"; return $?; fi
+    if command -v gtimeout >/dev/null 2>&1; then gtimeout "$secs" "$@"; return $?; fi
+    "$@" &
+    local pid=$! waited=0
+    while kill -0 "$pid" 2>/dev/null; do
+        [[ $waited -ge $secs ]] && { kill -9 "$pid" 2>/dev/null; wait "$pid" 2>/dev/null; return 124; }
+        sleep 1
+        waited=$((waited + 1))
+    done
+    wait "$pid"
+}
 ship_apply_migrations() {
     # Bounded: a hung applier (uv stall, .venv lock, Postgres lock) becomes the
     # ERROR finding below (exit 124), never an endless wait before the push.
@@ -401,7 +417,7 @@ ship_apply_migrations() {
         cd "$AIDREAM_DIR"
         export MATRX_FRONTEND_DIR="$REPO_ROOT"
         export MATRX_MIGRATION_SUMMARY_JSON="$SHIP_MIG_SUMMARY"
-        timeout 900 uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
+        ship_bounded 900 uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
     )
 }
 # The applier's summary (aidream db/migration_hold.py) → one ERROR per held file,
