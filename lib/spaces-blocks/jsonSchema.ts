@@ -234,6 +234,7 @@ export function buildSpaceSnapshotSchema(): J {
               { type: "object", required: ["kind", "spaceId"], properties: { kind: { const: "space" }, spaceId: nonEmptyStr } },
               { type: "object", required: ["kind", "userId"], properties: { kind: { const: "person" }, userId: nonEmptyStr } },
               { type: "object", required: ["kind", "iso"], properties: { kind: { const: "date" }, iso: nonEmptyStr } },
+              { type: "object", required: ["kind", "url"], properties: { kind: { const: "link" }, url: nonEmptyStr, title: { type: "string" }, icon: { type: "string" } } },
             ],
           },
         },

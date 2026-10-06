@@ -20,7 +20,7 @@ const media = { fileId: "f1", width: 300, name: "a.png", caption: [span("cap")] 
 
 function everyType() {
   return [
-    { id: id(), type: "text", text: [span("hi", { bold: true, color: "red", link: "https://x.y", mention: { kind: "date", iso: "2026-10-05" } })], props: { textAlignment: "center" } },
+    { id: id(), type: "text", text: [span("hi", { bold: true, color: "red", link: "https://x.y", mention: { kind: "date", iso: "2026-10-05" } }), span("Pricing", { mention: { kind: "link", url: "https://example.com/pricing", title: "Pricing", icon: "Globe" } })], props: { textAlignment: "center" } },
     { id: id(), type: "text", text: [span("Could not map")], props: { unsupported: { from: "notion", kind: "synced_block", source: "<synced_block/>" } } },
     { id: id(), type: "heading", text: [span("H")], props: { level: 2, toggleable: true }, children: [{ id: id(), type: "text", text: [span("in")] }] },
     { id: id(), type: "bulleted", text: [span("b")], background: "gray" },
@@ -102,6 +102,8 @@ describe("Space snapshot JSON Schema", () => {
     "span without text": (s) => delete s.blocks[0].text[0].text,
     "span bad color": (s) => (s.blocks[0].text[0].color = "teal"),
     "bad mention": (s) => (s.blocks[0].text[0].mention = { kind: "space" }),
+    "link mention without url": (s) => (s.blocks[0].text[0].mention = { kind: "link", title: "Docs" }),
+    "link mention title not text": (s) => (s.blocks[0].text[0].mention = { kind: "link", url: "https://x.y", title: 3 }),
     "block text not an array": (s) => (s.blocks[0].text = "hi"),
     "divider with text": (s) => (s.blocks[9].text = [span("x")]),
     "divider with children": (s) => (s.blocks[9].children = [{ id: "z", type: "text" }]),

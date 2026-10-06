@@ -279,8 +279,11 @@ export function spanProblem(s: unknown): string | null {
   if (s.mention !== undefined) {
     const m = s.mention;
     if (!isObj(m)) return "span.mention must be an object";
-    if (m.kind === "space" ? !nonEmpty(m.spaceId) : m.kind === "person" ? !nonEmpty(m.userId) : m.kind === "date" ? !nonEmpty(m.iso) : true) {
-      return "span.mention must be {kind:'space',spaceId} | {kind:'person',userId} | {kind:'date',iso}";
+    if (m.kind === "space" ? !nonEmpty(m.spaceId) : m.kind === "person" ? !nonEmpty(m.userId) : m.kind === "date" ? !nonEmpty(m.iso) : m.kind === "link" ? !nonEmpty(m.url) : true) {
+      return "span.mention must be {kind:'space',spaceId} | {kind:'person',userId} | {kind:'date',iso} | {kind:'link',url,title?,icon?}";
+    }
+    if (m.kind === "link" && ((m.title !== undefined && !str(m.title)) || (m.icon !== undefined && !str(m.icon)))) {
+      return "span.mention link title and icon must be text";
     }
   }
   return null;

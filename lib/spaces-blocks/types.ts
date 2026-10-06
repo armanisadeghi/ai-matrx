@@ -26,7 +26,9 @@ export const SPACE_COLORS: readonly SpaceColor[] = [
 export type SpaceMention =
   | { kind: "space"; spaceId: string }
   | { kind: "person"; userId: string }
-  | { kind: "date"; iso: string };
+  | { kind: "date"; iso: string }
+  /** A web link shown as a mention chip; `title` / `icon` (Lucide name or image URL) as last fetched. */
+  | { kind: "link"; url: string; title?: string; icon?: string };
 
 /** A run of inline text with marks — the content of every text-bearing block. */
 export interface RichSpan {
@@ -39,7 +41,7 @@ export interface RichSpan {
   color?: SpaceColor;
   background?: SpaceColor;
   link?: string;
-  /** Inline mention: a Space, a person or a date. `text` is what shows (title, name, date). */
+  /** Inline mention: a Space, a person, a date or a web link. `text` is what shows (title, name, date). */
   mention?: SpaceMention;
   /** Inline equation (KaTeX source). `text` repeats the source so search and plain text see it. */
   equation?: string;
