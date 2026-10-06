@@ -121,7 +121,7 @@ describe("live chat connector catalogue", () => {
     expect(definitions.find(({ id }) => id === "custom")?.logo).toBeUndefined();
   });
 
-  it("tries the provider favicon, brand glyph, catalogue art, and cached favicon in order", () => {
+  it("tries the brand glyph, Google's 128px site icon, catalogue art, then the raw favicon", () => {
     const definitions = buildLiveConnectorDefinitions([
       entry({
         slug: "datadog",
@@ -133,11 +133,11 @@ describe("live chat connector catalogue", () => {
     ]);
 
     expect(definitions.find(({ id }) => id === "datadog")).toMatchObject({
-      iconUrl: "https://www.datadoghq.com/favicon.ico",
+      iconUrl: "https://cdn.simpleicons.org/datadog",
       fallbackIconUrls: [
-        "https://cdn.simpleicons.org/datadog",
-        "https://cdn.example.com/datadog.svg",
         "https://www.google.com/s2/favicons?domain=datadoghq.com&sz=128",
+        "https://cdn.example.com/datadog.svg",
+        "https://www.datadoghq.com/favicon.ico",
       ],
       brandColor: "#632CA6",
     });

@@ -7,7 +7,10 @@ import { DEFAULT_DIRECTORY_FILTERS, type DirectoryFilters, type IntegrationDirec
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-jest.mock("./ConnectorMark", () => ({ ConnectorMark: ({ connector }: { connector: { name: string } }) => <span>{connector.name[0]}</span> }));
+jest.mock("./ConnectorMark", () => {
+  const Mark = ({ connector }: { connector: { name: string } }) => <span>{connector.name[0]}</span>;
+  return { ConnectorMark: Mark, ConnectorTile: Mark };
+});
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
 function item(id: string, name: string, extra: Partial<IntegrationDirectoryItem> = {}): IntegrationDirectoryItem {

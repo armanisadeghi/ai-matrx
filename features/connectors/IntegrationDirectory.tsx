@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { MCP_CATEGORY_META } from "@ai-matrx/chat/agents/types/mcp.types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
-import { ConnectorMark } from "./ConnectorMark";
+import { ConnectorTile } from "./ConnectorMark";
 import {
   DEFAULT_DIRECTORY_FILTERS,
   filterDirectory,
@@ -465,10 +465,7 @@ export function IntegrationDirectory({
                       onClick={() => onSelect(item.id)}
                       className="flex min-h-14 w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
                     >
-                      <ConnectorMark
-                        connector={item.artwork}
-                        className="h-7 w-7 rounded object-contain"
-                      />
+                      <ConnectorTile connector={item.artwork} size="sm" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium">
                           {item.name}
@@ -558,12 +555,7 @@ export function IntegrationCard({
       onClick={onOpen}
       className="group flex w-full items-start gap-3 rounded-xl border border-border bg-card/60 p-3.5 text-left transition-colors hover:border-foreground/20 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border/70 bg-background">
-        <ConnectorMark
-          connector={item.artwork}
-          className="h-8 w-8 rounded object-contain"
-        />
-      </span>
+      <ConnectorTile connector={item.artwork} size="md" />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-sm font-medium text-foreground">
           {item.name}
@@ -656,12 +648,7 @@ export function FeaturedIntegrationTile({
       className="group flex w-full flex-col gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] hover:-translate-y-px hover:border-foreground/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       <span className="flex items-start gap-3">
-        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border/70 bg-background shadow-xs">
-          <ConnectorMark
-            connector={item.artwork}
-            className="h-7 w-7 rounded object-contain"
-          />
-        </span>
+        <ConnectorTile connector={item.artwork} size="lg" />
         <span className="min-w-0 flex-1 pt-0.5">
           <span className="block truncate text-sm font-semibold text-foreground">
             {item.name}
@@ -732,12 +719,7 @@ function ConnectionChip({
       }
       className="inline-flex max-w-full items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 text-sm transition-colors hover:border-foreground/20 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-background">
-        <ConnectorMark
-          connector={item.artwork}
-          className="h-4 w-4 rounded-sm object-contain"
-        />
-      </span>
+      <ConnectorTile connector={item.artwork} size="xs" />
       <span className="truncate font-medium">{item.name}</span>
       {shared ? (
         <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">

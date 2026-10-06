@@ -28,7 +28,7 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs.client";
 import { useSetting } from "@/features/settings/hooks/useSetting";
-import { ConnectorMark } from "./ConnectorMark";
+import { ConnectorTile } from "./ConnectorMark";
 import { getConnector } from "./registry";
 import type { ConnectorProviderConfig } from "./provider-config";
 
@@ -154,11 +154,7 @@ export function ConnectorPromptCard({
       )}
     >
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 ring-1 ring-inset ring-primary/15">
-          {connector ? (
-            <ConnectorMark connector={connector} className="h-5 w-5" />
-          ) : null}
-        </span>
+          {connector ? <ConnectorTile connector={connector} size="sm" className="mt-0.5" /> : null}
 
         <div className="min-w-0 flex-1">
           <h3 className="pr-7 text-sm font-semibold text-foreground">
