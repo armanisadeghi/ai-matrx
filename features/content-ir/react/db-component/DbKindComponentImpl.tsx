@@ -54,6 +54,7 @@ import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { earlyKeysFromValue } from "../loading/kind-loading.types";
 import { correctKindValue, kindCorrectionsOf } from "../../registry/kind-correctors";
 import { KindCorrectionsNotice } from "./KindCorrectionsNotice";
+import { withImageSources, type ImageSources } from "./item-state-media";
 
 /**
  * One entry per kind — the resolver's answer and the registry version it was
@@ -90,6 +91,14 @@ export interface DbKindComponentImplProps {
   /** Settings dictated by the mounting surface (e.g. selectionMode). */
   uiOptions?: KindComponentUiOptions;
   /**
+   * The item's durable state (what `save_item_state` / `run_shortcut` saveAs
+   * wrote), handed to the component as its `itemState` prop. Null = nothing
+   * saved yet, or no record to save into.
+   */
+  itemState?: Record<string, unknown> | null;
+  /** Loaded bytes of the images `itemState` references (file id → Blob). */
+  itemStateImages?: ImageSources;
+  /**
    * The organization that owns the rendered record. Its sandbox setting decides
    * where the component renders — never the active organization when the record
    * belongs to another. Falls back to the value's own `organization_id`, then
@@ -97,6 +106,8 @@ export interface DbKindComponentImplProps {
    */
   organizationId?: string | null;
 }
+
+const NO_IMAGES: ImageSources = new Map();
 
 const screamedDefects = new Set<string>();
 
@@ -182,6 +193,8 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
   onResolve,
   uiOptions,
   organizationId,
+  itemState = null,
+  itemStateImages,
 }) => {
   const generic = (
     <GenericStructuredBlock
@@ -291,6 +304,8 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
         runAction={runAction}
         onResolve={onResolve}
         uiOptions={uiOptions}
+        // The frame gets the image BYTES (Blob) and mints its own blob: URL.
+        itemState={withImageSources(itemState, itemStateImages ?? NO_IMAGES, "blob")}
         className={className}
       />
     );
@@ -319,6 +334,7 @@ const DbKindComponentBody: React.FC<DbKindComponentImplProps> = ({
         runAction={runAction}
         onResolve={onResolve}
         uiOptions={uiOptions}
+        itemState={withImageSources(itemState, itemStateImages ?? NO_IMAGES, "url") ?? {}}
       />
     </DbKindComponentErrorBoundary>
   );

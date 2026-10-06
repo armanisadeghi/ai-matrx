@@ -15,7 +15,8 @@
  * origin is not an identity; the frame bundle is audited to contain no
  * reference to another document) is written once, in `sandbox/protocol.ts`.
  *
- * WHAT CROSSES, AND WHAT CANNOT. `data`, `kind`, `config` and `uiOptions` are
+ * WHAT CROSSES, AND WHAT CANNOT. `data`, `kind`, `config`, `uiOptions` and
+ * `itemState` (the item's durable state, re-posted when it changes) are
  * plain JSON and cross as a structured clone. `runAction` and `onResolve` are
  * functions and cannot: the frame gets stand-ins that post
  * `matrx:sandbox:action` / `matrx:sandbox:resolve`, and THIS component calls
@@ -207,6 +208,8 @@ export interface KindSandboxFrameProps {
     runAction: RunKindAction;
     onResolve?: ResolveKindValue;
     uiOptions?: KindComponentUiOptions;
+    /** The item's durable state; crosses as plain JSON like `data`. */
+    itemState?: Record<string, unknown> | null;
     className?: string;
     /**
      * The ceilings this host enforces, resolved from the settings register by
@@ -224,6 +227,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
     runAction,
     onResolve,
     uiOptions,
+    itemState,
     className,
     ceilings,
 }) => {
@@ -289,6 +293,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         kind,
         config,
         uiOptions: uiOptions ?? null,
+        itemState: itemState ?? {},
     };
 
     const latestProps = React.useRef(props);
@@ -566,7 +571,7 @@ export const KindSandboxFrame: React.FC<KindSandboxFrameProps> = ({
         // The port handler reads nothing from this closure; the VALUES are the
         // dependency, which is why the functions are not listed.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [instanceId, data, kind, config, uiOptions]);
+    }, [instanceId, data, kind, config, uiOptions, itemState]);
 
     /**
      * Theme changes: the host owns light/dark and the organization theme, the

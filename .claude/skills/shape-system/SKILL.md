@@ -31,6 +31,13 @@ description: "The Shape System — the content_ir kind registry for structured c
 - Runtime: `matrx_graph.kinds.get_kind / validate_against_kind` (loud-fail-open). After ANY kind registry mutation call `invalidate_kind_catalog_cache()` (and remember the FE warm registry re-reads on its own cadence).
 - LLM binding: `matrx_ai.kinds.response_format_for_kind(slug)` → strict portable response_format. Unknown/unportable kinds decline loudly with `None`.
 
+## Buttons, AI runs and saved results inside a shape
+
+A kind component receives `runAction` and `itemState` beside `data`: it can run a shortcut
+on one item (in a window, or in the background saving the result onto the item), keep a
+person's pick, and show saved results and generated images. How: the **`kind-actions`**
+skill. Never answer "a shape can't trigger an agent."
+
 ## Hard rules
 
 - **One registry.** Never a parallel kind list, detector, sample store, or component map. Extending `content_ir` IS the feature.

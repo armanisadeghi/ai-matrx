@@ -3108,11 +3108,14 @@ const SHAPE_BLOCK_DISPATCH = {
   // flavor). The shell is lazy; errors fall back to the generic structured
   // viewer inside the component, never a blank hole. Reached ONLY via
   // applyIrKindRoute — nothing emits this block type upstream.
-  [DB_KIND_COMPONENT_KEY]: ({ block, index }) => (
+  [DB_KIND_COMPONENT_KEY]: ({ block, index, conversationId, messageId, isStreamActive }) => (
     <DbKindComponent
       key={index}
       content={block.content}
       metadata={block.metadata}
+      // The item's durable state (itemState / save_item_state / run_shortcut
+      // saveAs) is keyed to this answer's block.
+      chatBlock={{ conversationId, messageId, blockIndex: index, streaming: isStreamActive }}
       organizationId={
         typeof block.metadata?.organization_id === "string"
           ? block.metadata.organization_id

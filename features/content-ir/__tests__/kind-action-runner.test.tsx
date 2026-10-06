@@ -22,6 +22,10 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
   useAppSelector: () => "user-1",
+  useAppStore: () => ({ getState: () => ({}) }),
+}));
+jest.mock("@ai-matrx/chat/agents/hooks/useFloatingAgentRun", () => ({
+  useFloatingRunWindow: () => ({ start: () => ({ bind: jest.fn(), bindRequest: jest.fn(), close: jest.fn() }), close: jest.fn() }),
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
 jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({

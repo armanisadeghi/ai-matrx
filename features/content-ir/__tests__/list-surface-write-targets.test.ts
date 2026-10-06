@@ -25,6 +25,9 @@ function getKindAction(key: string): KindActionDefinition | undefined {
 const ctx: KindActionContext = {
   launchAgent: async () => ({ conversationId: "c", requestId: "r" }) as never,
   userId: "u",
+  openShortcut: async () => ({ conversationId: "c2" }),
+  runShortcut: async () => ({ ok: true, data: null }),
+  itemState: null,
 };
 
 function live(surfaceName: string, name: string, hasHandler: boolean) {

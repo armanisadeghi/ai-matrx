@@ -18,6 +18,57 @@ export type LaunchAgentFn = (
   options?: ManagedAgentOptions,
 ) => Promise<LaunchResult>;
 
+/** How a run's product is read: the extracted JSON, the answer text, or the generated image. */
+export type KindShortcutExpect = "json" | "text" | "image";
+
+/**
+ * A generated image, by its durable identity. `file_id` IS the image; every URL
+ * is derived from it at render time (the host resolves it into `src`).
+ */
+export interface KindImageRef {
+  file_id: string;
+  mime_type: string | null;
+  width: number | null;
+  height: number | null;
+}
+
+/** What a shortcut run produced: the extracted JSON value, the answer text, or a `KindImageRef`. */
+export interface KindShortcutRunResult {
+  ok: boolean;
+  /** JSON value (`expect: "json"`), answer text (`"text"`) or `KindImageRef` (`"image"`). */
+  data: unknown;
+  /** User-facing reason when `ok` is false. */
+  error?: string;
+}
+
+/** A saved shortcut, run by the host as the viewing user. */
+export interface KindShortcutRequest {
+  shortcutId: string;
+  /** Values the shortcut's scope mappings read (`selection`, `content`, custom keys). */
+  scope?: Record<string, unknown>;
+  /** Agent variables by name (merged over what the shortcut maps). */
+  variables?: Record<string, unknown>;
+  /** What the person typed, when the component collected words from them. */
+  userInput?: string;
+  /** Words for the live window while it runs ("Writing the visual brief"). */
+  label?: string;
+}
+
+/**
+ * The item's own durable state — what the person (and their actions) added to
+ * this rendered item: a generated image, a chosen option, a written brief. It
+ * is saved per item (the chat answer's block, or the canvas item) and handed
+ * back to the component as its `itemState` prop on every render.
+ */
+export interface KindItemStateHandle {
+  /** False when this render has no record to save into (a preview, a dialog). */
+  hosted: boolean;
+  /** The current saved state, with unflushed edits on top. */
+  read: () => Record<string, unknown>;
+  /** Merge-patch; `null` removes a key. Saved server-side, debounced. */
+  patch: (patch: Record<string, unknown>) => void;
+}
+
 /** The envelope every kind action returns. A skip/failure is never a silent pass. */
 export type KindActionResult =
   | { ok: true; result: unknown }
@@ -35,6 +86,20 @@ export interface KindActionContext {
   launchAgent: LaunchAgentFn;
   /** The acting (viewing) user's id, or null when unauthenticated. */
   userId: string | null;
+  /** Open a shortcut the way a menu click does (its own window and display). */
+  openShortcut: (request: KindShortcutRequest) => Promise<{ conversationId: string }>;
+  /**
+   * Run a shortcut to completion and hand back its product. Streams into the
+   * floating live-run window while it works (never a silent spinner).
+   * `onResult` fires on every exit path, even after the component unmounted —
+   * the persistence seam for `saveAs`.
+   */
+  runShortcut: (
+    request: KindShortcutRequest & { expect: KindShortcutExpect },
+    onResult?: (result: KindShortcutRunResult) => void,
+  ) => Promise<KindShortcutRunResult>;
+  /** This item's durable state, or null when the runner was bound without one. */
+  itemState: KindItemStateHandle | null;
 }
 
 /** A kind capability. Pure w.r.t. globals — all deps arrive via ctx. */

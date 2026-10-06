@@ -33,6 +33,7 @@ import type {
   SourceFeature,
   RequestInitiation,
 } from "../../../types/instance.types";
+import type { ApplicationScope } from "../../../types/scope.types";
 import { extractFirstJson } from "@ai-matrx/kit/json-extract";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
@@ -67,10 +68,18 @@ import {
 import { executeInstance } from "./execute-instance.thunk";
 
 export interface HeadlessAgentJsonOptions {
-  /** Exact agent to run. Mutually exclusive with mandateKey. */
+  /** Exact agent to run. Mutually exclusive with mandateKey and shortcutId. */
   agentId?: string;
   /** Swappable mandate to resolve inside the canonical launcher, preserving config_overrides. */
   mandateKey?: AnyMandateKey;
+  /**
+   * A saved shortcut to run: the launcher resolves its agent, config and scope
+   * mappings exactly as a menu click would. Mutually exclusive with agentId and
+   * mandateKey. Pair with `applicationScope` for the shortcut's mapped values.
+   */
+  shortcutId?: string;
+  /** UI-captured scope values a shortcut's scopeMappings read (selection, content, …). */
+  applicationScope?: ApplicationScope;
   /** Stable surface key for telemetry + the focus registry. */
   surfaceKey: string;
   /** UI feature that triggered the run. */
@@ -543,7 +552,7 @@ export async function runHeadlessAgentJson(
     {
       onResult: opts.onResult,
       surfaceKey: opts.surfaceKey,
-      agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
+      agentRef: opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
     },
     result,
   );
@@ -682,21 +691,22 @@ async function launchAndWait(
   try {
     let executionIdentity:
       | { agentId: string }
-      | { mandateKey: AnyMandateKey };
+      | { mandateKey: AnyMandateKey }
+      | { shortcutId: string };
+    const identities = [opts.agentId, opts.mandateKey, opts.shortcutId].filter((v) => v !== undefined);
+    if (identities.length !== 1) {
+      throw new Error("runHeadlessAgentJson requires exactly one of agentId, mandateKey or shortcutId");
+    }
     if (opts.mandateKey !== undefined) {
-      if (opts.agentId !== undefined) {
-        throw new Error("runHeadlessAgentJson accepts agentId or mandateKey, never both");
-      }
       executionIdentity = { mandateKey: opts.mandateKey };
+    } else if (opts.shortcutId !== undefined) {
+      executionIdentity = { shortcutId: opts.shortcutId };
     } else {
-      if (opts.agentId === undefined) {
-        throw new Error("runHeadlessAgentJson requires agentId or mandateKey");
-      }
-      executionIdentity = { agentId: opts.agentId };
+      executionIdentity = { agentId: opts.agentId as string };
     }
     screamIfDeclaredFlattening(
       opts,
-      opts.agentId ?? opts.mandateKey ?? "unknown",
+      opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
     );
     const launch = await dispatch(
       launchAgentExecution({
@@ -730,6 +740,7 @@ async function launchAndWait(
           ...(opts.surfaceName !== undefined ? { surfaceName: opts.surfaceName } : {}),
           ...(opts.variables ? { variables: opts.variables } : {}),
           ...(opts.userInput !== undefined ? { userInput: opts.userInput } : {}),
+          ...(opts.applicationScope ? { applicationScope: opts.applicationScope } : {}),
         },
         // `callerExecutes` is the deliberate half of `autoRun: !twoStep`. A
         // headless launch normally IGNORES autoRun (no interface = nothing to
@@ -788,7 +799,7 @@ async function launchAndWait(
       pollMs,
       settleMs,
       surfaceKey: opts.surfaceKey,
-      agentRef: opts.agentId ?? opts.mandateKey ?? "unknown",
+      agentRef: opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
       msgs,
       expect: opts.expect ?? "json",
       ...(opts.signal ? { signal: opts.signal } : {}),
@@ -831,7 +842,7 @@ async function launchAndWait(
       conversationId: conversationId ?? undefined,
       raw: {
         surfaceKey: opts.surfaceKey,
-        agent: opts.agentId ?? opts.mandateKey ?? "unknown",
+        agent: opts.agentId ?? opts.mandateKey ?? opts.shortcutId ?? "unknown",
         detail,
         // Only when nothing readable came out: the raw shape, so a throw this
         // helper cannot read is a bug report rather than a shrug.

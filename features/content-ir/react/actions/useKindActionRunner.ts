@@ -26,15 +26,31 @@
 
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { toast } from "@/lib/toast";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   emitKindInteraction,
   type KindInteractionEvent,
 } from "../kind-interaction";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
+import { useFloatingRunWindow } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
+import { triggerShortcut } from "@ai-matrx/chat/agents/utils/trigger-shortcut";
+import {
+  livePosture,
+  runHeadlessAgentJson,
+  type HeadlessAgentJsonResult,
+} from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-headless-agent-json";
+import { selectRenderBlocksByType } from "@ai-matrx/chat/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-import type { KindActionContext, KindActionResult } from "./kind-action-context";
+import type {
+  KindActionContext,
+  KindActionResult,
+  KindImageRef,
+  KindItemStateHandle,
+  KindShortcutExpect,
+  KindShortcutRequest,
+  KindShortcutRunResult,
+} from "./kind-action-context";
 import { kindActionId, kindActionProvider } from "./kind-action-provider";
 import { invokeAction } from "@ai-matrx/alchemy/actions";
 import { useOptionalAlchemyActions } from "@ai-matrx/alchemy/react/host";
@@ -61,6 +77,11 @@ function inFlightKey(key: string, input: unknown): string {
     if (typeof target === "string" && target) return `${key}::${target}`;
     const agentId = (input as { agentId?: unknown }).agentId;
     if (typeof agentId === "string" && agentId) return `${key}::${agentId}`;
+    // One shortcut may run for several ideas at once; one idea's save key may not.
+    const saveAs = (input as { saveAs?: unknown }).saveAs;
+    if (typeof saveAs === "string" && saveAs) return `${key}::save:${saveAs}`;
+    const shortcutId = (input as { shortcutId?: unknown }).shortcutId;
+    if (typeof shortcutId === "string" && shortcutId) return `${key}::${shortcutId}`;
   }
   return key;
 }
@@ -72,8 +93,49 @@ function inFlightKey(key: string, input: unknown): string {
  */
 export type KindActionOrigin = Omit<KindInteractionEvent, "state" | "previous" | "data">;
 
-export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
+export interface KindActionRunnerOptions {
+  /** The rendered item's durable state (`save_item_state`, `run_shortcut` saveAs). */
+  itemState?: KindItemStateHandle | null;
+}
+
+/**
+ * The generated images of one request, by durable identity. An image model's
+ * product is a media block, never answer text, so `expect: "image"` reads it
+ * here (the instance is kept alive by the live window, so the block is still
+ * in state when the run settles).
+ */
+type RenderBlocksState = Parameters<ReturnType<typeof selectRenderBlocksByType>>[0];
+
+export function imagesOfRequest(state: RenderBlocksState, requestId: string | undefined): KindImageRef[] {
+  if (!requestId) return [];
+  const blocks = selectRenderBlocksByType(requestId, "image_output")(state) ?? [];
+  const out: KindImageRef[] = [];
+  for (const block of blocks) {
+    const data = (block.data ?? {}) as Record<string, unknown>;
+    const fileId = typeof data.fileId === "string" ? data.fileId : null;
+    if (!fileId || block.status !== "complete") continue;
+    out.push({
+      file_id: fileId,
+      mime_type: typeof data.mimeType === "string" ? data.mimeType : null,
+      width: typeof data.width === "number" ? data.width : null,
+      height: typeof data.height === "number" ? data.height : null,
+    });
+  }
+  return out;
+}
+
+/** Every kind-launched shortcut names this surface (telemetry + attribution). */
+const KIND_SHORTCUT_SOURCE = "ai-results" as const;
+
+export function useKindActionRunner(
+  origin?: KindActionOrigin,
+  options: KindActionRunnerOptions = {},
+): RunKindAction {
   const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const liveWindow = useFloatingRunWindow();
+  const itemStateRef = useRef(options.itemState ?? null);
+  itemStateRef.current = options.itemState ?? null;
   const originRef = useRef(origin);
   originRef.current = origin;
   const { launchAgent } = useAgentLauncher();
@@ -107,7 +169,64 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
       inFlight.current.add(guardKey);
 
       try {
-        const context: KindActionContext = { launchAgent, userId };
+        const openShortcut = async (request: KindShortcutRequest) => {
+          const launched = await triggerShortcut(dispatch, {
+            shortcutId: request.shortcutId,
+            scope: request.scope,
+            surfaceKey: `kind-action:run_shortcut:${request.shortcutId}`,
+            sourceFeature: KIND_SHORTCUT_SOURCE,
+            config: { autoRun: true },
+            runtime: {
+              ...(request.variables ? { variables: request.variables } : {}),
+              ...(request.userInput !== undefined ? { userInput: request.userInput } : {}),
+            },
+          });
+          return { conversationId: launched.conversationId };
+        };
+        const runShortcut = async (
+          request: KindShortcutRequest & { expect: KindShortcutExpect },
+          onResult?: (result: KindShortcutRunResult) => void,
+        ): Promise<KindShortcutRunResult> => {
+          const live = liveWindow.start(request.label ?? "Working on it");
+          const toResult = (r: HeadlessAgentJsonResult): KindShortcutRunResult => {
+            if (request.expect === "image") {
+              const [image] = imagesOfRequest(store.getState(), r.requestId);
+              return image
+                ? { ok: true, data: image }
+                : { ok: false, data: null, error: r.error ?? "The shortcut finished without an image." };
+            }
+            return r.success ? { ok: true, data: r.data } : { ok: false, data: null, error: r.error };
+          };
+          let settled: KindShortcutRunResult | null = null;
+          const run = await runHeadlessAgentJson(dispatch, store.getState, {
+            shortcutId: request.shortcutId,
+            ...(request.scope ? { applicationScope: request.scope } : {}),
+            ...(request.variables ? { variables: request.variables } : {}),
+            ...(request.userInput !== undefined ? { userInput: request.userInput } : {}),
+            surfaceKey: `kind-action:run_shortcut:${request.shortcutId}`,
+            sourceFeature: KIND_SHORTCUT_SOURCE,
+            initiation: "user",
+            // The component hands the shortcut everything it needs as scope
+            // values; the page around it never leaks in.
+            surfaceName: null,
+            // An image model answers with a media block, not text: read the
+            // text lane (it may carry a caption) and take the image from state.
+            expect: request.expect === "json" ? "json" : "text",
+            ...livePosture(live.bind),
+            onResult: (r) => {
+              settled = toResult(r);
+              onResult?.(settled);
+            },
+          });
+          return settled ?? toResult(run);
+        };
+        const context: KindActionContext = {
+          launchAgent,
+          userId,
+          openShortcut,
+          runShortcut,
+          itemState: itemStateRef.current,
+        };
         const outcome = await invokeAction<KindActionResult>(
           registry,
           kindActionId(key),
@@ -169,6 +288,6 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
         inFlight.current.delete(guardKey);
       }
     },
-    [launchAgent, userId, dispatch, registry, ports],
+    [launchAgent, userId, dispatch, store, liveWindow, registry, ports],
   );
 }

@@ -35,6 +35,7 @@ import {
 import type { SandboxBodyPayload } from "../transform/transform-kind-body";
 import { executeKindBody } from "./execute-kind-body";
 import { installHostActionDispatcher } from "./host-action-relay";
+import { installPointerExit } from "./pointer-exit";
 
 export interface FrameMountApi {
     (
@@ -183,6 +184,9 @@ function startInstance(
         });
         return;
     }
+
+    // ── the pointer leaving the frame closes what it opened (pointer-exit.ts)
+    installPointerExit();
 
     // ── the reader's viewport, not the frame's box (S5b) ──────────────────
     //
@@ -354,10 +358,32 @@ function startInstance(
         }
     };
 
+    // Saved images arrive as their BYTES (the host fetched them with the
+    // reader's authorization; this frame can reach no file host). Each Blob
+    // becomes a frame-local blob: URL — the CSP allows blob: — so a component
+    // renders `itemState.<key>.src` exactly as it would in the page.
+    const blobUrls = new WeakMap<Blob, string>();
+    const withBlobUrls = (value: unknown, depth: number): unknown => {
+        if (typeof Blob !== "undefined" && value instanceof Blob) {
+            let url = blobUrls.get(value);
+            if (!url) {
+                url = URL.createObjectURL(value);
+                blobUrls.set(value, url);
+            }
+            return url;
+        }
+        if (depth > 4 || !value || typeof value !== "object") return value;
+        if (Array.isArray(value)) return value.map((v) => withBlobUrls(v, depth + 1));
+        const out: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(value)) out[k] = withBlobUrls(v, depth + 1);
+        return out;
+    };
+
     const withHostProps = (
         props: Record<string, unknown>,
     ): Record<string, unknown> => ({
         ...transformed(props),
+        itemState: withBlobUrls(props.itemState ?? {}, 0),
         runAction,
         onResolve,
     });
