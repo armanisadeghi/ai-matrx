@@ -2,7 +2,8 @@
 -- Same fixtures as ap3_u1_scopes_red.sql (rolled back). Expect:
 --   admin_all_party_total_no_header = admin_all_party_total_with_header (+ the same for task and the drill API)
 --   test_only_me_on_all/orgs/team = false; test_only_me_opens_by_id = true; admin_only_me_on_all (her own) = true
---   test_containment_task_on_all = false; test_containment_task_opens_by_id = true
+--   test_containment_task_on_all = true since follow-up 1 (coordinator 2026-10-06: containment stays in All;
+--   ap3_u1_containment_green.sql); test_containment_task_opens_by_id = true
 --   org filter narrows: all_total > holloway_total, rows of more than one organization without the filter
 --   default lane = knob lists.landing_tab (platform.entity_default_list_scope): default_total = all_total
 --   stale/foreign/damaged cursor -> MX013; options not served yet -> MX016 / MX015 by name
