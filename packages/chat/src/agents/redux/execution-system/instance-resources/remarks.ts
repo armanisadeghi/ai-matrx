@@ -315,7 +315,6 @@ export function restoreComposerRemarks(conversationId: string): void {
 }
 
 let durability: RemarkDurability | null = null;
-((globalThis as any).__rdProbes ||= []).push(() => durability !== null); // TEMP-PROBE
 
 /** The app registers how unsent chips are kept. Returns the release. */
 export function registerRemarkDurability(port: RemarkDurability): () => void {
