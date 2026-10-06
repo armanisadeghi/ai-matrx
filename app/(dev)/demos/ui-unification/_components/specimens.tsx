@@ -11,11 +11,8 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  Input,
-  SegmentedControl,
-  Skeleton, Button as SurfaceButton,
-} from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Input, Skeleton, Button as SurfaceButton } from "@ai-matrx/design-system";
 import {
   Copy,
   FolderOpen,
@@ -377,7 +374,7 @@ export function TabsLine() {
 export function TabsSegmented() {
   const [value, setValue] = useState("overview");
   return (
-    <SegmentedControl
+    <SegmentedControl aria-label="Section"
       value={value}
       onValueChange={setValue}
       data={[

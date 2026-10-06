@@ -40,7 +40,7 @@ import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/Mas
 import { replaceAddressOrNavigate } from "@/lib/url-state/addressWithoutNavigating";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { useRunViewPreference } from "../board/useRunViewPreference";
 
 /**
@@ -217,8 +217,7 @@ export function WorkflowRunPage({
             label="AI steps of this workflow"
           />
           {showingRun ? (
-            <SegmentedControl
-              size="sm"
+            <SegmentedControl aria-label="Run view"
               className="mr-1"
               value={runView}
               onValueChange={(next) =>

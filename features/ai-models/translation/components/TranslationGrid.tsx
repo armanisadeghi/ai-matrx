@@ -12,7 +12,8 @@
 import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { SegmentedControl, Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -158,8 +159,7 @@ export default function TranslationGrid() {
       </SelectContent>
     </Select>
   ) : (
-    <SegmentedControl
-      size="sm"
+    <SegmentedControl aria-label="View"
       value={view}
       onValueChange={setView}
       data={VIEWS.map((v) => ({

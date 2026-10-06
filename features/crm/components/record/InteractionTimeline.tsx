@@ -8,7 +8,6 @@
 // a stored column would snapshot the whole row on every dial).
 
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@ai-matrx/design-system";
 import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useState } from "react";
@@ -28,7 +27,7 @@ import {
 } from "lucide-react";
 import { InboundLabelBadge } from "../outreach-lists/badges";
 import type { LucideIcon } from "lucide-react";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import {
@@ -340,8 +339,7 @@ export function InteractionTimeline({
           from the history below. */}
       <div className="mb-2 space-y-1.5 border-b border-border pb-2">
         <div className="flex flex-wrap items-center gap-1">
-          <SegmentedControl
-            size="sm"
+          <SegmentedControl aria-label="Channel"
             value={channel}
             onValueChange={(next) => {
               const picked = composerChannels.find((c) => c === next);
@@ -363,8 +361,7 @@ export function InteractionTimeline({
           />
           {/* A note has no direction — hidden like Minutes is for non-calls. */}
           {channel !== "note" && (
-          <SegmentedControl
-            size="sm"
+          <SegmentedControl aria-label="Direction"
             value={direction}
             onValueChange={(next) =>
               setDirection(next === "inbound" ? "inbound" : "outbound")

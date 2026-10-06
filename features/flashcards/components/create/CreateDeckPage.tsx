@@ -40,8 +40,7 @@ import {
 import { createSourceRef } from "@ai-matrx/agents/sources";
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
 import { Label } from "@/components/ui/label";
 import {
@@ -639,7 +638,7 @@ export function CreateDeckPage({
           )}
         >
           {/* How to start: make cards, or bring a deck you already have. */}
-          <SegmentedControl
+          <SegmentedControl aria-label="How to start"
             value={mode}
             onValueChange={(v) => {
               if (!busy) setMode(v === "import" ? "import" : "make");
@@ -648,8 +647,7 @@ export function CreateDeckPage({
               { value: "make", label: "Make cards" },
               { value: "import", label: "Import a deck file" },
             ]}
-            fullWidth
-            className="max-lg:[&_[role=tab]]:min-h-11!"
+            fill
           />
 
           {mode === "import" ? (

@@ -8,8 +8,7 @@
 
 "use client";
 
-import { SegmentedControl } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 import {
   localDateString,
@@ -38,9 +37,7 @@ export function WindowPicker({
   const today = localDateString(new Date());
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2">
-      <SegmentedControl
-        className="max-w-full overflow-x-auto [&>button]:shrink-0 [&>button]:whitespace-nowrap"
-        size="sm"
+      <SegmentedControl aria-label="Time window"
         value={preset}
         onValueChange={(value) =>
           onChange({ preset: value as SpendWindowPreset, fromDay, toDay })

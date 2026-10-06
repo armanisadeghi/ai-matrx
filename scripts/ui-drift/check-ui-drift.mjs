@@ -32,6 +32,10 @@
  *   hand-built-chip          a hand-built tinted chip/tag/pill: tinted fill + tinted ink + radius +
  *                            px-* + small text in one className (owner, 2026-10-05). Predicate shared
  *                            with ESLint `matrx/no-hand-built-chip` (scripts/lint-rules/hand-built-chip.mjs).
+ *   hand-built-segmented     a hand-built segmented control: a muted track (bg-muted*) + small inner
+ *                            padding (p-0.5/p-1) + radius + flex, holding two or more buttons (or a
+ *                            .map of buttons) instead of the design-system SegmentedControl
+ *                            (owner, 2026-10-05: /education/flashcards/new, /review/page-cleanup).
  *   canonical-override       a page re-styling the package's canonical table/toolbar: a class prop
  *                            (`className`, `tableClassName`, `*ClassName`) on MatrxDataTable /
  *                            TableTitleRow / TableViewTabs / … from @ai-matrx/design-system, or a
@@ -124,6 +128,10 @@ export const RULES = {
   "hand-built-chip": {
     title: "hand-built tinted chip/tag/pill",
     fix: HAND_BUILT_CHIP_FIX,
+  },
+  "hand-built-segmented": {
+    title: "hand-built segmented control",
+    fix: "Use SegmentedControl from @ai-matrx/design-system/controls (data=[{value,label}], value, onValueChange, aria-label; `fill` for full width). Tabs variant=\"capsule\" for filters. Never a bg-muted track with buttons inside; a missing option is added to the package.",
   },
   "unclamped-text-pill": {
     title: "dynamic text in an unclamped pill",
@@ -345,6 +353,14 @@ export function scanSource(file, text) {
     for (const [imported, localName] of names) if (PRIM[imported]) local[localName] = imported;
   }
   const defLayer = DEF_LAYER.test(file);
+  // The package's ROOT SegmentedControl is the old bg-muted track + buttons; the one control lives in /controls.
+  for (const st of sf.statements) {
+    if (!ts.isImportDeclaration(st) || st.moduleSpecifier.text !== "@ai-matrx/design-system") continue;
+    const nb = st.importClause?.namedBindings;
+    if (nb && ts.isNamedImports(nb) && nb.elements.some((e) => (e.propertyName || e.name).text === "SegmentedControl")) {
+      sites.push({ rule: "hand-built-segmented", file, line: sf.getLineAndCharacterOfPosition(st.getStart(sf)).line + 1, what: "SegmentedControl from the package root" });
+    }
+  }
   const packageSide = isExemptFile(file);
   const spinnerFile = SPINNER_FILE.test(file);
   const lineOf = (n) => sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
@@ -412,6 +428,9 @@ export function scanSource(file, text) {
         if (primSite || rawButtonSite) {
           if (!spinnerFile && toks.some((t) => stripVariants(t).base === "animate-spin")) add("spinner-outside-spinner", open, `<${tag}>`);
         } else classRules(toks, open, `<${tag}>`);
+      }
+      if (!defLayer && !packageSide && toks.length && ts.isJsxElement(node) && isHandBuiltSegmented(toks, node)) {
+        add("hand-built-segmented", open, `<${tag}> ${[...new Set(toks.filter((t) => /^(bg-muted|p-|rounded|inline-flex|flex$)/.test(stripVariants(t).base)))].sort().join(" ")}`);
       }
       if (!defLayer && !packageSide && toks.length) {
         const chip = handBuiltChipTokens(toks.join(" "));
@@ -482,6 +501,31 @@ export function scanSource(file, text) {
   }
   visit(sf, []);
   return sites;
+}
+
+/** A muted track + small inner padding + radius + flex: the skeleton of a hand-built segmented control. */
+const SEG_TRACK_BG = /^bg-muted(\/\d+)?$/;
+const SEG_TRACK_PAD = /^p-(0\.5|1|px|\[[23]px\])$/;
+function isHandBuiltSegmented(toks, node) {
+  const bases = toks.map((t) => stripVariants(t)).filter((x) => x.variants.length === 0).map((x) => x.base);
+  if (!bases.some((b) => SEG_TRACK_BG.test(b)) || !bases.some((b) => SEG_TRACK_PAD.test(b))) return false;
+  if (!bases.some((b) => b === "inline-flex" || b === "flex" || b === "grid") || !bases.some((b) => /^rounded/.test(b))) return false;
+  let buttons = 0;
+  let mapped = false;
+  (function walk(n, inMap) {
+    if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) {
+      const o = ts.isJsxElement(n) ? n.openingElement : n;
+      const t = o.tagName.getText();
+      const role = attrString(attr(o.attributes.properties, "role"));
+      if (t === "button" || t === "Button" || role === "tab" || role === "radio") {
+        buttons += 1;
+        if (inMap) mapped = true;
+      }
+    }
+    const nextMap = inMap || (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && n.expression.name.text === "map");
+    ts.forEachChild(n, (c) => walk(c, nextMap));
+  })(node, false);
+  return buttons >= 2 || mapped;
 }
 
 /** Sites in source order: by file, then line. */
@@ -643,6 +687,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge"; import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { SegmentedControl } from "@ai-matrx/design-system";
 export function Bad() {
   return (
     <Card>
@@ -663,6 +708,7 @@ export function Bad() {
       <section className="[&_[data-matrx-table-tabs]]:border-b-0" />
       <span className="inline-flex rounded-full bg-warning/10 px-2.5 text-xs font-semibold text-warning">3 due</span>
       <TabsList className="h-full min-h-0 w-full rounded-lg bg-muted">x</TabsList>
+      <div className="inline-flex items-center rounded-md bg-muted p-0.5"><button onClick={a}>One</button><button onClick={b}>Two</button></div>
     </Card>
   );
 }
@@ -673,6 +719,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge"; import { Tabs, TabsList, TabsContent } from "@/components/ui/tabs";
 import { TapTargetButton, CopyTapButton, TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 export function Good() {
   return (
     <Card>
@@ -692,6 +739,8 @@ export function Good() {
       <Chip tone="warning" label="3 due" />
       <Tabs className="h-full min-h-0 w-full flex-1"><TabsList className="h-full min-h-0 w-full"><TabsContent value="a" className="min-h-0 flex-1">x</TabsContent></TabsList></Tabs>
       <span className="flex size-8 items-center justify-center rounded-md bg-primary/10 text-primary" />
+      <SegmentedControl aria-label="Mode" value={m} onValueChange={setM} data={[{ value: "a", label: "A" }, { value: "b", label: "B" }]} />
+      <div className="flex items-center rounded-md bg-muted p-1"><span>progress</span></div>
     </Card>
   );
 }
@@ -717,6 +766,8 @@ const PLANTED_SITES = [
   "canonical-override :: <section> [&_[data-matrx-table-tabs]]:border-b-0",
   "hand-built-chip :: <span> bg-warning/10 px-2.5 rounded-full text-warning text-xs",
   "primitive-visual-class :: <TabsList> bg-muted rounded-lg",
+  "hand-built-segmented :: SegmentedControl from the package root",
+  "hand-built-segmented :: <div> bg-muted inline-flex p-0.5 rounded-md",
 ];
 
 export function selfTest() {
@@ -738,7 +789,7 @@ export function selfTest() {
   const same = judge(groupSites(scanSource("a.tsx", PLANTED)), { counts }, () => before);
   if (same.some((j) => j.status !== "known")) problems.push("an unchanged file read as new against its own counts");
   const grown = judge(groupSites(after), { counts }, () => before).filter((j) => j.status === "new");
-  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 14) {
+  if (grown.length !== 1 || grown[0].key !== "arbitrary-text-size|a.tsx" || grown[0].fresh.length !== 1 || grown[0].fresh[0].line !== 15) {
     problems.push(`a grown count did not name exactly its one new site: ${JSON.stringify(grown.map((g) => [g.key, g.fresh.map((f) => f.line)]))}`);
   }
   const shrunk = judge(groupSites(after.filter((x) => x.rule !== "raw-color")), { counts }, () => before);

@@ -9,7 +9,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -99,14 +99,13 @@ export function DeviceConsole({ device }: { device: DeviceRow }) {
         ) : null}
 
         <div className="shrink-0 px-4 py-2 lg:hidden">
-          <SegmentedControl value={view} onValueChange={(v) => setQuery({ view: v === "terminal" ? null : v })} data={PHONE_VIEWS} fullWidth size="sm" />
+          <SegmentedControl aria-label="View" value={view} onValueChange={(v) => setQuery({ view: v === "terminal" ? null : v })} data={PHONE_VIEWS} fill />
         </div>
         <div className="hidden shrink-0 px-3 py-2 lg:block">
-          <SegmentedControl
+          <SegmentedControl aria-label="View"
             value={view === "info" ? "terminal" : view}
             onValueChange={(v) => setQuery({ view: v === "terminal" ? null : v })}
             data={DESKTOP_VIEWS}
-            size="sm"
           />
         </div>
 

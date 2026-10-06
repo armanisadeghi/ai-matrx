@@ -35,7 +35,7 @@ import {
   PropertyRow,
 } from "@/components/official/ConfigurationFields";
 import { Lock, PenLine } from "lucide-react";
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { InfoHint } from "@/components/official/InfoHint";
 import { getManifest } from "@/features/surfaces/manifests/registry";
 import type {
@@ -203,8 +203,7 @@ export function WritePolicyEditor({
               {structured && (
                 <span className="text-xs font-medium">Policy override</span>
               )}
-              <SegmentedControl
-                size="sm"
+              <SegmentedControl aria-label="Write policy"
                 value={segment}
                 onValueChange={(next) => {
                   if (disabled) return;

@@ -19,7 +19,7 @@
 
 import { useState, type ComponentType, type ReactNode } from "react";
 import { Check, X } from "lucide-react";
-import { cn, SegmentedControl, Skeleton } from "@ai-matrx/design-system";
+import { cn, Skeleton } from "@ai-matrx/design-system";
 import { Switch } from "@ai-matrx/chat/ui/switch";
 import {
   PickerEmpty,
@@ -27,7 +27,7 @@ import {
   PickerSearchField,
   PickerSectionLabel,
 } from "@ai-matrx/chat/utils/resource-picker/ResourcePickerSubViewHeader";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Button, SegmentedControl } from "@ai-matrx/design-system/controls";
 
 type IconType = ComponentType<{ className?: string }>;
 
@@ -233,10 +233,9 @@ export function RunPicksSurface({
       >
         {topSlot}
         {notice}
-        <SegmentedControl
+        <SegmentedControl aria-label="Pane"
           className="@2xl:hidden"
-          fullWidth
-          size="sm"
+          fill
           value={pane}
           onValueChange={(next) => setPane(next === "add" ? "add" : "agent")}
           data={[

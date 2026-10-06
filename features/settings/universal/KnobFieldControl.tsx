@@ -40,11 +40,10 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-  SegmentedControl,
   selectTriggerVariants,
   Slider,
   Switch, Button as SurfaceButton, } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
@@ -337,8 +336,7 @@ function SegmentedField({
       aria-labelledby={labelId}
       className={cn("flex h-9 items-center", disabled && "opacity-50")}
     >
-      <SegmentedControl
-        size="sm"
+      <SegmentedControl aria-label="Setting"
         value={current}
         data={choices.map((choice) => ({
           value: choice.value,

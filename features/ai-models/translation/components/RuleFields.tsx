@@ -11,8 +11,8 @@
 
 import { useState } from "react";
 import { Plus, X } from "lucide-react";
-import { Label, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Textarea } from "@ai-matrx/design-system";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import RuleValueInput from "@/features/ai-models/components/controls/RuleValueInput";
@@ -190,7 +190,7 @@ export default function RuleFields({
             ))}
           </div>
         ) : (
-          <SegmentedControl size="sm" fullWidth value={mode} onValueChange={setMode} data={MODE_OPTIONS} />
+          <SegmentedControl aria-label="Mode" fill value={mode} onValueChange={setMode} data={MODE_OPTIONS} />
         )}
       </Section>
 

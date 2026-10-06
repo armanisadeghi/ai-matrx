@@ -25,8 +25,8 @@
 
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { AlertCircle, ListChecks, Loader2, Search, X } from "lucide-react";
-import { SegmentedControl, Textarea } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Textarea } from "@ai-matrx/design-system";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { knobInt } from "@/lib/knobs/featureKnobs";
@@ -377,15 +377,13 @@ export function SourceInput({
               stacked alone in the column it stretched into an empty
               full-width box (375px, 2026-10-03). */}
           <div className="flex items-center justify-between gap-2 sm:justify-start">
-            <SegmentedControl
+            <SegmentedControl aria-label="Scope"
               value={scopeChoice}
               onValueChange={(v) => setScopeChoice(v === "mine" ? "mine" : "all")}
               data={[
                 { value: "all", label: "All" },
                 { value: "mine", label: "Mine" },
               ]}
-              size="sm"
-              className="max-w-full shrink-0 max-lg:[&_[role=tab]]:min-h-11!"
             />
             <EntityOrgFilter
               orgId={orgFilter}

@@ -19,7 +19,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Check, Copy, Database, ExternalLink, HardDrive, Trash2 } from "lucide-react";
-import { Badge, SegmentedControl, ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Badge, ToggleGroup, ToggleGroupItem } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import {
   createRecordsClient,
@@ -274,8 +275,7 @@ export default function PageCleanupReview() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <SegmentedControl
-          size="sm"
+        <SegmentedControl aria-label="Recommendation"
           value={recFilter}
           onValueChange={(v) => setRecFilter(v as typeof recFilter)}
           data={[
@@ -286,8 +286,7 @@ export default function PageCleanupReview() {
             { value: "SHELL", label: "Shell" },
           ]}
         />
-        <SegmentedControl
-          size="sm"
+        <SegmentedControl aria-label="Decision state"
           value={doneFilter}
           onValueChange={(v) => setDoneFilter(v as typeof doneFilter)}
           data={[

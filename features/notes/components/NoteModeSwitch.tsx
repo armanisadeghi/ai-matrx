@@ -6,7 +6,7 @@
 // note tile, `NoteWorkspace`) render THIS component, so the control is the
 // same everywhere.
 
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import {
   useNoteEditorMode,
   useSelectNoteMode,

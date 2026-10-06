@@ -25,7 +25,7 @@ import { useState } from "react";
 import { ExternalLink, Layers, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 import { BindingsPanel } from "./BindingsPanel";
 import { CompletenessStrip } from "./CompletenessStrip";
@@ -90,8 +90,7 @@ export function PlacesWorkspace() {
           </div>
 
           <div className="flex shrink-0 flex-col items-end gap-1.5">
-            <SegmentedControl
-              size="sm"
+            <SegmentedControl aria-label="Altitude"
               value={altitude}
               onValueChange={(v) => setAltitude(v as Altitude)}
               data={[

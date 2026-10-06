@@ -10,19 +10,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import {
-  Checkbox,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-  SegmentedControl,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-  Skeleton,
-} from "@ai-matrx/design-system";
-import { Button, Input, SelectTrigger } from "@ai-matrx/design-system/controls";
+import { Checkbox, Popover, PopoverContent, PopoverTrigger, Select, SelectContent, SelectItem, SelectValue, Skeleton } from "@ai-matrx/design-system";
+import { Button, Input, SelectTrigger, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { RoomViewReceipt } from "@ai-matrx/chat/agents/components/context-policies-display/MessageContextReceipt";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { stripControlLines } from "@/lib/control-tokens/stripControlLines";
@@ -255,8 +244,7 @@ function ParticipantRow({
         </div>
       </td>
       <td className="px-1 py-1" onClick={(e) => e.stopPropagation()}>
-        <SegmentedControl
-          size="sm"
+        <SegmentedControl aria-label="Labels"
           value={full.labels}
           onValueChange={(v) => change({ labels: v as FullPolicy["labels"] })}
           data={[

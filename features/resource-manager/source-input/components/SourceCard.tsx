@@ -31,7 +31,7 @@ import {
   X,
 } from "lucide-react";
 import type { SourceManifestEntry } from "@ai-matrx/agents/sources";
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -356,15 +356,13 @@ export function SourceCard({
           <div className="space-y-1.5">
             <p className="text-xs font-medium text-foreground">How the AI gets it</p>
             {deliveryChoices.length > 1 ? (
-            <SegmentedControl
+            <SegmentedControl aria-label="Delivery"
               value={delivery}
               onValueChange={(v) => {
                 const choice = deliveryChoices.find((c) => c.value === v);
                 if (choice && choice.value !== delivery) set.updateRef(card.id, deliveryPatch(choice.value));
               }}
               data={deliveryChoices.map((c) => ({ value: c.value, label: c.label }))}
-              size="sm"
-              className="max-w-full max-lg:[&_[role=tab]]:min-h-11!"
             />
             ) : (
               // The one way this page can use it — said, never a one-option control.
@@ -435,12 +433,10 @@ function FormChooser({
     return <p className="text-xs text-muted-foreground">This Source has only one form so far.</p>;
   if (forms.length <= 4)
     return (
-      <SegmentedControl
+      <SegmentedControl aria-label="Form"
         value={value}
         onValueChange={onChange}
         data={forms.map((f) => ({ value: f.form, label: `${f.label} · ${formatChars(f.chars)}` }))}
-        size="sm"
-        className="max-w-full max-lg:[&_[role=tab]]:min-h-11!"
       />
     );
   return (

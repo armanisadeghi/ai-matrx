@@ -17,7 +17,7 @@
 import { useMemo, useState } from "react";
 import { Building2, Globe, LayoutGrid, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { SegmentedControl } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { cn } from "@/lib/utils";
@@ -296,8 +296,7 @@ export function JobBoardPreview() {
             </Badge>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <SegmentedControl
-              size="sm"
+            <SegmentedControl aria-label="Scope"
               value={scope}
               onValueChange={(v) => {
                 setScope(v as PrincipalScope);

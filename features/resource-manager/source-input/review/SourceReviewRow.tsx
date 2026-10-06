@@ -24,8 +24,8 @@ import {
   Trash2,
   type LucideIcon,
 } from "lucide-react";
-import { Badge, SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, cn } from "@ai-matrx/design-system";
-import { Input } from "@ai-matrx/design-system/controls";
+import { Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch, cn } from "@ai-matrx/design-system";
+import { Input, SegmentedControl } from "@ai-matrx/design-system/controls";
 import { Button } from "@/components/ui/button";
 import { formatChars, pagesPhrase } from "@ai-matrx/kit/tokens";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
@@ -42,9 +42,6 @@ import {
   type SourcePlanEntry,
 } from "@ai-matrx/agents/sources/runtime";
 import { formatCount } from "@ai-matrx/kit/format";
-
-/** Phones: every segment is a 44px target (the package control is 28px at "sm"). */
-const SEGMENTED_TOUCH = "max-w-full flex-wrap max-lg:[&_[role=tab]]:min-h-11!";
 
 /** Roughly how many characters fill a printed page — only for "about N pages". */
 
@@ -211,15 +208,13 @@ export function SourceReviewRow({
             <Field label="Which version">
               {/* Phone: a Select — long version names never stack a switch into rows. */}
               {availableForms.length <= 4 && !isMobile ? (
-                <SegmentedControl
+                <SegmentedControl aria-label="Form"
                   value={form?.form ?? entry.default_form}
                   onValueChange={onFormChange}
                   data={availableForms.map((f) => ({
                     value: f.form,
                     label: `${f.label} · ${formatChars(f.chars)}`,
                   }))}
-                  size="sm"
-                  className={SEGMENTED_TOUCH}
                 />
               ) : (
                 <Select value={form?.form ?? entry.default_form} onValueChange={onFormChange}>
@@ -240,7 +235,7 @@ export function SourceReviewRow({
 
           {usable && segments.length > 1 && delivery === "direct" && (
             <Field label="How much" hint={`${segments.length} parts`}>
-              <SegmentedControl
+              <SegmentedControl aria-label="Include"
                 value={choosingParts ? "parts" : "all"}
                 onValueChange={(v) => {
                   if (v === "all") {
@@ -254,8 +249,6 @@ export function SourceReviewRow({
                   { value: "all", label: "All of it" },
                   { value: "parts", label: "Choose parts" },
                 ]}
-                size="sm"
-                className={SEGMENTED_TOUCH}
               />
               {choosingParts && (
                 <div className="pt-2">
@@ -313,12 +306,10 @@ export function SourceReviewRow({
               hint={deliveryChoices.length > 1 ? DELIVERY_WORDS[delivery].hint : undefined}
             >
               {deliveryChoices.length > 1 ? (
-                <SegmentedControl
+                <SegmentedControl aria-label="Delivery"
                   value={delivery}
                   onValueChange={(v) => update(deliveryPatch(v === "context" ? "context" : "direct"))}
                   data={deliveryChoices.map((c) => ({ value: c.value, label: c.label }))}
-                  size="sm"
-                  className={SEGMENTED_TOUCH}
                 />
               ) : (
                 // The one way this host can use it — said, never a one-option control.
