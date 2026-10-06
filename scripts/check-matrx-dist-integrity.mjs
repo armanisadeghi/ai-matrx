@@ -113,6 +113,7 @@ function installedCopies(root) {
   const rootScope = join(nm, "@ai-matrx");
   if (existsSync(rootScope)) {
     for (const short of readdirSync(rootScope)) {
+      if (short.startsWith(".")) continue;
       try {
         rootResolved.set(`@ai-matrx/${short}`, realpathSync(join(rootScope, short)));
       } catch {
@@ -148,6 +149,8 @@ function installedCopies(root) {
       continue;
     }
     for (const short of names) {
+      // pnpm parks a replaced copy as `@ai-matrx/.ignored_<name>`; it is not a package.
+      if (short.startsWith(".")) continue;
       const dir = join(scope, short);
       let real;
       try {
