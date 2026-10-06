@@ -15,6 +15,7 @@ import { supabase } from "@/utils/supabase/client";
 import { docprocDb, PROCESSED_DOCUMENTS_COLUMNS } from "@/utils/supabase/docprocDb";
 import { parseHttpError } from "@/lib/api/errors";
 import { getAccessTokenOrNull, requestRaw } from "@/lib/python-client";
+import { invalidateProcessedDocumentPages } from "./useProcessedDocumentPages";
 import { consumeBatchExtractNdjsonStream } from "../service/batchExtractDebugStream";
 import {
   appendBatchExtractDebugLine,
@@ -627,6 +628,26 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           );
         };
 
+        // Per-doc bookkeeping for the terminal `record_update` contract: a
+        // doc that never gets one did not finish processing (said, never
+        // silent).
+        const recordUpdated = new Set<string>();
+        const lastCleanRefreshAt = new Map<string, number>();
+
+        const refreshCleanedDoc = async (recordId: string) => {
+          invalidateProcessedDocumentCache(recordId);
+          invalidateProcessedDocumentPages(recordId);
+          const fresh = await fetchDocument(recordId);
+          setTabs((prev) =>
+            prev.map((tab) =>
+              tab.id === recordId
+                ? { ...tab, document: fresh ?? tab.document }
+                : tab,
+            ),
+          );
+          setProcessedDocSignal({ docId: recordId, at: Date.now() });
+        };
+
         for await (const event of stream) {
           if (event.event === "info") {
             if (event.data.code === "pdf_page_progress") {
@@ -643,14 +664,43 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             event.data.table === "processed_documents"
           ) {
             const recordId = event.data.record_id;
+            const outcome = classifyRecordUpdateStatus(event.data.status);
+            recordUpdated.add(recordId);
             invalidateProcessedDocumentCache(recordId);
             const fresh = await fetchDocument(recordId);
+            if (outcome === "queued" || outcome === "active") {
+              // Not terminal: keep the doc's status label visible.
+              if (outcome === "queued") {
+                setProcessingStatus((prev) => ({
+                  ...prev,
+                  [recordId]: CLEAN_QUEUED_LABEL,
+                }));
+              }
+              setTabs((prev) =>
+                prev.map((tab) =>
+                  tab.id === recordId
+                    ? {
+                        ...tab,
+                        document: fresh ?? tab.document,
+                        progressMessage:
+                          outcome === "queued"
+                            ? CLEAN_QUEUED_LABEL
+                            : tab.progressMessage,
+                      }
+                    : tab,
+                ),
+              );
+              setProcessedDocSignal({ docId: recordId, at: Date.now() });
+              continue;
+            }
+            const failed = outcome === "failed";
             setTabs((prev) =>
               prev.map((tab) =>
                 tab.id === recordId
                   ? {
                       ...tab,
                       document: fresh ?? tab.document,
+                      error: failed ? CLEAN_FAILED_MESSAGE : tab.error,
                       progressMessage: undefined,
                     }
                   : tab,
@@ -698,6 +748,19 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
               const message = (evtData.message as string) ?? "";
               const label = `${stage}: ${message}`;
               if (docId) {
+                // Cleaned text is readable as soon as the clean stage writes
+                // it — refetch then, not after chunk/embed/NER finish.
+                const now = Date.now();
+                if (
+                  shouldRefreshOnProcessingProgress(
+                    evtData,
+                    lastCleanRefreshAt.get(docId) ?? 0,
+                    now,
+                  )
+                ) {
+                  lastCleanRefreshAt.set(docId, now);
+                  void refreshCleanedDoc(docId);
+                }
                 setProcessingStatus((prev) => ({ ...prev, [docId]: label }));
                 setTabs((prev) =>
                   prev.map((tab) =>
@@ -799,6 +862,21 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
           }
         }
 
+        // The stream is over: any finished doc that never got its terminal
+        // `record_update` was not fully processed — say so on its tab.
+        const unconfirmed = completedDocIds.filter(
+          (id) => !recordUpdated.has(id),
+        );
+        if (unconfirmed.length > 0) {
+          setTabs((prev) =>
+            prev.map((tab) =>
+              unconfirmed.includes(tab.id) && !tab.error
+                ? { ...tab, error: NO_RECORD_UPDATE_MESSAGE }
+                : tab,
+            ),
+          );
+        }
+
         if (debugSessionId) {
           dispatch(
             finishBatchExtractDebugSession({
@@ -859,8 +937,15 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
 
         setBatchStatus("idle");
         // The stream is over — no more processing events can arrive, so any
-        // leftover per-doc status is stale. Clear it.
-        setProcessingStatus({});
+        // leftover per-doc status is stale. Clear it — except docs parked on
+        // the batch queue, whose "Cleaning queued" label is still true.
+        setProcessingStatus((prev) => {
+          const kept: Record<string, string> = {};
+          for (const [id, label] of Object.entries(prev)) {
+            if (label === CLEAN_QUEUED_LABEL) kept[id] = label;
+          }
+          return kept;
+        });
         clearFiles();
         // Refresh history
         loadHistory();
