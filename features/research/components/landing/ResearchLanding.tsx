@@ -65,13 +65,13 @@ export default function ResearchLanding() {
                         and generates a comprehensive research report — with you in control at every step.
                     </p>
                     <div className="mt-10 flex flex-col items-stretch @2xl:flex-row @2xl:items-center justify-center gap-4">
-                        <Button variant="primary" asChild>
+                        <Button hero variant="primary" asChild>
                             <Link href="/research/topics">
                                 Start Researching
                                 <ArrowRight className="h-4 w-4" />
                             </Link>
                         </Button>
-                        <Button variant="outline" asChild>
+                        <Button hero variant="outline" asChild>
                             <Link href="#how-it-works">
                                 See How It Works
                             </Link>
@@ -182,7 +182,7 @@ export default function ResearchLanding() {
                     <p className="mt-4 text-muted-foreground text-lg mb-8">
                         Create your first research project and let AI do the heavy lifting.
                     </p>
-                    <Button variant="primary" asChild>
+                    <Button hero variant="primary" asChild>
                         <Link href="/research/topics">
                             Get Started Free
                             <ArrowRight className="h-4 w-4" />

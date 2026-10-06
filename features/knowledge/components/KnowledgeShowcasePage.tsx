@@ -485,7 +485,7 @@ export function KnowledgeShowcasePage() {
             answer.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
+            <Button hero
               variant="primary"
               className="w-full sm:w-auto"
               asChild
@@ -495,7 +495,7 @@ export function KnowledgeShowcasePage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button
+            <Button hero
               variant="outline"
               className="w-full sm:w-auto"
               asChild

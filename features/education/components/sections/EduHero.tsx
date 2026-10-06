@@ -79,7 +79,7 @@ export function EduHero({
         {(primary || secondary) && (
           <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
             {primary ? (
-              <Button
+              <Button hero
                 variant="primary"
                 className="w-full sm:w-auto"
                 asChild
@@ -91,7 +91,7 @@ export function EduHero({
               </Button>
             ) : null}
             {secondary ? (
-              <Button
+              <Button hero
                 variant="outline"
                 className="w-full sm:w-auto"
                 asChild

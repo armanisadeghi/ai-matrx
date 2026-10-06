@@ -22,7 +22,7 @@ export function LandingCTAs() {
 
   return (
     <>
-      <Button
+      <Button hero
         icon={<Lightbulb />}
         variant="primary"
         onClick={() => setInvitationModalOpen(true)}
@@ -31,7 +31,7 @@ export function LandingCTAs() {
         Enter Invitation Code
       </Button>
       
-      <Button
+      <Button hero
         iconEnd={<ArrowRight />}
         onClick={() => setRequestModalOpen(true)}
         data-request-access

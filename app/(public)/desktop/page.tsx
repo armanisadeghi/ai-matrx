@@ -15,7 +15,7 @@ import {
   Smartphone,
   Volume2,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { siteConfig } from "@/config/extras/site";
 import {
@@ -238,8 +238,9 @@ export default async function MatrxDesktopPage() {
           <>
             <Button
               asChild
-              size="lg"
-              className="h-12 w-full rounded-xl px-6 text-base font-semibold shadow-lg shadow-primary/20 sm:w-auto"
+              hero
+              variant="primary"
+              className="w-full sm:w-auto"
             >
               <a href={downloadHref} rel="noopener noreferrer">
                 <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
@@ -248,9 +249,9 @@ export default async function MatrxDesktopPage() {
             </Button>
             <Button
               asChild
-              size="lg"
+              hero
               variant="outline"
-              className="h-12 w-full rounded-xl px-6 text-base sm:w-auto"
+              className="w-full sm:w-auto"
             >
               <a href="#whats-inside">See what&rsquo;s inside</a>
             </Button>
@@ -334,8 +335,9 @@ export default async function MatrxDesktopPage() {
       >
         <Button
           asChild
-          size="lg"
-          className="h-12 w-full rounded-xl px-6 text-base font-semibold sm:w-auto"
+          hero
+          variant="primary"
+          className="w-full sm:w-auto"
         >
           <a href={downloadHref}>
             <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
@@ -344,9 +346,9 @@ export default async function MatrxDesktopPage() {
         </Button>
         <Button
           asChild
-          size="lg"
+          hero
           variant="outline"
-          className="h-12 w-full rounded-xl px-6 text-base sm:w-auto"
+          className="w-full sm:w-auto"
         >
           <Link href="/extend">Meet Matrx Extend</Link>
         </Button>

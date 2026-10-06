@@ -217,7 +217,7 @@ export default function LegalLanding() {
             of record you already trust.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
+            <Button hero
               variant="primary"
               className="w-full sm:w-auto"
               asChild
@@ -227,7 +227,7 @@ export default function LegalLanding() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button
+            <Button hero
               variant="outline"
               className="w-full sm:w-auto"
               asChild
@@ -421,7 +421,7 @@ export default function LegalLanding() {
             harness designed for the rigor your work demands and the
             procurement bar your firm answers to.
           </p>
-          <Button variant="primary" asChild>
+          <Button hero variant="primary" asChild>
             <Link href="/sign-up?source=legal-landing">
               Get Started
               <ArrowRight className="h-4 w-4" />

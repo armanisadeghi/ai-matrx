@@ -350,7 +350,7 @@ export function AiVisibilityTool() {
             Aliases can include a doctor, founder, old business name, or common
             spelling.
           </p>
-          <Button
+          <Button hero
             icon={running ? (
               <PanelRightOpen />
             ) : (

@@ -266,7 +266,7 @@ export default function AcceptProjectInvitationPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
-            <Button
+            <Button hero
               onClick={handleDecline}
               variant="outline"
               disabled={accepting || declining}
@@ -283,7 +283,7 @@ export default function AcceptProjectInvitationPage() {
                 </>
               )}
             </Button>
-            <Button
+            <Button hero
               variant="primary"
               onClick={handleAccept}
               disabled={accepting || declining}

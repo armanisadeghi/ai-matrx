@@ -14,7 +14,6 @@ import {
   Terminal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Button as SurfaceButton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { MATRX_LOCAL_RELEASE, type DesktopPlatform } from "./release";
 
@@ -51,17 +50,17 @@ function DownloadButton({
   variant?: "default" | "outline";
 }) {
   return (
-    <SurfaceButton
+    <Button
       asChild
-      size="lg"
-      variant={variant}
-      className="h-11 w-full justify-center gap-2 rounded-xl text-sm font-semibold shadow-sm"
+      hero
+      variant={variant === "outline" ? "outline" : "primary"}
+      className="w-full"
     >
       <a href={href} rel="noopener noreferrer">
         <ArrowDownToLine className="h-4 w-4" aria-hidden="true" />
         {children}
       </a>
-    </SurfaceButton>
+    </Button>
   );
 }
 

@@ -458,7 +458,7 @@ export function AiVisibilityReport({
               an anonymous recipient can run their own check right now, which
               is the entire referral mechanic. See
               features/sharing/lenses/source-surface.ts. */}
-          <Button variant="primary" asChild className="mt-5">
+          <Button hero variant="primary" asChild className="mt-5">
             <Link href="/seo/ai-visibility">
               Check your own brand
               <ArrowRight className="h-4 w-4" />

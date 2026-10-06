@@ -13,7 +13,7 @@ import {
   ToggleLeft,
   UserRoundCheck,
 } from "lucide-react";
-import { Button } from "@ai-matrx/design-system";
+import { Button } from "@ai-matrx/design-system/controls";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { siteConfig } from "@/config/extras/site";
 import { createRouteMetadata } from "@/utils/route-metadata";
@@ -191,8 +191,9 @@ export default function MatrxExtendPage() {
           <>
             <Button
               asChild
-              size="lg"
-              className="h-12 w-full rounded-xl px-6 text-base font-semibold shadow-lg shadow-primary/20 sm:w-auto"
+              hero
+              variant="primary"
+              className="w-full sm:w-auto"
             >
               <a href={CHROME_WEB_STORE_URL} rel="noopener noreferrer">
                 <Puzzle className="h-4 w-4" aria-hidden="true" />
@@ -201,9 +202,9 @@ export default function MatrxExtendPage() {
             </Button>
             <Button
               asChild
-              size="lg"
+              hero
               variant="outline"
-              className="h-12 w-full rounded-xl px-6 text-base sm:w-auto"
+              className="w-full sm:w-auto"
             >
               <Link href="/matrx-extend-demo">
                 <ScanSearch className="h-4 w-4" aria-hidden="true" />
@@ -282,8 +283,9 @@ export default function MatrxExtendPage() {
       >
         <Button
           asChild
-          size="lg"
-          className="h-12 w-full rounded-xl px-6 text-base font-semibold sm:w-auto"
+          hero
+          variant="primary"
+          className="w-full sm:w-auto"
         >
           <a href={CHROME_WEB_STORE_URL} rel="noopener noreferrer">
             <Puzzle className="h-4 w-4" aria-hidden="true" />
@@ -292,9 +294,9 @@ export default function MatrxExtendPage() {
         </Button>
         <Button
           asChild
-          size="lg"
+          hero
           variant="outline"
-          className="h-12 w-full rounded-xl px-6 text-base sm:w-auto"
+          className="w-full sm:w-auto"
         >
           <Link href="/desktop">Meet Matrx Desktop</Link>
         </Button>

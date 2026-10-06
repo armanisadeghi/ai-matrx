@@ -135,7 +135,7 @@ export default function PdRatingsCalculatorLanding() {
             all replayable.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
+            <Button hero
               variant="primary"
               className="w-full sm:w-auto"
               asChild
@@ -145,7 +145,7 @@ export default function PdRatingsCalculatorLanding() {
                 <ArrowRight className="h-4 w-4" />
               </AppLink>
             </Button>
-            <Button
+            <Button hero
               variant="outline"
               className="w-full sm:w-auto"
               asChild
@@ -313,7 +313,7 @@ export default function PdRatingsCalculatorLanding() {
             Start with a single PPD calculation, or chain into present value,
             weeks, life expectancy, and AWC.
           </p>
-          <Button
+          <Button hero
             variant="primary"
             asChild
           >

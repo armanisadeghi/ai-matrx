@@ -507,7 +507,7 @@ export function StartHero() {
             />
           )}
 
-          <Button
+          <Button hero
             variant="primary"
             className="w-full"
             disabled={!canGenerate || ingestGuard.isChecking || holdingForClean}

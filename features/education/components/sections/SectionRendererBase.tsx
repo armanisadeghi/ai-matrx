@@ -267,14 +267,14 @@ function Cta({
         <div className="mb-8" />
       )}
       <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        <Button variant="primary" asChild>
+        <Button hero variant="primary" asChild>
           <Link href={primary.href}>
             {primary.label}
             <ArrowRight className="h-4 w-4" />
           </Link>
         </Button>
         {secondary ? (
-          <Button
+          <Button hero
             variant="outline"
             asChild
           >

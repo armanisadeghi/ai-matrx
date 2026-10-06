@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@ai-matrx/design-system";
+import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
@@ -751,10 +752,12 @@ export function KitHub({
                       ? FORMAT_PROMISE[challengeKind]
                       : "Choose a study aid to begin."}
                 </p>
-                <Button
+                <div className="mt-4">
+                <ControlButton
                   asChild
-                  size="lg"
-                  className="mt-4 min-h-11 w-full gap-1.5"
+                  hero
+                  variant="primary"
+                  className="w-full"
                 >
                   <Link href={artifactActionHref(challenge)}>
                     {challengeStats?.hasProgress
@@ -762,7 +765,8 @@ export function KitHub({
                       : challengeLook.verb}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
-                </Button>
+                </ControlButton>
+                </div>
               </div>
             )}
           </div>

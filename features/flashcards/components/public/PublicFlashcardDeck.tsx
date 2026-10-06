@@ -201,7 +201,7 @@ export function PublicFlashcardDeck({
           )}
 
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
-            <Button
+            <Button hero
               icon={<GraduationCap />}
               variant="primary"
               onClick={() => openMode(latest?.mode ?? "study")}
@@ -209,7 +209,7 @@ export function PublicFlashcardDeck({
             >
               {!latest ? "Study" : finished ? "Study again" : "Resume"}
             </Button>
-            <Button
+            <Button hero
               icon={<Target />}
               variant="outline"
               onClick={() => openMode("learn")}

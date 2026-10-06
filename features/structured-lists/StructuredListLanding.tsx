@@ -71,7 +71,7 @@ export default function StructuredListLanding() {
             across Matrx.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button variant="primary" asChild>
+            <Button hero variant="primary" asChild>
               <Link href="/sign-up?source=lists-landing">
                 Get started
                 <ArrowRight className="h-4 w-4" />

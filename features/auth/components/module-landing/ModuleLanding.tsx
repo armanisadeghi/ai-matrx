@@ -160,7 +160,7 @@ export function ModuleLanding({
             {description}
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
+            <Button hero
               variant="primary"
               className="w-full sm:w-auto"
               asChild
@@ -170,7 +170,7 @@ export function ModuleLanding({
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button
+            <Button hero
               variant="outline"
               className="w-full sm:w-auto"
               asChild
@@ -401,7 +401,7 @@ export function ModuleLanding({
           <p className="mt-4 text-muted-foreground text-lg mb-8">
             {finalCtaDescription}
           </p>
-          <Button
+          <Button hero
             variant="primary"
             asChild
           >

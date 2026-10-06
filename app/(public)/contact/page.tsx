@@ -179,7 +179,7 @@ export default function ContactPage() {
             )}
 
             {/* Submit Button */}
-            <Button
+            <Button hero
               variant="primary"
               type="submit"
               disabled={loading}

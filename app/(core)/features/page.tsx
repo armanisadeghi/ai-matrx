@@ -51,7 +51,7 @@ export default function FeaturesIndexPage() {
             workspaces, sandboxes — every one designed to feed the others.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
+            <Button hero
               variant="primary"
               className="w-full sm:w-auto"
               asChild
@@ -61,7 +61,7 @@ export default function FeaturesIndexPage() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
-            <Button
+            <Button hero
               variant="outline"
               className="w-full sm:w-auto"
               asChild
@@ -133,7 +133,7 @@ export default function FeaturesIndexPage() {
             Free to start, no credit card. Every surface above plays nicely with
             the rest the moment you sign up.
           </p>
-          <Button
+          <Button hero
             variant="primary"
             asChild
           >
