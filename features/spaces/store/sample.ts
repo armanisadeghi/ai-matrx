@@ -2,7 +2,8 @@
 // every sub-page through the store, so the sample is a real saved Space like any other.
 
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
-import { agencyTokenByName, type AgencyTables } from "../data/agency-install";
+import { agencyTokenByName, viewOnInstalledKeys, type AgencyTables } from "../data/agency-install";
+import type { SpaceDbView } from "../data/sources";
 import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
 import { b, RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_GAP_RULES, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
@@ -77,12 +78,23 @@ function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: Spa
           blk = { ...blk, props: { ...blk.props, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
         }
       }
+      // Round 16: views name fields by the install's keys (an upgraded install renamed a converted column).
+      if (blk.type === "database" && !blk.props?.sample && Array.isArray(blk.props?.views)) {
+        const token = agencyTokenByName(typeof blk.props.title === "string" ? blk.props.title : undefined);
+        const keys = token ? tables[token]?.keys : undefined;
+        const vs = blk.props.views as SpaceDbView[];
+        const moved = vs.map((v) => viewOnInstalledKeys(v, keys));
+        if (moved.some((v, i) => v !== vs[i])) {
+          changed = true;
+          blk = { ...blk, props: { ...blk.props, views: moved } };
+        }
+      }
       // Round 11: a client grid already on the installed table hides its reverse links and sorts by start date.
       if (blk.type === "database" && !blk.props?.sample && blk.props?.title === "Clients") {
         const vs = blk.props.views as Array<{ layout?: string; hiddenFields?: string[] }> | undefined;
         if (vs?.some((v) => v.layout === "grid" && !v.hiddenFields?.includes("linked:nps_surveys"))) {
           changed = true;
-          blk = { ...blk, props: { ...blk.props, views: vs.map((v) => (v.layout === "grid" ? { ...v, hiddenFields: SAMPLE_CLIENT_HIDDEN, sorts: SAMPLE_CLIENT_SORTS } : v)) } };
+          blk = { ...blk, props: { ...blk.props, views: vs.map((v) => (v.layout === "grid" ? viewOnInstalledKeys({ ...v, hiddenFields: SAMPLE_CLIENT_HIDDEN, sorts: SAMPLE_CLIENT_SORTS }, tables.client.keys) : v)) } };
         }
       }
       const views = blk.type === "database" ? (blk.props?.views as Array<{ hiddenFields?: string[] }> | undefined) : undefined;

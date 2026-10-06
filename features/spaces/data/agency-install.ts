@@ -10,7 +10,7 @@
 // gallery install makes. A re-press resumes: a copy already noted is never made twice.
 
 import { supabaseDataSource } from "@ai-matrx/records/core";
-import { runTemplateDoor, templateDeclaration, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
+import { runTemplateDoor, templateDeclaration, templateUpgradeHint, upgradeTemplateInstall, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 
 import { addInstalledAgent, hostStepsPending, type Claim } from "@/features/make/gallery/installAgent";
 import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/templates/agentCopyHost";
@@ -31,6 +31,10 @@ export interface AgencyTable {
   viewId?: string;
   /** Set only for the template gallery's read-only preview: the in-memory world the table lives in. */
   sample?: string;
+  /** The spec's field key → this install's key, where they differ. An upgrade that converts a column
+   *  keeps the retired one under the old key and gives the new one a fresh key (`offer` → `offer_2`),
+   *  so a block never names a field by the spec's key — it asks `fieldKey`. Matched by title. */
+  keys?: Record<string, string>;
 }
 
 /** The four tables every install has, plus Offers (version 2 — an older install has none). */
@@ -54,6 +58,53 @@ export function agencyTablesFrom(answer: TemplateDoorAnswer): AgencyTables {
   if (offer?.id) {
     const view = made.find((m) => m.kind === "view" && m.ref === "views.all_offers");
     out.offer = { tableId: offer.id, name: offer.title ?? "Offers", viewId: view?.id ?? undefined };
+  }
+  return out;
+}
+
+/** The installed key of the spec's field `specKey` on `table` (the spec's key when the install keeps it). */
+export function fieldKey(table: AgencyTable | undefined, specKey: string): string {
+  return table?.keys?.[specKey] ?? specKey;
+}
+
+/** A view with every field it names (sorts, group, date, filters, hidden, chart axes) moved onto the
+ *  install's keys. Answers the same object when nothing moves. */
+export function viewOnInstalledKeys<V extends { groupField?: string | null; dateField?: string | null; sorts?: Array<{ field: string; direction: "asc" | "desc" }>; filters?: Record<string, unknown>; hiddenFields?: string[]; chart?: { groupBy: string | null; field?: string | null } }>(view: V, keys: Record<string, string> | undefined): V {
+  if (!keys || !Object.keys(keys).length) return view;
+  const k = (x: string) => keys[x] ?? x;
+  const kn = (x: string | null | undefined) => (x ? k(x) : x);
+  const next: V = {
+    ...view,
+    ...(view.groupField !== undefined ? { groupField: kn(view.groupField) } : {}),
+    ...(view.dateField !== undefined ? { dateField: kn(view.dateField) } : {}),
+    ...(view.sorts ? { sorts: view.sorts.map((s) => ({ ...s, field: k(s.field) })) } : {}),
+    ...(view.filters ? { filters: Object.fromEntries(Object.entries(view.filters).map(([f, v]) => [k(f), v])) } : {}),
+    ...(view.hiddenFields ? { hiddenFields: view.hiddenFields.map(k) } : {}),
+    ...(view.chart ? { chart: { ...view.chart, groupBy: kn(view.chart.groupBy) ?? null, ...(view.chart.field !== undefined ? { field: kn(view.chart.field) } : {}) } } : {}),
+  };
+  return JSON.stringify(next) === JSON.stringify(view) ? view : next;
+}
+
+/** Reads each installed table's fields and maps the spec's keys onto them by title (an upgraded
+ *  install's converted column carries a new key; the retired one keeps the old key off the table). */
+async function withInstalledKeys(tables: AgencyTables): Promise<AgencyTables> {
+  const entries = Object.entries(tables) as Array<[string, AgencyTable]>;
+  const { data, error } = await createClient()
+    .schema("custom")
+    .from("field")
+    .select("entity_definition_id, key, label")
+    .in("entity_definition_id", entries.map(([, t]) => t.tableId));
+  if (error) throw new Error(`We couldn't read the sample's fields: ${error.message}`);
+  const out = { ...tables } as AgencyTables;
+  for (const [token, table] of entries) {
+    const spec = AGENCY_SPEC.tables.find((t) => t.token === token);
+    const installed = (data ?? []).filter((f) => f.entity_definition_id === table.tableId);
+    const keys: Record<string, string> = {};
+    for (const f of spec?.fields ?? []) {
+      const hit = installed.find((x) => x.label === f.label);
+      if (hit?.key && hit.key !== f.key) keys[f.key] = hit.key;
+    }
+    (out as Record<string, AgencyTable>)[token] = Object.keys(keys).length ? { ...table, keys } : table;
   }
   return out;
 }
@@ -98,26 +149,66 @@ async function runHostSteps(answer: TemplateDoorAnswer, orgId: string, dispatch:
   if (!result.ok) throw new Error(`The sample's assistant was not made: ${result.why}`);
 }
 
+/** What an upgrade did, in words: "1 table, 1 field converted, 1 field retired, 1 view, 4 rows, 4 links". */
+export function upgradeCountsText(counts: Record<string, number> | undefined): string {
+  const words: Record<string, [string, string]> = {
+    tables: ["table", "tables"],
+    fields: ["field", "fields"],
+    fields_converted: ["field converted", "fields converted"],
+    fields_retired: ["field retired", "fields retired"],
+    views: ["view", "views"],
+    dashboards: ["dashboard", "dashboards"],
+    rows: ["row", "rows"],
+    links: ["link", "links"],
+    targets_created: ["linked record made", "linked records made"],
+  };
+  // `kept` (steps already done) is not a change; the rest in the order Notion would read them.
+  const parts = Object.keys(words)
+    .map((k) => [k, counts?.[k] ?? 0] as const)
+    .concat(Object.entries(counts ?? {}).filter(([k]) => !(k in words) && k !== "kept"))
+    .filter(([, n]) => typeof n === "number" && n > 0)
+    .map(([k, n]) => `${n} ${(words[k] ?? [k.replace(/_/g, " "), k.replace(/_/g, " ")])[n === 1 ? 0 : 1]}`);
+  return parts.length ? parts.join(", ") : "nothing needed changing";
+}
+
 /** Installs (or finds) the agency sample in `organizationId` — tables, views, dashboard and the
- *  assistant, the whole gallery install — and answers its tables. */
-export async function installAgencySample(organizationId: string, dispatch: AppDispatch): Promise<AgencyTables> {
+ *  assistant, the whole gallery install — and answers its tables. An install made from an older
+ *  version is upgraded first (custom.template_upgrade): new tables, fields and views are added, a
+ *  choice column that became a link is converted, nothing is dropped. `onStage` hears each stage. */
+export async function installAgencySample(organizationId: string, dispatch: AppDispatch, onStage?: (stage: string) => void): Promise<AgencyTables> {
   const client = createClient();
+  onStage?.("Planning…");
   const declared = await client
     .schema("custom")
     .rpc("template_declare", { p_scope: "org", p_spec: templateDeclaration(AGENCY_SPEC as never, organizationId) as never });
   if (declared.error) throw new Error(`The sample's tables could not be planned: ${declared.error.message}`);
   const templateId = (declared.data as unknown as { template_id: string }).template_id;
+  onStage?.("Making tables…");
   const done = await runTemplateDoor(supabaseDataSource(client), "template_install", organizationId, templateId, { maxCalls: 400 });
   if (!done.ok || !done.answer?.done) {
     const refusal = done.answer?.refusal as { message?: string } | null | undefined;
     throw new Error(`The sample's tables were not made: ${refusal?.message ?? done.error?.message ?? "the install stopped before it finished."}`);
   }
-  // An organization installed before the spec's current version keeps its old tables: the template
-  // system has no upgrade door yet (NEEDS), so say so instead of drawing the old shape silently.
-  const newer = (done.answer as { already?: boolean; newer_version?: number | null }).newer_version;
-  if (newer) toast.info(`Sample tables predate version ${newer}; upgrading them isn't available yet.`);
-  const tables = agencyTablesFrom(done.answer);
-  await runHostSteps(done.answer, organizationId, dispatch);
+  let answer: TemplateDoorAnswer = done.answer;
+  const hint = templateUpgradeHint(answer);
+  if (hint) {
+    onStage?.(`Upgrading v${hint.from_version} → v${hint.to_version}…`);
+    const up = await upgradeTemplateInstall(supabaseDataSource(client), organizationId, hint.install_id, hint.template_id, { maxCalls: 6 });
+    if (!up.ok || !up.answer) {
+      const refusal = up.answer?.refusal as { message?: string } | null | undefined;
+      throw new Error(`The sample's tables were not upgraded to version ${hint.to_version}: ${refusal?.message ?? up.error?.message ?? "the upgrade stopped before it finished."}`);
+    }
+    if (up.answer.upgraded !== false) {
+      toast.success(`Sample tables upgraded to version ${up.answer.version ?? hint.to_version}: ${upgradeCountsText(up.answer.counts)}.`);
+    }
+    answer = up.answer;
+  } else if ((answer as { newer_version?: number | null }).newer_version) {
+    // An answer naming a newer version with no upgrade hint: say so instead of drawing the old shape silently.
+    toast.info(`Sample tables predate version ${(answer as { newer_version?: number }).newer_version}; this install can't be upgraded.`);
+  }
+  const tables = await withInstalledKeys(agencyTablesFrom(answer));
+  onStage?.("Adding the assistant…");
+  await runHostSteps(answer, organizationId, dispatch);
   return tables;
 }
 

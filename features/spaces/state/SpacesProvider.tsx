@@ -286,7 +286,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
           },
           // org-filter: write-target a new sample page and its tables are filed in the active organization
           writeOrg: () => ensureOrgId(orgRef.current),
-          install: (orgId) => installAgencySample(orgId, dispatch),
+          install: (orgId) => installAgencySample(orgId, dispatch, setSampleProgress),
           createRoot: async (orgId, title) => {
             const doc = await createDatabaseSpacesStore(orgId).create({ parentId: null, title });
             store.notifyTree();

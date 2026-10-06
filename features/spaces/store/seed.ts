@@ -7,7 +7,7 @@
 
 import type { RichSpan, SpaceBlock, SpaceColor, SpaceDoc, SpaceMedia } from "../contract";
 import { spread } from "./position";
-import type { AgencyTables, AgencyToken } from "../data/agency-install";
+import { viewOnInstalledKeys, type AgencyTables, type AgencyToken } from "../data/agency-install";
 import type { ChartSettings, SpaceDbView } from "../data/sources";
 
 const bid = () => crypto.randomUUID();
@@ -53,6 +53,8 @@ export const b = {
   /** A linked view of one installed agency table (Notion's inline database / chart tile). */
   database: (tables: AgencyTables, token: AgencyToken, views: SpaceDbView[], extra: Record<string, unknown> = {}): SpaceBlock => {
     const table = tables[token];
+    // Fields are named by the install's keys (an upgraded install renames a converted column).
+    views = views.map((v) => viewOnInstalledKeys(v, table.keys));
     const source = table.viewId ? { kind: "table" as const, tableId: table.tableId, viewId: table.viewId } : { kind: "table" as const, tableId: table.tableId };
     return {
       id: bid(),
