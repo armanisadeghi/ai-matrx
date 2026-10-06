@@ -11,6 +11,7 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker } from "../data/SourcePicker";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
@@ -129,6 +130,10 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const contentRef = useRef<HTMLDivElement | null>(null);
   const comments = useSpaceComments(spaceId, doc?.title ?? "");
   const room = useSpaceRoom(spaceId, comments.reload);
+  // What this person may do here: the database decides (get_resource_access). A viewer or commenter gets
+  // no editing affordances and never writes.
+  const access = useAccess("document", spaceId);
+  const canEdit = access.level === "edit" || access.level === "admin";
   useSpacesAiDisclosure();
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -297,7 +302,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   }
 
   const locked = doc.settings.locked;
-  const editable = !locked && !doc.isArchived;
+  const editable = canEdit && !locked && !doc.isArchived;
   const path = doc.isArchived ? [] : pathTo(doc.id);
   const isFavorite = favorites.includes(doc.id);
   const setSettings = (patch: Partial<SpaceDoc["settings"]>) => update({ settings: { ...doc.settings, ...patch } }, 0);
@@ -465,7 +470,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         </nav>
         <span className="flex-1" />
         {locked ? (
-          <button type="button" className="spaces-locked-pill" onClick={() => setSettings({ locked: false })} title="Unlock page">
+          <button type="button" className="spaces-locked-pill" onClick={() => canEdit && setSettings({ locked: false })} disabled={!canEdit} title={canEdit ? "Unlock page" : "Locked"}>
             <Lock size={13} />
             Locked
           </button>
@@ -570,15 +575,15 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
                 </button>
               </IconPicker>
             ) : null}
-            {editable ? (
+            {!doc.isArchived ? (
               <div className="spaces-header-controls">
-                {!doc.icon ? (
+                {editable && !doc.icon ? (
                   <button type="button" className="spaces-header-control" onClick={() => update({ icon: randomIcon() }, 0)}>
                     <SmilePlus size={15} />
                     Add icon
                   </button>
                 ) : null}
-                {!doc.cover ? (
+                {editable && !doc.cover ? (
                   <button type="button" className="spaces-header-control" onClick={() => update({ cover: randomCover() }, 0)}>
                     <ImageIcon size={15} />
                     Add cover
