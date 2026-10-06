@@ -18,7 +18,9 @@ import { createRoot } from "react-dom/client";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const launchMandate = jest.fn(async () => ({ conversationId: "fresh-conv" }));
+const launchMandate = jest.fn(async (_key: string, opts?: { conversationId?: string }) => ({
+  conversationId: opts?.conversationId ?? "fresh-conv",
+}));
 jest.mock("@ai-matrx/chat/agents/hooks/useAgentLauncher", () => ({
   useAgentLauncher: () => ({ launchMandate }),
 }));
@@ -37,6 +39,13 @@ jest.mock(
 let messageCount = 0;
 let executing = false;
 let cacheOnly = false;
+let serverOperations = 0;
+jest.mock("@/lib/api/typed-client", () => ({
+  buildPath: (p: string, params: Record<string, string>) =>
+    p.replace(/\{(\w+)\}/g, (_m, k: string) => params[k]),
+  apiGet: async () => ({ data: { operation_count: serverOperations, operations: [] } }),
+}));
+let userMessages: Array<{ role: string; content: unknown }> = [];
 /** Resume outcomes in order: "fail" rejects as an unwritten row, "hang" never settles. */
 let resumePlan: Array<"ok" | "fail" | "hold"> = [];
 let releaseHeld: (() => void) | null = null;
@@ -83,6 +92,7 @@ jest.mock(
   "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({
     selectMessageCount: () => () => messageCount,
+    selectConversationMessages: () => () => userMessages,
     selectMessagesHydrationFailure: () => () => hydrationFailure,
   }),
 );
@@ -139,6 +149,9 @@ beforeEach(() => {
   messageCount = 0;
   executing = false;
   cacheOnly = false;
+  serverOperations = 0;
+  userMessages = [];
+  sessionStorage.clear();
   resumePlan = [];
   hydrationFailure = null;
   window.history.replaceState(null, "", "/marketing/brand-1/pr");
@@ -250,12 +263,59 @@ test("a re-render while the conversation is opening does not strand the panel", 
   expect(launchMandate).not.toHaveBeenCalled();
 });
 
-test("the id waits for the server's row before it rides the URL", async () => {
+/*
+ * Final walk 2026-10-05 (1280px, headless): a reload in the first second after sending showed an
+ * empty welcome screen and the question was gone — the id waited for the server's row before it
+ * rode the URL, so a reload in that window found nothing to reopen. A sent question must survive a
+ * reload at ANY moment: the id (minted on this client, adopted by the server) is pinned the moment
+ * a turn is sent, the question is kept on this tab until the server confirms the row, and a
+ * reopen that never finds the row re-sends that question under the same id — once.
+ */
+
+test("the moment a turn is sent, its id rides the URL and the question is kept until confirmed", async () => {
   executing = true;
   messageCount = 1;
-  cacheOnly = true; // the run has started; the server has not confirmed the row yet
+  cacheOnly = true; // the server has not written the row yet
+  userMessages = [{ role: "user", content: [{ type: "text", text: "What should we do first?" }] }];
   await mount();
-  expect(new URL(window.location.href).searchParams.get("director")).toBeNull();
+  expect(new URL(window.location.href).searchParams.get("director")).toBe("fresh-conv");
+  expect(sessionStorage.getItem("matrx.pr.director.pending.fresh-conv")).toBe("What should we do first?");
+});
+
+test("once the server confirms the row, the kept question is let go", async () => {
+  executing = true;
+  messageCount = 1;
+  cacheOnly = false;
+  sessionStorage.setItem("matrx.pr.director.pending.fresh-conv", "What should we do first?");
+  await mount();
+  expect(sessionStorage.getItem("matrx.pr.director.pending.fresh-conv")).toBeNull();
+});
+
+test("a reload before the row existed re-sends the kept question under the same id, once", async () => {
+  jest.useFakeTimers();
+  try {
+    window.history.replaceState(null, "", "/marketing/brand-1/pr?director=early-conv");
+    sessionStorage.setItem("matrx.pr.director.pending.early-conv", "What should we do first?");
+    resumePlan = ["fail", "fail", "fail", "fail", "fail", "fail", "fail"];
+    dispatch.mockClear();
+    await mount();
+    for (let i = 0; i < 12; i++) {
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(2000);
+      });
+    }
+    expect(launchMandate).toHaveBeenCalledWith(
+      "seo.press_strategist",
+      expect.objectContaining({ conversationId: "early-conv" }),
+    );
+    const sent = dispatch.mock.calls
+      .map((c) => c[0] as { type?: string; p?: { text?: string } })
+      .filter((a) => a.type === "input");
+    expect(sent.map((a) => a.p?.text)).toEqual(["What should we do first?"]);
+    expect(dispatch.mock.calls.filter((c) => (c[0] as { type?: string }).type === "exec")).toHaveLength(1);
+  } finally {
+    jest.useRealTimers();
+  }
 });
 
 test("a row that is not there yet is retried until it is", async () => {
@@ -274,4 +334,34 @@ test("a row that is not there yet is retried until it is", async () => {
   } finally {
     jest.useRealTimers();
   }
+});
+
+
+/*
+ * Final headless walk (0.5 s): the reload found an EMPTY conversation row (the id is reserved at
+ * launch) and showed the welcome screen with no error and no question. An empty row with no server
+ * operation means the turn never reached the server: the kept question is sent again, once. An
+ * empty row the server IS working on is left to reconnect — never sent twice.
+ */
+test("an empty row the server never worked on gets the kept question again, once", async () => {
+  window.history.replaceState(null, "", "/marketing/brand-1/pr?director=reserved-conv");
+  sessionStorage.setItem("matrx.pr.director.pending.reserved-conv", "What should we do first?");
+  dispatch.mockClear();
+  await mount();
+  await act(async () => {});
+  const inputs = dispatch.mock.calls
+    .map((c) => c[0] as { type?: string; p?: { text?: string } })
+    .filter((a) => a.type === "input");
+  expect(inputs.map((a) => a.p?.text)).toEqual(["What should we do first?"]);
+  expect(dispatch.mock.calls.filter((c) => (c[0] as { type?: string }).type === "exec")).toHaveLength(1);
+});
+
+test("an empty row the server is still working on is never sent twice", async () => {
+  window.history.replaceState(null, "", "/marketing/brand-1/pr?director=busy-conv");
+  sessionStorage.setItem("matrx.pr.director.pending.busy-conv", "What should we do first?");
+  serverOperations = 1;
+  dispatch.mockClear();
+  await mount();
+  await act(async () => {});
+  expect(dispatch.mock.calls.filter((c) => (c[0] as { type?: string }).type === "exec")).toHaveLength(0);
 });

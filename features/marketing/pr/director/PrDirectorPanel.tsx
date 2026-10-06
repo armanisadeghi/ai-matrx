@@ -28,11 +28,13 @@ import { smartExecute } from "@ai-matrx/chat/agents/redux/execution-system/thunk
 import { resumeConversation } from "@ai-matrx/chat/agents/redux/execution-system/thunks/resume-conversation.thunk";
 import { selectIsExecuting } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
+  selectConversationMessages,
   selectMessageCount,
   selectMessagesHydrationFailure,
 } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { selectIsCacheOnly } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
+import { apiGet, buildPath } from "@/lib/api/typed-client";
 import { cn } from "@/lib/utils";
 
 import {
@@ -104,19 +106,87 @@ function takeAskFromUrl(): string | null {
  * second between the run starting and the server writing the row; that read is not a failure,
  * it is early. About 20 seconds of patience, then the honest error with Try again.
  */
-const REOPEN_DELAYS_MS = [1000, 2000, 3000, 4000, 5000, 5000] as const;
-async function reopenWithRetry<T>(attempt: () => Promise<T>): Promise<T> {
+const REOPEN_DELAYS_MS: readonly number[] = [1000, 2000, 3000, 4000, 5000, 5000];
+/** With the question kept on this tab, a missing row is resent sooner: ~8 seconds, not ~20. */
+const REOPEN_DELAYS_WITH_KEPT_MS: readonly number[] = [1000, 2000, 2000, 3000];
+async function reopenWithRetry<T>(
+  attempt: () => Promise<T>,
+  delays: readonly number[] = REOPEN_DELAYS_MS,
+): Promise<T> {
   let lastError: unknown;
-  for (let i = 0; i <= REOPEN_DELAYS_MS.length; i++) {
+  for (let i = 0; i <= delays.length; i++) {
     try {
       return await attempt();
     } catch (error) {
       lastError = error;
-      if (i === REOPEN_DELAYS_MS.length) break;
-      await new Promise((r) => setTimeout(r, REOPEN_DELAYS_MS[i]));
+      if (i === delays.length) break;
+      await new Promise((r) => setTimeout(r, delays[i]));
     }
   }
   throw lastError;
+}
+
+/** Does the server hold any operation for this conversation? A failed check answers "yes" — the
+ *  safe side: never send a person's question twice on a guess. */
+async function serverIsWorkingOn(conversationId: string): Promise<boolean> {
+  try {
+    const { data } = await apiGet(
+      buildPath("/runtime/operations/by-link/{link_kind}/{link_id}", {
+        link_kind: "conversation",
+        link_id: conversationId,
+      }),
+      { expectedErrorStatuses: [404] },
+    );
+    return ((data as { operation_count?: number } | null)?.operation_count ?? 0) > 0;
+  } catch (error) {
+    // 404 is the server's "no operation you own for this conversation".
+    return (error as { status?: number } | null)?.status !== 404;
+  }
+}
+
+// THE KEPT QUESTION: per tab (sessionStorage), per conversation, only until the server confirms
+// the row. Never sent anywhere; read back only to re-send a question the server never received.
+const KEPT_PREFIX = "matrx.pr.director.pending.";
+function keptQuestion(conversationId: string): string | null {
+  try {
+    return window.sessionStorage.getItem(KEPT_PREFIX + conversationId);
+  } catch {
+    return null;
+  }
+}
+function keepQuestion(conversationId: string, text: string): void {
+  try {
+    window.sessionStorage.setItem(KEPT_PREFIX + conversationId, text);
+  } catch {
+    // Private mode: the reload can still reopen the conversation once the row exists.
+  }
+}
+function forgetKeptQuestion(conversationId: string): void {
+  try {
+    window.sessionStorage.removeItem(KEPT_PREFIX + conversationId);
+  } catch {
+    // nothing kept
+  }
+}
+
+const EMPTY_MESSAGES: readonly { role?: string; content?: unknown }[] = [];
+/** The text of the latest user turn, from its content blocks. */
+function latestUserText(messages: readonly { role?: string; content?: unknown }[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "user") continue;
+    const blocks = Array.isArray(m.content) ? m.content : [m.content];
+    const text = blocks
+      .map((b) =>
+        typeof b === "string" ? b : b && typeof b === "object" && typeof (b as { text?: unknown }).text === "string"
+          ? (b as { text: string }).text
+          : "",
+      )
+      .join("")
+      .trim();
+    return text || null;
+  }
+  return null;
 }
 
 function holdDirectorConversation(conversationId: string): void {
@@ -192,7 +262,38 @@ export function PrDirectorPanel({
               // instead; that is the "early" case this retry exists for, so it counts as a miss.
               const failure = selectMessagesHydrationFailure(reopen)(store.getState());
               if (failure) throw new Error(failure);
-            }).then(() => reopen)
+            }, keptQuestion(reopen) ? REOPEN_DELAYS_WITH_KEPT_MS : REOPEN_DELAYS_MS)
+              .then(async () => {
+                // The row can exist EMPTY (its id is reserved at launch). Empty, with no operation on
+                // the server, means the turn never reached it: send the kept question again, once.
+                // Empty WITH an operation is a turn still running — reconnect follows it.
+                const question = keptQuestion(reopen);
+                if (
+                  question &&
+                  selectMessageCount(reopen)(store.getState()) === 0 &&
+                  !(await serverIsWorkingOn(reopen))
+                ) {
+                  forgetKeptQuestion(reopen);
+                  setPendingAsk(question);
+                }
+                return reopen;
+              })
+              .catch(async (error: unknown) => {
+                // The row never appeared: the server never received the turn (it writes the row
+                // before it streams). If this tab kept the question, send it again under the SAME
+                // id — the person's words are never lost to a reload.
+                const question = keptQuestion(reopen);
+                if (!question) throw error;
+                const relaunched = await launchMandate(PR_DIRECTOR_MANDATE_KEY, {
+                  surfaceKey,
+                  sourceFeature: "marketing",
+                  organizationId,
+                  conversationId: reopen,
+                });
+                forgetKeptQuestion(reopen);
+                setPendingAsk(question);
+                return relaunched.conversationId;
+              })
           : launchMandate(PR_DIRECTOR_MANDATE_KEY, {
               surfaceKey,
               sourceFeature: "marketing",
@@ -259,16 +360,23 @@ export function PrDirectorPanel({
   const messageCount = useAppSelector((state) =>
     conversationId ? selectMessageCount(conversationId)(state) : 0,
   );
-  // HOLD IT: once the SERVER has confirmed the conversation row, the id rides the URL so a reload finds
-  // it. Not when the run merely starts — a reload in that second asked for a row not yet written.
+  // HOLD IT, THE MOMENT A TURN IS SENT. The id is minted on this client and adopted by the server, so
+  // it can ride the URL at once; until the server confirms the row, the question is kept on this tab,
+  // so a reload at ANY moment either reopens the conversation or re-sends the question (above).
   const serverHasRow = useAppSelector((state) =>
     conversationId ? !selectIsCacheOnly(conversationId)(state) : false,
   );
+  const messages = useAppSelector((state) =>
+    conversationId ? selectConversationMessages(conversationId)(state) : EMPTY_MESSAGES,
+  );
+  const latestQuestion = latestUserText(messages);
   useEffect(() => {
-    if (!conversationId || !serverHasRow) return;
+    if (!conversationId) return;
     if (messageCount === 0 && !executing) return;
     holdDirectorConversation(conversationId);
-  }, [conversationId, serverHasRow, messageCount, executing]);
+    if (serverHasRow) forgetKeptQuestion(conversationId);
+    else if (latestQuestion) keepQuestion(conversationId, latestQuestion);
+  }, [conversationId, serverHasRow, messageCount, executing, latestQuestion]);
 
   const [bind, setBind] = useState<BindState>("idle");
   const boundFor = useRef<string | null>(null);

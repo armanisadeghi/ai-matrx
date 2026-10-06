@@ -15,7 +15,7 @@
  * over the page. ONE panel instance either way, so one conversation.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Megaphone, PanelRightClose, X } from "lucide-react";
 
 import { useMarketingBrand } from "@/features/marketing/lib/brand-context";
@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils";
 
 import PressRoomWorkspace from "./PressRoomWorkspace";
 import { PrDirectorPanel } from "./director/PrDirectorPanel";
-import { useDirectorDock } from "./director/director-dock";
+import { pageHoldsDirectorConversation, useDirectorDock } from "./director/director-dock";
 
 export function BrandScopedPressRoom() {
   const brand = useMarketingBrand();
@@ -31,16 +31,25 @@ export function BrandScopedPressRoom() {
   // by default where it would squeeze the angle list (see director-dock.ts).
   const [directorOpen, setDirectorOpen] = useState(false);
   const [docked, setDocked] = useDirectorDock();
+  // On a phone too, a reload mid-conversation lands back in the conversation.
+  useEffect(() => {
+    if (pageHoldsDirectorConversation()) setDirectorOpen(true);
+  }, []);
   return (
-    <div className="flex h-full min-h-0">
+    // A size container: the Director docks beside the workspace only when BOTH keep a usable width
+    // (workspace ≥ ~640px + Director 420px); narrower, it floats over the right edge instead of
+    // squeezing the angle list to one word per line (walk 2026-10-05, 1024px).
+    <div className="@container/pressroom flex h-full min-h-0">
       <div className="h-full min-w-0 flex-1">
         <PressRoomWorkspace scopedBrandId={brand.id} />
       </div>
       <aside
         aria-label="PR Director column"
         className={cn(
-          "flex-col border-l bg-background lg:static lg:z-auto lg:w-[420px] lg:shrink-0",
-          docked ? "lg:flex" : "lg:hidden",
+          "flex-col border-l bg-background lg:w-[420px] lg:shrink-0",
+          docked
+            ? "lg:fixed lg:inset-x-auto lg:right-0 lg:bottom-0 lg:top-[var(--shell-header-h)] lg:z-40 lg:flex lg:shadow-xl @min-[66rem]/pressroom:static @min-[66rem]/pressroom:z-auto @min-[66rem]/pressroom:shadow-none"
+            : "lg:hidden",
           directorOpen
             ? "fixed inset-x-0 bottom-0 top-[var(--shell-header-h)] z-40 flex"
             : "hidden",
