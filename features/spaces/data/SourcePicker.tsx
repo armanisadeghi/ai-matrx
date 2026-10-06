@@ -13,7 +13,7 @@ import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
@@ -39,13 +39,14 @@ function Lists({ query, onPick }: { query: string; onPick: (s: PickedSource) => 
   const sample = AGENCY_SPEC.tables.filter((t) => !q || t.name.toLowerCase().includes(q));
   // org-filter: write-target picking a sample table installs the agency in the active organization
   const activeOrg = useAppSelector(selectActiveOrganizationId);
+  const dispatch = useAppDispatch();
   const [installing, setInstalling] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const pickSample = async (token: AgencyToken) => {
     setInstalling(token);
     setFailed(null);
     try {
-      const made = (await installAgencySample(await ensureOrgId(activeOrg)))[token];
+      const made = (await installAgencySample(await ensureOrgId(activeOrg), dispatch))[token];
       onPick({ tableId: made.tableId, name: made.name });
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) setFailed(err instanceof Error ? err.message : "The sample could not be added.");

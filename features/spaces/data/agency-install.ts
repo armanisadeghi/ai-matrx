@@ -3,10 +3,20 @@
 // declared as the organization's own template (custom.template_declare, an upsert on its catalogue id
 // and version) and custom.template_install runs it to done. A second press finds the install and
 // answers `already` with the same tables — nothing is made twice.
+//
+// FULL INSTALL (round 12): after template_install answers done, the host's steps run exactly as the
+// gallery's Install button runs them — `addInstalledAgent` (features/make) copies the "Agency
+// assistant", claims and notes it on the install, so the sample ends with the same assistant a
+// gallery install makes. A re-press resumes: a copy already noted is never made twice.
 
 import { supabaseDataSource } from "@ai-matrx/records/core";
 import { runTemplateDoor, templateDeclaration, type TemplateDoorAnswer } from "@ai-matrx/records/templates";
 
+import { addInstalledAgent, hostStepsPending, type Claim } from "@/features/make/gallery/installAgent";
+import { templateAgentArchiver, templateAgentCopier, templateWorkflowCreator } from "@/features/templates/agentCopyHost";
+import { templateKnob } from "@/features/templates/knobs";
+import { setWorkflowFlag } from "@/features/workflow-runtime/browse/service";
+import type { AppDispatch } from "@/lib/redux/store";
 import { createClient } from "@/utils/supabase/client";
 
 import { AGENCY_SPEC } from "./agency-spec";
@@ -41,8 +51,49 @@ export function agencyTablesFrom(answer: TemplateDoorAnswer): AgencyTables {
   return out;
 }
 
-/** Installs (or finds) the agency sample's tables in `organizationId`. */
-export async function installAgencySample(organizationId: string): Promise<AgencyTables> {
+/** The gallery's host steps after template_install (its agent, extra agents, workflows), with the
+ *  same ports the gallery's TemplatePreview builds. Throws, by name, when the assistant was not made. */
+async function runHostSteps(answer: TemplateDoorAnswer, orgId: string, dispatch: AppDispatch): Promise<void> {
+  if (!hostStepsPending(answer)) return;
+  const supabase = createClient();
+  const result = await addInstalledAgent(answer, orgId, {
+    copier: templateAgentCopier(dispatch),
+    extraCopier: templateAgentCopier(dispatch, { attachRecordsTool: false }),
+    createWorkflow: templateWorkflowCreator(dispatch),
+    archiveAgent: templateAgentArchiver(dispatch),
+    archiveWorkflow: (workflowId) => setWorkflowFlag(workflowId, { is_archived: true }),
+    claim: async (installId, kind, label, sourceId) => {
+      const lease = await templateKnob("run_lease_seconds");
+      const { data, error } = await supabase
+        .schema("custom")
+        .rpc("template_install_claim", {
+          p_organization_id: orgId,
+          p_install_id: installId,
+          p_kind: kind,
+          p_label: label,
+          ...(sourceId ? { p_source_id: sourceId } : {}),
+          p_lease_seconds: lease,
+        });
+      if (error) throw new Error(error.message);
+      const claim = (data as unknown as { claim: Claim & { claimed_at?: string } }).claim;
+      if (claim.state !== "held") return claim;
+      const at = claim.claimed_at ? Date.parse(claim.claimed_at) + lease * 1000 : NaN;
+      return { state: "held", retryAt: Number.isFinite(at) ? new Date(at).toISOString() : null };
+    },
+    note: async (installId, agentId, label, kind) => {
+      const { data, error } = await supabase
+        .schema("custom")
+        .rpc("template_install_note", { p_organization_id: orgId, p_install_id: installId, p_kind: kind ?? "agent", p_id: agentId, p_label: label });
+      if (error) throw new Error(error.message);
+      return data as TemplateDoorAnswer;
+    },
+  });
+  if (!result.ok) throw new Error(`The sample's assistant was not made: ${result.why}`);
+}
+
+/** Installs (or finds) the agency sample in `organizationId` — tables, views, dashboard and the
+ *  assistant, the whole gallery install — and answers its tables. */
+export async function installAgencySample(organizationId: string, dispatch: AppDispatch): Promise<AgencyTables> {
   const client = createClient();
   const declared = await client
     .schema("custom")
@@ -54,7 +105,9 @@ export async function installAgencySample(organizationId: string): Promise<Agenc
     const refusal = done.answer?.refusal as { message?: string } | null | undefined;
     throw new Error(`The sample's tables were not made: ${refusal?.message ?? done.error?.message ?? "the install stopped before it finished."}`);
   }
-  return agencyTablesFrom(done.answer);
+  const tables = agencyTablesFrom(done.answer);
+  await runHostSteps(done.answer, organizationId, dispatch);
+  return tables;
 }
 
 /** The table a sample block named, by its title (the preview's table names are the spec's). */

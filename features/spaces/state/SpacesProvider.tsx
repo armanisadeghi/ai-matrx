@@ -12,13 +12,15 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
 
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { installAgencySample } from "../data/agency-install";
 import { addTravelingSmmSample } from "../store/sample";
+import { createDatabaseSpacesStore } from "../store-db/create-store";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
 import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
@@ -110,6 +112,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const orgRef = useRef(organizationId);
   orgRef.current = organizationId;
   const [store] = useState(() => createLiveSpacesStore(() => orgRef.current));
+  const dispatch = useAppDispatch();
   const [all, setAll] = useState<SpaceSummary[]>([]);
   const [ready, setReady] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -272,9 +275,27 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (sampleProgress) return;
     setSampleProgress("0");
     try {
-      // org-filter: write-target the sample's tables are installed in the active organization (asked for when none is chosen)
-      const install = async () => installAgencySample(await ensureOrgId(orgRef.current));
-      const root = await addTravelingSmmSample(store, install, (done, total) => setSampleProgress(`${done}/${total}`));
+      // The page and its tables share one organization: an existing sample page's own organization;
+      // a new page and its tables go to the write organization (asked for when none is chosen).
+      const root = await addTravelingSmmSample(
+        store,
+        {
+          orgOf: async (id) => {
+            const { data, error } = await createClient().schema("content").from("document").select("organization_id").eq("id", id).maybeSingle();
+            if (error || !data) throw new Error(`We couldn't read the sample page's organization${error ? `: ${error.message}` : "."}`);
+            return data.organization_id;
+          },
+          // org-filter: write-target a new sample page and its tables are filed in the active organization
+          writeOrg: () => ensureOrgId(orgRef.current),
+          install: (orgId) => installAgencySample(orgId, dispatch),
+          createRoot: async (orgId, title) => {
+            const doc = await createDatabaseSpacesStore(orgId).create({ parentId: null, title });
+            store.notifyTree();
+            return doc;
+          },
+        },
+        (done, total) => setSampleProgress(`${done}/${total}`),
+      );
       open(root.id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");

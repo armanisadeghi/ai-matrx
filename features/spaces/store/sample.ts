@@ -42,6 +42,17 @@ function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: Spa
           blk = { ...blk, props: { ...rest, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
         }
       }
+      // Round 12: a block on an agency table in ANOTHER organization (an earlier add installed into the
+      // active organization, not the page's) reads the tables installed beside the page instead.
+      const src = blk.type === "database" ? (blk.props?.source as { kind?: string; tableId?: string } | undefined) : undefined;
+      if (src?.kind === "table" && !blk.props?.sample) {
+        const token = agencyTokenByName(typeof blk.props?.title === "string" ? blk.props.title : undefined);
+        const t = token ? tables[token] : null;
+        if (t && src.tableId !== t.tableId) {
+          changed = true;
+          blk = { ...blk, props: { ...blk.props, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
+        }
+      }
       // Round 11: a client grid already on the installed table hides its reverse links and sorts by start date.
       if (blk.type === "database" && !blk.props?.sample && blk.props?.title === "Clients") {
         const vs = blk.props.views as Array<{ layout?: string; hiddenFields?: string[] }> | undefined;
@@ -93,31 +104,46 @@ function upgradeMedia(doc: SpaceDoc): Partial<SpaceDoc> | null {
   return { ...(oldCover ? { cover: SAMPLE_COVER } : {}), ...(oldIcon ? { icon: SAMPLE_ICON } : {}) };
 }
 
+/** Where the sample's pieces are filed. The page and its tables always share one organization. */
+export interface SampleTargets {
+  /** The organization an existing page lives in (the sample page's own organization). */
+  orgOf: (id: SpaceId) => Promise<string>;
+  /** The organization to write a NEW sample into (the active one; asks when none is chosen). */
+  writeOrg: () => Promise<string>;
+  /** Makes (or finds) the agency's real tables — the full gallery install — in that organization. */
+  install: (organizationId: string) => Promise<AgencyTables>;
+  /** Creates the top-level sample page in that organization. */
+  createRoot: (organizationId: string, title: string) => Promise<SpaceDoc>;
+}
+
 /** Adds the sample once: when it is already in the tree, that copy is brought up to date and returned
- *  (no second "The Traveling SMM™ OS"). Otherwise creates it; `onProgress(done, total)` after each page.
- *  `install` makes (or finds) the agency's real tables first — the page's data blocks point at them. */
+ *  (no second "The Traveling SMM™ OS"), with the tables installed into THAT page's organization.
+ *  Otherwise the page and its tables are both made in the write organization; `onProgress(done, total)`
+ *  after each page. The page's data blocks point at the installed tables. */
 export async function addTravelingSmmSample(
   store: SpacesStore,
-  install: () => Promise<AgencyTables>,
+  targets: SampleTargets,
   onProgress?: (done: number, total: number) => void,
 ): Promise<SpaceDoc> {
-  const tables = await install();
   const existing = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
   if (existing) {
     const doc = await store.get(existing.id);
     if (doc) {
+      const tables = await targets.install(await targets.orgOf(doc.id));
       const up = upgradeSlots(doc.blocks, tables);
       const media = upgradeMedia(doc);
       return up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
     }
   }
+  const organizationId = await targets.writeOrg();
+  const tables = await targets.install(organizationId);
   const docs = seedSpaces(tables);
   const rootSeed = docs.find((d) => d.id === SEED_ROOT_ID)!;
   const kids = docs.filter((d) => d.parentId === SEED_ROOT_ID);
   const total = docs.length;
   const ids = new Map<string, SpaceId>();
 
-  const root = await store.create({ parentId: null, title: rootSeed.title });
+  const root = await targets.createRoot(organizationId, rootSeed.title);
   ids.set(rootSeed.id, root.id);
   onProgress?.(1, total);
 
