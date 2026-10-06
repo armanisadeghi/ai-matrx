@@ -76,7 +76,7 @@ export function PiiCandidatesContent({ results, onJumpToPage, initialTier = "med
               className={cn(
                 "rounded-full border px-2 py-0.5 text-[10px] capitalize transition-colors",
                 tier === t
-                  ? "border-primary bg-primary/10 text-primary"
+                  ? "border-primary bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:bg-accent",
               )}
             >

@@ -50,7 +50,7 @@ export function FileReferenceCopyButton({
       className={cn(
         "inline-flex items-center justify-center rounded-md",
         "transition-all duration-150",
-        "text-muted-foreground hover:text-primary hover:bg-primary/10",
+        "text-muted-foreground hover:text-primary-ink hover:bg-primary/10",
         copied && "text-primary",
         btnSize,
         className,

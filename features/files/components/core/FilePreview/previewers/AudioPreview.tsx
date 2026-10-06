@@ -457,7 +457,7 @@ function AudioPreviewSession({
           className={cn(
             "flex items-center gap-1 rounded-md px-2 py-0.5",
             loop
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/10 text-primary-ink"
               : "hover:bg-accent hover:text-foreground",
           )}
         >

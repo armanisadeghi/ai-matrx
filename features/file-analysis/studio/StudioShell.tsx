@@ -496,7 +496,7 @@ function ModeButton({
       className={cn(
         "flex max-lg:min-h-11 max-lg:min-w-11 items-center justify-center gap-1 rounded-md border px-2 py-1 text-[10px] font-medium uppercase tracking-wider transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-primary-ink"
           : "border-border text-muted-foreground hover:bg-accent",
       )}
     >

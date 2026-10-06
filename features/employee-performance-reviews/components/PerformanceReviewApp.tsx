@@ -575,7 +575,7 @@ export default function PerformanceReviewApp({
                       Finished report preview
                     </h1>
                   </div>
-                  <span className="hidden rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary sm:inline-flex">
+                  <span className="hidden rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary-ink sm:inline-flex">
                     Letter · 2 pages
                   </span>
                 </div>
@@ -745,7 +745,7 @@ export default function PerformanceReviewApp({
                       >
                         <AccordionTrigger className="py-3 hover:no-underline">
                           <span className="flex flex-1 items-center gap-2.5 pr-2">
-                            <span className="grid h-6 w-6 flex-none place-items-center rounded-md bg-primary/10 text-xs font-bold text-primary">
+                            <span className="grid h-6 w-6 flex-none place-items-center rounded-md bg-primary/10 text-xs font-bold text-primary-ink">
                               {ci + 1}
                             </span>
                             <span className="text-sm font-semibold">

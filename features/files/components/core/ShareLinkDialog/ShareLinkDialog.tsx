@@ -319,7 +319,7 @@ export function ShareLinkDialogBody({
                       onClick={() => void handleRevoke(link.id)}
                       aria-label="Revoke link"
                       title="Revoke link"
-                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-destructive hover:bg-destructive/10"
+                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded text-destructive-ink hover:bg-destructive/10"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

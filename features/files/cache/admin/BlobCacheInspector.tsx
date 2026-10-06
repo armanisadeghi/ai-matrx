@@ -251,7 +251,7 @@ export function BlobCacheInspector() {
   if (!isSuperAdmin) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive-ink">
           <AlertCircle className="h-4 w-4" />
           <span>Super Admin access required.</span>
         </div>

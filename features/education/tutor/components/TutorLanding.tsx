@@ -36,7 +36,7 @@ export function TutorLanding({ conversationId }: TutorLandingProps) {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 px-4 py-10 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
         <GraduationCap className="h-7 w-7" aria-hidden />
       </div>
       <div className="space-y-2">

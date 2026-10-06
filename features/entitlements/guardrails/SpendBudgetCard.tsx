@@ -216,7 +216,7 @@ function Headline({
           className={cn(
             "rounded-full border px-2 py-0.5 text-[11px] font-medium",
             effective.enforced
-              ? "border-primary/30 bg-primary/10 text-primary"
+              ? "border-primary/30 bg-primary/10 text-primary-ink"
               : "border-border bg-muted text-muted-foreground",
           )}
         >
@@ -305,7 +305,7 @@ function Row({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
           <span className="text-sm text-foreground">{label}</span>
           {binding ? (
-            <span className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+            <span className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
               binding
             </span>
           ) : null}

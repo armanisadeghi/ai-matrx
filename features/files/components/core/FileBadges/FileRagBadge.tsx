@@ -85,7 +85,7 @@ export function FileRagBadge({
       {isIndexed ? (
         <span
           title="Indexed for Knowledge search"
-          className="inline-flex items-center gap-0.5 rounded-sm bg-primary/10 text-primary px-1 py-px text-[9px] font-semibold leading-none"
+          className="inline-flex items-center gap-0.5 rounded-sm bg-primary/10 text-primary-ink px-1 py-px text-[9px] font-semibold leading-none"
         >
           <Lightbulb className="h-2.5 w-2.5" />
           {iconOnly ? null : <span>Knowledge</span>}

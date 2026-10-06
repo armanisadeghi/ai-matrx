@@ -51,7 +51,7 @@ export function SectionCard({
     >
       <CardHeader className="p-4 pb-2">
         <div className="flex items-center gap-3">
-          <span className="grid h-7 w-7 flex-none place-items-center rounded-lg bg-primary/10 text-sm font-bold text-primary">
+          <span className="grid h-7 w-7 flex-none place-items-center rounded-lg bg-primary/10 text-sm font-bold text-primary-ink">
             {badge}
           </span>
           <CardTitle className="text-base">{title}</CardTitle>

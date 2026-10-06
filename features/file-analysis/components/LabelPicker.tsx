@@ -305,7 +305,7 @@ function CategoryChip({
       className={cn(
         "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
         active
-          ? "border-primary bg-primary/10 text-primary"
+          ? "border-primary bg-primary/10 text-primary-ink"
           : "border-border text-muted-foreground hover:bg-accent",
       )}
     >

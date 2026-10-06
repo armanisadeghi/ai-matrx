@@ -218,7 +218,7 @@ export function QuickViews({
               active
                 ? "border-primary bg-primary text-primary-foreground"
                 : view.primary
-                  ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/15"
+                  ? "border-primary/50 bg-primary/10 text-primary-ink hover:bg-primary/15"
                   : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >

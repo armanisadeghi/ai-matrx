@@ -274,7 +274,7 @@ function SearchTab({ onOpenBrowse }: { onOpenBrowse: () => void }) {
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
         {!hasQuery ? (
           <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-            <div className="mb-4 rounded-2xl bg-primary/10 p-4 text-primary">
+            <div className="mb-4 rounded-2xl bg-primary/10 p-4 text-primary-ink">
               <FileSearch className="h-8 w-8" aria-hidden="true" />
             </div>
             <p className="font-medium">Find anything in your library</p>

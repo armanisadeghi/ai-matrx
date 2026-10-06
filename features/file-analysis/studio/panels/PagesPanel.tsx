@@ -289,7 +289,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
       </div>
 
       {error ? (
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive">
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive-ink">
           <AlertCircle className="h-3 w-3" /> {error}
           <ErrorAlchemyMenu error={error} />
         </div>
@@ -298,7 +298,7 @@ export function PagesPanel({ fileId, activePageNumber, onSelectPage }: Props) {
       {/* A failed page-list read must say so — an empty grid with working
           bulk buttons would silently claim the file has no pages. */}
       {pagesError ? (
-        <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive">
+        <div className="flex shrink-0 items-center gap-1.5 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-[11px] text-destructive-ink">
           <AlertCircle className="h-3 w-3" /> The page list could not be
           loaded.
           <button

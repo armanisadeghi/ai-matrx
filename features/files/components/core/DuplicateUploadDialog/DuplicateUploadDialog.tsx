@@ -396,7 +396,7 @@ function ActionPill({
         active
           ? "border-primary bg-primary text-primary-foreground"
           : primary
-            ? "border-primary/50 bg-primary/10 text-primary hover:bg-primary/20"
+            ? "border-primary/50 bg-primary/10 text-primary-ink hover:bg-primary/20"
             : "border-border bg-background hover:bg-accent",
       )}
     >

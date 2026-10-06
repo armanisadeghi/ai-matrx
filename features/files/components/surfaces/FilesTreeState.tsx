@@ -55,7 +55,7 @@ export function FilesTreeErrorState({
       data-surface-value="tree_status"
     >
       <div className="flex max-w-md flex-col items-center gap-3 text-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive-ink">
           <TriangleAlert className="h-5 w-5" aria-hidden="true" />
         </div>
         <div>

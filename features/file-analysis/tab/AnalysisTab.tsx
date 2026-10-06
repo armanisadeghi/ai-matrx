@@ -288,7 +288,7 @@ export function AnalysisTab({ fileId, className }: AnalysisTabProps) {
           </div>
         ) : null}
         {analysis.error ? (
-          <div className="mt-2 flex items-center gap-2 rounded border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+          <div className="mt-2 flex items-center gap-2 rounded border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive-ink">
             <AlertCircle className="h-3 w-3" /> {analysis.error}
             <ErrorAlchemyMenu error={analysis.error} />
           </div>
@@ -498,7 +498,7 @@ function StatusBadge({ status }: { status: string }) {
     running: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
     partial: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
     complete: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-    failed: "bg-destructive/15 text-destructive",
+    failed: "bg-destructive/15 text-destructive-ink",
     not_applicable: "bg-muted text-muted-foreground italic",
   };
   return (
@@ -578,7 +578,7 @@ function SectionTabs({
               className={cn(
                 "ml-1 rounded px-1 py-px text-[9px] tabular-nums",
                 section === it.id
-                  ? "bg-primary/15 text-primary"
+                  ? "bg-primary/15 text-primary-ink"
                   : "bg-muted text-muted-foreground",
               )}
             >

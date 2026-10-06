@@ -260,7 +260,7 @@ export function RestoreDialog({ fileId, open, onOpenChange }: RestoreDialogProps
           ) : null}
 
           {error ? (
-            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-ink">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>

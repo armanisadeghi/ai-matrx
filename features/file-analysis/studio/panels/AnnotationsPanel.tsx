@@ -98,7 +98,7 @@ export function AnnotationsPanel({
                             p{a.page_number}
                           </span>
                           {a.redact ? (
-                            <span className="rounded bg-destructive/15 px-1 py-px text-[9px] uppercase text-destructive">
+                            <span className="rounded bg-destructive/15 px-1 py-px text-[9px] uppercase text-destructive-ink">
                               redact
                             </span>
                           ) : null}

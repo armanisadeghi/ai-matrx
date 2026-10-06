@@ -223,7 +223,7 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
             ) : null}
 
             {error ? (
-              <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+              <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive-ink">
                 {error}
                 <ErrorAlchemyMenu error={error} />
               </div>

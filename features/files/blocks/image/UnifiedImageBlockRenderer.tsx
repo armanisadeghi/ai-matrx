@@ -928,7 +928,7 @@ function DrawerRow({
       className={[
         "flex w-full items-center gap-3 rounded-md px-3 py-3 text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-left",
         danger
-          ? "text-destructive hover:bg-destructive/10"
+          ? "text-destructive-ink hover:bg-destructive/10"
           : "text-foreground hover:bg-accent",
       ].join(" ")}
     >

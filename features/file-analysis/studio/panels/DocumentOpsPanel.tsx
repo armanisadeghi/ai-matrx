@@ -225,7 +225,7 @@ export function DocumentOpsPanel({ fileId }: Props) {
           </div>
         ) : null}
         {error ? (
-          <div className="rounded border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive">
+          <div className="rounded border border-destructive/40 bg-destructive/5 p-2 text-[11px] text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </div>

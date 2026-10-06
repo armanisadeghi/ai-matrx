@@ -225,7 +225,7 @@ export function SendToRulebookDialog({
               </div>
 
               {loadError && (
-                <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+                <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive-ink">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>Your Rulebooks could not be read: {loadError}</span>
                   <ErrorAlchemyMenu error={loadError} />
@@ -335,7 +335,7 @@ export function SendToRulebookDialog({
               )}
 
               {sendError && (
-                <p className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+                <p className="mt-3 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive-ink">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   <span>{sendError}</span>
                   <ErrorAlchemyMenu error={sendError} />

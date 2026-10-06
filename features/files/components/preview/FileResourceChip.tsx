@@ -147,7 +147,7 @@ export function FileResourceChip({
       />
       {badge && (
         <span
-          className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium leading-none text-primary"
+          className="shrink-0 whitespace-nowrap rounded bg-primary/10 px-1 py-0.5 text-[10px] font-medium leading-none text-primary-ink"
           data-chip-badge
         >
           {badge}

@@ -62,7 +62,7 @@ const LEVEL_CHIP: Record<UsageGateLevel, { text: string; tone: string }> = {
     text: "Near limit",
     tone: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   },
-  over: { text: "Limit reached", tone: "bg-destructive/10 text-destructive" },
+  over: { text: "Limit reached", tone: "bg-destructive/10 text-destructive-ink" },
 };
 
 function WindowRow({ w }: { w: UsageWindow }) {

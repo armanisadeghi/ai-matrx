@@ -111,14 +111,14 @@ function DimensionRow({ d }: { d: PlanDimension }) {
             className={cn(
               "ml-1.5 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium",
               d.enforced
-                ? "bg-primary/10 text-primary"
+                ? "bg-primary/10 text-primary-ink"
                 : "bg-muted text-muted-foreground",
             )}
           >
             {d.enforced ? "Enforced" : "Planning only"}
           </span>
           {d.fromAddon ? (
-            <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+            <span className="ml-1.5 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
               <Plus className="h-2.5 w-2.5" aria-hidden />
               add-on
             </span>
@@ -283,7 +283,7 @@ export function PlanUsagePanel({
               {plan.name} plan
             </h3>
             {plan.badge ? (
-              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
                 {plan.badge}
               </span>
             ) : null}

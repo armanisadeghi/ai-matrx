@@ -161,7 +161,7 @@ export function ReadingOrderContent({ fileId, onJumpToPage }: Props) {
                 </span>
                 <span
                   className={cn(
-                    "shrink-0 self-start rounded bg-primary/10 px-1 py-px font-mono text-[9px] text-primary",
+                    "shrink-0 self-start rounded bg-primary/10 px-1 py-px font-mono text-[9px] text-primary-ink",
                   )}
                   title={`Column ${block.column_index + 1} · bbox (${Math.round(block.x0)}, ${Math.round(block.y0)}) → (${Math.round(block.x1)}, ${Math.round(block.y1)})`}
                 >

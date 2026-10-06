@@ -128,7 +128,7 @@ export function EntitiesContent({ fileId }: Props) {
               >
                 <span className="truncate">{e.canonical_value || e.label}</span>
                 {e.is_user_named ? (
-                  <span className="shrink-0 rounded bg-primary/10 px-1 text-[9px] font-medium text-primary">
+                  <span className="shrink-0 rounded bg-primary/10 px-1 text-[9px] font-medium text-primary-ink">
                     user
                   </span>
                 ) : null}

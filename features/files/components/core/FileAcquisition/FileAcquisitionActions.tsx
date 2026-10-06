@@ -410,7 +410,7 @@ export function FileAcquisitionActions({
               onClick={() => runAction(action.key)}
               disabled={disabled || busy}
               title={action.label}
-              className="inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-border bg-background/60 px-1.5 py-1.5 text-center text-[11px] font-medium leading-tight text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:opacity-50"
+              className="inline-flex min-h-12 min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-border bg-background/60 px-1.5 py-1.5 text-center text-[11px] font-medium leading-tight text-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary-ink disabled:opacity-50"
             >
               <Icon
                 className={cn(

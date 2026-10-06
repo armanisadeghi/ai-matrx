@@ -122,7 +122,7 @@ export function KeyHandoff({
           </div>
 
           {escrowStatus === "failed" ? (
-            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
+            <div className="rounded border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive-ink">
               Organization escrow FAILED — this key exists only in this
               browser. Clearing site data makes the originals permanently
               unrecoverable. Download the key file now and report the escrow
