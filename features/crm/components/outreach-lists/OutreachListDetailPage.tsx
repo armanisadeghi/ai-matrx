@@ -34,6 +34,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { useDebounce } from "@ai-matrx/kit/hooks";
 import type {
@@ -314,7 +321,10 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       header: "Member",
       sortable: false,
       filter: false,
-      href: (row) => (row.party ? resolveEntityDoors("party", row.party.id).href ?? undefined : undefined),
+      href: (row) =>
+        row.party
+          ? (resolveEntityDoors("party", row.party.id).href ?? undefined)
+          : undefined,
       cell: (row) =>
         !row.party ? (
           <UnresolvedEntityRef
@@ -633,6 +643,67 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
     </div>
   ) : null;
 
+  const campaignActions = (
+    <>
+      {/* Where the answers to this campaign land, and what it is
+                  currently costing the human. Both are views over the same two
+                  tables this page writes, so a campaign must reach them. */}
+      <Button variant="quiet" asChild>
+        <Link href="/crm/inbox">
+          <Inbox className="h-3.5 w-3.5" />
+          Replies
+        </Link>
+      </Button>
+      <Button variant="quiet" asChild>
+        <Link href="/crm/chasebox">
+          <ListChecks className="h-3.5 w-3.5" />
+          Chasebox
+        </Link>
+      </Button>
+      {/* The loop closed: links our crawl credited to this campaign. */}
+      <Button
+        icon={<Award />}
+        variant={activeView === "outcomes" ? "outline" : "quiet"}
+        onClick={() =>
+          setActiveView(activeView === "outcomes" ? "members" : "outcomes")
+        }
+      >
+        Outcomes
+      </Button>
+      {/* Is this campaign working? Every number opens to its rows. */}
+      <Button
+        icon={<BarChart3 />}
+        variant={activeView === "performance" ? "outline" : "quiet"}
+        onClick={() =>
+          setActiveView(
+            activeView === "performance" ? "members" : "performance",
+          )
+        }
+      >
+        Performance
+      </Button>
+      {lifecycleButton}
+      <Button
+        icon={<ListPlus />}
+        variant="outline"
+        onClick={() => setAddOpen(true)}
+      >
+        Add members
+      </Button>
+      <Button variant="primary" asChild>
+        <Link href={`/crm/outreach-lists/${listId}/dial`}>
+          <PhoneCall className="h-3.5 w-3.5" />
+          Call queue
+          {counts && (
+            <span className="rounded-full bg-primary-foreground/20 px-1.5 text-[11px] tabular-nums">
+              {counts.dialable.toLocaleString()}
+            </span>
+          )}
+        </Link>
+      </Button>
+    </>
+  );
+
   if (!headerLoading && !list && headerError) {
     return (
       <div className="h-full overflow-y-auto bg-textured px-3 pb-6 pt-[calc(var(--shell-header-h)+0.5rem)]">
@@ -649,7 +720,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="matrx-touch-targets h-full overflow-y-auto lg:flex lg:flex-col lg:overflow-hidden">
       <div className="shrink-0 px-3 pt-[calc(var(--shell-header-h)+0.375rem)]">
         {list ? (
           <div className="flex flex-wrap items-center gap-2">
@@ -689,72 +760,26 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 </span>
               </span>
             )}
-            <div className="ml-auto flex items-center gap-1.5">
-              {/* Where the answers to this campaign land, and what it is
-                  currently costing the human. Both are views over the same two
-                  tables this page writes, so a campaign must reach them. */}
-              <Button
-                variant="quiet"
-                asChild
-              >
-                <Link href="/crm/inbox">
-                  <Inbox className="h-3.5 w-3.5" />
-                  Replies
-                </Link>
-              </Button>
-              <Button
-                variant="quiet"
-                asChild
-              >
-                <Link href="/crm/chasebox">
-                  <ListChecks className="h-3.5 w-3.5" />
-                  Chasebox
-                </Link>
-              </Button>
-              {/* The loop closed: links our crawl credited to this campaign. */}
-              <Button
-                icon={<Award />}
-                variant={activeView === "outcomes" ? "outline" : "quiet"}
-                onClick={() =>
-                  setActiveView(
-                    activeView === "outcomes" ? "members" : "outcomes",
-                  )
-                }
-              >
-                Outcomes
-              </Button>
-              {/* Is this campaign working? Every number opens to its rows. */}
-              <Button
-                icon={<BarChart3 />}
-                variant={activeView === "performance" ? "outline" : "quiet"}
-                onClick={() =>
-                  setActiveView(
-                    activeView === "performance" ? "members" : "performance",
-                  )
-                }
-              >
-                Performance
-              </Button>
-              {lifecycleButton}
-              <Button
-                icon={<ListPlus />}
-                variant="outline"
-                onClick={() => setAddOpen(true)}
-              >
-                Add members
-              </Button>
-              <Button variant="primary" asChild>
-                <Link href={`/crm/outreach-lists/${listId}/dial`}>
-                  <PhoneCall className="h-3.5 w-3.5" />
-                  Call queue
-                  {counts && (
-                    <span className="rounded-full bg-primary-foreground/20 px-1.5 text-[11px] tabular-nums">
-                      {counts.dialable.toLocaleString()}
-                    </span>
-                  )}
-                </Link>
-              </Button>
+            <div className="ml-auto hidden flex-wrap items-center gap-1.5 lg:flex">
+              {campaignActions}
             </div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="quiet"
+                  icon={<MoreVertical />}
+                  className="ml-auto lg:hidden"
+                >
+                  Actions
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="matrx-touch-targets">
+                <DialogHeader>
+                  <DialogTitle>Campaign actions</DialogTitle>
+                </DialogHeader>
+                <div className="flex flex-wrap gap-2">{campaignActions}</div>
+              </DialogContent>
+            </Dialog>
           </div>
         ) : (
           <div className="h-7" />
@@ -779,7 +804,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 onValueChange={(value) => void chooseSendingIdentity(value)}
                 disabled={mailboxesLoading || mailboxSaving}
               >
-                <SelectTrigger className="min-w-64">
+                <SelectTrigger className="w-full min-w-0 sm:w-auto sm:min-w-64">
                   <SelectValue
                     placeholder={
                       mailboxesLoading
@@ -839,15 +864,15 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       </div>
 
       {activeView === "performance" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
+        <div className="px-3 pb-2 pt-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           <CampaignPerformancePanel campaignId={listId} />
         </div>
       ) : activeView === "outcomes" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-2 pt-2">
+        <div className="px-3 pb-2 pt-2 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           <OutcomesPanel campaignId={listId} />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 px-3 pb-2 pt-2">
+        <div className="min-w-0 px-3 pb-2 pt-2 lg:min-h-0 lg:flex-1">
           {/* No `surfaceName`: this is the DETAIL of one list, and
               `matrx-user/crm-outreach-lists` declares the LISTS surface's
               values. Claiming it here would emit a scope this page cannot
@@ -862,32 +887,85 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
             resolveContextOnOpen={rowMenu.resolveContextOnOpen}
             extraSections={rowMenu.sections}
           >
-            <div className="flex h-full min-h-0 flex-col">
+            <div className="flex min-w-0 flex-col lg:h-full lg:min-h-0">
               <MatrxDataTable<OutreachListMemberWithParty>
+                className="h-auto lg:h-full"
+                frameHeight="content"
                 data={members}
-                columns={[...(memberColumns), { id: "custom-actions", header: "Actions", sortable: false, filter: false, customActions: (row) => (
-                  <ItemMenu config={memberMenu(row)} align="end">
-                    <button
-                      type="button"
-                      aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </button>
-                  </ItemMenu>
-                ) }]}
+                columns={[
+                  ...memberColumns,
+                  {
+                    id: "custom-actions",
+                    header: "Actions",
+                    sortable: false,
+                    filter: false,
+                    customActions: (row) => (
+                      <ItemMenu config={memberMenu(row)} align="end">
+                        <button
+                          type="button"
+                          aria-label={`Actions for ${row.party?.display_name ?? "member"}`}
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </ItemMenu>
+                    ),
+                  },
+                ]}
                 getRowId={(row) => row.id}
                 isLoading={isLoading}
                 isFetching={isFetching}
                 zebra
+                mobileCards={(row, _index, controls) => (
+                  <div className="flex min-w-0 items-start justify-between gap-2 p-3">
+                    <div className="min-w-0 space-y-1">
+                      {controls.renderCell("party")}
+                      {controls.renderCell("status")}
+                      {controls.renderCell("outcome")}
+                      <p className="text-xs text-muted-foreground">
+                        {row.attempt_count} attempts
+                      </p>
+                      <details>
+                        <summary className="flex min-h-11 cursor-pointer items-center text-sm text-muted-foreground">
+                          Details
+                        </summary>
+                        <dl className="space-y-2 text-xs">
+                          {(
+                            [
+                              ["job_title", "Title"],
+                              ["last_attempt_at", "Last attempt"],
+                              ["next_attempt_at", "Next try"],
+                              ["claimed", "Claim"],
+                              ["notes", "Notes"],
+                            ] as const
+                          ).map(([id, label]) => (
+                            <div key={id} className="min-w-0">
+                              <dt className="text-muted-foreground">{label}</dt>
+                              <dd className="break-words">
+                                {controls.renderCell(id)}
+                              </dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </details>
+                    </div>
+                    {controls.actions}
+                  </div>
+                )}
+                mobileCardsBreakpoint="lg"
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 getRowHref={(row) =>
-                  row.party ? resolveEntityDoors("party", row.party.id).href ?? undefined : undefined
+                  row.party
+                    ? (resolveEntityDoors("party", row.party.id).href ??
+                      undefined)
+                    : undefined
                 }
                 onRowOpen={(row) => {
-                  const href = row.party ? resolveEntityDoors("party", row.party.id).href : null;
+                  const href = row.party
+                    ? resolveEntityDoors("party", row.party.id).href
+                    : null;
                   if (href) router.push(href);
                 }}
                 query={{

@@ -41,11 +41,19 @@ import {
   Plus,
   ScrollText,
   Search,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -153,7 +161,10 @@ export function LibraryCatalogPage() {
       }
       const qs = params.toString();
       // Discrete selection — Back closes the item the user just opened.
-      pushAddressOrNavigate(router, `/knowledge/library-catalog${qs ? `?${qs}` : ""}`);
+      pushAddressOrNavigate(
+        router,
+        `/knowledge/library-catalog${qs ? `?${qs}` : ""}`,
+      );
     },
     [router, search],
   );
@@ -289,6 +300,53 @@ export function LibraryCatalogPage() {
   });
 
   const total = catalog.items.length;
+  const catalogFilters = (
+    <>
+      <div className="flex flex-wrap gap-1">
+        {TYPE_FILTERS.map((t) => {
+          const count =
+            t === "all" ? catalog.items.length : catalog.countsByType[t];
+          const label =
+            t === "all" ? "Everything" : LIBRARY_TYPE_LABEL_PLURAL[t];
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTypeFilter(t)}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
+                typeFilter === t
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {label}
+              <UntrustedCount
+                className="tabular-nums opacity-70"
+                value={count}
+                trustworthy={!catalog.error}
+                label={label}
+              />
+            </button>
+          );
+        })}
+      </div>
+      {/* The inverse sense on purpose: the quiet view is the default, and
+                the loud one is the deliberate act. The state stays
+                `entitledOnly` because that is what the surface's
+                `catalog_filters` write target and the agent context both
+                mean. */}
+      <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={!entitledOnly}
+          onChange={(e) => setEntitledOnly(!e.target.checked)}
+          className="h-3 w-3 accent-[var(--primary)]"
+        />
+        Show everything in the Library, not just my industry
+      </label>
+    </>
+  );
 
   return (
     <SurfaceRuntimeProvider
@@ -326,64 +384,41 @@ export function LibraryCatalogPage() {
             one (back arrow in the detail header returns to the list). */}
         <aside
           className={cn(
-            "w-full shrink-0 flex-col overflow-hidden border-r pt-[var(--shell-header-h)] md:flex md:w-96",
+            "matrx-touch-targets w-full shrink-0 flex-col overflow-y-auto md:overflow-hidden border-r pt-[var(--shell-header-h)] md:flex md:w-96",
             selected ? "hidden" : "flex",
           )}
         >
           <div className="space-y-2 border-b p-3">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-              <Input adornment="start"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search the Library…"
-              />
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  adornment="start"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search the Library…"
+                />
+              </div>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="quiet"
+                    icon={<SlidersHorizontal />}
+                    className="md:hidden"
+                    aria-label="Library filters"
+                  />
+                </DialogTrigger>
+                <DialogContent className="matrx-touch-targets">
+                  <DialogHeader>
+                    <DialogTitle>Library filters</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3">{catalogFilters}</div>
+                </DialogContent>
+              </Dialog>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {TYPE_FILTERS.map((t) => {
-                const count =
-                  t === "all" ? catalog.items.length : catalog.countsByType[t];
-                const label =
-                  t === "all" ? "Everything" : LIBRARY_TYPE_LABEL_PLURAL[t];
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => setTypeFilter(t)}
-                    className={cn(
-                      "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors",
-                      typeFilter === t
-                        ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-border text-muted-foreground hover:bg-muted",
-                    )}
-                  >
-                    {label}
-                    <UntrustedCount
-                      className="tabular-nums opacity-70"
-                      value={count}
-                      trustworthy={!catalog.error}
-                      label={label}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-            {/* The inverse sense on purpose: the quiet view is the default, and
-                the loud one is the deliberate act. The state stays
-                `entitledOnly` because that is what the surface's
-                `catalog_filters` write target and the agent context both
-                mean. */}
-            <label className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground">
-              <input
-                type="checkbox"
-                checked={!entitledOnly}
-                onChange={(e) => setEntitledOnly(!e.target.checked)}
-                className="h-3 w-3 accent-[var(--primary)]"
-              />
-              Show everything in the Library, not just my industry
-            </label>
+            <div className="hidden md:block">{catalogFilters}</div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div className="md:min-h-0 md:flex-1 md:overflow-auto">
             {catalog.loading && catalog.items.length === 0 && (
               <div className="flex items-center gap-2 px-3 py-2 type-secondary text-muted-foreground">
                 <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading…
@@ -434,7 +469,8 @@ export function LibraryCatalogPage() {
               organizationId={organizationId ?? null}
               onAdd={async () => {
                 const ok = await catalog.subscribe(selected);
-                if (!ok) toast.error(catalog.error ?? "Could not add this Rulebook");
+                if (!ok)
+                  toast.error(catalog.error ?? "Could not add this Rulebook");
                 return ok;
               }}
             />
@@ -477,21 +513,13 @@ export function LibraryCatalogPage() {
 }
 
 /** The nothing-selected pane: what the Library is, and what each verb means. */
-function EmptyPane({
-  counts,
-}: {
-  counts: Record<LibraryEntityType, number>;
-}) {
+function EmptyPane({ counts }: { counts: Record<LibraryEntityType, number> }) {
   return (
     <div className="m-6 max-w-2xl space-y-3 rounded-md border bg-muted/20 p-6 type-body text-muted-foreground">
       <p className="flex items-center gap-2 font-medium text-foreground">
         <Library className="h-4 w-4" /> The Matrx Library
       </p>
-      <p>
-        Expertise curated for a whole industry, a specific organization, or
-        everyone. The chip on each row tells you whether — and why — your
-        organization already has it.
-      </p>
+      <p>Select a resource to see its documents and access details.</p>
       <ul className="space-y-1.5">
         <li className="flex items-start gap-2">
           <Library className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -509,8 +537,8 @@ function EmptyPane({
             <span className="font-medium text-foreground">
               {LIBRARY_TYPE_LABEL_PLURAL.seo_starter_pack}
             </span>{" "}
-            ({counts.seo_starter_pack}) — you USE ONE ON A SITE. Its defaults are
-            copied onto the website you choose, and every row stays yours to
+            ({counts.seo_starter_pack}) — you USE ONE ON A SITE. Its defaults
+            are copied onto the website you choose, and every row stays yours to
             edit.
           </span>
         </li>
@@ -552,7 +580,9 @@ function CatalogListRow({
           entityType={item.entityType}
           className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
         />
-        <span className="flex-1 truncate type-secondary font-medium">{item.name}</span>
+        <span className="flex-1 truncate type-secondary font-medium">
+          {item.name}
+        </span>
         <span className="type-meta tabular-nums text-muted-foreground">
           {item.itemCount} {itemNoun(item.entityType, item.itemCount)}
         </span>
@@ -609,7 +639,7 @@ function StoreDetailPanel({
   const [pending, setPending] = useState(false);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
+    <div className="matrx-touch-targets h-full overflow-y-auto md:flex md:flex-col md:overflow-hidden">
       <header className="shrink-0 space-y-2 border-b px-4 py-3">
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -621,7 +651,7 @@ function StoreDetailPanel({
             <ArrowLeft className="h-4 w-4" />
           </button>
           <Library className="h-4 w-4 text-muted-foreground" />
-          <h1 className="type-title">{item.name}</h1>
+          <h1 className="min-w-0 break-words type-title">{item.name}</h1>
           <span className="rounded bg-secondary px-1.5 py-0.5 type-meta uppercase tracking-wide text-secondary-foreground">
             {humanizeIdentifier(item.kind)}
           </span>
@@ -632,11 +662,7 @@ function StoreDetailPanel({
           <div className="ml-auto flex items-center gap-1">
             {item.subscribed ? (
               <Button
-                icon={pending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <X />
-                )}
+                icon={pending ? <Loader2 className="animate-spin" /> : <X />}
                 variant="quiet"
                 disabled={pending}
                 onClick={async () => {
@@ -649,11 +675,7 @@ function StoreDetailPanel({
               </Button>
             ) : (
               <Button
-                icon={pending ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <Plus />
-                )}
+                icon={pending ? <Loader2 className="animate-spin" /> : <Plus />}
                 variant="outline"
                 disabled={pending}
                 onClick={async () => {
@@ -668,14 +690,18 @@ function StoreDetailPanel({
           </div>
         </div>
         {item.description && (
-          <p className="type-secondary text-muted-foreground">{item.description}</p>
+          <p className="type-secondary text-muted-foreground">
+            {item.description}
+          </p>
         )}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 type-meta text-muted-foreground">
           <span className="tabular-nums">
             {item.itemCount} document{item.itemCount === 1 ? "" : "s"}
           </span>
           {item.slug ? <code className="font-mono">{item.slug}</code> : null}
-          <span className="select-all font-mono type-meta">{item.id}</span>
+          <span className="select-all break-all font-mono type-meta">
+            {item.id}
+          </span>
         </div>
         {/* Why you have access — every grant reaching the caller. */}
         {provenance.length > 0 && (
@@ -700,7 +726,7 @@ function StoreDetailPanel({
         )}
       </header>
 
-      <div className="flex-1 space-y-3 overflow-auto p-4">
+      <div className="space-y-3 p-4 md:min-h-0 md:flex-1 md:overflow-auto">
         {!entitled ? (
           <div className="rounded-md border border-dashed bg-muted/20 p-6 text-center type-body text-muted-foreground">
             <Lock className="mx-auto mb-2 h-6 w-6 text-muted-foreground/60" />
@@ -740,10 +766,17 @@ function StoreDetailPanel({
               </div>
             ) : (
               <div className="overflow-x-auto rounded-md border">
-                <table className={cn("whitespace-nowrap type-body", MOBILE_TABLE)}>
+                <table
+                  className={cn("whitespace-nowrap type-body", MOBILE_TABLE)}
+                >
                   <thead>
                     <tr className="border-b bg-muted/40">
-                      <th className={cn("px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground", MOBILE_TABLE_FROZEN_HEAD)}>
+                      <th
+                        className={cn(
+                          "px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground",
+                          MOBILE_TABLE_FROZEN_HEAD,
+                        )}
+                      >
                         Document
                       </th>
                       <th className="px-3 py-1.5 text-left type-meta font-semibold uppercase tracking-wide text-muted-foreground">
@@ -761,7 +794,12 @@ function StoreDetailPanel({
                         key={`${m.sourceKind}/${m.sourceId}`}
                         className="hover:bg-muted/20"
                       >
-                        <td className={cn("px-3 py-1.5", MOBILE_TABLE_FROZEN_CELL)}>
+                        <td
+                          className={cn(
+                            "px-3 py-1.5",
+                            MOBILE_TABLE_FROZEN_CELL,
+                          )}
+                        >
                           <div className="flex items-center gap-1.5 type-secondary">
                             <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                             {m.label ?? "Untitled document"}
