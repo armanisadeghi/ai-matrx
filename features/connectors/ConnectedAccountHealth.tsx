@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ConnectorMark } from "./ConnectorMark";
+import { ConnectorTile } from "./ConnectorMark";
 import { getConnector } from "./registry";
 import type { ConnectorProviderConfig } from "./provider-config";
 import type {
@@ -171,11 +171,7 @@ export function ConnectedAccountHealth({
       )}
     >
         <div className="flex flex-wrap items-start gap-2 border-b border-border/60 p-2.5 sm:gap-3 sm:p-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-            {connector ? (
-              <ConnectorMark connector={connector} className="h-5 w-5" />
-            ) : null}
-          </span>
+          {connector ? <ConnectorTile connector={connector} size="sm" className="mt-0.5" /> : null}
           <div className="min-w-0 flex-1 basis-[calc(100%-3.25rem)] sm:basis-0">
             <div className="flex flex-wrap items-center gap-1.5">
               <span className="truncate text-sm font-semibold text-foreground">

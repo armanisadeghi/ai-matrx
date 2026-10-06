@@ -75,7 +75,8 @@ import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnec
 import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
-import { providerArtworkUrls } from "@/features/connectors/live-connectors";
+import { connectorDefinitionFromMcp, providerArtworkUrls } from "@/features/connectors/live-connectors";
+import { ConnectorTile } from "@/features/connectors/ConnectorMark";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -814,13 +815,9 @@ export function IntegrationsWorkspace({
                     </p>
                   </details>
                 ))}
-                <button
-                  type="button"
-                  className="text-sm underline"
-                  onClick={refresh}
-                >
+                <Button variant="outline" onClick={refresh}>
                   Try again
-                </button>
+                </Button>
               </div>
             ) : null
           }
@@ -927,8 +924,6 @@ function ServerCard({
   const [supabaseProjectRef, setSupabaseProjectRef] = useState("");
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
-  const [failedIconUrls, setFailedIconUrls] = useState<string[]>([]);
-  const iconUrl = providerArtworkUrls(entry).find((url) => !failedIconUrls.includes(url));
 
   const isSupabase = entry.slug === "supabase";
   const [showSupabaseProjectLock, setShowSupabaseProjectLock] = useState(false);
@@ -998,25 +993,11 @@ function ServerCard({
         {/* Top row */}
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
-            {iconUrl ? (
-              <img
-                src={iconUrl}
-                alt=""
-                decoding="async"
-                referrerPolicy="no-referrer"
-                className={cn(
-                  "h-11 w-11 rounded-xl border border-border bg-background object-contain p-1.5",
-                  isComingSoon && "grayscale",
-                )}
-                onError={() => setFailedIconUrls((current) => [...current, iconUrl])}
-              />
-            ) : (
-              <div
-                className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-sm font-semibold text-primary-ink"
-              >
-                {entry.name.charAt(0).toUpperCase()}
-              </div>
-            )}
+            <ConnectorTile
+              connector={connectorDefinitionFromMcp(entry)}
+              colored={!isComingSoon}
+              size="md"
+            />
           </div>
 
           <div className="flex-1 min-w-0">

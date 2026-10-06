@@ -49,24 +49,43 @@ const SIMPLE_ICON_SLUG_BY_PROVIDER_NAME: Record<string, string> = {
   "Zoho CRM Data Insights": "zoho",
 };
 
-export function providerArtworkUrls(entry: McpCatalogEntry): string[] {
+/**
+ * The artwork chain for a catalog provider, best first. Square, legible icons
+ * lead: the provider's Simple Icons glyph, then Google's 128px site icon for
+ * the host and for its registrable domain (a docs subdomain often has none).
+ * The catalog's own `icon_url` follows — many are wide wordmarks that shrink
+ * to nothing in a square — and the site's raw `/favicon.ico` comes last, since
+ * it is usually a blurry 16px image. `ConnectorMark` skips any image that
+ * fails or loads too small to read, and ends at a monogram, so every provider
+ * always has a mark.
+ */
+export function providerArtworkUrls(
+  entry: Pick<McpCatalogEntry, "name" | "websiteUrl" | "iconUrl">,
+): string[] {
   const urls: Array<string | null> = [];
-
-  if (entry.websiteUrl) {
-    try {
-      urls.push(`${new URL(entry.websiteUrl).origin}/favicon.ico`);
-    } catch {
-      // An invalid website URL must not suppress otherwise valid artwork.
-    }
-  }
 
   const simpleIconSlug = SIMPLE_ICON_SLUG_BY_PROVIDER_NAME[entry.name];
   if (simpleIconSlug) {
     urls.push(`https://cdn.simpleicons.org/${simpleIconSlug}`);
   }
 
+  let origin: string | null = null;
+  if (entry.websiteUrl) {
+    try {
+      const url = new URL(entry.websiteUrl);
+      origin = url.origin;
+      urls.push(getFaviconUrl(url.origin, 128));
+      const labels = url.hostname.split(".");
+      if (labels.length > 2) {
+        urls.push(getFaviconUrl(`https://${labels.slice(-2).join(".")}`, 128));
+      }
+    } catch {
+      // An invalid website URL must not suppress otherwise valid artwork.
+    }
+  }
+
   urls.push(entry.iconUrl?.trim() || null);
-  urls.push(entry.websiteUrl ? getFaviconUrl(entry.websiteUrl, 128) : null);
+  if (origin) urls.push(`${origin}/favicon.ico`);
 
   return [...new Set(urls.filter((url): url is string => Boolean(url)))];
 }

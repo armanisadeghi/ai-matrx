@@ -21,7 +21,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Info, Plug } from "lucide-react";
+import { ArrowRight, Info, Plug } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { Button } from "@/components/ui/button";
@@ -59,8 +59,30 @@ import {
   type ConnectedSourcesPageState,
 } from "../browse/surface";
 import { formatCount } from "@ai-matrx/kit/format";
+import { ConnectorTile } from "@/features/connectors/ConnectorMark";
+import { getConnector } from "@/features/connectors/registry";
+import type { ConnectorDefinition } from "@/features/connectors/types";
 
 const INTEGRATIONS_HREF = "/user-settings/integrations";
+
+/** The integrations directory, opened on one provider's own detail. */
+function providerHref(provider: string): string {
+  return `${INTEGRATIONS_HREF}?provider=${encodeURIComponent(provider)}`;
+}
+
+/** The provider's brand mark, from the ONE connector registry where it has one. */
+function providerMark(provider: string): ConnectorDefinition {
+  const known = provider === "google" ? getConnector("google-workspace") : undefined;
+  return (
+    known ?? {
+      id: provider,
+      name: providerName(provider),
+      blurb: "",
+      surfaces: ["directory"],
+      iconUrl: provider === "microsoft" ? "/icons/brands/microsoft.svg" : null,
+    }
+  );
+}
 /** Per-viewer convenience only: the account this browser last looked at. */
 const PICK_STORAGE_KEY = "connected-sources:account";
 
@@ -247,7 +269,7 @@ export function BrowseEverything() {
 
   const connectLinks = missingProviders.map((provider) => (
     <Button key={provider} asChild variant="quiet">
-      <Link href={INTEGRATIONS_HREF}>
+      <Link href={providerHref(provider)}>
         <Plug className="mr-1.5 h-3.5 w-3.5" />
         Connect {providerName(provider)}
       </Link>
@@ -281,13 +303,48 @@ export function BrowseEverything() {
       </div>
     );
   } else if (!connectedAccounts.length) {
+    // One card per provider the server can read, naming what connecting it
+    // makes browsable here — straight into that provider's own connect detail.
+    const providers = [...new Set(adapters.map((a) => a.provider))];
     body = (
-      <div className="mx-auto flex max-w-md flex-col items-center gap-3 py-12 text-center">
-        <p className="text-sm font-medium text-foreground">No account connected yet</p>
-        <p className="text-sm text-muted-foreground">
-          Connect Google or Microsoft and everything in it shows up here, read live.
-        </p>
-        <div className="flex flex-wrap justify-center gap-2">{connectLinks}</div>
+      <div className="mx-auto flex max-w-3xl flex-col gap-5 py-10">
+        <h2 className="text-center text-lg font-semibold text-foreground">
+          Connect an account to browse it here
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {providers.map((provider) => (
+            <Link
+              key={provider}
+              href={providerHref(provider)}
+              data-clickable
+              className="group flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-[border-color,box-shadow] hover:border-foreground/20 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="flex items-center gap-3">
+                <ConnectorTile connector={providerMark(provider)} size="md" />
+                <span className="text-sm font-semibold text-foreground">
+                  {providerName(provider)}
+                </span>
+              </span>
+              <span className="line-clamp-2 text-xs text-muted-foreground">
+                {adapters
+                  .filter((a) => a.provider === provider)
+                  .map((a) => a.title)
+                  .join(" · ")}
+              </span>
+              <span className="mt-auto inline-flex items-center gap-1 text-xs font-medium text-primary">
+                Connect {providerName(provider)}
+                <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
+              </span>
+            </Link>
+          ))}
+        </div>
+        <Link
+          href={INTEGRATIONS_HREF}
+          className="mx-auto inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          Browse every integration
+          <ArrowRight className="h-3 w-3" aria-hidden />
+        </Link>
       </div>
     );
   }
@@ -419,7 +476,7 @@ export function BrowseEverything() {
         emptyAction={
           chosen.adapter === "google_picked_files" ? (
             <Button variant="primary" asChild>
-              <Link href={INTEGRATIONS_HREF}>Pick files</Link>
+              <Link href={providerHref("google")}>Pick files</Link>
             </Button>
           ) : undefined
         }

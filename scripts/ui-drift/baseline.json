@@ -3,8 +3,9 @@
   "updated": "2026-10-06",
   "sha": "bc48048f584874a320c8ce65e7672bf4192cbd75",
   "sites": 36894,
-  "count": 4,
+  "count": 5,
   "ids": [
+    "raw-color|features/connectors/ConnectorMark.tsx",
     "styled-raw-button|features/connectors/ConnectorsSettingsPanel.tsx",
     "styled-raw-button|features/connectors/IntegrationDirectory.tsx",
     "unclamped-text-pill|features/connectors/IntegrationDirectory.tsx",
@@ -11564,6 +11565,11 @@
     },
     "styled-raw-button|features/connectors/ConnectorsSettingsPanel.tsx": {
       "reason": "Full-width disclosure row (aria-expanded) that opens a shared account's health card; a Button control cannot hold the two-line account identity",
+      "accepted_by": "Arman Sadeghi",
+      "date": "2026-10-06"
+    },
+    "raw-color|features/connectors/ConnectorMark.tsx": {
+      "reason": "Brand-logo plate: provider artwork is drawn for a light ground, so the plate is white in both themes (black marks like GitHub/Notion vanish on a dark tile); one place, used by every connector surface",
       "accepted_by": "Arman Sadeghi",
       "date": "2026-10-06"
     }
