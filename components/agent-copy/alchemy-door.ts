@@ -23,7 +23,7 @@
 
 import type { Receipt, WriteDoor, WriteHandler } from "@ai-matrx/alchemy/operate";
 import type { ApprovalPort } from "@ai-matrx/alchemy/ports";
-import type { TransferTarget } from "@ai-matrx/kit/content-transfer";
+import type { TransferTarget } from "@ai-matrx/alchemy/operate";
 import {
   loadSurfaceWriteDoor,
   surfaceWriteApprovals,

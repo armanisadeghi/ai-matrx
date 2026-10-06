@@ -40,7 +40,7 @@ import {
   AlchemySurfaceBridge,
   useAlchemySurfaceHandle,
 } from "../../agent-copy/AlchemySurfaceBridge";
-import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
+import type { SurfaceHandle } from "@ai-matrx/alchemy/operate";
 import type { ApplySurfaceWriteOptions } from "./surface-writeback";
 
 /**

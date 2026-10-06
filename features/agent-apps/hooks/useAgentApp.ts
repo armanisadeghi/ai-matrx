@@ -110,7 +110,7 @@ import {
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 
 import { useSurfaceRuntimeRegistration } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import type { SurfaceHandle } from "@ai-matrx/kit/content-transfer";
+import type { SurfaceHandle } from "@ai-matrx/alchemy/operate";
 import {
   buildAgentAppSurfaceScope,
   type AgentAppSurfaceBinding,

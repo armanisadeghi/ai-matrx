@@ -1,6 +1,6 @@
 "use client";
 
-import { normalizeTransferJson } from "@ai-matrx/kit/content-transfer";
+import { normalizeTransferJson } from "@ai-matrx/alchemy/operate";
 import { useMandateAlchemyTabCapture } from "../workspace/MandateAlchemy";
 
 /**

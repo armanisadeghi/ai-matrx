@@ -162,7 +162,7 @@ it("a descendant names what the page left unnamed, never overriding a name the p
 });
 
 it("every variant builds through the kit's real envelope (xml-safe kind and context keys)", async () => {
-  const { buildAgentPayload } = await import("@ai-matrx/kit/content-transfer");
+  const { buildAgentPayload } = await import("@ai-matrx/alchemy/operate");
   for (const variant of ["everything", "data"] as const) {
     const text = buildAgentPayload(pageCapturePayload(inspector(), variant));
     expect(text).toContain("Context inspector");
@@ -177,7 +177,7 @@ it("every variant builds through the kit's real envelope (xml-safe kind and cont
 // The Alchemy workspace clones the JSON source through the kit's strict clone; a table page's
 // capture carried its records section's `load` function and a store declaration. Red before the
 // capture was made plain at registration: the kit's clone refuses the capture below.
-import { normalizeTransferJson, buildAgentPayload } from "@ai-matrx/kit/content-transfer";
+import { normalizeTransferJson, buildAgentPayload } from "@ai-matrx/alchemy/operate";
 import {
   checkedTransferJson,
   normalizePageCapture,
