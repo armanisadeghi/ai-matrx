@@ -5,7 +5,7 @@
  * must survive the round trip or the source-request responder loses them.
  */
 
-import { brandProfileToJson, parseBrandProfile } from "@/features/marketing/types";
+import { brandProfileToJson, mergeBrandProfile, parseBrandProfile } from "@/features/marketing/types";
 
 describe("brand press expertise profile", () => {
   const stored = {
@@ -26,5 +26,23 @@ describe("brand press expertise profile", () => {
   it("drops empty entries instead of storing blanks", () => {
     const parsed = parseBrandProfile({ expertise_areas: ["  ", "Recycling"], contact_block: "  " });
     expect(parsed).toEqual({ expertise_areas: ["Recycling"] });
+  });
+});
+
+describe("an editor save merges into the stored profile", () => {
+  it("keeps every key the editor does not own (brand_aliases)", () => {
+    const stored = { audience: "IT managers", brand_aliases: ["AI Matrx", "aimatrx"], agent_note: { a: 1 } };
+    const edited = { ...parseBrandProfile(stored), voice_tone: "Plain" };
+    expect(mergeBrandProfile(stored, edited)).toEqual({
+      audience: "IT managers",
+      voice_tone: "Plain",
+      brand_aliases: ["AI Matrx", "aimatrx"],
+      agent_note: { a: 1 },
+    });
+  });
+
+  it("removes an owned field the person cleared", () => {
+    const stored = { audience: "IT managers", brand_aliases: ["X"] };
+    expect(mergeBrandProfile(stored, {})).toEqual({ brand_aliases: ["X"] });
   });
 });

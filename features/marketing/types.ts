@@ -197,6 +197,23 @@ export function brandProfileToJson(profile: BrandProfile): Json {
   return record;
 }
 
+/**
+ * The ONE way an editor writes `web.brand.profile`: its edited fields MERGED into
+ * the stored object. Every key the editor does not own (`brand_aliases`, keys other
+ * lanes or agents write) survives untouched; an owned field the person cleared is
+ * removed. Writing `brandProfileToJson(...)` alone replaced the whole jsonb and
+ * silently erased every key the parser does not know.
+ */
+export function mergeBrandProfile(current: Json | null | undefined, edited: BrandProfile): Json {
+  const merged: { [key: string]: Json } =
+    current !== null && current !== undefined && isJsonRecord(current) ? { ...current } : {};
+  for (const key of [...BRAND_PROFILE_STRING_FIELDS, ...BRAND_PROFILE_LIST_FIELDS]) {
+    delete merged[key];
+  }
+  const owned = brandProfileToJson(edited);
+  return isJsonRecord(owned) ? { ...merged, ...owned } : merged;
+}
+
 /** Every user-editable brand field. If it's editable, it's HERE and in the editor. */
 export interface CreateBrandInput {
   organizationId: string;

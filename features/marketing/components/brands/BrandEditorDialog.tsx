@@ -35,6 +35,7 @@ import {
 import type { BrandProfile, MarketingBrand } from "@/features/marketing/types";
 import {
   brandProfileToJson,
+  mergeBrandProfile,
   parseBrandProfile,
 } from "@/features/marketing/types";
 import { extractErrorMessage } from "@/utils/errors";
@@ -241,7 +242,8 @@ function BrandEditorDialogBody({
             ...(draft.publishedToWeb !== brand.published_to_web
               ? publishedToWebPatch(draft.publishedToWeb, userId)
               : {}),
-            profile: brandProfileToJson(profileFromDraft(draft)),
+            // Merged, never replaced: keys this editor does not own survive.
+            profile: mergeBrandProfile(brand.profile, profileFromDraft(draft)),
           },
         });
         toast.success("Brand saved");
