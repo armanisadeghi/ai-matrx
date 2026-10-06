@@ -3,8 +3,9 @@
   "updated": "2026-10-06",
   "sha": "bc48048f584874a320c8ce65e7672bf4192cbd75",
   "sites": 36894,
-  "count": 3,
+  "count": 4,
   "ids": [
+    "styled-raw-button|features/connectors/ConnectorsSettingsPanel.tsx",
     "styled-raw-button|features/connectors/IntegrationDirectory.tsx",
     "unclamped-text-pill|features/connectors/IntegrationDirectory.tsx",
     "unclamped-text-pill|features/marketing/local/rank-grid/RankGridMap.tsx"
@@ -11558,6 +11559,11 @@
     },
     "unclamped-text-pill|features/connectors/IntegrationDirectory.tsx": {
       "reason": "The pill only ever holds one of a fixed set of short status words (Connect, Connected, Needs attention, Connect your own); it carries max-w, truncate and a title",
+      "accepted_by": "Arman Sadeghi",
+      "date": "2026-10-06"
+    },
+    "styled-raw-button|features/connectors/ConnectorsSettingsPanel.tsx": {
+      "reason": "Full-width disclosure row (aria-expanded) that opens a shared account's health card; a Button control cannot hold the two-line account identity",
       "accepted_by": "Arman Sadeghi",
       "date": "2026-10-06"
     }
