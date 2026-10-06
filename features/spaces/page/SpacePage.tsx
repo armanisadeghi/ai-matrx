@@ -47,6 +47,7 @@ import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepUnsaved, readUnsaved } from "./unsaved";
+import { sendOnLeave, trackAccessToken } from "./leave-save";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -388,7 +389,9 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const schedule = () => {
     if (!docRef.current || !canEditRef.current) return;
     pending.current = true;
-    if (keptLocally.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+    // The host (a solo editor included) keeps every unsaved change on this device the moment it is made: a
+    // tab that closes or crashes before the save lands loses nothing. Others' edits are already in the room.
+    if (keptLocally.current || collab.hostRef.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
     const now = Date.now();
     dirtySince.current ??= now;
     // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
@@ -456,6 +459,24 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   }, [collab.isHost, collab.cadence]);
 
   useEffect(() => {
+    trackAccessToken();
+    /** This member holds edits the store does not have yet (only the host writes; a peer's are in the room). */
+    const leaving = () => !!docRef.current && hostAtLastRender.current && !trashedRef.current && (pending.current || inFlight.current) && contentKey(docRef.current) !== savedKey.current;
+    // The tab is going (closed, reloaded, navigated away): keep the page on this device, then send it as a
+    // keepalive save the browser finishes after the tab is gone (page/leave-save.ts).
+    const onPageHide = () => {
+      if (!leaving() || !docRef.current) return;
+      keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+      sendOnLeave(docRef.current, baseVersion.current);
+    };
+    // Hidden (tab switched, phone locked — a phone may end the page without another word): save now.
+    const onHidden = () => {
+      if (document.visibilityState !== "hidden" || !leaving() || !docRef.current) return;
+      keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+      void flush();
+    };
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onHidden);
     const warn = (e: BeforeUnloadEvent) => {
       // Only the host holds unsaved work for everyone; any other member's edits are already in the room.
       if (!hostAtLastRender.current || ((!pending.current || (docRef.current && contentKey(docRef.current) === savedKey.current)) && !inFlight.current)) return;
@@ -467,8 +488,11 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     window.addEventListener("beforeunload", warn);
     return () => {
       window.removeEventListener("beforeunload", warn);
-      // Leaving this Space: write what is pending now.
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onHidden);
+      // Leaving this Space: write what is pending now (and keep it here until that lands).
       if (timer.current) window.clearTimeout(timer.current);
+      if (leaving() && docRef.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
       void flush(true);
     };
     // Flush on leaving this Space only.

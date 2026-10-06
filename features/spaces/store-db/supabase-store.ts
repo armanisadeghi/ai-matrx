@@ -116,6 +116,18 @@ function projection(title: string, blocks: SpaceBlock[]): string {
   return lines.join("\n\n");
 }
 
+/** The arguments of `content.space_save` — the one shape a save sends (page/leave-save.ts sends it too). */
+export function spaceSaveArgs(doc: SpaceDoc, expectedVersion: number) {
+  return {
+    p_document_id: doc.id,
+    p_expected_version: expectedVersion,
+    p_snapshot: toSnapshot(doc) as unknown as Json,
+    p_title: doc.title,
+    p_projection: projection(doc.title, doc.blocks),
+    p_origin: "manual",
+  };
+}
+
 function fail(action: string, error: { message: string } | null | undefined): never {
   throw new Error(`We couldn't ${action}: ${error?.message ?? "no answer from the database"}`);
 }
@@ -405,14 +417,7 @@ export class SupabaseSpacesStore implements SpacesStore {
     const result = await guardedUpdate<DocHead>({
       expectedVersion,
       applyUpdate: async ({ expectedVersion: version }) => {
-        const { data, error } = await this.db.schema("content").rpc("space_save", {
-          p_document_id: doc.id,
-          p_expected_version: version,
-          p_snapshot: toSnapshot(doc) as unknown as Json,
-          p_title: doc.title,
-          p_projection: projection(doc.title, doc.blocks),
-          p_origin: "manual",
-        });
+        const { data, error } = await this.db.schema("content").rpc("space_save", spaceSaveArgs(doc, version));
         // PT409 (HTTP 409) is the door's compare-and-swap miss: hand guardedUpdate "no row" so it classifies it.
         if (error?.code === "PT409") return { data: null, error: null, count: null, status: 200, statusText: "OK" };
         if (error) return { data: null, error, count: null, status: 400, statusText: "Bad Request" };
