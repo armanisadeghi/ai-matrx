@@ -653,6 +653,14 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
                   <NewsDigestView
                     value={run.digest}
                     storyActions={(key) => <span data-story-key={key}>{storyActions(key)}</span>}
+                    onShowSourceHealth={
+                      health.length
+                        ? () => {
+                            const el = document.querySelector<HTMLElement>('[data-surface-value="news_source_health"]');
+                            el?.scrollIntoView({ block: "start", behavior: "smooth" });
+                          }
+                        : undefined
+                    }
                     onOpen={(target) => {
                       setParam("open", openTargetParam(target));
                       openedFromLink.current = openTargetParam(target);

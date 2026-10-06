@@ -34,6 +34,11 @@ import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 
 export interface NewsDigestViewProps {
   value: Record<string, unknown>;
+  /**
+   * The host already shows this run's source health (the run view's "Sources
+   * this run"): the digest then shows one line pointing to it, never a second copy.
+   */
+  onShowSourceHealth?: () => void;
   /** Per-story controls the host adds (surface anyway, dismiss). */
   storyActions?: (storyKey: string) => ReactNode;
   /**
@@ -110,7 +115,7 @@ function statusTone(status: string): "good" | "warn" | "bad" | "neutral" {
   return "bad";
 }
 
-export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewProps) {
+export function NewsDigestView({ value, storyActions, onOpen, onShowSourceHealth }: NewsDigestViewProps) {
   const { format: formatCost } = useCostDisplay();
   const headline = isRecord(value.headline) ? value.headline : {};
   const surfaced = records(value.surfaced);
@@ -279,7 +284,13 @@ export function NewsDigestView({ value, storyActions, onOpen }: NewsDigestViewPr
         ) : null}
       </div>
 
-      {health.length ? (
+      {health.length && onShowSourceHealth ? (
+        <p className="text-xs">
+          <button type="button" className="text-primary hover:underline" onClick={onShowSourceHealth}>
+            Sources this run
+          </button>
+        </p>
+      ) : health.length ? (
         <div>
           <p className="text-xs font-medium text-foreground">Sources this run</p>
           <ul className="mt-1 flex flex-col gap-0.5">
