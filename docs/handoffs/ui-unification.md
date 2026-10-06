@@ -88,6 +88,10 @@
 - Type scale codemod (components/official, ui, entity-list, shell, agents, research, rag, mandates): arbitrary-text-size 10627 -> 9443.
 - Page-top: 583 -> 433 (raw headers 203 -> 117, sentences 380 -> 316); RecordPageHeader/EntityModeHeader optional `backHref`.
 
+## DONE 2026-10-06 — round 3 (segmented + Tile)
+- One SegmentedControl: the package-root bg-muted one is gone from the app (21 sites) and 38 hand-built bg-muted tracks moved onto `/controls`; `check:ui-drift` rule `hand-built-segmented` (self-test red on both shapes). Left in baseline (8, need package options): colored task status/priority pickers, war-room mode/tab bars, composer mode switch (display-only variant), focal-point grid, content-plan step rail, Coolify log view (file was dirty).
+- design-system 0.68.26: pressed = primary tint + hairline (`pressed-contrast.test.ts`), `Tile wrapTitle`, `SegmentedControl value={null}`, pill guard ignores progress tracks. Quiz answers, progress tracker and troubleshooting rows are Tiles. Demo: `/demos/blocks/interactive-blocks`.
+
 ## QUEUED for the next rollout wave (updated 2026-10-05 end of wave 3)
 - Sync `@ai-matrx/agents` 0.45.5 once it publishes (rerun 37367162423), then `ConversationContextChip`: drop colour className, pass `variant="quiet"`; until then the "blind" pill loses its dashed border.
 - Usage-limit toast still sits over content at 375 when no dock/composer floats (/cms): clearance offset only applies with a floating dock. Make the toast always respect `--matrx-floating-clearance`.
