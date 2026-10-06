@@ -6,6 +6,8 @@ Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md` — read it before touching this feature in ANY repo.
 
+Timeline inbound email deletion uses the atomic erasure RPC: its confirmation must name permanent stored-content removal and distinguish it from Gmail source deletion.
+
 ---
 
 ## Purpose

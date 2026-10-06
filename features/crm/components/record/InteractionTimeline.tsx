@@ -235,6 +235,10 @@ export function InteractionTimeline({
   const remove = async (row: InteractionRow) => {
     const ok = await confirm({
       title: "Delete this entry?",
+      description:
+        row.direction === "inbound" && row.channel_code === "email"
+          ? "Permanently removes this stored email and related reply text from AI Matrx. Gmail is unchanged."
+          : "Removes this activity from the timeline.",
       confirmLabel: "Delete",
       variant: "destructive",
     });
@@ -533,7 +537,7 @@ export function InteractionTimeline({
                     </Link>
                   )}
                 </div>
-                <span className="flex shrink-0 items-center gap-0.5">
+                <span className="flex shrink-0 items-center">
                   {copyParent && (
                     <CrmRecordCopyButtons
                       revealFrom="item"

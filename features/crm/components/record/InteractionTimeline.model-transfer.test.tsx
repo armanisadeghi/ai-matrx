@@ -2,6 +2,12 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { InteractionRow } from "../../types";
 import { InteractionTimeline } from "./InteractionTimeline";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { removeInteraction } from "../../service";
+
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
+  confirm: jest.fn(async () => false),
+}));
 
 const capturedCopyButtons: Array<Record<string, unknown>> = [];
 
@@ -146,6 +152,7 @@ describe("InteractionTimeline model-transfer seam", () => {
   let root: Root;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     capturedCopyButtons.length = 0;
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -155,6 +162,31 @@ describe("InteractionTimeline model-transfer seam", () => {
   afterEach(() => {
     act(() => root.unmount());
     container.remove();
+  });
+
+  it.each([
+    ["inbound", "email", true],
+    ["outbound", "email", false],
+    ["inbound", "call", false],
+  ] as const)("explains the actual %s %s deletion before confirmation", async (direction, channel, erasesContent) => {
+    await act(async () => {
+      root.render(
+        <InteractionTimeline
+          partyId={INTERACTION.party_id}
+          orgId={INTERACTION.organization_id}
+          interactions={[{ ...INTERACTION, direction, channel_code: channel }]}
+          onChanged={async () => undefined}
+        />,
+      );
+    });
+    await act(async () => {
+      (container.querySelector('[aria-label="Delete entry"]') as HTMLButtonElement).click();
+    });
+    const options = jest.mocked(confirm).mock.calls[0][0];
+    expect(options.description?.includes("Permanently")).toBe(erasesContent);
+    expect(options.description?.includes("Gmail is unchanged")).toBe(erasesContent);
+    expect(options.description).toBeTruthy();
+    expect(removeInteraction).not.toHaveBeenCalled();
   });
 
   it("prepares only opaque IDs even when editable fields relabel Gmail content", () => {
