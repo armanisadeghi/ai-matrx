@@ -27,6 +27,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { ConnectorAccount, ConnectorCapabilityRollout } from "../health";
 
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 const toastInfo = jest.fn();
 
 /**
@@ -255,4 +257,36 @@ test("Meet first action carries its exact tab into the canonical Calendar window
   dispatch.mockClear();
   click(button!);
   expect(dispatch).toHaveBeenCalledWith(openOverlay({ overlayId: "googleAgendaWindow", data: { initialView: "meet" } }));
+});
+
+
+describe.each([
+  ["calendar_shared", "calendar_shared", false],
+  ["calendar_changes", "calendar_write", true],
+] as const)("%s Calendar first action", (productKey, capabilityKey, needsOrg) => {
+  it("opens the selected-calendar controls rather than the general calendar", async () => {
+    const product = provider.products.find((item) => item.key === productKey)!;
+    const account: ConnectorAccount = {
+      ...REFUSED,
+      grantedScopes: [...provider.identityScopes, ...product.scopes],
+      activity: googleActivityByProduct(provider, parseGoogleCapabilityHealth({
+        __kind: GOOGLE_CAPABILITY_HEALTH_KIND,
+        [capabilityKey]: { last_refusal: {
+          at: "2026-10-05T00:00:00Z", action: "calendar.preview",
+          code: "grant_expired_or_revoked", sentence: "Renew Calendar access", http_status: 401,
+        } },
+      })),
+    };
+    mount(account);
+    const connect = [...container.querySelectorAll("button")].find((node) => node.textContent?.includes(provider.dialog.cta));
+    await act(async () => connect!.click());
+    const button = container.querySelector(`[data-connector-first-action="${productKey}"]`);
+    expect(button).not.toBeNull();
+    dispatch.mockClear();
+    click(button!);
+    expect(dispatch).toHaveBeenCalledWith(openOverlay({
+      overlayId: "googleAgendaWindow",
+      data: { initialView: "selected", ...(needsOrg ? { organizationId: ORGANIZATION_ID } : {}) },
+    }));
+  });
 });

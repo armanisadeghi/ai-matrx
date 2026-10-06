@@ -47,11 +47,13 @@ jest.mock("@/components/ui/tabs", () => ({
   TabsList: ({
     children,
     className,
+    overflow,
   }: {
     children: React.ReactNode;
     className?: string;
+    overflow?: string;
   }) => (
-    <div data-tabs-list className={className}>
+    <div data-tabs-list data-overflow={overflow} className={className}>
       {children}
     </div>
   ),
@@ -106,11 +108,7 @@ describe("GoogleAgendaWindow selected-calendar admission", () => {
     expect(host.textContent).toContain("Meet review");
     expect(host.textContent).toContain("Meet review body");
     expect(host.querySelectorAll("[data-tab]")).toHaveLength(4);
-    expect(host.querySelector("[data-tabs-list]")?.className).toContain(
-      "sm:grid-cols-4",
-    );
-    for (const tab of host.querySelectorAll("[data-tab]"))
-      expect(tab.className).toContain("min-h-11");
+    expect(host.querySelector("[data-tabs-list]")?.getAttribute("data-overflow")).toBe("scroll");
   });
 
   it("opens Meet directly for a reviewer and falls back after eligibility changes", () => {

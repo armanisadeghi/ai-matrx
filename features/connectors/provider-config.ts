@@ -475,6 +475,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "overlay",
         label: "Open Calendar to review a selected calendar",
         overlayId: "googleAgendaWindow",
+        data: { initialView: "selected" },
       },
     },
     {
@@ -515,6 +516,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
         kind: "overlay",
         label: "Review Calendar changes",
         overlayId: "googleAgendaWindow",
+        data: { initialView: "selected" },
         needs: ["organizationId"],
       },
     },
