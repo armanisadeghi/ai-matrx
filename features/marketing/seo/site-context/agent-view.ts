@@ -10,19 +10,29 @@
 // (`agent_reach._rendered_bytes`): that text carried as a JSON string with
 // non-ASCII escaped, in UTF-8 bytes.
 
-export function pythonJsonText(value: unknown): string {
+/**
+ * Keys whose values the server holds as Python floats. `JSON.parse` turns
+ * `0.0` into `0`, and Python writes a whole float as `0.0`, so these print
+ * with the `.0` the model actually reads (money: `cost.estimate_usd` etc.;
+ * a voice's `confidence`). Proven against a live envelope.
+ */
+const FLOAT_KEY = /(_usd|^confidence)$/;
+
+function pyNumber(value: number, isFloat: boolean): string {
+  if (!Number.isFinite(value)) return "null";
+  const text = JSON.stringify(value);
+  return isFloat && Number.isInteger(value) ? `${text}.0` : text;
+}
+
+export function pythonJsonText(value: unknown, isFloat = false): string {
   if (value === null || value === undefined) return "null";
   if (typeof value === "string" || typeof value === "boolean") return JSON.stringify(value);
-  if (typeof value === "number") {
-    // Python writes a whole float as `1.0`; JSON has already lost that
-    // distinction, so a whole number prints as an integer (one byte apart).
-    return Number.isFinite(value) ? JSON.stringify(value) : "null";
-  }
-  if (Array.isArray(value)) return `[${value.map(pythonJsonText).join(", ")}]`;
+  if (typeof value === "number") return pyNumber(value, isFloat);
+  if (Array.isArray(value)) return `[${value.map((v) => pythonJsonText(v)).join(", ")}]`;
   if (typeof value === "object") {
     const parts = Object.entries(value as Record<string, unknown>)
       .filter(([, v]) => v !== undefined)
-      .map(([k, v]) => `${JSON.stringify(k)}: ${pythonJsonText(v)}`);
+      .map(([k, v]) => `${JSON.stringify(k)}: ${pythonJsonText(v, FLOAT_KEY.test(k))}`);
     return `{${parts.join(", ")}}`;
   }
   return "null";

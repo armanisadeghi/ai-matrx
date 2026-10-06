@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@ai-matrx/design-system";
 import { Badge, Button, RegionSkeleton, Tabs } from "@ai-matrx/design-system/controls";
+import { formatCount } from "@ai-matrx/kit/format";
 import { budgetedBytes, contextParts, pythonJsonText } from "./agent-view";
 import { useAgentContextView } from "./hooks";
 
@@ -64,7 +65,7 @@ export function AgentViewDialog({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent size="xl">
           <DialogHeader>
             <DialogTitle>What agents see</DialogTitle>
             <DialogDescription>The exact site context an agent receives.</DialogDescription>
@@ -75,8 +76,8 @@ export function AgentViewDialog({
                 tone={maxBytes !== null && bytes > maxBytes ? "warning" : "neutral"}
                 data-testid="agent-view-size"
               >
-                {bytes.toLocaleString()}
-                {maxBytes !== null ? ` of ${maxBytes.toLocaleString()}` : ""} bytes
+                {formatCount(bytes)}
+                {maxBytes !== null ? ` of ${formatCount(maxBytes)}` : ""} bytes
               </Badge>
             ) : null}
             {envelope ? <Badge>{envelope.cost?.class === "free" ? "Free" : "Paid"}</Badge> : null}
@@ -120,7 +121,7 @@ export function AgentViewDialog({
               {view === "exact" ? (
                 <pre
                   data-testid="agent-view-exact"
-                  className="whitespace-pre-wrap break-all rounded-md border border-border bg-card p-2 font-mono text-[11px]"
+                  className="whitespace-pre-wrap break-all rounded-md border border-border bg-card p-2 font-mono text-xs"
                 >
                   {text}
                 </pre>
@@ -138,11 +139,11 @@ export function AgentViewDialog({
                         {p.more ? <Badge tone="warning">{p.more} more</Badge> : null}
                       </div>
                       {p.source ? (
-                        <p className="truncate text-[11px] text-muted-foreground">{p.source}</p>
+                        <p className="truncate text-xs text-muted-foreground">{p.source}</p>
                       ) : null}
                       {p.note ? <p className="text-xs">{p.note}</p> : null}
                       {p.next ? (
-                        <p className="font-mono text-[11px] text-muted-foreground">Next: {p.next}</p>
+                        <p className="font-mono text-xs text-muted-foreground">Next: {p.next}</p>
                       ) : null}
                     </li>
                   ))}

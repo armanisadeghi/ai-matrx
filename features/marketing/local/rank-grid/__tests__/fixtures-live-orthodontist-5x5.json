@@ -1,0 +1,738 @@
+{
+ "preview": {
+  "__kind": "seo.tool_envelope",
+  "status": "ok",
+  "data": {
+   "preview": true,
+   "center": {
+    "latitude": 33.6189,
+    "longitude": -117.9298,
+    "source": "argument"
+   },
+   "center_confirmed_value": "33.6189,-117.9298",
+   "matched_business": null,
+   "center_to_listing_km": null,
+   "keyword": "orthodontist",
+   "grid_size": 5,
+   "spacing_km": 2.0,
+   "zoom": 13,
+   "depth": 20,
+   "device": "mobile",
+   "points": [
+    {
+     "row": 0,
+     "col": 0,
+     "lat": 33.6550749,
+     "lng": -117.9729497
+    },
+    {
+     "row": 0,
+     "col": 1,
+     "lat": 33.6550749,
+     "lng": -117.9513749
+    },
+    {
+     "row": 0,
+     "col": 2,
+     "lat": 33.6550749,
+     "lng": -117.9298
+    },
+    {
+     "row": 0,
+     "col": 3,
+     "lat": 33.6550749,
+     "lng": -117.9082251
+    },
+    {
+     "row": 0,
+     "col": 4,
+     "lat": 33.6550749,
+     "lng": -117.8866503
+    },
+    {
+     "row": 1,
+     "col": 0,
+     "lat": 33.6369874,
+     "lng": -117.9729497
+    },
+    {
+     "row": 1,
+     "col": 1,
+     "lat": 33.6369874,
+     "lng": -117.9513749
+    },
+    {
+     "row": 1,
+     "col": 2,
+     "lat": 33.6369874,
+     "lng": -117.9298
+    },
+    {
+     "row": 1,
+     "col": 3,
+     "lat": 33.6369874,
+     "lng": -117.9082251
+    },
+    {
+     "row": 1,
+     "col": 4,
+     "lat": 33.6369874,
+     "lng": -117.8866503
+    },
+    {
+     "row": 2,
+     "col": 0,
+     "lat": 33.6189,
+     "lng": -117.9729497
+    },
+    {
+     "row": 2,
+     "col": 1,
+     "lat": 33.6189,
+     "lng": -117.9513749
+    },
+    {
+     "row": 2,
+     "col": 2,
+     "lat": 33.6189,
+     "lng": -117.9298
+    },
+    {
+     "row": 2,
+     "col": 3,
+     "lat": 33.6189,
+     "lng": -117.9082251
+    },
+    {
+     "row": 2,
+     "col": 4,
+     "lat": 33.6189,
+     "lng": -117.8866503
+    },
+    {
+     "row": 3,
+     "col": 0,
+     "lat": 33.6008126,
+     "lng": -117.9729497
+    },
+    {
+     "row": 3,
+     "col": 1,
+     "lat": 33.6008126,
+     "lng": -117.9513749
+    },
+    {
+     "row": 3,
+     "col": 2,
+     "lat": 33.6008126,
+     "lng": -117.9298
+    },
+    {
+     "row": 3,
+     "col": 3,
+     "lat": 33.6008126,
+     "lng": -117.9082251
+    },
+    {
+     "row": 3,
+     "col": 4,
+     "lat": 33.6008126,
+     "lng": -117.8866503
+    },
+    {
+     "row": 4,
+     "col": 0,
+     "lat": 33.5827251,
+     "lng": -117.9729497
+    },
+    {
+     "row": 4,
+     "col": 1,
+     "lat": 33.5827251,
+     "lng": -117.9513749
+    },
+    {
+     "row": 4,
+     "col": 2,
+     "lat": 33.5827251,
+     "lng": -117.9298
+    },
+    {
+     "row": 4,
+     "col": 3,
+     "lat": 33.5827251,
+     "lng": -117.9082251
+    },
+    {
+     "row": 4,
+     "col": 4,
+     "lat": 33.5827251,
+     "lng": -117.8866503
+    }
+   ],
+   "estimate_usd": 0.0,
+   "reused_points": 25,
+   "always_asks_approval": true
+  },
+  "cost": {
+   "class": "free",
+   "estimate_usd": 0.0,
+   "charged_usd": 0.0,
+   "reused": false,
+   "reused_run_ids": []
+  },
+  "evidence": [],
+  "notices": [
+   "Preview only \u2014 nothing was spent. Check that center is the storefront and matched_business is the right business, then call again with preview=false and center_confirmed='33.6189,-117.9298'.",
+   "No stored listing for this business, so the center could not be checked against its storefront; call find_business or profile first to check it."
+  ]
+ },
+ "run": {
+  "__kind": "seo.tool_envelope",
+  "status": "ok",
+  "data": {
+   "keyword": "orthodontist",
+   "grid_size": 5,
+   "spacing_km": 2.0,
+   "zoom": 13,
+   "depth": 20,
+   "device": "mobile",
+   "center": {
+    "latitude": 33.6189,
+    "longitude": -117.9298,
+    "source": "argument"
+   },
+   "matched_business": null,
+   "summary": {
+    "points_found": 0,
+    "points_searched": 25,
+    "points_failed": 0,
+    "points_pending": 0,
+    "avg_rank": null,
+    "top3": 0,
+    "top10": 0
+   },
+   "grid_text": " \u2013  \u2013  \u2013  \u2013  \u2013\n \u2013  \u2013  \u2013  \u2013  \u2013\n \u2013  \u2013  \u2013  \u2013  \u2013\n \u2013  \u2013  \u2013  \u2013  \u2013\n \u2013  \u2013  \u2013  \u2013  \u2013",
+   "points": [
+    {
+     "row": 0,
+     "col": 0,
+     "lat": 33.6550749,
+     "lng": -117.9729497,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Surf City Smiles",
+      "cid": "15215896704516949206"
+     },
+     "run_id": "ef80c6ee-39a1-4479-a45e-2c13ea31592f",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 0,
+     "col": 1,
+     "lat": 33.6550749,
+     "lng": -117.9513749,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "28301c5a-a6d4-408c-bd64-9ff37c120bbf",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 0,
+     "col": 2,
+     "lat": 33.6550749,
+     "lng": -117.9298,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "e8822775-c1cf-4b9e-b01b-ae9414ef558d",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 0,
+     "col": 3,
+     "lat": 33.6550749,
+     "lng": -117.9082251,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "b409ba39-3e6b-41ed-97ff-ae92b2dd1d55",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 0,
+     "col": 4,
+     "lat": 33.6550749,
+     "lng": -117.8866503,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Family Orthodontics & Oral Surgery",
+      "cid": "6057006187613005026"
+     },
+     "run_id": "0edd8517-6320-42f6-89cd-c0da51d3438f",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 1,
+     "col": 0,
+     "lat": 33.6369874,
+     "lng": -117.9729497,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "13155afd-db8d-4f04-9a82-3168999a35a8",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 1,
+     "col": 1,
+     "lat": 33.6369874,
+     "lng": -117.9513749,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "9a081590-a94b-467a-8241-093c023c07fc",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 1,
+     "col": 2,
+     "lat": 33.6369874,
+     "lng": -117.9298,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "5463a86e-6761-4d1d-941d-ca827855b81d",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 1,
+     "col": 3,
+     "lat": 33.6369874,
+     "lng": -117.9082251,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "ed9199c7-da17-4140-a392-98e9a1c6daac",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 1,
+     "col": 4,
+     "lat": 33.6369874,
+     "lng": -117.8866503,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "ee3f1d90-8efc-48d4-9722-3ed2dc184635",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 2,
+     "col": 0,
+     "lat": 33.6189,
+     "lng": -117.9729497,
+     "rank": null,
+     "results_count": 19,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "b3df7f5f-fc54-4e4e-a701-4ec52d0196cd",
+     "not_found_reading": "sparse"
+    },
+    {
+     "row": 2,
+     "col": 1,
+     "lat": 33.6189,
+     "lng": -117.9513749,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "ce1fae77-0fca-44e3-8e41-3a5a25681b6f",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 2,
+     "col": 2,
+     "lat": 33.6189,
+     "lng": -117.9298,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "0276d022-037f-41de-8fc4-dce443d456af",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 2,
+     "col": 3,
+     "lat": 33.6189,
+     "lng": -117.9082251,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "2a406c08-d729-467b-9bce-ff3872a7ddaa",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 2,
+     "col": 4,
+     "lat": 33.6189,
+     "lng": -117.8866503,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "DiGiovanni Orthodontics",
+      "cid": "7499402445621780530"
+     },
+     "run_id": "e18717d8-677d-4632-a9a2-07c3764556cc",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 3,
+     "col": 0,
+     "lat": 33.6008126,
+     "lng": -117.9729497,
+     "rank": null,
+     "results_count": 6,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "61d48011-8e69-47a7-9890-a6e7cfe4d2d2",
+     "not_found_reading": "sparse"
+    },
+    {
+     "row": 3,
+     "col": 1,
+     "lat": 33.6008126,
+     "lng": -117.9513749,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "5e5496a5-5674-424e-8942-ccb5db041b01",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 3,
+     "col": 2,
+     "lat": 33.6008126,
+     "lng": -117.9298,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "97815c4f-b8c0-4322-bef7-be2aa494d671",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 3,
+     "col": 3,
+     "lat": 33.6008126,
+     "lng": -117.9082251,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "b3f36d1a-a7af-4080-9758-14ae53127d9f",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 3,
+     "col": 4,
+     "lat": 33.6008126,
+     "lng": -117.8866503,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "DiGiovanni Orthodontics",
+      "cid": "7499402445621780530"
+     },
+     "run_id": "2bf22008-7110-4075-9891-028f767b04b5",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 4,
+     "col": 0,
+     "lat": 33.5827251,
+     "lng": -117.9729497,
+     "rank": null,
+     "results_count": 3,
+     "top_result": {
+      "name": "Smile HB Dental and Orthodontics",
+      "cid": "17530339317838562582"
+     },
+     "run_id": "99ce83b0-0acb-449e-95ab-2e9a9fe4d751",
+     "not_found_reading": "sparse"
+    },
+    {
+     "row": 4,
+     "col": 1,
+     "lat": 33.5827251,
+     "lng": -117.9513749,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "83c08c3a-7ec2-4af3-8df7-2f5f40e24e12",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 4,
+     "col": 2,
+     "lat": 33.5827251,
+     "lng": -117.9298,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "7d1e4254-57b4-488f-9f2c-ba314d96bc8b",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 4,
+     "col": 3,
+     "lat": 33.5827251,
+     "lng": -117.9082251,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "Newport-Mesa Orthodontics & Family Dentistry",
+      "cid": "5978929699797404409"
+     },
+     "run_id": "4fd1b251-6872-4bac-90ff-187f6712c3e9",
+     "not_found_reading": "outranked"
+    },
+    {
+     "row": 4,
+     "col": 4,
+     "lat": 33.5827251,
+     "lng": -117.8866503,
+     "rank": null,
+     "results_count": 20,
+     "top_result": {
+      "name": "DiGiovanni Orthodontics",
+      "cid": "7499402445621780530"
+     },
+     "run_id": "5d456108-ee50-40b8-b015-1dcc155868c6",
+     "not_found_reading": "outranked"
+    }
+   ]
+  },
+  "cost": {
+   "class": "paid",
+   "estimate_usd": 0.0,
+   "charged_usd": 0.0,
+   "reused": true,
+   "reused_run_ids": [
+    "ef80c6ee-39a1-4479-a45e-2c13ea31592f",
+    "28301c5a-a6d4-408c-bd64-9ff37c120bbf",
+    "e8822775-c1cf-4b9e-b01b-ae9414ef558d",
+    "b409ba39-3e6b-41ed-97ff-ae92b2dd1d55",
+    "0edd8517-6320-42f6-89cd-c0da51d3438f",
+    "13155afd-db8d-4f04-9a82-3168999a35a8",
+    "9a081590-a94b-467a-8241-093c023c07fc",
+    "5463a86e-6761-4d1d-941d-ca827855b81d",
+    "ed9199c7-da17-4140-a392-98e9a1c6daac",
+    "ee3f1d90-8efc-48d4-9722-3ed2dc184635",
+    "b3df7f5f-fc54-4e4e-a701-4ec52d0196cd",
+    "ce1fae77-0fca-44e3-8e41-3a5a25681b6f",
+    "0276d022-037f-41de-8fc4-dce443d456af",
+    "2a406c08-d729-467b-9bce-ff3872a7ddaa",
+    "e18717d8-677d-4632-a9a2-07c3764556cc",
+    "61d48011-8e69-47a7-9890-a6e7cfe4d2d2",
+    "5e5496a5-5674-424e-8942-ccb5db041b01",
+    "97815c4f-b8c0-4322-bef7-be2aa494d671",
+    "b3f36d1a-a7af-4080-9758-14ae53127d9f",
+    "2bf22008-7110-4075-9891-028f767b04b5",
+    "99ce83b0-0acb-449e-95ab-2e9a9fe4d751",
+    "83c08c3a-7ec2-4af3-8df7-2f5f40e24e12",
+    "7d1e4254-57b4-488f-9f2c-ba314d96bc8b",
+    "4fd1b251-6872-4bac-90ff-187f6712c3e9",
+    "5d456108-ee50-40b8-b015-1dcc155868c6"
+   ]
+  },
+  "evidence": [
+   {
+    "run_id": "ef80c6ee-39a1-4479-a45e-2c13ea31592f",
+    "observed_at": "2026-10-06T01:49:39.959080Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "28301c5a-a6d4-408c-bd64-9ff37c120bbf",
+    "observed_at": "2026-10-06T01:49:15.312543Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "e8822775-c1cf-4b9e-b01b-ae9414ef558d",
+    "observed_at": "2026-10-06T01:49:42.247471Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "b409ba39-3e6b-41ed-97ff-ae92b2dd1d55",
+    "observed_at": "2026-10-06T01:49:19.175008Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "0edd8517-6320-42f6-89cd-c0da51d3438f",
+    "observed_at": "2026-10-06T01:49:31.417251Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "13155afd-db8d-4f04-9a82-3168999a35a8",
+    "observed_at": "2026-10-06T01:49:15.585992Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "9a081590-a94b-467a-8241-093c023c07fc",
+    "observed_at": "2026-10-06T01:49:47.484775Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "5463a86e-6761-4d1d-941d-ca827855b81d",
+    "observed_at": "2026-10-06T01:49:34.026562Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "ed9199c7-da17-4140-a392-98e9a1c6daac",
+    "observed_at": "2026-10-06T01:49:51.841458Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "ee3f1d90-8efc-48d4-9722-3ed2dc184635",
+    "observed_at": "2026-10-06T01:49:17.937154Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "b3df7f5f-fc54-4e4e-a701-4ec52d0196cd",
+    "observed_at": "2026-10-06T01:49:35.316111Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "ce1fae77-0fca-44e3-8e41-3a5a25681b6f",
+    "observed_at": "2026-10-06T01:49:59.633681Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "0276d022-037f-41de-8fc4-dce443d456af",
+    "observed_at": "2026-10-06T01:49:37.170024Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "2a406c08-d729-467b-9bce-ff3872a7ddaa",
+    "observed_at": "2026-10-06T01:49:45.800868Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "e18717d8-677d-4632-a9a2-07c3764556cc",
+    "observed_at": "2026-10-06T01:49:25.362945Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "61d48011-8e69-47a7-9890-a6e7cfe4d2d2",
+    "observed_at": "2026-10-06T01:49:42.659548Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "5e5496a5-5674-424e-8942-ccb5db041b01",
+    "observed_at": "2026-10-06T01:49:38.461587Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "97815c4f-b8c0-4322-bef7-be2aa494d671",
+    "observed_at": "2026-10-06T01:49:27.897390Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "b3f36d1a-a7af-4080-9758-14ae53127d9f",
+    "observed_at": "2026-10-06T01:49:22.402659Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "2bf22008-7110-4075-9891-028f767b04b5",
+    "observed_at": "2026-10-06T01:49:49.056777Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "99ce83b0-0acb-449e-95ab-2e9a9fe4d751",
+    "observed_at": "2026-10-06T01:49:21.962473Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "83c08c3a-7ec2-4af3-8df7-2f5f40e24e12",
+    "observed_at": "2026-10-06T01:49:42.331814Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "7d1e4254-57b4-488f-9f2c-ba314d96bc8b",
+    "observed_at": "2026-10-06T01:49:18.565615Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "4fd1b251-6872-4bac-90ff-187f6712c3e9",
+    "observed_at": "2026-10-06T01:49:39.959169Z",
+    "operation": "serp.google.maps.advanced"
+   },
+   {
+    "run_id": "5d456108-ee50-40b8-b015-1dcc155868c6",
+    "observed_at": "2026-10-06T01:49:23.536991Z",
+    "operation": "serp.google.maps.advanced"
+   }
+  ],
+  "notices": [
+   "Grid legend: numbers are Maps ranks (top 20 checked), north at the top; '\u2013' = not found at that point, 'x' = that point's search failed (its error says why and what to do; it may still be charged), '?' = not searched yet.",
+   "'outranked': a full page of results came back without it \u2014 at least that many businesses outrank it there.",
+   "'sparse': the search returned fewer results than the depth checked, and this business was not among them \u2014 it is not listed there, not merely outranked.",
+   "Business matched by name; pass cid for certainty.",
+   "The business was not found at any point; check matched_business in the preview (cid) before reading this as invisibility.",
+   "25 of 25 points reused results under 24 hours old, free."
+  ]
+ }
+}

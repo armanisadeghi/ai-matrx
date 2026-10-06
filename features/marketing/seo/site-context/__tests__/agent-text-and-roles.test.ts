@@ -30,6 +30,13 @@ describe("pythonJsonText", () => {
     expect(pythonJsonText(value)).toBe(PYTHON);
   });
 
+  it("writes the server's float fields the way Python does (0.0, not 0)", () => {
+    // From a live seo_site context envelope: cost carries Python floats.
+    expect(pythonJsonText({ cost: { class: "free", estimate_usd: 0, charged_usd: 0.25 }, total: 0 })).toBe(
+      '{"cost": {"class": "free", "estimate_usd": 0.0, "charged_usd": 0.25}, "total": 0}',
+    );
+  });
+
   it("measures size the way the server budgets it (non-ASCII escaped)", () => {
     expect(budgetedBytes(PYTHON)).toBe(288);
   });
