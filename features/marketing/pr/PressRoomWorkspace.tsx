@@ -98,6 +98,7 @@ import {
   readFacts,
   type StoryAngle,
 } from "@/features/marketing/pr/types";
+import { toast } from "@/lib/toast";
 import { HeadlinesDialog } from "@/features/marketing/pr/media-desk/HeadlinesDialog";
 import { rememberedRunKeys } from "@/features/marketing/pr/media-desk/rejoin";
 import { MakeClipDialog } from "@/features/marketing/pr/media-desk/MakeClipDialog";
@@ -176,6 +177,9 @@ export default function PressRoomWorkspace({
   } = usePressRoomUrl();
   const brands = useVisibleBrandOptions();
   const sites = useBrandSites(brandId);
+  /** The selected site's organization: every AI action here passes it, so none stops to ask. */
+  const siteOrganizationId =
+    sites.data?.find((site) => site.id === siteId)?.organization_id ?? null;
   const now = useMinuteClock();
   const rulings = usePressRoomRulings();
 
@@ -334,7 +338,8 @@ export default function PressRoomWorkspace({
       error: null,
     });
     try {
-      const result = await generateStoryAngles(dispatch, siteId, {
+      if (!siteOrganizationId) throw new Error("This site's organization has not loaded yet. Try again in a moment.");
+      const result = await generateStoryAngles(dispatch, siteId, siteOrganizationId, {
         capturePages: 8,
         onStage: (stage) =>
           setAnalysis((current) => ({ ...current, stage })),
@@ -350,7 +355,7 @@ export default function PressRoomWorkspace({
         error: err instanceof Error ? err.message : "Analysis failed.",
       });
     }
-  }, [dispatch, siteId, press]);
+  }, [dispatch, siteId, siteOrganizationId, press]);
 
   // Score/re-score one request row — the recovery door for rows that landed
   // unscored. One in flight at a time; the refetch pulls the verdict in.
@@ -359,15 +364,19 @@ export default function PressRoomWorkspace({
     async (requestId: string) => {
       setScoringRequestId(requestId);
       try {
-        await evaluateSourceRequest(dispatch, requestId);
+        if (!siteOrganizationId) throw new Error("This site's organization has not loaded yet. Try again in a moment.");
+        await evaluateSourceRequest(dispatch, requestId, siteOrganizationId);
         press.refetch();
-      } catch {
-        // The row is unchanged on failure; the button stays available.
+      } catch (err) {
+        // The row is unchanged and the button stays available; the reason is said, never swallowed.
+        toast.error("Scoring this request stopped", {
+          description: err instanceof Error ? err.message : String(err),
+        });
       } finally {
         setScoringRequestId(null);
       }
     },
-    [dispatch, press],
+    [dispatch, press, siteOrganizationId],
   );
 
   const selectedBrand = brands.data?.find((brand) => brand.id === brandId);
@@ -854,6 +863,7 @@ export default function PressRoomWorkspace({
                     : (angle) => (
                         <HeadlinesDialog
                           siteId={angle.site_id}
+                          organizationId={angle.organization_id}
                           angleId={angle.id}
                           angleHeadline={angle.headline}
                           angleFactCount={readFacts(angle.facts).items.length}
@@ -877,6 +887,7 @@ export default function PressRoomWorkspace({
                     siteId ? (
                       <IngestRequestsDialog
                         siteId={siteId}
+                        organizationId={siteOrganizationId}
                         onIngested={press.refetch}
                       />
                     ) : null
@@ -897,6 +908,7 @@ export default function PressRoomWorkspace({
                   : (mention) => (
                       <MakeClipDialog
                         siteId={mention.site_id}
+                        organizationId={mention.organization_id}
                         defaultUrl={mention.url}
                         defaultClientName={selectedBrand?.name ?? ""}
                         coverageMentionId={mention.id}
@@ -907,6 +919,7 @@ export default function PressRoomWorkspace({
             <ClipsGallery
               siteIds={(sites.data ?? []).map((site) => site.id)}
               activeSiteId={snapshot.isSample ? null : siteId || null}
+              organizationId={selectedSite?.organization_id ?? null}
               clientName={selectedBrand?.name ?? ""}
             />
 

@@ -44,12 +44,15 @@ function isHttpUrl(value: string): boolean {
 
 export function MakeClipDialog({
   siteId,
+  organizationId,
   defaultUrl = "",
   defaultClientName = "",
   coverageMentionId = null,
   trigger,
 }: {
   siteId: string;
+  /** The brand's organization — passed explicitly so the action never asks which one. */
+  organizationId: string;
   /** Set for a coverage mention (fixed); empty for a pasted link. */
   defaultUrl?: string;
   defaultClientName?: string;
@@ -98,6 +101,7 @@ export function MakeClipDialog({
       const done = await makePressClip(
         dispatch,
         siteId,
+        organizationId,
         { url: url.trim(), client_name: clientName, coverage_mention_id: coverageMentionId },
         {
           onStage: (stage) => setStages((prev) => [...prev, stage]),

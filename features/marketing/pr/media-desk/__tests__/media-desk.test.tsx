@@ -162,3 +162,27 @@ describe("HeadlinesResultView", () => {
     expect(used).toEqual(["On-site hard drive shredding"]);
   });
 });
+
+describe("HeadlinesResultView guidelines", () => {
+  it("counts every format and says guideline vs limit", () => {
+    const result: HeadlinesResult = {
+      result_kind: "press.headlines",
+      angle_id: null,
+      formats: ["news", "press_release"],
+      facts: [],
+      groups: [
+        { format: "news", candidates: [{ text: "n".repeat(75), move: null, charge: null, char_count: 75, over_limit: true }], pick: null, limit: 70, limit_kind: "guideline" },
+        { format: "press_release", candidates: [{ text: "Release head", move: null, charge: null, char_count: 12, over_limit: false }], pick: null, limit: 100, limit_kind: "guideline" },
+      ],
+      materials_used: [],
+      next_step: null,
+      subject_line_max_chars: 60,
+      checks: [],
+    };
+    render(<HeadlinesResultView result={result} />);
+    const news = container.querySelector('[data-testid="headline-group-news"]')!;
+    expect(news.textContent).toContain("Guideline: about 70 characters");
+    expect(news.textContent).toContain("75");
+    expect(container.querySelector('[data-testid="headline-group-press_release"]')?.textContent).toContain("12");
+  });
+});

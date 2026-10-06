@@ -18,11 +18,14 @@ import { MakeClipDialog } from "./MakeClipDialog";
 export function ClipsGallery({
   siteIds,
   activeSiteId,
+  organizationId,
   clientName,
 }: {
   siteIds: readonly string[];
   /** Where a pasted-link clip is filed (the Press Room's selected site). */
   activeSiteId: string | null;
+  /** The brand's organization (the active site's own). */
+  organizationId: string | null;
   clientName: string;
 }) {
   const clips = useClipsGallery(siteIds);
@@ -34,9 +37,10 @@ export function ClipsGallery({
           <span className="text-[11px] tabular-nums text-muted-foreground">
             {clips.data ? `${clips.data.length} made` : ""}
           </span>
-          {activeSiteId ? (
+          {activeSiteId && organizationId ? (
             <MakeClipDialog
               siteId={activeSiteId}
+              organizationId={organizationId}
               defaultClientName={clientName}
               trigger={
                 <Button type="submit" variant="outline">

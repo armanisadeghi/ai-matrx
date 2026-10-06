@@ -84,6 +84,8 @@ export interface HeadlineGroup {
   candidates: HeadlineCandidate[];
   pick: { text: string; why: string | null; char_count: number; over_limit: boolean } | null;
   limit: number | null;
+  /** `limit` for the pitch subject line (the brief's hard check); `guideline` for every other format. */
+  limit_kind?: "limit" | "guideline";
 }
 
 export interface HeadlinesResult {
@@ -107,6 +109,8 @@ export interface CheckedStatement {
 
 export interface CrisisHoldingResult {
   result_kind: "reputation.crisis_holding";
+  /** The zone every time on this answer is said in (the organization's). */
+  timezone?: string;
   org_name: string;
   counsel_review_mode: boolean;
   legal_status: string;
@@ -271,6 +275,9 @@ export async function consume<T>(
 export function makePressClip(
   dispatch: AppDispatch,
   siteId: string,
+  /** The brand's organization (the site's own). Explicit, so the action never stops to ask
+   * "which organization?" — the brand already answers it. */
+  organizationId: string,
   body: { url: string; client_name: string; coverage_mention_id?: string | null },
   options: RunOptions = {},
 ): Promise<MakeClipResult> {
@@ -281,6 +288,7 @@ export function makePressClip(
         path: "/seo/sites/{site_id}/press/clips",
         pathParams: { site_id: siteId },
         method: "POST",
+        scopeOverrides: { organization_id: organizationId },
         body: {
           url: body.url,
           client_name: body.client_name,
@@ -298,6 +306,9 @@ export function makePressClip(
 export function writePressHeadlines(
   dispatch: AppDispatch,
   siteId: string,
+  /** The brand's organization (the site's own). Explicit, so the action never stops to ask
+   * "which organization?" — the brand already answers it. */
+  organizationId: string,
   body: { angle_id?: string | null; facts?: string[]; formats: HeadlineFormat[]; peg?: string | null },
   options: RunOptions = {},
 ): Promise<HeadlinesResult> {
@@ -308,6 +319,7 @@ export function writePressHeadlines(
         path: "/seo/sites/{site_id}/press/headlines",
         pathParams: { site_id: siteId },
         method: "POST",
+        scopeOverrides: { organization_id: organizationId },
         body: {
           angle_id: body.angle_id ?? null,
           facts: body.facts ?? [],
@@ -326,6 +338,9 @@ export function writePressHeadlines(
 export function draftCrisisHolding(
   dispatch: AppDispatch,
   siteId: string,
+  /** The brand's organization (the site's own). Explicit, so the action never stops to ask
+   * "which organization?" — the brand already answers it. */
+  organizationId: string,
   body: { intake: CrisisIntake; counsel_review_mode: boolean },
   options: RunOptions = {},
 ): Promise<CrisisHoldingResult> {
@@ -336,6 +351,7 @@ export function draftCrisisHolding(
         path: "/seo/sites/{site_id}/reputation/crisis-holding",
         pathParams: { site_id: siteId },
         method: "POST",
+        scopeOverrides: { organization_id: organizationId },
         body,
         stream: true,
         onStreamEvent,

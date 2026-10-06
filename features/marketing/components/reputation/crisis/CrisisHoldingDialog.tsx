@@ -313,6 +313,7 @@ export function CrisisHoldingDialog({
       const done = await draftCrisisHolding(
         dispatch,
         siteId,
+        organizationId,
         { intake: toWire(current), counsel_review_mode: counselReviewMode },
         {
           onStage: (stage) => setStages((prev) => [...prev, stage]),

@@ -157,6 +157,7 @@ function MentionDetail({
         </a>
         <MakeClipDialog
           siteId={row.site_id}
+          organizationId={row.organization_id}
           defaultUrl={row.url}
           defaultClientName={clientName}
           coverageMentionId={row.id}

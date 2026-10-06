@@ -61,10 +61,13 @@ const PASTEABLE_PLATFORMS = [
 
 export function IngestRequestsDialog({
   siteId,
+  organizationId,
   onIngested,
 }: {
   /** Scope the ingest to the Press Room's selected site. */
   siteId: string | null;
+  /** The site's organization, explicit, so the ingest never asks which one. */
+  organizationId: string | null;
   /** Called after rows landed so the rail can refetch. */
   onIngested: () => void;
 }) {
@@ -84,7 +87,8 @@ export function IngestRequestsDialog({
     if (!rawText.trim()) return;
     setRun({ running: true, stage: "Connecting", result: null, error: null });
     try {
-      const result = await ingestSourceRequests(dispatch, rawText, {
+      if (!organizationId) throw new Error("This site's organization has not loaded yet. Try again in a moment.");
+      const result = await ingestSourceRequests(dispatch, rawText, organizationId, {
         platform,
         evaluate,
         siteIds: siteId ? [siteId] : undefined,

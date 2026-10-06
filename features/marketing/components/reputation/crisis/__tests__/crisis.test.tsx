@@ -27,7 +27,7 @@ import { usePitchAdvisories } from "@/features/crm/pitch-advisories/usePitchAdvi
 import type { CrisisHoldingResult } from "@/features/marketing/pr/media-desk/api";
 import type { BusinessFact } from "@/features/marketing/types";
 import { brandPrefill, emptyIntake, missingIntake, toWire, validity } from "../crisis-intake";
-import { CrisisHoldingView } from "../CrisisHoldingView";
+import { CrisisHoldingView, sayTime } from "../CrisisHoldingView";
 
 let container: HTMLDivElement;
 let root: Root;
@@ -142,6 +142,7 @@ describe("CrisisHoldingView", () => {
       gate: { ...BASE.gate, stopped: false },
       stop_block: null,
       banner,
+      timezone: "America/Los_Angeles",
       short: { text: "We are aware of a report about a drive we collected. We are reviewing it.", words: 15, notes: [] },
       medium: { text: "Medium text.", words: 2, notes: ["2 words; the target is 100 to 140."] },
       cautious: { text: "Cautious text.", words: 2, notes: [], deltas: ["appears to have"] },
@@ -154,14 +155,21 @@ describe("CrisisHoldingView", () => {
     expect(container.querySelector('[data-testid="crisis-statement-medium"]')?.textContent).toContain("the target is 100 to 140");
     expect(container.querySelector('[data-testid="crisis-do-not-say"]')?.textContent).toContain("isolated incident");
     expect(container.querySelector('[data-testid="crisis-qa"]')?.textContent).toContain("Was the drive destroyed?");
-    expect(container.querySelector('[data-testid="crisis-valid-until"]')?.textContent).toBe(
-      new Date("2026-09-28T20:00:00+00:00").toLocaleString(),
-    );
+    // Said in the organization's zone, never the viewer's machine zone or a raw stamp.
+    expect(container.querySelector('[data-testid="crisis-valid-until"]')?.textContent).toBe("Sep 28, 2026, 1:00 PM PDT");
     const send = Array.from(container.querySelectorAll('[data-testid="crisis-statement-short"] button')).find((b) =>
       b.textContent?.includes("Send to press"),
     ) as HTMLButtonElement;
     act(() => send.click());
     expect(container.querySelector('[data-testid="advisory-panel"]')?.textContent).toBe("sending this statement");
     expect(usePitchAdvisories).toHaveBeenLastCalledWith("org", expect.objectContaining({ surface: "crisis_publish", body: `${banner}\n\nWe are aware of a report about a drive we collected. We are reviewing it.` }));
+  });
+});
+
+
+describe("sayTime", () => {
+  it("says a time in plain words in the given zone, UTC when none", () => {
+    expect(sayTime("2026-10-06T01:56:00+00:00", "America/Los_Angeles")).toBe("Oct 5, 2026, 6:56 PM PDT");
+    expect(sayTime("2026-10-06T01:56:00+00:00", undefined)).toBe("Oct 6, 2026, 1:56 AM UTC");
   });
 });

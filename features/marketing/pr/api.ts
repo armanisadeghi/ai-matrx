@@ -81,12 +81,15 @@ function streamData(event: TypedStreamEvent): Record<string, unknown> | null {
 export async function generateStoryAngles(
   dispatch: AppDispatch,
   siteId: string,
+  /** The site's organization, explicit: a brand-scoped action never asks "which organization?". */
+  organizationId: string,
   options: GenerateAnglesOptions = {},
 ): Promise<GenerateAnglesResult> {
   let completed: GenerateAnglesResult | undefined;
   const outcome = await dispatch(
     callApi({
       path: "/seo/sites/{site_id}/press/angles/generate",
+      scopeOverrides: { organization_id: organizationId },
       pathParams: { site_id: siteId },
       method: "POST",
       body: {
@@ -177,12 +180,15 @@ const INGEST_STAGE_LABELS: Record<string, string> = {
 export async function ingestSourceRequests(
   dispatch: AppDispatch,
   rawText: string,
+  /** The organization whose sites receive the requests, explicit. */
+  organizationId: string,
   options: IngestRequestsOptions = {},
 ): Promise<IngestRequestsResult> {
   let completed: IngestRequestsResult | undefined;
   const outcome = await dispatch(
     callApi({
       path: "/seo/press/source-requests/ingest",
+      scopeOverrides: { organization_id: organizationId },
       method: "POST",
       body: {
         platform: options.platform ?? "haro",
@@ -229,11 +235,14 @@ export interface EvaluateRequestResult {
 export async function evaluateSourceRequest(
   dispatch: AppDispatch,
   requestId: string,
+  /** The request's organization, explicit. */
+  organizationId: string,
 ): Promise<EvaluateRequestResult> {
   let completed: EvaluateRequestResult | undefined;
   const outcome = await dispatch(
     callApi({
       path: "/seo/press/source-requests/{request_id}/evaluate",
+      scopeOverrides: { organization_id: organizationId },
       method: "POST",
       pathParams: { request_id: requestId },
       body: {},

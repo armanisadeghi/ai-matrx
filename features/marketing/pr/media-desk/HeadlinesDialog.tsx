@@ -60,7 +60,11 @@ export function HeadlineGroupView({
       <div className="flex items-center justify-between border-b border-border px-3 py-1.5">
         <h3 className="text-xs font-semibold text-foreground">{FORMAT_LABELS[group.format] ?? group.format}</h3>
         {group.limit ? (
-          <span className="text-[10px] text-muted-foreground">{group.limit} characters or fewer</span>
+          <span className="text-[10px] text-muted-foreground">
+            {group.limit_kind === "guideline"
+              ? `Guideline: about ${group.limit} characters`
+              : `${group.limit} characters or fewer`}
+          </span>
         ) : null}
       </div>
       {group.pick ? (
@@ -90,7 +94,11 @@ export function HeadlineGroupView({
                 <Badge
                   variant={candidate.over_limit ? "destructive" : "outline"}
                   className="text-[10px] tabular-nums"
-                  title={candidate.over_limit ? `Over the ${group.limit}-character limit` : "Characters"}
+                  title={
+                    candidate.over_limit
+                      ? `Over the ${group.limit}-character ${group.limit_kind === "guideline" ? "guideline" : "limit"}`
+                      : "Characters"
+                  }
                 >
                   {candidate.char_count}
                 </Badge>
@@ -154,6 +162,7 @@ export function HeadlinesResultView({
 
 export function HeadlinesDialog({
   siteId,
+  organizationId,
   angleId = null,
   angleHeadline = null,
   angleFactCount = 0,
@@ -162,6 +171,8 @@ export function HeadlinesDialog({
   trigger,
 }: {
   siteId: string;
+  /** The brand's organization — passed explicitly so the action never asks which one. */
+  organizationId: string;
   angleId?: string | null;
   angleHeadline?: string | null;
   angleFactCount?: number;
@@ -202,6 +213,7 @@ export function HeadlinesDialog({
       const done = await writePressHeadlines(
         dispatch,
         siteId,
+        organizationId,
         { angle_id: angleId, facts: ownFacts, formats, peg: peg.trim() || null },
         {
           onStage: (stage) => setStages((prev) => [...prev, stage]),

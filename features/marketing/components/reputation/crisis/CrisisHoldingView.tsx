@@ -43,6 +43,27 @@ function str(value: unknown): string {
   return String(value);
 }
 
+/** A time in plain words in the answer's own zone (the organization's), e.g. "Oct 5, 2026, 6:56 PM PDT". */
+export function sayTime(iso: string, timeZone: string | undefined): string {
+  const at = new Date(iso);
+  const options: Intl.DateTimeFormatOptions = {
+    dateStyle: "medium",
+    timeStyle: "short",
+  };
+  try {
+    return `${at.toLocaleString("en-US", { ...options, timeZone: timeZone || "UTC" })} ${zoneAbbreviation(at, timeZone || "UTC")}`;
+  } catch {
+    return `${at.toLocaleString("en-US", { ...options, timeZone: "UTC" })} UTC`;
+  }
+}
+
+function zoneAbbreviation(at: Date, timeZone: string): string {
+  const part = new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" })
+    .formatToParts(at)
+    .find((p) => p.type === "timeZoneName");
+  return part?.value ?? timeZone;
+}
+
 function useMinuteNow(): number {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -252,16 +273,16 @@ export function CrisisHoldingView({
     title: `Holding statement for ${result.org_name} expires — refresh it`,
     start: result.decay.valid_until,
     end: new Date(until.getTime() + 15 * 60_000).toISOString(),
-    description: `The holding statement issued ${new Date(result.decay.issued_at).toLocaleString()} is no longer safe to reuse. Refresh it if: ${result.decay.refresh_triggers.map(str).join("; ") || "anything new is public"}.`,
+    description: `The holding statement issued ${sayTime(result.decay.issued_at, result.timezone)} is no longer safe to reuse. Refresh it if: ${result.decay.refresh_triggers.map(str).join("; ") || "anything new is public"}.`,
   };
   return (
     <div className="space-y-3" data-testid="crisis-set">
       <header className="rounded-md border border-border bg-muted/20 p-3 text-xs">
         <p className="font-semibold text-foreground">Holding draft · {result.org_name}</p>
         <p className="mt-0.5 text-muted-foreground">
-          Issued {new Date(result.decay.issued_at).toLocaleString()} · valid until{" "}
+          Issued {sayTime(result.decay.issued_at, result.timezone)} · valid until{" "}
           <span className="font-medium text-foreground" data-testid="crisis-valid-until">
-            {until.toLocaleString()}
+            {sayTime(result.decay.valid_until, result.timezone)}
           </span>{" "}
           ({result.decay.rule})
         </p>
