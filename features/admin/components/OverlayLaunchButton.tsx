@@ -39,7 +39,7 @@ export function OverlayLaunchButton({
       onClick={handleClick}
       className={cn(
         "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider",
-        "border border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 transition-colors",
+        "border border-primary/30 bg-primary/5 text-primary-ink hover:bg-primary/10 transition-colors",
       )}
       aria-label={`Open ${label}`}
     >

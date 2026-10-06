@@ -41,7 +41,7 @@ export function ConveyPill({ level }: { level: PermissionLevel }) {
       ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-500"
       : level === "viewer"
         ? "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400"
-        : "border-primary/40 bg-primary/10 text-primary";
+        : "border-primary/40 bg-primary/10 text-primary-ink";
   return (
     <span
       className={`inline-flex rounded-md border px-1.5 py-0.5 text-xs font-medium ${tone}`}

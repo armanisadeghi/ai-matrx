@@ -239,7 +239,7 @@ export function AgentAppFullyCustomShell({
     return (
       <AgentAppTransferBoundary handle={ctx.surfaceHandle}>
         <div className="p-6 max-w-2xl mx-auto">
-          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive flex items-start gap-2">
+          <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive-ink flex items-start gap-2">
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <div>
               <div className="font-medium mb-1">App failed to compile</div>

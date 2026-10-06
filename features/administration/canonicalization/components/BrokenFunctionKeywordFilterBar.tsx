@@ -26,7 +26,7 @@ function TagChip({
         "h-6 gap-1 pr-1 font-mono text-[11px]",
         tone === "include"
           ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300"
-          : "border-destructive/40 bg-destructive/10 text-destructive",
+          : "border-destructive/40 bg-destructive/10 text-destructive-ink",
       )}
     >
       {tag}

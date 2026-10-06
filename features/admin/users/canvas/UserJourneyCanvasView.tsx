@@ -112,7 +112,7 @@ export default function UserJourneyCanvasView({ data }: CanvasKindProps) {
     <div className="@container h-full min-h-0 overflow-y-auto p-4">
       {!current ? <SuspenseLoader message="Loading the journey" /> : null}
       {journeyError ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink">
           {journeyError}
           <ErrorAlchemyMenu error={journeyError} />
         </div>

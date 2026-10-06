@@ -513,9 +513,9 @@ function AutoCreateAgentAppFormWithAgent({
               className={cn(
                 "flex items-center gap-1 px-2 py-0.5 rounded-full",
                 activeStage === "metadata"
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : metadataTaskId
-                    ? "bg-success/10 text-success"
+                    ? "bg-success/10 text-success-ink"
                     : "bg-muted text-muted-foreground",
               )}
             >
@@ -533,9 +533,9 @@ function AutoCreateAgentAppFormWithAgent({
               className={cn(
                 "flex items-center gap-1 px-2 py-0.5 rounded-full",
                 activeStage === "code"
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : isCodeStreamEnded
-                    ? "bg-success/10 text-success"
+                    ? "bg-success/10 text-success-ink"
                     : "bg-muted text-muted-foreground",
               )}
             >

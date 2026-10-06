@@ -66,7 +66,7 @@ export function PendingVerificationFlag({
             className={cn(
               "inline-flex items-center gap-1 whitespace-nowrap rounded-md border px-1.5 py-0.5 text-[11px] font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
               producesMoney
-                ? "border-destructive/40 bg-destructive/10 text-destructive"
+                ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
                 : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
               className,
             )}
@@ -86,7 +86,7 @@ export function PendingVerificationFlag({
       className={cn(
         "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] font-medium",
         producesMoney
-          ? "border-destructive/40 bg-destructive/10 text-destructive"
+          ? "border-destructive/40 bg-destructive/10 text-destructive-ink"
           : "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-400",
         className,
       )}

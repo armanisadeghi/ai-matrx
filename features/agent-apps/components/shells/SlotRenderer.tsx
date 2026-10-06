@@ -98,7 +98,7 @@ function SlotCompileError({
   error: string;
 }) {
   return (
-    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive flex items-start gap-2">
+    <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink flex items-start gap-2">
       <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
       <div className="space-y-1">
         <div className="font-medium">Slot "{slot}" failed to compile</div>

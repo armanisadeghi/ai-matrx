@@ -20,7 +20,7 @@ export function AgentAppListItem({
 }: AgentAppListItemProps) {
   const body = (
     <div className="flex items-center gap-3 px-3 py-2 hover:bg-accent rounded-md transition-colors">
-      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-primary/10 text-primary inline-flex items-center justify-center">
+      <div className="flex-shrink-0 w-8 h-8 rounded-md bg-primary/10 text-primary-ink inline-flex items-center justify-center">
         <Stars className="w-4 h-4" />
       </div>
       <div className="min-w-0 flex-1">

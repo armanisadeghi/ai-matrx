@@ -122,7 +122,7 @@ export function EstimatedCostPanel({
       <header className="flex min-w-0 flex-wrap items-center gap-2">
         <Calculator className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
         <h2 className="text-sm font-semibold text-foreground">Estimated</h2>
-        <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning">
+        <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] font-medium text-warning-ink">
           not invoiced · not in totals
         </span>
         <span className="truncate text-xs text-muted-foreground">
@@ -135,7 +135,7 @@ export function EstimatedCostPanel({
         </span>
       </header>
       {error ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive-ink">
           Estimated cost unreadable ({error.message}).
           <ErrorAlchemyMenu />
         </div>

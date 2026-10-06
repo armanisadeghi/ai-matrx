@@ -97,7 +97,7 @@ function MountedSpendWindowPanels({ refreshKey }: { refreshKey: number }) {
         </AppLink>
       </div>
       {windowTooWide ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">Max {WINDOW_DAY_CAP} days.</div>
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive-ink">Max {WINDOW_DAY_CAP} days.</div>
       ) : (
         <>
           <BatchSavingsPanel from={window.from} to={window.to} windowLabel={windowLabel} organizationId={orgId} refreshKey={refreshKey} />

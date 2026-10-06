@@ -241,7 +241,7 @@ export default function ErrorInspectorWindow({
                         {e.relation ?? capturedErrorLabel(e)}
                       </span>
                       {e.count > 1 && (
-                        <span className="ml-auto shrink-0 rounded-full bg-destructive/20 text-destructive px-1.5 text-[10px] font-semibold">
+                        <span className="ml-auto shrink-0 rounded-full bg-destructive/20 text-destructive-ink px-1.5 text-[10px] font-semibold">
                           ×{e.count}
                         </span>
                       )}
@@ -276,7 +276,7 @@ export default function ErrorInspectorWindow({
           <Bug className="h-4 w-4 text-primary shrink-0" />
           <span className="shrink-0">Error Inspector</span>
           {errors.length > 0 && (
-            <span className="rounded-full bg-destructive/20 text-destructive px-1.5 text-[11px] font-semibold shrink-0">
+            <span className="rounded-full bg-destructive/20 text-destructive-ink px-1.5 text-[11px] font-semibold shrink-0">
               {errors.length}
               <ErrorAlchemyMenu />
             </span>

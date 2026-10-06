@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const STATUS_STYLES: Record<string, string> = {
-  FAIL: "border-destructive/30 bg-destructive/10 text-destructive",
+  FAIL: "border-destructive/30 bg-destructive/10 text-destructive-ink",
   WARN: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
   PASS: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   SKIP: "border-border bg-muted text-muted-foreground",
@@ -22,7 +22,7 @@ export function GateStatusBadge({ status }: { status: string | null | undefined 
 }
 
 const SEVERITY_STYLES: Record<string, string> = {
-  real: "border-destructive/30 bg-destructive/10 text-destructive",
+  real: "border-destructive/30 bg-destructive/10 text-destructive-ink",
   advisory:
     "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
   style: "border-border bg-muted text-muted-foreground",
@@ -77,7 +77,7 @@ export function BoolBadge({
         "text-[10px]",
         isGood
           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-          : "border-destructive/30 bg-destructive/10 text-destructive",
+          : "border-destructive/30 bg-destructive/10 text-destructive-ink",
       )}
     >
       {value ? trueLabel : falseLabel}

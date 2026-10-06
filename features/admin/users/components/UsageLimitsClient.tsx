@@ -76,9 +76,9 @@ const SEGMENTS: ReadonlyArray<{ id: AccountSegment; label: string }> = [
 const STATE_LABEL: Record<AdminUsageState, string> = { ok: "OK", near: "Near", over: "Over" };
 
 const STATE_BADGE: Record<AdminUsageState, string> = {
-  ok: "border-success/40 bg-success/10 text-success",
-  near: "border-warning/40 bg-warning/10 text-warning",
-  over: "border-destructive/40 bg-destructive/10 text-destructive",
+  ok: "border-success/40 bg-success/10 text-success-ink",
+  near: "border-warning/40 bg-warning/10 text-warning-ink",
+  over: "border-destructive/40 bg-destructive/10 text-destructive-ink",
 };
 
 const STATE_BAR: Record<AdminUsageState, string> = {

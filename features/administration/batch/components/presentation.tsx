@@ -65,11 +65,11 @@ export function fmtSpan(
 
 const STATUS_CLASS: Record<string, string> = {
   pending: "border-border bg-muted text-muted-foreground",
-  claimed: "border-info/30 bg-info/10 text-info",
-  submitted: "border-info/40 bg-info/15 text-info",
-  completed: "border-success/30 bg-success/10 text-success",
-  failed: "border-warning/40 bg-warning/10 text-warning",
-  dead_letter: "border-destructive/40 bg-destructive/10 text-destructive",
+  claimed: "border-info/30 bg-info/10 text-info-ink",
+  submitted: "border-info/40 bg-info/15 text-info-ink",
+  completed: "border-success/30 bg-success/10 text-success-ink",
+  failed: "border-warning/40 bg-warning/10 text-warning-ink",
+  dead_letter: "border-destructive/40 bg-destructive/10 text-destructive-ink",
   abandoned: "border-border bg-muted text-muted-foreground",
 };
 
@@ -104,22 +104,22 @@ export const DELIVERY: Record<
   dispatched: {
     label: "delivering",
     hint: "A result handler is running; the answer has not landed yet.",
-    className: "border-info/40 bg-info/10 text-info",
+    className: "border-info/40 bg-info/10 text-info-ink",
   },
   succeeded: {
     label: "delivered",
     hint: "The answer reached the consumer that ordered it.",
-    className: "border-success/30 bg-success/10 text-success",
+    className: "border-success/30 bg-success/10 text-success-ink",
   },
   failed: {
     label: "retrying",
     hint: "The handler raised; the queue will try again.",
-    className: "border-warning/40 bg-warning/10 text-warning",
+    className: "border-warning/40 bg-warning/10 text-warning-ink",
   },
   dead: {
     label: "never delivered",
     hint: "Dead-lettered after the handler's last attempt. Tokens were bought and nothing was delivered.",
-    className: "border-destructive/50 bg-destructive/15 text-destructive font-semibold",
+    className: "border-destructive/50 bg-destructive/15 text-destructive-ink font-semibold",
   },
 };
 
@@ -130,7 +130,7 @@ export function deliveryOf(handlerStatus: string | null) {
       label: key,
       // An unconstrained column can carry a value nobody taught this screen.
       hint: "Unrecognised handler_status — this screen does not know whether it means delivered or lost.",
-      className: "border-warning/50 bg-warning/10 text-warning",
+      className: "border-warning/50 bg-warning/10 text-warning-ink",
     }
   );
 }

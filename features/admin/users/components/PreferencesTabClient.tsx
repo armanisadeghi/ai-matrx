@@ -223,7 +223,7 @@ function DriftDashboard() {
       </header>
 
       {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>
@@ -480,7 +480,7 @@ function UserPreferencesView({ userId }: { userId: string }) {
       </div>
 
       {error ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>
