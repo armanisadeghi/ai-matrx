@@ -7,7 +7,7 @@
 
 import { GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { buildConsentPlan } from "../consent-plan";
-import type { ConnectorCapabilityRollout } from "../health";
+import type { ConnectorAccount, ConnectorCapabilityRollout } from "../health";
 import { GOOGLE_CONNECTOR_PROVIDER, scopeLanguage } from "../provider-config";
 
 const writeProducts = [
@@ -125,4 +125,50 @@ it("explains Calendar event-write reach in plain language without overstating ap
   expect(scopeLanguage(GOOGLE_CONNECTOR_PROVIDER, GOOGLE_SCOPE.calendarEventsWrite)).toBe(
     "Google permits viewing and editing events on all your calendars. AI Matrx only runs the exact create, move, cancel, or RSVP you review",
   );
+});
+
+
+// Google Events.list accepts calendar.events; combining reads and writes must
+// not newly request redundant event-read access or discard a held literal grant.
+const calendarRollout = [
+  ...catalog("calendar_shared", true),
+  ...catalog("calendar_write", true),
+];
+function calendarAccount(scopes: string[]): ConnectorAccount {
+  return { id: "calendar-test", label: "Cedar review", ownerKind: "person",
+    organizationId: null, providerSubject: "cedar-subject", grantedScopes: scopes,
+    usable: true, statusLabel: "Connected", statusReason: "Connected",
+    statusRemedy: null, lastVerifiedAt: null, lastRefusalSentence: null };
+}
+it("newly requests only list and write when both Calendar products are selected", () => {
+  const plan = buildConsentPlan({ provider: GOOGLE_CONNECTOR_PROVIDER,
+    selectedProductKeys: ["calendar_shared", "calendar_changes"], account: null, rollout: calendarRollout });
+  expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES,
+    GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsWrite]));
+  expect(plan.request?.capabilityKeys).toEqual(["calendar_shared", "calendar_write"]);
+  expect(plan.request?.addedScopes).not.toContain(GOOGLE_SCOPE.calendarEventsReadonly);
+});
+it("retains held event-read access while adding Calendar writes", () => {
+  const plan = buildConsentPlan({ provider: GOOGLE_CONNECTOR_PROVIDER,
+    selectedProductKeys: ["calendar_shared", "calendar_changes"],
+    account: calendarAccount([GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsReadonly]),
+    rollout: calendarRollout });
+  expect(plan.request?.scopes).toContain(GOOGLE_SCOPE.calendarEventsReadonly);
+  expect(plan.request?.scopes).toContain(GOOGLE_SCOPE.calendarEventsWrite);
+  expect(plan.request?.addedScopes).toEqual([GOOGLE_SCOPE.calendarEventsWrite]);
+});
+it("uses already-held Calendar write access for reads without another approval", () => {
+  const plan = buildConsentPlan({ provider: GOOGLE_CONNECTOR_PROVIDER,
+    selectedProductKeys: ["calendar_shared"],
+    account: calendarAccount([GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsWrite]),
+    rollout: calendarRollout });
+  expect(plan.request).toBeNull();
+  expect(plan.alreadyGranted.map(p => p.key)).toEqual(["calendar_shared"]);
+});
+it("keeps read-only selection narrow", () => {
+  const plan = buildConsentPlan({ provider: GOOGLE_CONNECTOR_PROVIDER,
+    selectedProductKeys: ["calendar_shared"], account: null, rollout: calendarRollout });
+  expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES,
+    GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsReadonly]));
+  expect(plan.request?.scopes).not.toContain(GOOGLE_SCOPE.calendarEventsWrite);
 });

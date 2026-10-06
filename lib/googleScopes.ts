@@ -61,7 +61,7 @@ export type GoogleScope = (typeof GOOGLE_SCOPE)[keyof typeof GOOGLE_SCOPE];
 /**
  * Whether one exact Google scope requirement is covered by a recorded grant.
  *
- * Google's Gmail, Contacts, and Tasks write scopes each include their paired
+ * Google's Gmail, Contacts, Tasks, and Calendar event write scopes include their paired
  * read operation. Those are the only supported implications here; every other
  * requirement needs an exact match.
  * Keep this predicate out of consent request construction: what Google may
@@ -79,7 +79,9 @@ export function hasGoogleGrantedScope(
     (requiredScope === GOOGLE_SCOPE.contactsReadonly &&
       grantedScopes.includes(GOOGLE_SCOPE.contactsWrite)) ||
     (requiredScope === GOOGLE_SCOPE.tasksReadonly &&
-      grantedScopes.includes(GOOGLE_SCOPE.tasksWrite))
+      grantedScopes.includes(GOOGLE_SCOPE.tasksWrite)) ||
+    (requiredScope === GOOGLE_SCOPE.calendarEventsReadonly &&
+      grantedScopes.includes(GOOGLE_SCOPE.calendarEventsWrite))
   );
 }
 

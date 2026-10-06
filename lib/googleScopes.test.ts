@@ -5,6 +5,7 @@ describe("hasGoogleGrantedScope", () => {
     [GOOGLE_SCOPE.gmailModify, GOOGLE_SCOPE.gmailReadonly],
     [GOOGLE_SCOPE.contactsWrite, GOOGLE_SCOPE.contactsReadonly],
     [GOOGLE_SCOPE.tasksWrite, GOOGLE_SCOPE.tasksReadonly],
+    [GOOGLE_SCOPE.calendarEventsWrite, GOOGLE_SCOPE.calendarEventsReadonly],
   ])("recognizes the confirmed %s coverage of %s", (granted, required) => {
     expect(hasGoogleGrantedScope([granted], required)).toBe(true);
   });
@@ -16,7 +17,8 @@ describe("hasGoogleGrantedScope", () => {
     [GOOGLE_SCOPE.contactsWrite, GOOGLE_SCOPE.contactsOtherReadonly],
     [GOOGLE_SCOPE.driveReadonly, GOOGLE_SCOPE.driveFile],
     [GOOGLE_SCOPE.gmailModify, GOOGLE_SCOPE.gmailSend],
-    [GOOGLE_SCOPE.calendarEventsWrite, GOOGLE_SCOPE.calendarEventsReadonly],
+    [GOOGLE_SCOPE.calendarEventsReadonly, GOOGLE_SCOPE.calendarEventsWrite],
+    [GOOGLE_SCOPE.calendarEventsWrite, GOOGLE_SCOPE.calendarListReadonly],
   ])("does not invent coverage from %s to %s", (granted, required) => {
     expect(hasGoogleGrantedScope([granted], required)).toBe(false);
   });

@@ -43,7 +43,7 @@ import type {
   ConnectorProviderConfig,
 } from "./provider-config";
 import { productByKey } from "./provider-config";
-import { hasGoogleGrantedScope } from "@/lib/googleScopes";
+import { GOOGLE_SCOPE, hasGoogleGrantedScope } from "@/lib/googleScopes";
 import {
   productHealth,
   productIsEligible,
@@ -241,7 +241,7 @@ export function buildConsentPlan({
   // YouTube beside other products is NEVER one combined press — new grant or
   // renewal (a renewal sends the same scope set Google rejected in dc39b03173).
   const isolatedProduct = youtubeEntry?.product;
-  if (isolatedProduct !== undefined && wanted.length > 1) {
+  if (youtubeEntry !== undefined && isolatedProduct !== undefined && wanted.length > 1) {
     const others = wanted.filter(({ product }) => product.key !== "youtube");
     const separately = `Connect ${isolatedProduct.name} separately from the other selected Google products. Your existing connections are unchanged.`;
     if (youtubeEntry.renewal || others.some(({ renewal }) => renewal)) {
@@ -278,7 +278,13 @@ export function buildConsentPlan({
     };
   }
 
-  const added = [...new Set(wanted.flatMap(({ missing }) => missing))];
+  const addedSet = new Set(wanted.flatMap(({ missing }) => missing));
+  // Reduce only new Calendar requirements. Existing literal grants below stay
+  // cumulative, and a read-only choice can never add the event-write scope.
+  if (addedSet.has(GOOGLE_SCOPE.calendarEventsWrite)) {
+    addedSet.delete(GOOGLE_SCOPE.calendarEventsReadonly);
+  }
+  const added = [...addedSet];
   const isolatedYouTube = youtubeAdds;
   return {
     request: {
