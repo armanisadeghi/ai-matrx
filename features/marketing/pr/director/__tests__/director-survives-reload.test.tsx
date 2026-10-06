@@ -36,20 +36,32 @@ jest.mock(
 
 let messageCount = 0;
 let executing = false;
+let cacheOnly = false;
+/** Resume outcomes in order: "fail" rejects as an unwritten row, "hang" never settles. */
+let resumePlan: Array<"ok" | "fail" | "hold"> = [];
+let releaseHeld: (() => void) | null = null;
+/** What the last resume left in the store: the real thunk FULFILLS on an unwritten row and records
+ *  a hydration failure instead (load-conversation.thunk, expectMaterialized). */
+let hydrationFailure: string | null = null;
 const dispatch = jest.fn((action: unknown) => {
   const a = action as { type?: string };
   if (a?.type === "resume") {
+    const outcome = resumePlan.shift() ?? "ok";
     return {
-      unwrap: async () => ({
-        conversationId: (a as { args: { conversationId: string } }).args
-          .conversationId,
-      }),
+      unwrap: async () => {
+        if (outcome === "hold") await new Promise<void>((r) => (releaseHeld = r));
+        hydrationFailure = outcome === "fail" ? "not readable" : null;
+        return {
+          conversationId: (a as { args: { conversationId: string } }).args.conversationId,
+        };
+      },
     };
   }
   return action;
 });
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
+  useAppStore: () => ({ getState: () => ({ chatRoute: {} }) }),
   // The Director's composer reads `chatRoute.composerMode`; an empty route state is the default.
   useAppSelector: (sel: (s: unknown) => unknown) => sel({ chatRoute: {} }),
 }));
@@ -62,9 +74,16 @@ jest.mock(
   }),
 );
 jest.mock(
+  "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors",
+  () => ({
+    selectIsCacheOnly: () => () => cacheOnly,
+  }),
+);
+jest.mock(
   "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors",
   () => ({
     selectMessageCount: () => () => messageCount,
+    selectMessagesHydrationFailure: () => () => hydrationFailure,
   }),
 );
 jest.mock(
@@ -119,20 +138,21 @@ beforeEach(() => {
   resumeCalls.length = 0;
   messageCount = 0;
   executing = false;
+  cacheOnly = false;
+  resumePlan = [];
+  hydrationFailure = null;
   window.history.replaceState(null, "", "/marketing/brand-1/pr");
 });
 
-async function mount() {
+let root: ReturnType<typeof createRoot>;
+async function mount(organizationId = "org-1") {
   await act(async () => {
     const host = document.createElement("div");
     document.body.innerHTML = "";
     document.body.appendChild(host);
-    createRoot(host).render(
-      <PrDirectorPanel
-        brandId="brand-1"
-        brandName="Brand"
-        organizationId="org-1"
-      />,
+    root = createRoot(host);
+    root.render(
+      <PrDirectorPanel brandId="brand-1" brandName="Brand" organizationId={organizationId} />,
     );
   });
 }
@@ -196,4 +216,62 @@ test("a reload whose URL still carries an already-sent ?ask= beside ?director= r
   const types = dispatch.mock.calls.map((c) => (c[0] as { type?: string }).type);
   expect(types).not.toContain("exec");
   expect(new URL(window.location.href).searchParams.get("ask")).toBeNull();
+});
+
+
+/*
+ * Walk 2026-10-05 (independent, commit c5c632fbad): a reload mid-answer stuck on "Opening your
+ * PR director…" or "Couldn't load this conversation", and Try again did nothing. Three causes:
+ *  1. the open was cancelled by ANY re-render that changed the effect's inputs (the launcher's
+ *     identity, the organization arriving), and a ref guard then refused to open again;
+ *  2. the id was pinned to the URL the moment a run STARTED, before the server had written the
+ *     conversation row — a reload in that window asked for a row that did not exist yet;
+ *  3. one failed read was final.
+ */
+
+test("a re-render while the conversation is opening does not strand the panel", async () => {
+  window.history.replaceState(null, "", "/marketing/brand-1/pr?director=live-conv");
+  resumePlan = ["hold"];
+  await act(async () => {
+    const host = document.createElement("div");
+    document.body.innerHTML = "";
+    document.body.appendChild(host);
+    root = createRoot(host);
+    root.render(<PrDirectorPanel brandId="brand-1" brandName="Brand" organizationId="org-1" />);
+  });
+  // The organization context lands a moment later, as it does on a cold reload.
+  await act(async () => {
+    root.render(<PrDirectorPanel brandId="brand-1" brandName="Brand" organizationId="org-2" />);
+  });
+  await act(async () => {
+    releaseHeld?.();
+  });
+  expect(document.querySelector('[data-testid="column"]')?.textContent).toBe("live-conv");
+  expect(launchMandate).not.toHaveBeenCalled();
+});
+
+test("the id waits for the server's row before it rides the URL", async () => {
+  executing = true;
+  messageCount = 1;
+  cacheOnly = true; // the run has started; the server has not confirmed the row yet
+  await mount();
+  expect(new URL(window.location.href).searchParams.get("director")).toBeNull();
+});
+
+test("a row that is not there yet is retried until it is", async () => {
+  jest.useFakeTimers();
+  try {
+    window.history.replaceState(null, "", "/marketing/brand-1/pr?director=live-conv");
+    resumePlan = ["fail", "fail", "ok"];
+    await mount();
+    for (let i = 0; i < 6; i++) {
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(2000);
+      });
+    }
+    expect(resumeCalls).toHaveLength(3);
+    expect(document.querySelector('[data-testid="column"]')?.textContent).toBe("live-conv");
+  } finally {
+    jest.useRealTimers();
+  }
 });
