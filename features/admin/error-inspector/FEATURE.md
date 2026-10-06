@@ -31,7 +31,7 @@ second symptom instead of deduping the incident.
 
 - **Unresolved sandbox imports** — `captureUnresolvedImports.ts`
   (`sandbox-unresolved-import`, red). Every in-page compile of stored component
-  code (`compileSlotComponent`) passes a required `origin` (`tool:<name>`,
+  code (`compileStoredComponent`, `lib/code-runtime/compile-stored.ts`) passes a required `origin` (`tool:<name>`,
   `agent-app:<id>[:slot:<s>]`, `emit:<ref>`,
   `kind-component:<kind>:<platform>:<role>`); each name the allowlisted scope
   could not supply is one row with that origin as `relation` and the import
@@ -454,6 +454,7 @@ source, ... })` from the chokepoint. Store + UI are source-agnostic.
 
 ## Change Log
 
+- 2026-10-06 — Unresolved-import capture now comes from `compileStoredComponent` (`@ai-matrx/code-runtime`); `compileSlotComponent` deleted. Same `origin` contract.
 - 2026-10-02 — **Caller aborts are named.** `abortByCaller(controller, why)`
   (`lib/diagnostics/cancelledByCaller.ts`) aborts with an `AbortError` whose
   message carries `cancelled-by-caller:`; the Supabase capture files nothing

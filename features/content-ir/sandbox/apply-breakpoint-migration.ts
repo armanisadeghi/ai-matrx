@@ -28,8 +28,8 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { rewriteViewportBreakpoints } from "./migrate-viewport-breakpoints";
 import { transformKindComponentBody } from "./transform/transform-kind-body";
-import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
-import { componentSourceGate } from "@/features/agent-apps/utils/component-source-gate";
+import { defaultComponentEntries } from "@ai-matrx/code-runtime/scope";
+import { componentSourceGate } from "@ai-matrx/code-runtime/gate";
 import {
     listKindComponentCode,
     saveKindComponentCode,
@@ -122,7 +122,7 @@ async function main(): Promise<void> {
         }
         const { payload, error: compileError } = transformKindComponentBody(
             result.next,
-            getDefaultImportsForKindComponents(),
+            defaultComponentEntries(),
         );
         if (!payload) {
             refusals.push({

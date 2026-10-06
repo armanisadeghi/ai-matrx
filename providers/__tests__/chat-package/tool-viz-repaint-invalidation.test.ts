@@ -26,10 +26,10 @@ jest.mock(
   "@ai-matrx/chat/tool-call-visualization/db-renderer/fetchToolRendererRow",
   () => ({ fetchToolRendererRow: jest.fn(async () => null) }),
 );
-jest.mock(
-  "@ai-matrx/chat/tool-call-visualization/db-renderer/compileToolRenderer",
-  () => ({ compileToolRenderer: jest.fn(() => ({ Component: () => null })) }),
-);
+jest.mock("@ai-matrx/chat/host/ui-slots", () => ({
+  ...jest.requireActual("@ai-matrx/chat/host/ui-slots"),
+  compileStoredComponent: jest.fn(() => ({ Component: () => null, error: null, unresolvedImports: [] })),
+}));
 
 describe("invalidation-registry (the tiny shared primitive)", () => {
   it("fires registered callbacks with detail; unregistered names are a no-op", () => {
@@ -100,11 +100,9 @@ describe("toolRendererCache registers the db-renderer invalidation at module ini
     const { fetchToolRendererRow } = await import(
       "@ai-matrx/chat/tool-call-visualization/db-renderer/fetchToolRendererRow"
     );
-    const { compileToolRenderer } = await import(
-      "@ai-matrx/chat/tool-call-visualization/db-renderer/compileToolRenderer"
-    );
+    const { compileStoredComponent } = await import("@ai-matrx/chat/host/ui-slots");
     const fetchMock = fetchToolRendererRow as jest.Mock;
-    const compileMock = compileToolRenderer as jest.Mock;
+    const compileMock = compileStoredComponent as unknown as jest.Mock;
 
     const StaleComponent = () => null;
     const FreshComponent = () => null;
@@ -119,8 +117,10 @@ describe("toolRendererCache registers the db-renderer invalidation at module ini
 
     // Compile mirrors whichever row's code it is given, so the assertion
     // proves WHICH row's data survived the race.
-    compileMock.mockImplementation((code: string) => ({
+    compileMock.mockImplementation(({ code }: { code: string }) => ({
       Component: code === "fresh" ? FreshComponent : StaleComponent,
+      error: null,
+      unresolvedImports: [],
     }));
 
     // First (stale) fetch: resolves ONLY after we invalidate mid-flight.

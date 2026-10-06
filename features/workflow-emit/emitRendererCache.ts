@@ -21,7 +21,7 @@ import {
   registerInvalidationCallback,
 } from "@ai-matrx/kit/invalidation";
 
-import { compileEmitRenderer } from "./compileEmitRenderer";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import { fetchEmitRendererRow } from "./fetchEmitRendererRow";
 import type { EmitRendererProps } from "./types";
 
@@ -83,11 +83,14 @@ export function loadEmitRenderer(
         return null;
       }
 
-      const { Component, error } = compileEmitRenderer(
-        row.inline_code,
-        row.allowed_imports,
-        componentRef,
-      );
+      const { Component: compiled, error } = compileStoredComponent({
+        code: row.inline_code,
+        allowedImports: row.allowed_imports,
+        origin: `emit:${componentRef}`,
+      });
+      // The compiler types components generically; the callsite always passes
+      // EmitRendererProps — the single deliberate narrowing.
+      const Component = compiled as EmitComponent | null;
 
       if (!Component || error) {
         if (error) {

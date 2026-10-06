@@ -43,7 +43,7 @@ import {
   saveDraftCode,
   type DraftHandle,
 } from "../services/auto-create-draft";
-import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
+import { defaultNewAppScopeEntries } from "@/lib/code-runtime/defaults";
 import type { AppMetadata } from "../types";
 import {
   buildCodeRunVariables,
@@ -385,7 +385,7 @@ export function useAutoCreateApp(options: UseAutoCreateAppOptions = {}) {
           metadata,
           mode: data.mode ?? "standard",
           variableSchema,
-          allowedImports: getDefaultImportsForNewApps(),
+          allowedImports: defaultNewAppScopeEntries(),
         });
         setDraftAppId(draft.appId);
 

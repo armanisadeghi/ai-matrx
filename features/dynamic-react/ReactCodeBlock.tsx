@@ -10,7 +10,7 @@ import React, {
 import { Code2, Eye, Loader2, AlertTriangle, Boxes } from "lucide-react";
 import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import { compileReactComponent } from "./compileReactComponent";
+import { compileCodeBlock } from "./compileCodeBlock";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 /**
@@ -24,7 +24,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
  *                              "View code" toggle.
  *  4. Compile/runtime error  → silent code block + opt-in error detail.
  *
- * Execution uses the shared allowlist-scoped compiler (compileReactComponent):
+ * Execution uses the shared allowlist-scoped compiler (compileCodeBlock → @ai-matrx/code-runtime):
  * curated imports only, runs in-app (trusted/first-party content). See that
  * module for the limitations + the single allowlist extension point.
  */
@@ -106,7 +106,7 @@ const ReactCodeBlock: React.FC<ReactCodeBlockProps> = ({
 
     (async () => {
       try {
-        const compiled = await compileReactComponent({
+        const compiled = await compileCodeBlock({
           code,
           language: normalizeLanguage(language),
         });

@@ -28,7 +28,7 @@ import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformKindComponentBody } from "./transform/transform-kind-body";
-import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
+import { defaultComponentEntries } from "@ai-matrx/code-runtime/scope";
 import { inlineJson } from "./inline-json";
 import { SANDBOX_PROTOCOL_VERSION } from "./protocol";
 import { launch, type Rect } from "./parity/cdp";
@@ -175,7 +175,7 @@ async function buildCases(keys: string[] | null): Promise<{
         }
     }
 
-    const allowed = getDefaultImportsForKindComponents();
+    const allowed = defaultComponentEntries();
     const cases: Case[] = [];
     const skipped: Array<{ componentKey: string; reason: string }> = [];
     for (const row of rows) {

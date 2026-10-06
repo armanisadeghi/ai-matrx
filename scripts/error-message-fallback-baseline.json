@@ -235,7 +235,6 @@
   "features/agent-apps/components/inputs/AgentAppCategoryPicker.tsx": 1,
   "features/agent-apps/components/LiveBuilder.tsx": 1,
   "features/agent-apps/components/UpdateAgentAppModal.tsx": 1,
-  "features/agent-apps/utils/compile-slot.ts": 1,
   "features/agent-connections/coding-sessions/useCodingSessions.ts": 2,
   "features/agent-context/components/scope-admin/ScopeForm.tsx": 1,
   "features/agent-context/components/scope-admin/ScopeTypeFormSheet.tsx": 1,

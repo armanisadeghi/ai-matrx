@@ -10,7 +10,7 @@ Every primitive is pure presentation over `react`, `lucide-react`, shadcn
 `@/components/ui/*`, `cn` from `@/lib/utils` and (for the header bar)
 `@/components/agent-copy/CopyButtons`. Nothing here reaches app data; every
 import path below is on the compiler allowlist
-(`features/agent-apps/utils/allowed-imports.ts`).
+(the `@ai-matrx/code-runtime` scope; app modules in `lib/code-runtime/stored-scope.ts`).
 
 A DB kind component receives `{ data, kind, config }` (`data` = the kind
 instance value, possibly PARTIAL while streaming). The kit assumes that:
@@ -376,6 +376,7 @@ commits, Esc cancels), and an inline "Add" input.
 
 ## Change log
 
+- 2026-10-06 — Scope pointers moved to `@ai-matrx/code-runtime` (`lib/code-runtime/stored-scope.ts`); agent-apps `allowed-imports.ts` deleted.
 - 2026-08-30 — `SortableList` row controls take ZERO layout space: the
   up/down/remove cluster floats over the row's top-right corner and appears
   only on row hover or keyboard focus (Notion-style), replacing the original
@@ -398,5 +399,5 @@ commits, Esc cancels), and an inline "Add" input.
   the common `icon={<Icon />}` form.
 - 2026-08-23 — Created: SortableList, KindPanelGrid, KindPanel, KindHeaderBar,
   StreamingSkeleton (+ useStreamingValue / streamList / streamText),
-  KeywordChip / TagList. Allowlisted in `features/agent-apps/utils/allowed-imports.ts`.
+  KeywordChip / TagList. Registered in the `@ai-matrx/code-runtime` scope via `lib/code-runtime/stored-scope.ts`.
   Demo: `/demos/kind-kit`.

@@ -1020,7 +1020,7 @@ const SCRAPE_READING_SNAPSHOT: ToolLifecycleEntry = {
 };
 
 // Dynamic (DB) renderer demo — resolves to the `tool_ui` row for `agent_call`,
-// fetched + compiled at runtime via the canonical compileSlotComponent path.
+// fetched + compiled at runtime via the canonical @ai-matrx/code-runtime compiler.
 const AGENT_CALL_ENTRY = entry({
   callId: "agent-call-demo",
   toolName: "agent_call",
@@ -1371,7 +1371,7 @@ const CLOUD_BROWSER_BATCH_ENTRIES: ToolLifecycleEntry[] = [
 ];
 
 // DB-loaded renderer examples — each resolves to its `tool_ui` row (agent-
-// authored code), fetched + compiled at runtime via compileSlotComponent. The
+// authored code), fetched + compiled at runtime via @ai-matrx/code-runtime. The
 // codebase ships NONE of these renderers; they live in the DB. This is the
 // code-first dynamic path that, long-term, carries most tool UIs.
 const DB_RENDERER_ENTRIES: ToolLifecycleEntry[] = [

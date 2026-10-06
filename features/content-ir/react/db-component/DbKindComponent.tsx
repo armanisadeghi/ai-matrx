@@ -4,8 +4,8 @@
  * DbKindComponent — lazy entry point for DB-sourced kind components,
  * modeled directly on tool-viz's DbToolRenderer shell/Impl split.
  *
- * `DbKindComponentImpl` reaches the shared allowlist compiler
- * (`compileSlotComponent`), which statically imports `@babel/standalone`.
+ * `DbKindComponentImpl` reaches `@ai-matrx/code-runtime`'s compiler, which
+ * statically imports `@babel/standalone`.
  * Loading the impl via `next/dynamic({ ssr: false })` keeps Babel OUT of the
  * main chat/notes bundle: the chunk is fetched only when a block actually
  * routed to a DB kind component (`applyIrKindRoute`'s db-override flip) and

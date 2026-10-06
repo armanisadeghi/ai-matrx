@@ -75,7 +75,7 @@ interface ToolRendererProps {
 
 ## Path A — DB renderer (default)
 
-Agent-authored component code stored in `tool_ui`, fetched by `tool_name` + surface, compiled at runtime through the proven Agent Apps Babel sandbox (`db-renderer/` → `compileSlotComponent`). This is how most tools should be customized: no repo deploy, works for agent- and user-authored renderers, scales to every platform.
+Agent-authored component code stored in `tool_ui`, fetched by `tool_name` + surface, compiled at runtime by `@ai-matrx/code-runtime` (`db-renderer/` → `compileStoredComponent` in `lib/code-runtime/compile-stored.ts`). This is how most tools should be customized: no repo deploy, works for agent- and user-authored renderers, scales to every platform.
 
 ### The component
 
@@ -111,7 +111,7 @@ export default function FsListRenderer({ entry }) {
 
 ### Sandbox scope (what you CAN use)
 
-Set by `allowed_imports`. The allow-list lives in `features/agent-apps/utils/allowed-imports.ts` — do not assume anything outside it:
+Set by `allowed_imports`. The scope registry is the package's `listScopeEntries()` (`@ai-matrx/code-runtime/scope`); the app's own modules are in `lib/code-runtime/stored-scope.ts`. New code should prefer `@ai-matrx/design-system/controls`; `@/components/ui/*` are legacy aliases kept while stored code uses them. Do not assume anything outside the registry:
 
 - **`react`** — always: `React`, `useState`, `useEffect`, `useMemo`, `useCallback`, `useRef`.
 - **`lucide-react`** — always when listed: ALL icons by name (a missing icon name renders a safe placeholder, never a crash).

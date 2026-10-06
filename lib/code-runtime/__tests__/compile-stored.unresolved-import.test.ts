@@ -13,7 +13,7 @@
  */
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import {
   clearCapturedErrors,
   getSnapshot,
@@ -43,9 +43,9 @@ beforeEach(() => {
   resetUnresolvedImportCaptures();
 });
 
-describe("compileSlotComponent — unresolved imports announce themselves", () => {
+describe("compileStoredComponent — unresolved imports announce themselves", () => {
   it("shows a named stand-in that keeps its children and files the import path under the tool", async () => {
-    const result = compileSlotComponent({
+    const result = compileStoredComponent({
       origin: "tool:get_weather",
       code: `
         import { ForecastCard } from "@/features/weather/ForecastCard";
@@ -81,7 +81,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
   });
 
   it("files an icon the allowlisted module does not export", async () => {
-    const result = compileSlotComponent({
+    const result = compileStoredComponent({
       origin: "agent-app:3f1c2a9e:slot:header",
       code: `
         import { CloudSunRainbow } from "lucide-react";
@@ -103,7 +103,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
   });
 
   it("files a JSX tag that is never imported or defined", async () => {
-    const result = compileSlotComponent({
+    const result = compileStoredComponent({
       origin: "emit:report_summary",
       code: `
         export default function Summary() {
@@ -123,7 +123,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
   });
 
   it("files an allowed_imports entry the allowlist does not know", async () => {
-    compileSlotComponent({
+    compileStoredComponent({
       origin: "tool:search_listings",
       code: `export default function Listings() { return <ul />; }`,
       allowedImports: ["react", "@/features/listings/private-client"],
@@ -137,7 +137,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
   });
 
   it("files nothing for a component whose imports all resolve", async () => {
-    const result = compileSlotComponent({
+    const result = compileStoredComponent({
       origin: "tool:get_weather",
       code: `
         import { Sun } from "lucide-react";
@@ -163,7 +163,7 @@ describe("compileSlotComponent — unresolved imports announce themselves", () =
  * and the compile runs INSIDE render. The gap is filed once per page session,
  * and never from inside the compile call itself.
  */
-describe("compileSlotComponent — unresolved-import filing is once and out of render", () => {
+describe("compileStoredComponent — unresolved-import filing is once and out of render", () => {
   const HEADER = `
     import { RainChance } from "@/features/weather/RainChance";
     export default function Header() {
@@ -172,7 +172,7 @@ describe("compileSlotComponent — unresolved-import filing is once and out of r
   `;
 
   it("files nothing synchronously inside the compile (it runs during render)", async () => {
-    compileSlotComponent({
+    compileStoredComponent({
       origin: "agent-app:7b2e41d0:slot:header",
       code: HEADER,
       allowedImports: ["react"],
@@ -185,7 +185,7 @@ describe("compileSlotComponent — unresolved-import filing is once and out of r
 
   it("re-mounting the same slot does not raise the count or the unseen badge", async () => {
     for (let mount = 0; mount < 4; mount++) {
-      compileSlotComponent({
+      compileStoredComponent({
         origin: "agent-app:7b2e41d0:slot:header",
         code: HEADER,
         allowedImports: ["react"],
@@ -204,7 +204,7 @@ describe("compileSlotComponent — unresolved-import filing is once and out of r
       "agent-app:7b2e41d0:slot:header",
       "agent-app:c09a5f13:slot:header",
     ]) {
-      compileSlotComponent({ origin, code: HEADER, allowedImports: ["react"] });
+      compileStoredComponent({ origin, code: HEADER, allowedImports: ["react"] });
     }
     await flushCaptures();
 

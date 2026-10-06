@@ -27,7 +27,7 @@ import { SimpleTerminal } from "@/features/code/terminal/SimpleTerminal";
 import { useHtmlPreviewState } from "@/features/html-pages/hooks/useHtmlPreviewState";
 import { fetchArtifactsForMessageThunk, updateArtifactThunk, registerArtifactThunk } from "@/lib/redux/thunks/artifactThunks";
 import { selectHtmlPageArtifactForMessage } from "@/lib/redux/selectors/artifactSelectors";
-import { compileSlotComponent } from "@/features/agent-apps/utils/compile-slot";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { refreshNoteContent, fetchNotesList, saveNoteField } from "@/features/notes/redux/thunks";
 import { loadProjectsWithTasks } from "@/features/tasks/redux/thunks";
@@ -86,7 +86,7 @@ registerChatUi({
   updateArtifactThunk,
   registerArtifactThunk,
   selectHtmlPageArtifactForMessage,
-  compileSlotComponent,
+  compileStoredComponent,
   reportCanvasOpenDrop,
   refreshNoteContent,
   fetchNotesList,
