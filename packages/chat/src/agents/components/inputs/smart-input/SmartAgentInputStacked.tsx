@@ -132,6 +132,7 @@ export function SmartAgentInputStacked({
           conversationId={conversationId}
           uploadRoot={uploadRoot}
           uploadPath={uploadPath}
+          pasteFiles={enablePasteImages}
           className={cn(
             "relative flex w-full min-h-0 flex-col gap-1.5 border border-border bg-card transition-colors focus-within:border-foreground/25",
             "[&_[data-variable-row]]:px-1.5 [&_[data-variable-heading]]:px-1.5 [&>input[type=file]]:!hidden",
@@ -217,7 +218,6 @@ export function SmartAgentInputStacked({
       compact={isCompact}
       uploadRoot={uploadRoot}
       uploadPath={uploadPath}
-      enablePasteImages={enablePasteImages}
       surfaceKey={surfaceKey}
       disableSend={sendBlocked}
       initiallyExpanded={expandRequestKey > 0}
@@ -262,6 +262,7 @@ export function SmartAgentInputStacked({
           conversationId={conversationId}
           uploadRoot={uploadRoot}
           uploadPath={uploadPath}
+          pasteFiles={enablePasteImages}
           className={cn(
             "relative flex w-full min-h-0 flex-col gap-1 rounded-[18px] border p-1.5",
             "border-glass-edge bg-glass shadow-glass backdrop-blur-glass backdrop-saturate-glass transition-[border-color,background-color,box-shadow]",
@@ -294,7 +295,6 @@ export function SmartAgentInputStacked({
                 compact
                 uploadRoot={uploadRoot}
                 uploadPath={uploadPath}
-                enablePasteImages={enablePasteImages}
                 surfaceKey={surfaceKey}
                 disableSend={sendBlocked}
                 autoFocus={false}
@@ -338,6 +338,7 @@ export function SmartAgentInputStacked({
         conversationId={conversationId}
         uploadRoot={uploadRoot}
         uploadPath={uploadPath}
+        pasteFiles={enablePasteImages}
         className={cardClassName}
       >
         {/* Attachments; the value-group chip rides the meta row. */}
