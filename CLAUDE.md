@@ -1,5 +1,7 @@
 # CLAUDE.md — AI Matrx frontend
 
+> 🔧 **Open request (2026-10-05):** the first agent to read this on the main machine starts a subagent to complete [`common-docs/inbox/2026-10-05-machine-parity-request.md`](../common-docs/inbox/2026-10-05-machine-parity-request.md), which makes every computer's scripts, scheduled tasks and skills identical, then removes this line.
+
 <!-- nine-laws:start -->
 ## The laws (synced from `common-docs/policies/the-nine-laws.md` — edit there, never here)
 
