@@ -3,18 +3,18 @@
 /**
  * AgentSyncBody
  *
- * Unified panel for the link between a user agent and its system ("builtin")
- * twin. Handles, from either side of the pair:
+ * Linked Agent Sync: every agent linked to the viewed one by lineage — its
+ * parent (`source_agent_id`) and every child copy — user or system alike. Pick
+ * any relative to compare; the pair is oriented baseline → copy (a system agent
+ * is the baseline when exactly one side is system, otherwise the parent is):
  *
- *   - Pull  (system → my personal copy) — owner-gated, behavior-only by default
- *   - Push  (user → system)             — super-admin-gated, identity included
- *   - Create my personal copy           — idempotent (opens an existing copy)
- *   - Convert to a new system agent      — when a user agent has no twin yet
+ *   - Pull  (baseline → copy)  — copy's owner, or super admin for a system copy
+ *   - Push  (copy → baseline)  — baseline's owner, or super admin for a system baseline
+ *   - Create my personal copy  — from a system agent with none of mine yet
+ *   - Make system agent        — super admin, user agent with no system relative
  *
- * The DB (`agx_sync_linked_agents`) is the real authority on linkage + write
- * gating; this component only enables/labels the actions. Direction-agnostic by
- * design: the link lives on whichever side was derived, and we resolve the twin
- * from either end via `fetchLinkedCounterpart`.
+ * The DB (`agx_sync_linked_agents_reviewed`) is the real authority on linkage +
+ * write gating; this component only enables/labels the actions.
  */
 
 import { useEffect, useState } from "react";
@@ -172,32 +172,138 @@ function AgentHeadCard({
   );
 }
 
+/** One agent linked to the viewed agent by lineage: its parent or a child. */
+interface LinkedRelative {
+  ref: LinkedAgentRef;
+  role: "parent" | "child";
+}
+
 /**
- * Resolve the (userSide, systemSide) pair around the viewed agent, plus the
- * derived side's last-reconciled timestamp.
+ * Every agent linked to the viewed one: its parent (`source`) and every child
+ * (`derived`), user or system alike. A link is a link — the DB
+ * (`agx_sync_linked_agents_reviewed`) syncs any parent/child pair and gates the
+ * write itself, so no relative is hidden here because of its type.
+ */
+function listRelatives(counterpart: LinkedCounterpartResult): LinkedRelative[] {
+  const relatives: LinkedRelative[] = [];
+  if (counterpart.source) {
+    relatives.push({ ref: counterpart.source, role: "parent" });
+  }
+  for (const ref of counterpart.derived) {
+    if (ref.id !== counterpart.source?.id) relatives.push({ ref, role: "child" });
+  }
+  return relatives;
+}
+
+/**
+ * Default relative to open: a system twin first (the historic purpose of this
+ * panel), then my own copy, then the parent, then the newest child.
+ */
+function defaultRelativeId(
+  self: LinkedAgentRef,
+  relatives: LinkedRelative[],
+): string | null {
+  const twin =
+    self.agentType === "builtin"
+      ? (relatives.find((r) => r.ref.agentType === "user" && r.ref.isOwnedByMe) ??
+        relatives.find((r) => r.ref.agentType === "user"))
+      : relatives.find((r) => r.ref.agentType === "builtin");
+  return (
+    twin?.ref.id ??
+    relatives.find((r) => r.role === "parent")?.ref.id ??
+    relatives[0]?.ref.id ??
+    null
+  );
+}
+
+/**
+ * Orient the (self, relative) pair as baseline → copy. When exactly one side is
+ * a system agent it is the baseline (a system agent is what copies follow, even
+ * when it was converted FROM a user agent); otherwise the lineage parent is.
  */
 function resolvePair(
-  selfType: "user" | "builtin",
-  counterpart: LinkedCounterpartResult,
-): {
-  userSide: LinkedAgentRef | null;
-  systemSide: LinkedAgentRef | null;
-} {
-  const { self, source, derived } = counterpart;
-  const candidates = [source, ...derived].filter(Boolean) as LinkedAgentRef[];
-
-  if (selfType === "builtin") {
-    // Prefer my own user copy; fall back to any visible user-side twin.
-    const userSide =
-      candidates.find((c) => c.agentType === "user" && c.isOwnedByMe) ??
-      candidates.find((c) => c.agentType === "user") ??
-      null;
-    return { userSide, systemSide: self };
+  self: LinkedAgentRef,
+  relative: LinkedRelative,
+): { baseSide: LinkedAgentRef; copySide: LinkedAgentRef } {
+  const other = relative.ref;
+  const selfSystem = self.agentType === "builtin";
+  const otherSystem = other.agentType === "builtin";
+  if (selfSystem !== otherSystem) {
+    return selfSystem
+      ? { baseSide: self, copySide: other }
+      : { baseSide: other, copySide: self };
   }
+  return relative.role === "parent"
+    ? { baseSide: other, copySide: self }
+    : { baseSide: self, copySide: other };
+}
 
-  // self is a user agent — find its system twin.
-  const systemSide = candidates.find((c) => c.agentType === "builtin") ?? null;
-  return { userSide: self, systemSide };
+function relativeLabel(relative: LinkedRelative): string {
+  const kind = relative.ref.agentType === "builtin" ? "System" : "User";
+  return relative.role === "parent" ? `${kind} · parent` : `${kind} · child`;
+}
+
+function LinkedRelativesList({
+  relatives,
+  selectedId,
+  onSelect,
+}: {
+  relatives: LinkedRelative[];
+  selectedId: string | null;
+  onSelect?: (id: string) => void;
+}) {
+  if (relatives.length === 0) return null;
+  return (
+    <section aria-labelledby="linked-agents-title">
+      <h3
+        id="linked-agents-title"
+        className="mb-2 type-secondary font-semibold"
+      >
+        Linked agents
+      </h3>
+      <ul className="space-y-1.5">
+        {relatives.map((relative) => {
+          const selected = relative.ref.id === selectedId;
+          return (
+            <li
+              key={relative.ref.id}
+              className={cn(
+                "flex items-center justify-between gap-2 rounded-md border px-2.5 py-1.5",
+                selected ? "border-primary/50 bg-primary/5" : "border-border",
+              )}
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <Badge variant="outline" className="shrink-0 text-[10px]">
+                  {relativeLabel(relative)}
+                </Badge>
+                <EntityRef
+                  token="agent"
+                  id={relative.ref.id}
+                  name={relative.ref.name}
+                  href={`${basePathFor(relative.ref)}/${relative.ref.id}`}
+                  alwaysShowActions
+                />
+              </div>
+              {onSelect &&
+                (selected ? (
+                  <span className="shrink-0 type-meta text-primary">
+                    Comparing
+                  </span>
+                ) : (
+                  <Button
+                    variant="quiet"
+                    className="shrink-0"
+                    onClick={() => onSelect(relative.ref.id)}
+                  >
+                    Compare
+                  </Button>
+                ))}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
 
 export function AgentSyncBody({
@@ -224,6 +330,10 @@ export function AgentSyncBody({
   const [activeView, setActiveView] = useState<"overview" | "differences">(
     "overview",
   );
+  const [selectedRelativeId, setSelectedRelativeId] = useState<string | null>(
+    null,
+  );
+  const [startOver, setStartOver] = useState<null | "convert">(null);
   const [comparisonState, setComparisonState] = useState<{
     key: string;
     system: AgentDefinition;
@@ -299,18 +409,36 @@ export function AgentSyncBody({
     };
   }, [agentId, dispatch]);
 
-  const pair = counterpart ? resolvePair(selfType, counterpart) : null;
-  const userSide = pair?.userSide ?? null;
-  const systemSide = pair?.systemSide ?? null;
-  const hasPair = !!userSide && !!systemSide;
+  const selfDeletedAt = counterpart?.self.deletedAt ?? null;
+  const relatives = counterpart ? listRelatives(counterpart) : [];
+  const selectedRelative =
+    counterpart && !selfDeletedAt
+      ? (relatives.find((r) => r.ref.id === selectedRelativeId) ??
+        relatives.find(
+          (r) => r.ref.id === defaultRelativeId(counterpart.self, relatives),
+        ) ??
+        null)
+      : null;
+  const pair =
+    counterpart && selectedRelative
+      ? resolvePair(counterpart.self, selectedRelative)
+      : null;
+  const copySide = pair?.copySide ?? null;
+  const baseSide = pair?.baseSide ?? null;
+  const baseIsSystem = baseSide?.agentType === "builtin";
+  const copyIsSystem = copySide?.agentType === "builtin";
+  const systemTwin = baseIsSystem ? baseSide : copyIsSystem ? copySide : null;
+  const baseNoun = baseIsSystem ? "system baseline" : "original";
+  const copyNoun = copyIsSystem ? "system copy" : "copy";
+  const hasPair = !!copySide && !!baseSide;
   const comparisonKey =
-    userSide && systemSide ? `${systemSide.id}:${userSide.id}` : null;
+    copySide && baseSide ? `${baseSide.id}:${copySide.id}` : null;
   useEffect(() => {
-    if (!comparisonKey || !userSide || !systemSide) return undefined;
+    if (!comparisonKey || !copySide || !baseSide) return undefined;
     let cancelled = false;
     Promise.all([
-      fetchSavedAgentDefinition(systemSide.id),
-      fetchSavedAgentDefinition(userSide.id),
+      fetchSavedAgentDefinition(baseSide.id),
+      fetchSavedAgentDefinition(copySide.id),
     ])
       .then(([system, personal]) => {
         if (cancelled) return;
@@ -330,14 +458,14 @@ export function AgentSyncBody({
     return () => {
       cancelled = true;
     };
-  }, [comparisonKey, comparisonRetry, systemSide, userSide]);
+  }, [comparisonKey, comparisonRetry, baseSide, copySide]);
 
   useEffect(() => {
-    if (!comparisonKey || !userSide || !systemSide) return undefined;
+    if (!comparisonKey || !copySide || !baseSide) return undefined;
     let cancelled = false;
     Promise.all([
-      fetchAgentVersionFieldSnapshots(systemSide.id),
-      fetchAgentVersionFieldSnapshots(userSide.id),
+      fetchAgentVersionFieldSnapshots(baseSide.id),
+      fetchAgentVersionFieldSnapshots(copySide.id),
     ])
       .then(([system, personal]) => {
         if (cancelled) return;
@@ -357,14 +485,14 @@ export function AgentSyncBody({
     return () => {
       cancelled = true;
     };
-  }, [comparisonKey, comparisonRetry, systemSide, userSide]);
+  }, [comparisonKey, comparisonRetry, baseSide, copySide]);
 
   const comparisonReady = comparisonState?.key === comparisonKey;
-  const systemAgent = comparisonReady ? comparisonState.system : undefined;
-  const userAgent = comparisonReady ? comparisonState.personal : undefined;
+  const baseAgent = comparisonReady ? comparisonState.system : undefined;
+  const copyAgent = comparisonReady ? comparisonState.personal : undefined;
   const comparison =
-    comparisonReady && systemAgent && userAgent
-      ? compareAgentDefinitions(systemAgent, userAgent)
+    comparisonReady && baseAgent && copyAgent
+      ? compareAgentDefinitions(baseAgent, copyAgent)
       : null;
   const currentComparisonError =
     comparisonError?.key === comparisonKey ? comparisonError.message : null;
@@ -374,18 +502,18 @@ export function AgentSyncBody({
     fieldHistoryError?.key === comparisonKey ? fieldHistoryError.message : null;
 
   let temporalMetadata: DiffTemporalMetadata | undefined;
-  if (systemAgent && userAgent && comparison) {
+  if (baseAgent && copyAgent && comparison) {
     const systemVersionMoment = findAgentVersionMoment(
       currentFieldHistory?.system ?? [],
-      systemAgent.version,
+      baseAgent.version,
     );
     const personalVersionMoment = findAgentVersionMoment(
       currentFieldHistory?.personal ?? [],
-      userAgent.version,
+      copyAgent.version,
     );
     const changedFieldKeys = comparison.changedFields.map((field) => field.key);
-    const systemValues: Record<string, unknown> = { ...systemAgent };
-    const personalValues: Record<string, unknown> = { ...userAgent };
+    const systemValues: Record<string, unknown> = { ...baseAgent };
+    const personalValues: Record<string, unknown> = { ...copyAgent };
     const systemFieldMoments = currentFieldHistory
       ? deriveAgentFieldChangeMoments(
           systemValues,
@@ -412,25 +540,25 @@ export function AgentSyncBody({
         fields[fieldKey] = {
           old: systemFieldMoment
             ? {
-                label: "System last changed",
+                label: `${baseIsSystem ? "System" : "Original"} last changed`,
                 timestamp: systemFieldMoment.changedAt,
                 version: systemFieldMoment.versionNumber,
               }
             : {
-                label: "System record saved; exact field date unavailable",
-                timestamp: systemAgent.updatedAt,
-                version: systemAgent.version,
+                label: `${baseIsSystem ? "System" : "Original"} record saved; exact field date unavailable`,
+                timestamp: baseAgent.updatedAt,
+                version: baseAgent.version,
               },
           new: personalFieldMoment
             ? {
-                label: "Personal last changed",
+                label: "Copy last changed",
                 timestamp: personalFieldMoment.changedAt,
                 version: personalFieldMoment.versionNumber,
               }
             : {
-                label: "Personal record saved; exact field date unavailable",
-                timestamp: userAgent.updatedAt,
-                version: userAgent.version,
+                label: "Copy record saved; exact field date unavailable",
+                timestamp: copyAgent.updatedAt,
+                version: copyAgent.version,
               },
         };
       }
@@ -439,13 +567,13 @@ export function AgentSyncBody({
     temporalMetadata = {
       old: {
         label: systemVersionMoment ? "Version saved" : "Record saved",
-        timestamp: systemVersionMoment?.changedAt ?? systemAgent.updatedAt,
-        version: systemAgent.version,
+        timestamp: systemVersionMoment?.changedAt ?? baseAgent.updatedAt,
+        version: baseAgent.version,
       },
       new: {
         label: personalVersionMoment ? "Version saved" : "Record saved",
-        timestamp: personalVersionMoment?.changedAt ?? userAgent.updatedAt,
-        version: userAgent.version,
+        timestamp: personalVersionMoment?.changedAt ?? copyAgent.updatedAt,
+        version: copyAgent.version,
       },
       fields,
       loading: !currentFieldHistory && !currentFieldHistoryError,
@@ -457,45 +585,59 @@ export function AgentSyncBody({
 
   // The reconciliation stamp lives on whichever side was derived.
   const derivedRef =
-    userSide && userSide.sourceAgentId === systemSide?.id
-      ? userSide
-      : systemSide && systemSide.sourceAgentId === userSide?.id
-        ? systemSide
+    copySide && copySide.sourceAgentId === baseSide?.id
+      ? copySide
+      : baseSide && baseSide.sourceAgentId === copySide?.id
+        ? baseSide
         : null;
   const lastSyncedAt = derivedRef?.sourceSnapshotAt ?? null;
 
-  const canPull = !!userSide && (userSide.isOwnedByMe || isSuperAdmin);
-  const canPush = isSuperAdmin;
+  // Mirrors the DB gate in agx_sync_linked_agents_reviewed: a system agent takes
+  // writes from super admins only; any other agent from its owner or a super admin.
+  const canWriteInto = (ref: LinkedAgentRef | null): boolean =>
+    !!ref &&
+    (ref.agentType === "builtin" ? isSuperAdmin : ref.isOwnedByMe || isSuperAdmin);
+  const canPull = canWriteInto(copySide);
+  const canPush = canWriteInto(baseSide);
+  const hasSystemRelative = relatives.some(
+    (r) => r.ref.agentType === "builtin",
+  );
+  const hasMyUserRelative = relatives.some(
+    (r) => r.ref.agentType === "user" && r.ref.isOwnedByMe,
+  );
+  const canOfferConvert =
+    selfType === "user" && isSuperAdmin && !hasSystemRelative;
+  const canOfferPersonalCopy = selfType === "builtin" && !hasMyUserRelative;
 
   const refreshLinkedDefinitions = async () => {
-    if (!userSide || !systemSide) return;
+    if (!copySide || !baseSide) return;
     const [system, personal] = await Promise.all([
-      fetchSavedAgentDefinition(systemSide.id),
-      fetchSavedAgentDefinition(userSide.id),
+      fetchSavedAgentDefinition(baseSide.id),
+      fetchSavedAgentDefinition(copySide.id),
     ]);
     setComparisonState({
-      key: `${systemSide.id}:${userSide.id}`,
+      key: `${baseSide.id}:${copySide.id}`,
       system,
       personal,
     });
   };
 
   const runPull = async () => {
-    if (!userSide || !systemSide || !systemAgent || !userAgent) return;
+    if (!copySide || !baseSide || !baseAgent || !copyAgent) return;
     setBusy("pull");
     try {
       await dispatch(
         syncLinkedAgents({
-          fromId: systemSide.id,
-          toId: userSide.id,
+          fromId: baseSide.id,
+          toId: copySide.id,
           includeIdentity: pullIdentity,
-          expectedFromUpdatedAt: systemAgent.updatedAt,
-          expectedToUpdatedAt: userAgent.updatedAt,
+          expectedFromUpdatedAt: baseAgent.updatedAt,
+          expectedToUpdatedAt: copyAgent.updatedAt,
         }),
       ).unwrap();
       setFieldHistoryState(null);
       setFieldHistoryError(null);
-      toast.success(`Pulled latest into "${userSide.name}".`);
+      toast.success(`Pulled latest into "${copySide.name}".`);
       const [relationshipRefreshed, definitionsRefreshed] = await Promise.all([
         load(),
         refreshLinkedDefinitions()
@@ -517,21 +659,21 @@ export function AgentSyncBody({
   };
 
   const runPush = async () => {
-    if (!userSide || !systemSide || !systemAgent || !userAgent) return;
+    if (!copySide || !baseSide || !baseAgent || !copyAgent) return;
     setBusy("push");
     try {
       await dispatch(
         syncLinkedAgents({
-          fromId: userSide.id,
-          toId: systemSide.id,
+          fromId: copySide.id,
+          toId: baseSide.id,
           includeIdentity: true,
-          expectedFromUpdatedAt: userAgent.updatedAt,
-          expectedToUpdatedAt: systemAgent.updatedAt,
+          expectedFromUpdatedAt: copyAgent.updatedAt,
+          expectedToUpdatedAt: baseAgent.updatedAt,
         }),
       ).unwrap();
       setFieldHistoryState(null);
       setFieldHistoryError(null);
-      toast.success(`Pushed "${userSide.name}" to the system agent.`);
+      toast.success(`Pushed "${copySide.name}" into "${baseSide.name}".`);
       const [relationshipRefreshed, definitionsRefreshed] = await Promise.all([
         load(),
         refreshLinkedDefinitions()
@@ -606,62 +748,71 @@ export function AgentSyncBody({
     );
   }
 
-  // ─── No twin: user agent, super-admin → convert-create flow ──────────────
+  // ─── Convert to a new system agent (super admin, no system relative) ─────
 
-  if (!hasPair && selfType === "user" && isSuperAdmin) {
+  if (canOfferConvert && (startOver === "convert" || relatives.length === 0) && !selfDeletedAt) {
     return (
-      <div className="h-full overflow-y-auto p-4">
-        <ConvertAgentToSystemBody agentId={agentId} onClose={onClose} />
-      </div>
-    );
-  }
-
-  // ─── No twin: builtin → create my personal copy ──────────────────────────
-
-  if (!hasPair && selfType === "builtin") {
-    return (
-      <div className="space-y-4 p-4">
-        <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
-          <Copy className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-          <div className="type-secondary leading-relaxed text-muted-foreground">
-            Editable copy of{" "}
-            <span className="font-medium text-foreground">
-              {agent?.name ?? "this system agent"}
-            </span>
-            ; it stays linked for future updates
+      <div className="flex h-full min-h-0 flex-col">
+        {relatives.length > 0 && (
+          <div className="shrink-0 border-b border-border px-4 py-2">
+            <Button variant="quiet" onClick={() => setStartOver(null)}>
+              Back to linked agents
+            </Button>
           </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <Button variant="quiet" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button icon={busy === "copy" ? (
-              <Loader2 className="animate-spin" />
-            ) : (
-              <Copy />
-            )} variant="primary" onClick={runCreateCopy} disabled={busy === "copy"}>
-            Create my personal copy
-          </Button>
+        )}
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <ConvertAgentToSystemBody agentId={agentId} onClose={onClose} />
         </div>
       </div>
     );
   }
 
-  // ─── No twin: user agent, not admin ──────────────────────────────────────
+  // ─── No pair: deleted, a system agent with no copies, or unlinked ────────
 
   if (!hasPair) {
     return (
       <div className="space-y-4 p-4">
         <div className="flex items-start gap-3 rounded-md border border-border bg-muted/30 px-3 py-2.5">
-          <Unlink className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+          {selfDeletedAt ? (
+            <AlertCircle className="w-4 h-4 text-destructive mt-0.5 shrink-0" />
+          ) : selfType === "builtin" ? (
+            <Copy className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+          ) : (
+            <Unlink className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+          )}
           <div className="type-secondary leading-relaxed text-muted-foreground">
-            This agent isn&apos;t linked to a system agent.
+            {selfDeletedAt ? (
+              <>
+                This agent was deleted {formatTimestamp(selfDeletedAt)}; nothing
+                to sync
+              </>
+            ) : selfType === "builtin" ? (
+              <>
+                Editable copy of{" "}
+                <span className="font-medium text-foreground">
+                  {agent?.name ?? "this system agent"}
+                </span>
+                ; it stays linked for future updates
+              </>
+            ) : (
+              "No linked parent or copies"
+            )}
           </div>
         </div>
-        <div className="flex justify-end">
+        <LinkedRelativesList relatives={relatives} selectedId={null} />
+        <div className="flex justify-end gap-2">
           <Button variant="quiet" onClick={onClose}>
             Close
           </Button>
+          {canOfferPersonalCopy && !selfDeletedAt && (
+            <Button icon={busy === "copy" ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Copy />
+              )} variant="primary" onClick={runCreateCopy} disabled={busy === "copy"}>
+              Create my personal copy
+            </Button>
+          )}
         </div>
       </div>
     );
@@ -670,16 +821,16 @@ export function AgentSyncBody({
   // ─── Linked pair: relationship + configuration comparison + sync ────────
 
   const derivedAgent =
-    derivedRef?.id === userSide.id
-      ? userAgent
-      : derivedRef?.id === systemSide.id
-        ? systemAgent
+    derivedRef?.id === copySide.id
+      ? copyAgent
+      : derivedRef?.id === baseSide.id
+        ? baseAgent
         : undefined;
   const relationshipCreatedAt = derivedAgent?.createdAt ?? null;
   const relationshipCreatedLabel =
-    derivedRef?.id === systemSide.id
+    derivedRef?.id === baseSide.id
       ? "System twin linked"
-      : "Personal copy linked";
+      : "Copy linked";
   const behaviorDifferenceCount = comparison?.behaviorFields.length ?? 0;
   const comparisonAvailable =
     comparison !== null && currentComparisonError === null;
@@ -696,12 +847,12 @@ export function AgentSyncBody({
 
   const mandateDisplayName = mandateLabel ?? mandateKey ?? null;
   const runRebindToSystem = async () => {
-    if (!onRebindToSystem || !systemSide) return;
+    if (!onRebindToSystem || !systemTwin) return;
     setRebindBusy(true);
     try {
-      await onRebindToSystem(systemSide.id);
+      await onRebindToSystem(systemTwin.id);
       toast.success(
-        `Mandate ${mandateDisplayName ?? mandateKey ?? "(unknown)"} rebound to the system agent "${systemSide.name}" (tracks latest).`,
+        `Mandate ${mandateDisplayName ?? mandateKey ?? "(unknown)"} rebound to the system agent "${systemTwin.name}" (tracks latest).`,
       );
     } catch (err) {
       toast.error(
@@ -727,7 +878,7 @@ export function AgentSyncBody({
                 runs.
               </span>
             </div>
-            {onRebindToSystem && (
+            {onRebindToSystem && systemTwin && (
               <Button
                 icon={rebindBusy ? (
                   <Loader2 className="animate-spin" />
@@ -737,7 +888,7 @@ export function AgentSyncBody({
                 variant="outline"
                 className="shrink-0"
                 disabled={rebindBusy || busy !== null}
-                title={`Rebind mandate ${mandateDisplayName} to the system agent "${systemSide.name}" (tracks latest)`}
+                title={`Rebind mandate ${mandateDisplayName} to the system agent "${systemTwin.name}" (tracks latest)`}
                 onClick={() => void runRebindToSystem()}
               >
                 Rebind mandate to system side
@@ -799,23 +950,23 @@ export function AgentSyncBody({
                 Retry comparison
               </Button>
             </div>
-          ) : comparisonReady && systemAgent && userAgent ? (
+          ) : comparisonReady && baseAgent && copyAgent ? (
             <div className="flex h-full min-h-0 flex-col">
               <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/20 px-4 py-2 type-secondary">
                 <div className="flex min-w-0 flex-wrap items-center gap-3">
                   <EntityRef
                     token="agent"
-                    id={systemSide.id}
-                    name={systemSide.name}
-                    href={`${basePathFor(systemSide)}/${systemSide.id}`}
+                    id={baseSide.id}
+                    name={baseSide.name}
+                    href={`${basePathFor(baseSide)}/${baseSide.id}`}
                     alwaysShowActions
                   />
                   <span className="text-muted-foreground">compared with</span>
                   <EntityRef
                     token="agent"
-                    id={userSide.id}
-                    name={userSide.name}
-                    href={`${basePathFor(userSide)}/${userSide.id}`}
+                    id={copySide.id}
+                    name={copySide.name}
+                    href={`${basePathFor(copySide)}/${copySide.id}`}
                     alwaysShowActions
                   />
                 </div>
@@ -824,10 +975,10 @@ export function AgentSyncBody({
                 </span>
               </div>
               <AgentDiffViewer
-                oldAgent={systemAgent}
-                newAgent={userAgent}
-                oldLabel={`System — ${systemSide.name}${systemAgent.version != null ? ` v${systemAgent.version}` : ""}`}
-                newLabel={`Personal — ${userSide.name}${userAgent.version != null ? ` v${userAgent.version}` : ""}`}
+                oldAgent={baseAgent}
+                newAgent={copyAgent}
+                oldLabel={`${baseIsSystem ? "System" : "Original"} — ${baseSide.name}${baseAgent.version != null ? ` v${baseAgent.version}` : ""}`}
+                newLabel={`${copyIsSystem ? "System copy" : "Copy"} — ${copySide.name}${copyAgent.version != null ? ` v${copyAgent.version}` : ""}`}
                 temporalMetadata={temporalMetadata}
                 className="h-full min-h-0 flex-1"
               />
@@ -887,8 +1038,8 @@ export function AgentSyncBody({
                         ? comparison.localStateFields.length > 0
                           ? `Synced behavior matches, but local record state differs: ${comparison.localStateFields.map((field) => humanizeIdentifier(field.key)).join(", ")}${comparison.profileFields.length > 0 ? `; profile details also differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}` : ""}.`
                           : comparison.profileFields.length > 0
-                            ? `Only personal profile details differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`
-                            : "The current runtime configuration matches the system baseline."
+                            ? `Only profile details differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`
+                            : `The current runtime configuration matches the ${baseNoun}.`
                         : `Changed behavior: ${comparison.behaviorFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`}
                     </p>
                   </div>
@@ -918,14 +1069,14 @@ export function AgentSyncBody({
                     Current relationship
                   </h3>
                   <span className="type-meta text-muted-foreground">
-                    System baseline → personal copy
+                    {baseIsSystem ? "System baseline" : "Original"} → {copyNoun}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                   <AgentHeadCard
-                    agentRef={systemSide}
-                    agent={systemAgent}
-                    label="System baseline"
+                    agentRef={baseSide}
+                    agent={baseAgent}
+                    label={baseIsSystem ? "System baseline" : "Original"}
                   />
                   <div className="flex items-center justify-center gap-1 text-muted-foreground sm:flex-col">
                     <div className="h-px flex-1 bg-border sm:h-full sm:min-h-6 sm:w-px" />
@@ -938,12 +1089,14 @@ export function AgentSyncBody({
                     <div className="h-px flex-1 bg-border sm:h-full sm:min-h-6 sm:w-px" />
                   </div>
                   <AgentHeadCard
-                    agentRef={userSide}
-                    agent={userAgent}
+                    agentRef={copySide}
+                    agent={copyAgent}
                     label={
-                      userSide.isOwnedByMe
-                        ? "My personal copy"
-                        : "Personal copy"
+                      copyIsSystem
+                        ? "System copy"
+                        : copySide.isOwnedByMe
+                          ? "My copy"
+                          : "Copy"
                     }
                   />
                 </div>
@@ -1007,6 +1160,19 @@ export function AgentSyncBody({
                   Milestones only; full edits are in each agent&apos;s Versions
                 </p>
               </section>
+
+              <LinkedRelativesList
+                relatives={relatives}
+                selectedId={selectedRelative?.ref.id ?? null}
+                onSelect={
+                  relatives.length > 1
+                    ? (id) => {
+                        setSelectedRelativeId(id);
+                        setActiveView("overview");
+                      }
+                    : undefined
+                }
+              />
             </div>
           </div>
         )}
@@ -1029,9 +1195,30 @@ export function AgentSyncBody({
           </div>
         )}
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button variant="quiet" onClick={onClose}>
-            Close
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="quiet" onClick={onClose}>
+              Close
+            </Button>
+            {canOfferConvert && (
+              <Button
+                variant="quiet"
+                icon={<ShieldCheck />}
+                onClick={() => setStartOver("convert")}
+              >
+                Make system agent
+              </Button>
+            )}
+            {canOfferPersonalCopy && (
+              <Button
+                variant="quiet"
+                icon={busy === "copy" ? <Loader2 className="animate-spin" /> : <Copy />}
+                onClick={runCreateCopy}
+                disabled={busy !== null}
+              >
+                Create my personal copy
+              </Button>
+            )}
+          </div>
           <div className="flex items-center gap-2">
             <Button
               icon={busy === "pull" ? (
@@ -1052,12 +1239,14 @@ export function AgentSyncBody({
                   ? !comparisonAvailable
                     ? "Wait for the comparison to finish"
                     : !pullHasChanges
-                      ? "The selected pull would not change the personal copy"
-                      : "Copy the system baseline into the personal copy"
-                  : "You can only pull into a copy you own"
+                      ? `The selected pull would not change the ${copyNoun}`
+                      : `Copy the ${baseNoun} into the ${copyNoun}`
+                  : copyIsSystem
+                    ? "Only super admins can update a system agent"
+                    : "You can only pull into a copy you own"
               }
             >
-              Update personal copy
+              {copyIsSystem ? "Update system copy" : "Update copy"}
             </Button>
             <Button
               icon={busy === "push" ? (
@@ -1078,12 +1267,14 @@ export function AgentSyncBody({
                   ? !comparisonAvailable
                     ? "Wait for the comparison to finish"
                     : !pushHasChanges
-                      ? "The personal copy has no syncable changes"
-                      : "Replace the system baseline with the personal copy"
-                  : "Only super admins can update a system agent"
+                      ? `The ${copyNoun} has no syncable changes`
+                      : `Replace the ${baseNoun} with the ${copyNoun}`
+                  : baseIsSystem
+                    ? "Only super admins can update a system agent"
+                    : "You can only push into an agent you own"
               }
             >
-              Update system baseline
+              {baseIsSystem ? "Update system baseline" : "Update original"}
             </Button>
           </div>
         </div>
@@ -1093,21 +1284,23 @@ export function AgentSyncBody({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Update the shared system baseline?
+              {baseIsSystem
+                ? "Update the shared system baseline?"
+                : `Update "${baseSide.name}"?`}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              This replaces the system agent&apos;s runtime configuration and
-              profile with the personal copy. It can affect every user and mandate
-              that follows this system agent.
+              {baseIsSystem
+                ? "This replaces the system agent's runtime configuration and profile with the copy. It can affect every user and mandate that follows this system agent."
+                : `This replaces the original's runtime configuration and profile with "${copySide.name}".`}
               {comparison && !comparison.comparedConfigurationMatches
                 ? ` The current comparison contains ${comparison.changedFields.length} changed ${comparison.changedFields.length === 1 ? "section" : "sections"}.`
                 : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Keep current baseline</AlertDialogCancel>
+            <AlertDialogCancel>Keep current {baseNoun}</AlertDialogCancel>
             <AlertDialogAction onClick={() => void runPush()}>
-              Update system baseline
+              {baseIsSystem ? "Update system baseline" : "Update original"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
