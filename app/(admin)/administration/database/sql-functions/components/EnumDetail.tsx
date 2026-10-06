@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect } from "react";
 import { DatabaseEnum, EnumUsage } from "@/types/enum-types";
 import {
@@ -58,6 +60,10 @@ export default function EnumDetail({
   onDelete,
   initialTab,
 }: EnumDetailProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [isExpanded, setIsExpanded] = useUrlState(
     "expanded",
     booleanUrlCodec(false),
@@ -101,7 +107,7 @@ export default function EnumDetail({
   // Handle copy enum definition
   const handleCopyDefinition = () => {
     const definition = `CREATE TYPE ${enumType.schema}.${enumType.name} AS ENUM (${enumType.values.map((v) => `'${v}'`).join(", ")});`;
-    navigator.clipboard.writeText(definition);
+    copyText(definition);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };
@@ -109,7 +115,7 @@ export default function EnumDetail({
   // Handle copy values
   const handleCopyValues = () => {
     const values = enumType.values.join(", ");
-    navigator.clipboard.writeText(values);
+    copyText(values);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

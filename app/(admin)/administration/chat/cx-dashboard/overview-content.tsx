@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -113,6 +115,10 @@ const toolUsageColumns: MatrxColumnDef<ToolUsageRow>[] = [
 ];
 
 export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const formatCostDisplay = useAdminCost();
   const router = useRouter();
   const [clickedTool, setClickedTool] = useState<ToolUsageRow | null>(null);
@@ -134,7 +140,7 @@ export function OverviewContent({ kpis }: { kpis: CxOverviewKpis }) {
       disabled: !clickedTool,
       onSelect: () => {
         if (!clickedTool) return;
-        void navigator.clipboard.writeText(clickedTool.tool_name);
+        void copyText(clickedTool.tool_name);
       },
     },
   ];

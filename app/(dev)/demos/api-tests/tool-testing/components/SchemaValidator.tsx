@@ -1,5 +1,6 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useMemo, useState } from 'react';
 import Ajv from 'ajv';
 import { Button } from '@/components/ui/button';
@@ -46,10 +47,14 @@ export function validateAgainstSchema(
 // ─── Copy button ─────────────────────────────────────────────────────────────
 
 function InlineCopyButton({ text }: { text: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       toast.success('Copied');
       setTimeout(() => setCopied(false), 2000);

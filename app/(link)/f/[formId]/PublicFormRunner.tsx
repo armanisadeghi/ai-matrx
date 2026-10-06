@@ -24,6 +24,8 @@
 // Sending uses the place up: the secret travels as the submission's client key,
 // and the store marks the place sent in the same transaction.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FormRunner,
@@ -91,6 +93,10 @@ type Resumed =
   | { kind: "gone"; message: string };
 
 export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?: Record<string, unknown> }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [secret, setSecret] = useState<string | null>(null);
   const [resumed, setResumed] = useState<Resumed>({ kind: "none" });
   const [runKey, setRunKey] = useState(0);
@@ -327,7 +333,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
 
   async function copyResumeLink(url: string) {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setCopied("copied");
       window.setTimeout(() => setCopied("idle"), 1600);
     } catch {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState, useMemo } from "react";
@@ -59,11 +60,15 @@ function CopyButton({
   content: string;
   label?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     if (!content) return;
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopied(true);
       toast.success("Copied to clipboard");
       setTimeout(() => setCopied(false), 2000);

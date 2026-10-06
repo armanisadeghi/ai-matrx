@@ -6,6 +6,7 @@
  * (masked display, copy, rotate-with-confirm).
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -49,6 +50,10 @@ function maskKey(key: string): string {
 }
 
 function SiteDataKeyCard() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { site, refreshSite } = useSiteContext();
   const [revealed, setRevealed] = useState(false);
   const [rotateOpen, setRotateOpen] = useState(false);
@@ -59,8 +64,7 @@ function SiteDataKeyCard() {
   const handleCopy = async () => {
     if (!key) return;
     try {
-      await navigator.clipboard.writeText(key);
-      toast.success("Site data key copied");
+      await copyText(key, "Site data key copied");
     } catch {
       toast.error("Could not copy — reveal the key and copy it manually");
     }

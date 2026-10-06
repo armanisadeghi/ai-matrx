@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { formatCount, formatDurationMs } from "@ai-matrx/kit/format";
 
 import { useState } from "react";
@@ -681,6 +683,10 @@ function ResultCard({
   result: CompareResult | null;
   isLoading: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [expanded, setExpanded] = useState(false);
   const [copied, setCopied] = useState(false);
   const PREVIEW_CHARS = 2000;
@@ -691,7 +697,7 @@ function ResultCard({
 
   const handleCopy = async () => {
     if (!result?.content) return;
-    await navigator.clipboard.writeText(result.content);
+    await copyText(result.content);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

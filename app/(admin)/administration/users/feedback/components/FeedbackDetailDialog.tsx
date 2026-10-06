@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useState,
   useEffect,
@@ -193,6 +194,10 @@ export default function FeedbackDetailDialog({
   initialTab,
   onOpenFeedback,
 }: FeedbackDetailDialogProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // Live local copy of the feedback item — updated from server responses
   const [item, setItem] = useState<UserFeedback>(feedback);
   // Hindsight's reviewable repo-file change proposal, when this row carries one.
@@ -427,8 +432,7 @@ export default function FeedbackDetailDialog({
       categoryName: categories.find((c) => c.id === item.category_id)?.name,
     });
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success("Full feedback data copied to clipboard");
+      await copyText(text, "Full feedback data copied to clipboard");
     } catch {
       toast.error("Failed to copy to clipboard");
     }

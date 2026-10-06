@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +37,10 @@ const SortIcon = ({
 };
 
 export function DataTable({ data, dimension, title }: DataTableProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
     const [sortField, setSortField] = useState<SortField>('clicks');
     const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
     const [hoveredRow, setHoveredRow] = useState<number | null>(null);
@@ -138,7 +143,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
     };
 
     const handleCopy = async (text: string) => {
-        await navigator.clipboard.writeText(text);
+        await copyText(text);
         setCopiedText(text);
         setTimeout(() => setCopiedText(null), 2000);
     };

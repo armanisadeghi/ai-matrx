@@ -10,6 +10,8 @@
 // (`mx_live_...`) is shown exactly once at creation — only its SHA-256 hash
 // rests in the database.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Check, Copy, KeyRound, Loader2, Plus } from "lucide-react";
@@ -56,6 +58,10 @@ function formatDate(value: string | null): string {
 }
 
 export default function OrgApiKeysPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const params = useParams();
   const orgId = params.orgId as string;
   const { organization, organizationId, loading, error, refresh } =
@@ -107,7 +113,7 @@ export default function OrgApiKeysPage() {
 
   const handleCopy = async () => {
     if (!created) return;
-    await navigator.clipboard.writeText(created.api_key);
+    await copyText(created.api_key);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
