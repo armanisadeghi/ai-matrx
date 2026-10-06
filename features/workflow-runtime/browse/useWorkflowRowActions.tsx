@@ -11,6 +11,7 @@
 // verb, and a chooser modal in front of a two-destination record is a click
 // tax. The kebab carries the FULL action list, same handlers, one code path.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
@@ -63,6 +64,10 @@ export function useWorkflowRowActions({
   removeRow,
   refresh,
 }: UseWorkflowRowActionsArgs): WorkflowRowActionsHost {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const [shareWorkflow, setShareWorkflow] = useState<WorkflowBrowseRow | null>(
     null,
@@ -224,12 +229,11 @@ export function useWorkflowRowActions({
 
         onCopyLink: () => {
           const url = `${window.location.origin}${workflowRunHref(row.id)}`;
-          void navigator.clipboard.writeText(url);
-          toast.success("Link copied");
+          void copyText(url, "Link copied");
         },
 
         onCopyForAgent: () => {
-          void navigator.clipboard.writeText(
+          void copyText(
             buildRecordReferenceFence({
               type: "workflow",
               id: row.id,

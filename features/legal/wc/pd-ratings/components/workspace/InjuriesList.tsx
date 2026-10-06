@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import * as React from "react";
 import { Plus, Activity, ClipboardCopy } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -37,6 +38,10 @@ export function InjuriesList({
   liveResult,
   className,
 }: InjuriesListProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [newlyAddedId, setNewlyAddedId] = React.useState<string | null>(null);
   const { data: catalog } = useImpairments();
@@ -87,7 +92,7 @@ export function InjuriesList({
     if (rows.length === 0) return;
     const tsv = rowsToTsv(rows);
     try {
-      await navigator.clipboard.writeText(tsv);
+      await copyText(tsv);
       toast.success(`Copied ${rows.length} injuries`, {
         description: "Tab-separated — paste into Excel or Sheets.",
       });

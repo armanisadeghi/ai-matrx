@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
 import {
@@ -34,8 +35,12 @@ export function VariablesPanel({
   onRemove,
   usageCounts,
 }: VariablesPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const handleCopy = (token: string) => {
-    navigator.clipboard.writeText(token);
+    copyText(token);
     toast.success(`Copied ${token}`);
   };
 

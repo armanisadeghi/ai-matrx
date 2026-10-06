@@ -5,6 +5,7 @@
 // The ONE action list for a research topic row — the kebab, the phone card
 // and the right-click menu all read this builder.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Archive, ArchiveRestore, ArrowRight, ExternalLink, Link2, Settings } from "lucide-react";
@@ -22,6 +23,10 @@ import { topicHref, type ResearchTopicListRow } from "./types";
 export function useTopicRowActions(
   list: EntityListController<ResearchTopicListRow>,
 ): EntityRowActionsResult<ResearchTopicListRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const [, startTransition] = useTransition();
   const [archiveTarget, setArchiveTarget] = useState<ResearchTopicListRow | null>(null);
@@ -66,7 +71,7 @@ export function useTopicRowActions(
             label: "Copy link",
             icon: Link2,
             onSelect: () => {
-              void navigator.clipboard.writeText(
+              void copyText(
                 `${window.location.origin}${topicHref(row.id)}`,
               );
               toast.success("Link copied");

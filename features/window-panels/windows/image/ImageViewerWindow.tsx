@@ -17,6 +17,7 @@
  *     "@/features/overlays/openers/imageViewer";
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useCallback, useEffect } from "react";
 import {
   ChevronLeft,
@@ -403,6 +404,10 @@ export function ImageViewerWindow({
   title,
   instanceId = "default",
 }: ImageViewerWindowProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [index, setIndex] = useState(initialIndex);
   const hasMany = images.length > 1;
 
@@ -480,8 +485,7 @@ export function ImageViewerWindow({
                   icon: LinkIcon,
                   disabled: !images[index],
                   onSelect: () => {
-                    void navigator.clipboard.writeText(images[index] ?? "");
-                    toast.success("Image URL copied");
+                    void copyText(images[index] ?? "", "Image URL copied");
                   },
                 },
                 {
@@ -491,7 +495,7 @@ export function ImageViewerWindow({
                   icon: Copy,
                   disabled: images.length < 2,
                   onSelect: () => {
-                    void navigator.clipboard.writeText(images.join("\n"));
+                    void copyText(images.join("\n"));
                     toast.success(`${images.length} image URLs copied`);
                   },
                 },

@@ -8,6 +8,7 @@
  * file — it's covered by `scraperWindow`.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -104,6 +105,10 @@ export function ScraperFloatingWorkspace({
   /** Seed workspace mode. Defaults to "url" when an `initialUrl` is given. */
   initialMode?: WorkspaceMode;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const router = useRouter();
   const keywordForm = useScraperKeywordSearchForm();
@@ -341,7 +346,7 @@ export function ScraperFloatingWorkspace({
     const text =
       selectedScraped.textContent || selectedScraped.plainTextContent || "";
     if (!text) return;
-    await navigator.clipboard.writeText(text);
+    await copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [selectedScraped]);

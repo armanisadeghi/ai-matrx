@@ -7,6 +7,7 @@
 // exports the same bytes; Word and PDF go through the platform's one document
 // exporter (`@ai-matrx/print/document`), never a second converter.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Copy, Database, Download, Loader2, Mail } from "lucide-react";
 import {
@@ -64,6 +65,10 @@ export function RecordExportMenu({
   /** Present for the host: "Email the recap…" opens the recap. */
   onSendRecap?: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [busy, setBusy] = useState<string | null>(null);
   const openSaveToTable = useOpenSaveToTable();
   const base = fileSafe(meeting.title);
@@ -74,7 +79,7 @@ export function RecordExportMenu({
 
   const copy = async (label: string, text: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       toast.success(`${label} copied.`);
     } catch {
       toast.error(

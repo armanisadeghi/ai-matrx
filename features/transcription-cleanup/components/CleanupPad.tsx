@@ -31,6 +31,7 @@
  * persist; manual edits take precedence over live mic preview while focused.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useCallback,
   useEffect,
@@ -722,6 +723,10 @@ export default function CleanupPad({
   sessionListSlot,
   externalRecording,
 }: CleanupPadProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const session = useCleanupSession({ sessionId, urlSync });
@@ -2052,8 +2057,7 @@ export default function CleanupPad({
     if (transcript) parts.push(transcript);
     if (response) parts.push(kindTextToMarkdown(response));
     try {
-      await navigator.clipboard.writeText(parts.join("\n\n---\n\n"));
-      toast.success("Both copied to clipboard");
+      await copyText(parts.join("\n\n---\n\n"), "Both copied to clipboard");
     } catch {
       toast.error("Copy failed — try selecting the text and copying manually");
     }

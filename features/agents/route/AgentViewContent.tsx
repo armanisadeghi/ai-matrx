@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useState, useEffect, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
@@ -274,6 +276,10 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
  * renders it after the stat strip and never knows what it is.
  */
 export function AgentViewContent({ agentId, recordSections }: { agentId: string; recordSections?: ReactNode }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const dispatch = useAppDispatch();
   const [mounted, setMounted] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("pretty");
@@ -415,7 +421,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
 
   const handleCopy = async (key: string, text: string, message: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(key);
       toast.success(message);
       setTimeout(() => setCopied(null), 1500);

@@ -1,4 +1,6 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React from "react";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useMonaco } from "@monaco-editor/react";
@@ -80,6 +82,10 @@ const SmallCodeEditor = ({
   fileExtension,
   onEditorMount,
 }: CodeEditorProps) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [ref, { width, height }] = useMeasure();
   const monaco = useMonaco();
   const [output, setOutput] = useState<string>("");
@@ -338,7 +344,7 @@ const SmallCodeEditor = ({
     if (editorRef.current) {
       const code = editorRef.current.getValue();
       try {
-        await navigator.clipboard.writeText(code);
+        await copyText(code);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {

@@ -13,6 +13,7 @@
  * • Footer with result count and view controls
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useState,
   useCallback,
@@ -93,6 +94,10 @@ const ORIENTATION_OPTIONS: { value: OrientationFilter; label: string }[] = [
 // ─── GalleryFloatingWorkspace ────────────────────────────────────────────────
 
 export function GalleryFloatingWorkspace() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const {
     photos,
@@ -240,8 +245,7 @@ export function GalleryFloatingWorkspace() {
     e.stopPropagation();
     const url = photo.urls?.regular || photo.links?.html;
     if (url) {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied");
+      copyText(url, "Link copied");
     }
   }, []);
 
@@ -253,7 +257,7 @@ export function GalleryFloatingWorkspace() {
       toast.error("No images loaded yet");
       return;
     }
-    navigator.clipboard.writeText(links.join("\n"));
+    copyText(links.join("\n"));
     toast.success(`Copied ${links.length} image links`);
   }, [photos]);
 

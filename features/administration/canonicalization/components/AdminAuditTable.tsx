@@ -14,6 +14,7 @@
  * KgInspectorColumnHeader) rather than reimplementing sort/filter logic.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useMemo, useRef } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Copy, Download, Search, X } from "lucide-react";
@@ -202,6 +203,10 @@ function HeaderCell<T>({
 }
 
 function Cell<T>({ col, row }: { col: AuditColumnDef<T>; row: T }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   if (col.render) return <>{col.render(row)}</>;
 
   const value = col.getValue(row);
@@ -222,8 +227,7 @@ function Cell<T>({ col, row }: { col: AuditColumnDef<T>; row: T }) {
           title="Copy"
           onClick={(e) => {
             e.stopPropagation();
-            void navigator.clipboard.writeText(display);
-            toast.success("Copied to clipboard");
+            void copyText(display, "Copied to clipboard");
           }}
         >
           <Copy className="h-3 w-3" />

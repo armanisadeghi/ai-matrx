@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import * as React from "react";
 import {
   AlertTriangle,
@@ -226,13 +227,17 @@ export function RatingBreakdownTable({
   isStale,
   className,
 }: RatingBreakdownTableProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const rows = React.useMemo(() => buildInjuryRows(result), [result]);
   const combined = result.result?.combined_rating;
   const finalRating = combined?.final_rating;
 
   const handleCopyAll = async () => {
     try {
-      await navigator.clipboard.writeText(buildExportText(result, rows));
+      await copyText(buildExportText(result, rows));
       toast.success("Breakdown copied", {
         description:
           "Paste anywhere — formulas and per-injury detail included.",

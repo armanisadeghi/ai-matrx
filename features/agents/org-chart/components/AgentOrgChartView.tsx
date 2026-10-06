@@ -16,6 +16,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -145,6 +146,10 @@ export function AgentOrgChartView({
   emptyTitle?: string;
   emptyBody?: string;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -655,8 +660,7 @@ export function AgentOrgChartView({
     const url = new URL(window.location.href);
     url.searchParams.set("focus", b);
     try {
-      await navigator.clipboard.writeText(url.toString());
-      toast.success("Link to this box copied.");
+      await copyText(url.toString(), "Link to this box copied.");
     } catch {
       toast.error("Couldn't copy — your browser blocked the clipboard.");
     }

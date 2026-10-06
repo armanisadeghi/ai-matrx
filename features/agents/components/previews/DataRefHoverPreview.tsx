@@ -7,6 +7,7 @@
  * readable form. No fetch, no Redux read.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   HoverCard,
@@ -66,6 +67,10 @@ interface DataRefPreviewContentProps {
 }
 
 export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const entityInfo = tryGetEntityInfoByUniqueTableName(dataRef.table);
   const recordId = "id" in dataRef ? dataRef.id : null;
@@ -73,7 +78,7 @@ export function DataRefPreviewContent({ dataRef }: DataRefPreviewContentProps) {
 
   const handleCopyJson = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(dataRef, null, 2));
+      await copyText(JSON.stringify(dataRef, null, 2));
       setCopied(true);
       toast.success("Reference copied as JSON");
       setTimeout(() => setCopied(false), 1500);

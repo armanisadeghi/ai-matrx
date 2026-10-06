@@ -12,6 +12,7 @@
 // same `crm.check_send_eligibility` authority. A second compose UI would be a
 // second send path, which is the one thing this feature may never grow.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   CircleCheck,
@@ -50,6 +51,10 @@ function link(
 export function useInboxRowActions(
   list: EntityListController<InboxRow>,
 ): EntityRowActionsResult<InboxRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // 🚨 N7 (VERIFY-U-P1-R5) — THE ONE DOOR, and it opens IN PLACE. This file
   // hand-built the party route `/crm/<id>` three times, so the one thing F-40 filed
   // — "the reviewer had to leave the queue to find out who it was about" —
@@ -159,7 +164,7 @@ export function useInboxRowActions(
                   );
                   return;
                 }
-                void navigator.clipboard.writeText(
+                void copyText(
                   `${window.location.origin}${path}`,
                 );
                 toast.success("Link copied");
@@ -171,7 +176,7 @@ export function useInboxRowActions(
               icon: ClipboardCopy,
               hidden: !row.party_id,
               onSelect: () => {
-                void navigator.clipboard.writeText(
+                void copyText(
                   buildRecordReferenceFence({
                     type: "party",
                     id: row.party_id as string,

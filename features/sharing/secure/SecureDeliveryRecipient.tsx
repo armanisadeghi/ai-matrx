@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 // features/sharing/secure/SecureDeliveryRecipient.tsx — THE PAGE A SECURE LINK OPENS.
 //
@@ -266,6 +268,10 @@ function Opened({ page, from }: { page: SecureDeliveryPage; from: string }) {
 }
 
 function FieldRow({ label, value, secret }: { label: string; value: string; secret: boolean }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [shown, setShown] = useState(!secret);
   const [copied, setCopied] = useState(false);
   const multiline = value.includes("\n") || value.length > 80;
@@ -289,7 +295,7 @@ function FieldRow({ label, value, secret }: { label: string; value: string; secr
             variant="quiet"
             aria-label={`Copy ${label}`}
             onClick={async () => {
-              await navigator.clipboard.writeText(value);
+              await copyText(value);
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}

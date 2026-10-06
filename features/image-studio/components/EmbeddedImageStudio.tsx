@@ -28,6 +28,7 @@
  *   - Filename-rename gate before mass variant creation.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useCallback,
   useEffect,
@@ -875,10 +876,14 @@ function ExternalUrlBanner({
   onClear: () => void;
   disabled?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(url);
+      await copyText(url);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -1220,11 +1225,15 @@ function VariantCard({
   pending: boolean;
   isPrimary: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     if (!publicUrl) return;
     try {
-      await navigator.clipboard.writeText(publicUrl);
+      await copyText(publicUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

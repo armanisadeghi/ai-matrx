@@ -9,6 +9,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useMemo, useState } from "react";
 import { AlertTriangle, ChevronLeft, ChevronRight, Copy, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +30,10 @@ interface Props {
 }
 
 export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const nativeResult = findResult(results, "text_extraction_native");
   const ocrResult = findResult(results, "text_extraction_ocr");
 
@@ -121,7 +127,7 @@ export function TextContent({ results, onJumpToPage, initialPage = 1 }: Props) {
         <Button
           icon={<Copy />}
           variant="outline"
-          onClick={() => void navigator.clipboard.writeText(display)}
+          onClick={() => void copyText(display)}
         > Copy page
         </Button>
         {onJumpToPage ? (

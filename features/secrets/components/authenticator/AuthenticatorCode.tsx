@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -21,6 +22,10 @@ export function AuthenticatorCode({
   period?: number;
   presentation?: "compact" | "large";
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [code, setCode] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -121,8 +126,7 @@ export function AuthenticatorCode({
         aria-label={code ? `Copy code ${code}` : "Getting authenticator code"}
         onClick={async () => {
           if (!code) return;
-          await navigator.clipboard.writeText(code);
-          toast.success("Code copied");
+          await copyText(code, "Code copied");
         }}
       >
         <span className="font-mono text-[2rem] font-medium leading-none tracking-[0.08em] text-primary tabular-nums transition-colors group-hover:text-primary/80">
@@ -149,8 +153,7 @@ export function AuthenticatorCode({
           aria-label="Copy authenticator code"
           onClick={async () => {
             if (!code) return;
-            await navigator.clipboard.writeText(code);
-            toast.success("Code copied");
+            await copyText(code, "Code copied");
           }}
         />
       </div>

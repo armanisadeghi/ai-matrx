@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 /**
  * SEO provider spend rollup panel (M-9 / WS-7 UI tranche) — the third
@@ -69,6 +70,10 @@ function ProviderRow({ row }: { row: SeoProviderSpendRow }) {
 }
 
 export function SeoSpendPanel() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { unit } = useCostDisplay();
   // THE PAGE'S ORGANIZATION FILTER (`?org_filter=`, default All organizations — never the active
   // organization, which only decides where new things are saved). All organizations sums the
@@ -207,8 +212,7 @@ export function SeoSpendPanel() {
         disabled: !clickedRejection,
         onSelect: () => {
           if (!clickedRejection) return;
-          void navigator.clipboard.writeText(clickedRejection.run_id);
-          toast.success("Run ID copied");
+          void copyText(clickedRejection.run_id, "Run ID copied");
         },
       },
     ],

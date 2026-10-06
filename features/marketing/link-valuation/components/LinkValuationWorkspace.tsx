@@ -8,6 +8,7 @@
  * which is the point of keeping the algorithm free of IO.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,10 @@ import { ResultPanel } from "./ResultPanel";
 import { TuningPanel } from "./TuningPanel";
 
 export function LinkValuationWorkspace() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [configs, setConfigs] = useState<LinkValuationConfig[]>([
     ...BUILT_IN_CONFIGS,
   ]);
@@ -154,8 +159,7 @@ export function LinkValuationWorkspace() {
   };
 
   const exportJson = async () => {
-    await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-    toast.success("Config JSON copied to the clipboard");
+    await copyText(JSON.stringify(config, null, 2), "Config JSON copied to the clipboard");
   };
 
   const importJson = async () => {

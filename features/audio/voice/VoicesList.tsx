@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { listVoices } from "@/lib/cartesia/cartesiaUtils";
 import { CardContent, CardHeader } from "@/components/ui/card";
@@ -20,6 +22,10 @@ import { matchesSearch } from "@ai-matrx/kit/search-scoring";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 const VoicesList: React.FC = () => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const { loading, error, getOneData, setOneData, setLoading, setError } =
     useAiAudio();
 
@@ -98,7 +104,7 @@ const VoicesList: React.FC = () => {
 
   const handleCopyId = useCallback((id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(id);
+    copyText(id);
     toast({
       title: "Voice ID Copied",
       description: "The voice ID has been copied to your clipboard.",

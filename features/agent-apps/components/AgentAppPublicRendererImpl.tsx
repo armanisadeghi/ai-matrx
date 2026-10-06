@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, {
   useState,
   useEffect,
@@ -210,6 +212,10 @@ function CustomComponentRenderer({
   TestComponent,
   surfaceName = null,
 }: AgentAppPublicRendererProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
@@ -584,7 +590,7 @@ function CustomComponentRenderer({
     if (!responseText) return;
     try {
       // A person's copy reads a kind as its markdown (kind-never-raw R1).
-      await navigator.clipboard.writeText(kindTextToMarkdown(responseText));
+      await copyText(kindTextToMarkdown(responseText));
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {

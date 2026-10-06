@@ -7,6 +7,8 @@
  * (NotebookPen) plus the notes route accent color (see NOTE_ACCENT).
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useEffect, useRef, useState } from "react";
 import { Check, Copy, Eye, FileText, Loader2, NotebookPen } from "lucide-react";
 import { toast } from "@ai-matrx/chat/host/notify";
@@ -272,11 +274,15 @@ export function NoteEditArea({
 
 /** Full note UUID + always-visible copy affordance. */
 export function IdCopyChip({ id }: { id: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(id);
+      await copyText(id);
       setCopied(true);
       toast.success("Note ID copied");
       setTimeout(() => setCopied(false), 1500);

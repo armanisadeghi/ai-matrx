@@ -9,6 +9,7 @@
 // front door (<RichDocument>) with the same header affordances the living
 // document pane carries: copy + download. Never a bespoke renderer.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Check, Copy, Download, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,11 +35,15 @@ export function DeliverablePane({
   filename,
   finalizedAt,
 }: DeliverablePaneProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const copyDoc = async () => {
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopied(true);
       setTimeout(() => setCopied(false), 900);
     } catch {

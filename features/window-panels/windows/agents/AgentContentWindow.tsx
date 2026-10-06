@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   MessageSquare,
@@ -224,6 +225,10 @@ function FooterControls({
   activeTab,
   activeTabs,
 }: FooterControlsProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isDirty = useAppSelector((state) => selectAgentIsDirty(state, agentId));
@@ -250,7 +255,7 @@ function FooterControls({
   };
 
   const handleCopyId = () => {
-    navigator.clipboard.writeText(agentId);
+    copyText(agentId);
   };
 
   return (
@@ -625,6 +630,10 @@ export default function AgentContentWindow({
   onClose,
   multiAgentMode = true,
 }: AgentContentWindowProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
 
@@ -872,8 +881,7 @@ export default function AgentContentWindow({
                           label: "Copy agent ID",
                           icon: Copy,
                           onSelect: () => {
-                            void navigator.clipboard.writeText(agentId);
-                            toast.success("Agent ID copied");
+                            void copyText(agentId, "Agent ID copied");
                           },
                         },
                         {
@@ -883,8 +891,7 @@ export default function AgentContentWindow({
                           icon: Copy,
                           disabled: !agentName,
                           onSelect: () => {
-                            void navigator.clipboard.writeText(agentName ?? "");
-                            toast.success("Agent name copied");
+                            void copyText(agentName ?? "", "Agent name copied");
                           },
                         },
                         { kind: "separator", id: "aae-sep" },

@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useState, useEffect } from "react";
 import {
   Code,
@@ -115,6 +117,10 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 export default function ToolOverlay({ entry, events, onOpenOverlay, toolGroupId }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
     const [copied, setCopied] = useState(false);
 
     if (entry.status !== "completed" || entry.result == null) {
@@ -125,7 +131,7 @@ export default function ToolOverlay({ entry, events, onOpenOverlay, toolGroupId 
     const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
 
     const handleCopy = async () => {
-        await navigator.clipboard.writeText(text);
+        await copyText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

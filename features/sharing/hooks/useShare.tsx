@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useState, type ReactNode } from "react";
 import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
 
@@ -33,6 +35,10 @@ export interface UseShareResult {
 
 /** Native share-sheet first, clipboard second, accessible manual copy last. */
 export function useShare(): UseShareResult {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null);
   const [fallbackTitle, setFallbackTitle] = useState("Copy link");
@@ -46,7 +52,7 @@ export function useShare(): UseShareResult {
       fallback?: { title?: string; description?: string },
     ): Promise<"copied" | "manual"> => {
       try {
-        await navigator.clipboard.writeText(text);
+        await copyTextKit(text);
         setCopied(true);
         window.setTimeout(() => setCopied(false), 2_000);
         return "copied";

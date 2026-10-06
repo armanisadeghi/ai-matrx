@@ -1,5 +1,7 @@
 'use client';
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { usePromptBuilder } from './PromptBuilderContext';
@@ -8,6 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyIcon, CheckIcon } from "lucide-react";
 
 export const PreviewTab: React.FC = () => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { finalPrompt, globalPrompt, enabledSections, allTabs, generateFinalPrompt } = usePromptBuilder();
   const [copied, setCopied] = useState(false);
   const [previewTab, setPreviewTab] = useState<'final' | 'structure'>('final');
@@ -20,7 +26,7 @@ export const PreviewTab: React.FC = () => {
   
   // Function to copy the prompt to clipboard
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(localFinalPrompt);
+    copyText(localFinalPrompt);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

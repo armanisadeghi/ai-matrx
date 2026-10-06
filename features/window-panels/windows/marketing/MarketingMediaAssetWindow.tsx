@@ -7,6 +7,7 @@
  * while WindowPanel's secondary panel owns metadata and actions.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useRef, useState, type RefObject } from "react";
 import {
   Check,
@@ -352,6 +353,10 @@ function AssetInspector({
   /** The window's context menu calls these SAME functions — see the type doc above. */
   actionsRef?: RefObject<AssetInspectorActions | null>;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const createAsset = useCreateBrandAsset();
   const [libraryKind, setLibraryKind] = useState<BrandAssetKind>("image");
   const [copied, setCopied] = useState(false);
@@ -359,7 +364,7 @@ function AssetInspector({
   const standardCheck = nearestStandardSlot(asset, standards);
 
   const copySrc = async () => {
-    await navigator.clipboard.writeText(asset.src);
+    await copyText(asset.src);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

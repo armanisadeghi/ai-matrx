@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect } from "react";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
@@ -108,6 +109,10 @@ export default function TaskDetailsPanel({
   writeSurfaceName,
   surfaceDraftRef,
 }: TaskDetailsPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const refresh = () => dispatch(invalidateAndRefetchFullContext());
   const createSubtask = async (parentTaskId: string, title: string) => {
@@ -151,7 +156,7 @@ export default function TaskDetailsPanel({
   const [showDescPreview, setShowDescPreview] = useState(false);
 
   const handleCopyId = async () => {
-    await navigator.clipboard.writeText(task.id);
+    await copyText(task.id);
     setIdCopied(true);
     setTimeout(() => setIdCopied(false), 2000);
   };

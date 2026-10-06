@@ -26,6 +26,7 @@
  * collapse a pane via keyboard.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useRouter } from "next/navigation";
 import {
   editSource,
@@ -2046,12 +2047,16 @@ function CopyIconButton({
   label: string;
   hoverReveal?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       try {
-        await navigator.clipboard.writeText(getText());
+        await copyText(getText());
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } catch {

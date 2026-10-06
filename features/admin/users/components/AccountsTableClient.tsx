@@ -8,6 +8,7 @@
 // flag) plus cross-links to this user's preferences / usage / admin level via
 // ?user=<id>. An admin surface hides nothing.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -156,6 +157,10 @@ function levelBadge(level: string | null) {
 }
 
 export function AccountsTableClient() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -263,7 +268,7 @@ export function AccountsTableClient() {
             ? {
                 label: "Copy link",
                 onClick: () =>
-                  void navigator.clipboard.writeText(json.action_link),
+                  void copyText(json.action_link),
               }
             : undefined,
         });

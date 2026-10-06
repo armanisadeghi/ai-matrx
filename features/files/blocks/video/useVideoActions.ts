@@ -24,6 +24,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
 import { shareableMediaUrl } from "@/lib/media/durability";
@@ -57,6 +58,10 @@ export function useVideoActions({
   currentSrc,
   fileId,
 }: UseVideoActionsArgs): VideoActionsApi {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const isMatrx = block.origin === "matrx";
 
   const [isDownloading, setIsDownloading] = useState(false);
@@ -98,8 +103,7 @@ export function useVideoActions({
       return;
     }
     try {
-      await navigator.clipboard.writeText(linkToCopy);
-      toast.success("Link copied");
+      await copyText(linkToCopy, "Link copied");
     } catch {
       toast.error("Could not copy link");
     }

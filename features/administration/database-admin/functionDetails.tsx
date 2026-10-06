@@ -1,3 +1,5 @@
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import React, { useState, type ComponentType, type ReactNode } from "react";
 import {
   Dialog,
@@ -89,6 +91,10 @@ const FunctionDetails = ({
   open,
   onOpenChange,
 }: FunctionDetailsProps) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [activeTab, setActiveTab] = useUrlState(
     "detailTab",
     enumUrlCodec(
@@ -109,7 +115,7 @@ const FunctionDetails = ({
   }, [func]);
 
   const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
+    copyText(text);
   };
 
   if (!func) return null;

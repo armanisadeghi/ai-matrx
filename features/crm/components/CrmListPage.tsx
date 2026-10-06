@@ -12,6 +12,7 @@
 //     query (search, filters, page, scope) deliberately does not
 //   * ONE "…" menu per row carrying every record action
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState } from "react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import Link from "next/link";
@@ -512,6 +513,10 @@ export function CrmListPage({
   presentation = "route",
   surfaceName = CRM_SURFACE_NAME,
 }: CrmListPageProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   // `/crm?view=<id>` opens that smart view — how an outreach list (or a
   // teammate's link) points back at the query behind it. Windows have no URL
@@ -835,7 +840,7 @@ export function CrmListPage({
               id: "copy-link",
               label: "Copy link",
               onSelect: () =>
-                navigator.clipboard.writeText(
+                copyText(
                   `${window.location.origin}${resolveEntityDoors("party", row.id).href ?? ""}`,
                 ),
               toast: {
@@ -846,7 +851,7 @@ export function CrmListPage({
             {
               id: "copy-id",
               label: "Copy ID",
-              onSelect: () => navigator.clipboard.writeText(row.id),
+              onSelect: () => copyText(row.id),
               toast: { loading: "Copying…", success: "ID copied" },
             },
           ],

@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { CopyTapButton } from "@ai-matrx/tap-target/buttons";
 
 /**
@@ -17,8 +19,12 @@ export function TemplateModeActions({
   templateCode?: string;
   supportsChat?: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const copyCode = () => {
-    if (templateCode) void navigator.clipboard.writeText(templateCode);
+    if (templateCode) void copyText(templateCode);
   };
 
   return (

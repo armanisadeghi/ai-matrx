@@ -15,6 +15,7 @@
  * describes the row, its readable text, and its entity.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Copy, Eye, EyeOff, Globe } from "lucide-react";
 
@@ -67,6 +68,10 @@ export interface CompetitorMenuOptions {
 }
 
 export function useCompetitorMenu(opts: CompetitorMenuOptions): CompetitorMenu {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [row, setRow] = useState<CompetitorRow | null>(null);
 
   const resolveContextOnOpen = (target: HTMLElement | null) => {
@@ -89,8 +94,7 @@ export function useCompetitorMenu(opts: CompetitorMenuOptions): CompetitorMenu {
       disabled: !row,
       onSelect: () => {
         if (!row) return;
-        void navigator.clipboard.writeText(row.display_domain);
-        toast.success("Domain copied");
+        void copyText(row.display_domain, "Domain copied");
       },
     },
     {

@@ -34,6 +34,8 @@
  * inert", and no type checker will tell you.**
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import { useState } from "react";
 import { flushSync } from "react-dom";
 import {
@@ -82,6 +84,10 @@ export function PdfRegionContextMenu({
   selectedAnnotationId,
   children,
 }: PdfRegionContextMenuProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   // The region under the last right-click, resolved at menu-open time.
   // State (not a ref) — extraSections are derived from it during render.
   const [activeRegion, setActiveRegion] = useState<AnnotationOut | null>(null);
@@ -103,7 +109,7 @@ export function PdfRegionContextMenu({
         toast({ title: "No text found in this region" });
         return;
       }
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       // Persist onto the annotation when it has nothing yet, so the text
       // shows up in the inspector and future menus without re-extracting.
       if (!region.extracted_text) {

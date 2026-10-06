@@ -10,6 +10,7 @@
 // Dense two-column layout on desktop (identity rail + activity main), single
 // stacked scroll on mobile. One scroll area per view.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -105,6 +106,10 @@ function RecordSkeleton() {
 }
 
 export function PartyRecordPage({ partyId, initialHeading }: Props) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const isMobile = useIsMobile();
   const { detail, isLoading, error, refresh } = usePartyDetail(partyId);
@@ -191,8 +196,7 @@ export function PartyRecordPage({ partyId, initialHeading }: Props) {
     }
     const url = `${window.location.origin}${href}`;
     try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Link copied");
+      await copyText(url, "Link copied");
     } catch {
       // A blocked clipboard never ends in a dead toast: the link is put in
       // front of the person, selected, so they can still copy it.

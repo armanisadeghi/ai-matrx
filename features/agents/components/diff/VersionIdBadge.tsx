@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import {
@@ -20,12 +22,16 @@ export function VersionIdBadge({
   className,
   showLabel = true,
 }: VersionIdBadgeProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(versionId);
+      await copyText(versionId);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

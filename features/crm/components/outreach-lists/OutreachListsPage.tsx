@@ -7,6 +7,7 @@
 // (an org runs dozens, not thousands), so the table runs in local mode —
 // sort/filter over the loaded set.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -58,6 +59,10 @@ function memberCount(row: OutreachListWithCount): number {
 }
 
 export function OutreachListsPage() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const searchParams = useSearchParams();
   const ctx = useCrmContext();
@@ -214,7 +219,7 @@ export function OutreachListsPage() {
               id: "copy-link",
               label: "Copy link",
               onSelect: () =>
-                navigator.clipboard.writeText(
+                copyText(
                   `${window.location.origin}/crm/outreach-lists/${row.id}`,
                 ),
               toast: { loading: "Copying…", success: "Link copied" },

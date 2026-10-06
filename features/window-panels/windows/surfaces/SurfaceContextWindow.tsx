@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState } from "react";
 import {
   Braces,
@@ -123,6 +124,10 @@ export default function SurfaceContextWindow({
   surfaceName,
   isEditable = false,
 }: SurfaceContextWindowProps) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const live = useLiveSurfaceScope({ enabled: isOpen, surfaceName });
   // A value's machine name is an engineer's handle — admin-only, like the
   // surface key in the Agents menu. Everyone else reads the label.
@@ -247,7 +252,7 @@ export default function SurfaceContextWindow({
     : "This Page";
 
   const copyText = async (text: string, key: string) => {
-    await navigator.clipboard.writeText(text);
+    await copyTextKit(text);
     setCopied(key);
     window.setTimeout(() => setCopied(null), 1200);
   };

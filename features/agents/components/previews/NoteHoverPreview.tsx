@@ -6,6 +6,7 @@
  * already in the notes slice once the user has interacted with them.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -35,6 +36,10 @@ interface NotePreviewContentProps {
 }
 
 export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const note = useAppSelector(selectNoteById(noteId));
   const [copied, setCopied] = useState(false);
 
@@ -42,7 +47,7 @@ export function NotePreviewContent({ noteId, onOpen }: NotePreviewContentProps) 
     const text = note?.content ?? "";
     if (!text) return;
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       toast.success("Note text copied");
       setTimeout(() => setCopied(false), 1500);

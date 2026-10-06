@@ -20,6 +20,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -66,6 +68,10 @@ function detectKind(fileName: string): DataKind {
 }
 
 export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const kind = useMemo(() => detectKind(fileName), [fileName]);
 
   // Same-origin blob via the Python download endpoint — no S3 CORS to fight.
@@ -285,7 +291,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
     const payload = jsonRaw ?? (data ? JSON.stringify(data, null, 2) : null);
     if (!payload) return;
     try {
-      await navigator.clipboard.writeText(payload);
+      await copyText(payload);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {

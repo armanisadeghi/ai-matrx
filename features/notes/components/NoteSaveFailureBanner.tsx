@@ -19,11 +19,11 @@
  * `reportNoteSaveFailure` (lib/local-drafts) by the time this renders.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { AlertOctagon, Copy, Download, RefreshCw, RotateCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { downloadFile, exportFilename } from "@/components/agent-copy/export";
 import {
   selectNoteContent,
@@ -52,6 +52,10 @@ interface NoteSaveFailureBannerProps {
 }
 
 export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const failureCount = useAppSelector(selectNoteSaveFailureCount(noteId));
   const errorMessage = useAppSelector(selectNoteSaveErrorMessage(noteId));
@@ -84,8 +88,7 @@ export function NoteSaveFailureBanner({ noteId }: NoteSaveFailureBannerProps) {
   };
 
   const handleCopy = async () => {
-    await writeClipboard(content);
-    toast.success("Note text copied — paste it somewhere safe.");
+    await copyText(content, "Note text copied — paste it somewhere safe.");
   };
 
   const handleDownload = () => {

@@ -1,4 +1,5 @@
 "use client";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import React, { useRef, useState, useEffect } from "react";
@@ -137,6 +138,10 @@ const CodeBlockBody: React.FC<CodeBlockProps> = ({
   extraMenuItems,
   meta,
 }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const fence = parseFenceMeta(meta);
   // Map language for respective editors (with additional safety checks)
   const viewLanguage = normalizeViewLanguage(rawLanguage);
@@ -282,7 +287,7 @@ const CodeBlockBody: React.FC<CodeBlockProps> = ({
       textToCopy = paddedLines.join("\n");
     }
 
-    await navigator.clipboard.writeText(textToCopy);
+    await copyText(textToCopy);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

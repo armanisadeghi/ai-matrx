@@ -11,6 +11,7 @@
 // count. A document with no H2 structure renders whole — never a parser
 // failure, just fewer folds.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Check, Copy, FileText, History } from "lucide-react";
 import {
@@ -136,6 +137,10 @@ function splitSections(markdown: string): {
 }
 
 export function DocumentPane() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const session = useAppSelector(selectRoomSession);
   const hydrated = useAppSelector(selectRoomHydrated);
   const revisions = useAppSelector(selectRevisions);
@@ -153,7 +158,7 @@ export function DocumentPane() {
     try {
       // The user's copy is clean markdown — no machine section markers.
       MARKER_RE.lastIndex = 0;
-      await navigator.clipboard.writeText(
+      await copyText(
         document.replace(MARKER_RE, "").replace(/\n{3,}/g, "\n\n").trim(),
       );
       setCopied(true);

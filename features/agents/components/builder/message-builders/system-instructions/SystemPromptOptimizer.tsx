@@ -10,6 +10,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useShortcutTrigger } from "@ai-matrx/chat/agents/hooks/useShortcutTrigger";
@@ -85,6 +86,10 @@ export function SystemPromptOptimizer({
   onAcceptFullPrompt,
   onAcceptAsCopy,
 }: SystemPromptOptimizerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const trigger = useShortcutTrigger();
   // NOTE: router / basePath removed — previously used by the deprecated "Save as Copy" path.
@@ -231,8 +236,7 @@ export function SystemPromptOptimizer({
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(streamingText);
-    toast.success("Copied to clipboard");
+    copyText(streamingText, "Copied to clipboard");
   };
 
   const hasOptimizedText = streamingText.trim().length > 0;

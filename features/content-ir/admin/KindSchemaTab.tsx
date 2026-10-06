@@ -7,6 +7,7 @@
  * live in the pydantic mirror, so only the emitted schema shows.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { Copy, Info } from "lucide-react";
 import { toast } from "@/lib/toast";
 import type { Json } from "@/types/database.types";
@@ -114,6 +115,10 @@ export default function KindSchemaTab({
   fieldData,
   emittedJsonSchema,
 }: KindSchemaTabProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const fieldRows = isStoredFieldArray(fieldData)
     ? flattenStoredFields(fieldData as unknown as StoredFieldElement[])
     : null;
@@ -123,7 +128,7 @@ export default function KindSchemaTab({
   async function copySchema() {
     if (!schemaText) return;
     try {
-      await navigator.clipboard.writeText(schemaText);
+      await copyText(schemaText);
       toast.success(`Copied ${kind} emitted_json_schema`);
     } catch (error) {
       toast.error(

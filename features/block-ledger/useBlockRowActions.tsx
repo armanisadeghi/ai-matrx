@@ -10,6 +10,7 @@
 // address itself for a web page, and for everything else the row detail says
 // exactly what the platform holds. Never a row you can see and cannot follow.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import {
   ClipboardCopy,
@@ -42,6 +43,10 @@ import {
 export function useBlockRowActions(
   list: EntityListController<AcquisitionBlock>,
 ): EntityRowActionsResult<AcquisitionBlock> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [detailed, setDetailed] = useState<AcquisitionBlock | null>(null);
 
   const menuFor = (row: AcquisitionBlock) => (): ItemMenuConfig => {
@@ -127,7 +132,7 @@ export function useBlockRowActions(
               label: "Copy this block",
               icon: ClipboardCopy,
               onSelect: () => {
-                void navigator.clipboard.writeText(
+                void copyText(
                   [
                     row.input_ref,
                     `Source: ${labelFor(SOURCE_TYPE_LABELS, row.source_type)}`,

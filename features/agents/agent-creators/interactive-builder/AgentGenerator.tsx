@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, {
   useState,
   useEffect,
@@ -193,6 +194,10 @@ const HOLDER_DRAFT_JSON_EXTRACTION = {
 } as const;
 
 export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const trigger = useShortcutTrigger();
   const { launchMandate } = useAgentLauncher();
@@ -665,7 +670,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
 
   const handleCopyGenerated = useCallback(() => {
     if (extractedValue) {
-      navigator.clipboard.writeText(JSON.stringify(extractedValue, null, 2));
+      copyText(JSON.stringify(extractedValue, null, 2));
       toast.success("Copied generated JSON to clipboard", {
         position: TOAST_POSITION,
       });
@@ -674,7 +679,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
 
   const handleCopyRaw = useCallback(() => {
     if (streamingText) {
-      navigator.clipboard.writeText(streamingText);
+      copyText(streamingText);
       toast.success("Copied raw response to clipboard", {
         position: TOAST_POSITION,
       });

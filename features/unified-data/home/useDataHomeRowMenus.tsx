@@ -20,6 +20,7 @@
 // Rows that are not tables (forms, dashboards, digests…) keep their open entries; they get their
 // own action lists when their kinds are added to the registry.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { ArchiveRestore, ExternalLink, Link2, Star, StarOff } from "lucide-react";
@@ -220,6 +221,10 @@ export function useDataHomeRowMenus({
   /** The archive failed or was undone: the row is listed again. */
   onUnhide: (rowId: string) => void;
 }): DataHomeRowMenus {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const client = useRecordsClient();
   const recordsUi = useRecordsUi();
@@ -273,8 +278,7 @@ export function useDataHomeRowMenus({
         },
         copyText: async (url) => {
           try {
-            await navigator.clipboard.writeText(url);
-            toast.success("Link copied");
+            await copyTextKit(url, "Link copied");
           } catch {
             toast.error("Couldn’t copy the link");
           }

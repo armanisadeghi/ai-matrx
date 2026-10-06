@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React from "react";
 import {
   Music,
@@ -32,6 +33,10 @@ interface PodcastShowPageProps {
 }
 
 export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const publishedEpisodes = episodes.filter((e) => e.is_published);
   const coverImage = show.image_url ?? null;
   const { share, copied, fallbackDialog } = useShare();
@@ -46,7 +51,7 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
 
   async function copyRss() {
     try {
-      await navigator.clipboard.writeText(feedUrl);
+      await copyText(feedUrl);
       setRssCopied(true);
       toast.success("RSS feed URL copied");
       window.setTimeout(() => setRssCopied(false), 2000);

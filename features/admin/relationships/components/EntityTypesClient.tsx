@@ -13,6 +13,7 @@
 // active registry tokens (server prop) against the generated vocabulary and
 // stays up until they match again.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Pencil, Plus, Power, TriangleAlert } from "lucide-react";
@@ -182,6 +183,10 @@ interface Props {
 }
 
 export function EntityTypesClient({ entityTypes }: Props) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [, startTransition] = useTransition();
@@ -639,8 +644,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
         disabled: !clickedRow,
         onSelect: () => {
           if (!clickedRow) return;
-          void navigator.clipboard.writeText(clickedRow.token);
-          toast.success("Token copied");
+          void copyText(clickedRow.token, "Token copied");
         },
       },
       {
@@ -682,8 +686,7 @@ export function EntityTypesClient({ entityTypes }: Props) {
             icon={<Copy />}
             variant="outline"
             onClick={() => {
-              void navigator.clipboard.writeText("pnpm gen:entity-types");
-              toast.success("Command copied");
+              void copyText("pnpm gen:entity-types", "Command copied");
             }}
           >
             Copy command

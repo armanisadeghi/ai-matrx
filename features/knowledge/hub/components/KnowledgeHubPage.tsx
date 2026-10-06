@@ -18,6 +18,7 @@
  * writes refuse).
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -217,7 +218,6 @@ import Link from "next/link";
 import { cn } from "@/utils/cn";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { buildAgentPayload } from "@/components/agent-copy/buildAgentPayload";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { saveTranscriptRowEdit } from "@/features/transcripts/browse/service";
 import { exportTranscriptRows, transcriptExportConfirm } from "@/features/transcripts/browse/bulkExport";
@@ -360,6 +360,10 @@ export function KnowledgeHubPage({
   defaultLayout?: Layout;
   cookieName: string;
 }) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const isMobile = useIsMobile();
   const { state, setState } = useHubUrlState();
@@ -872,7 +876,7 @@ export function KnowledgeHubPage({
 
   const copyText = async (text: string, done: string) => {
     try {
-      await writeClipboard(text);
+      await copyTextKit(text);
       toast.success(done);
     } catch (err) {
       toast.error(`Nothing was copied: ${err instanceof Error ? err.message : "the clipboard refused."}`);

@@ -9,6 +9,7 @@
 //   • Choose how the episode page renders (audio / cover / video)
 //   • Download the audio, copy the share link, native share
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
@@ -57,6 +58,10 @@ export function ResultActions({
   title,
   hasVideo,
 }: ResultActionsProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [published, setPublished] = useState(false);
   const [publishing, setPublishing] = useState(false);
   // Mirror the backend's persisted default: a freshly-generated episode with a
@@ -104,8 +109,7 @@ export function ResultActions({
   const copyLink = async () => {
     if (!absoluteUrl) return;
     try {
-      await navigator.clipboard.writeText(absoluteUrl);
-      toast.success("Link copied");
+      await copyText(absoluteUrl, "Link copied");
     } catch {
       toast.error("Couldn't copy");
     }

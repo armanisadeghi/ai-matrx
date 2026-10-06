@@ -12,6 +12,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import React, { useEffect, useMemo, useState } from "react";
@@ -129,6 +130,10 @@ function RecoveryInputSection({
 }
 
 export default function RecoveryWindowImpl() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const {
     items,
     readError,
@@ -204,7 +209,7 @@ export default function RecoveryWindowImpl() {
 
   const handleCopyJson = async () => {
     if (!payloadJson.trim()) return;
-    await navigator.clipboard.writeText(payloadJson);
+    await copyText(payloadJson);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -218,7 +223,7 @@ export default function RecoveryWindowImpl() {
           ? draftText
           : humanReadableText;
     if (!text.trim()) return;
-    await navigator.clipboard.writeText(text);
+    await copyText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

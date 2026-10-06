@@ -13,6 +13,7 @@
  * only `onNewPage` and `onOpenPage` (which own list scroll capture + routing).
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -39,6 +40,10 @@ export function HtmlPagesContextMenu({
   onOpenPage,
   children,
 }: HtmlPagesContextMenuProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
 
   const extraSections = createHtmlPagesListExtraSections({
@@ -51,8 +56,7 @@ export function HtmlPagesContextMenu({
     onCopySelectedUrl: async () => {
       if (!page) return;
       try {
-        await navigator.clipboard.writeText(page.url);
-        toast.success("URL copied");
+        await copyText(page.url, "URL copied");
       } catch {
         toast.error("Failed to copy URL");
       }

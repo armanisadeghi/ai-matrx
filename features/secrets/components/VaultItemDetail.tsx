@@ -9,6 +9,7 @@
  * Revealed plaintext is component-local via `useTransientSecret` with a
  * ~30s auto-clear — never Redux, storage, or query caches.
  */
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useRef, useState } from "react";
 import { RichContent } from "@/components/rich-content/RichContent";
 import {
@@ -1669,6 +1670,10 @@ function StoredRecoveryCodes({
   actions: VaultActions;
   editMode: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const secret = useFieldSecret(item, field);
   const [replacement, setReplacement] = useState("");
   const codes = (secret.value ?? "")
@@ -1678,8 +1683,7 @@ function StoredRecoveryCodes({
 
   const copyCode = async (code: string) => {
     try {
-      await navigator.clipboard.writeText(code);
-      toast.success("Recovery code copied.");
+      await copyText(code, "Recovery code copied.");
     } catch {
       toast.error("Your browser blocked clipboard access.");
     }

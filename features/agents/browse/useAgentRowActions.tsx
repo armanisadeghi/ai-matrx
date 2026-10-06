@@ -11,6 +11,7 @@
 // ItemMenu still carries the FULL action list — same handlers, never a second
 // code path.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
@@ -81,6 +82,10 @@ export function useAgentRowActions({
   removeRow,
   refresh,
 }: UseAgentRowActionsArgs): AgentRowActionsHost {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
@@ -292,12 +297,11 @@ export function useAgentRowActions({
 
         onCopyLink: () => {
           const url = `${window.location.origin}${agentHref(agent, "/run")}`;
-          void navigator.clipboard.writeText(url);
-          toast.success("Link copied");
+          void copyText(url, "Link copied");
         },
 
         onCopyForAgent: () => {
-          void navigator.clipboard.writeText(
+          void copyText(
             buildRecordReferenceFence({
               type: "agent",
               id: agent.id,

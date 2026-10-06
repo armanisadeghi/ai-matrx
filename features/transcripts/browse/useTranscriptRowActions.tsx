@@ -8,6 +8,7 @@
 // Studio / Cleanup / Scribe), with the same secondary destinations the old
 // hub cards carried.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
@@ -44,6 +45,10 @@ function link(
 export function useTranscriptRowActions(
   list: EntityListController<TranscriptListRow>,
 ): EntityRowActionsResult<TranscriptListRow> {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const router = useRouter();
 
   // THE ONE ARCHIVE for a transcript (restorable: the toast's Undo and Trash).
@@ -145,7 +150,7 @@ export function useTranscriptRowActions(
                 label: "Copy link",
                 icon: Link2,
                 onSelect: () => {
-                  void navigator.clipboard.writeText(
+                  void copyText(
                     `${window.location.origin}${href}`,
                   );
                   toast.success("Link copied");
@@ -158,7 +163,7 @@ export function useTranscriptRowActions(
                 // Unsorted recordings have no referenceable record type.
                 hidden: row.kind === "unsorted",
                 onSelect: () => {
-                  void navigator.clipboard.writeText(
+                  void copyText(
                     buildRecordReferenceFence({
                       type: referenceType,
                       id: row.id,

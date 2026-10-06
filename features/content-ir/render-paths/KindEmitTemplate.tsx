@@ -14,6 +14,7 @@
  * value missing the marker is repaired on the way out rather than shown wrong.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -28,6 +29,10 @@ export default function KindEmitTemplate({
   kind,
   value,
 }: KindEmitTemplateProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState<"json" | "fence" | null>(null);
 
   async function copy(mode: "json" | "fence") {
@@ -36,7 +41,7 @@ export default function KindEmitTemplate({
         ? emitPayloadFence(kind, value)
         : emitPayloadJson(kind, value);
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(mode);
       toast.success(
         mode === "fence"

@@ -18,6 +18,8 @@
  * state in both cases.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useMeasure } from "@ai-matrx/kit/hooks";
 import type { CodeFile } from "@/features/code-editor/multi-file-core/types";
@@ -69,6 +71,10 @@ export function useCodeEditorWindowState({
   initialActiveFile,
   initialIsEditing = false,
 }: UseCodeEditorWindowStateProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const isPersisted = Array.isArray(fileIds) && fileIds.length > 0;
 
@@ -211,7 +217,7 @@ export function useCodeEditorWindowState({
   // ── Clipboard ─────────────────────────────────────────────────────────────
   const handleCopy = useCallback(async () => {
     if (!currentFile) return;
-    await navigator.clipboard.writeText(currentFile.content);
+    await copyText(currentFile.content);
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   }, [currentFile]);

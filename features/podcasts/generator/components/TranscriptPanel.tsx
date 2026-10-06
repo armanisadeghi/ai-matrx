@@ -5,6 +5,7 @@
 // `script` is parsed by its delimiters (JSON header / duration / dialogue tags
 // stripped) so only the real speaker turns show. RTL-aware for Persian.
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { toast } from "@/lib/toast";
 import { FileText, ChevronDown, Copy, Check, Clock } from "lucide-react";
@@ -22,6 +23,10 @@ interface TranscriptPanelProps {
 }
 
 export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -35,7 +40,7 @@ export function TranscriptPanel({ script, rtl }: TranscriptPanelProps) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         hasDialogue ? parsed.plain : script,
       );
       setCopied(true);

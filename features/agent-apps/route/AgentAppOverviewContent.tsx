@@ -17,6 +17,7 @@
  *     summary). The hero already shows the obvious identity fields.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { readOf } from "@/components/read-state/ReadGate";
 import {
   UntrustedCount,
@@ -138,6 +139,10 @@ function LabeledPill({ label, children, icon: Icon, accent }: LabeledPillProps) 
 }
 
 export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { format: costText } = useCostDisplay();
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
@@ -160,7 +165,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const handleCopy = async (key: string, text: string, label: string) => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(key);
       toast.success(label);
       setTimeout(() => setCopied(null), 1500);

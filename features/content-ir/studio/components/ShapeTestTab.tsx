@@ -10,6 +10,7 @@
  * loads this whole tab via `next/dynamic({ ssr: false })`.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useState } from "react";
 import Link from "next/link";
 import {
@@ -94,6 +95,10 @@ export default function ShapeTestTab({
   titleKey,
   emittedJsonSchema,
 }: ShapeTestTabProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [instance, setInstance] = useState<unknown>(null);
   const [renderKey, setRenderKey] = useState(0);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
@@ -212,7 +217,7 @@ export default function ShapeTestTab({
   async function copyInstance(): Promise<void> {
     if (instance === null) return;
     try {
-      await navigator.clipboard.writeText(JSON.stringify(instance, null, 2));
+      await copyText(JSON.stringify(instance, null, 2));
       toast.success(`Copied ${kind} instance`);
     } catch (error) {
       toast.error(

@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Copy, Check } from "lucide-react";
@@ -12,13 +14,17 @@ type Props = {
 };
 
 export function CxJsonViewer({ data, label, defaultCollapsed = true, maxHeight = "300px" }: Props) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [copied, setCopied] = useState(false);
 
   const jsonStr = JSON.stringify(data, null, 2);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(jsonStr);
+    copyText(jsonStr);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

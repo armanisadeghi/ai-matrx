@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState, useCallback } from "react";
 import { Button } from "@ai-matrx/design-system";
 import { Copy, Check } from "lucide-react";
@@ -13,12 +15,16 @@ export function ScraperHookErrorDetails({
 }: {
   diagnostics: unknown;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const text = formatScraperDiagnosticsJson(diagnostics);
 
   const handleCopy = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(text);
+      await copyText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

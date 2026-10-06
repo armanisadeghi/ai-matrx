@@ -36,6 +36,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState } from "react";
 import { Coins, Info, Loader2, Save, Sprout } from "lucide-react";
 
@@ -253,6 +254,10 @@ function EarningCodesSection({
   organizationId: string | null;
   onSaved: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   /** Right-clicked row — STATE (not a ref) so the menu reads the row that
    *  was actually clicked. */
   const [clickedCode, setClickedCode] = useState<HrEarningCode | null>(null);
@@ -284,8 +289,7 @@ function EarningCodesSection({
         disabled: !clickedCode,
         onSelect: () => {
           if (!clickedCode) return;
-          void navigator.clipboard.writeText(clickedCode.code);
-          toast.success("Code copied");
+          void copyText(clickedCode.code, "Code copied");
         },
       },
     ],
@@ -648,6 +652,10 @@ function DeductionCodesSection({
   organizationId: string | null;
   onSaved: () => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   /** Right-clicked row — STATE (not a ref) so the menu reads the row that
    *  was actually clicked. */
   const [clickedCode, setClickedCode] = useState<HrDeductionCode | null>(null);
@@ -679,8 +687,7 @@ function DeductionCodesSection({
         disabled: !clickedCode,
         onSelect: () => {
           if (!clickedCode) return;
-          void navigator.clipboard.writeText(clickedCode.code);
-          toast.success("Code copied");
+          void copyText(clickedCode.code, "Code copied");
         },
       },
     ],

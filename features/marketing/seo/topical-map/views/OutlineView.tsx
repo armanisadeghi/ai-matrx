@@ -22,6 +22,8 @@
  * `intent_colors`. None is a constant here.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useRef, useState } from "react";
 import { Files, PanelRight } from "lucide-react";
 
@@ -118,6 +120,10 @@ interface OutlineBodyProps extends MapViewProps {
 }
 
 function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const links = useMapLinks();
@@ -284,7 +290,7 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
 
   async function copySlug(slug: string): Promise<void> {
     try {
-      await navigator.clipboard.writeText(slug);
+      await copyText(slug);
     } catch {
       setClipboardFallback(slug);
     }

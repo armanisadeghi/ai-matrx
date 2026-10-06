@@ -12,6 +12,7 @@
  * tab (h-full) — the page shell owns the viewport.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import {
@@ -121,6 +122,10 @@ function fieldKindRefs(field: FieldSchema): string[] {
 }
 
 export default function KindRegistryAdminClient() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [catalog, setCatalog] = useState<KindCatalogEntry[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
@@ -299,7 +304,7 @@ export default function KindRegistryAdminClient() {
   async function copyExport() {
     if (!exportPayload || !selected) return;
     try {
-      await navigator.clipboard.writeText(
+      await copyText(
         JSON.stringify(exportPayload, null, 2),
       );
       toast.success(`Copied ${selected.kind} JSON Schema`);

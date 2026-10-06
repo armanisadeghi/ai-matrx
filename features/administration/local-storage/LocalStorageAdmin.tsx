@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState, useEffect, useCallback } from "react";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
@@ -900,6 +902,10 @@ const StorageManager = ({
 };
 
 const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [rawData, setRawData] = useState<object>({});
   const [feedback, setFeedback] = useState<StorageVerification | null>(null);
   const [storageSize, setStorageSize] = useState<{
@@ -930,7 +936,7 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
 
   const handleCopyToClipboard = async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(rawData, null, 2));
+      await copyText(JSON.stringify(rawData, null, 2));
       setFeedback({
         success: true,
         message: "Copied to clipboard",

@@ -25,6 +25,7 @@
  * table's own density from `tables.density.mode` through `MatrxDataTableHost`.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useRef, useState } from "react";
 import { Columns3, RotateCcw } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -139,6 +140,10 @@ export interface TopicTableProps extends MapViewProps {
 }
 
 export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const links = useMapLinks();
   const openTopicPanel = useOpenTopicPanel();
@@ -351,7 +356,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
 
   const copySlug = async (slug: string) => {
     try {
-      await navigator.clipboard.writeText(slug);
+      await copyText(slug);
       toast.success(`Copied "${slug}"`);
     } catch {
       toast.error(`Could not reach the clipboard — the slug is ${slug}`);

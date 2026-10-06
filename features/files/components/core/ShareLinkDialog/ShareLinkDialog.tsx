@@ -12,6 +12,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useCallback, useState } from "react";
 import { toast } from "@/lib/toast";
 import { Check, Copy, ExternalLink, Link, Loader2, Trash2 } from "lucide-react";
@@ -102,6 +103,10 @@ export function ShareLinkDialogBody({
   resourceType,
   appOrigin,
 }: ShareLinkDialogBodyProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const links = useAppSelector((s) =>
     selectActiveShareLinksForResource(s, resourceId),
@@ -170,7 +175,7 @@ export function ShareLinkDialogBody({
     async (key: string, url: string) => {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         try {
-          await navigator.clipboard.writeText(url);
+          await copyText(url);
           setCopiedKey(key);
           setTimeout(
             () => setCopiedKey((k) => (k === key ? null : k)),

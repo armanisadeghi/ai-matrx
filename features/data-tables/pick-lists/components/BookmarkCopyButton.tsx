@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState } from "react";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,13 +22,17 @@ export function BookmarkCopyButton({
   size = "sm",
   className,
 }: BookmarkCopyButtonProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     try {
-      await navigator.clipboard.writeText(buildBookmarkReferenceFence(bookmark));
+      await copyText(buildBookmarkReferenceFence(bookmark));
       setCopied(true);
       toast.success("Bookmark copied to clipboard", {
         description: label,

@@ -32,6 +32,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 import {
   AlertCircle,
@@ -154,6 +156,10 @@ export function OfficePreview({
   fileName,
   className,
 }: OfficePreviewProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const deck = isDeckFileName(fileName);
 
   // State is keyed by fileId and reset DURING RENDER when the file changes
@@ -325,7 +331,7 @@ export function OfficePreview({
   const onCopy = useCallback(async () => {
     if (!extraction?.markdown) return;
     try {
-      await navigator.clipboard.writeText(extraction.markdown);
+      await copyText(extraction.markdown);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

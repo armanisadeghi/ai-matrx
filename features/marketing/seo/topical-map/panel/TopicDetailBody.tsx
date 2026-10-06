@@ -34,6 +34,8 @@
  * `user_input`.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useRef, useState } from "react";
 
 import { ClipboardFallbackDialog } from "@/components/dialogs/clipboard-fallback/ClipboardFallbackDialog";
@@ -149,6 +151,10 @@ function TopicDetailBodyInner({
   onClose,
 }: Required<Pick<TopicDetailBodyProps, "mapId" | "slug" | "siteId" | "host" | "readOnly">> &
   Pick<TopicDetailBodyProps, "onClose">) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const dispatch = useAppDispatch();
   const links = useMapLinks();
   const openPanel = useOpenTopicPanel();
@@ -213,7 +219,7 @@ function TopicDetailBodyInner({
 
   async function copySlug(): Promise<void> {
     try {
-      await navigator.clipboard.writeText(slug);
+      await copyText(slug);
     } catch {
       setClipboardFallback(slug);
     }

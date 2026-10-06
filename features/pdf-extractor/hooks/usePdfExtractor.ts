@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -311,6 +312,10 @@ export interface UsePdfExtractorOptions {
 }
 
 export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
+  const { copyText: copyTextKit } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const { loadHistory: shouldLoadHistory = true } = options;
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -1387,7 +1392,7 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
       const tab = tabs.find((t) => t.id === targetId);
       const text = tab?.document?.content;
       if (text) {
-        await navigator.clipboard.writeText(text);
+        await copyTextKit(text);
       }
     },
     [tabs, activeTabId],

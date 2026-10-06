@@ -8,6 +8,8 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -62,6 +64,10 @@ function TableCard({
   table: TablePayload;
   onJumpToPage?: (page: number) => void;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const grid = useGridFromCells(table.cells, table.row_count, table.col_count);
 
   return (
@@ -87,7 +93,7 @@ function TableCard({
               icon={<Copy />}
               variant="outline"
               onClick={() =>
-                void navigator.clipboard.writeText(table.markdown ?? "")
+                void copyText(table.markdown ?? "")
               }
             > Copy md
             </Button>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useState } from "react";
 import { Binary, Check, Clipboard, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 export function GoogleEmbeddingLab() {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [model, setModel] =
     useState<GoogleEmbeddingRequest["model"]>("gemini-embedding-2");
   const [dimensions, setDimensions] = useState(1536);
@@ -206,7 +212,7 @@ export function GoogleEmbeddingLab() {
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    void navigator.clipboard.writeText(
+                    void copyText(
                       JSON.stringify(result.vectors),
                     );
                     setCopied(true);

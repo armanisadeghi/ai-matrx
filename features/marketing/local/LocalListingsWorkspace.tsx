@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -1351,6 +1352,10 @@ function ObservedVerdictLine({
 }
 
 function JsonLdCard({ location }: { location: BusinessLocation }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   const script = useMemo(
     () => localBusinessJsonLdScript(buildLocalBusinessJsonLd(location)),
@@ -1359,7 +1364,7 @@ function JsonLdCard({ location }: { location: BusinessLocation }) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(script);
+      await copyText(script);
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

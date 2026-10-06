@@ -1,5 +1,6 @@
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { extractErrorMessage } from "@/utils/errors";
@@ -633,11 +634,15 @@ function CapNode({
 // ─── Copy button ──────────────────────────────────────────────────────────
 
 function CopyBtn({ text }: { text: string }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [copied, setCopied] = useState(false);
   return (
     <button
       onClick={() => {
-        navigator.clipboard.writeText(text);
+        copyText(text);
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}

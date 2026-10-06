@@ -10,6 +10,7 @@
 
 "use client";
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 import React, { useState, useEffect, useMemo } from "react";
 // TODO(prompt-to-agent-sweep): re-enable useAppDispatch when handleOptimize is re-wired
 // TODO(prompt-to-agent-sweep): re-add supabase import when re-wiring to agent.definition
@@ -91,6 +92,10 @@ export function FullPromptOptimizer({
   onAccept,
   onAcceptAsCopy,
 }: FullPromptOptimizerProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   // TODO(prompt-to-agent-sweep): re-enable when handleOptimize is re-wired
   // const dispatch = useAppDispatch();
   const [additionalGuidance, setAdditionalGuidance] = useState("");
@@ -190,20 +195,17 @@ export function FullPromptOptimizer({
   };
 
   const handleCopyOriginal = () => {
-    navigator.clipboard.writeText(currentPromptJson);
-    toast.success("Copied original to clipboard");
+    copyText(currentPromptJson, "Copied original to clipboard");
   };
 
   const handleCopyOptimized = () => {
     if (extractedJson) {
-      navigator.clipboard.writeText(JSON.stringify(extractedJson, null, 2));
-      toast.success("Copied extracted JSON to clipboard");
+      copyText(JSON.stringify(extractedJson, null, 2), "Copied extracted JSON to clipboard");
     }
   };
 
   const handleCopyRawResponse = () => {
-    navigator.clipboard.writeText(streamingText);
-    toast.success("Copied raw response to clipboard");
+    copyText(streamingText, "Copied raw response to clipboard");
   };
 
   const hasOptimizedObject = extractedJson !== null;

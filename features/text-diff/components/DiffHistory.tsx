@@ -6,6 +6,8 @@
  * Timeline view of note version history with restore functionality
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast as copyToast } from "@/lib/toast";
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -50,6 +52,10 @@ export function DiffHistory({
   className,
   showHeader = true,
 }: DiffHistoryProps) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? copyToast.error(message) : copyToast.success(message),
+  });
   const dispatch = useAppDispatch();
   const toast = useToastManager("diff-history");
 
@@ -77,7 +83,7 @@ export function DiffHistory({
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-    await navigator.clipboard.writeText(content);
+    await copyText(content);
     setCopiedIds((prev) => new Set(prev).add(id));
     setTimeout(() => {
       setCopiedIds((prev) => {

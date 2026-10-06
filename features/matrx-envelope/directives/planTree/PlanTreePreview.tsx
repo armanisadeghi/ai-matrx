@@ -14,6 +14,8 @@
  *  - go silent through a multi-second write.
  */
 
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 import { useMemo, useState } from "react";
 import {
   ChevronDown,
@@ -157,6 +159,10 @@ export function PlanTreePreview({
   directive: DecodedDirective;
   applied: boolean;
 }) {
+  const { copyText } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [expandAll, setExpandAll] = useState(false);
   const [showJson, setShowJson] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -169,7 +175,7 @@ export function PlanTreePreview({
   );
 
   async function copyJson() {
-    await navigator.clipboard.writeText(json);
+    await copyText(json);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
