@@ -1,13 +1,12 @@
 // features/make/__tests__/install-reads-the-agent-an-already-answer-carries.test.ts
 //
 // THE USE CASE: a person opens a template they already installed (the gallery's "Use template", Spaces'
-// "Add the sample") and the store answers `already`. That answer's `agent` is the template plan's agent
-// AS DECLARED (custom.template_install: `'agent', v_t.plan -> 'agent'`): camelCase `platformAgent`, no
-// `platform_agent`, no `copied`, bindings with `tableToken` but no `table_id`. The fresh-install answer
-// spells it `platform_agent` / `copied` / `table_id`. The host must make the assistant from either.
+// "Add the sample") and the store answers `already`. Every template door now answers its agent in the
+// ONE shape a fresh install uses (`platform_agent`, `copied`, bindings with `table_id` from the install's
+// id map — store guard compares the key sets). The host makes the assistant from that answer.
 //
 // BREAKS THIS CATCHES: "The sample's assistant was not made: Cannot read properties of undefined
-// (reading 'name')" · a copy bound to no table because the answer had no table_id.
+// (reading 'name')" · a copy bound to no table.
 
 jest.mock("@/features/templates/agentCopyHost", () => ({ templateAgentCopier: jest.fn(), templateAgentArchiver: jest.fn() }));
 
@@ -20,11 +19,12 @@ const ALREADY: InstallAnswer = {
   already: true,
   made: [{ kind: "table", id: "tbl-1", ref: "tables.clients", title: "Clients", table_id: null }],
   host: { ids: { "tables.clients": "tbl-1" } },
-  // The raw plan agent, exactly as the door spells it for an `already` answer.
+  // The one agent shape every template door answers with.
   agent: {
-    platformAgent: { id: "4cd676c6-f55d-4426-b7eb-a9d0273566ec", name: "Answers From Your Tables" },
     name: "Ask your agency",
-    bindings: [{ variable: "clients", tableToken: "clients", describes: "your clients" }],
+    copied: null,
+    platform_agent: { id: "4cd676c6-f55d-4426-b7eb-a9d0273566ec", name: "Answers From Your Tables" },
+    bindings: [{ variable: "clients", tableToken: "clients", table_id: "tbl-1", describes: "your clients" }],
   },
 } as unknown as InstallAnswer;
 
@@ -36,7 +36,7 @@ function ports() {
 }
 
 describe("an `already` answer's agent is copied", () => {
-  it("copies the assistant from the raw plan agent, bound to the table the install made", async () => {
+  it("copies the assistant from the one answer shape, bound to the table the install made", async () => {
     expect(agentStillToCopy(ALREADY)).toBe(true);
     const p = ports();
     const r = await addInstalledAgent(ALREADY, "org-1", p);

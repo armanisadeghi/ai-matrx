@@ -68,13 +68,12 @@ function hostOf(answer: InstallAnswer) {
 }
 
 /**
- * The platform agent an answer's `agent` names. A fresh install spells it `platform_agent`; the
- * `already` answer (custom.template_install: `'agent', v_t.plan -> 'agent'`) carries the plan's agent
- * as declared, spelled `platformAgent`. Both are read; neither present is null (the caller says so).
+ * The platform agent an answer's `agent` names. Every template door answers its agent in ONE shape
+ * (`{name, copied, platform_agent, bindings:[{variable, tableToken, table_id}]}`, the store's one
+ * helper since 2026-10-06). A template may name none: null, and the caller says so.
  */
 function platformAgentOf(agent: object): { id: string; name: string } | null {
-  const a = agent as { platform_agent?: { id: string; name: string } | null; platformAgent?: { id: string; name: string } | null };
-  return a.platform_agent ?? a.platformAgent ?? null;
+  return (agent as { platform_agent?: { id: string; name: string } | null }).platform_agent ?? null;
 }
 
 /** True when the install answered an agent the host still has to copy. */
@@ -212,7 +211,7 @@ export async function addInstalledAgent(
           return {
             variable: String(b["variable"] ?? ""),
             tableToken: String(b["tableToken"] ?? ""),
-            tableId: String(b["table_id"] ?? resolver.tableId(String(b["tableToken"] ?? "")) ?? ""),
+            tableId: String(b["table_id"] ?? ""),
             describes: String(b["describes"] ?? ""),
             ...(full ? { binding: installedBinding(full, resolver) } : {}),
           };
