@@ -9,6 +9,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { dirname, join, relative } from "node:path";
 import { tmpdir } from "node:os";
 import * as ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const DEMOS = join(ROOT, "app", "(dev)", "demos");
@@ -78,7 +79,7 @@ if (process.argv.includes("--self-test")) {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const missing = missingRegistrations(DEMOS);

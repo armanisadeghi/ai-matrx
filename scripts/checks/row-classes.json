@@ -5,7 +5,7 @@
     "repo-only": "reads the repository and nothing else"
   },
   "counts": {
-    "repo-only": 143,
+    "repo-only": 149,
     "live-db": 63
   },
   "rows": {
@@ -140,6 +140,20 @@
       "class": "repo-only",
       "cmd": "pnpm test:vercel-ignore",
       "reason": "no database access in 1 file(s) reached",
+      "evidence": []
+    },
+    "demos-chat-ui-routes-register-required-host-slots": {
+      "label": "Demos chat UI routes register required host slots",
+      "class": "repo-only",
+      "cmd": "pnpm check:demos-chat-registration",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "the-demos-chat-registration-guard-can-still-fail": {
+      "label": "The demos chat registration guard can still fail",
+      "class": "repo-only",
+      "cmd": "pnpm check:demos-chat-registration:self-test",
+      "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
     "every-typescript-file-parses": {
@@ -680,6 +694,20 @@
       "reason": "no database access in 2 file(s) reached",
       "evidence": []
     },
+    "ssr-viewport-branch": {
+      "label": "SSR viewport branch",
+      "class": "repo-only",
+      "cmd": "pnpm check:ssr-viewport-branch:strict",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
+    "ssr-viewport-branch-self-test": {
+      "label": "SSR viewport branch — self-test",
+      "class": "repo-only",
+      "cmd": "pnpm check:ssr-viewport-branch:self-test",
+      "reason": "no database access in 2 file(s) reached",
+      "evidence": []
+    },
     "ui-drift": {
       "label": "UI drift",
       "class": "repo-only",
@@ -698,7 +726,7 @@
       "label": "Bare secret fill — self-test",
       "class": "repo-only",
       "cmd": "pnpm check:fill-secret:self-test",
-      "reason": "no database access in 3 file(s) reached",
+      "reason": "no database access in 6 file(s) reached",
       "evidence": []
     },
     "one-control": {
@@ -1778,7 +1806,7 @@
       "label": "Content IR / kinds test suite",
       "class": "repo-only",
       "cmd": "pnpm test:content-ir",
-      "reason": "no database access in 214 file(s) reached",
+      "reason": "no database access in 216 file(s) reached",
       "evidence": []
     },
     "whole-jest-suite-every-suite-not-ci-s-four-scopes": {
@@ -2266,20 +2294,6 @@
           "signal": "live database host"
         }
       ]
-    },
-    "ssr-viewport-branch": {
-      "label": "SSR viewport branch",
-      "class": "repo-only",
-      "cmd": "pnpm check:ssr-viewport-branch:strict",
-      "reason": "no database access in 2 file(s) reached",
-      "evidence": []
-    },
-    "ssr-viewport-branch-self-test": {
-      "label": "SSR viewport branch — self-test",
-      "class": "repo-only",
-      "cmd": "pnpm check:ssr-viewport-branch:self-test",
-      "reason": "no database access in 2 file(s) reached",
-      "evidence": []
     }
   }
 }
