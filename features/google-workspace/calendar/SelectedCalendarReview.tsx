@@ -16,6 +16,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { useGoogleCapabilities, useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { useOpenConnectorConsentDialog } from "@/features/overlays/openers/connectorConsentDialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { BackendApiError } from "@/lib/api/errors";
 import type { GoogleConnectionHealth } from "@/features/marketing/google/types";
@@ -31,7 +32,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { GOOGLE_SCOPE } from "@/lib/googleScopes";
+import { GOOGLE_SCOPE, hasGoogleGrantedScope } from "@/lib/googleScopes";
 import { CalendarCreateReview } from "./CalendarCreateReview";
 import { CalendarEventChangeReview } from "./CalendarEventChangeReview";
 
@@ -208,6 +209,7 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
   const capabilities = useGoogleCapabilities();
   const actorId = useAppSelector(selectUserId);
   const openGoogleConnect = useOpenGoogleConnectWindow();
+  const openConsent = useOpenConnectorConsentDialog();
   const [connectionId, setConnectionId] = useState("");
   const [calendars, setCalendars] = useState<SelectedCalendar[]>([]);
   const [calendarId, setCalendarId] = useState("");
@@ -230,6 +232,9 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
   const selectedConnection =
     connections.find((connection) => connection.id === connectionId) ?? null;
   const selectedCalendar = calendars.find((calendar) => calendar.id === calendarId) ?? null;
+  const needsCalendarAccess = selectedConnection !== null &&
+    (!hasGoogleGrantedScope(selectedConnection.scopes, GOOGLE_SCOPE.calendarListReadonly) ||
+      !hasGoogleGrantedScope(selectedConnection.scopes, GOOGLE_SCOPE.calendarEventsReadonly));
   const writeCapability = capabilities.data?.find((capability) => capability.key === "calendar_write");
   const writeConnection = selectedConnection?.owner_type === "user" &&
     selectedConnection.owner_user_id === actorId && selectedConnection.health === "connected" &&
@@ -370,6 +375,22 @@ export function SelectedCalendarReviewContent({ organizationId }: { organization
             {googleConnectionLabel(selectedConnection)}
           </span>
         </p>
+      ) : null}
+      {selectedConnection && needsCalendarAccess ? (
+        <div className="rounded-md border border-border p-3 text-sm">
+          <p>This account has not connected selected Calendar access.</p>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2"
+            onClick={() => openConsent({
+              initialConnectionId: selectedConnection.id,
+              initialProductKeys: ["calendar_shared"],
+            })}
+          >
+            Connect selected calendars
+          </Button>
+        </div>
       ) : null}
       <Button
         icon={<RefreshCw

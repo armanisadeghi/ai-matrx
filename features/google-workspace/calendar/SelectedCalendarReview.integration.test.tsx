@@ -8,6 +8,8 @@ import { SelectedCalendarReviewContent } from "./SelectedCalendarReview";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+const mockScopes = { value: [GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsWrite] as string[] };
+const mockOpenConsent = jest.fn();
 const mockChangeProps = jest.fn();
 const mockCreateProps = jest.fn();
 
@@ -21,12 +23,13 @@ jest.mock("@/features/marketing/google/hooks", () => ({
       owner_type: "user",
       owner_user_id: "admin-reviewer",
       health: "connected",
-      scopes: [GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsWrite],
+      scopes: mockScopes.value,
     }] },
   }),
   useGoogleCapabilities: () => ({ data: [{ key: "calendar_write", eligible: true }] }),
 }));
 jest.mock("@/lib/redux/hooks", () => ({ useAppSelector: () => "admin-reviewer" }));
+jest.mock("@/features/overlays/openers/connectorConsentDialog", () => ({ useOpenConnectorConsentDialog: () => mockOpenConsent }));
 jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({ useOpenGoogleConnectWindow: () => jest.fn() }));
 jest.mock("@/features/marketing/google/presentation", () => ({ googleConnectionLabel: () => "admin@admin.com" }));
 jest.mock("@/features/google-workspace/GoogleAccountSelect", () => ({
@@ -52,10 +55,27 @@ describe("SelectedCalendarReview event changes", () => {
   let root: Root;
 
   beforeEach(() => {
-    mockChangeProps.mockClear(); mockCreateProps.mockClear();
+    mockChangeProps.mockClear(); mockCreateProps.mockClear(); mockOpenConsent.mockClear();
+    mockScopes.value = [GOOGLE_SCOPE.calendarListReadonly, GOOGLE_SCOPE.calendarEventsWrite];
     host = document.createElement("div"); document.body.append(host); root = createRoot(host);
   });
   afterEach(() => { act(() => root.unmount()); host.remove(); });
+
+  it.each([[GOOGLE_SCOPE.gmailModify], [GOOGLE_SCOPE.calendarListReadonly], [GOOGLE_SCOPE.calendarEventsReadonly]])("opens exact selected-account Calendar consent when access is incomplete (%s)", async (scope) => {
+    mockScopes.value = [scope];
+    await act(async () => root.render(<SelectedCalendarReviewContent organizationId="organization-cedar" />));
+    act(() => button(host, "Choose Cedar account").click());
+    expect(host.textContent).toContain("This account has not connected selected Calendar access.");
+    act(() => button(host, "Connect selected calendars").click());
+    expect(mockOpenConsent).toHaveBeenCalledWith({ initialConnectionId: "connection-cedar", initialProductKeys: ["calendar_shared"] });
+  });
+
+  it("recognizes Calendar writes as event-read coverage without requesting redundant access", async () => {
+    await act(async () => root.render(<SelectedCalendarReviewContent organizationId="organization-cedar" />));
+    act(() => button(host, "Choose Cedar account").click());
+    expect(host.textContent).not.toContain("Connect selected calendars");
+    expect(mockOpenConsent).not.toHaveBeenCalled();
+  });
 
   it("mounts create and existing-event controls through the same eligible write connection before a window read", async () => {
     await act(async () => root.render(<SelectedCalendarReviewContent organizationId="organization-cedar" />));
