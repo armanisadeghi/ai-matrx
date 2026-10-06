@@ -1,12 +1,12 @@
 /**
- * Surface manifest — Custom lists (`matrx-user/lists`).
+ * Surface manifest — Custom lists (`matrx-user/pick-lists`).
  *
  * The ROUTE home of a custom list: `/pick-lists/[id]`, rendered by
  * `ListDetailClient` with `asRoute` — the canonical deep link a share button
  * copies and every list card navigates to. (`/pick-lists` itself is a static
  * landing page with no list state; see "WHERE THIS MOUNTS" below.)
  *
- * WHY THIS IS THE SAME SURFACE AS `matrx-user/list-manager`, NOT A RIVAL.
+ * WHY THIS IS THE SAME SURFACE AS `matrx-user/pick-list-manager`, NOT A RIVAL.
  * The floating List Manager window renders the SAME `ListDetailClient` in its
  * detail pane, over the same rows, driving the same server actions
  * (`updateListAction`, `addItemAction`). They are two MOUNTS of one editable
@@ -24,7 +24,7 @@
  * missing:
  *
  *   - `/pick-lists/[id]` → `ListDetailClient asRoute` mounts
- *     `<SurfaceRuntimeProvider surfaceName="matrx-user/lists">` with the live
+ *     `<SurfaceRuntimeProvider surfaceName="matrx-user/pick-lists">` with the live
  *     scope AND the write handlers. This is the only mount.
  *   - `/pick-lists` (index) → `PickListsLanding` inside `MarketingPageShell`:
  *     a static explainer with no list open and nothing authored. It mounts
@@ -32,7 +32,7 @@
  *   - Inside the List Manager window, `ListDetailClient` is rendered WITHOUT
  *     `asRoute`, so it registers nothing there. That gate is load-bearing:
  *     the surface registry resolves DEEPEST-first, so an ungated provider
- *     would register below `matrx-user/list-manager` and shadow the shipped
+ *     would register below `matrx-user/pick-list-manager` and shadow the shipped
  *     window surface entirely.
  *
  * NOT WRITABLE HERE, ON PURPOSE (see the shared targets module for the full
@@ -265,7 +265,7 @@ const surfaceSpecific: SurfaceValue[] = [
 ];
 
 export const listsManifest: SurfaceManifest = {
-  surfaceName: "matrx-user/lists",
+  surfaceName: "matrx-user/pick-lists",
   client: "matrx-user",
   executor: MATRX_WEB_APP_EXECUTOR,
   executionMode: "python-stream",
@@ -285,7 +285,7 @@ Two things you cannot do, by design. You cannot delete the list or any item, and
 
 Check list_is_owner before proposing an edit. When it is false the viewer arrived through a shared link, the page is read-only, and every write will be refused.
 
-This is the same list state as the List Manager window (matrx-user/list-manager) and offers the same write targets under the same names — the window is that state's other home.
+This is the same list state as the List Manager window (matrx-user/pick-list-manager) and offers the same write targets under the same names — the window is that state's other home.
 </surface_intro>`,
   groups,
   values: mergeBaselineValues(

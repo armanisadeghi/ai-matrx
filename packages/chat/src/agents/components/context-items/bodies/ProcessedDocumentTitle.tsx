@@ -13,9 +13,9 @@
  * same lexical search its own bar used to.
  */
 
+import { renameFile } from "@ai-matrx/media/files/engine/redux/thunks";
 import { toast } from "../../../../host/notify";
 import { useAppDispatch } from "../../../../store/hooks";
-import { renameFile } from "@ai-matrx/chat/host/ui-slots";
 import { useAttachedDocumentDisplayName } from "../../inputs/resources/attached-documents";
 import { PdfNamedSurfaceSwitcher } from "@ai-matrx/chat/host/ui-slots";
 import type { ContextItemTitleProps } from "../types";

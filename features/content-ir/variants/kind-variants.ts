@@ -38,7 +38,7 @@ import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalo
 /**
  * The config surface a variant may carry: the `VariableCustomComponent`
  * surface minus `type` (which is `component_type`), minus the authoring
- * scratchpad (`stash`), and minus the deprecated `picklist` alias. It is
+ * scratchpad (`stash`), and minus the deprecated `picklist` / `structured_list` aliases. It is
  * deliberately the SAME surface the canonical `CustomComponentConfigurator`
  * emits, so the registry admin can embed that editor whole instead of forking
  * a second one — and so nothing it writes is silently dropped on the way into
@@ -46,7 +46,7 @@ import type { ContextValueType } from "@/features/scopes/redux/contextItemCatalo
  */
 export type KindVariantConfig = Omit<
   VariableCustomComponent,
-  "type" | "stash" | "picklist"
+  "type" | "stash" | "picklist" | "structured_list"
 >;
 
 /** One registered variant. `name` is the string an input references. */
@@ -132,10 +132,10 @@ function parseConfig(value: unknown): KindVariantConfig {
   if (step !== undefined) config.step = step;
   // Structured shapes the canonical configurator can emit. Carried opaquely so
   // the registry never silently drops what the shared editor wrote.
-  const structuredList = asObject(raw.structured_list);
+  const structuredList = asObject(raw.pick_list) ?? asObject(raw.structured_list);
   if (structuredList && typeof structuredList.listId === "string") {
-    config.structured_list =
-      structuredList as unknown as KindVariantConfig["structured_list"];
+    config.pick_list =
+      structuredList as unknown as KindVariantConfig["pick_list"];
   }
   const assignment = asObject(raw.assignment);
   if (assignment) {
@@ -196,7 +196,7 @@ export function variantToCustomComponent(
 
 /**
  * The reverse — the configurator's output split back into `component_type` +
- * `config`. The authoring scratchpad (`stash`) and the deprecated `picklist`
+ * `config`. The authoring scratchpad (`stash`) and the deprecated `picklist` / `structured_list`
  * alias are the only things dropped, exactly as the kind ⇄ variable bridge
  * drops them: they are UI residue, not semantics.
  */
@@ -204,7 +204,13 @@ export function customComponentToVariantParts(
   component: VariableCustomComponent | undefined,
 ): { component_type: string; config: KindVariantConfig } {
   if (!component) return { component_type: "textarea", config: {} };
-  const { type, stash: _stash, picklist: _picklist, ...config } = component;
+  const {
+    type,
+    stash: _stash,
+    picklist: _picklist,
+    structured_list: _structuredList,
+    ...config
+  } = component;
   return { component_type: type, config };
 }
 
@@ -288,7 +294,7 @@ export function validateKindVariant(
   const meta = getComponentTypeMeta(componentType as VariableComponentType);
   const { options: opts, toggleValues, min, max, step } = variant.config;
 
-  const boundToStructuredList = Boolean(variant.config.structured_list?.listId);
+  const boundToStructuredList = Boolean(variant.config.pick_list?.listId);
 
   if (meta.requiresOptions) {
     if (boundToStructuredList) {

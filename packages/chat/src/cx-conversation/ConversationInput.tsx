@@ -1,5 +1,6 @@
 "use client";
 
+import { useFileUpload } from "@ai-matrx/media/files/engine/handler/hooks/useFileUpload";
 import React, {
   useState,
   useRef,
@@ -55,7 +56,6 @@ import { selectActiveChatAgent } from "./_legacy-stubs";
 import { selectIsDebugMode } from "../host/prefs";
 import { ResourceChips } from "../agents/resources/ResourceChips";
 import { ResourcePickerMenu } from "../host/ui-slots";
-import { useFileUpload } from "@ai-matrx/chat/host/ui-slots";
 import { composeUploadFolderPath } from "@ai-matrx/media/files";
 import { useRecordAndTranscribe } from "@ai-matrx/chat/host/ui-slots";
 import { TranscriptionLoader } from "@ai-matrx/chat/host/ui-slots";

@@ -249,7 +249,7 @@ test("E. an agent's choice writes land as Records of the list's Table, in the li
   CLIENT_CONFIGS.length = 0;
   olderReads.length = 0;
   (client.rpc as jest.Mock).mockImplementation(async (fn: string) => {
-    if (fn === "get_pick_list_with_items") {
+    if (fn === "get_user_list_with_items") {
       return {
         data: {
           list_id: STORE_LIST,

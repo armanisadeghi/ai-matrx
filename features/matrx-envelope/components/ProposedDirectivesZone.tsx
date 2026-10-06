@@ -55,6 +55,7 @@ import {
 } from "@/features/matrx-envelope/conversationReceipts";
 import DirectiveReceiptBlock from "@/components/mardown-display/blocks/data-events/DirectiveReceiptBlock";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useStoreRead } from "@/lib/redux/store-reads/useStoreRead";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
 import { Badge } from "@/components/ui/badge";
@@ -220,8 +221,11 @@ function useRehydratedProposals(
   // Asked ONCE per conversation, kept in Redux (`useStoreRead`): a remount or a
   // wake of the chat renders the inbox and reads nothing. The proposals go to
   // the proposed-directives slice; the stored answer is only what was unreadable.
+  // Signed out: chat.message is private, so no read is issued (a refused read is a
+  // system_error row, and a visitor has no stored proposals to find anyway).
+  const signedIn = useAppSelector(selectUserId) !== null;
   const read = useStoreRead<{ unreadable: string[] }>(
-    conversationId && baseUrl ? `chat.directive-proposals:${conversationId}` : null,
+    conversationId && baseUrl && signedIn ? `chat.directive-proposals:${conversationId}` : null,
     async () => {
       const { proposals, unreadable } = await fetchConversationProposals(baseUrl, conversationId);
       for (const proposal of proposals) dispatch(proposeDirective(proposal));

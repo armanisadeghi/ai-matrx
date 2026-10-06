@@ -903,7 +903,7 @@
               "Owner",
               "Manager"
             ],
-            "structured_list": {
+            "pick_list": {
               "listId": "list-abc",
               "multiple": false
             }
@@ -974,7 +974,7 @@
           "customComponent": {
             "type": "select",
             "allowOther": true,
-            "structured_list": {
+            "pick_list": {
               "listId": "list-xyz",
               "multiple": true
             }
@@ -1044,7 +1044,7 @@
               "NA",
               "EU"
             ],
-            "structured_list": {
+            "pick_list": {
               "listId": "list-legacy",
               "multiple": false
             }

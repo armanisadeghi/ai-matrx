@@ -234,7 +234,7 @@ function detailRecordHref(token: string, id: string): string {
 // information_schema (schema/table/title column all confirmed). Non-canonical
 // names (agent_app, picklist, website, canvas, research, sandbox) are
 // deliberately ABSENT — they are not registered tokens (`picklist` → use
-// `structured_list`), so they can never be a valid association edge endpoint.
+// `pick_list`), so they can never be a valid association edge endpoint.
 const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
   // ─── Agents / Apps / Skills (utilities) ───────────────────────────────────
   ai_model: {
@@ -326,8 +326,14 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Message Templates",
     hrefFor: (id) => `/chat/message-templates/${id}`,
   },
-  // Pick Lists / user lists (`/pick-lists`) — canonical token is structured_list
-  // (legacy names picklist / udt_picklists / user_lists are dead).
+  // Pick Lists / user lists (`/pick-lists`) — canonical token is pick_list
+  // (legacy names structured_list / picklist / udt_picklists / user_lists are dead).
+  pick_list: {
+    Icon: ListOrdered,
+    labelPlural: "Lists",
+    hrefFor: (id) => `/pick-lists/${id}`,
+  },
+  // The retired spelling, still carried by sources and references stored before the rename.
   structured_list: {
     Icon: ListOrdered,
     labelPlural: "Lists",

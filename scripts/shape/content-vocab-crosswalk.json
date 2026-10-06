@@ -7283,13 +7283,13 @@
       "rationale": "registered kind (content_ir.kind_definition, active)"
     },
     {
-      "name": "picklist_tool_result",
+      "name": "pick_list_tool_result",
       "sources": [
         "db:kind_definition"
       ],
       "family": "picklists",
       "classification": "shape",
-      "kind": "picklist_tool_result",
+      "kind": "pick_list_tool_result",
       "registered": true,
       "rationale": "registered kind (content_ir.kind_definition, inactive)"
     },

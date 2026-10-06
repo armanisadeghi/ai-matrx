@@ -10,18 +10,18 @@ jest.mock("@ai-matrx/realtime", () => ({
   }),
   subscribeToRealtimeManager: jest.fn(),
 }));
-jest.mock("./converters", () => ({}));
-jest.mock("./request-ledger", () => ({ ledgerSize: () => 0 }));
-jest.mock("./thunks", () => ({
+jest.mock("@ai-matrx/media/files/engine/redux/converters", () => ({}));
+jest.mock("@ai-matrx/media/files/engine/redux/request-ledger", () => ({ ledgerSize: () => 0 }));
+jest.mock("@ai-matrx/media/files/engine/redux/thunks", () => ({
   loadUserFileTree: { fulfilled: { match: () => false } },
   reconcileTree: jest.fn(),
 }));
-jest.mock("./slice", () => ({
+jest.mock("@ai-matrx/media/files/engine/redux/slice", () => ({
   setRealtimeStatus: (payload: unknown) => ({ type: "status", payload }),
 }));
 jest.mock("@/features/files/utils/folder-conventions", () => ({}));
-jest.mock("@/features/files/hooks/blob-cache", () => ({}));
-jest.mock("@/features/files/hooks/office-extraction-cache", () => ({}));
+jest.mock("@ai-matrx/media/files/engine/hooks/blob-cache", () => ({}));
+jest.mock("@ai-matrx/media/files/engine/hooks/office-extraction-cache", () => ({}));
 const subscribe = jest.mocked(subscribeToRealtimeManager);
 beforeEach(() => subscribe.mockReset());
 function setup() {
@@ -80,9 +80,9 @@ describe("background backfill while the tab is hidden", () => {
   afterEach(() => setVisibility("visible"));
 
   it("defers the whole-tree reconcile until the tab is visible again", async () => {
-    const reconcile = jest.requireMock("./thunks").reconcileTree as jest.Mock;
+    const reconcile = jest.requireMock("@ai-matrx/media/files/engine/redux/thunks").reconcileTree as jest.Mock;
     reconcile.mockReset();
-    const loaded = jest.requireMock("./thunks").loadUserFileTree.fulfilled;
+    const loaded = jest.requireMock("@ai-matrx/media/files/engine/redux/thunks").loadUserFileTree.fulfilled;
     loaded.match = (a: { type: string }) => a.type === "tree-loaded";
     subscribe.mockReturnValue(jest.fn());
     const { invoke } = setup();
@@ -104,7 +104,7 @@ describe("background backfill while the tab is hidden", () => {
   });
 
   it("drops a deferred reconcile when the channel is torn down", async () => {
-    const reconcile = jest.requireMock("./thunks").reconcileTree as jest.Mock;
+    const reconcile = jest.requireMock("@ai-matrx/media/files/engine/redux/thunks").reconcileTree as jest.Mock;
     reconcile.mockReset();
     subscribe.mockReturnValue(jest.fn());
     const { invoke } = setup();

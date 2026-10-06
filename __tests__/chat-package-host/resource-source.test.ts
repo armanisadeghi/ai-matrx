@@ -2,10 +2,6 @@ import {
   refineBlockType,
   resourceDataToSource,
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/resource-source";
-import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { normalize as Host_normalize } from "@/features/files/handler/input/normalize";
-import { toMediaRef as Host_toMediaRef } from "@/features/files/handler/output/target";
-registerChatUi({ normalize: Host_normalize, toMediaRef: Host_toMediaRef });
 
 const FILE_ID = "11111111-1111-4111-8111-111111111111";
 const SHARE_URL =

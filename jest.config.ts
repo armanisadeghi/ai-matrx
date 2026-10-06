@@ -13,7 +13,7 @@
  * effectively the repo had no Jest config. PR 1.A replaces it with this.
  */
 import type { Config } from "jest";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 /**
@@ -32,6 +32,7 @@ function aiMatrxExportsMap(): Record<string, string> {
   const scope = join(process.cwd(), "node_modules", "@ai-matrx");
   if (!existsSync(scope)) return {};
   const out: Record<string, string> = {};
+  const realDirs: Record<string, string> = {};
   const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   for (const name of readdirSync(scope)) {
     let manifest: { exports?: unknown };
@@ -60,8 +61,13 @@ function aiMatrxExportsMap(): Record<string, string> {
       };
       const file = pick(target);
       if (!file || !/\.(c|m)?js$/.test(file)) continue;
-      out[`^@ai-matrx/${escape(name)}/${escape(subpath.slice(2))}$`] =
-        `<rootDir>/node_modules/@ai-matrx/${name}/${file.replace(/^\.\//, "")}`;
+      // The REAL path, not the pnpm symlink: a package's own relative imports
+      // resolve to the real path, so a suite's jest.mock("@ai-matrx/x/sub") must
+      // key the same module id or the mock never reaches the package's callers.
+      out[`^@ai-matrx/${escape(name)}/${escape(subpath.slice(2))}$`] = join(
+        realDirs[name] ??= realpathSync(join(scope, name)),
+        file.replace(/^\.\//, ""),
+      );
     }
   }
   return out;

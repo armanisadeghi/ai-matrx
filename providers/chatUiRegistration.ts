@@ -12,7 +12,6 @@ const asSlot = <T,>(impl: T) => impl as unknown as never;
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { SandboxFilesystemAdapter } from "@/features/code/adapters/SandboxFilesystemAdapter";
 import { LIVE_CONVERSATION_VOICES } from "@/lib/voices/voiceSets";
-import { OUR_FILE_URL_MARKERS } from "@/lib/media/our-file-sources";
 import { HTMLPageService } from "@/features/html-pages/services/htmlPageService";
 import { sklActions } from "@/features/agent-connections/redux/skl/slice";
 import HtmlPreviewFullScreenEditor from "@/features/html-pages/components/HtmlPreviewFullScreenEditor";
@@ -56,7 +55,6 @@ import { dispatchWarRoomTool } from "@/features/agents/war-room-tools/dispatcher
 import { dispatchWarRoomMasterTool } from "@/features/agents/war-room-master-tools/dispatcher/dispatch-war-room-master-tool.thunk";
 import { resolveGmailSendConnection } from "@/features/google-workspace/connection";
 import { voiceDisplayName } from "@/lib/voices/voiceSets";
-import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { convertMarkdownToHtml } from "@/features/html-pages/utils/html-preview-utils";
 import { selectAllContentBlocksArray, selectContentBlocksByScope, selectContentBlocksByScopeRef, selectActiveContentBlocks } from "@/features/agent-connections/redux/skl/content-block-compat";
 import { createElement } from "react";
@@ -122,13 +120,11 @@ registerChatUi({
   dispatchWarRoomMasterTool,
   resolveGmailSendConnection,
   voiceDisplayName,
-  recognizeOurFileUrl,
   canvasGetVersionHistory: (id: string) => canvasArtifactService.getVersionHistory(id),
   canvasGetById: (id: string) => canvasArtifactService.getById(id),
   createSandboxFilesystemAdapter: (instanceId: string) => new SandboxFilesystemAdapter(instanceId),
   notesGetById: (id: string) => NotesAPI.getById(id),
   isLiveConversationVoice: (id: string) => LIVE_CONVERSATION_VOICES.some((voice) => voice.id === id),
-  ourFileUrlMarkers: () => OUR_FILE_URL_MARKERS,
   createHtmlPage: (...args: Parameters<typeof HTMLPageService.createPage>) => HTMLPageService.createPage(...args),
   convertMarkdownToHtml,
   sklActions: sklActions,
@@ -377,16 +373,6 @@ registerChatUi({
 import { announceComingSoon as Host_announceComingSoon } from "@/lib/coming-soon/announce";
 registerChatUi({
   announceComingSoon: Host_announceComingSoon,
-});
-
-import { normalize as Host_normalize } from "@/features/files/handler/input/normalize";
-registerChatUi({
-  normalize: Host_normalize,
-});
-
-import { toMediaRef as Host_toMediaRef } from "@/features/files/handler/output/target";
-registerChatUi({
-  toMediaRef: Host_toMediaRef,
 });
 
 import { peekSystemOrgId as Host_peekSystemOrgId } from "@/lib/organizations/systemOrg";

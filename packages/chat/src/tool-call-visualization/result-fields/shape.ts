@@ -15,9 +15,9 @@
  *  - Every branch is reachable and documented.
  */
 
+import { recognizeOurFileUrl } from "@ai-matrx/media/files/engine";
 import type { MediaRef } from "@ai-matrx/media/files";
 import { fileNameFromUrl } from "@ai-matrx/data/files";
-import { recognizeOurFileUrl } from "@ai-matrx/chat/host/ui-slots";
 import { findCodeRanges } from "@ai-matrx/content-ir/source";
 import { findTableStart } from "@ai-matrx/content-ir/source";
 import { isUuidShape } from "@ai-matrx/kit/uuid";

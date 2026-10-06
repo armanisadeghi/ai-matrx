@@ -11,15 +11,15 @@
 import { createElement, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
-  buildAgentPayload,
-  type AgentPayloadInput,
-} from "@/components/agent-copy/buildAgentPayload";
+  serializeFrameAgentPayload,
+  type FrameAgentPayload,
+} from "./FrameAgentPayload";
 
 type Resolvable<T> = T | (() => T | Promise<T>);
 
 export interface CopyForAiButtonProps {
   label: string;
-  agent: Resolvable<AgentPayloadInput | string>;
+  agent: Resolvable<FrameAgentPayload | string>;
   size?: "icon" | "sm";
   disabled?: boolean;
   className?: string;
@@ -46,11 +46,11 @@ export function CopyForAiButton({
         typeof agent === "function"
           ? await (
               agent as () =>
-                AgentPayloadInput | string | Promise<AgentPayloadInput | string>
+                FrameAgentPayload | string | Promise<FrameAgentPayload | string>
             )()
           : agent;
       await navigator.clipboard.writeText(
-        typeof value === "string" ? value : buildAgentPayload(value),
+        typeof value === "string" ? value : serializeFrameAgentPayload(value),
       );
       setStatus("copied");
     } catch {
@@ -67,21 +67,17 @@ export function CopyForAiButton({
       disabled={disabled}
       className={cn(
         "inline-flex items-center justify-center rounded-md border border-border bg-background text-sm font-medium transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-50",
-        compact
-          ? "h-6 px-2 text-xs"
-          : size === "icon"
-            ? "h-8 w-8"
-            : "h-8 px-3",
+        compact ? "h-6 px-2 text-xs" : size === "icon" ? "h-8 w-8" : "h-8 px-3",
         className,
       )}
     >
-      {showLabel && size !== "icon" ? (
-        status === "copied" ? "Copied" : "Copy for AI"
-      ) : icon ? (
-        createElement(icon, { className: "h-4 w-4" })
-      ) : (
-        "AI"
-      )}
+      {showLabel && size !== "icon"
+        ? status === "copied"
+          ? "Copied"
+          : "Copy for AI"
+        : icon
+          ? createElement(icon, { className: "h-4 w-4" })
+          : "AI"}
     </button>
   );
 }

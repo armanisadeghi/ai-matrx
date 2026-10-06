@@ -38,6 +38,9 @@ const OLD_TEXT: Array<[string, RegExp]> = [
   ["the get_user_lists renderer", /get[-_]user[-_]lists/],
   ["the old selection hook", /useStructuredListForSelection|getStructuredListForSelection/],
   ["the /lists route", /(?<![\w/.-])\/lists(?=[/"'`?#)\s\]}]|$)/],
+  ["the old surface ids", /matrx-user\/(lists|list-manager)(?![\w-])/],
+  ["the old result-kind slugs", /picklist_(tool_result|approval_result|item_update_result)/],
+  ["the old binding editor name", /StructuredListBindingEditor/],
   ["the old agent tool names", /toolName:\s*["']picklist["']|\buserlist_(create|get|update|batch)/],
 ];
 

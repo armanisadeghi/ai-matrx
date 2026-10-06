@@ -144,11 +144,16 @@ export async function fetchProcessedDocumentPages(
     return ((data ?? []) as Record<string, unknown>[]).map(rowFromApi);
   })()
     .then((pages) => {
-      fetchPagesCache.set(key, { resolvedAt: Date.now(), pages });
+      // Evicted by an invalidation while in flight = read predates the write.
+      if (fetchPagesInflight.get(key) === promise) {
+        fetchPagesCache.set(key, { resolvedAt: Date.now(), pages });
+      }
       return pages;
     })
     .finally(() => {
-      fetchPagesInflight.delete(key);
+      if (fetchPagesInflight.get(key) === promise) {
+        fetchPagesInflight.delete(key);
+      }
     });
 
   fetchPagesInflight.set(key, promise);
@@ -167,11 +172,17 @@ export function invalidateProcessedDocumentPages(
 ): void {
   if (processedDocumentId == null) {
     fetchPagesCache.clear();
+    fetchPagesInflight.clear();
     return;
   }
   for (const key of fetchPagesCache.keys()) {
     if (key.endsWith(`:${processedDocumentId}`)) {
       fetchPagesCache.delete(key);
+    }
+  }
+  for (const key of fetchPagesInflight.keys()) {
+    if (key.endsWith(`:${processedDocumentId}`)) {
+      fetchPagesInflight.delete(key);
     }
   }
 }

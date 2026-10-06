@@ -26,7 +26,7 @@ const uploads: UploadCall[] = [];
 const serverRows = new Map<string, { version: number }>();
 let forceForeignAnswer = false;
 
-jest.mock("@/features/files/api/files", () => ({
+jest.mock("@ai-matrx/media/files/engine/api/files", () => ({
   uploadNewVersion: async (
     fileId: string,
     p: { file: File; changeSummary?: string },
@@ -64,7 +64,7 @@ jest.mock("@/features/files/api/files", () => ({
 
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 
-jest.mock("@/features/files/filesDb", () => {
+jest.mock("@ai-matrx/media/files/engine/filesDb", () => {
   const chain = {
     select: () => chain,
     eq: () => chain,

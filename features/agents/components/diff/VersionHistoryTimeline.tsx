@@ -11,7 +11,11 @@ import {
 import { cn } from "@ai-matrx/design-system";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { supabase } from "@ai-matrx/chat/host/db";
+import { usePathname } from "next/navigation";
+import { useAgentDuplicateFlow } from "@ai-matrx/chat/agents/hooks/useAgentDuplicateFlow";
+import { ADMIN_SYSTEM_AGENTS_BASE_PATH } from "@ai-matrx/chat/agents/components/shared/agent-route-context";
 import {
+  Copy,
   GitCompareArrows,
   ArrowRight,
   ChevronDown,
@@ -56,6 +60,22 @@ export function VersionHistoryTimeline({
     fetchEnrichedHistory,
     fetchGap,
   } = useSmartVersionFetch(agentId, versions);
+
+  // Any row copies into a NEW agent. The current version copies the agent as
+  // it is now (same as the menu's Duplicate); a past one copies its snapshot.
+  // On the admin system-agents routes a builtin copies into another builtin.
+  const pathname = usePathname();
+  const duplicateFlow = useAgentDuplicateFlow(agentId, {
+    basePath: pathname?.startsWith(ADMIN_SYSTEM_AGENTS_BASE_PATH)
+      ? ADMIN_SYSTEM_AGENTS_BASE_PATH
+      : "/agents",
+  });
+  const onDuplicate = (version: { version_id: string; version_number: number }) =>
+    void duplicateFlow.startDuplicate(
+      version.version_number === currentVersion
+        ? undefined
+        : { versionId: version.version_id },
+    );
 
   const hasEnrichedData = enrichedVersions.some((v) => v.diffSummary);
 
@@ -109,8 +129,11 @@ export function VersionHistoryTimeline({
             versions={enrichedVersions}
             currentVersion={currentVersion}
             onCompare={onCompare}
+            onDuplicate={onDuplicate}
+            duplicating={duplicateFlow.isDuplicating}
           />
         </div>
+        {duplicateFlow.dialog}
       </div>
     );
   }
@@ -166,7 +189,7 @@ export function VersionHistoryTimeline({
             <th className={cn("text-left py-2 pr-3 font-medium", MOBILE_TABLE_CELL)}>
               Changes from Previous
             </th>
-            <th className={cn("text-right py-2 font-medium w-[140px]", MOBILE_TABLE_CELL)}>Compare</th>
+            <th className={cn("text-right py-2 font-medium w-[170px]", MOBILE_TABLE_CELL)}>Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-border/50">
@@ -199,6 +222,8 @@ export function VersionHistoryTimeline({
                 gapVersions={gapVersions}
                 onCompare={onCompare}
                 onFetchGap={fetchGap}
+                onDuplicate={onDuplicate}
+                duplicating={duplicateFlow.isDuplicating}
               />
             );
           })}
@@ -206,6 +231,7 @@ export function VersionHistoryTimeline({
       </table>
 
       <div className="h-[50dvh]" />
+      {duplicateFlow.dialog}
     </div>
   );
 }
@@ -220,6 +246,8 @@ function VersionRow({
   gapVersions,
   onCompare,
   onFetchGap,
+  onDuplicate,
+  duplicating,
 }: {
   agentId: string;
   version: EnrichedVersion;
@@ -230,6 +258,8 @@ function VersionRow({
   gapVersions: number[];
   onCompare: (version: number, compareToVersion: number | "current") => void;
   onFetchGap: (versions: number[]) => void;
+  onDuplicate: (version: EnrichedVersion) => void;
+  duplicating: boolean;
 }) {
   const diff = version.diffSummary;
   const changedFields =
@@ -402,6 +432,14 @@ function VersionRow({
                 Current
               </Button>
             )}
+            <Button
+              icon={<Copy />}
+              variant="quiet"
+              disabled={duplicating}
+              aria-label={`Duplicate v${version.version_number} as a new agent`}
+              title={`Duplicate v${version.version_number} as a new agent`}
+              onClick={() => onDuplicate(version)}
+            />
           </div>
         </td>
       </tr>
@@ -431,10 +469,14 @@ function BasicTimeline({
   versions,
   currentVersion,
   onCompare,
+  onDuplicate,
+  duplicating,
 }: {
   versions: EnrichedVersion[];
   currentVersion: number | null;
   onCompare: (version: number, compareToVersion: number | "current") => void;
+  onDuplicate: (version: EnrichedVersion) => void;
+  duplicating: boolean;
 }) {
   return (
     <table className={cn("type-secondary", MOBILE_TABLE)}>
@@ -446,6 +488,9 @@ function BasicTimeline({
           <th className={cn("text-left py-1.5 pr-3 font-medium w-[110px]", MOBILE_TABLE_CELL)}>ID</th>
           <th className={cn("text-left py-1.5 pr-3 font-medium", MOBILE_TABLE_CELL)}>Date</th>
           <th className={cn("text-left py-1.5 font-medium", MOBILE_TABLE_CELL)}>Note</th>
+          <th className={cn("text-right py-1.5 font-medium w-[48px]", MOBILE_TABLE_CELL)}>
+            <span className="sr-only">Actions</span>
+          </th>
         </tr>
       </thead>
       <tbody className="divide-y divide-border/50">
@@ -480,6 +525,16 @@ function BasicTimeline({
               </td>
               <td className={cn("py-1.5 text-muted-foreground", MOBILE_TABLE_CELL)}>
                 {v.change_note ?? "—"}
+              </td>
+              <td className={cn("py-1.5 text-right", MOBILE_TABLE_CELL)} onClick={(e) => e.stopPropagation()}>
+                <Button
+                  icon={<Copy />}
+                  variant="quiet"
+                  disabled={duplicating}
+                  aria-label={`Duplicate v${v.version_number} as a new agent`}
+                  title={`Duplicate v${v.version_number} as a new agent`}
+                  onClick={() => onDuplicate(v)}
+                />
               </td>
             </tr>
           );

@@ -532,7 +532,7 @@ Legend: ✅ ok · ⚠️ warn · ❌ missing (a real, closeable gap) · — n/a 
 | `pdf.content_cleaning.offer` | no | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ⚠️ |
 | `personalization_target_result` | yes | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ | ⚠️ |
 | `personalization_write_result` | yes | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⚠️ |
-| `picklist_tool_result` | no | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ⚠️ |
+| `pick_list_tool_result` | no | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ⚠️ |
 | `plan_concept_name` | no | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ⚠️ |
 | `plan_deferred_topic` | no | ✅ | ✅ | ✅ | — | — | — | — | — |
 | `plan_draft_section` | no | ✅ | ✅ | ✅ | — | — | — | — | — |
@@ -1545,7 +1545,7 @@ Published by aidream's contract publisher; render assets are structurally `n/a`,
 - **no-content-block** — kind "pdf_table_extraction" has no content block referencing "__kind": "pdf_table_extraction"
 - **no-content-block** — kind "pdf_text_extraction" has no content block referencing "__kind": "pdf_text_extraction"
 - **no-content-block** — kind "pdf.content_cleaning.offer" has no content block referencing "__kind": "pdf.content_cleaning.offer"
-- **no-content-block** — kind "picklist_tool_result" has no content block referencing "__kind": "picklist_tool_result"
+- **no-content-block** — kind "pick_list_tool_result" has no content block referencing "__kind": "pick_list_tool_result"
 - **no-content-block** — kind "plan_concept_name" has no content block referencing "__kind": "plan_concept_name"
 - **no-content-block** — kind "plan_entity" has no content block referencing "__kind": "plan_entity"
 - **no-content-block** — kind "plan_entity_attachment" has no content block referencing "__kind": "plan_entity_attachment"
@@ -2700,7 +2700,7 @@ Published by aidream's contract publisher; render assets are structurally `n/a`,
 - **no-skill** — kind "pdf_table_extraction" has no render_block skill teaching it
 - **no-skill** — kind "pdf_text_extraction" has no render_block skill teaching it
 - **no-skill** — kind "pdf.content_cleaning.offer" has no render_block skill teaching it
-- **no-skill** — kind "picklist_tool_result" has no render_block skill teaching it
+- **no-skill** — kind "pick_list_tool_result" has no render_block skill teaching it
 - **no-skill** — kind "plan_page_draft" has no render_block skill teaching it
 - **no-skill** — kind "plan_page_outline" has no render_block skill teaching it
 - **no-skill** — kind "plan_page_research" has no render_block skill teaching it
@@ -5368,11 +5368,11 @@ These cells are structurally impossible to satisfy, so they are `n/a` and emit n
 - `personalization_target_result` · Skill — DUPLICATE skills per syntax: json: kind_personalization_target_result + kind_personalization_write_result
 - `personalization_target_result` · Surface — no surface registered (legitimate until Stage 5)
 - `personalization_write_result` · Surface — no surface registered (legitimate until Stage 5)
-- `picklist_tool_result` · Component — no web component and no compiled render path
-- `picklist_tool_result` · Loading — no loading_component (no renderer yet either)
-- `picklist_tool_result` · Skill — no render_block skill teaches this kind
-- `picklist_tool_result` · Content block — no content block references this kind
-- `picklist_tool_result` · Surface — no surface registered (legitimate until Stage 5)
+- `pick_list_tool_result` · Component — no web component and no compiled render path
+- `pick_list_tool_result` · Loading — no loading_component (no renderer yet either)
+- `pick_list_tool_result` · Skill — no render_block skill teaches this kind
+- `pick_list_tool_result` · Content block — no content block references this kind
+- `pick_list_tool_result` · Surface — no surface registered (legitimate until Stage 5)
 - `plan_concept_name` · Component — no web component and no compiled render path
 - `plan_concept_name` · Loading — no loading_component (no renderer yet either)
 - `plan_concept_name` · Content block — no content block references this kind

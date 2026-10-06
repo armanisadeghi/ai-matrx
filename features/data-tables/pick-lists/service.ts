@@ -50,7 +50,7 @@ export async function getListWithItems(
 
 /** The list as stored, WITHOUT reading its choices' versions (the write path's own lookup). */
 async function readListWithItems(listId: string): Promise<UserListWithItems | null> {
-  const { data, error } = await supabase.rpc("get_pick_list_with_items", {
+  const { data, error } = await supabase.rpc("get_user_list_with_items", {
     p_list_id: listId,
   });
   if (error) throw new Error(`Failed to load list: ${error.message}`);
@@ -115,9 +115,9 @@ export async function createList(input: CreateListInput) {
 
 // ─── Update ────────────────────────────────────────────────────────────────────
 
-/** Rename / re-describe a list (and, with `p_items`, rewrite its choices) through `update_pick_list`. */
+/** Rename / re-describe a list (and, with `p_items`, rewrite its choices) through `update_user_list`. */
 export async function updateList(input: UpdateListInput) {
-  const { data, error } = await supabase.rpc("update_pick_list", {
+  const { data, error } = await supabase.rpc("update_user_list", {
     p_list_id: input.p_list_id,
     p_list_name: input.p_list_name,
     p_description: input.p_description,

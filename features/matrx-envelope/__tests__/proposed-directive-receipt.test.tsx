@@ -43,6 +43,7 @@ function makeStore() {
     reducer: {
       proposedDirectives: proposedDirectivesReducer,
       apiConfig: apiConfigReducer,
+      userAuth: () => ({ id: "11111111-1111-1111-1111-111111111111" }), // a signed-in reader: signed-out issues no ledger/message reads
       storeReads: storeReadsReducer,
     },
   });

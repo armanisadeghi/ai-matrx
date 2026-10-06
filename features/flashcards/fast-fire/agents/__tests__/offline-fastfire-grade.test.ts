@@ -49,7 +49,7 @@ jest.mock("@/lib/toast", () => ({
     warning: jest.fn(),
   },
 }));
-jest.mock("@/features/files/handler/handler", () => ({
+jest.mock("@ai-matrx/media/files/engine/handler/handler", () => ({
   fileHandler: {
     upload: (...args: unknown[]) => upload(...args),
   },

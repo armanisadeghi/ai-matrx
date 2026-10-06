@@ -132,6 +132,7 @@ jest.mock("@ai-matrx/chat/agents/components/shared/transcript-audience", () => (
 }));
 jest.mock("@ai-matrx/chat/agents/components/messages-display/assistant/AssistantMessageFooter", () => ({
   AssistantMessageFooter: () => null,
+  AssistantMessageFooterPlaceholder: () => null,
   AssistantMessageContextMenu: ({
     children,
   }: {

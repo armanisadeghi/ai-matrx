@@ -60,7 +60,8 @@ export function isUuidValue(value: unknown): value is string {
  */
 const PEEK_KEY_BY_TOKEN: Record<string, string> = {
   app: "agent_app",
-  structured_list: "picklist",
+  pick_list: "pick_list",
+  structured_list: "pick_list",
 };
 
 /**

@@ -5,12 +5,12 @@
  * every surface that mounts list-editing state.
  *
  * WHY THIS FILE EXISTS. Two surface manifests declare list-editing targets —
- * `matrx-user/list-manager` (the floating List Manager window,
- * `ListManagerFloatingWorkspace`) and `matrx-user/lists` — and they must offer
+ * `matrx-user/pick-list-manager` (the floating List Manager window,
+ * `ListManagerFloatingWorkspace`) and `matrx-user/pick-lists` — and they must offer
  * agents one vocabulary, not two. Defining the targets once here (and the
  * handlers once in `./surface-write-handlers`) makes that structural.
  *
- * `matrx-user/list-manager` shipped these targets first and its vocabulary
+ * `matrx-user/pick-list-manager` shipped these targets first and its vocabulary
  * WINS — the names, semantics, and prose below are exactly what it already
  * declared, lifted verbatim.
  *
@@ -59,7 +59,7 @@ export const LIST_WRITE_TARGET_NAMES = {
  * Write half of every list-editing surface.
  *
  * There is NO draft layer on a user list: every edit persists at once
- * (`update_pick_list`, or a Record of the list's Table of choices). So every target is `mode: "entity"`
+ * (`update_user_list`, or a Record of the list's Table of choices). So every target is `mode: "entity"`
  * — an applied write is a database commit, not a staged change — and every one
  * is `applyPolicy: "ask"`. `auto` is deliberately absent and must stay absent:
  * there is nothing to review after the fact and no Save bar to undo it.

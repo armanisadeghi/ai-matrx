@@ -14,6 +14,18 @@ describe("compareAgentDefinitions", () => {
     expect(result.behaviorFields).toHaveLength(0);
   });
 
+  it("never counts lineage or authorship as a behavior difference", () => {
+    // A copy made by another person from v3 differs from its original only in
+    // who made it and where it came from — that is not a sync difference.
+    const result = compareAgentDefinitions(
+      { name: "Writer", modelId: "model-a", createdBy: "person-a", sourceVersion: null, followsSource: false },
+      { name: "Writer", modelId: "model-a", createdBy: "person-b", sourceVersion: 3, followsSource: true },
+    );
+
+    expect(result.behaviorFields).toHaveLength(0);
+    expect(result.comparedConfigurationMatches).toBe(true);
+  });
+
   it("reports the exact behavior sections that diverged", () => {
     const result = compareAgentDefinitions(
       { name: "Writer", modelId: "model-a", tools: ["tool-a"] },

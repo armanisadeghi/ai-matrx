@@ -28,7 +28,8 @@ jest.mock("@/lib/python-client", () => ({
   postJson: jest.fn(async () => ({ data: {}, meta: {} })),
   uploadWithProgress: jest.fn(),
 }));
-jest.mock("@/lib/api/typed-client", () => ({
+// The engine's typed REST verbs live in the package (P16f).
+jest.mock("@ai-matrx/media/files/engine/host/typed-client", () => ({
   apiDelete: jest.fn(async () => ({ data: {}, meta: {} })),
   apiGet: jest.fn(async () => ({ data: { id: "f-2", organization_id: "org-of-f2" }, meta: {} })),
   apiMultipart: jest.fn(),
@@ -47,7 +48,7 @@ jest.mock("@/lib/redux/store-singleton", () => ({
 }));
 
 const pc = jest.requireMock("@/lib/python-client");
-const tc = jest.requireMock("@/lib/api/typed-client");
+const tc = jest.requireMock("@ai-matrx/media/files/engine/host/typed-client");
 const FILE = "503e2c1f-7b89-5908-891a-18ca0282fc04";
 const ORG = "884d1ce8-0000-4000-8000-000000000001";
 const lastOpts = (fn: jest.Mock) => fn.mock.calls[fn.mock.calls.length - 1]?.at(-1);

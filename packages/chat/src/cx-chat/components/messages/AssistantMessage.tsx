@@ -1,5 +1,6 @@
 "use client";
 
+import { recognizeOurFileUrl } from "@ai-matrx/media/files/engine";
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Volume2,
@@ -17,7 +18,6 @@ import { selectMessageHasUnsavedChanges } from "../../_legacy-stubs";
 import { editMessage } from "../../_legacy-stubs";
 import { buildContentBlocksForSave } from "../../utils/buildContentBlocksForSave";
 import { useMediaLoadRecovery } from "@ai-matrx/media/core";
-import { recognizeOurFileUrl } from "@ai-matrx/chat/host/ui-slots";
 import { chatConversationsActions } from "../../_legacy-stubs";
 import { RichDocumentActions } from "@ai-matrx/chat/host/rich-document-slots";
 import { MessageTimestamp } from "../../../agents/components/messages-display/MessageTimestamp";

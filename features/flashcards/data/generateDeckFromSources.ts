@@ -58,7 +58,7 @@ import { sectionRunTitle } from "@/features/education/convert/coverage";
 export const FLASHCARD_SOURCE_DELIVERIES = ["direct"] as const;
 
 /** Source types held in the record store (no association token reaches them). */
-const RECORD_STORE_TYPES = new Set(["dataset", "structured_list"]);
+const RECORD_STORE_TYPES = new Set(["dataset", "pick_list", "structured_list"]);
 
 const CHUNK_HEADER_RE = /^### Chunk (\S+)(?: \(page (\d+)\))?[ \t]*$/gm;
 

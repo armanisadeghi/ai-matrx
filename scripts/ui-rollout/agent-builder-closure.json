@@ -478,7 +478,7 @@
  "features/agents/components/variables-management/CustomComponentConfigurator.tsx",
  "features/agents/components/variables-management/HighlightedText.tsx",
  "features/agents/components/variables-management/OptionsEditor.tsx",
- "features/agents/components/variables-management/StructuredListBindingEditor.tsx",
+ "features/agents/components/variables-management/PickListBindingEditor.tsx",
  "features/agents/components/variables-management/VariableSelector.tsx",
  "features/agents/components/variables-management/custom-data/CustomDataBindingPicker.tsx",
  "features/agents/components/variables-management/custom-data/CustomDataBindingPreview.tsx",
