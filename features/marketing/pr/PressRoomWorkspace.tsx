@@ -90,6 +90,7 @@ import {
   ANGLE_VIEWS,
   StoryAngleQueue,
 } from "@/features/marketing/pr/components/StoryAngleQueue";
+import { BuildMediaListFromAngle } from "@/features/marketing/pr/components/BuildMediaListFromAngle";
 import { readLadder } from "@/features/marketing/pr/ladder";
 import { useLandOnRecord } from "@/features/marketing/pr/useLandOnRecord";
 import { deadlineState } from "@/features/marketing/pr/scoring";
@@ -861,13 +862,16 @@ export default function PressRoomWorkspace({
                   snapshot.isSample
                     ? undefined
                     : (angle) => (
-                        <HeadlinesDialog
-                          siteId={angle.site_id}
-                          organizationId={angle.organization_id}
-                          angleId={angle.id}
-                          angleHeadline={angle.headline}
-                          angleFactCount={readFacts(angle.facts).items.length}
-                        />
+                        <>
+                          <HeadlinesDialog
+                            siteId={angle.site_id}
+                            organizationId={angle.organization_id}
+                            angleId={angle.id}
+                            angleHeadline={angle.headline}
+                            angleFactCount={readFacts(angle.facts).items.length}
+                          />
+                          <BuildMediaListFromAngle angle={angle} />
+                        </>
                       )
                 }
               />

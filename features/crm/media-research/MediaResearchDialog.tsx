@@ -40,6 +40,18 @@ import {
   type MediaResearchRow,
 } from "./service";
 
+/** What a caller already knows about the angle (a Press Room story angle). Every field stays editable. */
+export interface MediaResearchPrefill {
+  angle?: string;
+  standing?: string;
+  reporterShape?: string;
+  subAngles?: string[];
+  competitors?: string[];
+  regions?: string[];
+  /** Where the prefill came from, said above the form ("From the story angle “…”"). */
+  sourceLabel?: string;
+}
+
 export interface MediaResearchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -47,6 +59,7 @@ export interface MediaResearchDialogProps {
   listName: string;
   organizationId: string;
   onLanded?: () => void;
+  prefill?: MediaResearchPrefill;
 }
 
 function lines(text: string): string[] {
@@ -64,17 +77,18 @@ export function MediaResearchDialog({
   listName,
   organizationId,
   onLanded,
+  prefill,
 }: MediaResearchDialogProps) {
   const dispatch = useAppDispatch();
-  const [angle, setAngle] = useState("");
+  const [angle, setAngle] = useState(prefill?.angle ?? "");
   const [wanted, setWanted] = useState("10");
   const [narrow, setNarrow] = useState(false);
   const [narrowReason, setNarrowReason] = useState("");
-  const [standing, setStanding] = useState("");
-  const [shape, setShape] = useState("");
-  const [subAngles, setSubAngles] = useState("");
-  const [competitors, setCompetitors] = useState("");
-  const [regions, setRegions] = useState("");
+  const [standing, setStanding] = useState(prefill?.standing ?? "");
+  const [shape, setShape] = useState(prefill?.reporterShape ?? "");
+  const [subAngles, setSubAngles] = useState((prefill?.subAngles ?? []).join("\n"));
+  const [competitors, setCompetitors] = useState((prefill?.competitors ?? []).join("\n"));
+  const [regions, setRegions] = useState((prefill?.regions ?? []).join("\n"));
   const [override, setOverride] = useState<number | null>(null);
   const [splitAngles, setSplitAngles] = useState<{ angle: string; wanted_good_fits: number }[]>([]);
 
@@ -208,7 +222,7 @@ export function MediaResearchDialog({
         <DialogHeader>
           <DialogTitle>Find journalists for this angle</DialogTitle>
           <DialogDescription>
-            For “{listName}”. You ask for good fits; we research more than that, judge every one
+            For “{listName}”.{prefill?.sourceLabel ? ` ${prefill.sourceLabel} — check it, then preview.` : ""} You ask for good fits; we research more than that, judge every one
             against your angle, and put the fits on this list. You see the cost before anything is spent.
           </DialogDescription>
         </DialogHeader>
@@ -267,7 +281,10 @@ export function MediaResearchDialog({
                 )}
               </div>
             </div>
-            <details className="rounded-md border border-border p-2">
+            <details
+              className="rounded-md border border-border p-2"
+              open={Boolean(prefill?.standing || prefill?.reporterShape) || undefined}
+            >
               <summary className="cursor-pointer text-xs font-medium text-foreground">
                 Sharpen the search (standing, reporter shape, sub-angles, competitors, regions)
               </summary>
