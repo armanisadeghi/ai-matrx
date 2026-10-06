@@ -39,7 +39,7 @@ jest.mock("@ai-matrx/records/core", () => ({
   })),
 }));
 jest.mock("@/utils/supabase/client", () => ({ createClient: () => ({}) }));
-jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({
+jest.mock("@ai-matrx/records/realtime", () => ({
   createRecordsRealtimePort: () => ({ subscribeRecords: () => () => undefined }),
 }));
 

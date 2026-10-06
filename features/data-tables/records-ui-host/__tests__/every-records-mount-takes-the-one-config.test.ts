@@ -5,7 +5,7 @@
  * file outside the host may call `createRecordsRealtimePort(` or write a records `config={{ … }}`
  * literal (dataSource / actor / organizationId keys) by hand.
  *
- * Allowed: the host file; the port's own file; two non-React subscribers that join the port
+ * Allowed: the host file; two non-React subscribers that join the port
  * directly (no config); tests; `features/spaces/` until Spaces switches itself.
  */
 import { execSync } from "node:child_process";
@@ -16,7 +16,6 @@ const ROOT = path.resolve(__dirname, "../../../..");
 
 const ALLOWED = [
   "features/data-tables/records-ui-host/recordsUiHost.tsx",
-  "features/unified-data/realtime/recordsRealtimePort.ts",
   "features/content-ir/registry/table-kind-source.ts",
   "features/data-tables/hooks/useRecordStoreTableRealtime.ts",
 ];

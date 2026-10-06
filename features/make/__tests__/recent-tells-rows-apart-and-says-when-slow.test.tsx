@@ -70,7 +70,7 @@ jest.mock("@/features/data-tables/records-ui-host/recordsUiHost", () => ({
   useAppRecordsConfig: () => ({}),
   useRecordsUiPorts: () => ({}),
 }));
-jest.mock("@/features/unified-data/realtime/recordsRealtimePort", () => ({ createRecordsRealtimePort: () => undefined }));
+jest.mock("@ai-matrx/records/realtime", () => ({ createRecordsRealtimePort: () => undefined }));
 jest.mock("@/features/unified-data/hub/doors", () => ({ dataHome: jest.fn(), dataHomeTables: jest.fn(), doorFailureLine: () => "" }));
 jest.mock("@/features/unified-data/home/dataHomeRows", () => ({ buildDataHomeRows: jest.fn(), dataHomeKindWord: (k: string) => ({ table: "Table", form: "Form", booking: "Booking page" })[k] ?? k }));
 jest.mock("@/features/unified-data/hub/capabilities", () => ({ HUB_CAPABILITIES: [] }));

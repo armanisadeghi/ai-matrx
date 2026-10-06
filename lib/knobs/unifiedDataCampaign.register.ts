@@ -334,10 +334,11 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
   },
   {
     id: "records-realtime-port",
-    file: "features/unified-data/realtime/recordsRealtimePort.ts",
+    file: "features/data-tables/records-ui-host/recordsUiHost.tsx",
     kind: "runtime",
     why:
-      "Lane REALTIME — the host port the store grid's \"Not live: this host bound no realtime " +
+      "Lane REALTIME — the host binds the package's port (`@ai-matrx/records/realtime`, one per " +
+      "organization) that the store grid's \"Not live: this host bound no realtime " +
       "port\" banner has been naming. It joins the private topic `custom:table:<table_id>` that " +
       "the database broadcasts a NOTICE on (ids only, never a value) and re-reads through the " +
       "read door, so per-record access is still decided by the one ladder at READ time. " +
