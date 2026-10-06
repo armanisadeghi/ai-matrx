@@ -440,7 +440,7 @@ export function ShareModal({
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex-1 mt-3 min-h-0 overflow-y-auto">
+            <div className="dialog-scroll-clear-floating flex-1 mt-3 min-h-0 overflow-y-auto">
               <TabsContent value="users" className="mt-0 space-y-3">
                 {/* WHO CAN SEE THIS (SHARE-LANE-CONTROL): the lane, above the people it limits. */}
                 <WhoCanSeeThis
