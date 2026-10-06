@@ -228,6 +228,18 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
   };
   const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu, comment: (id) => commentOnBlock(id) }));
   const [widths, setWidths] = useState(() => columnCss(editor.document as unknown as EngineBlock[]));
+  // With a room the body arrives through the Yjs binding (the first sync, a peer's edit), which
+  // BlockNoteView's onChange never reports — so a page opened in a room drew its columns 50/50. The
+  // editor's own change feed, remote updates included, keeps the widths current.
+  useEffect(() => {
+    const read = () => setWidths(columnCss(editor.document as unknown as EngineBlock[]));
+    const raf = requestAnimationFrame(read);
+    const off = editor.onChange(read, true);
+    return () => {
+      cancelAnimationFrame(raf);
+      off();
+    };
+  }, [editor]);
 
   useEffect(() => {
     onReady?.(editor);
