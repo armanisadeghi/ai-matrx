@@ -12,6 +12,11 @@
  *
  * Every frame of the REAL accumulator stream is drawn by the DOM frame judge
  * (whose scan reads the repr as a leak), and the settled frame equals reload.
+ *
+ * SUPERSEDED BY ROUND 10 (302f4ceed7, 0072e32abd): a repr is DETECTION ONLY — never converted
+ * to a label. It is drawn exactly as written, inside an inline code span that carries
+ * data-kind-source (a deliberate source view, skipped by the judge's visible-text read), so
+ * live and reload still agree and no frame draws it as a raw leak.
  */
 // eslint-disable-next-line import/order -- the judge's mocks must register first
 import { domElementVerdict, domFrameVerdict } from "@/features/content-ir/render-paths/__tests__/dom-frame-judge";
@@ -63,12 +68,9 @@ async function reloadText(text: string): Promise<string> {
 }
 
 describe("a Python-repr kind in prose", () => {
-  it("the transform: complete → one-line label, unfinished → kind name, kindless untouched", () => {
-    expect(spelledKindsAsOneLine(ANSWER)).toBe(
-      "The save tool rejected this payload: **Cell biology** · Flashcard Set. I will retry with a shorter title.",
-    );
-    expect(spelledKindsAsOneLine("Rejected: {'__kind': 'flashcard_set', 'title': 'Cel")).toBe("Rejected: Flashcard Set");
-    expect(spelledKindsAsOneLine("Rejected: {'__ki")).toBe("Rejected: ");
+  it("the transform: a repr is left exactly as written at every point, kindless untouched", () => {
+    expect(spelledKindsAsOneLine(ANSWER)).toBe(ANSWER);
+    expect(spelledKindsAsOneLine("Rejected: {'__kind': 'flashcard_set', 'title': 'Cel")).toBe("Rejected: {'__kind': 'flashcard_set', 'title': 'Cel");
     const plain = "A dict {'a': 1} and {'title': 'x'} stay.";
     expect(spelledKindsAsOneLine(plain)).toBe(plain);
   });
@@ -86,8 +88,8 @@ describe("a Python-repr kind in prose", () => {
     expect(leaks).toEqual([]);
     const settled = frames[frames.length - 1].block;
     const live = await domFrameVerdict(settled, { isStreamActive: false });
-    expect(live.text).toContain("Cell biology");
-    expect(live.text).toContain("Flashcard Set");
+    expect(live.text).toContain("The save tool rejected this payload:");
+    expect(live.text).toContain("I will retry with a shorter title.");
     expect(live.text).toBe(await reloadText(ANSWER));
   });
 });

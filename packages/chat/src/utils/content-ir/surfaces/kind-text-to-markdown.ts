@@ -20,6 +20,7 @@ import { findCodeRanges, fenceParts } from "@ai-matrx/content-ir/source";
 import { kindValueToMarkdown } from "../kinds/kind-value-markdown";
 import { humanizeKind, plainValueMarkdown } from "../kinds/kind-markdown-utils";
 import {
+  balancedEnds,
   findBrokenKindJsonRegions,
   findKindCarryingJsonValues,
   frontMatterEnd,
@@ -69,44 +70,6 @@ function carriesBrokenKind(value: unknown, depth = 0): boolean {
   return Object.values(record).some((item) => carriesBrokenKind(item, depth + 1));
 }
 
-/**
- * For every `{` / `[` in `text`: the end (exclusive) of the string-aware
- * balanced JSON value opening there, or -1 (never balances). Each opener's
- * reading starts outside a string, exactly as if read alone; one right-to-left
- * pass reuses each nested opener's own answer (its reading from inside an
- * enclosing value is the same reading), so the whole table is linear — a
- * reading per opener was quadratic on thousands of unclosed `{` (round 11, P5).
- */
-function balancedEnds(text: string): Int32Array {
-  const ends = new Int32Array(text.length).fill(-1);
-  const stack: string[] = [];
-  for (let start = text.length - 1; start >= 0; start--) {
-    const open = text[start];
-    if (open !== "{" && open !== "[") continue;
-    stack.length = 0;
-    stack.push(open === "{" ? "}" : "]");
-    let inString = false;
-    for (let i = start + 1; i < text.length; i++) {
-      const ch = text[i]!;
-      if (inString) {
-        if (ch === "\\") i++;
-        else if (ch === '"') inString = false;
-        continue;
-      }
-      if (ch === '"') inString = true;
-      else if (ch === "{" || ch === "[") {
-        const end = ends[i]!;
-        if (end < 0) break;
-        i = end - 1;
-      } else if (ch === "}" || ch === "]") {
-        if (stack.pop() !== ch) break;
-        ends[start] = i + 1;
-        break;
-      }
-    }
-  }
-  return ends;
-}
 
 /** Sorted, non-overlapping ranges → for each position, whether it lies inside one (a cursor, linear over a forward walk). */
 function rangeCursor(ranges: Array<[number, number]>): (at: number) => [number, number] | undefined {
