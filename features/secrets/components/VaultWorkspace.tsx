@@ -23,6 +23,9 @@ import {
   Download,
   KeyRound,
   List,
+  ChevronDown,
+  MoreHorizontal,
+  SlidersHorizontal,
   Plus,
   Search,
   Share2,
@@ -33,6 +36,18 @@ import {
   X,
 } from "lucide-react";
 
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -200,7 +215,8 @@ export function VaultWorkspace({
           ? { kind: "organization", organizationId: null }
           : next,
       );
-      const nextFilter = next.kind === "organization" ? next.organizationId : null;
+      const nextFilter =
+        next.kind === "organization" ? next.organizationId : null;
       if (nextFilter !== urlOrgFilter) setUrlOrgFilter(nextFilter);
     } else {
       setUncontrolledScope(next);
@@ -221,7 +237,10 @@ export function VaultWorkspace({
   const organizationNameById = new Map(
     availableOrganizations.map((org) => {
       const distinguisher = orgNameDistinguisher(org, availableOrganizations);
-      return [org.id, distinguisher ? `${org.name} · ${distinguisher}` : org.name] as const;
+      return [
+        org.id,
+        distinguisher ? `${org.name} · ${distinguisher}` : org.name,
+      ] as const;
     }),
   );
   /** Organizations where the person is an owner/admin — each credential is judged by its own. */
@@ -378,6 +397,11 @@ export function VaultWorkspace({
     : null;
   const SelectedIcon = selectedIdentity?.icon ?? KeyRound;
 
+  const mobileScrollRef = useRef<HTMLElement | null>(null);
+  useClippedContentGuard(mobileScrollRef, {
+    label: "Vault credentials",
+    enabled: presentation === "full",
+  });
   const filtering = query.length > 0 || family !== "all" || favoritesOnly;
   const deepLinkTouch = useRef<string | null>(null);
   useEffect(() => {
@@ -413,9 +437,163 @@ export function VaultWorkspace({
     </VaultContextMenu>
   );
 
+  const mobileControls = (
+    <>
+      <div
+        className="flex min-w-0 items-center gap-2 lg:hidden"
+        aria-label="Vault navigation"
+      >
+        {principal.type === "user" && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" icon={<ChevronDown />}>
+                {scope.kind === "mine"
+                  ? "My credentials"
+                  : scope.kind === "shared"
+                    ? "Shared with me"
+                    : "Organization"}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="matrx-touch-targets">
+              <DropdownMenuRadioGroup
+                value={scope.kind}
+                onValueChange={(value) => {
+                  if (value === "organization") openOrganizationScope();
+                  else if (value === "mine" || value === "shared") {
+                    setUserScope({ kind: value });
+                    setSelectedId(null);
+                  }
+                }}
+              >
+                <DropdownMenuRadioItem value="mine">
+                  My credentials
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="shared">
+                  Shared with me
+                </DropdownMenuRadioItem>
+                {availableOrganizations.length > 0 && (
+                  <DropdownMenuRadioItem value="organization">
+                    Organization
+                  </DropdownMenuRadioItem>
+                )}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              icon={<SlidersHorizontal />}
+              aria-label="Vault filters"
+              aria-pressed={family !== "all" || favoritesOnly}
+            >
+              Filters
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="matrx-touch-targets">
+            <DropdownMenuCheckboxItem
+              checked={favoritesOnly}
+              onCheckedChange={setFavoritesOnly}
+            >
+              Favorites
+            </DropdownMenuCheckboxItem>
+            {familiesPresent.length > 1 && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Type</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  value={family}
+                  onValueChange={(value) => {
+                    setFamily(value as "all" | CredentialFamily);
+                    setSelectedId(null);
+                  }}
+                >
+                  <DropdownMenuRadioItem value="all">
+                    All types
+                  </DropdownMenuRadioItem>
+                  {familiesPresent.map((fam) => (
+                    <DropdownMenuRadioItem key={fam} value={fam}>
+                      {FAMILY_LABELS[fam]}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Sort</DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              value={sort}
+              onValueChange={(value) => setSort(value as VaultListSort)}
+            >
+              {VAULT_LIST_SORT_OPTIONS.map((option) => (
+                <DropdownMenuRadioItem key={option.value} value={option.value}>
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {canCreate && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="quiet"
+                icon={<MoreHorizontal />}
+                aria-label="Vault actions"
+              />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="matrx-touch-targets">
+              {canExport && (
+                <DropdownMenuItem
+                  onSelect={() => setBackupOpen(true)}
+                  disabled={vault.busy || vault.loading}
+                >
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Backup & restore
+                </DropdownMenuItem>
+              )}
+              {canExport && (
+                <DropdownMenuItem
+                  onSelect={() => setExportOpen(true)}
+                  disabled={vault.busy || vault.loading}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Export selected logins
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onSelect={() => setImportOpen(true)}
+                disabled={vault.busy}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Import .env
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => setCsvImportOpen(true)}
+                disabled={vault.busy}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Import passwords
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
+      {principal.type === "user" && scope.kind === "organization" && (
+        <div className="lg:hidden">
+          <EntityOrgFilter
+            orgId={scope.organizationId}
+            onChange={chooseOrganizationFilter}
+          />
+        </div>
+      )}
+    </>
+  );
+
   if (presentation === "full") {
     return withMenu(
-      <div className="h-full min-h-0 bg-background">
+      <div className="matrx-touch-targets h-full min-h-0 bg-background">
         <div className="grid h-full min-h-0 overflow-hidden border-t border-border bg-background lg:grid-cols-[14rem_20rem_minmax(0,1fr)] xl:grid-cols-[15rem_22rem_minmax(0,1fr)]">
           <aside className="hidden min-h-0 flex-col border-r border-border bg-muted/20 lg:flex">
             <div className="border-b border-border px-3 py-3.5">
@@ -565,98 +743,20 @@ export function VaultWorkspace({
             )}
           </aside>
 
-          <section className="flex min-h-0 min-w-0 flex-col border-r border-border">
+          {/* On phones the toolbar and records share one scrollport. */}
+          <section
+            ref={mobileScrollRef}
+            data-matrx-page-scroll
+            className="min-h-0 min-w-0 overflow-y-auto border-border lg:flex lg:flex-col lg:overflow-hidden lg:border-r"
+          >
             <div className="space-y-2 border-b border-border px-3 py-3">
-              <div className="flex flex-wrap items-center gap-2 lg:hidden">
-                {principal.type === "user" && (
-                  <div
-                    role="tablist"
-                    aria-label="Vault scope"
-                    className="inline-flex rounded-lg border border-border bg-muted/50 p-0.5"
-                  >
-                    {(["mine", "shared"] as const).map((value) => (
-                      <button
-                        key={value}
-                        type="button"
-                        role="tab"
-                        aria-selected={scope.kind === value}
-                        onClick={() => {
-                          setUserScope({ kind: value });
-                          setSelectedId(null);
-                        }}
-                        className={cn(
-                          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                          scope.kind === value
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {value === "mine" ? "My credentials" : "Shared with me"}
-                      </button>
-                    ))}
-                    {availableOrganizations.length > 0 && (
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={scope.kind === "organization"}
-                        onClick={openOrganizationScope}
-                        className={cn(
-                          "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                          scope.kind === "organization"
-                            ? "bg-card text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        Organization
-                      </button>
-                    )}
-                  </div>
-                )}
-                {principal.type === "user" && scope.kind === "organization" && (
-                  <EntityOrgFilter
-                    orgId={scope.organizationId}
-                    onChange={chooseOrganizationFilter}
-                  />
-                )}
-                {familiesPresent.length > 1 && (
-                  <Select
-                    value={family}
-                    onValueChange={(next) => {
-                      setFamily(next as "all" | CredentialFamily);
-                      setSelectedId(null);
-                    }}
-                  >
-                    <SelectTrigger
-                      className="w-auto min-w-32"
-                      aria-label="Filter by credential type"
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All types</SelectItem>
-                      {familiesPresent.map((fam) => (
-                        <SelectItem key={fam} value={fam}>
-                          {FAMILY_LABELS[fam]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-                <VaultSortControl sort={sort} onSortChange={setSort} />
-                <Button
-                  icon={<Star />}
-                  variant={favoritesOnly ? "outline" : "outline"}
-                  className="shrink-0"
-                  onClick={() => setFavoritesOnly((value) => !value)}
-                  aria-pressed={favoritesOnly}
-                > Favorites
-                </Button>
-              </div>
+              {mobileControls}
 
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-0 flex-1 basis-40 lg:basis-full">
                   <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input adornment="both"
+                  <Input
+                    adornment="both"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search credentials"
@@ -706,7 +806,7 @@ export function VaultWorkspace({
                   credential{filtered.length === 1 ? "" : "s"}
                 </p>
                 {canCreate && (
-                  <div className="flex min-w-0 flex-wrap items-center gap-1">
+                  <div className="hidden min-w-0 flex-wrap items-center gap-1 lg:flex">
                     {canExport && (
                       <Button
                         icon={<ShieldCheck />}
@@ -762,7 +862,7 @@ export function VaultWorkspace({
               />
             )}
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-1.5">
+            <div className="p-1.5 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
               {vault.loading ? (
                 <VaultWorkspaceListSkeleton />
               ) : vault.error && filtered.length === 0 ? (
@@ -954,22 +1054,39 @@ export function VaultWorkspace({
   }
 
   return withMenu(
-    <div className="space-y-3">
+    <div className="matrx-touch-targets space-y-3">
       {scope.kind === "organization" && (
         <div className="flex items-start gap-2.5 rounded-lg border border-border bg-muted/40 p-3 text-xs">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
           <p className="text-muted-foreground">
-            <span className="font-medium text-foreground">
-              Members can use organization credentials without revealing them.
-            </span>{" "}
-            Values are encrypted at rest and only resolved inside trusted server
-            operations. Admins manage access, rotation, and deletion.
+            Members can use credentials without revealing them.
           </p>
         </div>
       )}
 
-      {/* Toolbar — scope, search, filter, and the two create paths in one band */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="space-y-2 lg:hidden">
+        {mobileControls}
+        <div className="flex min-w-0 items-center gap-2">
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search credentials"
+            aria-label="Search credentials"
+          />
+          {canCreate && (
+            <Button
+              icon={<Plus />}
+              variant="primary"
+              onClick={() => setCreateOpen(true)}
+              disabled={vault.busy}
+            >
+              New
+            </Button>
+          )}
+        </div>
+      </div>
+      {/* Desktop toolbar; phone controls use the same menus as the full route. */}
+      <div className="hidden flex-wrap items-center gap-2 lg:flex">
         {/* Scope — a deliberate destination, never a silent widening */}
         {principal.type === "user" && (
           <div
@@ -1024,7 +1141,8 @@ export function VaultWorkspace({
 
         <div className="relative min-w-0 flex-1 basis-56">
           <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input adornment="both"
+          <Input
+            adornment="both"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search vault"
@@ -1764,11 +1882,7 @@ function VaultEmptyState({
         <p className="mx-auto mt-1 max-w-xs text-xs text-muted-foreground">
           Nothing here matches your active search, type, or favorites filter.
         </p>
-        <Button
-          variant="outline"
-          className="mt-3"
-          onClick={onClearFilters}
-        >
+        <Button variant="outline" className="mt-3" onClick={onClearFilters}>
           Clear filters
         </Button>
       </div>
@@ -1791,7 +1905,12 @@ function VaultEmptyState({
             : "An organization admin can add shared credentials here."}
       </p>
       {canCreate && !isShared && (
-        <Button icon={<Plus />} variant="primary" className="mt-3.5" onClick={onCreate}>
+        <Button
+          icon={<Plus />}
+          variant="primary"
+          className="mt-3.5"
+          onClick={onCreate}
+        >
           Add your first credential
         </Button>
       )}

@@ -139,7 +139,7 @@ export function HubFilterMenu({
           {partialNote ? (
             <p className="border-b border-border px-3 py-1.5 text-[11px] text-muted-foreground">{partialNote}</p>
           ) : null}
-          <CommandList className="max-h-[60vh]">
+          <CommandList className="max-h-[60dvh]">
             <CommandEmpty>No filter matches.</CommandEmpty>
             <CommandGroup heading="Kind">
               {HUB_KINDS.map((k) => {
