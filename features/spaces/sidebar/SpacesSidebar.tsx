@@ -21,7 +21,6 @@ import {
   StarOff,
   Trash2,
   LayoutTemplate,
-  TreePalm,
   Undo2,
 } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -32,6 +31,8 @@ import { toast } from "@/lib/toast";
 import type { SpaceId, SpaceSummary } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces, type DropPlacement } from "../state/SpacesProvider";
+import { ImportButton } from "./ImportMenu";
+import { TemplateGallery } from "./TemplateGallery";
 
 const EXPANDED_KEY = "spaces:expanded";
 
@@ -78,7 +79,12 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
           </span>
           Copy link
         </button>
-        <button type="button" className="spaces-menu-row" onClick={act(() => void spaces.duplicateSpace(space.id))}>
+        <button type="button" className="spaces-menu-row" onClick={act(() =>
+            void spaces
+              .duplicateSpace(space.id)
+              .then((copy) => spaces.open(copy.id))
+              .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't duplicate this page.")),
+          )}>
           <span className="spaces-menu-row-icon">
             <Copy size={16} />
           </span>
@@ -290,36 +296,19 @@ function Section({ title, children, onAdd }: { title: string; children: React.Re
   );
 }
 
-/** Notion's sidebar "Templates": for now the one sample, added as real saved pages. */
-function TemplatesPopover() {
+/** Notion's sidebar "Templates": opens the template picker (I2). */
+function TemplatesButton() {
   const { sample } = useSpaces();
   const [open, setOpen] = useState(false);
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button type="button" className="spaces-nav-row">
-          <LayoutTemplate size={17} />
-          Templates
-          {sample.adding ? <span className="ml-auto type-secondary text-muted-foreground">{sample.progress}</span> : null}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent surface="solid" side="right" align="end" width="md" padding="xs">
-        <button
-          type="button"
-          className="spaces-menu-row"
-          disabled={sample.adding}
-          onClick={() => {
-            setOpen(false);
-            void sample.add();
-          }}
-        >
-          <span className="spaces-menu-row-icon">
-            <TreePalm size={16} />
-          </span>
-          <span className="flex-1 truncate text-left">{sample.adding ? `Adding… ${sample.progress ?? ""}` : "Add the Traveling SMM™ OS sample"}</span>
-        </button>
-      </PopoverContent>
-    </Popover>
+    <>
+      <button type="button" className="spaces-nav-row" onClick={() => setOpen(true)}>
+        <LayoutTemplate size={17} />
+        Templates
+        {sample.adding ? <span className="ml-auto type-secondary text-muted-foreground">{sample.progress}</span> : null}
+      </button>
+      <TemplateGallery open={open} onOpenChange={setOpen} />
+    </>
   );
 }
 
@@ -450,7 +439,8 @@ export function SpacesSidebarContent({ onCollapse }: { onCollapse?: () => void }
       </div>
 
       <div className="spaces-sidebar-foot">
-        <TemplatesPopover />
+        <TemplatesButton />
+        <ImportButton />
         <TrashPopover />
       </div>
     </div>

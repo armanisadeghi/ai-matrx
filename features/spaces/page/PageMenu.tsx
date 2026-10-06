@@ -5,7 +5,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Switch } from "@ai-matrx/design-system/controls";
-import { Copy, CornerUpRight, History, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
+import { Copy, CornerUpRight, FileUp, History, LayoutTemplate, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
 import type { SpaceDoc } from "../contract";
@@ -51,6 +51,9 @@ export function PageMenu({
   onDelete,
   onUndo,
   onHistory,
+  onExport,
+  isTemplate,
+  onTemplate,
   updatedLabel,
   counts,
 }: {
@@ -62,6 +65,11 @@ export function PageMenu({
   onDelete: () => void;
   onUndo: () => void;
   onHistory: () => void;
+  /** K1 — opens the Export dialog. */
+  onExport: () => void;
+  /** I3 — the page carries the template label (null = not known yet). */
+  isTemplate: boolean | null;
+  onTemplate: (on: boolean) => void;
   updatedLabel: string;
   /** A14 — the page's words and characters, Notion's "Word count" line. */
   counts: { words: number; characters: number };
@@ -105,6 +113,14 @@ export function PageMenu({
         <div className="my-1 border-t border-border" />
         <Row icon={<Undo2 size={16} />} label="Undo" onClick={act(onUndo)} />
         <Row icon={<History size={16} />} label="Page history" onClick={act(onHistory)} />
+        <div className="my-1 border-t border-border" />
+        <Row
+          icon={<LayoutTemplate size={16} />}
+          label="Save as template"
+          onClick={isTemplate === null ? undefined : () => onTemplate(!isTemplate)}
+          end={<Switch checked={Boolean(isTemplate)} disabled={isTemplate === null} tabIndex={-1} aria-hidden />}
+        />
+        <Row icon={<FileUp size={16} />} label="Export" onClick={act(onExport)} />
         <p className="px-2 pt-2 type-secondary text-muted-foreground" title={`${counts.characters.toLocaleString()} characters`}>
           Word count: {counts.words.toLocaleString()} {counts.words === 1 ? "word" : "words"}
         </p>

@@ -21,6 +21,8 @@ export interface LiveSpacesStore extends SpacesStore {
   onChange(listener: (change: SpacesChange) => void): () => void;
   /** Page history: every saved version of a page, newest first. */
   history(id: SpaceId): Promise<SpaceHistoryEntry[]>;
+  /** A write made outside the store (e.g. "Use template"): the open screens re-read the tree. */
+  notifyTree(): void;
 }
 
 export function createLiveSpacesStore(getOrganizationId: () => string | null): LiveSpacesStore {
@@ -55,11 +57,18 @@ export function createLiveSpacesStore(getOrganizationId: () => string | null): L
       return saved;
     },
     move: (id, parentId, position) => tree(base.move(id, parentId, position)),
-    duplicate: (id, options) => tree(base.duplicate(id, options)),
+    async duplicate(id, options) {
+      // A sub-page's copy stays beside it, in its organization; a top-level page's copy is a new
+      // top-level page, filed in the active organization like any new top-level page.
+      const source = await base.get(id);
+      const target = source?.parentId ? base : createDatabaseSpacesStore(await ensureOrgId(getOrganizationId()));
+      return tree(target.duplicate(id, options));
+    },
     archive: (id) => tree(base.archive(id)),
     restore: (id) => tree(base.restore(id)),
     subscribe: (id, onChange) => base.subscribe(id, onChange),
     history: (id) => base.history(id),
+    notifyTree: () => emit({ kind: "tree" }),
     onChange(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);

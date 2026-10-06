@@ -18,6 +18,7 @@ import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { addTravelingSmmSample } from "../store/sample";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
+import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
 
 const FAVORITES_KEY = "spaces:favorites";
 const RECENT_KEY = "spaces:recent";
@@ -56,6 +57,14 @@ interface SpacesContextValue {
   /** A page created in this tab, handed to its screen once so it opens without a round trip. */
   takeFresh: (id: SpaceId) => SpaceDoc | null;
   sample: { adding: boolean; progress: string | null; add: () => Promise<void> };
+  /** I2 / I3 — Spaces marked as templates that the person can open (null = not read yet). */
+  templates: {
+    ids: string[] | null;
+    error: string | null;
+    refresh: () => void;
+    setTemplate: (id: SpaceId, on: boolean) => Promise<void>;
+    use: (id: SpaceId, title: string) => Promise<void>;
+  };
   summaries: SpaceSummary[];
   archived: SpaceSummary[];
   byId: Map<SpaceId, SpaceSummary>;
@@ -105,6 +114,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const [quickFind, setQuickFind] = useState<SpacesContextValue["quickFind"]>({ open: false, mode: "jump" });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [templateIds, setTemplateIds] = useState<string[] | null>(null);
+  const [templatesError, setTemplatesError] = useState<string | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -130,6 +141,11 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       // Position and parent stay as the list gave them (a saved doc does not carry the list's order key).
       setAll((prev) => prev.map((s) => (s.id === id ? { ...s, title, icon, updatedAt, isArchived } : s)));
     });
+    // The template labels (I3): the ••• menu shows whether the open page is one.
+    void listTemplateIds().then(
+      (ids) => live && setTemplateIds(ids),
+      (err: unknown) => live && setTemplatesError(err instanceof Error ? err.message : "We couldn't list templates."),
+    );
     setFavorites(readList(FAVORITES_KEY));
     setRecent(readList(RECENT_KEY));
     return () => {
@@ -226,6 +242,29 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
       setSampleProgress(null);
     }
   };
+  const refreshTemplates = () => {
+    void listTemplateIds().then(
+      (ids) => {
+        setTemplateIds(ids);
+        setTemplatesError(null);
+      },
+      (err: unknown) => setTemplatesError(err instanceof Error ? err.message : "We couldn't list templates."),
+    );
+  };
+  const markTemplate = async (id: SpaceId, on: boolean) => {
+    await setTemplate(id, on);
+    setTemplateIds((prev) => (on ? [...new Set([...(prev ?? []), id])] : (prev ?? []).filter((t) => t !== id)));
+  };
+  const applyTemplate = async (id: SpaceId, title: string) => {
+    try {
+      const copyId = await copyTemplate(id, title, orgRef.current);
+      // The tree learns of the copy, then it opens (Notion opens the new page at once).
+      store.notifyTree();
+      open(copyId);
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't use this template.");
+    }
+  };
   const archiveSpace = (id: SpaceId) => store.archive(id);
   const restoreSpace = (id: SpaceId) => store.restore(id);
   const duplicateSpace = async (id: SpaceId) => {
@@ -256,6 +295,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     takeFocusTitle,
     takeFresh,
     sample: { adding: sampleProgress !== null, progress: sampleProgress, add: addSample },
+    templates: { ids: templateIds, error: templatesError, refresh: refreshTemplates, setTemplate: markTemplate, use: applyTemplate },
     summaries: visible,
     archived,
     byId: visibleById,

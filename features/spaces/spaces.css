@@ -1356,3 +1356,16 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-backlinks-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px; background: none; border: 0; text-align: left; cursor: pointer; color: inherit; }
 .spaces-backlinks-item:hover { background: var(--spaces-hover); }
 .spaces-backlinks-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* I2 — template picker (Notion: list left, the template's page right, "Use template" top right). */
+.spaces-templates-body { display: grid; grid-template-columns: 260px minmax(0, 1fr); height: 100%; min-height: 0; }
+.spaces-templates-list { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--spaces-rule); }
+.spaces-templates-preview { display: flex; flex-direction: column; min-height: 0; }
+.spaces-templates-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--spaces-rule); }
+.spaces-templates-page { flex: 1 1 auto; overflow-y: auto; padding: 40px 56px; }
+.spaces-templates-title { font-size: 32px; font-weight: 700; line-height: 1.2; margin: 0 0 12px; }
+@media (max-width: 640px) {
+  .spaces-templates-body { grid-template-columns: 1fr; grid-template-rows: minmax(0, 38%) minmax(0, 1fr); }
+  .spaces-templates-list { border-right: 0; border-bottom: 1px solid var(--spaces-rule); }
+  .spaces-templates-page { padding: 20px; }
+}

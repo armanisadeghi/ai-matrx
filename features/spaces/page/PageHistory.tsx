@@ -19,7 +19,7 @@ import type { SpaceHistoryEntry } from "../store-db/supabase-store";
 
 const text = (b: SpaceBlock) => (b.text ?? []).map((s) => s.text).join("");
 
-function Preview({ blocks, depth = 0 }: { blocks: SpaceBlock[]; depth?: number }) {
+export function Preview({ blocks, depth = 0 }: { blocks: SpaceBlock[]; depth?: number }) {
   return (
     <>
       {blocks.map((b) => {

@@ -14,6 +14,7 @@ import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
 import { useSourcePicker } from "../data/SourcePicker";
+import { ExportDialog } from "./ExportDialog";
 import { PageHistory } from "./PageHistory";
 
 import type { SpaceBlock, SpaceDoc } from "../contract";
@@ -102,6 +103,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [editorRound, setEditorRound] = useState(0);
   const [focusTitle, setFocusTitle] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -416,6 +418,14 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
           }}
           onUndo={() => editorRef.current?.undo()}
           onHistory={() => setHistoryOpen(true)}
+          onExport={() => setExportOpen(true)}
+          isTemplate={spaces.templates.ids ? spaces.templates.ids.includes(doc.id) : null}
+          onTemplate={(on) =>
+            void spaces.templates
+              .setTemplate(doc.id, on)
+              .then(() => toast.success(on ? "Saved as a template" : "No longer a template"))
+              .catch((e: unknown) => toast.error(e instanceof Error ? e.message : "We couldn't change the template label."))
+          }
           updatedLabel={editedAgo(doc.updatedAt, now)}
           counts={pageCounts(doc)}
         />
@@ -495,6 +505,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: () => toast.info("AI is not connected yet") }}
           />
           {sourcePicker}
+          <ExportDialog open={exportOpen} onOpenChange={setExportOpen} spaceId={doc.id} beforeExport={flush} />
           <PageHistory
             open={historyOpen}
             onOpenChange={setHistoryOpen}
