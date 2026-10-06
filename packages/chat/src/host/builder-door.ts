@@ -23,6 +23,11 @@ export interface DuplicateAgentOptions {
   asSystem?: boolean;
   organizationId?: string;
   followsSource?: boolean;
+  /**
+   * Copy this exact saved version (agent.definition_version id) instead of the
+   * agent as it is now. Omitted = the current agent.
+   */
+  versionId?: string;
 }
 
 export type CreateAgentInput = Partial<

@@ -26,9 +26,35 @@ import {
 } from "@ai-matrx/design-system";
 import { Alert, AlertDescription } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system";
+import { Select } from "@ai-matrx/design-system/controls";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 
-export type DuplicateOutcomeState = "loading" | "success" | "error";
+/** "choose" = the person picks which version to copy before anything runs. */
+export type DuplicateOutcomeState = "choose" | "loading" | "success" | "error";
+
+/** The value of the "copy the agent as it is now" choice. */
+export const CURRENT_VERSION_CHOICE = "current";
+
+export interface DuplicateVersionOption {
+  versionId: string;
+  versionNumber: number;
+  changedAt: string;
+  changeNote: string | null;
+}
+
+export interface DuplicateVersionChooser {
+  /** The source agent's live version number, shown on the default choice. */
+  currentVersion: number | null;
+  /** Saved past versions, newest first. */
+  versions: DuplicateVersionOption[];
+  versionsLoading: boolean;
+  /** Set when the version list could not be read — the current version still works. */
+  versionsError: string | null;
+  /** CURRENT_VERSION_CHOICE or a version id. */
+  selected: string;
+  onSelectedChange: (value: string) => void;
+  onConfirm: () => void;
+}
 
 export interface AgentDuplicateOutcomeDialogProps {
   open: boolean;
@@ -46,6 +72,8 @@ export interface AgentDuplicateOutcomeDialogProps {
   /** Whether the source agent was a builtin/system agent. Tweaks the success
    *  copy so admins know the duplicate is also a system agent. */
   asSystem?: boolean;
+  /** Required for the "choose" state. */
+  chooser?: DuplicateVersionChooser;
 }
 
 /**
@@ -70,6 +98,7 @@ export function AgentDuplicateOutcomeDialog({
   newAgentPath,
   errorMessage,
   asSystem = false,
+  chooser,
 }: AgentDuplicateOutcomeDialogProps) {
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -92,7 +121,9 @@ export function AgentDuplicateOutcomeDialog({
   };
 
   const titleText =
-    state === "loading"
+    state === "choose"
+      ? "Duplicate agent"
+      : state === "loading"
       ? "Duplicating agent…"
       : state === "success"
         ? asSystem
@@ -101,7 +132,9 @@ export function AgentDuplicateOutcomeDialog({
         : "Duplicate failed";
 
   const descriptionText =
-    state === "loading"
+    state === "choose"
+      ? "Pick the version to copy into a new agent."
+      : state === "loading"
       ? "Creating a copy with all messages, variables, settings, and tools."
       : state === "success"
         ? newAgentName
@@ -111,6 +144,49 @@ export function AgentDuplicateOutcomeDialog({
 
   const body = (
     <div className="space-y-4">
+      {state === "choose" && chooser && (
+        <div className="space-y-3">
+          <Select
+            aria-label="Version to copy"
+            className="w-full"
+            value={chooser.selected}
+            onValueChange={chooser.onSelectedChange}
+            options={[
+              {
+                value: CURRENT_VERSION_CHOICE,
+                label:
+                  chooser.currentVersion != null
+                    ? `Current version (v${chooser.currentVersion})`
+                    : "Current version",
+              },
+              ...chooser.versions
+                .filter((v) => v.versionNumber !== chooser.currentVersion)
+                .map((v) => ({ value: v.versionId, label: versionOptionLabel(v) })),
+            ]}
+          />
+          {chooser.versionsLoading && (
+            <p className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Loading versions…
+            </p>
+          )}
+          {chooser.versionsError && (
+            <p className="text-xs text-destructive">
+              Past versions could not be loaded: {chooser.versionsError}
+            </p>
+          )}
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={handleStayHere}>
+              Cancel
+            </Button>
+            <Button onClick={chooser.onConfirm}>
+              <Copy className="h-4 w-4" />
+              Duplicate
+            </Button>
+          </div>
+        </div>
+      )}
+
       {state === "loading" && (
         <div className="flex flex-col items-center gap-3 py-6">
           <Loader2 className="h-10 w-10 animate-spin text-primary" />
@@ -213,4 +289,16 @@ export function AgentDuplicateOutcomeDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function versionOptionLabel(v: DuplicateVersionOption): string {
+  const date = new Date(v.changedAt).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const note = v.changeNote?.trim();
+  return note
+    ? `v${v.versionNumber} · ${date} · ${note.length > 40 ? `${note.slice(0, 40)}…` : note}`
+    : `v${v.versionNumber} · ${date}`;
 }

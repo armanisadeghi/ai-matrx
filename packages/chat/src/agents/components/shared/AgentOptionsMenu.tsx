@@ -2,7 +2,7 @@
 
 import { useAppDispatch, useAppSelector } from "../../../store/hooks";
 import { applyOrganizationContextHeader } from "../../../host/server/organization-context";
-import { getBuilderDoor, requireBuilderDoor } from "../../../host/builder-door";
+import { getBuilderDoor } from "../../../host/builder-door";
 import { invalidateAgentCache } from "../../redux/agent-definition/invalidate-agent-cache.thunk";
 import { selectAgentById } from "../../redux/agent-definition/selectors";
 import { useOpenAgentSettingsWindow } from "../../../host/window-openers";
@@ -24,7 +24,7 @@ import { useOpenSaveTemplateDialog } from "../../../host/window-openers";
 const SAVE_AS_TEMPLATE_LABEL = "Save as template";
 
 import { useCallback, useState } from "react";
-import { usePathname, Link } from "../../../host/navigation";
+import { Link } from "../../../host/navigation";
 import {
   MoreHorizontal,
   FileText,
@@ -69,19 +69,11 @@ import {
 } from "@ai-matrx/design-system";
 import { Drawer, DrawerContent, DrawerTitle } from "@ai-matrx/design-system";
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
-import {
-  AgentDuplicateOutcomeDialog,
-  type DuplicateOutcomeState,
-} from "./AgentDuplicateOutcomeDialog";
+import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
 import { ReferenceCopyMenuItem } from "@ai-matrx/chat/host/ui-slots";
-import {
-  ADMIN_SYSTEM_AGENTS_BASE_PATH,
-  isAdminSystemAgentsContext,
-} from "./agent-route-context";
 import { useAgentLifecycleActions } from "../../lifecycle/useAgentLifecycleActions";
-import { getUserMessage } from "@ai-matrx/agents/matrx";
 import { selectIsSuperAdmin } from "../../../host/identity";
-import { selectOrganizationId, isOrganizationSelectionCancelled } from "../../../host/org";
+import { selectOrganizationId } from "../../../host/org";
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 const INTERFACE_VARIATIONS = [
@@ -240,7 +232,6 @@ export function AgentOptionsMenu({
   const [isConverting, setIsConverting] = useState(false);
   const [isRefreshingCache, setIsRefreshingCache] = useState(false);
   const dispatch = useAppDispatch();
-  const pathname = usePathname();
   const openSettings = useOpenAgentSettingsWindow();
   const openRunHistory = useOpenAgentRunHistoryWindow();
   const openAdvancedEditor = useOpenAgentContentWindow();
@@ -256,19 +247,13 @@ export function AgentOptionsMenu({
   const openImport = useOpenAgentImportWindow();
   const openInterfaceVariations = useOpenAgentInterfaceVariationsWindow();
 
-  // Post-duplicate outcome dialog — the user picks whether to navigate to the
-  // copy, open it in a new tab, or stay put. State is lifted here (rather
-  // than inside the desktop/mobile branches) so the dialog survives the
-  // closing of the parent dropdown / drawer that triggered the duplicate.
-  const [duplicateOpen, setDuplicateOpen] = useState(false);
-  const [duplicateState, setDuplicateState] =
-    useState<DuplicateOutcomeState>("loading");
-  const [duplicatedAgentId, setDuplicatedAgentId] = useState<string | null>(
-    null,
-  );
-  const [duplicatedAgentName, setDuplicatedAgentName] = useState<string>("");
-  const [duplicateError, setDuplicateError] = useState<string>("");
-  const [duplicateAsSystem, setDuplicateAsSystem] = useState(false);
+  // Duplicate asks which version to copy (default: current), then runs the
+  // shared flow. The dialog lives at this level so it survives the dropdown /
+  // drawer that opened it closing.
+  const duplicateFlow = useAgentDuplicateFlow(agentId, {
+    basePath,
+    fallbackSuffix: "",
+  });
 
   // Builtin/system agents need different menu options than user agents.
   // - "Convert to Template" is meaningless — builtins ARE the templates users
@@ -282,68 +267,7 @@ export function AgentOptionsMenu({
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const isBuiltin = agent?.agentType === "builtin";
 
-  // Admin surfaces (the system-agents route family) want every action to
-  // operate on the system catalogue rather than the admin's personal one.
-  // The route declares this by passing `basePath`; we don't try to detect it
-  // any other way so the contract stays explicit.
-  const isAdminContext = isAdminSystemAgentsContext(basePath);
-
-  /**
-   * Compute where "Open new agent" / "Open in new tab" should land for the
-   * duplicated copy. We mirror the user's current sub-route (e.g. `/build`,
-   * `/run`, `/widgets`) so they keep the working context they were just in.
-   * If the source-agent segment isn't found in the pathname (the menu is
-   * rendered from a list page, etc.), the destination is the bare agent
-   * overview — a sensible default.
-   */
-  const newAgentPath = duplicatedAgentId
-    ? (() => {
-        const sourceSegment = `${basePath}/${agentId}`;
-        const suffix =
-          pathname && pathname.startsWith(sourceSegment)
-            ? pathname.slice(sourceSegment.length)
-            : "";
-        return `${basePath}/${duplicatedAgentId}${suffix}`;
-      })()
-    : null;
-
-  /**
-   * Kicks off the duplicate flow and drives the outcome dialog through
-   * loading → success | error. Both the desktop dropdown row and the mobile
-   * drawer item route through this function so the dialog state lives in
-   * exactly one place. Each caller is responsible for closing its own
-   * surrounding surface (dropdown / drawer) before invoking this.
-   */
-  const runDuplicate = useCallback(async () => {
-    // From the admin surface, "Duplicate" must produce another system agent
-    // — duplicating a builtin into a personal user agent silently smuggled
-    // it out of the system catalogue (the original bug). On the user
-    // surface, this is the legitimate "fork a builtin into my workspace"
-    // flow so we leave it alone.
-    const asSystem = isAdminContext && isBuiltin;
-    setDuplicateAsSystem(asSystem);
-    setDuplicatedAgentId(null);
-    setDuplicatedAgentName(agent?.name ? `Copy of ${agent.name}` : "");
-    setDuplicateError("");
-    setDuplicateState("loading");
-    setDuplicateOpen(true);
-
-    try {
-      const newId = await dispatch(
-        requireBuilderDoor().duplicateAgent({ agentId, asSystem }),
-      ).unwrap();
-      setDuplicatedAgentId(newId);
-      setDuplicateState("success");
-    } catch (err) {
-      // Closing the organization picker is "not now", never a failure.
-      if (isOrganizationSelectionCancelled(err)) {
-        setDuplicateOpen(false);
-        return;
-      }
-      setDuplicateError(getUserMessage(err));
-      setDuplicateState("error");
-    }
-  }, [agent?.name, agentId, dispatch, isAdminContext, isBuiltin]);
+  const runDuplicate = duplicateFlow.openChooser;
 
   // Without a registered builder door (a bare host) there is no Duplicate: the row is absent
   // and the missing door is reported once (host/builder-door), never a button that does nothing.
@@ -530,17 +454,7 @@ export function AgentOptionsMenu({
   // Single dialog instance shared by both desktop and mobile flows. Lives at
   // the parent level so the dropdown / drawer that triggered the duplicate
   // can close cleanly without unmounting the in-flight dialog.
-  const duplicateDialog = (
-    <AgentDuplicateOutcomeDialog
-      open={duplicateOpen}
-      onOpenChange={setDuplicateOpen}
-      state={duplicateState}
-      newAgentName={duplicatedAgentName}
-      newAgentPath={newAgentPath}
-      errorMessage={duplicateError}
-      asSystem={duplicateAsSystem}
-    />
-  );
+  const duplicateDialog = duplicateFlow.dialog;
 
   if (isMobile) {
     return (
@@ -669,8 +583,7 @@ export function AgentOptionsMenu({
             Manage
           </DropdownMenuLabel>
           {managementItems.map(({ label, icon: Icon, soon }) => {
-            const duplicateInFlight =
-              duplicateOpen && duplicateState === "loading";
+            const duplicateInFlight = duplicateFlow.isDuplicating;
             const isLoading =
               (label === "Convert to Template" && isConverting) ||
               (label === "Duplicate" && duplicateInFlight);
@@ -784,7 +697,7 @@ function MobileMenuContent({
   /** Parent-owned duplicate orchestrator. The mobile drawer closes itself
    *  immediately after invoking this; the parent's outcome dialog takes
    *  over from there. */
-  onTriggerDuplicate: () => Promise<void>;
+  onTriggerDuplicate: () => Promise<void> | void;
   onTriggerRefreshCache: () => Promise<void>;
   isRefreshingCache: boolean;
 }) {
