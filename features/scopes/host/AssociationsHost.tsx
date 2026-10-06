@@ -70,6 +70,8 @@ import { openFilePicker } from "@/features/files/components/pickers/cloudFilesPi
 import { createDocument } from "@/features/data-tables/document-service";
 import type { Visibility } from "@/features/files/types";
 import { getAssociationsStore } from "./associationsStore";
+import { RichContent } from "@/components/rich-content/RichContent";
+import { cn } from "@/lib/utils";
 
 const VISIBILITIES: readonly Visibility[] = [
   "personal",
@@ -90,7 +92,20 @@ function UnresolvedRefDoor({ token, id }: { token: string; id: string }) {
   );
 }
 
+// A comment body is markdown (an edit thread's "Was:/Now:" quoted blocks): the same compact
+// inline rendering the document sidecar uses, with quoted blocks flowing tight.
+const QUOTED_BLOCK = /^\s*>/m;
+const BLOCKS_FLOW_TIGHT = "whitespace-normal [&_.rc-inline-p]:whitespace-pre-wrap [&_.list-item]:whitespace-pre-wrap";
+function CommentBodyImpl({ body, className }: { body: string; className?: string | undefined }) {
+  return (
+    <div className={cn("text-sm leading-5 text-foreground", QUOTED_BLOCK.test(body) && BLOCKS_FLOW_TIGHT, className)}>
+      <RichContent level="inline" source={body} />
+    </div>
+  );
+}
+
 const UI_PORTS: AssociationsUiPorts = {
+  commentBody: CommentBodyImpl,
   notifier: {
     success: (msg) => toast.success(msg),
     error: (msg, opts) => toast.error(msg, opts),
