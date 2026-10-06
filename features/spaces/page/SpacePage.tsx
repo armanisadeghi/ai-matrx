@@ -254,6 +254,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     const sent = docRef.current;
     const key = contentKey(sent);
     pending.current = false;
+    // The cadence's max wait runs from the first change AFTER what this save carries.
+    dirtySince.current = null;
     if (key === savedKey.current) {
       dirtySince.current = null;
       setSaveState("saved");
@@ -275,7 +277,6 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       }
       baseVersion.current = saved.version;
       savedKey.current = key;
-      dirtySince.current = pending.current ? dirtySince.current : null;
       if (docRef.current) docRef.current = { ...docRef.current, version: saved.version, updatedAt: saved.updatedAt };
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
@@ -292,7 +293,8 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
       toast.error(message);
     } finally {
       inFlight.current = false;
-      if (pending.current && !refused.current && !timer.current) timer.current = window.setTimeout(() => void flush(), 1000);
+      // Changes made while this save was in flight wait for the cadence like any other (never a fixed retry).
+      if (pending.current && !refused.current && !timer.current) schedule();
     }
   };
   /**
