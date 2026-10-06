@@ -293,9 +293,9 @@ function viewSpec(tableId: string, view: SpaceDbView, fields: Field[] = []): Sav
     startField: view.dateField ?? null,
     sorts: view.sorts ?? [],
     filters: scalarFilters(view.filters),
-    ...(view.hiddenFields?.length || hasFormats
-      ? { presentation: { ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}) } }
-      : {}),
+    // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
+    // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
+    presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}) },
   };
 }
 
