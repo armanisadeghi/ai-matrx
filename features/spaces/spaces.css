@@ -820,6 +820,16 @@
   opacity: 0.7;
   text-decoration-color: currentColor;
 }
+/* Notion's rhythm, measured on the reference at 2000px: a link-to-page row sits 32.5px from the next
+   (in a callout box or not), a to-do 29px; a plain paragraph keeps the 29.5px rhythm. */
+.spaces-editor .bn-block-content[data-content-type="page"] {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+.spaces-editor .bn-block-content[data-content-type="checkListItem"] {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
 .spaces-editor .bn-block-content[data-content-type="checkListItem"] > div > input {
   width: 16px;
   height: 24px;

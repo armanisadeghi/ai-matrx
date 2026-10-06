@@ -271,8 +271,17 @@ function scalarFilters(f: SpaceDbView["filters"]): Record<string, string | numbe
   return out;
 }
 
-function viewSpec(tableId: string, view: SpaceDbView): SavedViewSpec {
+/** Notion's default date is "Full date" (January 1, 2026): every date column of an inline grid. */
+function longDates(fields: Field[]): Record<string, { id: "date"; options: { dateStyle: "long" } }> {
+  const out: Record<string, { id: "date"; options: { dateStyle: "long" } }> = {};
+  for (const f of fields) if (kindOf(f) === "date" || kindOf(f) === "datetime") out[f.key] = { id: "date", options: { dateStyle: "long" } };
+  return out;
+}
+
+function viewSpec(tableId: string, view: SpaceDbView, fields: Field[] = []): SavedViewSpec {
   const layout = view.layout === "chart" ? "grid" : view.layout;
+  const formats = longDates(fields);
+  const hasFormats = Object.keys(formats).length > 0;
   return {
     name: view.name,
     subject: tableId,
@@ -282,7 +291,9 @@ function viewSpec(tableId: string, view: SpaceDbView): SavedViewSpec {
     startField: view.dateField ?? null,
     sorts: view.sorts ?? [],
     filters: scalarFilters(view.filters),
-    ...(view.hiddenFields?.length ? { presentation: { hiddenFields: view.hiddenFields } } : {}),
+    ...(view.hiddenFields?.length || hasFormats
+      ? { presentation: { ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}) } }
+      : {}),
   };
 }
 
@@ -312,7 +323,7 @@ function DatabaseBody({
   const group = needsGroup ? fields.find((f) => ["select", "status", "list"].includes(kindOf(f)))?.key : undefined;
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
   const date = needsDate ? fields.find((f) => ["datetime", "date"].includes(kindOf(f)))?.key : undefined;
-  const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null });
+  const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null }, fields);
   // Notion's inline database: records-ui's embedded grid (no search box, tick-boxes, Actions column or
   // pager; one-line rows; its own "New page" line, which writes the row in place).
   return (

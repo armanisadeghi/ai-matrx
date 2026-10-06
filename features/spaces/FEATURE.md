@@ -115,3 +115,10 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   place. The source picker's "Sample agency" rows install too. Date fields carry `absoluteDates`; title fields are not
   required ("+ New page" writes an untitled row); the client grid hides the store's reverse links (`linked:<inverse key>`).
   Type measured on the references: title 36px, blocks 15px/1.5 (`spaces.css`).
+- 2026-10-06 — builder round 12: "Add the sample" files the agency tables in the sample PAGE's organization (an existing
+  page: `content.document.organization_id`; a new page and its tables: the write organization, created by
+  `createDatabaseSpacesStore(org)`), and repoints any block left on another organization's agency tables. The install is
+  the gallery's whole Install: after `template_install`, `addInstalledAgent` (features/make) copies and notes the "Agency
+  assistant" with the gallery's ports (`installAgencySample(org, dispatch)`). Embedded grids hand every date column
+  `presentation.formats` date `long` ("January 1, 2026"); records-ui 0.101.29's embedded look (40px centred rows,
+  dividers, choice dots) needs nothing from the host. Rhythm: link-to-page rows 32.5px, to-dos 29px (measured).
