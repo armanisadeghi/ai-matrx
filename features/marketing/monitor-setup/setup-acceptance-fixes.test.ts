@@ -286,3 +286,20 @@ describe("A2 — a person nobody put on file (the CEO picked off a website)", ()
     expect(accepted.searchTerms.map((t) => t.text)).toContain("Kelvin Okafor");
   });
 });
+
+describe("A3 — a person-shaped brand alias nobody put on file", () => {
+  it("is offered, not preselected, when the server's name check flags it", () => {
+    const draft = newDraft({
+      brandName: "All Green Recycling",
+      aliases: ["all green electronics recycling", "Kelvin Okafor"],
+      siteId: "site-1",
+      timezone: "America/Los_Angeles",
+      people: PEOPLE,
+      personShapedAliases: ["Kelvin Okafor"],
+    });
+    expect(draft.keywords.map((k) => k.keyword)).not.toContain("Kelvin Okafor");
+    expect(draft.personOffers).toEqual([
+      expect.objectContaining({ text: "Kelvin Okafor", target: "keywords", why: "person" }),
+    ]);
+  });
+});

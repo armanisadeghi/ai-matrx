@@ -667,16 +667,28 @@ export function newDraft(input: {
   timezone: string;
   /** Who is a person. An alias naming one is offered, never preselected (defect A). */
   people: PeopleIndex;
+  /**
+   * The aliases the server's one setup name guard says look like a person
+   * (`alias_person_names` on the setup facts) — offered, never preselected.
+   * `null` = the check could not be read, so every alias is offered unchecked.
+   */
+  personShapedAliases?: string[] | null;
 }): MonitorDraft {
   const hasSite = Boolean(input.siteId);
   const brandKey = normalizeName(input.brandName);
   const aliases: string[] = [];
   const personOffers: PersonOffer[] = [];
+  const shaped = new Set(
+    (input.personShapedAliases ?? []).map((a) => normalizeName(a)),
+  );
   for (const alias of input.aliases) {
-    const unchecked = input.people.names === null;
+    const unchecked =
+      input.people.names === null || input.personShapedAliases === null;
     if (
       normalizeName(alias) !== brandKey &&
-      (unchecked || namesPerson(alias, input.people))
+      (unchecked ||
+        namesPerson(alias, input.people) ||
+        shaped.has(normalizeName(alias)))
     ) {
       personOffers.push({
         text: alias,
