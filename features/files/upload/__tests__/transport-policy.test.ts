@@ -35,7 +35,7 @@ jest.mock("@/lib/python-client", () => ({
   resolveBaseUrlForPath: jest.fn(() => "https://api.test"),
 }));
 
-jest.mock("@/features/files/api/files", () => ({
+jest.mock("@ai-matrx/media/files/engine/api/files", () => ({
   getFile: jest.fn(),
 }));
 
