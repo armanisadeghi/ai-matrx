@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-06T09:31:02.604Z",
+  "generated_at": "2026-10-06T09:37:05.600Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -109,6 +109,24 @@
       "filename": "anonlanes_the_optin_withdraws_an_undeclared_lane.sql",
       "checksum": "af621dea27edd93feeb9126def93b485709fbe12b575e60a3ef9c35429af2916",
       "applied_at": "2026-09-22 01:36:21.496133+00"
+    },
+    "migrations/campaign/ap4_a_platform_record_lists_the_custom_rows_that_link_to_it.sql": {
+      "source": "matrx-frontend",
+      "filename": "ap4_a_platform_record_lists_the_custom_rows_that_link_to_it.sql",
+      "checksum": "72b83e00ef57201bee429190622b69db1d98bd28b71522ea6107dbf4cf60ad1a",
+      "applied_at": "2026-10-06 04:01:49+00"
+    },
+    "migrations/campaign/ap4_b_a_platform_type_lists_its_columns_with_their_origin.sql": {
+      "source": "matrx-frontend",
+      "filename": "ap4_b_a_platform_type_lists_its_columns_with_their_origin.sql",
+      "checksum": "4124d0e9cca8dc9a42351cf5a58606202ab39c3119b1608757921078bc81e015",
+      "applied_at": "2026-10-06 04:22:54+00"
+    },
+    "migrations/campaign/ap4_c_a_choice_field_is_filtered_by_the_word_a_person_sees.sql": {
+      "source": "matrx-frontend",
+      "filename": "ap4_c_a_choice_field_is_filtered_by_the_word_a_person_sees.sql",
+      "checksum": "25f558707772dca2079028b6ca5939f12371bef723a96cdf3deb8dc2476d84df",
+      "applied_at": "2026-10-06 04:24:48+00"
     },
     "migrations/campaign/apprvfix_the_queue_holds_a_record_write_too.sql": {
       "source": "matrx-frontend",
