@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-06T01:44:36.098Z",
+  "generated_at": "2026-10-06T02:02:06.026Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -943,6 +943,18 @@
       "filename": "chairuistore_a_a_rollup_reads_through_a_back_link.sql",
       "checksum": "cbcd10824b43c7b15a4f8b3e3ea48bd8f70e3ba3caecf473a9865bd14f3f88a0",
       "applied_at": "2026-10-04 00:48:55.459506+00"
+    },
+    "migrations/campaign/chairworld_a_a_public_table_is_read_by_every_signed_in_person.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairworld_a_a_public_table_is_read_by_every_signed_in_person.sql",
+      "checksum": "8728c8b99380f05a048fc2a4c4fb477f0ea72e406d249ed06307135e207a024f",
+      "applied_at": "2026-10-06 02:01:44.559731+00"
+    },
+    "migrations/campaign/chairworld_b_the_example_tables_and_the_public_datasets_are_public_again.sql": {
+      "source": "matrx-frontend",
+      "filename": "chairworld_b_the_example_tables_and_the_public_datasets_are_public_again.sql",
+      "checksum": "48ff7567b7cc51ba02d05080148e911ece53021b15281a6a6e605a5eee0fcb4c",
+      "applied_at": "2026-10-06 02:02:05.003437+00"
     },
     "migrations/campaign/checklists_a_checklist_is_a_template_of_work.sql": {
       "source": "matrx-frontend",
