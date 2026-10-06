@@ -63,7 +63,11 @@ export async function makeAgentFromChat(
   dispatch: AppDispatch,
   conversationId: string,
   onStep: (step: FromChatStep, says: string) => void,
+  /** The person's own examples (R52): more proof cases beside the chat's own request. */
+  examples: string[] = [],
 ): Promise<FromChatAnswer> {
+  const given = examples.map((e) => e.trim()).filter(Boolean);
+  const body = given.length > 0 ? { conversation_id: conversationId, examples: given } : { conversation_id: conversationId };
   let result: AgentStudioFromChatResultData | null = null;
   let refusal: string | null = null;
   let lastStep: FromChatStep | null = null;
@@ -92,7 +96,7 @@ export async function makeAgentFromChat(
         callApi({
           path: "/admin/agent-studio/from-chat",
           method: "POST",
-          body: { conversation_id: conversationId },
+          body,
           stream: true,
           expectedErrorStatuses: [401, 403, 404, 409, 422],
           onStreamEvent,
@@ -102,7 +106,7 @@ export async function makeAgentFromChat(
         callApi({
           path: "/agent-studio/from-chat",
           method: "POST",
-          body: { conversation_id: conversationId },
+          body,
           stream: true,
           expectedErrorStatuses: [401, 403, 404, 409, 422],
           onStreamEvent,

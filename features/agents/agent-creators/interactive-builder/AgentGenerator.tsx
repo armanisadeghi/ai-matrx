@@ -72,12 +72,12 @@ import {
   AlertTriangle,
   Rocket,
   Bug,
-  Plus,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { RichContent } from "@/components/rich-content/RichContent";
 import { AgentStreamingResponse } from "./AgentJsonDisplay";
 import { VoiceTextarea } from "@/components/official/VoiceTextarea";
+import { ExamplesField, emptyExamples } from "@/features/agents/factory/components/ExamplesField";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { asClause } from "@ai-matrx/kit/text";
 
@@ -227,7 +227,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
   const [conversationId, setConversationId] = useState<string | null>(null);
 
   // Pipeline path: the person's example inputs (proof needs 3, R34) and the build it started.
-  const [examples, setExamples] = useState<string[]>(["", "", ""]);
+  const [examples, setExamples] = useState<string[]>(emptyExamples);
   const [buildId, setBuildId] = useState<string | null>(null);
   const [buildOver, setBuildOver] = useState(false);
   const [startingBuild, setStartingBuild] = useState(false);
@@ -850,35 +850,11 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             </div>
 
             {pipelineMode && !mandateMode ? (
-              <div className="space-y-2" data-testid="generator-examples">
-                <Label className="text-xs sm:text-sm font-medium flex items-center gap-2">
-                  Examples
-                  <span className="type-secondary text-muted-foreground tabular-nums">
-                    {examples.filter((e) => e.trim()).length} of 3 to prove it
-                  </span>
-                </Label>
-                {examples.map((value, index) => (
-                  <VoiceTextarea
-                    key={index}
-                    aria-label={`Example ${index + 1}`}
-                    value={value}
-                    onChange={(e) =>
-                      setExamples((all) => all.map((v, i) => (i === index ? e.target.value : v)))
-                    }
-                    placeholder="A real input this agent will get"
-                    className="min-h-[64px] text-sm border border-border rounded-xl"
-                    disabled={startingBuild || buildRunning}
-                  />
-                ))}
-                <Button
-                  variant="quiet"
-                  icon={<Plus />}
-                  onClick={() => setExamples((all) => [...all, ""])}
-                  disabled={startingBuild || buildRunning}
-                >
-                  Add example
-                </Button>
-              </div>
+              <ExamplesField
+                examples={examples}
+                onChange={setExamples}
+                disabled={startingBuild || buildRunning}
+              />
             ) : null}
 
             {showResult && (

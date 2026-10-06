@@ -91,8 +91,7 @@ export function HolderDraftPanel({
         data-testid="holder-draft-no-owner"
         className="rounded-md border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground"
       >
-        Pick the organization this answer is for on the Mandate Holder tab first — a
-        new agent has to belong to someone before it can be drafted.
+        Pick the organization on the Mandate Holder tab first.
       </p>
     );
   }

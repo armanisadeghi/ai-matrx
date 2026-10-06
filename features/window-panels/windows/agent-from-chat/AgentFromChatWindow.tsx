@@ -23,6 +23,8 @@ import { RichContent } from "@/components/rich-content/RichContent";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { BuildProgress } from "@/features/agents/factory/components/BuildProgress";
+import { ExamplesField, emptyExamples } from "@/features/agents/factory/components/ExamplesField";
+import { useFactoryDoor } from "@/features/agents/factory/door";
 import {
   FROM_CHAT_STEPS,
   latestAgentFromChat,
@@ -87,6 +89,9 @@ function AgentFromChatWindowInner({
   // AF-D door #4 on `pipeline`: the Agent Factory build the server started for this chat.
   const [buildId, setBuildId] = useState<string | null>(null);
   const [tab, setTab] = useState<ResultTab>("compare");
+  // R52: on the factory path the person may add examples; the chat's own request is case 1.
+  const pipelineMode = useFactoryDoor("from_chat") === "pipeline";
+  const [examples, setExamples] = useState<string[]>(() => emptyExamples().slice(0, 2));
   const [startingMasterwork, setStartingMasterwork] = useState(false);
   // ONE INTENT, ONE RULEBOOK: a second press of "Start" lands on the same draft.
   const masterworkToken = useRef<string | null>(null);
@@ -121,7 +126,7 @@ function AgentFromChatWindowInner({
     const answer = await makeAgentFromChat(dispatch, conversationId, (step, line) => {
       setReached(step);
       setSays(line);
-    });
+    }, pipelineMode ? examples : []);
     if (answer.ok && "buildId" in answer) {
       setBuildId(answer.buildId);
       setPhase("building");
@@ -183,19 +188,22 @@ function AgentFromChatWindowInner({
 
   return (
     <WindowPanel
+      // The window sizes itself once; the door answers a moment after it opens, so it is
+      // opened again at the right height when the answer changes it.
+      key={pipelineMode ? "factory" : "legacy"}
       title="Make an agent"
       id="agent-from-chat-window"
       minWidth={420}
       minHeight={220}
       width={phase === "done" ? 960 : 520}
-      height={phase === "done" ? 680 : phase === "idle" ? (previous ? 290 : 240) : phase === "building" ? 320 : 420}
+      height={phase === "done" ? 680 : phase === "idle" ? (pipelineMode && lane === "agent" ? 560 : previous ? 290 : 240) : phase === "building" ? 320 : 420}
       position="center"
       onClose={onClose}
       overlayId="agentFromChatWindow"
       onCollectData={() => ({ conversationId, conversationTitle })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-3">
         {phase === "idle" ? (
           <>
             <p className="truncate text-sm text-muted-foreground">
@@ -215,6 +223,9 @@ function AgentFromChatWindowInner({
                 ? "One agent that gets this result on the first try."
                 : "A Rulebook built from this chat, for a multi-step job."}
             </p>
+            {pipelineMode && lane === "agent" ? (
+              <ExamplesField examples={examples} onChange={setExamples} supplied={1} />
+            ) : null}
             {previous ? (
               <div className="flex items-center gap-2 rounded-md border border-border px-2 py-1.5">
                 <AGENT_ICON className="h-4 w-4 shrink-0 text-muted-foreground" />
