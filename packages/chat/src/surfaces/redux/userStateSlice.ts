@@ -22,7 +22,7 @@ interface FeatureState {
   rows: SurfaceStateRows;
 }
 
-interface SurfaceUserStateSlice {
+export interface SurfaceUserStateSlice {
   byFeature: Record<string, FeatureState>;
 }
 

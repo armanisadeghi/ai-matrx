@@ -27,7 +27,7 @@ interface SurfaceConfigEntry {
   error: string | null;
 }
 
-interface SurfaceConfigSliceState {
+export interface SurfaceConfigSliceState {
   bySurfaceName: Record<string, SurfaceConfigEntry>;
 }
 

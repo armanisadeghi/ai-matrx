@@ -77,7 +77,7 @@ interface AgentsListProps { onRunAgent?: (agentId: string) => void; [extra: stri
 interface ValueChangeProps<T> { onChange?: (value: T) => void; [extra: string]: any }
 /** A selector the host's usages store answers; `state` is the host's root state. */
 type UsageSelector<R> = (state: any) => R;
-interface RedFlagSummary { bySeverity: Record<DriftSeverity, number>; stalePins: number; totalUsages: number; updatableKeys: Array<{ usageType: string; usageId: string }>; hasRedFlags: boolean }
+export interface RedFlagSummary { bySeverity: Record<DriftSeverity, number>; stalePins: number; totalUsages: number; updatableKeys: Array<{ usageType: string; usageId: string }>; hasRedFlags: boolean }
 type AnyComponent = ComponentType<any>;
 /**
  * A component slot typed by the props the PACKAGE passes. Bivariant on purpose: the host

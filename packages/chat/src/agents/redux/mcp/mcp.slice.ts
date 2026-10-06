@@ -35,7 +35,7 @@ export interface McpServerDiscovery {
   discoveredAt: string | null;
 }
 
-interface McpSliceState {
+export interface McpSliceState {
   catalog: McpCatalogEntry[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;

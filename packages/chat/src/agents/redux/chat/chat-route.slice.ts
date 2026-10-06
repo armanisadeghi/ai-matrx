@@ -2,7 +2,7 @@ import { createSlice } from "@reduxjs/toolkit";
 import type { ChatRootState } from "../../../store/root-state";
 import type { ComposerMode } from "../../components/inputs/smart-input/composer/composer-types";
 
-interface ChatRouteState {
+export interface ChatRouteState {
   /**
    * The composer's page mode (Chat · Work · Advanced — Amendment 1, A1). ONE
    * value for the whole tab: the top-bar switch, every composer and a

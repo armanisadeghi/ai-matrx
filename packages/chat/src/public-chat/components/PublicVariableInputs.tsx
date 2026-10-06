@@ -18,7 +18,7 @@ import { Button } from "@ai-matrx/design-system/controls";
 // TYPES
 // ============================================================================
 
-interface PublicVariableInputsProps {
+export interface PublicVariableInputsProps {
   variableDefaults: PromptVariable[];
   values: Record<string, string>;
   onChange: (name: string, value: string) => void;
