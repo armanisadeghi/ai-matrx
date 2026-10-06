@@ -22,7 +22,7 @@ import { readFile, writeFile, mkdir, copyFile } from "node:fs/promises";
 import { resolve, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { transformKindComponentBody } from "./transform/transform-kind-body";
-import { getDefaultImportsForKindComponents } from "@/features/agent-apps/utils/allowed-imports";
+import { defaultComponentEntries } from "@ai-matrx/code-runtime/scope";
 import { inlineJson } from "./inline-json";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -82,7 +82,7 @@ async function main(): Promise<void> {
         );
     }
 
-    const allowed = getDefaultImportsForKindComponents();
+    const allowed = defaultComponentEntries();
     const items: HarnessItem[] = [];
 
     for (const id of ids) {

@@ -21,7 +21,7 @@
  * stored component sees it. Capture never breaks the compile.
  */
 import { captureError } from "./errorCaptureStore";
-import type { UnresolvedImport } from "@/features/agent-apps/utils/patch-scope-identifiers";
+import type { UnresolvedImport } from "@ai-matrx/code-runtime";
 
 /** Keys already filed this page session — see the header. */
 const filedThisSession = new Set<string>();

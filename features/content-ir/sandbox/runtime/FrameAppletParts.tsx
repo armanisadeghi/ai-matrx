@@ -2,7 +2,7 @@
  * FrameAppletParts — the sandbox frame's stand-in for
  * `@/features/agent-apps/embed/AppletParts` (the `@/applets` import).
  *
- * WHY IT EXISTS. `@/applets` is allowlisted (allowed-imports.ts) so an applet
+ * WHY IT EXISTS. `@/applets` is a documented scope entry (@ai-matrx/code-runtime) so an applet
  * can place a page built from tables (`DataPage`) or another applet
  * (`Applet`) inside itself. Both read live data under the viewer's session:
  * the real module reaches `recordsUiHost` → the Share dialog → a server action

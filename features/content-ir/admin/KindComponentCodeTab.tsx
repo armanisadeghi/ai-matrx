@@ -157,13 +157,11 @@ export default function KindComponentCodeTab({
             "Component code must read from `data`; the renderer passes the Shape value as props.data.",
           );
         }
-        const [
-          { compileSlotComponent },
-          { getDefaultImportsForKindComponents },
-        ] = await Promise.all([
-          import("@/features/agent-apps/utils/compile-slot"),
-          import("@/features/agent-apps/utils/allowed-imports"),
-        ]);
+        const [{ compileStoredComponent }, { defaultComponentEntries }] =
+          await Promise.all([
+            import("@/lib/code-runtime/compile-stored"),
+            import("@ai-matrx/code-runtime/scope"),
+          ]);
         const declaredImports =
           isJsonObject(selectedComponent.config) &&
           Array.isArray(selectedComponent.config.allowed_imports) &&
@@ -171,8 +169,8 @@ export default function KindComponentCodeTab({
             (value) => typeof value === "string",
           )
             ? selectedComponent.config.allowed_imports
-            : getDefaultImportsForKindComponents();
-        const compiled = compileSlotComponent({
+            : defaultComponentEntries();
+        const compiled = compileStoredComponent({
           code: draft,
           allowedImports: declaredImports,
           origin: `kind-component-editor:${selectedComponent.id}`,

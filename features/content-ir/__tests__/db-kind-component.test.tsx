@@ -47,10 +47,12 @@ import { envelopeFromCompleteValue } from "@ai-matrx/content-ir";
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { DbKindComponentImpl } from "../react/db-component/DbKindComponentImpl";
 import {
-  buildComponentScope,
-  getAllowedImportsList,
-  getDefaultImportsForKindComponents,
-} from "@/features/agent-apps/utils/allowed-imports";
+  buildScope,
+  createUnresolvedImportStandIn,
+  defaultComponentEntries,
+  listScopeEntryPaths,
+} from "@ai-matrx/code-runtime/scope";
+import { provideStoredComponentScopeModules } from "@/lib/code-runtime/stored-scope";
 import {
   clearCapturedErrors,
   getSnapshot,
@@ -618,7 +620,7 @@ describe("deterministic db-row ordering", () => {
 
 describe("allowlist expansion (2026-07-17)", () => {
   it("registers the expanded shadcn/util/chart entries by exact path", () => {
-    const paths = getAllowedImportsList();
+    const paths = listScopeEntryPaths();
     for (const expected of [
       "@/lib/utils",
       "@/components/ui/badge",
@@ -642,24 +644,26 @@ describe("allowlist expansion (2026-07-17)", () => {
     ]) {
       expect(paths).toContain(expected);
     }
-    // Kind components default to the FULL registered scope.
-    expect(getDefaultImportsForKindComponents()).toEqual(paths);
+    // Kind components default to every registry entry but the heavy
+    // optional libraries (recharts excepted), which load on demand.
+    const defaults = defaultComponentEntries();
+    for (const p of defaults) expect(paths).toContain(p);
+    expect(defaults).toContain("recharts");
+    expect(defaults).toContain("@ai-matrx/design-system/controls");
   });
 
   it("builds a scope carrying cn + expanded primitives + full hook set; unknown identifiers keep the safe proxy", () => {
-    const scope = buildComponentScope(getDefaultImportsForKindComponents());
+    provideStoredComponentScopeModules();
+    const scope = buildScope({ entries: defaultComponentEntries(), shadowDangerousGlobals: false });
     expect(typeof scope.cn).toBe("function");
     expect(scope.Badge).toBeTruthy();
     expect(scope.Table).toBeTruthy();
     expect(scope.ResponsiveContainer).toBeTruthy();
     expect(typeof scope.useReducer).toBe("function");
     expect(typeof scope.useId).toBe("function");
-    // lucide safe proxy: a missing PascalCase name resolves to a fallback,
-    // never undefined (the crash class the proxy exists to kill).
-    const proxies = scope.__safeProxies as Record<
-      string,
-      Record<string, unknown>
-    >;
-    expect(proxies["lucide-react"].DefinitelyNotAnIcon).toBeTruthy();
+    // A missing name renders the named stand-in, never undefined (the crash
+    // class the stand-in exists to kill) — the package proves the safe proxy;
+    // here, that the stand-in factory is the package's.
+    expect(createUnresolvedImportStandIn("DefinitelyNotAnIcon")).toBeTruthy();
   });
 });

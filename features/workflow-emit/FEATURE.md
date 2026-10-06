@@ -45,7 +45,7 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
 | Public entry | `DbEmitRenderer.tsx` | THE only thing a consumer outside this feature may render. `next/dynamic({ssr:false})` around the impl, so `@babel/standalone` stays out of the host bundle. |
 | The three branches | `DbEmitRendererImpl.tsx` | `component_ref` null → generic. Ref resolves → compiled component inside the error boundary. Ref fails → generic. Resolution is keyed `(componentRef, version)`; the generic body paints immediately and the custom component upgrades it in place, so there is never a blank flash. |
 | Generic body | `GenericEmitRenderer.tsx` | Any payload shape via `ResultValue density="full"` (HIDE NOTHING) + `MarkdownStream` for the title. Carries the ephemeral **"Build a beautiful UI for this output"** Assist — the intended path by which a `component_ref` ever comes to exist. |
-| Compiler | `compileEmitRenderer.ts` | The agent-apps `compileSlotComponent` sandbox, reused VERBATIM. Never a second compile path. |
+| Compiler | `emitRendererCache.ts` → `compileStoredComponent` | `lib/code-runtime/compile-stored.ts` (`@ai-matrx/code-runtime`), shared with every stored component. Never a second compile path. |
 | Row fetch | `fetchEmitRendererRow.ts` | One active `tool.ui` row by `tool_name`, pinned to `WORKFLOW_EMIT_SURFACE`. DIRECT to Supabase (the client never asks the Python server for a row). |
 | Cache + invalidation | `emitRendererCache.ts` | Positive / negative / in-flight, session-scoped. Registers on `INVALIDATION_KEYS.dbToolRenderers` and bumps a monotonic per-ref version. |
 | Repaint hook | `useEmitRendererVersion.ts` | `useSyncExternalStore` over that version — a mounted emission re-resolves when an agent edits the row. |
@@ -56,8 +56,8 @@ all degrade to `GenericEmitRenderer`. Nothing here can take a run surface down.
 ## Invariants (violating any of these is a defect)
 
 1. 🚨 **A consumer outside this feature imports ONLY `DbEmitRenderer`,
-   `surface`, or `types`.** `emitRendererCache` → `compileEmitRenderer` → the
-   agent-apps compiler → a STATIC `@babel/standalone`. The `next/dynamic`
+   `surface`, or `types`.** `emitRendererCache` → `compileStoredComponent` → the
+   `@ai-matrx/code-runtime` compiler → a STATIC `@babel/standalone`. The `next/dynamic`
    boundary in `DbEmitRenderer.tsx` is the only thing keeping Babel out of the
    run-surface bundle, and any other import walks straight around it. That is
    the **D115 shape** — the import edge that cost +14 GB peak build RSS and
@@ -158,6 +158,7 @@ in `.github/workflows/ci.yml` invokes the script by name and will not notice.
 
 ## Change Log
 
+- 2026-10-06 — `compileEmitRenderer.ts` deleted; `emitRendererCache` compiles through `compileStoredComponent` (`@ai-matrx/code-runtime`).
 ### 2026-09-30 — kinds never reach the generic body
 
 - Run surfaces render emissions through `workflow-runtime/kind-emissions/EmissionRender`, not `DbEmitRenderer` directly; a kind-carrying payload (wire `kind` or its own `__kind`) is drawn as its kind, never as JSON in the generic body (KIND_NEVER_RAW_CHECKLIST W1/W2/W6).

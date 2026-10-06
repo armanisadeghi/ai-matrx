@@ -15,8 +15,8 @@
 
 import React, { useState, useMemo, useCallback, useRef } from "react";
 import { AlertCircle } from "lucide-react";
-import { getDefaultImportsForNewApps } from "../utils/allowed-imports";
-import { compileSlotComponent } from "../utils/compile-slot";
+import { defaultNewAppScopeEntries } from "@/lib/code-runtime/defaults";
+import { compileStoredComponent } from "@/lib/code-runtime/compile-stored";
 import { AgentAppErrorBoundary } from "./AgentAppErrorBoundary";
 import type { AppDisplayMode } from "../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -125,10 +125,10 @@ export function TemplatePreviewRenderer({
   const CustomComponent = useMemo(() => {
     if (!templateCode) return null;
 
-    // The ONE compile path (compile-slot) — see AgentAppPublicRendererImpl.
-    const { Component, error } = compileSlotComponent({
+    // The ONE compile path (@ai-matrx/code-runtime) — see AgentAppPublicRendererImpl.
+    const { Component, error } = compileStoredComponent({
       code: templateCode,
-      allowedImports: getDefaultImportsForNewApps(),
+      allowedImports: defaultNewAppScopeEntries(),
       origin: `agent-app-template:${displayMode}`,
     });
     if (error) console.error("Failed to transform template:", error);

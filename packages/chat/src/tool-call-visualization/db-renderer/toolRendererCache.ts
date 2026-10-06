@@ -13,14 +13,13 @@
  */
 import type React from "react";
 
-import { compileSlotComponent } from "@ai-matrx/chat/host/ui-slots";
+import { compileStoredComponent } from "@ai-matrx/chat/host/ui-slots";
 import {
   INVALIDATION_KEYS,
   registerInvalidationCallback,
 } from "@ai-matrx/kit/invalidation";
 import type { ToolRendererProps } from "../types";
 import { fetchToolRendererRow } from "./fetchToolRendererRow";
-import { compileToolRenderer } from "./compileToolRenderer";
 
 type ToolComponent = React.ComponentType<ToolRendererProps>;
 
@@ -131,7 +130,7 @@ export function loadToolRenderer(
       let subtitle: ToolSubtitleFn | null = null;
       if (row.header_subtitle_code) {
         try {
-          const { Component: subFn } = compileSlotComponent({
+          const { Component: subFn } = compileStoredComponent({
             code: row.header_subtitle_code,
             allowedImports: [],
             origin: `tool:${toolName}:subtitle`,
@@ -152,11 +151,14 @@ export function loadToolRenderer(
         displayMode: row.keep_expanded_on_stream ? "stay-open" : null,
       });
 
-      const { Component, error } = compileToolRenderer(
-        row.inline_code,
-        row.allowed_imports,
-        toolName,
-      );
+      const { Component: compiled, error } = compileStoredComponent({
+        code: row.inline_code,
+        allowedImports: row.allowed_imports,
+        origin: `tool:${toolName}`,
+      });
+      // The compiler types components generically; the callsite always passes
+      // ToolRendererProps — the single deliberate narrowing.
+      const Component = compiled as ToolComponent | null;
 
       if (!Component || error) {
         if (error) {

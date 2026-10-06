@@ -30,7 +30,7 @@
  *
  * 🚨 NEVER import `emitRendererCache` (or anything else under
  * `features/workflow-emit/` except `DbEmitRenderer` and `types`) FROM HERE.
- * `emitRendererCache` → `compileEmitRenderer` → the agent-apps compiler →
+ * `emitRendererCache` → `compileStoredComponent` → `@ai-matrx/code-runtime` →
  * a STATIC `@babel/standalone`. `DbEmitRenderer`'s `next/dynamic` boundary is
  * the only thing keeping Babel out of the run-surface bundle, and a static
  * import here walks straight around it. That is the D115 shape — the import

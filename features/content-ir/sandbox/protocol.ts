@@ -55,8 +55,12 @@
  * speaking 2 lays every viewport media query out against its own box instead
  * of the reader's screen, which is a visibly different component — so it is
  * refused with a sentence rather than rendered wrong.
+ *
+ * 4 (Applets AP-5, 2026-10-06): the body payload is `@ai-matrx/code-runtime`'s
+ * `TransformedGraph` (`{ graph, allowedImports }`), linked in the frame by the
+ * package's `/execute`. A frame still speaking 3 expects the old flat payload.
  */
-export const SANDBOX_PROTOCOL_VERSION = 3;
+export const SANDBOX_PROTOCOL_VERSION = 4;
 
 /**
  * 🚨 THE READER'S VIEWPORT IS NOT THE FRAME'S BOX (S5b, DD-123).

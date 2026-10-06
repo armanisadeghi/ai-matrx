@@ -1,7 +1,7 @@
 /**
  * DD-124 — THE THIRD LEG OF THE PARITY.
  *
- * `component-source-gate.json` is the one canonical list. The TypeScript gate
+ * `@ai-matrx/code-runtime/gate-lists.json` is the one canonical list. The TypeScript gate
  * imports it and the aidream Python twin is held byte-identical to it by
  * `packages/matrx-ai/tests/test_component_source_gate_parity.py`. The database
  * trigger `content_ir.kind_component_source_gate` cannot import anything, so
@@ -29,7 +29,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import gate from "./component-source-gate.json";
+import { GATE_LISTS as gate } from "@ai-matrx/code-runtime/gate";
 
 const MIGRATION = path.join(
   __dirname,
