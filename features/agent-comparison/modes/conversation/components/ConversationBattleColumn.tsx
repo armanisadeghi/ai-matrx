@@ -65,7 +65,7 @@ export function ConversationBattleColumn({
           type="button"
           onClick={() => onRemove(fork)}
           title="Remove this fork from the battle (the chat stays in history)"
-          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          className="p-1 rounded text-muted-foreground hover:text-destructive-ink hover:bg-destructive/10"
         >
           <X className="size-3.5" />
         </button>

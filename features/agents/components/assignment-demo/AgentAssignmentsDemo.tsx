@@ -253,7 +253,7 @@ export function AgentAssignmentsDemo() {
                 </div>
 
                 {state.error && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 type-body text-destructive">
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 type-body text-destructive-ink">
                     {state.error}
                     <ErrorAlchemyMenu error={state.error} />
                   </div>

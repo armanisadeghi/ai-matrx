@@ -162,7 +162,7 @@ export function ToolsColumnHeader({ column, onToggleCollapse }: Props) {
       </div>
 
       <span
-        className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-semibold shrink-0"
+        className="inline-flex items-center gap-1 px-1.5 h-5 rounded-full bg-primary/15 text-primary-ink text-[10px] font-semibold shrink-0"
         title={`${totalCount} tool${totalCount === 1 ? "" : "s"} attached to this column`}
       >
         <Wrench className="w-2.5 h-2.5" />

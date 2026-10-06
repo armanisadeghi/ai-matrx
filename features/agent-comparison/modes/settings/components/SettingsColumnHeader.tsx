@@ -213,7 +213,7 @@ export function SettingsColumnHeader({ column, onToggleCollapse }: Props) {
               "inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-[11px] font-medium",
               "border border-border bg-background hover:bg-muted/50 transition-colors",
               overrideCount > 0
-                ? "text-primary border-primary/40 bg-primary/5"
+                ? "text-primary-ink border-primary/40 bg-primary/5"
                 : "text-muted-foreground",
             )}
             title="Edit per-column LLM overrides"

@@ -438,7 +438,7 @@ function EmptyState({
   return (
     <div className="h-full flex items-center justify-center p-8 text-center">
       <div className="space-y-3">
-        <div className="mx-auto size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+        <div className="mx-auto size-12 rounded-full bg-primary/10 text-primary-ink flex items-center justify-center">
           <Split className="size-6" />
         </div>
         <h2 className="text-sm font-semibold">

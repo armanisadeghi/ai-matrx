@@ -375,7 +375,7 @@ function CellDetail({
                   key={t.name}
                   className={cn(
                     "h-5 px-1.5 rounded type-meta font-mono inline-flex items-center",
-                    isBundleLister(t.name) ? "bg-muted text-muted-foreground" : "bg-warning/15 text-warning",
+                    isBundleLister(t.name) ? "bg-muted text-muted-foreground" : "bg-warning/15 text-warning-ink",
                   )}
                 >
                   {t.name} ×{t.count}

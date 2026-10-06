@@ -52,7 +52,7 @@ export const SliderControl: React.FC<{
         <div className="mb-4">
             <div className="flex justify-between items-center mb-1">
                 <Label className="text-sm font-medium">{label}</Label>
-                <span className="type-secondary font-medium px-2 py-1 bg-primary/10 text-primary rounded-full">{value}%</span>
+                <span className="type-secondary font-medium px-2 py-1 bg-primary/10 text-primary-ink rounded-full">{value}%</span>
             </div>
             <div className="flex items-center space-x-2">
                 <span className="type-secondary text-muted-foreground">{leftLabel}</span>
@@ -166,7 +166,7 @@ export const PillButtonControl: React.FC<{
                         onClick={() => onChange(option.id, item.id)}
                         className={`px-3 py-1.5 border rounded-full text-sm transition-all ${
                             value === item.id
-                                ? "border-primary bg-primary/10 text-primary"
+                                ? "border-primary bg-primary/10 text-primary-ink"
                                 : "border-border text-foreground hover:border-muted-foreground hover:bg-accent/50"
                         }`}
                     >
@@ -201,7 +201,7 @@ export const MultiSelectControl: React.FC<{
                         onClick={() => handleToggle(item.id)}
                         className={`py-2 px-3 text-sm border rounded-lg flex items-center ${
                             value.includes(item.id)
-                                ? "border-primary bg-primary/10 text-primary"
+                                ? "border-primary bg-primary/10 text-primary-ink"
                                 : "border-border hover:border-muted-foreground hover:bg-accent/50"
                         }`}
                     >

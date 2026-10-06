@@ -298,7 +298,7 @@ export function DecisionComparisonTable() {
       )}
 
       {verdictError && (
-        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+        <p className="flex items-start gap-1.5 rounded-md border border-destructive/40 bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive-ink">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-px" />
           <span>{verdictError}</span>
           <ErrorAlchemyMenu error={verdictError} />
@@ -385,7 +385,7 @@ export function DecisionComparisonTable() {
                   ))}
                   <td className="py-1.5 pr-2">
                     {disagree ? (
-                      <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive">
+                      <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] text-destructive-ink">
                         different answers
                       </span>
                     ) : spread != null ? (

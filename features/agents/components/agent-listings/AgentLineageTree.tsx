@@ -396,7 +396,7 @@ function LineageCard({
           ) : (
             <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
           )}
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary-ink shrink-0">
             <Cpu className="h-4 w-4" />
           </div>
           <div className="flex-1 min-w-0">
@@ -600,7 +600,7 @@ function CountBadge({
       className={cn(
         "flex items-center gap-1 px-1.5 py-0.5 rounded type-meta",
         state === "ready" && count > 0
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "text-muted-foreground/60 border border-border",
       )}
       title={label}

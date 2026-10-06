@@ -155,7 +155,7 @@ export function VariationsColumnHeader({
       <button
         type="button"
         onClick={onEdit}
-        className="inline-flex items-center gap-1 h-6 px-1.5 rounded text-[10px] font-semibold text-primary hover:bg-primary/10 shrink-0"
+        className="inline-flex items-center gap-1 h-6 px-1.5 rounded text-[10px] font-semibold text-primary-ink hover:bg-primary/10 shrink-0"
         title="Edit this variation's agent configuration"
       >
         <SlidersHorizontal className="w-3 h-3" />

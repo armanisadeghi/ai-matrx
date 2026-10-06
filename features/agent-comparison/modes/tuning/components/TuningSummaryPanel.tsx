@@ -100,7 +100,7 @@ export function TuningSummaryPanel({ syntheticAgentId }: Props) {
             {summaryPills.map((p) => (
               <span
                 key={p.key}
-                className="inline-flex items-center px-1.5 h-5 rounded bg-primary/10 text-primary text-[10px] font-mono"
+                className="inline-flex items-center px-1.5 h-5 rounded bg-primary/10 text-primary-ink text-[10px] font-mono"
               >
                 {p.text}
               </span>

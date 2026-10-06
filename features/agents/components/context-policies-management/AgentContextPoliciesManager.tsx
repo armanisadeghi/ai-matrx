@@ -641,7 +641,7 @@ function PolicyEditorFields({
       )}
 
       {formError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink">
           {formError}
           <ErrorAlchemyMenu error={formError} />
         </div>

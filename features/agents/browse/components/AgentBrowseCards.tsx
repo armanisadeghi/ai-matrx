@@ -113,7 +113,7 @@ export function AgentBrowseCards({
             className="group flex cursor-pointer flex-col rounded-lg border border-border bg-card transition-colors hover:border-primary/40"
           >
             <div className="flex items-start gap-2.5 p-3 pb-2">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
                 <Webhook className="h-4 w-4" />
               </span>
 

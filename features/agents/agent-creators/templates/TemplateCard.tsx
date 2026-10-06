@@ -94,7 +94,7 @@ export function TemplateCard({
             </Badge>
           )}
           {category && (
-            <Badge variant="secondary" className="bg-primary/10 text-primary">
+            <Badge variant="secondary" className="bg-primary/10 text-primary-ink">
               {category}
             </Badge>
           )}

@@ -877,7 +877,7 @@ function Section({
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-2.5">
-        <span className="shrink-0 h-5 w-5 rounded-full bg-primary/10 text-primary text-[11px] font-semibold flex items-center justify-center">
+        <span className="shrink-0 h-5 w-5 rounded-full bg-primary/10 text-primary-ink text-[11px] font-semibold flex items-center justify-center">
           {step}
         </span>
         <div className="min-w-0 flex-1">

@@ -274,7 +274,7 @@ function SharedContextScopeStatus() {
         "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
         submittableCount === 0
           ? "bg-muted/40 text-muted-foreground"
-          : "bg-primary/10 text-primary",
+          : "bg-primary/10 text-primary-ink",
       )}
     >
       <Layers className="w-3 h-3" />

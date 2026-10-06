@@ -104,7 +104,7 @@ export function RowKindBadge({
       className={cn(
         "inline-flex h-4 shrink-0 items-center rounded px-1 text-[9px] font-semibold uppercase tracking-wide",
         kind === "create"
-          ? "bg-primary/10 text-primary"
+          ? "bg-primary/10 text-primary-ink"
           : "bg-violet-500/10 text-violet-600 dark:text-violet-400",
       )}
       title={kind === "create" ? addTitle : updateTitle}

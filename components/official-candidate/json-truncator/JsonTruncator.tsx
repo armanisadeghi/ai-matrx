@@ -44,6 +44,7 @@ import {
   Rows3,
 } from "lucide-react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 // ─── Public types (exported so consumers can reference them) ─────────────────
 
@@ -2365,22 +2366,7 @@ export function JsonTruncator({
         <div className="flex items-center gap-2 px-2 py-0.5 bg-card border-b border-border flex-shrink-0 min-w-0">
           <InlineControlsBar {...controlsProps} />
           <span className="w-px h-4 bg-border shrink-0" />
-          <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5 shrink-0">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setActiveTab(t.id)}
-                className={cn(
-                  "text-[10px] px-2 py-0.5 rounded transition-colors whitespace-nowrap",
-                  activeTab === t.id
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl aria-label="View" value={activeTab} onValueChange={setActiveTab} data={tabs.map((t) => ({ value: t.id, label: t.label }))} />
           {layoutToggleBtn && (
             <>
               <span className="w-px h-4 bg-border shrink-0" />

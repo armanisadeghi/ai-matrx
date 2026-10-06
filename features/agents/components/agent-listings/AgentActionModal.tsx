@@ -223,7 +223,7 @@ export function AgentActionModal({
                   variant="outline"
                   onClick={(e) => handleAction(e, "delete", onDelete)}
                   disabled={isAnyActionActive}
-                  className="flex items-center justify-start gap-1.5 sm:gap-2 h-auto py-2 px-3 sm:px-4 border-destructive/30 text-destructive hover:bg-destructive/10 relative"
+                  className="flex items-center justify-start gap-1.5 sm:gap-2 h-auto py-2 px-3 sm:px-4 border-destructive/30 text-destructive-ink hover:bg-destructive/10 relative"
                 >
                   {isDeleting && (
                     <div className="absolute inset-0 bg-destructive/20 backdrop-blur-sm flex items-center justify-center rounded-md">

@@ -81,7 +81,7 @@ const Section: React.FC<{
                 <Card className="h-full bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-700 rounded-xl">
                   <div className="p-3">
                     <div className="flex items-center mb-3 pb-2 border-b border-border">
-                      <div className="p-1 rounded-lg bg-primary/10 text-primary mr-2">
+                      <div className="p-1 rounded-lg bg-primary/10 text-primary-ink mr-2">
                         <cardConfig.icon className="h-4 w-4" />
                       </div>
                       <h3 className="type-title text-foreground">

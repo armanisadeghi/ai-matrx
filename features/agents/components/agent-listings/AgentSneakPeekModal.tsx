@@ -614,7 +614,7 @@ export function AgentSneakPeekContent({
                     <span className="type-title text-foreground">
                       {variableRunLabel(v)}
                     </span>
-                    <code className="rounded bg-primary/10 px-1.5 py-0.5 type-secondary font-semibold text-primary">
+                    <code className="rounded bg-primary/10 px-1.5 py-0.5 type-secondary font-semibold text-primary-ink">
                       {`{{${v.name}}}`}
                     </code>
                     <span className="rounded bg-background px-1.5 py-0.5 type-meta font-medium uppercase tracking-wide text-muted-foreground">

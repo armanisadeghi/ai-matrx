@@ -89,7 +89,7 @@ export function AgentEditAccessControl({
                   className={cn(
                     "h-7 px-2.5 text-xs font-normal",
                     selected
-                      ? "bg-primary/15 text-primary hover:bg-primary/20 hover:text-primary"
+                      ? "bg-primary/15 text-primary-ink hover:bg-primary/20 hover:text-primary-ink"
                       : "text-muted-foreground",
                   )}
                 >
@@ -204,7 +204,7 @@ export function AgentEditAccessToggle({
               "flex items-center gap-1 rounded px-1.5 py-1 text-[11px] transition-colors",
               selected
                 ? option === "editable"
-                  ? "bg-primary/15 text-primary"
+                  ? "bg-primary/15 text-primary-ink"
                   : "bg-muted text-foreground"
                 : "text-muted-foreground hover:text-foreground",
               disabled && "cursor-not-allowed",
@@ -240,7 +240,7 @@ export function AgentEditAccessBadge({
       className={cn(
         "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 type-meta font-medium",
         access === "editable"
-          ? "border-primary/40 bg-primary/10 text-primary"
+          ? "border-primary/40 bg-primary/10 text-primary-ink"
           : "border-border bg-muted text-muted-foreground",
         className,
       )}

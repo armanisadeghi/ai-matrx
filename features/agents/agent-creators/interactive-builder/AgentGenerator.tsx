@@ -641,7 +641,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
             // button that opens the job so it can be bound (Arman, 2026-09-24).
             <div
               data-testid="generator-unavailable"
-              className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 type-secondary text-destructive"
+              className="flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1.5 type-secondary text-destructive-ink"
             >
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
               <span className="flex-1 font-medium">Mandate binding needed</span>
@@ -659,7 +659,7 @@ export function AgentGenerator({ onComplete, mandate }: AgentGeneratorProps) {
           ) : generatorLoadError ? (
             <div
               data-testid="generator-unavailable"
-              className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 type-secondary text-destructive"
+              className="flex items-start gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/30 type-secondary text-destructive-ink"
             >
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
               <div className="flex-1 min-w-0">

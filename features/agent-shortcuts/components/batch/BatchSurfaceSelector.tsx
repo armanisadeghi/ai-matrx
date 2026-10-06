@@ -279,7 +279,7 @@ function RowList({
                     {item.title}
                   </span>
                   {item.isTemplate && (
-                    <span className="shrink-0 inline-flex items-center h-4 px-1 rounded text-[9px] font-medium text-primary bg-primary/10 border border-primary/30">
+                    <span className="shrink-0 inline-flex items-center h-4 px-1 rounded text-[9px] font-medium text-primary-ink bg-primary/10 border border-primary/30">
                       template
                     </span>
                   )}

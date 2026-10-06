@@ -131,7 +131,7 @@ function CountCard({
 }) {
   return (
     <Card className="p-4 flex items-start gap-3">
-      <div className="shrink-0 rounded-md bg-primary/10 text-primary p-2">
+      <div className="shrink-0 rounded-md bg-primary/10 text-primary-ink p-2">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">

@@ -162,7 +162,7 @@ function VariantRow({
             chips.map((c) => (
               <span
                 key={c}
-                className="shrink-0 h-5 px-1.5 rounded bg-primary/10 text-primary type-meta font-medium inline-flex items-center"
+                className="shrink-0 h-5 px-1.5 rounded bg-primary/10 text-primary-ink type-meta font-medium inline-flex items-center"
               >
                 {c}
               </span>
