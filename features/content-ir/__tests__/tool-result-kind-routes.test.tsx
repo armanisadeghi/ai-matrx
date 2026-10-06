@@ -26,6 +26,7 @@
  * (fixtures/tool-result-kind-examples.json, copied verbatim from content_ir).
  */
 
+import "@/__tests__/helpers/register-chat-host";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

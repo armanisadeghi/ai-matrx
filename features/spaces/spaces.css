@@ -1480,7 +1480,7 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-comment-bubble:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
 :root { --spaces-comment-mark: rgb(255 212 0 / 0.8); --spaces-comment-fill: rgb(255 212 0 / 0.28); }
 .dark { --spaces-comment-mark: rgb(255 212 0 / 0.6); --spaces-comment-fill: rgb(255 212 0 / 0.18); }
-::highlight(spaces-comment) { background-color: var(--spaces-comment-fill); text-decoration: underline; text-decoration-color: var(--spaces-comment-mark); text-decoration-thickness: 2px; }
+.spaces-root ::highlight(spaces-comment) { background-color: var(--spaces-comment-fill); text-decoration: underline; text-decoration-color: var(--spaces-comment-mark); text-decoration-thickness: 2px; }
 .spaces-presence { display: inline-flex; align-items: center; margin-right: 6px; }
 .spaces-presence-avatar { display: inline-flex; margin-left: -6px; border-radius: 9999px; box-shadow: 0 0 0 2px var(--spaces-page-bg); }
 .spaces-presence-avatar:first-child { margin-left: 0; }

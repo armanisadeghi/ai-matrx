@@ -149,13 +149,15 @@ describe("KindRecordChrome — store records use store doors only", () => {
     expect(service.keepStoreOutput).not.toHaveBeenCalled();
   });
 
-  it("neither store answers: no Save button, an honest Not saved", async () => {
+  it("neither store answers: an honest Not saved, and Save (door 5, 93c62daf47) is the one button", async () => {
     service.fetchMessageLandings.mockResolvedValue(outcomes());
     await mount(
       <KindRecordChrome kind="wine_tasting" durableMessageId={MESSAGE} fingerprint="fp-wine" value={{ vintage: 2018 }} />,
     );
     expect(container.textContent).toContain("Not saved");
-    expect(Array.from(container.querySelectorAll("button")).map((b) => b.textContent)).toEqual([]);
+    // Since 93c62daf47 / 01a2766c22 an output in no table offers Save (POST /kind-outputs/save);
+    // no store door (Confirm / Archive) is offered for it.
+    expect(Array.from(container.querySelectorAll("button")).map((b) => b.textContent)).toEqual(["Save"]);
   });
 
   it("a fork's copied output is read-only", async () => {

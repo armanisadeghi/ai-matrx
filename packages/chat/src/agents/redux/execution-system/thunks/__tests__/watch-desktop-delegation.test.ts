@@ -97,7 +97,7 @@ jest.mock("../../../../../host/notify", () => ({
 }));
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
+import { createChatTestReducer } from "../../../../../testing/chat-test-reducer";
 import {
   createInstance,
   destroyInstance,

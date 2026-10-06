@@ -50,6 +50,11 @@ import "./export";
 import "./fullscreen-editor";
 
 enableMapSet();
+// The shared host registration loads the app's providers, which reach the supabase client mock above
+// (its factory reads the `mock*` consts) — so it registers once those consts exist, before any render.
+beforeAll(() => {
+  require("@/__tests__/helpers/register-chat-host");
+});
 const ORG = "11111111-1111-4111-8111-111111111111";
 const ID = "22222222-2222-4222-8222-222222222222";
 function note(overrides: Partial<Note> = {}): Note {

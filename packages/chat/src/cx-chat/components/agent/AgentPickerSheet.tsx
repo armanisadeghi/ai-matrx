@@ -22,7 +22,7 @@ import { selectAgentById } from "../../../agents/redux/agent-definition/selector
 import type { AgentDefinitionRecord } from "../../../agents/types/agent-definition.types";
 import type { AgentConfig } from "../../types/agents";
 
-interface AgentPickerSheetProps {
+export interface AgentPickerSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   selectedAgent?: AgentConfig | null;

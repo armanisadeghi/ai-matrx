@@ -13,7 +13,7 @@
 import * as React from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { renderHook as renderBareHook } from "@ai-matrx/chat/host/__tests__/render-hook";
+import { renderHook as renderBareHook } from "@ai-matrx/chat/testing/render-hook";
 
 // The hook reads the selected organization (it is part of the question), so it
 // renders under a store, as it does in the app.

@@ -104,7 +104,7 @@ export function buildAmbientContext(
     user: {
       id: auth.id,
       name,
-      email: auth.email,
+      email: auth.email ?? null,
       // ADMIN POWER, not identity: an agent on a user page must see an admin
       // exactly as it sees anyone else (utils/supabase/adminLane.ts).
       is_admin: auth.adminLaneOpen === true && (auth.isAdmin ?? false),

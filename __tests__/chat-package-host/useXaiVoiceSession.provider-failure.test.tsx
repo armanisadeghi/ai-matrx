@@ -18,7 +18,7 @@
 import * as React from "react";
 import { Provider } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
-import { renderHook, settle } from "@ai-matrx/chat/host/__tests__/render-hook";
+import { renderHook, settle } from "@ai-matrx/chat/testing/render-hook";
 import voiceAgentReducer, {
   applyAgentConfig,
   initInstance,
@@ -112,7 +112,7 @@ jest.mock("@ai-matrx/chat/voice-agent/transport/tokenManager", () => ({
 }));
 
 import { useXaiVoiceSession } from "@ai-matrx/chat/voice-agent/hooks/useXaiVoiceSession";
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

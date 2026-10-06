@@ -17,7 +17,7 @@ import {
   normalizeKindSpellings,
   textCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
-import { domLeaksKind, screenKindSlug, screenTextHoldsKind } from "@/features/content-ir/surfaces/kind-leak-scan";
+import { domLeaksKind, domShowsDetectionOnlyKind, screenKindSlug, screenTextHoldsKind } from "@/features/content-ir/surfaces/kind-leak-scan";
 import { kindTextPreview, kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { inlineKindText } from "@/features/content-ir/surfaces/kind-one-line";
 import { snippetKindText } from "@/features/content-ir/surfaces/kind-snippet-text";
@@ -37,8 +37,13 @@ describe("the shared detector", () => {
   it("reads a Python-repr key in text contexts", () => {
     expect(hasKindKey(PY, { python: true })).toBe(true);
     expect(firstKindSlug(PY, { python: true })).toBe("flashcard_set");
-    expect(markdownCarriesKind(PY_ERROR)).toBe(true);
-    expect(textCarriesKind(PY_ERROR)).toBe(true);
+  });
+
+  // Round 10 (302f4ceed7, 11ec229496): only REAL JSON is converted/lifted; a Python repr in
+  // free text is DETECTION ONLY — the sentinel reports it, no reader lifts or rewrites it.
+  it("a Python repr in prose is detection only: never lifted as a markdown/text kind region", () => {
+    expect(markdownCarriesKind(PY_ERROR)).toBe(false);
+    expect(textCarriesKind(PY_ERROR)).toBe(false);
   });
 
   it("never reads a Python repr as a JSON key (parsed-JSON contexts)", () => {
@@ -52,8 +57,16 @@ describe("the shared detector", () => {
 });
 
 describe("the screen scan (sentinel + frame judge)", () => {
+  it("reports a Python repr drawn as text as detection only (sentinel yes, frame judge no)", () => {
+    expect(screenTextHoldsKind(PY_ERROR)).toBe(true);
+    expect(screenKindSlug(PY_ERROR)).toBe("flashcard_set");
+    const p = document.createElement("p");
+    p.textContent = PY_ERROR;
+    expect(domLeaksKind(p)).toBe(false);
+    expect(domShowsDetectionOnlyKind(p)).toBe(true);
+  });
+
   it.each([
-    ["Python repr", PY_ERROR],
     ["zero-width key", ZW_PROSE],
   ])("flags a %s drawn as text", (_name, text) => {
     expect(screenTextHoldsKind(text)).toBe(true);
@@ -63,8 +76,14 @@ describe("the screen scan (sentinel + frame judge)", () => {
     expect(domLeaksKind(p)).toBe(true);
   });
 
+  it("reports a Python repr in a title attribute as detection only", () => {
+    const span = document.createElement("span");
+    span.setAttribute("title", PY);
+    expect(domLeaksKind(span)).toBe(false);
+    expect(domShowsDetectionOnlyKind(span)).toBe(true);
+  });
+
   it.each([
-    ["Python repr", PY],
     ["zero-width key", ZW],
   ])("flags a %s in a title attribute", (_name, text) => {
     const span = document.createElement("span");
@@ -73,9 +92,14 @@ describe("the screen scan (sentinel + frame judge)", () => {
   });
 });
 
-describe("the converters treat both as a kind", () => {
+describe("the converters: a zero-width key is a kind, a Python repr is left as written", () => {
+  it("Python repr: every converter leaves the words exactly as written (round 10)", () => {
+    expect(kindTextToMarkdown(PY_ERROR)).toBe(PY_ERROR);
+    expect(inlineKindText(PY_ERROR, { plain: true })).toBe(PY_ERROR);
+    expect(snippetKindText(PY_ERROR)).toBe(PY_ERROR);
+  });
+
   it.each([
-    ["Python repr", PY_ERROR],
     ["zero-width key", ZW_PROSE],
   ])("markdown: %s", (_name, text) => {
     const md = kindTextToMarkdown(text);
@@ -85,7 +109,6 @@ describe("the converters treat both as a kind", () => {
   });
 
   it.each([
-    ["Python repr", PY_ERROR],
     ["zero-width key", ZW_PROSE],
   ])("one line: %s", (_name, text) => {
     const line = inlineKindText(text, { plain: true });
@@ -94,7 +117,6 @@ describe("the converters treat both as a kind", () => {
   });
 
   it.each([
-    ["Python repr", PY_ERROR],
     ["zero-width key", ZW_PROSE],
   ])("search snippet: %s", (_name, text) => {
     const snippet = snippetKindText(text);

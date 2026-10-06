@@ -19,9 +19,12 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 ## Entry points
 
 **Routes**
-- `app/(link)/apps/[app]/[[...path]]/page.tsx` — signed-in only (signed-out → `/login?redirectTo=…`);
-  resolves the slug against `app.definition` through the viewer's server client (row security decides);
-  a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
+- `app/(link)/apps/[app]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves), so it is never
+  remounted when its page changes (a page under `[[...path]]` remounts per path; that rebuilt the host and
+  re-read everything on every page change and on browser Back).
+- `app/(link)/apps/[app]/[[...path]]/page.tsx` — renders nothing; signed-in only (signed-out →
+  `/login?redirectTo=…`); resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
+  security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
 **Components**
 - `AppletHostMount.tsx` — builds ONE `createPlatformHost` per (Applet, active organization) and renders
@@ -37,7 +40,7 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 | `agents` | `createIntelligencePort({ transport: createMatrxTransport(store.getState) })` from `@ai-matrx/agents/intelligence` |
 | `activeOrganizationId` | `selectActiveOrganizationId` at mount — reported to the frame; never narrows a read. The host is NOT rebuilt when it changes (a running job would die) |
 | job organization | `host.intelligence.run` is wrapped: a member of the Applet's organization runs its jobs there (entity-bound, like a table write); anyone else uses the selected organization, and with none the organization gate asks (`ensureOrganizationContext`). The agents transport stamps that same organization |
-| `nav` | Next router: `go(to)` → `/apps/<slug><to>`; `current()` reads the URL; route changes are pushed to `subscribe` listeners |
+| `nav` | `go(to)` → `history.pushState` to `/apps/<slug><to>` (Next syncs `usePathname`; no server round trip, no remount); `current()` reads the URL; every URL change (incl. Back/Forward) is pushed to `subscribe` listeners |
 | `reportError` | `captureError({ source: "applet" })` |
 | `renderKind` | `KindInstanceRender` (the one kind pipeline, `variant="bare"`) |
 
@@ -58,3 +61,5 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 
 - 2026-10-06 — Created (AP-0, gate G1). Replaced `features/person-apps` (code registry + `PersonAppMount`
   + `holloway-content`) with the database-backed host; Holloway is now the `holloway-content` Applet row.
+- 2026-10-06 — The Applet mounts in the route LAYOUT and navigates with `pushState`, so a page change or
+  browser Back no longer remounts it (owner saw Back show the old page, then an empty shell, then content at ~10 s).

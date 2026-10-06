@@ -12,8 +12,8 @@
  * assistant message (chat.message, same file_id).
  */
 
-import liveEvent from "@ai-matrx/chat/agents/speech-script/__tests__/fixtures/gemini-live-media-block-event.json";
-import persistedPart from "@ai-matrx/chat/agents/speech-script/__tests__/fixtures/gemini-persisted-audio-part.json";
+import liveEvent from "@ai-matrx/chat/testing/captured/gemini-live-media-block-event";
+import persistedPart from "@ai-matrx/chat/testing/captured/gemini-persisted-audio-part";
 import { fromMediaBlock, type WireMediaBlock } from "@ai-matrx/media/files";
 import { normalizeContentBlocks } from "@ai-matrx/chat/agents/redux/execution-system/utils/normalize-content-blocks";
 import { withPerformedScript } from "@ai-matrx/chat/agents/speech-script/types";

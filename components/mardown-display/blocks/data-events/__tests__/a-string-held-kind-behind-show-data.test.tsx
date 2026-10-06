@@ -166,10 +166,18 @@ describe("K7: the search-error card", () => {
   });
 
   it("an error message holding a kind reads as its one-line form", () => {
-    const pyRepr = "{'__kind': 'flashcard_set', 'title': 'Cell biology'}";
-    act(() => root.render(<SearchErrorBlock error={`Could not index ${pyRepr}: ${KIND_TEXT}`} />));
+    act(() => root.render(<SearchErrorBlock error={`Could not index: ${KIND_TEXT}`} />));
     expect(container.textContent).not.toMatch(/__kind/);
     expect(container.textContent).toContain("Could not index");
+    expect(container.textContent).toContain("Flashcard Set");
+  });
+
+  // Round 10 (302f4ceed7, 0072e32abd): a Python repr is detection only — left exactly as written,
+  // never converted — while the real JSON beside it still reads as its label.
+  it("an error message holding a Python repr keeps it as written; the JSON kind beside it converts", () => {
+    const pyRepr = "{'__kind': 'flashcard_set', 'title': 'Cell biology'}";
+    act(() => root.render(<SearchErrorBlock error={`Could not index ${pyRepr}: ${KIND_TEXT}`} />));
+    expect(container.textContent).toContain(`Could not index ${pyRepr}:`);
     expect(container.textContent).toContain("Flashcard Set");
   });
 });
@@ -181,8 +189,9 @@ describe("K8: the collapsed preview line", () => {
   const PREVIEWS: Array<[string, string]> = [
     ["kind JSON", KIND_TEXT],
     ["prose with a kind", `Saved deck: ${KIND_TEXT}`],
-    ["a Python repr", "Saved deck: {'__kind': 'flashcard_set', 'title': 'Cell biology'}"],
   ];
+  // Round 10: a Python repr in a preview is left exactly as written (detection only).
+  const PY_PREVIEW = "Saved deck: {'__kind': 'flashcard_set', 'title': 'Cell biology'}";
   it.each(PREVIEWS)("search snippet: %s", (_name, text) => {
     act(() => root.render(<SearchResultsBlock results={[{ title: "Deck", snippet: text }]} />));
     expect(door()).toBeNull();
@@ -194,6 +203,12 @@ describe("K8: the collapsed preview line", () => {
     expect(door()).toBeNull();
     expect(container.textContent).not.toMatch(/__kind/);
     expect(container.textContent).toContain("Flashcard Set");
+  });
+  it("a Python repr in a search snippet / fetch content is left as written", () => {
+    act(() => root.render(<SearchResultsBlock results={[{ title: "Deck", snippet: PY_PREVIEW }]} />));
+    expect(container.textContent).toContain(PY_PREVIEW);
+    act(() => root.render(<FetchResultsBlock results={[{ title: "Deck", content: PY_PREVIEW }]} />));
+    expect(container.textContent).toContain(PY_PREVIEW);
   });
   it("a kindless preview is unchanged", () => {
     act(() => root.render(<SearchResultsBlock results={[{ title: "Deck", snippet: "Mitochondria make ATP." }]} />));

@@ -20,7 +20,7 @@
 import * as React from "react";
 import { Provider } from "react-redux";
 import { configureStore, createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { renderHook } from "@ai-matrx/chat/host/__tests__/render-hook";
+import { renderHook } from "@ai-matrx/chat/testing/render-hook";
 
 class MandateOrganizationUnresolvedError extends Error {}
 

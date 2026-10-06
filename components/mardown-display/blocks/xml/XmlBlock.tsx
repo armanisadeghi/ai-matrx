@@ -146,7 +146,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                   <ChevronRight />
                 ) : (
                   <ChevronDown />
-                )} aria-label={`${cardCollapsed ? "Expand" : "Collapse"} ${rootTagName}`} aria-expanded={!cardCollapsed} onClick={() => setCardCollapsed((previous) => !previous)} className="min-w-0">
+                )} aria-label={`${cardCollapsed ? "Expand" : "Collapse"} ${rootTagName}`} aria-expanded={!cardCollapsed} onClick={() => setCardCollapsed((previous) => !previous)} className="size-11 min-w-0 lg:size-auto">
                 <span className="truncate">{rootTagName}</span>
               </Button>
             ) : (
@@ -163,7 +163,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
             <Check />
           ) : (
             <Copy />
-          )} glyphTone={copied ? "success" : undefined} aria-label="Copy XML" onClick={handleCopy} />
+          )} glyphTone={copied ? "success" : undefined} aria-label="Copy XML" onClick={handleCopy} className="size-11 lg:size-auto" />
       </div>
       {!cardCollapsed && (
         <div
@@ -267,7 +267,7 @@ const XmlBlock: React.FC<XmlBlockProps> = ({
                       <ChevronRight />
                     ) : (
                       <ChevronDown />
-                    )} aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${token.tagName}`} onClick={() => toggleCollapse(idx)} className="mr-1 lg:mt-0.5" />
+                    )} aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${token.tagName}`} onClick={() => toggleCollapse(idx)} className="mr-1 size-11 lg:mt-0.5 lg:size-auto" />
                 ) : (
                   <span className="w-[18px] flex-shrink-0" />
                 )}

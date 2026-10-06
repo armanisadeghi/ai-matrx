@@ -68,7 +68,13 @@ function render(
 }
 
 function buttons(): HTMLButtonElement[] {
-  return Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+  // The roles are the design system's SegmentedControl (3486fd6ef3): plain buttons, aria-pressed.
+  return Array.from(container.querySelectorAll<HTMLButtonElement>('[data-matrx-control="segmented"] button'));
+}
+
+/** A refused role keeps its place and is marked on its label (struck through, dimmed). */
+function refused(b: HTMLButtonElement): boolean {
+  return b.querySelector('[data-refused="true"]') !== null;
 }
 
 function explanation(): string {
@@ -98,7 +104,7 @@ test("clicking a role sets it and clicking the active role clears it", () => {
   expect(onChange).toHaveBeenLastCalledWith("style");
 
   render("style", GEMINI, onChange);
-  expect(buttons()[2].getAttribute("aria-checked")).toBe("true");
+  expect(buttons()[2].getAttribute("aria-pressed")).toBe("true");
   expect(explanation()).toMatch(/Borrows only the look/);
   act(() => buttons()[2].click());
   expect(onChange).toHaveBeenLastCalledWith(null);
@@ -107,17 +113,17 @@ test("clicking a role sets it and clicking the active role clears it", () => {
 test("a role the model cannot take stays visible, marked refused, with the reason", () => {
   render("mask", GEMINI);
   const mask = buttons()[3];
-  expect(mask.dataset.refused).toBe("true");
+  expect(refused(mask)).toBe(true);
   expect(mask.title).toContain("Gemini 3.1 Flash Image cannot take a Mask");
   // Chosen AND refused: the line below says so, naming role and model.
   expect(explanation()).toContain("Gemini 3.1 Flash Image cannot take a Mask");
   // Roles it can take are not marked.
-  expect(buttons()[0].dataset.refused).toBeUndefined();
+  expect(refused(buttons()[0])).toBe(false);
 });
 
 test("nothing is judged refused while the limits are still loading", () => {
   render("mask", null);
-  expect(buttons().some((b) => b.dataset.refused)).toBe(false);
+  expect(buttons().some((b) => refused(b))).toBe(false);
   expect(explanation()).toMatch(/Marks the only area/);
 });
 
@@ -194,13 +200,13 @@ test("a video model offers frames and references on images, extend/restyle on vi
 test("Veo refuses a Style image and a Restyle video by name, keeps the rest", () => {
   renderVideo("style", rolesFor("image", "video"), VEO);
   const style = buttons()[3];
-  expect(style.dataset.refused).toBe("true");
+  expect(refused(style)).toBe(true);
   expect(explanation()).toContain("Veo 3.1 cannot take a Style reference image");
-  expect(buttons()[0].dataset.refused).toBeUndefined();
+  expect(refused(buttons()[0])).toBe(false);
 
   renderVideo("restyle", rolesFor("video", "video"), VEO);
   expect(explanation()).toContain("Veo 3.1 cannot take a Restyle video");
-  expect(buttons()[0].dataset.refused).toBeUndefined(); // Extend
+  expect(refused(buttons()[0])).toBe(false); // Extend
 });
 
 test("an Asset reference takes an @name; a bad name is flagged, a good one saved without the @", () => {

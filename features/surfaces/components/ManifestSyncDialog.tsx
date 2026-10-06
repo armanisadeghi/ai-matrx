@@ -112,6 +112,12 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
           `${res.skippedRecentRows.length} recent row${res.skippedRecentRows.length === 1 ? "" : "s"} skipped — likely another lane's in-flight work.`,
         );
       }
+      if (res.refusedDatabaseOwned.length > 0) {
+        // Rows declared in the database (Applet surfaces, organization extensions) are never synced from code.
+        toast.warning(
+          `${res.refusedDatabaseOwned.length} database-owned row${res.refusedDatabaseOwned.length === 1 ? "" : "s"} left untouched.`,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Sync failed");
     } finally {

@@ -1,4 +1,6 @@
-{
+// Captured from a real run; shared with app tests via @ai-matrx/chat/testing/captured/*.
+
+const fixture = {
  "event": "data",
  "data": {
   "type": "media_block",
@@ -66,4 +68,6 @@
  },
  "stream_seq": 25,
  "stream_id": "16c274e9-4592-4d86-bfd5-5b8d669102f8"
-}
+};
+
+export default fixture;

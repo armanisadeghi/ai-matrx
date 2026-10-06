@@ -6,11 +6,12 @@
 // component builds its `AppletHost` with `@ai-matrx/applets/platform` over the viewer's OWN clients —
 // the browser supabase client (row security decides every read and write), the agents intelligence
 // port on the app's transport, the active organization (where jobs run; never a read filter), and the
-// Next router for its pages — then compiles and renders it full-bleed with `mountAppletAsync`.
+// browser history for its pages (pushState: no server round trip, no remount) — then compiles and renders
+// it full-bleed with `mountAppletAsync`. Mounted by the route's LAYOUT, so it outlives page changes.
 // No Applet code lives in this repo.
 
 import { useEffect, useRef, useState, type ComponentType } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { createPlatformHost, type PlatformHost } from "@ai-matrx/applets/platform";
 import { mountAppletAsync } from "@ai-matrx/applets/frame";
 import { createIntelligencePort } from "@ai-matrx/agents/intelligence";
@@ -56,10 +57,15 @@ function renderKind(kind: string, value: unknown) {
   );
 }
 
+/** Same URL inside the Applet, without a server round trip or a remount (Next syncs usePathname). */
+function pushAppletUrl(url: string) {
+  if (`${window.location.pathname}${window.location.search}` === url) return;
+  window.history.pushState(null, "", url);
+}
+
 type Mounted = { Component: ComponentType } | { error: string };
 
 export function AppletHostMount({ appletId, slug }: { appletId: string; slug: string }) {
-  const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams().toString();
   const store = useAppStore();
@@ -88,7 +94,7 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       nav: {
         async go(to) {
           const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
-          router.push(`/apps/${slug}${tail}`);
+          pushAppletUrl(`/apps/${slug}${tail}`);
         },
         async current() {
           return locationOf(slug, window.location.pathname, window.location.search);
@@ -138,7 +144,7 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       cancelled = true;
       host.dispose();
     };
-  }, [appletId, slug, router, store]);
+  }, [appletId, slug, store]);
 
   // Route changes the browser makes (back, forward, a link) reach the Applet's pages.
   useEffect(() => {

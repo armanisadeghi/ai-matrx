@@ -84,6 +84,56 @@ function matchingJsonObjectEnd(source: string, start: number): number | null {
   return null;
 }
 
+/**
+ * For every `{` / `[` in `text`: the end (exclusive) of the string-aware
+ * balanced JSON value opening there, or -1 (never balances). Each opener's
+ * reading starts outside a string, exactly as if read alone; one right-to-left
+ * pass reuses each nested opener's own answer (its reading from inside an
+ * enclosing value is the same reading), so the whole table is linear — a
+ * reading per opener was quadratic on thousands of unclosed `{` (round 11, P5).
+ */
+export function balancedEnds(text: string): Int32Array {
+  const ends = new Int32Array(text.length).fill(-1);
+  const stack: string[] = [];
+  for (let start = text.length - 1; start >= 0; start--) {
+    const open = text[start];
+    if (open !== "{" && open !== "[") continue;
+    stack.length = 0;
+    stack.push(open === "{" ? "}" : "]");
+    let inString = false;
+    for (let i = start + 1; i < text.length; i++) {
+      const ch = text[i]!;
+      if (inString) {
+        if (ch === "\\") i++;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{" || ch === "[") {
+        const end = ends[i]!;
+        if (end < 0) break;
+        i = end - 1;
+      } else if (ch === "}" || ch === "]") {
+        if (stack.pop() !== ch) break;
+        ends[start] = i + 1;
+        break;
+      }
+    }
+  }
+  return ends;
+}
+
+/** `matchingJsonObjectEnd` answered from ONE linear table, built on first use (a reading per opener is quadratic on thousands of unclosed `{`). */
+function lazyJsonEnds(source: string): (start: number) => number | null {
+  let table: Int32Array | undefined;
+  return (start) => {
+    if (source[start] !== "{" && source[start] !== "[") return null;
+    table ??= balancedEnds(source);
+    const end = table[start]!;
+    return end < 0 ? null : end;
+  };
+}
+
 function skipWhitespace(source: string, cursor: number): number {
   while (/\s/.test(source[cursor] ?? "")) cursor++;
   return cursor;
@@ -345,6 +395,7 @@ export function findEmbeddedKindJsonRegions(
   options: EmbeddedKindSearchOptions = {},
 ): EmbeddedKindJsonRegion[] {
   const regions: EmbeddedKindJsonRegion[] = [];
+  const endOf = lazyJsonEnds(source);
   const excluded = [
     ...(options.excludeLiteralContexts
       ? literalRanges(source, options.liftJsonFences === true)
@@ -381,7 +432,7 @@ export function findEmbeddedKindJsonRegions(
     )
       continue;
     if (source[start] !== "{") continue;
-    const end = matchingJsonObjectEnd(source, start);
+    const end = endOf(start);
     if (end === null) {
       // An unclosed object owns text only as far as its JSON grammar holds —
       // to the end while still validly open, else to its cut (round 10, C1):
@@ -655,6 +706,9 @@ export function findKindCarryingJsonValues(
   const excluded = options.excludeLiteralContexts ? literalRanges(source) : [];
   const inLiteral = (index: number) =>
     excluded.some(([start, end]) => index >= start && index < end);
+  // One linear table of every opener's balanced end: a reading per opener was
+  // quadratic on thousands of unclosed `{` (round 11, P5).
+  const ends = balancedEnds(source);
 
   const regions: KindCarryingJsonRegion[] = [];
   let floor = frontMatterEnd(source);
@@ -664,8 +718,9 @@ export function findKindCarryingJsonValues(
     for (let open = floor; open < region.start; open++) {
       const char = source[open];
       if ((char !== "{" && char !== "[") || inLiteral(open)) continue;
-      const end = matchingJsonObjectEnd(source, open);
-      if (end === null || end < region.end) continue;
+      const found = ends[open]!;
+      if (found < 0 || found < region.end) continue;
+      const end = found;
       try {
         best = { start: open, end, value: JSON.parse(source.slice(open, end)) };
         break; // the earliest opener that encloses it is the outermost
@@ -714,6 +769,7 @@ export function findBrokenKindJsonRegions(
 ): BrokenKindJsonRegion[] {
   const broken: BrokenKindJsonRegion[] = [];
   if (!KIND_KEY_TEXT.test(source)) return broken;
+  const endOf = lazyJsonEnds(source);
   const keys: number[] = [];
   KIND_KEY_TEXT_G.lastIndex = 0;
   for (let m = KIND_KEY_TEXT_G.exec(source); m; m = KIND_KEY_TEXT_G.exec(source)) keys.push(m.index);
@@ -756,7 +812,7 @@ export function findBrokenKindJsonRegions(
     }
     // Broken: the opener owns the key only when its grammar reached it.
     if (verdict.at <= key) continue;
-    const end = matchingJsonObjectEnd(source, start);
+    const end = endOf(start);
     if (end !== null && lenientJson(source.slice(start, end))) {
       broken.push({ start, end, content: source.slice(start, end) });
       start = end - 1;

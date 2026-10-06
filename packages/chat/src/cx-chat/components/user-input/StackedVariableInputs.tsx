@@ -22,7 +22,7 @@ import { Button } from "@ai-matrx/design-system/controls";
 // TYPES
 // ============================================================================
 
-interface StackedVariableInputsProps {
+export interface StackedVariableInputsProps {
   conversationId: string;
   disabled?: boolean;
   compact?: boolean;

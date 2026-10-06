@@ -147,7 +147,7 @@ export function documentAttachLabelFromState(
   fileId: string,
   resourceFilenameFallback: string,
 ): string {
-  const fromStore = state.cloudFiles.filesById[fileId]?.fileName?.trim();
+  const fromStore = state.cloudFiles?.filesById[fileId]?.fileName?.trim();
   if (fromStore) return fromStore;
   const fallback = cleanDocumentLabel(resourceFilenameFallback);
   return fallback === "Document" ? "Document" : fallback;

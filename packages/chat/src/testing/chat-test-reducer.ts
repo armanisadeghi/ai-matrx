@@ -4,8 +4,8 @@
  * slices, never the app's `rootReducer`.
  */
 import { combineReducers, type Reducer } from "@reduxjs/toolkit";
-import type { ChatRootState } from "../../store/root-state";
-import { chatReducers } from "../../store/slices";
+import type { ChatRootState } from "../store/root-state";
+import { chatReducers } from "../store/slices";
 
 /**
  * Typed as the root state package code reads (`ChatRootState`: the package's slices PLUS the

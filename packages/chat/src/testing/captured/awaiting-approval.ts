@@ -1,4 +1,6 @@
-{
+// Captured from a real run; shared with app tests via @ai-matrx/chat/testing/captured/*.
+
+const fixture = {
   "captured_at": "2026-09-20T02:05Z",
   "organization_id": "235a6add-e8b5-43f9-883e-9dd0389c1759",
   "how": "Produced by matrx_records.store.RecordStore.field_propose \u2014 the same call the deployed records tool makes \u2014 as admin@admin.com against the MAIN database, on tables a PERSON declared (no agent claim), in a throwaway store-ON organization left on the platform default for custom/agent_schema_changes.",
@@ -128,4 +130,6 @@
       "on_behalf_of": "87a6e699-3622-4869-8843-d0867456c0dd"
     }
   }
-}
+};
+
+export default fixture;

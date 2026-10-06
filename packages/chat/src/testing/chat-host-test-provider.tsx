@@ -6,7 +6,7 @@
  */
 
 import type { ComponentProps, ReactNode } from "react";
-import { ChatProvider } from "../react";
+import { ChatProvider } from "../host/react";
 import { createFakeDb } from "./fake-db";
 
 // One host object per module: configureChat caches by reference.

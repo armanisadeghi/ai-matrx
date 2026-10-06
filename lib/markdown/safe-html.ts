@@ -1,67 +1,21 @@
 /**
- * lib/markdown/safe-html.ts — THE Markdown → HTML conversion for any HTML that
- * leaves the app as markup: outgoing email bodies, CMS drafts that become
- * public pages, anything later set via `dangerouslySetInnerHTML`.
+ * lib/markdown/safe-html.ts — Markdown → sanitized HTML for any HTML that
+ * leaves the app as markup (outgoing email, CMS drafts, innerHTML).
  *
  * The markdown is read by THE ONE CORE (components/markdown-core/
- * markdown-core-html.ts — the same GFM + extended-syntax plugin table every
- * rendered surface uses), which PASSES RAW HTML THROUGH as CommonMark does, so
- * AI- or user-authored Markdown can carry `<script>`, `onerror=`,
- * `javascript:` links, `<iframe>`, `<form>` and `<meta http-equiv>` into the
- * tree. Every caller therefore goes through `markdownToSafeHtml`, which
- * sanitizes that tree against an
- * ALLOW-LIST (hast-util-sanitize's default schema — GitHub's own rendering
- * rules), then serializes. Allow-list, not block-list: a tag or attribute
- * nobody listed never survives.
- *
- * Isomorphic and synchronous — no DOM, so it runs in API routes (email) and in
- * the browser (CMS push) alike. Output keeps plain semantic tags (the allow-list
- * drops class names), so CMS themes and email styling see the same shape they
- * always did, minus the dangerous parts.
- *
- * Why not @ai-matrx/print's converter: it strips script/on*-handlers/
- * javascript: but passes `<iframe>`, `<form>`, `<meta>`, `<object>` and inline
- * `style` through (verified 2026-09-25). Why not @ai-matrx/kit's
- * `renderMarkdownHtml`: DOMPurify there needs a `window`, so it throws on the
- * server where email is built.
+ * markdown-core-html.ts), which passes raw HTML through as CommonMark does, so
+ * the serialized fragment is then run through THE ONE sanitizer:
+ * `@ai-matrx/print/safe-html` (GitHub's allow-list minus style and embedding
+ * tags). No local schema lives here. Isomorphic and synchronous (no DOM).
  */
 
-import { fromHtml } from "hast-util-from-html";
-import { defaultSchema, sanitize, type Schema } from "hast-util-sanitize";
 import { toHtml } from "hast-util-to-html";
-import type { Root } from "hast";
+import { sanitizeHtmlFragment } from "@ai-matrx/print/safe-html";
 import { markdownToHast } from "@/components/markdown-core/markdown-core-html";
 
-/**
- * GitHub's schema, plus: elements whose TEXT must not leak as visible content
- * when the element itself is dropped (a stripped `<style>` would otherwise
- * print its CSS), and no `user-content-` prefix rewriting of ids — authored
- * anchors keep their names.
- */
-export const MARKDOWN_HTML_SCHEMA: Schema = {
-  ...defaultSchema,
-  strip: [
-    "script",
-    "style",
-    "noscript",
-    "template",
-    "iframe",
-    "object",
-    "embed",
-    "textarea",
-    "select",
-  ],
-  clobberPrefix: "",
-  clobber: [],
-};
-
-/** Sanitize an HTML fragment against the allow-list. */
-export function sanitizeHtmlFragment(html: string): string {
-  const tree = sanitize(fromHtml(html, { fragment: true }), MARKDOWN_HTML_SCHEMA) as Root;
-  return toHtml(tree);
-}
+export { sanitizeHtmlFragment };
 
 /** Markdown (CommonMark + GFM) → sanitized HTML fragment. */
 export function markdownToSafeHtml(markdown: string): string {
-  return toHtml(sanitize(markdownToHast(markdown), MARKDOWN_HTML_SCHEMA) as Root);
+  return sanitizeHtmlFragment(toHtml(markdownToHast(markdown)));
 }

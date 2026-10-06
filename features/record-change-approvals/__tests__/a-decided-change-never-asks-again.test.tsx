@@ -44,7 +44,7 @@ jest.mock("../applyRecordChange", () => ({
   tableNameFor: async () => "Treatment Rooms",
 }));
 
-import captured from "@ai-matrx/chat/tool-call-visualization/components/__tests__/fixtures/awaiting-approval.captured.json";
+import captured from "@ai-matrx/chat/testing/captured/awaiting-approval";
 import { readRecordChangeWait } from "../recordChangeApproval";
 import { RecordChangeApprovalCard } from "../RecordChangeApprovalCard";
 

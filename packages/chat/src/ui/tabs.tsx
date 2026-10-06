@@ -24,7 +24,9 @@ function focusOnClick(onClick: TriggerProps["onClick"]): TriggerProps["onClick"]
   };
 }
 
-const TabsTrigger = React.forwardRef<
+const TabsTrigger: React.ForwardRefExoticComponent<
+  TriggerProps & React.RefAttributes<React.ElementRef<typeof TabsTriggerPrimitive>>
+> = React.forwardRef<
   React.ElementRef<typeof TabsTriggerPrimitive>,
   TriggerProps
 >(({ onClick, ...props }, ref) => (

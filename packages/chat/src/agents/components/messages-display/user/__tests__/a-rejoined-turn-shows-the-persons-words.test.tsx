@@ -27,7 +27,7 @@ import activeRequestsReducer, {
 import messagesReducer from "../../../../redux/execution-system/messages/messages.slice";
 import { processStream } from "../../../../redux/execution-system/thunks/process-stream";
 import type { ChatRootState } from "../../../../../store/root-state";
-import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+import { configureServerForTest } from "../../../../../testing/server-test-host";
 // jest.mock calls below are hoisted above these imports by babel-jest.
 import { AgentUserMessage } from "../AgentUserMessage";
 import { TranscriptAudienceProvider } from "../../../shared/transcript-audience";

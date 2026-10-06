@@ -11,7 +11,7 @@ import {
 } from "@/lib/diagnostics/errorCaptureStore";
 import { createAppChatDiagnostics } from "@/lib/diagnostics/chat-diagnostics-port";
 import { _resetChatHostForTests, configureChat } from "@ai-matrx/chat/host";
-import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
+import { createFakeDb } from "@ai-matrx/chat/testing/fake-db";
 import {
   resetFastPathVerdictsForTests,
   verifyFastPathAgainstMandate,

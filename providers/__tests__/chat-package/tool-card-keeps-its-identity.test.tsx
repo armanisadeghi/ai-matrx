@@ -150,8 +150,8 @@ import observabilityReducer from "@ai-matrx/chat/agents/redux/execution-system/o
 import { processStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 import { buildDisplayEntries, groupDisplayEntries } from "@ai-matrx/chat/agents/components/messages-display/display-groups";
 import { AssistantTurnGroup } from "@ai-matrx/chat/agents/components/messages-display/assistant/AssistantTurnGroup";
-import { ChatHostTestProvider } from "@ai-matrx/chat/host/__tests__/chat-host-test-provider";
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { ChatHostTestProvider } from "@ai-matrx/chat/testing/chat-host-test-provider";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

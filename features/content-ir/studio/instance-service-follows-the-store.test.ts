@@ -165,6 +165,14 @@ jest.mock("@ai-matrx/records/core", () => ({
           ? [{ id: TABLE, slug: "kind_instance", name: "Saved shapes" }]
           : [{ id: "other-table", slug: "contacts", name: "Contacts" }],
       ),
+      // Since 95f40fe05f the app asks the store's own one-table lookup (slug, then name), never a list.
+      tableFind: door("tableFind", (args: { slug?: string; name?: string }) => {
+        const tables =
+          config.organizationId === STORE_ORG
+            ? [{ id: TABLE, slug: "kind_instance", name: "Saved shapes" }]
+            : [{ id: "other-table", slug: "contacts", name: "Contacts" }];
+        return tables.find((t) => (args.slug ? t.slug === args.slug : t.name === args.name)) ?? null;
+      }),
       recordWrite: door("recordWrite", () => "store-record-1"),
       recordWriteGraph: door("recordWriteGraph", () => ({ parent_id: "store-record-2" })),
       list: door("list", () => {
@@ -204,7 +212,7 @@ import {
 const touchedLegacyTable = () =>
   tableCalls.some((c) => c.relation === "content_ir.kind_instance");
 const writeDoors = () =>
-  doorCalls.filter((c) => c.door !== "tableList").map((c) => c.door);
+  doorCalls.filter((c) => c.door !== "tableList" && c.door !== "tableFind").map((c) => c.door);
 
 beforeEach(() => {
   storeListRefuses = false;

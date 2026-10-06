@@ -20,6 +20,7 @@ import { findCodeRanges, fenceParts } from "@ai-matrx/content-ir/source";
 import { kindValueToMarkdown } from "../kinds/kind-value-markdown";
 import { humanizeKind, plainValueMarkdown } from "../kinds/kind-markdown-utils";
 import {
+  balancedEnds,
   findBrokenKindJsonRegions,
   findKindCarryingJsonValues,
   frontMatterEnd,
@@ -69,44 +70,6 @@ function carriesBrokenKind(value: unknown, depth = 0): boolean {
   return Object.values(record).some((item) => carriesBrokenKind(item, depth + 1));
 }
 
-/**
- * For every `{` / `[` in `text`: the end (exclusive) of the string-aware
- * balanced JSON value opening there, or -1 (never balances). Each opener's
- * reading starts outside a string, exactly as if read alone; one right-to-left
- * pass reuses each nested opener's own answer (its reading from inside an
- * enclosing value is the same reading), so the whole table is linear — a
- * reading per opener was quadratic on thousands of unclosed `{` (round 11, P5).
- */
-function balancedEnds(text: string): Int32Array {
-  const ends = new Int32Array(text.length).fill(-1);
-  const stack: string[] = [];
-  for (let start = text.length - 1; start >= 0; start--) {
-    const open = text[start];
-    if (open !== "{" && open !== "[") continue;
-    stack.length = 0;
-    stack.push(open === "{" ? "}" : "]");
-    let inString = false;
-    for (let i = start + 1; i < text.length; i++) {
-      const ch = text[i]!;
-      if (inString) {
-        if (ch === "\\") i++;
-        else if (ch === '"') inString = false;
-        continue;
-      }
-      if (ch === '"') inString = true;
-      else if (ch === "{" || ch === "[") {
-        const end = ends[i]!;
-        if (end < 0) break;
-        i = end - 1;
-      } else if (ch === "}" || ch === "]") {
-        if (stack.pop() !== ch) break;
-        ends[start] = i + 1;
-        break;
-      }
-    }
-  }
-  return ends;
-}
 
 /** Sorted, non-overlapping ranges → for each position, whether it lies inside one (a cursor, linear over a forward walk). */
 function rangeCursor(ranges: Array<[number, number]>): (at: number) => [number, number] | undefined {
@@ -339,20 +302,45 @@ function convertRegions(
   if (spans.length === 0) return null;
   spans.sort((a, b) => a.start - b.start);
 
-  let out = "";
+  // Built as parts: `closeBefore` of the whole output per span copied the growing
+  // string each time (quadratic on thousands of regions, round 11 P5).
+  const parts: string[] = [];
+  const push = (piece: string) => {
+    if (piece) parts.push(piece);
+  };
+  const closeBeforeParts = () => {
+    while (parts.length > 0) {
+      const last = parts[parts.length - 1]!;
+      const trimmed = last.replace(/[ \t\r]+$/, "");
+      if (trimmed) {
+        parts[parts.length - 1] = trimmed;
+        break;
+      }
+      parts.pop();
+    }
+    if (parts.length === 0) return;
+    const last = parts[parts.length - 1]!;
+    if (last[last.length - 1] !== "\n") {
+      parts.push("\n\n");
+      return;
+    }
+    const before = last.length > 1 ? last[last.length - 2] : parts.length > 1 ? parts[parts.length - 2]!.slice(-1) : "";
+    if (before !== "\n") parts.push("\n");
+  };
   let cursor = 0;
   let afterBlock = false;
   for (const span of spans) {
     if (span.start < cursor) continue; // inside a span already taken
     const between = leftover(text.slice(cursor, span.start));
-    out += afterBlock ? openAfter(between) : between;
-    out = closeBefore(out) + span.md;
+    push(afterBlock ? openAfter(between) : between);
+    closeBeforeParts();
+    push(span.md);
     cursor = span.end;
     afterBlock = true;
   }
   const tail = leftover(text.slice(cursor));
-  out += afterBlock ? openAfter(tail) : tail;
-  return out;
+  push(afterBlock ? openAfter(tail) : tail);
+  return parts.join("");
 }
 
 /** Fence languages whose body is a JSON region (an unlabelled fence included). */

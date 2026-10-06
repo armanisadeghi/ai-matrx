@@ -118,7 +118,7 @@ import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
 const _NO_LIVE_SOURCES: MessageCitationSource[] = [];
 const _selectNoLiveSources = () => _NO_LIVE_SOURCES;
 
-interface AgentAssistantMessageProps {
+export interface AgentAssistantMessageProps {
   conversationId: string;
   requestId?: string;
   /** Server-assigned `cx_message.id` — present for committed and DB-loaded turns. */

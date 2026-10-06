@@ -281,6 +281,8 @@ if $STRICT; then
         # common-docs projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Offline, ~5 s.
         "Chat package boundary (no new @host ties)|pnpm check:chat-package-boundary"
         "Chat package boundary — self-test|pnpm check:chat-package-boundary:self-test"
+        "Chat public subpaths (app imports only the package's public surface)|pnpm check:chat-public-subpaths"
+        "Chat public subpaths — self-test|pnpm check:chat-public-subpaths:self-test"
         "A run never fetches the agent definition (run tier)|pnpm check:agent-run-tier"
         "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
@@ -560,6 +562,10 @@ if $STRICT; then
         # EVERY PAGE HAS AN EXECUTOR (Arman, 2026-10-04): a surface row with no
         # executor_name disables every client-run tool for the request.
         "Every surface row names its executor|pnpm check:surface-executors"
+        # ORPHAN ROWS (Alchemy ALC-14): an active declared_by=code ui_surface row with no
+        # manifest/server declaration. ADVISORY; UNMEASURED (exit 3) without credentials.
+        "No orphan surface rows|pnpm check:surface-orphans"
+        "…and the orphan check can still fail|pnpm check:surface-orphans:self-test"
         "…and its archive/revive planner can still fail|npx jest scripts/lib/__tests__/surface-sync-check.test.ts --silent"
         # Blast radius of the surface VALUE vocabulary: orphan agent bindings /
         # shortcut mappings / write twins, values a sync would delete out from
@@ -866,6 +872,10 @@ if $STRICT; then
         # policies/cursor-law.md. Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Disabled state turns pointer events off (swallows the cursor)|pnpm check:cursor-law"
         "Cursor law guard self-test|pnpm check:cursor-law:self-test"
+        # ALCHEMY DOORS (ALC-20) — raw clipboard, hand-built downloads, direct format libraries,
+        # surface-write door bypass, private action registries. Shrink-only baseline; advisory here.
+        "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)|pnpm check:alchemy-doors"
+        "Alchemy doors guard self-test|pnpm check:alchemy-doors:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.
@@ -1112,6 +1122,8 @@ else
         # common-docs projects/chat-package-move/PACKAGE-INDEPENDENCE.md). Offline, ~5 s.
         "Chat package boundary (no new @host ties)|pnpm check:chat-package-boundary"
         "Chat package boundary — self-test|pnpm check:chat-package-boundary:self-test"
+        "Chat public subpaths (app imports only the package's public surface)|pnpm check:chat-public-subpaths"
+        "Chat public subpaths — self-test|pnpm check:chat-public-subpaths:self-test"
         "A run never fetches the agent definition (run tier)|pnpm check:agent-run-tier"
         "One door for an agent request's context|pnpm check:context-single-door"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
@@ -1525,6 +1537,10 @@ else
         # policies/cursor-law.md. Baseline ratchet: exits 1 only on a NEW site; advisory here.
         "Disabled state turns pointer events off (swallows the cursor)|pnpm check:cursor-law"
         "Cursor law guard self-test|pnpm check:cursor-law:self-test"
+        # ALCHEMY DOORS (ALC-20) — raw clipboard, hand-built downloads, direct format libraries,
+        # surface-write door bypass, private action registries. Shrink-only baseline; advisory here.
+        "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)|pnpm check:alchemy-doors"
+        "Alchemy doors guard self-test|pnpm check:alchemy-doors:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.

@@ -1036,6 +1036,8 @@ export interface ApplyManifestSyncResult {
   sweptPrefCount: number;
   /** Manifests skipped because their `surfaceName` isn't in `ui_surface`. */
   skippedMissingSurface: string[];
+  /** Code declarations refused because the database owns a row with the same key; one sentence each. */
+  refusedDatabaseOwned: string[];
   /**
    * `db_only` rows the sweep found stale but LEFT ALONE because they were
    * touched inside `RECENT_ROW_WINDOW_HOURS` (see `includeRecent`). Empty
@@ -1787,6 +1789,7 @@ export async function applyManifestSync(
     clientToolDeleted,
     sweptPrefCount,
     skippedMissingSurface,
+    refusedDatabaseOwned: executed.tables.flatMap((t) => t.refused),
     skippedRecentRows,
     urlPatternsUpdated,
     parentsUpdated,

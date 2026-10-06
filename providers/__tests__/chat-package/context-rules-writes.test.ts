@@ -137,7 +137,7 @@ import {
   settleOrganizationSelection,
 } from "@/lib/organization/organization-gate";
 import { configureChat, _resetChatHostForTests } from "@ai-matrx/chat/host/configure";
-import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
+import { createFakeDb } from "@ai-matrx/chat/testing/fake-db";
 import {
   ensureContextRulesReady,
   reloadContextRules,

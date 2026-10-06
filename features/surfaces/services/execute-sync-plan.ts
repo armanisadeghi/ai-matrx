@@ -70,6 +70,8 @@ function keyOf(row: Row, columns: readonly string[]): string {
 export interface ExecutedTable {
   table: string;
   written: Row[];
+  /** Rows the sync refused because the database owns them (declared_by is not 'code'), one sentence each. */
+  refused: string[];
 }
 
 export interface ExecuteSyncPlanResult {
@@ -99,7 +101,7 @@ function canonical(value: unknown): string {
 async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable> {
   const updateColumns = conflictUpdateColumns(plan);
   const compared = updateColumns.filter((column) => !PROVENANCE.has(column));
-  const readColumns = [...new Set([...plan.conflict, ...compared, "deleted_at"])].join(", ");
+  const readColumns = [...new Set([...plan.conflict, ...compared, "deleted_at", "declared_by"])].join(", ");
   const existing = await readAllRows(
     ({ from, to }) =>
       // VIEW LAW: completeness audit of the system catalog — every row is the job.
@@ -113,10 +115,16 @@ async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable>
   const fresh: Row[] = [];
   const changed: Row[] = [];
   const revived = new Set<Row>();
+  const refused: string[] = [];
   for (const row of plan.rows) {
     const present = current.get(keyOf(row, plan.conflict));
     if (!present) fresh.push(row);
-    else if (present.deleted_at !== null && present.deleted_at !== undefined) {
+    else if (present.declared_by !== undefined && present.declared_by !== null && present.declared_by !== "code") {
+      // The database owns this row; a code declaration with the same key never overwrites or revives it.
+      refused.push(
+        `${plan.table} "${keyOf(row, plan.conflict).replace(/::/g, " / ")}" is owned by the database, so the code declaration was skipped. Rename the code key or remove the database row.`,
+      );
+    } else if (present.deleted_at !== null && present.deleted_at !== undefined) {
       revived.add(row);
       changed.push(row);
     } else if (compared.some((column) => canonical(present[column]) !== canonical(row[column]))) changed.push(row);
@@ -147,7 +155,7 @@ async function executeTable(sb: Sb, plan: SyncTablePlan): Promise<ExecutedTable>
       written.push(...(result.data ?? []));
     }
   }
-  return { table: plan.table, written };
+  return { table: plan.table, written, refused };
 }
 
 export async function executeSyncPlan(

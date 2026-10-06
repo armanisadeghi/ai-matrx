@@ -11,7 +11,7 @@ const { execSync } = require("child_process");
 const ROOT = process.argv[2];
 const OUT = process.argv[3];
 
-const files = execSync("git ls-files '*.tsx'", { cwd: ROOT, encoding: "utf8" })
+const files = execSync("git ls-files '*.tsx'", { cwd: ROOT, encoding: "utf8", maxBuffer: 512 << 20 })
   .split("\n")
   .filter(Boolean)
   .filter((f) => !/\.(test|spec|stories)\.tsx$/.test(f) && !f.includes("__tests__") && !f.startsWith("node_modules"));
