@@ -81,7 +81,7 @@ function MatchedKeys({
                 ? kv
                   ? LAYER_META[kv.layer].className
                   : "border-border bg-muted text-foreground"
-                : "border-destructive/40 bg-destructive/5 text-destructive",
+                : "border-destructive/40 bg-destructive/5 text-destructive-ink",
             )}
           >
             {matched ? (

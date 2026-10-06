@@ -29,7 +29,7 @@ function UtilityCard({ title, description, href, icon: Icon }: (typeof utilities
         <AppLink href={href} onClick={handleClick} className="group block">
             <Card className="h-full border bg-card hover:bg-accent/30 transition-colors duration-150 cursor-pointer">
                 <CardHeader className="flex flex-row items-start gap-4 p-5">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink group-hover:bg-primary/20 transition-colors">
                         {isPending || isNavigating ? (
                             <LoadingSpinner size="sm" />
                         ) : (

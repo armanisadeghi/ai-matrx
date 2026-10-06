@@ -55,7 +55,7 @@ export function FinishedEpisode({ state }: { state: PodcastRunState }) {
             )}
           </div>
           <div className="flex min-w-0 flex-1 flex-col">
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-1 text-xs font-medium text-success">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-success/15 px-2.5 py-1 text-xs font-medium text-success-ink">
               <span className="h-1.5 w-1.5 rounded-full bg-success" />
               Episode ready
             </span>

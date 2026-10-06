@@ -63,7 +63,7 @@ export function DatabaseAdminLayoutClient({
               className={cn(
                 "inline-flex min-h-11 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors lg:min-h-8",
                 isHub
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >

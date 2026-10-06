@@ -56,7 +56,7 @@ function getStatusBadge(status: string) {
   const map: Record<string, { cls: string; Icon: typeof Clock }> = {
     draft: { cls: "bg-muted text-foreground", Icon: Clock },
     published: {
-      cls: "bg-success/15 text-success border-success/30",
+      cls: "bg-success/15 text-success-ink border-success/30",
       Icon: CheckCircle,
     },
     archived: {
@@ -64,7 +64,7 @@ function getStatusBadge(status: string) {
       Icon: Archive,
     },
     suspended: {
-      cls: "bg-destructive/15 text-destructive border-destructive/30",
+      cls: "bg-destructive/15 text-destructive-ink border-destructive/30",
       Icon: Ban,
     },
   };

@@ -110,7 +110,7 @@ function rowStatus(row: IntegrityRow): RowStatus {
 }
 
 const SEVERITY_STYLES: Record<Severity, string> = {
-  error: "bg-destructive/10 text-destructive border-destructive/30",
+  error: "bg-destructive/10 text-destructive-ink border-destructive/30",
   warning:
     "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
   info: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30",
@@ -804,7 +804,7 @@ function SummaryChip({
   tone: "error" | "warning" | "ok" | "neutral";
 }) {
   const styles = {
-    error: "border-destructive/30 bg-destructive/10 text-destructive",
+    error: "border-destructive/30 bg-destructive/10 text-destructive-ink",
     warning:
       "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
     ok: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",

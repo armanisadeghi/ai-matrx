@@ -79,8 +79,8 @@ export function RunView() {
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
                 done
-                  ? "bg-success/15 text-success"
-                  : "bg-primary/10 text-primary",
+                  ? "bg-success/15 text-success-ink"
+                  : "bg-primary/10 text-primary-ink",
               )}
             >
               {done ? (

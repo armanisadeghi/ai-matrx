@@ -920,7 +920,7 @@ export default function AdminSandboxManagementPage() {
             )}
 
             {sshError && (
-              <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md p-3">
+              <div className="text-sm text-destructive-ink bg-destructive/10 border border-destructive/20 rounded-md p-3">
                 {sshError}
                 <ErrorAlchemyMenu error={sshError} />
               </div>

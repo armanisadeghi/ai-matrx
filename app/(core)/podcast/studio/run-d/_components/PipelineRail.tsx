@@ -34,10 +34,10 @@ export function PipelineRail({ phases, timings }: PipelineRailProps) {
               <span
                 className={cn(
                   "relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border transition-colors",
-                  done && "border-success/40 bg-success/10 text-success",
-                  active && "border-primary/50 bg-primary/10 text-primary",
+                  done && "border-success/40 bg-success/10 text-success-ink",
+                  active && "border-primary/50 bg-primary/10 text-primary-ink",
                   failed &&
-                    "border-destructive/40 bg-destructive/10 text-destructive",
+                    "border-destructive/40 bg-destructive/10 text-destructive-ink",
                   !done &&
                     !active &&
                     !failed &&

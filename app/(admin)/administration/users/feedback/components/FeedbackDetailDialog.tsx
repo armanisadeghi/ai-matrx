@@ -1673,7 +1673,7 @@ export default function FeedbackDetailDialog({
                     <div className="flex items-center gap-2">
                       {/* The linked parent is an editor VALUE, so the label
                           can't be the anchor — its doors ride beside it. */}
-                      <div className="flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20 text-xs font-mono text-primary">
+                      <div className="flex min-w-0 flex-1 items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20 text-xs font-mono text-primary-ink">
                         <span className="shrink-0">
                           {parentId.slice(0, 8)}…
                         </span>

@@ -45,7 +45,7 @@ export function RunView() {
             "hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold sm:inline-flex",
             done
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500"
-              : "bg-primary/10 text-primary",
+              : "bg-primary/10 text-primary-ink",
           )}
         >
           {done ? (

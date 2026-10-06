@@ -639,7 +639,7 @@ export default function CollectionItemsPage() {
 
         {/* With rows on screen a failed refresh is said above them; with none, the table slot says it. */}
         {error && items.length > 0 && (
-          <div className="text-sm text-destructive flex items-center gap-2 p-3 rounded-md bg-destructive/10">
+          <div className="text-sm text-destructive-ink flex items-center gap-2 p-3 rounded-md bg-destructive/10">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
             <ErrorAlchemyMenu error={error} />

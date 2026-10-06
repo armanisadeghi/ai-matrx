@@ -59,7 +59,7 @@ const READINESS_META = {
   stub: { label: "stub", className: "text-muted-foreground" },
   unregistered: {
     label: "unregistered",
-    className: "border-destructive/40 bg-destructive/5 text-destructive",
+    className: "border-destructive/40 bg-destructive/5 text-destructive-ink",
   },
 } as const;
 

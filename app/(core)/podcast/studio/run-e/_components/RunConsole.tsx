@@ -50,7 +50,7 @@ export function RunConsole() {
       <PageHeader>
         <div className="flex w-full min-w-0 items-center gap-2">
           <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back to studio" />
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             <AudioLines className="h-4 w-4" />
           </span>
           <div className="min-w-0 leading-tight">

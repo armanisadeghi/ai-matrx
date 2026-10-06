@@ -97,7 +97,7 @@ export function CxDashboardLayoutClient({
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap",
                     isActive
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
                   )}
                 >

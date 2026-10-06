@@ -160,7 +160,7 @@ function JobBlock({
         >
           {job.meeting}
         </span>
-        <span className="inline-flex h-4 items-center gap-0.5 rounded bg-primary/10 px-1 text-[9px] font-semibold uppercase tracking-wide text-primary">
+        <span className="inline-flex h-4 items-center gap-0.5 rounded bg-primary/10 px-1 text-[9px] font-semibold uppercase tracking-wide text-primary-ink">
           {job.holder === "workflow" && <Workflow className="h-2.5 w-2.5" />}
           {job.holderLabel}
         </span>

@@ -155,7 +155,7 @@ function StatusHero({
               {spec.label}
             </h2>
             {spec.tone === "building" && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-ink">
                 <span className="relative flex h-1.5 w-1.5">
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
                   <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
