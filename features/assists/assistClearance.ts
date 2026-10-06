@@ -59,14 +59,28 @@ export function clearanceFor(
   return Math.ceil(visibleBottom - dock.top + GAP_PX);
 }
 
+/** Within this many px on every edge, a box IS the main area's box. */
+const SAME_BOX_PX = 2;
+
 /**
- * The page's main area (the shell's <main>, anything holding it, the document). It is never
- * inset: its children are sized to it, so padding it shrinks the page instead of adding room.
+ * The page's main area (the shell's <main>, anything holding it, the document, and a route's own
+ * full-size wrapper inside it — e.g. the agent builder's `h-full overflow-y-auto` root). It is never
+ * inset: its children are sized to it, so padding it shrinks the page instead of adding room (the
+ * builder grew a ~100 px empty band under both columns a second after load, 2026-10-06).
  */
-function isPageMainArea(el: HTMLElement, main: Element | null): boolean {
+function isPageMainArea(el: HTMLElement, main: Element | null, mainRect: DOMRect | null): boolean {
   if (el === document.body || el === document.documentElement) return true;
   if (el.tagName === "MAIN" || el.classList.contains("shell-main")) return true;
-  return main !== null && el.contains(main);
+  if (main === null) return false;
+  if (el.contains(main)) return true;
+  if (!mainRect || !main.contains(el)) return false;
+  const r = el.getBoundingClientRect();
+  return (
+    Math.abs(r.top - mainRect.top) <= SAME_BOX_PX &&
+    Math.abs(r.bottom - mainRect.bottom) <= SAME_BOX_PX &&
+    Math.abs(r.left - mainRect.left) <= SAME_BOX_PX &&
+    Math.abs(r.right - mainRect.right) <= SAME_BOX_PX
+  );
 }
 
 function isScroller(el: Element): el is HTMLElement {
@@ -82,12 +96,13 @@ function isScroller(el: Element): el is HTMLElement {
 function scrollersUnder(dock: DOMRect): HTMLElement[] {
   const found = new Set<HTMLElement>();
   const main = document.querySelector("main");
+  const mainRect = main?.getBoundingClientRect() ?? null;
   const probeY = Math.max(0, Math.min(window.innerHeight - 1, dock.top + dock.height / 2));
   for (const x of [dock.left + 2, dock.left + dock.width / 2, dock.right - 2]) {
     const stack = document.elementsFromPoint?.(x, probeY) ?? [];
     const hit = stack.find((el) => !el.closest(DOCK_SELECTOR));
     for (let el: Element | null = hit ?? null; el && el !== document.body; el = el.parentElement) {
-      if (el instanceof HTMLElement && isPageMainArea(el, main)) break;
+      if (el instanceof HTMLElement && isPageMainArea(el, main, mainRect)) break;
       if (isScroller(el)) {
         found.add(el);
         break;
