@@ -109,6 +109,8 @@ describe("surface writeback handler outcomes", () => {
       refused: true,
       phase: "apply",
       error: "Use the correction target for agent columns.",
+      // The one write door's receipt: a domain refusal is "cannot apply", never "failed".
+      receipt: expect.objectContaining({ status: "refused", reason: "cannot_apply" }),
     });
     expect(mockToastError).not.toHaveBeenCalled();
     expect(mockCaptureError).not.toHaveBeenCalled();
@@ -136,8 +138,11 @@ describe("surface writeback handler outcomes", () => {
       ok: false,
       phase: "apply",
       error: "Database write failed.",
+      receipt: expect.objectContaining({ status: "refused", reason: "failed" }),
     });
     expect(mockToastError).toHaveBeenCalledWith("Database write failed.");
+    // Reported once by the seam; the door does not capture it a second time.
+    expect(mockCaptureError).toHaveBeenCalledTimes(1);
     expect(mockCaptureError).toHaveBeenCalledWith(
       expect.objectContaining({
         source: "surface-writeback",

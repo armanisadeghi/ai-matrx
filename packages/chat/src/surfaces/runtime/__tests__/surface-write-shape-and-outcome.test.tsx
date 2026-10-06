@@ -368,6 +368,7 @@ describe("SurfaceWriteOutcome — what landed rides back on the result", () => {
         ok: false,
         phase: "apply",
         error: 'A class named "Algebra I" already exists.',
+        receipt: expect.objectContaining({ status: "refused", reason: "failed" }),
       });
     } finally {
       unregister();

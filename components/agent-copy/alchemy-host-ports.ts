@@ -22,6 +22,14 @@
  *                        knob snapshot
  *   window       PP-01a  `AlchemyWindowHost.tsx` — real WindowPanels, several
  *                        at once, each holding a live preparation session
+ *   door         ALC-17  THE one write door (`alchemy-door.ts`): every write to
+ *                        a declared target returns a receipt; the
+ *                        destinations' headless handlers are registered on it
+ *   approvals    ALC-17  the surface writeback seam's own approval flow (the
+ *                        inline approval card), as `ApprovalPort.ask`
+ *   serverActions AP-2   aidream `POST /actions/run` over `callApi`
+ *                        (`alchemy-server-actions.ts`); absent when the store
+ *                        cannot dispatch
  */
 
 import type {
@@ -51,6 +59,13 @@ import type { RootState } from "@/lib/redux/rootReducer";
 import { selectIsAdmin, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { alchemyOrganizationId, onAdminLaneChange } from "./alchemy-organization";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
+import type { AppDispatch } from "@/lib/redux/store";
+import {
+  createAlchemyApprovalPort,
+  createAlchemyDoorPort,
+  registerHeadlessDestinations,
+} from "./alchemy-door";
+import { createServerActionPort } from "./alchemy-server-actions";
 
 /** The two store methods the identity port reads. */
 export interface AlchemyIdentityStore {
@@ -233,10 +248,12 @@ export function createAlchemyHostPorts({
   store,
   window,
 }: {
-  store: AlchemyIdentityStore;
+  /** The app store; `dispatch` binds server Actions (absent = they are absent). */
+  store: AlchemyIdentityStore & { dispatch?: AppDispatch };
   /** The host's window system (PP-01a); absent = the workspace window is absent. */
   window?: WindowPort;
 }): AlchemyHostPorts {
+  registerHeadlessDestinations(() => store.getState());
   return {
     kinds: createKindValidatorPort(),
     diagnostics: createDiagnosticsPort(),
@@ -245,6 +262,9 @@ export function createAlchemyHostPorts({
     transferKnobs: createTransferKnobsPort(),
     icons: createIconResolverPort(),
     notify: createNotifyPort(),
+    door: createAlchemyDoorPort(),
+    approvals: createAlchemyApprovalPort(),
+    ...(store.dispatch ? { serverActions: createServerActionPort(store.dispatch) } : {}),
     ...(window ? { window } : {}),
   };
 }
