@@ -132,7 +132,7 @@ export function ConnectorTile({
     <span
       className={cn(
         // ui-exception: brand plate — artwork needs a light ground in both themes.
-        "flex shrink-0 items-center justify-center bg-white shadow-xs ring-1 ring-black/10 dark:ring-white/15",
+        "flex shrink-0 items-center justify-center bg-white text-black/75 shadow-xs ring-1 ring-black/10 dark:ring-white/15",
         geometry.plate,
         className,
       )}

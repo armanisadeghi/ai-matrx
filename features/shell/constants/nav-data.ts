@@ -1754,18 +1754,20 @@ export const primaryNavItems: ShellNavItem[] = [
   },
   {
     // google, microsoft, github, bing, mcp-connections, provider-access,
-    // connector-catalog. Provider sign-in screens still live inside the
-    // features that use them (Marketing connections, Agent Connections).
+    // connector-catalog. The Connectors directory is the one place to find
+    // and connect any of them; screens that live inside other features
+    // (Bing, databases, this computer) are listed there and open in place.
     label: "Integrations",
-    href: "/connected-sources",
+    href: "/user-settings/integrations",
     iconName: "Plug",
     section: "primary",
     profileMenu: false,
     dashboard: false,
-    description: "Connected sources and your own computers",
+    description: "Every connection, yours and shared",
     color: "sky",
     guestHidden: true,
     children: [
+      { label: "Connectors", href: "/user-settings/integrations", iconName: "Plug", guestHidden: true },
       { label: "Connected Sources", href: "/connected-sources", iconName: "Link2", guestHidden: true },
       { label: "Connect your AI", href: "/bring-your-work", iconName: "Import", guestHidden: true },
     ],

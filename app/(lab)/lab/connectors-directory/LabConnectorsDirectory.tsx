@@ -14,6 +14,8 @@ import {
 } from "@/features/connectors/integration-directory";
 import { getConnector } from "@/features/connectors/registry";
 import { providerArtworkUrls } from "@/features/connectors/live-connectors";
+import { lucideMark } from "@/features/connectors/marks";
+import { Bot, Laptop } from "lucide-react";
 
 function item(
   id: string,
@@ -74,6 +76,19 @@ const ITEMS: IntegrationDirectoryItem[] = [
   item("attio-docs", "Attio Docs", "Search Attio's developer documentation.", "Attio · Agent tools", "developer", "https://docs.attio.com/"),
   item("mercury", "Mercury", "Read balances and transactions from your bank.", "Mercury · Agent tools", "finance", "https://mercury.com"),
   item("vercel", "Vercel", "Deploy projects and read build logs.", "Vercel · Agent tools", "developer", "https://vercel.com"),
+  item("bing", "Bing Webmaster Tools", "Search performance and site health from Bing.", "Microsoft", "analytics", null, {
+    artwork: { id: "bing", name: "Bing", blurb: "", surfaces: ["directory"], iconUrl: "https://www.google.com/s2/favicons?domain=bing.com&sz=128" },
+    sharedBy: ["Titanium"],
+  }),
+  item("database", "Your own database", "Connect a Postgres or Supabase database you run.", "AI Matrx", "database", null, {
+    artwork: { id: "database", name: "Database", blurb: "", surfaces: ["directory"], iconUrl: "https://cdn.simpleicons.org/postgresql" },
+  }),
+  item("computer", "This computer", "Let agents work through your own computer and network.", "AI Matrx", "developer", null, {
+    artwork: { id: "computer", name: "This computer", blurb: "", surfaces: ["directory"], logo: lucideMark(Laptop) },
+  }),
+  item("your-ai", "Connect your AI", "Use AI Matrx from Claude, ChatGPT, Claude Code or Cursor.", "AI Matrx", "ai", null, {
+    artwork: { id: "your-ai", name: "Connect your AI", blurb: "", surfaces: ["directory"], logo: lucideMark(Bot) },
+  }),
   item("airtable", "Airtable", "Read and update bases, tables and records.", "Airtable · Agent tools", "data", "https://airtable.com", { comingSoon: true, available: false, status: "Coming soon" }),
 ];
 
