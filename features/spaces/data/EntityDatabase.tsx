@@ -556,7 +556,7 @@ function EntityPeek({ entity, rowId, as, editable, onClose }: { entity: Entity; 
   }
   return (
     <Dialog open onOpenChange={(o) => (o ? null : onClose())}>
-      <DialogContent className={as === "page" ? "max-w-[100vw] w-[100vw] h-[100dvh] rounded-none overflow-auto" : "max-w-[860px] w-[92vw] max-h-[86dvh] overflow-auto"}>
+      <DialogContent size={as === "page" ? "screen" : "xl"} className="overflow-auto">
         <DialogTitle className="sr-only">{entity.label ?? "Row"}</DialogTitle>
         {content}
       </DialogContent>
