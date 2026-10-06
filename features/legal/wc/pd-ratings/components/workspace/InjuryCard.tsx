@@ -43,7 +43,7 @@ export function InjuryCard({
       )}
     >
       <div className="flex items-start gap-3">
-        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-mono font-semibold text-primary">
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/10 text-xs font-mono font-semibold text-primary-ink">
           {index + 1}
         </span>
 

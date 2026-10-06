@@ -341,7 +341,7 @@ export function PromoteToSystemMandateButton({
         </span>
       </div>
       {refusal ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-[11.5px] text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-[11.5px] text-destructive-ink">
           <p>
             <TextWithDoors text={refusal.message} />
           </p>

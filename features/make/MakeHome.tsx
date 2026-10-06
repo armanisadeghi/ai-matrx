@@ -217,7 +217,7 @@ export default function MakeHome() {
                     data-make-tile={tile.id}
                     className="group relative flex h-full w-full min-w-0 items-start gap-3 rounded-xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:scale-[0.99]"
                   >
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                       <KindIcon kind={tile.kind} className="h-5 w-5" />
                     </span>
                     <span className="min-w-0 flex-1">

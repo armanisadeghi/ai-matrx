@@ -485,7 +485,7 @@ export function buildRow(
 }
 
 export const HEALTH_CLASS: Record<MandateHealth, string> = {
-  ok: "text-success border-success/40 bg-success/10",
+  ok: "text-success-ink border-success/40 bg-success/10",
   // Neutral on purpose — this is the true resting state of a new mandate,
   // not a problem. Nothing red, nothing amber.
   "no Mandate Holder yet": "text-muted-foreground border-border bg-muted/40",

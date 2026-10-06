@@ -199,7 +199,7 @@ export function CrawlScheduleCard({
       ) : null}
 
       {storedRefusal ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-[10px] leading-4 text-destructive">
+        <p className="rounded-md border border-destructive/40 bg-destructive/10 px-2.5 py-2 text-[10px] leading-4 text-destructive-ink">
           This site’s schedule is not allowed to run —{" "}
           <span className="font-medium">
             {describeCrawlCadence(storedCadence, timezone)}

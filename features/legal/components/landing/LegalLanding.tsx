@@ -199,7 +199,7 @@ export default function LegalLanding() {
           className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
         />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-20 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary-ink mb-6">
             <Scale className="h-3.5 w-3.5" />
             AI Matrx for Legal
           </div>
@@ -263,7 +263,7 @@ export default function LegalLanding() {
                 "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
               )}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4 group-hover:scale-110 transition-transform duration-300">
                 <feature.icon className="h-5 w-5" />
               </div>
               <h3 className="text-base font-semibold mb-2">{feature.title}</h3>
@@ -292,7 +292,7 @@ export default function LegalLanding() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {STEPS.map((step) => (
               <div key={step.number} className="flex gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary-ink font-bold text-lg">
                   {step.number}
                 </div>
                 <div>
@@ -336,7 +336,7 @@ export default function LegalLanding() {
                     className={cn(
                       "shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wider",
                       area.status === "Live"
-                        ? "bg-primary/10 text-primary border border-primary/20"
+                        ? "bg-primary/10 text-primary-ink border border-primary/20"
                         : "bg-muted text-muted-foreground border border-border",
                     )}
                   >
@@ -397,7 +397,7 @@ export default function LegalLanding() {
                 key={item.title}
                 className="rounded-2xl border border-border bg-card p-6 sm:p-7"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4">
                   <item.icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-base font-semibold mb-2">{item.title}</h3>

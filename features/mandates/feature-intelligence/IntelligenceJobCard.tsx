@@ -324,7 +324,7 @@ export function IntelligenceJobCard({
                     title={entry?.dropped_reason ?? undefined}
                     className={cn(
                       "flex min-w-0 items-center justify-between gap-3 rounded-md px-2 py-1",
-                      winner ? "bg-primary/10 font-medium text-primary" : entry?.dropped_reason ? "text-destructive" : "text-muted-foreground",
+                      winner ? "bg-primary/10 font-medium text-primary-ink" : entry?.dropped_reason ? "text-destructive" : "text-muted-foreground",
                     )}
                   >
                     <span className="shrink-0">{RUNG_LABEL[rung]}</span>

@@ -202,7 +202,7 @@ function CaseRow({
           href={`/legal/ca-wc/pd-ratings-calculator/${claim.id}`}
           className="flex-1 min-w-0 flex items-center gap-3"
         >
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             <FolderOpen className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
@@ -261,7 +261,7 @@ function CenteredCard({
   return (
     <div className="flex items-center justify-center min-h-[60dvh] px-4">
       <div className="text-center max-w-md">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+        <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary-ink mb-4">
           <Icon className="h-6 w-6" />
         </div>
         <h1 className="text-lg font-semibold text-foreground">{title}</h1>

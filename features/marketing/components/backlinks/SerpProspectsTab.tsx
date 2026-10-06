@@ -861,14 +861,14 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
           ))}
         </fieldset>
         {prospects.previewError ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive-ink">
             {prospects.previewError}
             <ErrorAlchemyMenu error={prospects.previewError} />
           </p>
         ) : null}
         <PreviewCard prospects={prospects} />
         {run.inputError ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive-ink">
             {run.inputError}
             <ErrorAlchemyMenu error={run.inputError} />
           </p>
@@ -880,7 +880,7 @@ function SerpSetupPanel({ prospects }: { prospects: SerpProspects }) {
           </p>
         ) : null}
         {run.status === "error" && run.error ? (
-          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
+          <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive-ink">
             {humanizeBackendError(run.error)}
             <ErrorAlchemyMenu />
           </p>

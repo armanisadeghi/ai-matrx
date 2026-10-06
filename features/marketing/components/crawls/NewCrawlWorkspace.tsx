@@ -609,7 +609,7 @@ export function NewCrawlWorkspace() {
               ) : null}
             </div>
             {visibleError ? (
-              <p className="shrink-0 border-t border-border bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <p className="shrink-0 border-t border-border bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
                 {visibleError}
                 <ErrorAlchemyMenu error={visibleError} />
               </p>

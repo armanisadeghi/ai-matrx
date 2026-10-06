@@ -260,7 +260,7 @@ function SeedCard({ prospects }: { prospects: LinkGapProspects }) {
   const { seed, seedLoading, seedError } = prospects;
   if (seedError) {
     return (
-      <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+      <div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
         {seedError}{" "}
         <button
           type="button"
@@ -542,7 +542,7 @@ export function BacklinkProspectsTab({
               </p>
             ) : null}
             {run.status === "error" && run.error ? (
-              <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive">
+              <p className="rounded-md border border-destructive/30 bg-destructive/5 px-2.5 py-1.5 text-xs text-destructive-ink">
                 {humanizeBackendError(run.error)}
                 <ErrorAlchemyMenu />
               </p>

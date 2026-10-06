@@ -138,7 +138,7 @@ export interface BadgeMeta {
 export const LAYER_META: Record<MandateResolvedLayer, BadgeMeta> = {
   user: {
     label: "Yours",
-    className: "border-primary/40 bg-primary/10 text-primary",
+    className: "border-primary/40 bg-primary/10 text-primary-ink",
   },
   org: {
     label: "Organization",

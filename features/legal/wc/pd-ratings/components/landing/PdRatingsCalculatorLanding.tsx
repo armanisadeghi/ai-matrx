@@ -116,7 +116,7 @@ export default function PdRatingsCalculatorLanding() {
           className="absolute -top-20 -right-20 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
         />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-16 sm:pt-24 pb-12 sm:pb-20 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary-ink mb-6">
             <Calculator className="h-3.5 w-3.5" />
             California PD Ratings
           </div>
@@ -233,7 +233,7 @@ export default function PdRatingsCalculatorLanding() {
                 "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
               )}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4 group-hover:scale-110 transition-transform duration-300">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4 group-hover:scale-110 transition-transform duration-300">
                 <tool.icon className="h-5 w-5" />
               </div>
               <h3 className="text-base font-semibold mb-2">{tool.title}</h3>
@@ -259,7 +259,7 @@ export default function PdRatingsCalculatorLanding() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8">
             {CHAIN.map((step) => (
               <div key={step.number} className="flex gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary font-bold text-lg">
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-2xl bg-primary/10 text-primary-ink font-bold text-lg">
                   {step.number}
                 </div>
                 <div>
@@ -291,7 +291,7 @@ export default function PdRatingsCalculatorLanding() {
               key={item.title}
               className="rounded-2xl border border-border bg-card p-6"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink mb-4">
                 <item.icon className="h-5 w-5" />
               </div>
               <h3 className="text-base font-semibold mb-2">{item.title}</h3>

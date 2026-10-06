@@ -107,7 +107,7 @@ function ErrorState({
       <LoaderHeader />
       <div className="flex items-center justify-center min-h-[60dvh]">
         <div className="text-center max-w-md mx-auto px-4">
-          <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive mb-3">
+          <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10 text-destructive-ink mb-3">
             <AlertCircle className="h-5 w-5" />
           </div>
           <p className="text-sm font-medium text-foreground">{message}</p>

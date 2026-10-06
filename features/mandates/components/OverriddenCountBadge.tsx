@@ -24,7 +24,7 @@ export function OverriddenCountBadge({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11.5px] font-medium ring-1 ring-inset",
         overridden > 0
-          ? "bg-primary/8 text-primary ring-primary/15"
+          ? "bg-primary/8 text-primary-ink ring-primary/15"
           : "bg-muted/50 text-muted-foreground ring-border/60",
         className,
       )}

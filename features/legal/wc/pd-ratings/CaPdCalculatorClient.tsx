@@ -342,7 +342,7 @@ function Toolbar({
         <span className="text-sm font-medium text-foreground whitespace-nowrap">
           PD Rating
         </span>
-        <span className="hidden md:inline-flex items-center gap-1 ml-1 rounded-full border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+        <span className="hidden md:inline-flex items-center gap-1 ml-1 rounded-full border border-primary/20 bg-primary/5 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
           <ShieldCheck className="h-2.5 w-2.5" />
           CA Workers&apos; Comp
         </span>

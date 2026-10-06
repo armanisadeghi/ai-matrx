@@ -313,8 +313,8 @@ function EmptyState({
         className={cn(
           "rounded-full p-3 mb-4 ring-1",
           tone === "destructive"
-            ? "bg-destructive/10 text-destructive ring-destructive/20"
-            : "bg-primary/10 text-primary ring-primary/15",
+            ? "bg-destructive/10 text-destructive-ink ring-destructive/20"
+            : "bg-primary/10 text-primary-ink ring-primary/15",
         )}
       >
         <Icon className={cn("h-5 w-5", spinning && "animate-spin")} />

@@ -206,7 +206,7 @@ export function IntelligenceIndicator({
             >
               <span
                 className={cn(
-                  "inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary/5 text-primary transition-colors group-hover/intel:bg-primary/15",
+                  "inline-flex items-center justify-center rounded-full border border-primary/40 bg-primary/5 text-primary-ink transition-colors group-hover/intel:bg-primary/15",
                   size === "sm" ? "h-5 w-5" : "h-6 w-6",
                 )}
               >

@@ -51,10 +51,10 @@ export function CandidateListCell({
       className={
         "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium tabular-nums hover:underline " +
         (bad
-          ? "bg-destructive/10 text-destructive"
+          ? "bg-destructive/10 text-destructive-ink"
           : cell.stalled
             ? "bg-amber-500/10 text-amber-700 dark:text-amber-400"
-            : "bg-primary/10 text-primary")
+            : "bg-primary/10 text-primary-ink")
       }
     >
       {cell.runs_in} of {cell.runs_wanted} in

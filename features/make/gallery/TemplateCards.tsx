@@ -41,7 +41,7 @@ export function TemplateCardGrid({
             ) : null}
             <span className="flex min-w-0 items-center gap-2">
               <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">{card.name}</span>
-              {card.installed ? <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary">Installed</span> : null}
+              {card.installed ? <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[11px] text-primary-ink">Installed</span> : null}
             </span>
             <span className="truncate text-xs text-muted-foreground">{card.business ?? card.vertical ?? ""}</span>
             <span className="truncate text-xs text-muted-foreground" data-make-footprint="">{footprintLine(card.footprint)}</span>

@@ -939,7 +939,7 @@ export function BacklinkEnrichmentDetail({
                   </div>
                 ) : null}
                 {jsonText(capture.failure_reason) ? (
-                  <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive">
+                  <p className="rounded border border-destructive/30 bg-destructive/5 p-2 text-xs text-destructive-ink">
                     {jsonText(capture.failure_reason)}
                     <ErrorAlchemyMenu />
                   </p>

@@ -580,8 +580,8 @@ export function CoverageTab({ siteId }: { siteId: string }) {
           className={cn(
             "shrink-0 rounded-md border p-2 text-xs",
             anyFailed
-              ? "border-destructive/40 bg-destructive/5 text-destructive"
-              : "border-warning/40 bg-warning/5 text-warning",
+              ? "border-destructive/40 bg-destructive/5 text-destructive-ink"
+              : "border-warning/40 bg-warning/5 text-warning-ink",
           )}
         >
           {/* read-gate-exempt: this banner renders only when incomplete.length > 0 — it names trackers actually read as failing, never a zero */}

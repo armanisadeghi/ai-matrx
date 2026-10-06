@@ -30,10 +30,10 @@ export function TabCount({ count }: { count: RecordTabCount }) {
       className={cn(
         "ml-0.5 rounded px-1 type-meta font-semibold tabular-nums leading-4",
         count.tone === "danger"
-          ? "bg-destructive/15 text-destructive"
+          ? "bg-destructive/15 text-destructive-ink"
           : count.tone === "warning"
             ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-            : "bg-primary/10 text-primary",
+            : "bg-primary/10 text-primary-ink",
       )}
     >
       {count.value}

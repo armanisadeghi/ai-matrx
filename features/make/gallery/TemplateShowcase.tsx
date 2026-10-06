@@ -382,7 +382,7 @@ export function CalendarShow({ table, view, today }: { table: ShowTable; view: S
                 </span>
               ) : null}
               {items.slice(0, 2).map((r) => (
-                <span key={r.key} className="mt-0.5 block truncate rounded bg-primary/10 px-1 text-primary">
+                <span key={r.key} className="mt-0.5 block truncate rounded bg-primary/10 px-1 text-primary-ink">
                   {titleOf(table, r)}
                 </span>
               ))}

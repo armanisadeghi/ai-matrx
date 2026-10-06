@@ -189,7 +189,7 @@ export function MandateNotesPanel({
               className={cn(
                 "rounded-full border px-2 py-0.5 text-[10px] transition-colors",
                 option === kind
-                  ? "border-primary/50 bg-primary/10 text-primary"
+                  ? "border-primary/50 bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:text-foreground",
               )}
             >

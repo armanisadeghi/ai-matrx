@@ -305,7 +305,7 @@ export function CrawlSummary({ crawlId }: { crawlId: string }) {
               </div>
             </dl>
             {row.error ? (
-              <p className="border-t border-border bg-destructive/5 p-3 text-xs text-destructive">
+              <p className="border-t border-border bg-destructive/5 p-3 text-xs text-destructive-ink">
                 {humanizeBackendError(row.error)}
                 <ErrorAlchemyMenu />
               </p>

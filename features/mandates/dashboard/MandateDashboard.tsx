@@ -158,7 +158,7 @@ function Section({
       {error ? (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 type-secondary text-destructive"
+          className="flex items-start gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 type-secondary text-destructive-ink"
         >
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           <span className="min-w-0 [overflow-wrap:anywhere]">

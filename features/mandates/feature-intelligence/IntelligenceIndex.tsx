@@ -97,7 +97,7 @@ function FeatureCard({
         className="group flex h-full min-w-0 flex-col gap-2 rounded-xl border border-border bg-card p-3.5 transition-colors hover:border-primary/40 hover:bg-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             <Icon className="h-[18px] w-[18px]" aria-hidden />
           </span>
           <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold text-foreground">
@@ -253,7 +253,7 @@ export function IntelligenceIndex({
         className="-mx-4 px-4 sm:-mx-6 sm:px-6"
       />
       {error ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 type-body text-destructive">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3.5 py-2.5 type-body text-destructive-ink">
           The features could not be read: {error}
           <ErrorAlchemyMenu error={error} />
         </div>

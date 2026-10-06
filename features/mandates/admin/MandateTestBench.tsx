@@ -306,7 +306,7 @@ function ResultRow({
         />
 
         {result.error ? (
-          <div className="rounded bg-destructive/10 p-2 type-meta text-destructive">
+          <div className="rounded bg-destructive/10 p-2 type-meta text-destructive-ink">
             {result.error}
             <ErrorAlchemyMenu error={result.error} />
           </div>

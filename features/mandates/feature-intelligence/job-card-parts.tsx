@@ -232,7 +232,7 @@ export function LadderChips({ row, job, className }: { row: FeatureIntelligenceR
                 warned
                   ? cn("border-amber-500/40 bg-amber-500/5 text-amber-700 dark:text-amber-300", isWinner && "font-medium")
                   : isWinner
-                    ? "border-primary/40 bg-primary/5 font-medium text-primary"
+                    ? "border-primary/40 bg-primary/5 font-medium text-primary-ink"
                     : "border-border text-muted-foreground",
               )}
               title={entry?.dropped_reason ?? entry?.output_warning ?? undefined}
