@@ -43,10 +43,8 @@ import {
 } from "@ai-matrx/chat/surfaces/runtime/surface-client-tools";
 import { surfacePatchContractLine } from "@ai-matrx/chat/surfaces/runtime/surface-write-patch";
 import { surfaceWriteToolOutput } from "@ai-matrx/chat/surfaces/runtime/surface-write-tool-output";
-import {
-  applySurfaceWrite,
-  listAgentWritableTargets,
-} from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { listAgentWritableTargets } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { writeToPageThroughDoor } from "@/components/agent-copy/alchemy-door";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
 
 /**
@@ -635,7 +633,7 @@ export async function actOnItem(
           " Nothing was changed.",
       };
     }
-    const result = await applySurfaceWrite(target, action.value, {
+    const result = await writeToPageThroughDoor(target, action.value, {
       ...(call?.agentWrite ?? { origin: "agent" as const }),
       source: capture,
     });

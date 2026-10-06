@@ -60,6 +60,7 @@ import {
 } from "@ai-matrx/chat/surfaces/runtime/custom-field-targets";
 import { registerSurfaceRuntime } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import type { RootState } from "@/lib/redux/rootReducer";
+import { writeToPageThroughDoor } from "./alchemy-door";
 
 const ORG = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 const USER = "8f14e45f-ceea-467a-9575-2d3b1c2f7a10";
@@ -104,6 +105,20 @@ beforeEach(() => {
 });
 
 describe("a page write goes through the door and returns a receipt", () => {
+  it("writeToPageThroughDoor (the app's entry for every non-destination caller) returns the door's receipt, applied or refused", async () => {
+    const noteTitle = jest.fn();
+    const unregister = mountNotesPage(noteTitle);
+    try {
+      const applied = await writeToPageThroughDoor("note_title", "Via entry", { surfaceName: "matrx-user/notes" });
+      expect(noteTitle).toHaveBeenCalledWith("Via entry");
+      expect(applied).toMatchObject({ ok: true, receipt: { status: "applied" } });
+    } finally {
+      unregister();
+    }
+    const refused = await writeToPageThroughDoor("no_such_target", "x", { surfaceName: "matrx-user/notes" });
+    expect(refused.ok).toBe(false);
+  });
+
   it("a person's write is applied by the page's handler, with an applied receipt", async () => {
     const noteTitle = jest.fn();
     const unregister = mountNotesPage(noteTitle);

@@ -286,3 +286,4 @@ an assist is personal and addressed to one person by design.
 - 2026-08-08 — UX overhaul to the Claude-Code bar (THE INTENTIONAL-ACTION LAW): hover/click-expand AssistCard, verb-labeled actions with explainer + receipt, generic per-page `AssistStrip` (GSC strip refactored onto it). Page-first doctrine recorded.
 - 2026-08-08 — GSC insights producer wired (search-console feature); extracted `emitAssistTracked` so producers stop hand-mirroring rows into Redux.
 - 2026-08-08 — Created: ledger, registry (3 action kinds), runner, chip, dock, first two producers (shapes missing-component, workflow-emit surprise-UI). Error Inspector source `assists` added.
+- **2026-10-06** — `surface_write` now writes through `writeToPageThroughDoor` (the app's one write door entry) instead of calling the writeback seam; the result carries the door's receipt.

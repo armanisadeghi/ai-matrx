@@ -25,10 +25,15 @@ import type { Receipt, WriteDoor, WriteHandler } from "@ai-matrx/alchemy/operate
 import type { ApprovalPort } from "@ai-matrx/alchemy/ports";
 import type { TransferTarget } from "@ai-matrx/alchemy/operate";
 import {
+  applySurfaceWrite,
   loadSurfaceWriteDoor,
   surfaceWriteApprovals,
 } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
+import type {
+  ApplySurfaceWriteOptions,
+  SurfaceWriteResult,
+} from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import type { RootState } from "@/lib/redux/rootReducer";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { alchemyOrganizationId } from "./alchemy-organization";
@@ -319,4 +324,19 @@ export async function saveWorkbookThroughDoor(
     new AbortController().signal,
   );
   return { receipt, created: receipt.status === "applied" ? createdRecordOf(receipt.result) : null };
+}
+
+/**
+ * A write to an open page's declared target, through the app's one door: the seam resolves the
+ * mounted (or captured) page's handler, applies the target's policy and approval, and hands the
+ * write to the door, so the result carries the door's `receipt` (applied / queued / refused).
+ * Every app caller that is not a destination or the agent write thunk writes through here —
+ * never `applySurfaceWrite` itself (`pnpm check:alchemy-doors`, rule `doorbypass`).
+ */
+export function writeToPageThroughDoor(
+  target: string,
+  value: unknown,
+  options?: ApplySurfaceWriteOptions,
+): Promise<SurfaceWriteResult> {
+  return applySurfaceWrite(target, value, options);
 }

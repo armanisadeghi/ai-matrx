@@ -39,7 +39,7 @@
  *     origin?: "user" | "agent"; actorLabel?: string }
  */
 
-import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { writeToPageThroughDoor } from "@/components/agent-copy/alchemy-door";
 import type {
   KindActionDefinition,
   KindActionResult,
@@ -81,8 +81,8 @@ async function applySurfaceWriteHandler(
       ? obj.actorLabel
       : undefined;
 
-  // applySurfaceWrite owns loudness (toast + captureError) and never throws.
-  const result = await applySurfaceWrite(target, obj.value, {
+  // the door seam owns loudness (toast + captureError) and never throws.
+  const result = await writeToPageThroughDoor(target, obj.value, {
     surfaceName,
     origin,
     actorLabel,
@@ -93,11 +93,12 @@ async function applySurfaceWriteHandler(
       result: {
         surfaceName: result.surfaceName,
         ...(result.outcome ? { outcome: result.outcome } : {}),
+        ...(result.receipt ? { receipt: result.receipt } : {}),
       },
     };
   }
   // A decline is reported honestly as not-applied, but it is NOT a defect —
-  // `applySurfaceWrite` already kept it quiet, and the runner must not toast
+  // the door seam already kept it quiet, and the runner must not toast
   // over the user's own choice.
   return { ok: false, error: result.error };
 }

@@ -1,12 +1,12 @@
 /**
  * `surface_write` — accepting the assist applies a prepared value to a
- * declared surface write target through the ONE write-back seam
- * (`applySurfaceWrite`). The chip click IS the human gesture, so the write
+ * declared surface write target through the app's ONE write door
+ * (`writeToPageThroughDoor`). The chip click IS the human gesture, so the write
  * runs with `origin: "user"` — the surface's own manifest validation and
  * handler wiring still apply, loudly.
  */
 
-import { applySurfaceWrite } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
+import { writeToPageThroughDoor } from "@/components/agent-copy/alchemy-door";
 import type {
   AssistActionDefinition,
   AssistActionResult,
@@ -22,7 +22,7 @@ export const surfaceWriteAssistAction: AssistActionDefinition = {
       return { ok: false, error: "surface_write: wrong action payload" };
     }
     const { target, value, surfaceName } = assist.action;
-    const outcome = await applySurfaceWrite(target, value, {
+    const outcome = await writeToPageThroughDoor(target, value, {
       surfaceName,
       origin: "user",
       actorLabel: "Assist",

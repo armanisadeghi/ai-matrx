@@ -518,11 +518,7 @@
     "features/spaces/io/import.ts": 1,
     "lib/code-runtime/app-scope.ts": 1
   },
-  "doorbypass": {
-    "features/assists/runtime/handlers/surface-write.ts": 2,
-    "features/board/tools/item-surfaces.ts": 2,
-    "features/content-ir/react/actions/handlers/apply-surface-write.ts": 2
-  },
+  "doorbypass": {},
   "registries": {
     "lib/client-directives/directiveRegistry.ts": 1,
     "packages/chat/src/surfaces/config/namespace-registry.ts": 1
