@@ -10,7 +10,7 @@ import type {
   ChatOrgPort,
   ChatPrefsPort,
 } from "../../host/contract";
-import { createFakeDb } from "../../host/__tests__/fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 import { resolveChatHost } from "../../host/configure";
 
 export const PRIYA: ChatIdentity = {

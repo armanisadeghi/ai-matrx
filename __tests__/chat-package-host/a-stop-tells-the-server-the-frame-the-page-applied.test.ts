@@ -40,7 +40,7 @@ jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/settle-after-stop
   settleAfterStop: () => () => Promise.resolve("reloaded"),
 }));
 
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 import { processStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 
 // The stream is read by the host's parser behind the server port (P9): this app's own.

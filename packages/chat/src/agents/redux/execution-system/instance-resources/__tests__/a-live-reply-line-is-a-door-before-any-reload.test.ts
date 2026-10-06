@@ -99,7 +99,7 @@ import observabilityReducer from "../../observability/observability.slice";
 import { selectConversationMessages } from "../../messages/messages.selectors";
 import { processStream } from "../../thunks/process-stream";
 import type { ChatRootState } from "../../../../../store/root-state";
-import { configureServerForTest } from "../../../../../host/__tests__/server-test-host";
+import { configureServerForTest } from "../../../../../testing/server-test-host";
 
 const g = globalThis as { TextEncoder?: typeof NodeTextEncoder; TextDecoder?: typeof NodeTextDecoder };
 if (!g.TextEncoder) g.TextEncoder = NodeTextEncoder;

@@ -31,7 +31,7 @@ import {
   configureChat,
 } from "../../../../../host/configure";
 import type { ChatDiagnosticEntry } from "../../../../../host/contract";
-import { createFakeDb } from "../../../../../host/__tests__/fake-db";
+import { createFakeDb } from "../../../../../testing/fake-db";
 
 // The host's diagnostics port: every entry the package records, in order.
 const recorded: ChatDiagnosticEntry[] = [];

@@ -1,4 +1,6 @@
-{
+// Captured from a real run; shared with app tests via @ai-matrx/chat/testing/captured/*.
+
+const fixture = {
   "the_regimen": {
     "headline_finding": "The morning shoe battle and the kitchen chase are not stubbornness but rage called out by daily restraint.",
     "stop_doing": [
@@ -69,4 +71,6 @@
     "expected_course": "Expect the shoe-and-counter rages to worsen for two or three mornings once the household stops giving in."
   },
   "watsons_words": "Your boy of two and a half is not stubborn, nor was he born with a vicious temper."
-}
+};
+
+export default fixture;

@@ -115,7 +115,7 @@ import instanceUserInputReducer from "../../instance-user-input/instance-user-in
 import instanceClientToolsReducer from "../../instance-client-tools/instance-client-tools.slice";
 import instanceUIStateReducer from "../../instance-ui-state/instance-ui-state.slice";
 import messagesReducer from "../../messages/messages.slice";
-import { configureRecordingWindows, type RecordingWindows } from "../../../../../host/__tests__/recording-windows";
+import { configureRecordingWindows, type RecordingWindows } from "../../../../../testing/recording-windows";
 import { CHAT_WINDOWS } from "../../../../../host/windows";
 import type { ChatDispatch, ChatRootState } from "../../../../../store/root-state";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";

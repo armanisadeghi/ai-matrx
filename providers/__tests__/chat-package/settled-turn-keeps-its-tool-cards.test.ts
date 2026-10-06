@@ -56,7 +56,7 @@ import { persistedToolEntry } from "@ai-matrx/chat/tool-call-visualization/utils
 import { readSurfaceWrite } from "@ai-matrx/chat/tool-call-visualization/surface-write/readSurfaceWrite";
 import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.types";
 import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

@@ -40,12 +40,20 @@ export const PUBLIC_DOMAINS = [
   "quick-actions",
   "store",
   "surfaces",
+  "testing",
   "tool-call-visualization",
   "ui",
   "utils",
   "voice-agent",
   "window-panels",
 ];
+
+/**
+ * `testing` is public for TESTS only: the fake db, the server/test hosts, render helpers and
+ * captured run fixtures a consumer's suites drive the package with. A runtime importer is
+ * refused by matrx-frontend's check:chat-public-subpaths (TEST_PATH).
+ */
+export const TEST_ONLY_DOMAINS = ["testing"];
 
 /** Named entries: subpath -> source module (without extension). */
 export const NAMED_ENTRIES = {

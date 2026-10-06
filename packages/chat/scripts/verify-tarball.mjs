@@ -91,7 +91,7 @@ if (!pinned.length && !pinnedPeers.length) ok(`manifest: ${Object.keys(manifest.
 const probe = join(consumer, "probe.mjs");
 writeFileSync(probe, `
 const subs = ${JSON.stringify(subpaths)};
-const mustFail = ["@ai-matrx/chat/src/host/index", "@ai-matrx/chat/host/__tests__/fake-db", "@ai-matrx/chat/not-a-domain/x", "@ai-matrx/chat"];
+const mustFail = ["@ai-matrx/chat/src/host/index", "@ai-matrx/chat/testing/fake-db", "@ai-matrx/chat/not-a-domain/x", "@ai-matrx/chat"];
 const bad = []; const leaked = [];
 for (const s of subs) { try { import.meta.resolve(s); } catch (e) { bad.push(s + " :: " + e.code); } }
 for (const s of mustFail) {

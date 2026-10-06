@@ -14,7 +14,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createChatTestReducer } from "@ai-matrx/chat/host/__tests__/chat-test-reducer";
+import { createChatTestReducer } from "@ai-matrx/chat/testing/chat-test-reducer";
 import { hydrateMessages, type MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { saveAnswerEdit, saveMessageDisplayEdit } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/save-answer-edit.thunk";

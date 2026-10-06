@@ -32,7 +32,7 @@ import messagesReducer from "@ai-matrx/chat/agents/redux/execution-system/messag
 import { processStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@/features/content-ir/kinds/decision-answers";
 import type { ChatRootState } from "@ai-matrx/chat/store/root-state";
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

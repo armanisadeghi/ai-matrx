@@ -28,7 +28,7 @@ jest.mock("@ai-matrx/chat/agents/redux/execution-system/thunks/resolve-base-url"
 jest.resetModules();
 /* eslint-disable @typescript-eslint/no-require-imports */
 const { resilientFetch } = require("@ai-matrx/data/net") as typeof import("@ai-matrx/data/net");
-const { configureServerForTest } = require("@ai-matrx/chat/host/__tests__/server-test-host") as typeof import("@ai-matrx/chat/host/__tests__/server-test-host");
+const { configureServerForTest } = require("@ai-matrx/chat/testing/server-test-host") as typeof import("@ai-matrx/chat/testing/server-test-host");
 const { resolveBackendForConversation } = require("@ai-matrx/chat/agents/redux/execution-system/thunks/resolve-base-url") as typeof import("@ai-matrx/chat/agents/redux/execution-system/thunks/resolve-base-url");
 const { createMatrxTransportForConversation } = require("@ai-matrx/chat/agents/redux/execution-system/thunks/matrx-transport-for-conversation") as typeof import("@ai-matrx/chat/agents/redux/execution-system/thunks/matrx-transport-for-conversation");
 /* eslint-enable @typescript-eslint/no-require-imports */

@@ -6,8 +6,8 @@
  * unconfigured host.
  */
 
-import { _resetChatHostForTests, configureChat } from "../configure";
-import type { ChatServerApi, ResolvedChatHost } from "../contract";
+import { _resetChatHostForTests, configureChat } from "../host/configure";
+import type { ChatServerApi, ResolvedChatHost } from "../host/contract";
 import { createFakeDb } from "./fake-db";
 
 export function configureServerForTest(

@@ -16,7 +16,7 @@ import { combineReducers, configureStore, type Reducer, type UnknownAction } fro
 import { DEFAULT_CHAT_PREFERENCES } from "../../host/defaults/prefs";
 import { _resetAnnouncements } from "../../host/errors";
 import { resolveChatHost } from "../../host/configure";
-import { createFakeDb } from "../../host/__tests__/fake-db";
+import { createFakeDb } from "../../testing/fake-db";
 import type { ChatPreferences, ChatPrefsPort } from "../../host/contract";
 import { followChatHost } from "../chat-host-sync";
 import { chatHostReducer, chatHostSynced, type ChatHostState } from "../chat-host.slice";

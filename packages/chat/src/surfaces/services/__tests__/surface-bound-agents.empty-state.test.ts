@@ -11,7 +11,7 @@ jest.mock("../../../host/db", () => ({
 }));
 
 import { fetchSurfaceMenuAgentsGrouped } from "../surface-bound-agents.service";
-import { configureServerForTest } from "../../../host/__tests__/server-test-host";
+import { configureServerForTest } from "../../../testing/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {

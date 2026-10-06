@@ -39,7 +39,7 @@ import { ChatConversationSurface } from "@ai-matrx/chat/agents/components/chat/C
 import { ChatProvider } from "@ai-matrx/chat/host/react";
 import type { ChatHost } from "@ai-matrx/chat/host";
 import { _resetChatHostForTests } from "@ai-matrx/chat/host/configure";
-import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
+import { createFakeDb } from "@ai-matrx/chat/testing/fake-db";
 import {
   CONVERSATION_DOCUMENTS_KIND,
   SCRATCHPAD_KIND,

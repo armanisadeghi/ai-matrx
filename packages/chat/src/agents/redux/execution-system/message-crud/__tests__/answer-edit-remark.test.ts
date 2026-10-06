@@ -25,7 +25,7 @@
  */
 
 import { configureStore } from "@reduxjs/toolkit";
-import { createChatTestReducer } from "../../../../../host/__tests__/chat-test-reducer";
+import { createChatTestReducer } from "../../../../../testing/chat-test-reducer";
 import { hydrateMessages, type MessageRecord } from "../../messages/messages.slice";
 import { saveAnswerEdit } from "../save-answer-edit.thunk";
 import { commitInlineContentEdit, flushPendingInlineEdit } from "../commit-inline-edit.thunk";

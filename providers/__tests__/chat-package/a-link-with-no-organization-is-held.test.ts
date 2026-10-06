@@ -26,7 +26,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { _resetChatHostForTests, configureChat } from "@ai-matrx/chat/host/configure";
 import type { ChatHost } from "@ai-matrx/chat/host/contract";
-import { createFakeDb } from "@ai-matrx/chat/host/__tests__/fake-db";
+import { createFakeDb } from "@ai-matrx/chat/testing/fake-db";
 
 const USER_ID = "4cf62e4e-2679-484f-b652-034e697418df";
 const AGENT_ID = "506a20fc-34a9-4038-b38b-6c71ab09b173";

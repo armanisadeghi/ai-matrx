@@ -50,9 +50,9 @@ jest.mock("@ai-matrx/chat/agents/components/inputs/smart-input/SmartAgentInput",
 import { TooltipProvider } from "@ai-matrx/design-system";
 // The app root's one Alchemy action registry (AlchemyHost, ALC-15): the
 // assistant turn's rich-document action bar reads it.
-import { ChatHostTestProvider } from "@ai-matrx/chat/host/__tests__/chat-host-test-provider";
+import { ChatHostTestProvider } from "@ai-matrx/chat/testing/chat-host-test-provider";
 import { AlchemyActionsTestHost } from "@/test-utils/alchemy-actions-host";
-import { configureServerForTest } from "@ai-matrx/chat/host/__tests__/server-test-host";
+import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 // Server calls reach the host's server client through the server port (P9).
 beforeAll(() => {
