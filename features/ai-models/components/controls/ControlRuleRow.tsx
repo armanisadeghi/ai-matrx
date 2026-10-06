@@ -497,7 +497,7 @@ function UiValuesEditor({
             className={cn(
               "px-1.5 py-0.5 rounded border text-[10px] transition-colors",
               on
-                ? "bg-primary/10 border-primary text-primary"
+                ? "bg-primary/10 border-primary text-primary-ink"
                 : "bg-background hover:bg-muted text-muted-foreground",
             )}
           >

@@ -437,7 +437,7 @@ function AdminOfferingBlock({
             "shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium",
             offering.isAvailable
               ? "bg-primary/10 text-foreground/80"
-              : "bg-destructive/15 text-destructive",
+              : "bg-destructive/15 text-destructive-ink",
           )}
         >
           {offering.isAvailable ? "Available" : "Unavailable"}
@@ -547,7 +547,7 @@ function AdminOfferingsSection({ model }: { model: CatalogModel }) {
       </div>
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
         {offerings.length === 0 ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/10 p-2 text-[11px] text-destructive-ink">
             No offerings — this model is not callable (a model without an
             `ai.offering` row cannot be routed).
           </div>
@@ -634,7 +634,7 @@ function ModelDetailCard({
             )}
             {model.isDeprecated && !model.retiredAt && (
               <span
-                className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive-ink"
                 title="Still runs normally; hidden from default selection."
               >
                 Deprecated
@@ -642,7 +642,7 @@ function ModelDetailCard({
             )}
             {model.retiredAt && (
               <span
-                className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive"
+                className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-medium text-destructive-ink"
                 title={`The provider no longer serves this model (retired ${model.retiredAt.slice(0, 10)}). It cannot be selected.`}
               >
                 Retired
@@ -1473,7 +1473,7 @@ function ModelRow({
         )}
         {model.isDeprecated && !retired && (
           <span
-            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
+            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive-ink"
             title="Deprecated — still runs; hidden from default selection"
           >
             dep
@@ -1481,7 +1481,7 @@ function ModelRow({
         )}
         {retired && (
           <span
-            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
+            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive-ink"
             title={retiredTitle}
           >
             retired
@@ -1489,7 +1489,7 @@ function ModelRow({
         )}
         {unavailable && (
           <span
-            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive"
+            className="shrink-0 rounded bg-destructive/15 px-1 text-[9px] text-destructive-ink"
             title="No available offerings — not callable"
           >
             off

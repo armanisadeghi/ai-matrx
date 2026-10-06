@@ -102,7 +102,7 @@ const STATUS_TABS: Array<{
 ];
 
 const STATUS_TONE: Record<AssistStatus, string> = {
-  pending: "bg-primary/10 text-primary border-primary/20",
+  pending: "bg-primary/10 text-primary-ink border-primary/20",
   accepted:
     "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20",
   dismissed: "bg-muted text-muted-foreground border-border",
@@ -688,7 +688,7 @@ export function AssistsManager() {
       )}
 
       {error && (
-        <p className="border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+        <p className="border-b border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </p>

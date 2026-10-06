@@ -324,7 +324,7 @@ export function GoogleMusicMixer() {
         </section>
 
         {error ? (
-          <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <p className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </p>

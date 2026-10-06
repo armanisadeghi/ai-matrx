@@ -39,7 +39,7 @@ export function ModeToggle({
             onClick={() => onChange(key)}
             className={
               mode === key
-                ? "rounded bg-primary/10 px-2.5 py-1 text-[11.5px] font-medium text-primary"
+                ? "rounded bg-primary/10 px-2.5 py-1 text-[11.5px] font-medium text-primary-ink"
                 : "rounded px-2.5 py-1 text-[11.5px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
             }
           >

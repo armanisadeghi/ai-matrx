@@ -2214,7 +2214,7 @@ function BindingDraft({
                               className={cn(
                                 "rounded px-2 py-0.5 text-[10.5px] transition-colors",
                                 mapTab === key
-                                  ? "bg-primary/10 font-medium text-primary"
+                                  ? "bg-primary/10 font-medium text-primary-ink"
                                   : "text-muted-foreground hover:text-foreground",
                               )}
                             >
@@ -2629,7 +2629,7 @@ function BindingDraft({
           {/* The server's refusal, kept ON THE PAGE — its words name the exact
           missing deliverable or the exact input, and a toast loses them. */}
           {saveError ? (
-            <div className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive">
+            <div className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] leading-relaxed text-destructive-ink">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <div className="min-w-0 space-y-1.5">
                 {/* Through the ONE sentence renderer (R-O2): the door's refusal

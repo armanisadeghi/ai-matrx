@@ -134,7 +134,7 @@ function LayerRow({
       className={cn(
         "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-accent",
         indent && "pl-7",
-        selected ? "bg-primary/10 text-primary" : "text-foreground",
+        selected ? "bg-primary/10 text-primary-ink" : "text-foreground",
         bold && "font-semibold",
       )}
     >

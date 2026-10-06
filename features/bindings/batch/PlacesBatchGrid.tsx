@@ -272,7 +272,7 @@ export function PlacesBatchGrid({
                         className={cn(
                           "border-b border-border px-3 py-1.5 text-[11.5px] leading-relaxed",
                           health.tone === "red"
-                            ? "bg-destructive/5 text-destructive"
+                            ? "bg-destructive/5 text-destructive-ink"
                             : "bg-amber-500/5 text-amber-700 dark:text-amber-400",
                         )}
                       >

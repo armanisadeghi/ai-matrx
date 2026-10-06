@@ -29,6 +29,7 @@ import type { DecisionResultView } from "./decision-result";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { ALL_DECISIONS_REVIEW_HREF } from "@/features/agents/decision-review/service";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
 
 export function DecisionPlayground() {
   const dispatch = useAppDispatch();
@@ -313,22 +314,7 @@ function ModeSwitch({
   onChange: (value: "text" | "json") => void;
 }) {
   return (
-    <div className="inline-flex rounded-md border border-border bg-muted p-0.5 text-xs">
-      <button
-        type="button"
-        onClick={() => onChange("text")}
-        className={`rounded px-2 py-1 ${value === "text" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
-      >
-        Text
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange("json")}
-        className={`rounded px-2 py-1 ${value === "json" ? "bg-background shadow-sm" : "text-muted-foreground"}`}
-      >
-        JSON
-      </button>
-    </div>
+    <SegmentedControl aria-label="Format" value={value} onValueChange={onChange} data={[{ value: "text", label: "Text" }, { value: "json", label: "JSON" }]} />
   );
 }
 

@@ -511,7 +511,7 @@ export function BoardTile({
             type="button"
             onClick={() => store.setEditing(null)}
             title="Stop interacting (Esc)"
-            className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary hover:bg-primary/25"
+            className="shrink-0 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary-ink hover:bg-primary/25"
           >
             Interacting · Esc
           </button>

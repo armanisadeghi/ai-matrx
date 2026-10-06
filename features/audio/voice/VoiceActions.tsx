@@ -112,7 +112,7 @@ const VoiceActions = () => {
                 </Button>
             </div>
 
-            {error && <div className="p-3 bg-destructive/10 text-destructive rounded-md">{error} <ErrorAlchemyMenu error={error} /></div>}
+            {error && <div className="p-3 bg-destructive/10 text-destructive-ink rounded-md">{error} <ErrorAlchemyMenu error={error} /></div>}
 
             {smartGetData("clonedVoice") && (
                 <div className="text-center">

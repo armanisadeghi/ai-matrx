@@ -622,7 +622,7 @@ export function BatchMode({
   }
   if (console_.status === "error") {
     return (
-      <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
+      <p className="flex items-start gap-1.5 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive-ink">
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         {console_.message}
         <ErrorAlchemyMenu error={console_.message} />
@@ -749,7 +749,7 @@ export function BatchMode({
       </section>
 
       {failures.length > 0 ? (
-        <div className="space-y-1 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive">
+        <div className="space-y-1 rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-[12px] text-destructive-ink">
           <p className="font-medium">
             {failures.length}{" "}
             {failures.length === 1 ? "place was" : "places were"} refused by the

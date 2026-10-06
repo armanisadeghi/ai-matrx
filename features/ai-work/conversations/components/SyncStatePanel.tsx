@@ -168,7 +168,7 @@ function AccountCard({ account }: { account: SyncAccountState }) {
             className={cn(
               "max-w-56 truncate rounded-full px-2 py-0.5 text-[11px] font-medium",
               account.accountReported
-                ? "bg-primary/10 text-primary"
+                ? "bg-primary/10 text-primary-ink"
                 : "bg-muted text-muted-foreground",
             )}
             title={account.accountLabel}
@@ -258,7 +258,7 @@ export function SyncStatePanel() {
           Reading delivered sessions…
         </div>
       ) : status === "error" ? (
-        <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+        <div className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
           <ErrorAlchemyMenu error={error} />

@@ -201,7 +201,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
             className={cn(
               "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
               item.status === "failed"
-                ? "bg-destructive/10 text-destructive"
+                ? "bg-destructive/10 text-destructive-ink"
                 : item.status === "recording"
                   ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
                   : "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",

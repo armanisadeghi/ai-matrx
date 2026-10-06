@@ -41,7 +41,7 @@ export function RememberedSignInHeading({
         {account.avatarUrl ? (
           <AvatarImage src={account.avatarUrl} alt="" />
         ) : null}
-        <AvatarFallback className="bg-primary/10 text-sm text-primary">
+        <AvatarFallback className="bg-primary/10 text-sm text-primary-ink">
           {initials}
         </AvatarFallback>
       </Avatar>

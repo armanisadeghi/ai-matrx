@@ -48,7 +48,7 @@ export function InlineConversionCard({
         />
 
         <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary-ink">
             <UserPlus className="h-6 w-6" />
           </div>
 

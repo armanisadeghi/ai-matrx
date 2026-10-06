@@ -41,7 +41,7 @@ export function HandsFreeVoiceChat() {
           </div>
           {canStart ? <Button icon={<Mic />} variant="primary" onClick={() => void chat.start()}>Start listening</Button> : <Button icon={<Moon />} variant="outline" onClick={() => void chat.sleep()}>Sleep now</Button>}
         </div>
-        {chat.error ? <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{chat.error} <ErrorAlchemyMenu error={chat.error} /></p> : null}
+        {chat.error ? <p className="mt-4 rounded-lg bg-destructive/10 p-3 text-sm text-destructive-ink">{chat.error} <ErrorAlchemyMenu error={chat.error} /></p> : null}
         <p className="mt-4 text-xs text-muted-foreground">On iPhone and iPad, the first tap also unlocks microphone and audio playback. Returning from another tab requires another tap.</p>
       </div>
       <div className="space-y-4" aria-label="Voice conversation">

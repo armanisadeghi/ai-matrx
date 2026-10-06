@@ -526,7 +526,7 @@ export function ProviderConversationTranscript({
             </div>
           ) : null}
           {earlierError ? (
-            <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+            <p className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
               <CircleAlert className="h-3.5 w-3.5 shrink-0" />
               {earlierError}
               <ErrorAlchemyMenu error={earlierError} />

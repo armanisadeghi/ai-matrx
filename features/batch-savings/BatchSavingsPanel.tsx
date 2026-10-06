@@ -211,7 +211,7 @@ export function BatchSavingsPanel({
       </header>
 
       {error ? (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
+        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive-ink">
           The batch savings read failed — no batch numbers are shown. {error.message}
           <ErrorAlchemyMenu />
         </div>

@@ -410,7 +410,7 @@ export function HolderAssignment({
       ) : null}
 
       {refusal ? (
-        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-[11.5px] leading-relaxed text-destructive">
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-[11.5px] leading-relaxed text-destructive-ink">
           {refusal}
           <ErrorAlchemyMenu error={refusal} />
         </p>

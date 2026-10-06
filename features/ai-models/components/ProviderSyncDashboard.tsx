@@ -1824,7 +1824,7 @@ export default function ProviderSyncDashboard({
         <div
           className={`shrink-0 flex items-center gap-2 px-4 py-1.5 text-sm border-b ${
             syncError
-              ? "bg-destructive/10 text-destructive"
+              ? "bg-destructive/10 text-destructive-ink"
               : "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
           }`}
         >

@@ -513,7 +513,7 @@ export function ConversationProvenancePanel({
           Reading provider bindings…
         </div>
       ) : state === "error" ? (
-        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+        <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
           <ErrorAlchemyMenu error={error} />

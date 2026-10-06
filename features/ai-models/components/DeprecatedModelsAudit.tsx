@@ -660,7 +660,7 @@ export default function DeprecatedModelsAudit({
       {globalError && (
         <div
           role="alert"
-          className="flex shrink-0 items-center gap-2 border-b bg-destructive/10 px-4 py-2 text-sm text-destructive"
+          className="flex shrink-0 items-center gap-2 border-b bg-destructive/10 px-4 py-2 text-sm text-destructive-ink"
         >
           <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden />
           <span>{globalError}</span>

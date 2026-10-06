@@ -120,13 +120,13 @@ export function HostedBillingStep({
       >
         <ToggleGroupItem
           value="platform"
-          className="px-2.5 text-xs pointer-coarse:min-h-11 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          className="px-2.5 text-xs pointer-coarse:min-h-11 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink"
         >
           AI Matrx credits
         </ToggleGroupItem>
         <ToggleGroupItem
           value="own_plan"
-          className="px-2.5 text-xs pointer-coarse:min-h-11 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+          className="px-2.5 text-xs pointer-coarse:min-h-11 data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink"
         >
           Your Claude plan
         </ToggleGroupItem>
