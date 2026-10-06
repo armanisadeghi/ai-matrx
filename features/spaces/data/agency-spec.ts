@@ -146,7 +146,7 @@ export const AGENCY_SPEC = {
         { key: "offer_name", label: "Offer", parityType: "text", sensitivity: "internal", contextPolicy: "include" },
         { key: "monthly_price", label: "Monthly price", parityType: "number", sensitivity: "internal", contextPolicy: "include", rules: [{ kind: "min", value: 0 }, { kind: "max", value: 50000 }] },
       ],
-      rows: OFFERS.map((o) => ({ key: o.key, values: { offer_name: o.name, monthly_price: o.price } })),
+      rows: OFFERS.map((o) => ({ key: o.key, icon: "Package", values: { offer_name: o.name, monthly_price: o.price } })),
     },
     {
       token: "nps_survey",
@@ -276,7 +276,8 @@ export const AGENCY_SPEC = {
     fictionalStreets: ["Driftwood Row"],
   },
   // 2: Offers became their own table and a client's Offer Bought a link to it (was a select).
-  version: 2,
+  // 3: the Offers rows carry a row icon (Package).
+  version: 3,
 } as const satisfies TemplateSpec;
 
 export const AGENCY_TABLES = {
