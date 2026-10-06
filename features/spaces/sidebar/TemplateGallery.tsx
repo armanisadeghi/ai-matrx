@@ -64,7 +64,7 @@ export function TemplateGallery({ open, onOpenChange }: { open: boolean; onOpenC
     try {
       if (picked === SAMPLE_KEY) {
         onOpenChange(false);
-        await sample.add();
+        await sample.add({ asTemplate: true });
       } else if (current) {
         await templates.use(current.id, current.title);
         onOpenChange(false);

@@ -1,8 +1,9 @@
-// Round 18 blocker: "/2 columns" typed inside a column nested a column list in a column — Notion never
-// does — and the page's next save was refused while later edits were lost. Every page crossing the
-// store boundary (stored → editor on load, editor → stored on save) leaves with flat columns: a nested
-// list's columns join the outer list, a stray block in a list gets its own column, a one-column list
-// melts into its blocks. The result is always a snapshot the database takes.
+// Round 18 blocker: "/2 columns" typed inside a column nested a column list there, and the page's next
+// save was refused ('"column" was expected') while later edits were lost. The editor no longer nests
+// (slash-insert.editor-proof.mts); and every page crossing the store boundary (stored → editor on load,
+// editor → stored on save) leaves with well-formed lists: a stray block in a list gets its own column, a
+// list straight inside a list joins it, a one-column list melts into its blocks. A list inside a COLUMN
+// is valid and kept (the sample's ring row above its client table). The result always validates.
 
 import { validateSnapshot } from "@/lib/spaces-blocks/schema";
 import { DEFAULT_PAGE_SETTINGS, type SpaceBlock } from "@/lib/spaces-blocks/types";
@@ -30,31 +31,38 @@ const NESTED: SpaceBlock[] = [
   ]),
 ];
 
-describe("columns are never nested across the store boundary", () => {
+// A list straight inside a list, a stray block in a list, and the editor's nested list in a column.
+const BROKEN: SpaceBlock[] = [
+  list("L", [col("A", 0.5, [p("a1", "Left column text")]), list("N", [col("N1", 0.5, [p("n1", "Joined")]), col("N2", 0.5, [p("n2", "")])]), p("s1", "Stray")]),
+];
+
+describe("column lists are always well formed across the store boundary", () => {
   for (const [name, run] of [
-    ["editor → stored (save)", (b: SpaceBlock[]) => fromEngine(b.length ? (toEngineRaw(b) as EngineBlock[]) : [])],
+    ["editor → stored (save)", (b: SpaceBlock[]) => fromEngine(toEngineRaw(b))],
     ["stored → editor (load)", (b: SpaceBlock[]) => fromEngineRaw(toEngine(b))],
   ] as const) {
-    it(`${name}: a list nested in a column joins the outer list, nothing lost`, () => {
-      const out = run(NESTED);
-      expect(nestedLists(out)).toEqual([]);
+    it(`${name}: a list in a list joins it, a stray block gets a column, nothing lost, the database takes it`, () => {
+      expect(valid(BROKEN)).not.toEqual([]);
+      const out = run(BROKEN);
       expect(out).toHaveLength(1);
-      expect(out[0].type).toBe("columnList");
-      expect(texts(out)).toEqual(["Left column text", "After nested columns", "", "Below", "Right"]);
-      const w = widthsOf(out[0]);
-      expect(w.reduce((s, x) => s + x, 0)).toBeCloseTo(1, 5);
+      expect(out[0].children?.map((c) => c.type)).toEqual(["column", "column", "column", "column"]);
+      expect(texts(out)).toEqual(["Left column text", "Joined", "", "Stray"]);
+      expect(widthsOf(out[0]).reduce((s, x) => s + x, 0)).toBeCloseTo(1, 5);
       expect(valid(out)).toEqual([]);
       // Ids stay unique and the same on every run (two co-editors seeding the room write identical items).
-      expect(JSON.stringify(run(NESTED))).toBe(JSON.stringify(out));
+      expect(JSON.stringify(run(BROKEN))).toBe(JSON.stringify(out));
+    });
+    it(`${name}: a column list inside a column is valid and kept as it is`, () => {
+      expect(run(NESTED)).toEqual(NESTED);
+      expect(nestedLists(NESTED)).toEqual(["N"]);
     });
   }
 
-  it("a stray block straight inside a list gets its own column; a one-column list melts into its blocks", () => {
-    const stray = fromEngine(toEngineRaw([list("S", [col("S1", 0.5, [p("s1", "one")]), p("s2", "stray")]), list("O", [col("O1", 1, [p("o1", "alone")])])]) as EngineBlock[]);
-    expect(stray.map((b) => b.type)).toEqual(["columnList", "text"]);
-    expect(stray[0].children?.map((c) => c.type)).toEqual(["column", "column"]);
-    expect(texts(stray)).toEqual(["one", "stray", "alone"]);
-    expect(valid(stray)).toEqual([]);
+  it("a one-column list melts into its blocks; a column outside a list too", () => {
+    const out = fromEngine(toEngineRaw([list("O", [col("O1", 1, [p("o1", "alone")])]), col("X", 1, [p("x1", "loose")])]));
+    expect(out.map((b) => b.type)).toEqual(["text", "text"]);
+    expect(texts(out)).toEqual(["alone", "loose"]);
+    expect(valid(out)).toEqual([]);
   });
 
   it("valid columns pass through unchanged", () => {

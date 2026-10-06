@@ -18,10 +18,11 @@ import { toast } from "@/lib/toast";
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { installAgencySample, pageOrganizationId } from "../data/agency-install";
-import { addTravelingSmmSample } from "../store/sample";
+import { addTravelingSmmSample, SAMPLE_TITLE } from "../store/sample";
 import { createDatabaseSpacesStore } from "../store-db/create-store";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
+import { sampleTemplatePlan } from "./template-plan";
 import { listTemplateIds, setTemplate, copyTemplate } from "./templates";
 
 const FAVORITES_KEY = "spaces:favorites";
@@ -64,7 +65,7 @@ interface SpacesContextValue {
   takeFocusTitle: (id: SpaceId) => boolean;
   /** A page created in this tab, handed to its screen once so it opens without a round trip. */
   takeFresh: (id: SpaceId) => SpaceDoc | null;
-  sample: { adding: boolean; progress: string | null; add: () => Promise<void> };
+  sample: { adding: boolean; progress: string | null; add: (opts?: { asTemplate?: boolean }) => Promise<void> };
   /** I2 / I3 — Spaces marked as templates that the person can open (null = not read yet). */
   templates: {
     ids: string[] | null;
@@ -270,10 +271,11 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     focusTitle.current = null;
     return true;
   };
-  const addSample = async () => {
+  const addSample = async (opts?: { asTemplate?: boolean }) => {
     if (sampleProgress) return;
     setSampleProgress("0");
     try {
+      const existed = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived)?.id ?? null;
       // The page and its tables share one organization: an existing sample page's own organization;
       // a new page and its tables go to the write organization (asked for when none is chosen).
       const root = await addTravelingSmmSample(
@@ -295,7 +297,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
         },
         (done, total) => setSampleProgress(`${done}/${total}`),
       );
-      open(root.id);
+      const plan = sampleTemplatePlan(Boolean(opts?.asTemplate), existed, root.id);
+      if (plan.kind === "copy") await applyTemplate(plan.of, root.title);
+      else open(plan.id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");
     } finally {

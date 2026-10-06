@@ -11,7 +11,7 @@
 
 import type { RichSpan, SpaceBlock, SpaceColor } from "../contract";
 
-import { columnsAreFlat, normalizeColumns } from "./columns";
+import { columnsAreWellFormed, normalizeColumns } from "./columns";
 
 /** Stored type <-> engine type. Custom blocks (callout, page, columns…) use the same name on both sides. */
 const TO_ENGINE: Record<string, string> = {
@@ -206,9 +206,9 @@ function tableFromEngine(block: EngineBlock): SpaceBlock {
   return out;
 }
 
-/** Stored → engine. Columns come out flat (columns.ts): a page stored with columns in a column opens fixed. */
+/** Stored → engine. Column lists come out well formed (columns.ts). */
 export function toEngine(blocks: SpaceBlock[]): EngineBlock[] {
-  return toEngineTree(columnsAreFlat(blocks) ? blocks : normalizeColumns(blocks));
+  return toEngineTree(columnsAreWellFormed(blocks) ? blocks : normalizeColumns(blocks));
 }
 
 function toEngineTree(blocks: SpaceBlock[]): EngineBlock[] {
@@ -246,10 +246,10 @@ function toEngineTree(blocks: SpaceBlock[]): EngineBlock[] {
   });
 }
 
-/** Engine → stored. Columns go out flat (columns.ts), so a save is never refused for its columns. */
+/** Engine → stored. Column lists go out well formed (columns.ts), so a save is never refused for its columns. */
 export function fromEngine(blocks: EngineBlock[]): SpaceBlock[] {
   const out = fromEngineTree(blocks);
-  return columnsAreFlat(out) ? out : normalizeColumns(out);
+  return columnsAreWellFormed(out) ? out : normalizeColumns(out);
 }
 
 function fromEngineTree(blocks: EngineBlock[]): SpaceBlock[] {
