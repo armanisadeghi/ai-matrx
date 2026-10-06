@@ -134,7 +134,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
       <div className="mx-auto w-full max-w-7xl space-y-8 px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
         <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary-ink">
               <FlaskConical className="h-4 w-4" />
               Isolated migration proof
             </div>
@@ -231,7 +231,7 @@ export default function CanonicalFlashcardsDemoHubPage() {
                     <div className="flex items-center gap-2">
                       <h3 className="text-lg font-semibold">{variant.name}</h3>
                       {variant.recommendation ? (
-                        <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold text-success">
+                        <span className="rounded-full bg-success/15 px-2 py-0.5 text-[11px] font-semibold text-success-ink">
                           Recommended
                         </span>
                       ) : null}

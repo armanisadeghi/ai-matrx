@@ -403,7 +403,7 @@ function SearchPanel({ local }: { local: UseMatrxLocalReturn }) {
       </div>
 
       {error && (
-        <div className="border border-destructive/50 rounded-lg p-3 bg-destructive/10 text-sm text-destructive">
+        <div className="border border-destructive/50 rounded-lg p-3 bg-destructive/10 text-sm text-destructive-ink">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

@@ -274,7 +274,7 @@ export function SharpCanonicalFlashcardsDemo() {
             <h1 className="truncate text-[clamp(0.95rem,0.9rem+0.25vw,1.1rem)] font-semibold">
               {DEMO_SET.title}
             </h1>
-            <span className="hidden rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary sm:inline">
+            <span className="hidden rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary-ink sm:inline">
               sharp proof
             </span>
           </div>
@@ -480,7 +480,7 @@ export function SharpCanonicalFlashcardsDemo() {
             <div className="flex shrink-0 flex-col items-center border-b border-border px-4 pb-3 pt-2">
               <GripHorizontal className="h-5 w-8 text-muted-foreground" />
               <div className="mt-1 flex w-full max-w-3xl items-center gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                   <AGENT_ICON className="h-5 w-5" />
                 </span>
                 <div className="min-w-0 flex-1">

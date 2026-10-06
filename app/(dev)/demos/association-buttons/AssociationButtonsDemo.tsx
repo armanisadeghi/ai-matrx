@@ -89,7 +89,7 @@ function Variant({
           className={cn(
             "rounded-full px-2 py-0.5 text-[11px] font-medium",
             canonical
-              ? "bg-primary/10 text-primary"
+              ? "bg-primary/10 text-primary-ink"
               : "bg-amber-500/15 text-amber-700 dark:text-amber-400",
           )}
         >

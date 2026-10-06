@@ -565,7 +565,7 @@ export function NewAppConceptClient() {
               <div className="hidden items-center rounded-lg border border-border bg-background p-1 shadow-sm sm:flex">
                 <button
                   type="button"
-                  className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary"
+                  className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary-ink"
                   aria-label="Grid view"
                 >
                   <Grid2X2 className="h-4 w-4" />
@@ -582,7 +582,7 @@ export function NewAppConceptClient() {
           </div>
 
           <div className="mt-5 flex w-full max-w-xl items-center overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-            <div className="flex h-16 w-24 items-center justify-center bg-primary/5 text-primary">
+            <div className="flex h-16 w-24 items-center justify-center bg-primary/5 text-primary-ink">
               <BookOpen className="h-8 w-8" />
             </div>
             <div className="flex min-w-0 flex-1 items-center justify-between gap-3 px-5">

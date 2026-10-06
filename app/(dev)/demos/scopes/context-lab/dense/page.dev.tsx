@@ -116,7 +116,7 @@ export default function DenseContextLabPage() {
           <h1 className="text-sm font-bold leading-none">
             Context picker · dense
           </h1>
-          <span className="rounded-sm bg-primary/10 px-1 py-0.5 font-mono text-[9px] text-primary">
+          <span className="rounded-sm bg-primary/10 px-1 py-0.5 font-mono text-[9px] text-primary-ink">
             rev 2
           </span>
           <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-muted-foreground">
@@ -161,7 +161,7 @@ export default function DenseContextLabPage() {
             type="button"
             disabled={isEmptySelection(sel)}
             onClick={() => setSel(EMPTY_SELECTION)}
-            className="h-5 shrink-0 rounded-sm px-1.5 text-[10px] text-destructive hover:bg-destructive/10 disabled:opacity-40"
+            className="h-5 shrink-0 rounded-sm px-1.5 text-[10px] text-destructive-ink hover:bg-destructive/10 disabled:opacity-40"
           >
             Clear
           </button>

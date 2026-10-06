@@ -103,7 +103,7 @@ function SavePlanRow({ entry }: { entry: SavePlanEntry }) {
         className={cn(
           "rounded px-1 py-px uppercase",
           entry.willSave
-            ? "bg-success/15 text-success"
+            ? "bg-success/15 text-success-ink"
             : "bg-muted text-muted-foreground",
         )}
       >

@@ -341,7 +341,7 @@ function CanonicalStudyCockpit({ sourceSurface }: { sourceSurface: Surface }) {
       aria-label={`${presentationCopy[presentation].label} flashcard player`}
     >
       <div className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-glass px-3 backdrop-blur-glass backdrop-saturate-glass sm:px-5">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
           <GraduationCap className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">

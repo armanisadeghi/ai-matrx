@@ -319,7 +319,7 @@ function methodBg(method: HttpMethod) {
     POST: "bg-blue-500/10 text-blue-700 dark:text-blue-400",
     PUT: "bg-orange-500/10 text-orange-700 dark:text-orange-400",
     PATCH: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
-    DELETE: "bg-destructive/10 text-destructive",
+    DELETE: "bg-destructive/10 text-destructive-ink",
   };
   return colors[method];
 }
@@ -1152,7 +1152,7 @@ export default function DynamicApiClient() {
               </div>
 
               {errorMessage && (
-                <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive font-mono">
+                <div className="flex-shrink-0 mb-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-xs text-destructive-ink font-mono">
                   <CircleX className="mr-1 inline size-3.5" aria-hidden="true" />
                   {errorMessage}
                   <ErrorAlchemyMenu error={errorMessage} />

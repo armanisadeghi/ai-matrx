@@ -81,7 +81,7 @@ function BlockStatusBadge({ complete }: { complete: boolean }) {
     <span
       className={cn(
         "rounded px-1.5 py-0.5 text-[9px] font-semibold uppercase",
-        complete ? "bg-success/15 text-success" : "bg-warning/15 text-warning",
+        complete ? "bg-success/15 text-success-ink" : "bg-warning/15 text-warning-ink",
       )}
     >
       {complete ? "complete" : "streaming"}

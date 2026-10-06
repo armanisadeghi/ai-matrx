@@ -178,7 +178,7 @@ function NavButton({
         "inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded px-3 text-xs font-medium transition-colors",
         isPending && "pointer-events-none opacity-60",
         active
-          ? "bg-primary/15 text-primary"
+          ? "bg-primary/15 text-primary-ink"
           : "text-muted-foreground hover:text-foreground hover:bg-muted",
       )}
     >

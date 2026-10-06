@@ -583,7 +583,7 @@ export default function LaunchInspectorDemoPage() {
                 <button
                   type="button"
                   onClick={() => destroyRun(run.conversationId)}
-                  className="inline-flex min-h-11 items-center gap-1 rounded border border-border px-3 text-xs text-destructive hover:bg-destructive/10"
+                  className="inline-flex min-h-11 items-center gap-1 rounded border border-border px-3 text-xs text-destructive-ink hover:bg-destructive/10"
                 >
                   <Trash2 className="h-3 w-3" /> Destroy
                 </button>
@@ -742,7 +742,7 @@ export default function LaunchInspectorDemoPage() {
                         <span
                           className={`text-[10px] rounded px-1 ${
                             entry.slotMatched
-                              ? "bg-primary/15 text-primary"
+                              ? "bg-primary/15 text-primary-ink"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -797,9 +797,9 @@ export default function LaunchInspectorDemoPage() {
                       <span
                         className={`text-[10px] rounded px-1 ${
                           r.status === "error"
-                            ? "bg-destructive/15 text-destructive"
+                            ? "bg-destructive/15 text-destructive-ink"
                             : r.status === "complete"
-                              ? "bg-primary/15 text-primary"
+                              ? "bg-primary/15 text-primary-ink"
                               : "bg-muted text-muted-foreground"
                         }`}
                       >

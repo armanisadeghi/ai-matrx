@@ -158,7 +158,7 @@ export const BreadcrumbTrigger = forwardRef<HTMLButtonElement, TriggerProps>(
           </span>
         )}
         {total > 1 && (
-          <span className="shrink-0 rounded-full bg-primary/10 px-1 font-mono text-[9px] text-primary">
+          <span className="shrink-0 rounded-full bg-primary/10 px-1 font-mono text-[9px] text-primary-ink">
             +{total - 1}
           </span>
         )}

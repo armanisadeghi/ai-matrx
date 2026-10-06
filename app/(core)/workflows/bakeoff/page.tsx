@@ -102,7 +102,7 @@ export default function BakeoffPickerPage() {
         <div className="flex-1 min-h-0 overflow-y-auto">
           <div className="mx-auto w-full max-w-5xl px-4 pb-8">
             {error ? (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-ink">
                 {error}
                 <ErrorAlchemyMenu error={error} />
               </div>
@@ -120,7 +120,7 @@ export default function BakeoffPickerPage() {
                       <div className="min-w-0">
                         <span className="text-sm font-medium">{row.name}</span>
                         {FEATURED.has(row.id) && (
-                          <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary-ink">
                             test fixture
                           </span>
                         )}

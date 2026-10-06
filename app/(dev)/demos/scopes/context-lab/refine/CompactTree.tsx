@@ -276,7 +276,7 @@ function GroupHeader({
         {count}
       </span>
       {picked > 0 && (
-        <span className="ml-auto shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+        <span className="ml-auto shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary-ink">
           {picked}
         </span>
       )}
@@ -335,7 +335,7 @@ function TypeBlock({
             {type.scopes.length}
           </span>
           {selectedCount > 0 && (
-            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary">
+            <span className="shrink-0 rounded-full bg-primary/10 px-1.5 text-[10px] font-semibold text-primary-ink">
               {selectedCount}
             </span>
           )}

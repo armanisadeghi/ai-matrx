@@ -62,7 +62,7 @@ export function AgentWireFoldComparison({
         </div>
       </div>
       {mismatch && (
-        <p className="text-[10px] text-destructive px-2 py-1 border-b border-border bg-destructive/10">
+        <p className="text-[10px] text-destructive-ink px-2 py-1 border-b border-border bg-destructive/10">
           Timeline length mismatch — fold out of sync with wire list.
         </p>
       )}

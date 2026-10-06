@@ -434,7 +434,7 @@ export default function SurfaceMappingsDemoPage() {
                         <span
                           className={`shrink-0 rounded px-1 py-0.5 text-[9px] font-medium uppercase tracking-wide ${
                             value.alwaysAvailable
-                              ? "bg-primary/15 text-primary"
+                              ? "bg-primary/15 text-primary-ink"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >
@@ -663,7 +663,7 @@ export default function SurfaceMappingsDemoPage() {
                         <span
                           className={`text-[10px] rounded px-1 ${
                             entry.slotMatched
-                              ? "bg-primary/15 text-primary"
+                              ? "bg-primary/15 text-primary-ink"
                               : "bg-muted text-muted-foreground"
                           }`}
                         >

@@ -250,7 +250,7 @@ function InstanceCard({
               </span>
             )}
             {isCurrent && (
-              <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0 font-medium">
+              <span className="text-[10px] bg-primary/10 text-primary-ink px-1.5 py-0.5 rounded shrink-0 font-medium">
                 current
               </span>
             )}
@@ -617,7 +617,7 @@ export function InstanceSelectorModal({
                         :{engine.port}
                       </span>
                       {isCurrent && (
-                        <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
+                        <span className="text-[10px] bg-primary/10 text-primary-ink px-1.5 py-0.5 rounded font-medium">
                           current
                         </span>
                       )}
@@ -660,7 +660,7 @@ export function InstanceSelectorModal({
           )}
 
           {error && (
-            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive-ink">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>

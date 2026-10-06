@@ -124,7 +124,7 @@ export function ContextMenuHubClient({ pages }: ContextMenuHubClientProps) {
                         "p-1.5 rounded",
                         isPlanned
                           ? "bg-muted text-muted-foreground"
-                          : "bg-primary/10 text-primary",
+                          : "bg-primary/10 text-primary-ink",
                       )}
                     >
                       <Icon className="h-4 w-4" />
