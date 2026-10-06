@@ -106,8 +106,8 @@ export const AGENCY_SPEC = {
       fields: [
         { key: "client_name", label: "Client Name", parityType: "text", sensitivity: "internal", contextPolicy: "include", required: true },
         { key: "offer", label: "Offer Bought", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: OFFERS },
-        { key: "date_started", label: "Date Started", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date" },
-        { key: "end_date", label: "End Date", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date" },
+        { key: "date_started", label: "Date Started", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
+        { key: "end_date", label: "End Date", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
         {
           key: "status",
           label: "Status",
@@ -137,7 +137,7 @@ export const AGENCY_SPEC = {
         { key: "survey", label: "Survey", parityType: "text", sensitivity: "internal", contextPolicy: "include", required: true },
         { key: "client", label: "Client", parityType: "relation", sensitivity: "internal", contextPolicy: "include", relationTarget: "client", relationMax: 1 },
         { key: "score", label: "Score", parityType: "number", sensitivity: "internal", contextPolicy: "include", rules: [{ kind: "min", value: 0 }, { kind: "max", value: 10 }] },
-        { key: "sent_on", label: "Sent", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date" },
+        { key: "sent_on", label: "Sent", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
       ],
       rows: NPS.map(([key, client, score, sent]) => ({
         key,
@@ -169,7 +169,7 @@ export const AGENCY_SPEC = {
           choices: ["Reach", "Leads", "Revenue", "Launch"],
           choiceColors: { Reach: "yellow", Leads: "yellow", Revenue: "yellow", Launch: "yellow" },
         },
-        { key: "won_on", label: "Won on", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date" },
+        { key: "won_on", label: "Won on", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
       ],
       rows: WINS.map(([key, win, client, kind, won]) => ({ key, values: { win, client, kind, won_on: won } })),
     },
@@ -191,7 +191,7 @@ export const AGENCY_SPEC = {
         { key: "client", label: "Client", parityType: "relation", sensitivity: "internal", contextPolicy: "include", relationTarget: "client", relationMax: 1 },
         { key: "kind", label: "Kind", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: TASK_KINDS },
         { key: "status", label: "Status", parityType: "select", sensitivity: "internal", contextPolicy: "include", choices: ["To do", "Doing", "Done"] },
-        { key: "done_on", label: "Done on", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date" },
+        { key: "done_on", label: "Done on", parityType: "datetime", sensitivity: "internal", contextPolicy: "include", format: "date", absoluteDates: true, historicalReason: "the sample agency's dated history, read as of 2026-10-05" },
       ],
       rows: tasks(),
     },

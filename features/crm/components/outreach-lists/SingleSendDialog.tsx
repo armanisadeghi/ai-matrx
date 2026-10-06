@@ -202,6 +202,12 @@ export function SingleSendDialog({
     });
   }
 
+  // REVIEWING NEVER NEEDS A MAILBOX. The server previews a draft for a campaign
+  // with none and says so with a null sender; only Send needs one, and pressing
+  // it then offers the connect step instead of failing.
+  const mailboxMissing = Boolean(draft && !draft.from_address);
+  const [mailboxOffer, setMailboxOffer] = useState(false);
+
   const approved = Boolean(draft?.approved_at);
   const canSend = Boolean(
     draft?.eligibility.allowed &&
@@ -256,6 +262,10 @@ export function SingleSendDialog({
 
   async function send() {
     if (!draft) return;
+    if (mailboxMissing) {
+      setMailboxOffer(true);
+      return;
+    }
     setBusy("send");
     setProblem(null);
     try {
@@ -383,6 +393,13 @@ export function SingleSendDialog({
                 {problem.unresolved.join(", ")}
               </p>
             )}
+            {problem.code === "identity_required" && (
+              <p className="mt-1 pl-6">
+                <Link className="font-medium text-primary underline" href="/crm/sending-identities">
+                  Connect a mailbox
+                </Link>
+              </p>
+            )}
             <ErrorAlchemyMenu error={problem.message} />
           </div>
         )}
@@ -392,7 +409,11 @@ export function SingleSendDialog({
             <div className="grid gap-1 rounded-md border bg-muted/30 p-3 text-sm sm:grid-cols-2">
               <span>
                 <span className="text-muted-foreground">From:</span>{" "}
-                {draft.from_address}
+                {draft.from_address || (
+                  <span className="text-amber-700 dark:text-amber-300" data-testid="single-send-no-mailbox">
+                    No mailbox yet. Review works; sending needs one.
+                  </span>
+                )}
               </span>
               <span>
                 <span className="text-muted-foreground">To:</span>{" "}
@@ -462,6 +483,23 @@ export function SingleSendDialog({
             )}
             {(review.running || review.report || review.error) && (
               <PreSendCheckPanel state={review} onRerun={reviewBeforeSend} />
+            )}
+            {mailboxOffer && mailboxMissing && (
+              <div
+                className="rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-sm"
+                data-testid="single-send-connect-mailbox"
+              >
+                <p className="font-medium">Sending needs a mailbox. This campaign has none.</p>
+                <p className="mt-1 text-muted-foreground">
+                  Connect one, choose it as the campaign&apos;s sending mailbox, then preview again.
+                </p>
+                <Link
+                  className="mt-1 inline-block font-medium text-primary underline"
+                  href="/crm/sending-identities"
+                >
+                  Connect a mailbox
+                </Link>
+              </div>
             )}
             {(draft.eligibility.blocks ?? []).map((block) => (
               <div

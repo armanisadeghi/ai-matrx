@@ -18,7 +18,8 @@ Notion code, fonts or logos.
 - Guard: `pnpm check:spaces-fence` (`:self-test`) — run before every commit.
 - Published packages are **read, never edited**: `@ai-matrx/records-ui` (grid, board, calendar,
   timeline, gallery, list, chart, dashboard, form, record page), `@ai-matrx/records/memory`
-  (`templatePreview` — in-memory sample data, no writes), `@ai-matrx/design-system/controls`.
+  (`templatePreview` — in-memory sample data, no writes; only the template gallery's preview draws it),
+  `@ai-matrx/design-system/controls`.
 - Something missing outside the fence (a design-system option, a records-ui layout, an icon) goes in
   `NEEDS.md` beside this file — the owner session adds it to the package and clears the row.
 
@@ -27,7 +28,7 @@ Notion code, fonts or logos.
 | Port | Now | Later (owner session) |
 |---|---|---|
 | `SpacesStore` | the database store (`store-db/`, owner's) wrapped by `state/live-store.ts` (active org via `ensureOrgId` for new top-level pages, change events for the tree) | realtime merge |
-| `SpacesDataPort` | `templatePreview(spec).config` over a realistic template spec | live config + built-in modules via drill doors |
+| `SpacesDataPort` | live store tables (`DataMount`, the table's own org) + built-in modules via drill doors; the sample's tables are installed by `data/agency-install.ts` (`custom.template_declare` + `template_install`, the gallery's Install door); `templatePreview` only in the template gallery preview | — |
 | `SpacesAiPort` | `ai/spaces-ai.ts`: `spaces.writing_assist` (useLiveAgentRun) and `spaces.ask_page` (launchAgentExecution) looked up in `MANDATE_KEYS`; a missing key = "AI is not connected yet" | — |
 
 Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color`, `background`,
@@ -107,3 +108,8 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   print window); K2 `io/import.ts` + `sidebar/ImportMenu.tsx`. C22/B12 `useLinkPreview` cards and mention titles. M1/M2/M4 `ai/` (Ask AI box,
   Ask about this page; disclosed through `useDeclaredSurfaceMandates`). Data: `ViewSwitcher embedded` + `sortOverride` + "New page" line;
   built-in boards on `TablePage source`, built-in charts on `EntityChartBlock`, New adds task / project rows.
+- 2026-10-05 — builder round 11: "Add the sample" installs the agency spec as REAL store tables in the active org
+  (`data/agency-install.ts`: `template_declare` upsert on catalogue id `T-SPACES-1` + `runTemplateDoor("template_install")`,
+  the same door as the template gallery's Install; a second add answers `already` with the same tables) and points the
+  page's ring and client blocks at them (`{kind:"table", tableId, viewId}`, no `sample`); an older copy is repointed in
+  place. The source picker's "Sample agency" rows install too. Date fields carry `absoluteDates`.

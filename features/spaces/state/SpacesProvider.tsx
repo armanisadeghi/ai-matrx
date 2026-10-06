@@ -10,12 +10,14 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
 import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
+import { installAgencySample } from "../data/agency-install";
 import { addTravelingSmmSample } from "../store/sample";
 import { createLiveSpacesStore, type LiveSpacesStore } from "./live-store";
 import { hasSignedInSession, isRefusal, onSignedIn, type LoadAccess } from "./load-access";
@@ -270,7 +272,9 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     if (sampleProgress) return;
     setSampleProgress("0");
     try {
-      const root = await addTravelingSmmSample(store, (done, total) => setSampleProgress(`${done}/${total}`));
+      // org-filter: write-target the sample's tables are installed in the active organization (asked for when none is chosen)
+      const install = async () => installAgencySample(await ensureOrgId(orgRef.current));
+      const root = await addTravelingSmmSample(store, install, (done, total) => setSampleProgress(`${done}/${total}`));
       open(root.id);
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "We couldn't add the sample.");

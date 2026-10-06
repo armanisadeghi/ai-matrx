@@ -2,11 +2,13 @@
 //
 // The acceptance Space ("The Traveling SMM™ OS", rebuilt from Arman's three reference screenshots) and
 // one sub-Space for every page link in it, each with a little realistic working content. The four chart
-// rings and the client database are `database` blocks over the agency sample (data/agency-spec.ts).
+// rings and the client database are `database` blocks over the agency's REAL tables, installed into the
+// organization first (data/agency-install.ts).
 
 import type { RichSpan, SpaceBlock, SpaceColor, SpaceDoc, SpaceMedia } from "../contract";
 import { spread } from "./position";
-import { AGENCY_SAMPLE_ID, sampleTable, type ChartSettings, type SpaceDbView } from "../data/sources";
+import type { AgencyTables, AgencyToken } from "../data/agency-install";
+import type { ChartSettings, SpaceDbView } from "../data/sources";
 
 const bid = () => crypto.randomUUID();
 
@@ -48,17 +50,18 @@ export const b = {
     children: cols.map((c) => ({ id: bid(), type: "column", props: { width: c.width }, children: c.blocks })),
   }),
   slot: (label: string, height: number): SpaceBlock => ({ id: bid(), type: "slot", props: { label, height } }),
-  /** A linked view of one agency-sample table (Notion's inline database / chart tile). */
-  database: (token: string, views: SpaceDbView[], extra: Record<string, unknown> = {}): SpaceBlock => {
-    const table = sampleTable(token);
+  /** A linked view of one installed agency table (Notion's inline database / chart tile). */
+  database: (tables: AgencyTables, token: AgencyToken, views: SpaceDbView[], extra: Record<string, unknown> = {}): SpaceBlock => {
+    const table = tables[token];
+    const source = table.viewId ? { kind: "table" as const, tableId: table.tableId, viewId: table.viewId } : { kind: "table" as const, tableId: table.tableId };
     return {
       id: bid(),
       type: "database",
-      props: { source: { kind: "table", tableId: table.id }, inline: true, title: table.name, sample: AGENCY_SAMPLE_ID, linked: true, showTitle: false, views, activeViewId: views[0].id, ...extra },
+      props: { source, inline: true, title: table.name, ...(table.sample ? { sample: table.sample } : {}), linked: true, showTitle: false, views, activeViewId: views[0].id, ...extra },
     };
   },
-  ring: (token: string, name: string, icon: string, chart: ChartSettings): SpaceBlock =>
-    b.database(token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
+  ring: (tables: AgencyTables, token: AgencyToken, name: string, icon: string, chart: ChartSettings): SpaceBlock =>
+    b.database(tables, token, [{ id: "view-ring", name, icon, layout: "chart", chart: { centerValue: true, ...chart } }]),
 };
 
 /** The four chart rings' view names, as the page's owner typed them (in capitals). */
@@ -76,12 +79,12 @@ export const SAMPLE_ICON = { url: "gallery:portrait-founder" };
 export const SAMPLE_COLUMNS = [0.245, 0.755] as const;
 
 /** The four chart rings of the acceptance page (Active clients, Client wins, Avg NPS score, YTD tasks). */
-export function sampleRings(): SpaceBlock {
+export function sampleRings(tables: AgencyTables): SpaceBlock {
   return b.columns(
-      { width: 0.25, blocks: [b.ring("client", RING_NAMES["Active clients"], "Users", { type: "donut", groupBy: "status", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("client_win", RING_NAMES["Client wins"], "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
-      { width: 0.25, blocks: [b.ring("nps_survey", RING_NAMES["Avg NPS score"], "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
-      { width: 0.25, blocks: [b.ring("task", RING_NAMES["YTD tasks completed"], "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
+      { width: 0.25, blocks: [b.ring(tables, "client", RING_NAMES["Active clients"], "Users", { type: "donut", groupBy: "status", op: "count" })] },
+      { width: 0.25, blocks: [b.ring(tables, "client_win", RING_NAMES["Client wins"], "Trophy", { type: "donut", groupBy: "kind", op: "count" })] },
+      { width: 0.25, blocks: [b.ring(tables, "nps_survey", RING_NAMES["Avg NPS score"], "Gauge", { type: "donut", groupBy: "score", op: "avg", field: "score" })] },
+      { width: 0.25, blocks: [b.ring(tables, "task", RING_NAMES["YTD tasks completed"], "ListChecks", { type: "donut", groupBy: "task", op: "count" })] },
     );
 }
 
@@ -89,8 +92,8 @@ export function sampleRings(): SpaceBlock {
 export const SAMPLE_CLIENT_HIDDEN = ["linked:nps_survey__client", "linked:client_win__client", "linked:task__client"];
 
 /** The linked client database of the acceptance page. */
-export function sampleClientsDatabase(): SpaceBlock {
-  return b.database("client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN }]);
+export function sampleClientsDatabase(tables: AgencyTables): SpaceBlock {
+  return b.database(tables, "client", [{ id: "view-all", name: "All", icon: "Users", layout: "grid", hiddenFields: SAMPLE_CLIENT_HIDDEN }]);
 }
 
 interface PageSeed {
@@ -284,7 +287,7 @@ function bodyFor(page: PageSeed): SpaceBlock[] {
 const icon = (name: string): SpaceMedia | null => (name ? { icon: name } : null);
 
 /** The sample as docs keyed by `seed-<key>` ids; the installer swaps in the database's real ids. */
-export function seedSpaces(): SpaceDoc[] {
+export function seedSpaces(tables: AgencyTables): SpaceDoc[] {
   const stamp = new Date(Date.now() - 37 * 60 * 1000).toISOString();
   const docs: SpaceDoc[] = [];
   const idOf = (key: string) => `seed-${key}`;
@@ -323,8 +326,8 @@ export function seedSpaces(): SpaceDoc[] {
   ];
 
   const right: SpaceBlock[] = [
-    sampleRings(),
-    sampleClientsDatabase(),
+    sampleRings(tables),
+    sampleClientsDatabase(tables),
     b.text(""),
     b.h1([t("90 Day Plan", { link: `/spaces/${idOf(PLAN.key)}`, color: "gray" })]),
     ...PLAN_PAGES.map((p) => b.page(idOf(p.key))),

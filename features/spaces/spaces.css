@@ -1,7 +1,8 @@
 /* features/spaces/spaces.css — Notion's page geometry on our tokens (layout of the Spaces canvas).
  *
- * Sizes copy Notion (708px text column, 96px gutters, 40px title, 16px/1.5 blocks, 240px sidebar,
- * 45px top bar). Colors: the ten content colors are a palette the writer picks (Notion's values,
+ * Sizes copy Notion (708px text column, 96px gutters, 240px sidebar, 45px top bar). Type is measured on
+ * Arman's reference screenshots (round 11): title 36px and 15px/1.5 blocks — the references' title is 89% and
+ * their text 94.6% of Notion's nominal 40px / 16px at this geometry. Colors: the ten content colors are a palette the writer picks (Notion's values,
  * stepped for dark); every chrome color comes from our semantic tokens. */
 
 /* On the page root AND on <html> while Spaces is open: menus, the phone drawer and popovers portal
@@ -729,7 +730,7 @@
 .spaces-title {
   margin: 0 0 4px;
   padding: 3px 2px;
-  font-size: 40px;
+  font-size: 36px;
   font-weight: 700;
   line-height: 1.2;
   white-space: pre-wrap;
@@ -760,6 +761,7 @@
 }
 .spaces-editor .bn-default-styles {
   font-family: inherit;
+  font-size: 15px;
 }
 .spaces-editor .bn-block-outer {
   line-height: 1.5;

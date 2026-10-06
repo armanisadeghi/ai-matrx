@@ -16,6 +16,7 @@ import type { SpaceDoc } from "../contract";
 import { Preview } from "../page/PageHistory";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces } from "../state/SpacesProvider";
+import { previewAgencyTables } from "../data/sources";
 import { seedSpaces, SEED_ROOT_ID } from "../store/seed";
 import { SAMPLE_TITLE } from "../store/sample";
 
@@ -53,7 +54,7 @@ export function TemplateGallery({ open, onOpenChange }: { open: boolean; onOpenC
   }, [ids.join(",")]);
 
   const listed = ids.filter((id) => docs[id] && !docs[id]!.isArchived);
-  const seed = picked === SAMPLE_KEY ? seedSpaces() : [];
+  const seed = picked === SAMPLE_KEY ? seedSpaces(previewAgencyTables()) : [];
   const sampleRoot = seed.find((s) => s.id === SEED_ROOT_ID) ?? null;
   const sampleTitles = new Map(seed.map((s) => [s.id, s.title]));
   const current = picked === SAMPLE_KEY ? sampleRoot : (docs[picked] ?? null);

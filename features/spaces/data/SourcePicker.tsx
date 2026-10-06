@@ -3,16 +3,23 @@
 // features/spaces/data/SourcePicker.tsx — "Linked view of database": choose the records a data block
 // shows. Built-in modules (tasks, projects, deals, employees — read as the person), the person's real
 // tables (every table they can see, across all their organizations — the data home's own list) and the
-// agency sample. Never filtered by the active organization (access ladder).
+// agency sample — picking one installs the agency's real tables in the active organization (once; a
+// second pick reuses them). The lists are never filtered by the active organization (access ladder).
 
 import { Button, RegionSkeleton, SearchField } from "@ai-matrx/design-system/controls";
-import { CircleCheckBig, Contact, Database, FlaskConical, FolderKanban, Handshake } from "lucide-react";
+import { CircleCheckBig, Contact, Database, FlaskConical, FolderKanban, Handshake, Loader2 } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEverywhere";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 
-import { AGENCY_SAMPLE_ID, BUILT_IN_SOURCES, agencySample } from "./sources";
+import { installAgencySample, type AgencyToken } from "./agency-install";
+import { AGENCY_SPEC } from "./agency-spec";
+import { BUILT_IN_SOURCES } from "./sources";
 
 const BUILT_IN_ICON = { task: CircleCheckBig, project: FolderKanban, deal: Handshake, employee: Contact } as const;
 
@@ -29,7 +36,23 @@ function Lists({ query, onPick }: { query: string; onPick: (s: PickedSource) => 
   const tables = useTablesEverywhere();
   const q = query.trim().toLowerCase();
   const real = tables.rows.filter((t) => !q || `${t.table_name} ${t.organization_name}`.toLowerCase().includes(q));
-  const sample = agencySample().tables.filter((t) => !q || t.name.toLowerCase().includes(q));
+  const sample = AGENCY_SPEC.tables.filter((t) => !q || t.name.toLowerCase().includes(q));
+  // org-filter: write-target picking a sample table installs the agency in the active organization
+  const activeOrg = useAppSelector(selectActiveOrganizationId);
+  const [installing, setInstalling] = useState<string | null>(null);
+  const [failed, setFailed] = useState<string | null>(null);
+  const pickSample = async (token: AgencyToken) => {
+    setInstalling(token);
+    setFailed(null);
+    try {
+      const made = (await installAgencySample(await ensureOrgId(activeOrg)))[token];
+      onPick({ tableId: made.tableId, name: made.name });
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) setFailed(err instanceof Error ? err.message : "The sample could not be added.");
+    } finally {
+      setInstalling(null);
+    }
+  };
   const builtIn = BUILT_IN_SOURCES.filter((b) => !q || b.name.toLowerCase().includes(q));
   // The list appears once, whole: drawing the sample rows while "Your tables" is still loading moved
   // them down under the pointer when the tables arrived, and a click picked the wrong source.
@@ -62,11 +85,18 @@ function Lists({ query, onPick }: { query: string; onPick: (s: PickedSource) => 
       ))}
       <div className="px-3 pt-3 pb-1 type-secondary text-muted-foreground">Sample agency</div>
       {sample.map((t) => (
-        <Button variant="quiet" icon={<FlaskConical size={15} />} key={t.id} onClick={() => onPick({ tableId: t.id, name: t.name, sample: AGENCY_SAMPLE_ID })}>
+        <Button
+          variant="quiet"
+          icon={installing === t.token ? <Loader2 size={15} className="animate-spin" /> : <FlaskConical size={15} />}
+          key={t.token}
+          disabled={installing !== null}
+          onClick={() => void pickSample(t.token as AgencyToken)}
+        >
           <span className="flex-1 truncate text-left">{t.name}</span>
-          <span className="type-secondary text-muted-foreground">{t.rows} rows</span>
+          <span className="type-secondary text-muted-foreground">{t.rows.length} rows</span>
         </Button>
       ))}
+      {failed ? <div className="px-3 py-2 type-body text-destructive">{failed}</div> : null}
     </div>
   );
 }

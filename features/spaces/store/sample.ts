@@ -2,6 +2,8 @@
 // every sub-page through the store, so the sample is a real saved Space like any other.
 
 import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../contract";
+import { agencyTokenByName, type AgencyTables } from "../data/agency-install";
+import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
 import { RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SEED_ROOT_ID, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
@@ -23,13 +25,23 @@ function remap(blocks: SpaceBlock[], ids: Map<string, SpaceId>): SpaceBlock[] {
 }
 
 /** The phase-1 sample held `slot` placeholders where the data blocks now sit; swap them in place. */
-function upgradeSlots(blocks: SpaceBlock[]): { blocks: SpaceBlock[]; changed: boolean } {
+function upgradeSlots(blocks: SpaceBlock[], tables: AgencyTables): { blocks: SpaceBlock[]; changed: boolean } {
   let changed = false;
   const walk = (list: SpaceBlock[]): SpaceBlock[] =>
     list.map((blk): SpaceBlock | null => {
       const label = typeof blk.props?.label === "string" ? blk.props.label : "";
-      if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings());
-      if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase());
+      if (blk.type === "slot" && label.startsWith("Charts:")) return ((changed = true), sampleRings(tables));
+      if (blk.type === "slot" && label.startsWith("Clients database:")) return ((changed = true), sampleClientsDatabase(tables));
+      // Round 11: a block over the in-memory preview reads the organization's installed tables instead.
+      if (blk.type === "database" && blk.props?.sample === AGENCY_SAMPLE_ID) {
+        const token = agencyTokenByName(typeof blk.props.title === "string" ? blk.props.title : undefined);
+        if (token) {
+          changed = true;
+          const t = tables[token];
+          const { sample: _sample, ...rest } = blk.props;
+          blk = { ...blk, props: { ...rest, source: t.viewId ? { kind: "table", tableId: t.tableId, viewId: t.viewId } : { kind: "table", tableId: t.tableId } } };
+        }
+      }
       const views = blk.type === "database" ? (blk.props?.views as Array<{ hiddenFields?: string[] }> | undefined) : undefined;
       if (views?.[0]?.hiddenFields?.includes("surveys")) {
         changed = true;
@@ -74,18 +86,24 @@ function upgradeMedia(doc: SpaceDoc): Partial<SpaceDoc> | null {
 }
 
 /** Adds the sample once: when it is already in the tree, that copy is brought up to date and returned
- *  (no second "The Traveling SMM™ OS"). Otherwise creates it; `onProgress(done, total)` after each page. */
-export async function addTravelingSmmSample(store: SpacesStore, onProgress?: (done: number, total: number) => void): Promise<SpaceDoc> {
+ *  (no second "The Traveling SMM™ OS"). Otherwise creates it; `onProgress(done, total)` after each page.
+ *  `install` makes (or finds) the agency's real tables first — the page's data blocks point at them. */
+export async function addTravelingSmmSample(
+  store: SpacesStore,
+  install: () => Promise<AgencyTables>,
+  onProgress?: (done: number, total: number) => void,
+): Promise<SpaceDoc> {
+  const tables = await install();
   const existing = (await store.list()).find((s) => s.parentId === null && s.title === SAMPLE_TITLE && !s.isArchived);
   if (existing) {
     const doc = await store.get(existing.id);
     if (doc) {
-      const up = upgradeSlots(doc.blocks);
+      const up = upgradeSlots(doc.blocks, tables);
       const media = upgradeMedia(doc);
       return up.changed || media ? store.save({ ...doc, ...media, blocks: up.blocks }, doc.version) : doc;
     }
   }
-  const docs = seedSpaces();
+  const docs = seedSpaces(tables);
   const rootSeed = docs.find((d) => d.id === SEED_ROOT_ID)!;
   const kids = docs.filter((d) => d.parentId === SEED_ROOT_ID);
   const total = docs.length;
