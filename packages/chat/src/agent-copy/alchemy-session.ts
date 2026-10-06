@@ -9,7 +9,7 @@
 // app's real capabilities. Never a second transfer menu, preparation workspace
 // or destination list.
 
-import type { FormatAdapter, Payload, Source } from "@ai-matrx/kit/content-transfer";
+import type { FormatAdapter, Payload, Source } from "@ai-matrx/alchemy/operate";
 import type { EnvelopeMeta, TransferMenuVariant } from "@ai-matrx/alchemy/react/workspace";
 
 export type AlchemySessionIntent =
