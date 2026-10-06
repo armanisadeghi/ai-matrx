@@ -5,6 +5,7 @@
 
 import { createReactInlineContentSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText, Link2 } from "lucide-react";
+import { useLinkPreview } from "@/lib/link-preview";
 
 import type { RichSpan } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -48,7 +49,13 @@ function PageMention({ spaceId, fallback }: { spaceId: string; fallback: string 
   );
 }
 
-function LinkMention({ url, title, icon }: { url: string; title: string; icon?: string }) {
+function LinkMention({ url, title: storedTitle, icon: storedIcon }: { url: string; title: string; icon?: string }) {
+  // B12 — the mention shows the linked page's own title and favicon once the preview answers; until
+  // then (or when it has none) what was stored: the host/path title and its icon.
+  const { status, preview } = useLinkPreview(url);
+  const live = status === "ready" ? preview : null;
+  const title = live?.title || storedTitle;
+  const icon = live?.favicon_url || storedIcon;
   const host = (() => {
     try {
       return new URL(url).host;
@@ -78,6 +85,7 @@ function LinkMention({ url, title, icon }: { url: string; title: string; icon?: 
       </a>
       <span className="spaces-mention-card" role="tooltip" contentEditable={false}>
         <span className="spaces-mention-card-title">{title || host}</span>
+        {live?.description ? <span className="spaces-mention-card-desc">{live.description}</span> : null}
         <span className="spaces-mention-card-url">{url}</span>
       </span>
     </span>

@@ -9,6 +9,7 @@ import { createReactBlockSpec } from "@blocknote/react";
 import { defaultProps } from "@blocknote/core";
 import katex from "katex";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
+import { useLinkPreview } from "@/lib/link-preview";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { Component, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
@@ -166,14 +167,32 @@ function MediaBlock({ type, p }: { type: string; p: Record<string, unknown> }) {
 
 function BookmarkBlock({ p }: { p: Record<string, unknown> }) {
   const url = String(p.url ?? "");
+  // C22 — Notion's card: title, two lines of description, favicon + address, the page's image on the
+  // right. Until the preview answers (or when it has none) the card shows the host and the address.
+  const { status, preview } = useLinkPreview(url);
+  const card = status === "ready" && preview ? preview : null;
   return (
     <figure className="spaces-media" contentEditable={false}>
-      <a className="spaces-bookmark" href={url} target="_blank" rel="noreferrer" onMouseDown={(e) => e.stopPropagation()}>
-        <span className="spaces-bookmark-title">{hostOf(url)}</span>
-        <span className="spaces-bookmark-url">
-          <Globe size={12} strokeWidth={1.8} />
-          <span className="truncate">{url}</span>
+      <a className="spaces-bookmark" data-rich={card ? "true" : undefined} href={url} target="_blank" rel="noreferrer" onMouseDown={(e) => e.stopPropagation()}>
+        <span className="spaces-bookmark-text">
+          <span className="spaces-bookmark-title">{card?.title || hostOf(url)}</span>
+          {card?.description ? <span className="spaces-bookmark-desc">{card.description}</span> : null}
+          <span className="spaces-bookmark-url">
+            {card?.favicon_url ? (
+              // eslint-disable-next-line @next/next/no-img-element -- a site's favicon, any host
+              <img src={card.favicon_url} alt="" width={16} height={16} className="spaces-bookmark-favicon" />
+            ) : (
+              <Globe size={12} strokeWidth={1.8} />
+            )}
+            <span className="truncate">{url}</span>
+          </span>
         </span>
+        {card?.image_url ? (
+          <span className="spaces-bookmark-image">
+            {/* eslint-disable-next-line @next/next/no-img-element -- the linked page's own picture, any host */}
+            <img src={card.image_url} alt="" />
+          </span>
+        ) : null}
       </a>
       <Caption spans={p.caption} />
     </figure>
