@@ -322,7 +322,10 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
   const applyTemplate = async (id: SpaceId, title: string) => {
     try {
       const copyId = await copyTemplate(id, title, orgRef.current);
-      // The tree learns of the copy, then it opens (Notion opens the new page at once).
+      // The copy's sidebar row shows at once (top-level, last: created order), then the tree re-reads.
+      const source = all.find((s) => s.id === id);
+      const now = new Date().toISOString();
+      setAll((prev) => (prev.some((s) => s.id === copyId) ? prev : [...prev, { id: copyId, parentId: null, position: topLevelLast(prev), title: title || "Untitled", icon: source?.icon ?? null, isArchived: false, updatedAt: now }]));
       store.notifyTree();
       open(copyId);
     } catch (err) {
@@ -330,6 +333,8 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
     }
   };
   const archiveSpace = (id: SpaceId) => store.archive(id);
+  /** A position after every top-level page (top-level order is created order). */
+  const topLevelLast = (list: SpaceSummary[]) => list.filter((s) => !s.parentId).map((s) => s.position).sort().at(-1)?.concat("z") ?? "z";
   const restoreSpace = (id: SpaceId) => store.restore(id);
   const duplicateSpace = async (id: SpaceId) => {
     const copy = await store.duplicate(id, { withChildren: true });
