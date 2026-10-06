@@ -290,7 +290,7 @@ export function InputActionButtons({
   // values count, and agent · output · effort at the right end.
   if (composer.part === "controls") {
     return (
-      <div className="flex min-w-0 items-center justify-between gap-1.5 shrink-0">
+      <div data-composer-row="" className="flex min-w-0 items-center justify-between gap-1.5 shrink-0">
         <div className="flex min-w-0 shrink-0 items-center gap-1.5">
           {plusMenu}
           <DesktopPresenceIndicator conversationId={conversationId} />
