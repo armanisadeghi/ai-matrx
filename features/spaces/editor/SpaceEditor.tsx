@@ -352,7 +352,12 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       {editable ? (
       <FormattingToolbarController
         floatingUIOptions={INSTANT_CLOSE}
-        formattingToolbar={() => (
+        formattingToolbar={() =>
+          // BlockNote re-evaluates the toolbar on every document change without asking for focus, so the
+          // room's first sync over a page that starts with columns left a block (node) selection on the
+          // first column and drew "Ask AI | Comment" over the title with nothing selected. A block
+          // selection nobody made in a focused editor shows no toolbar (Notion).
+          (editor.prosemirrorState.selection as { node?: unknown }).node && !editor.isFocused() ? null : (
           <FormattingToolbar>
             <AskAiButton onClick={menu.askAi} />
             <BlockTypeSelect key="blockTypeSelect" />
@@ -365,7 +370,8 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
             <ColorStyleButton key="colorStyleButton" />
             {onComment ? <CommentButton onClick={commentOnSelection} /> : null}
           </FormattingToolbar>
-        )}
+          )
+        }
       />
       ) : null}
     </BlockNoteView>
