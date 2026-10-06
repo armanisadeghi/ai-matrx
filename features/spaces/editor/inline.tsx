@@ -4,7 +4,7 @@
 // and inline equations. Each node holds its whole stored span (convert.ts), so marks and links survive.
 
 import { createReactInlineContentSpec } from "@blocknote/react";
-import { ArrowUpRight, FileText } from "lucide-react";
+import { ArrowUpRight, FileText, Link2 } from "lucide-react";
 
 import type { RichSpan } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -48,6 +48,42 @@ function PageMention({ spaceId, fallback }: { spaceId: string; fallback: string 
   );
 }
 
+function LinkMention({ url, title, icon }: { url: string; title: string; icon?: string }) {
+  const host = (() => {
+    try {
+      return new URL(url).host;
+    } catch {
+      return url;
+    }
+  })();
+  const isImage = !!icon && /^(https?:|data:|\/)/.test(icon);
+  return (
+    <span className="spaces-mention-linkwrap">
+      <a
+        className="spaces-mention spaces-mention-link"
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <span className="spaces-mention-icon">
+          {isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element -- a site's favicon, any host
+            <img src={icon} alt="" width={14} height={14} style={{ width: 14, height: 14, borderRadius: 3 }} />
+          ) : (
+            <Link2 size={14} strokeWidth={1.6} />
+          )}
+        </span>
+        <span className="spaces-mention-title">{title || host}</span>
+      </a>
+      <span className="spaces-mention-card" role="tooltip" contentEditable={false}>
+        <span className="spaces-mention-card-title">{title || host}</span>
+        <span className="spaces-mention-card-url">{url}</span>
+      </span>
+    </span>
+  );
+}
+
 export const mentionInline = createReactInlineContentSpec(
   { type: "inlineMention", propSchema: { span: { default: "{}" } }, content: "none" },
   {
@@ -55,6 +91,7 @@ export const mentionInline = createReactInlineContentSpec(
       const s = readSpan(inlineContent.props.span);
       const m = s.mention;
       if (m?.kind === "space") return <PageMention spaceId={m.spaceId} fallback={s.text} />;
+      if (m?.kind === "link") return <LinkMention url={m.url} title={m.title ?? s.text} icon={m.icon} />;
       if (m?.kind === "date") return <span className="spaces-mention spaces-mention-muted">@{formatDate(m.iso)}</span>;
       return <span className="spaces-mention spaces-mention-muted">@{s.text.replace(/^@/, "")}</span>;
     },

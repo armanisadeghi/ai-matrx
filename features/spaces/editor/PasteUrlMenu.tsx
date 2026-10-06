@@ -1,7 +1,7 @@
 "use client";
 
 // features/spaces/editor/PasteUrlMenu.tsx — B12: pasting a lone URL puts it in as a link and offers
-// Notion's choice beside it: keep it a Link, Mention (a Space's own address), Bookmark or Embed.
+// Notion's choice beside it: keep it a Link, Mention (a Space's address or any link), Bookmark or Embed.
 
 import { AtSign, Bookmark, Code2, Link2 } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -34,6 +34,21 @@ export function spaceIdOf(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** B12 — a web address as Notion's link mention: favicon + the page's name (its host and path until a title is known). */
+function linkMentionSpan(url: string) {
+  let title = url;
+  let icon: string | undefined;
+  try {
+    const u = new URL(url);
+    const path = u.pathname.replace(/\/$/, "");
+    title = `${u.host.replace(/^www\./, "")}${path}`;
+    icon = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(u.host)}&sz=64`;
+  } catch {
+    /* keep the raw address */
+  }
+  return { text: title, mention: { kind: "link", url, title, ...(icon ? { icon } : {}) } };
 }
 
 type InlineItem = { type: string; href?: string; content?: unknown; props?: Record<string, unknown> };
@@ -90,17 +105,18 @@ export function PasteUrlMenu({ editor, pasted, onClose }: { editor: SpacesEditor
         <Link2 size={16} />
         Link
       </button>
-      {spaceId ? (
-        <button
-          type="button"
-          role="menuitem"
-          className="spaces-paste-item"
-          onClick={pick(() => swapLink(editor, pasted.blockId, pasted.url, [{ type: "inlineMention", props: { span: JSON.stringify({ text: pasted.url, mention: { kind: "space", spaceId } }) } }]))}
-        >
-          <AtSign size={16} />
-          Mention
-        </button>
-      ) : null}
+      <button
+        type="button"
+        role="menuitem"
+        className="spaces-paste-item"
+        onClick={pick(() => {
+          const span = spaceId ? { text: pasted.url, mention: { kind: "space", spaceId } } : linkMentionSpan(pasted.url);
+          swapLink(editor, pasted.blockId, pasted.url, [{ type: "inlineMention", props: { span: JSON.stringify(span) } }]);
+        })}
+      >
+        <AtSign size={16} />
+        Mention
+      </button>
       <button type="button" role="menuitem" className="spaces-paste-item" onClick={pick(() => toBlock(editor, pasted, "bookmark"))}>
         <Bookmark size={16} />
         Bookmark

@@ -69,25 +69,54 @@ function carriesBrokenKind(value: unknown, depth = 0): boolean {
   return Object.values(record).some((item) => carriesBrokenKind(item, depth + 1));
 }
 
-/** The end (exclusive) of the string-aware balanced JSON value opening at `start`, or null. */
-function balancedEnd(text: string, start: number): number | null {
+/**
+ * For every `{` / `[` in `text`: the end (exclusive) of the string-aware
+ * balanced JSON value opening there, or -1 (never balances). Each opener's
+ * reading starts outside a string, exactly as if read alone; one right-to-left
+ * pass reuses each nested opener's own answer (its reading from inside an
+ * enclosing value is the same reading), so the whole table is linear — a
+ * reading per opener was quadratic on thousands of unclosed `{` (round 11, P5).
+ */
+function balancedEnds(text: string): Int32Array {
+  const ends = new Int32Array(text.length).fill(-1);
   const stack: string[] = [];
-  let inString = false;
-  for (let i = start; i < text.length; i++) {
-    const ch = text[i]!;
-    if (inString) {
-      if (ch === "\\") i++;
-      else if (ch === '"') inString = false;
-      continue;
-    }
-    if (ch === '"') inString = true;
-    else if (ch === "{" || ch === "[") stack.push(ch === "{" ? "}" : "]");
-    else if (ch === "}" || ch === "]") {
-      if (stack.pop() !== ch) return null;
-      if (stack.length === 0) return i + 1;
+  for (let start = text.length - 1; start >= 0; start--) {
+    const open = text[start];
+    if (open !== "{" && open !== "[") continue;
+    stack.length = 0;
+    stack.push(open === "{" ? "}" : "]");
+    let inString = false;
+    for (let i = start + 1; i < text.length; i++) {
+      const ch = text[i]!;
+      if (inString) {
+        if (ch === "\\") i++;
+        else if (ch === '"') inString = false;
+        continue;
+      }
+      if (ch === '"') inString = true;
+      else if (ch === "{" || ch === "[") {
+        const end = ends[i]!;
+        if (end < 0) break;
+        i = end - 1;
+      } else if (ch === "}" || ch === "]") {
+        if (stack.pop() !== ch) break;
+        ends[start] = i + 1;
+        break;
+      }
     }
   }
-  return null;
+  return ends;
+}
+
+/** Sorted, non-overlapping ranges → for each position, whether it lies inside one (a cursor, linear over a forward walk). */
+function rangeCursor(ranges: Array<[number, number]>): (at: number) => [number, number] | undefined {
+  const sorted = [...ranges].sort((a, b) => a[0] - b[0]);
+  let k = 0;
+  return (at) => {
+    while (k < sorted.length && sorted[k]![1] <= at) k++;
+    for (let j = k; j < sorted.length && sorted[j]![0] <= at; j++) if (at < sorted[j]![1]) return sorted[j];
+    return undefined;
+  };
 }
 
 /** Ranges whose text is quoted SOURCE (inline code, non-JSON fences) — never converted. */
@@ -111,16 +140,18 @@ function noteUnreadableKinds(text: string): string {
   const quoted = quotedCodeRanges(text);
   const fences = findCodeRanges(text).filter((range) => range.kind === "fence");
   const spans: Array<[number, number]> = [];
+  const ends = balancedEnds(text);
+  const quotedAt = rangeCursor(quoted);
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch !== "{" && ch !== "[") continue;
-    const range = quoted.find(([a, b]) => i >= a && i < b);
+    const range = quotedAt(i);
     if (range) {
       i = range[1] - 1;
       continue;
     }
-    const end = balancedEnd(text, i);
-    if (end === null) continue;
+    const end = ends[i]!;
+    if (end < 0) continue;
     let value: unknown;
     try {
       value = JSON.parse(text.slice(i, end));
@@ -130,7 +161,12 @@ function noteUnreadableKinds(text: string): string {
     if (carriesBrokenKind(value)) spans.push([i, end]);
     i = end - 1;
   }
-  let out = text;
+  // `out` is `text.slice(0, kept) + tail`: spans are replaced last to first, so
+  // the prefix is always the original text and only the tail is rebuilt (no
+  // whole-text copy per span — linear in the text, round 11 P5).
+  let kept = text.length;
+  let tail = "";
+  let tailHead = "";
   for (let k = spans.length - 1; k >= 0; k--) {
     let [start, end] = spans[k]!;
     const fence = fences.find((range) => start >= range.start && end <= range.end);
@@ -149,9 +185,14 @@ function noteUnreadableKinds(text: string): string {
         end = fence.end;
       }
     }
-    out = closeBefore(out.slice(0, start)) + UNREADABLE_KIND_NOTE + openAfter(out.slice(end));
+    const before = closeBeforeAt(text, start);
+    const following = end <= kept ? text.slice(end, kept) : "";
+    const after = end <= kept ? openAfterJoined(following, tail, tailHead) : openAfter(tail.slice(end - kept));
+    kept = before.cut;
+    tailHead = before.add + UNREADABLE_KIND_NOTE;
+    tail = tailHead + after;
   }
-  return out;
+  return text.slice(0, kept) + tail;
 }
 
 /** A string field whose text is kind JSON → its parsed value (so it converts too). */
@@ -224,10 +265,35 @@ function jsonKindValueMarkdown(text: string): string | null {
 
 /** Text before a block: the block starts on its own line, after a blank line. */
 function closeBefore(text: string): string {
-  const out = text.replace(/[ \t\r]+$/, "");
-  if (!out) return out;
-  if (out.endsWith("\n\n")) return out;
-  return out.endsWith("\n") ? `${out}\n` : `${out}\n\n`;
+  const { cut, add } = closeBeforeAt(text, text.length);
+  return text.slice(0, cut) + add;
+}
+
+const isLineSpace = (ch: string | undefined) => ch === " " || ch === "\t" || ch === "\r";
+
+/** `closeBefore(text.slice(0, at))` as where the kept text ends and what is added (a backward walk, never a regex over the prefix). */
+function closeBeforeAt(text: string, at: number): { cut: number; add: string } {
+  let cut = at;
+  while (cut > 0 && isLineSpace(text[cut - 1])) cut--;
+  if (cut === 0) return { cut, add: "" };
+  if (text[cut - 1] !== "\n") return { cut, add: "\n\n" };
+  return { cut, add: cut > 1 && text[cut - 2] === "\n" ? "" : "\n" };
+}
+
+/**
+ * `openAfter(head + tail)` without flattening `tail`: `tailHead` is the start
+ * of `tail` (a note, after its newlines), which never starts with a line space.
+ */
+function openAfterJoined(head: string, tail: string, tailHead: string): string {
+  let from = 0;
+  while (from < head.length && isLineSpace(head[from])) from++;
+  const rest = head.slice(from);
+  const lead = rest + tailHead.slice(0, 4);
+  if (!lead) return "";
+  const joined = rest + tail;
+  if (lead.startsWith("\n\n") || lead.startsWith("\r\n\r\n")) return joined;
+  if (lead.startsWith("\n")) return `\n${joined}`;
+  return `\n\n${joined}`;
 }
 
 /** Text after a block: whatever follows starts after a blank line. */
@@ -399,17 +465,18 @@ const KIND_KEY_PLAIN = /(?<!\\)"__kind"\s*:/;
 /** An unclosed JSON value at the tail whose `__kind` key is written escaped → its one-line note. */
 function noteEscapedCutOffKind(text: string, options: ConvertOptions): string {
   if (options.broken !== "note" || !hasKindKey(text) || KIND_KEY_PLAIN.test(text)) return text;
-  const quoted = quotedCodeRanges(text);
+  const quotedAt = rangeCursor(quotedCodeRanges(text));
+  const ends = balancedEnds(text);
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (ch !== "{" && ch !== "[") continue;
-    const range = quoted.find(([a, b]) => i >= a && i < b);
+    const range = quotedAt(i);
     if (range) {
       i = range[1] - 1;
       continue;
     }
-    const end = balancedEnd(text, i);
-    if (end !== null) {
+    const end = ends[i]!;
+    if (end >= 0) {
       i = end - 1;
       continue;
     }

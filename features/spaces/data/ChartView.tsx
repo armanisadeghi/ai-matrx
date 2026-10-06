@@ -10,6 +10,7 @@
 import { ChartBlock } from "@ai-matrx/records-ui";
 import { choiceSlug, measureKey, useFields, useRecords, useRecordsClient, type AggregateMeasure, type AggregateRow, type Field, type ReadRow } from "@ai-matrx/records/react";
 import { useEffect, useState } from "react";
+import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
 import type { ChartSettings } from "./sources";
 
@@ -185,14 +186,18 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
   const sum = data.points.reduce((s, p) => s + Math.max(0, p.value), 0) || 1;
   const many = data.points.length > 24;
   const gap = data.points.length > 1 ? (many ? c / 400 : c / 260) : 0;
-  let offset = 0;
+  const offsets = data.points.reduce<number[]>((acc, p, i) => {
+    acc.push(i === 0 ? 0 : acc[i - 1] + (Math.max(0, data.points[i - 1].value) / sum) * c);
+    return acc;
+  }, []);
   const center = settings.op === "count" || settings.op === "sum" ? data.total ?? sum : data.total;
   const shown = pretty(center);
   const fontSize = shown.length <= 2 ? 52 : shown.length === 3 ? 47 : shown.length === 4 ? 38 : 30;
   return (
     <div className="spaces-chart-donut">
       <svg viewBox={`0 0 ${RING} ${RING}`} width={RING} height={RING} role="img" aria-label={shown}>
-        {data.points.map((p) => {
+        {data.points.map((p, i) => {
+          const offset = offsets[i];
           const len = (Math.max(0, p.value) / sum) * c;
           const dash = Math.max(0.5, len - gap);
           const el = (
@@ -212,7 +217,6 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
               <title>{`${p.label}: ${pretty(p.value)}`}</title>
             </circle>
           );
-          offset += len;
           return el;
         })}
         {settings.centerValue !== false ? (
@@ -240,7 +244,13 @@ const RECORDS_KIND = { bar: "column", hbar: "bar", line: "line", donut: "donut" 
 
 export function ChartView({ tableId, settings, title, overRows }: { tableId: string; settings: ChartSettings; title: string; overRows?: boolean }) {
   const { data, error } = useChartData(tableId, settings, overRows);
-  if (error) return <p className="spaces-db-note">{error}</p>;
+  if (error)
+    return (
+      <div role="alert" className="spaces-db-note">
+        {error}
+        <ErrorAlchemyMenu />
+      </div>
+    );
   if (!data) return <div className="spaces-chart-loading" />;
   return (
     <div className="spaces-chart">

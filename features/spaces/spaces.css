@@ -1333,3 +1333,26 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-block-menu-search input { width: 100%; height: 28px; padding: 0 8px; border-radius: 6px; font-size: 14px; background: var(--muted); border: 1px solid var(--border); outline: none; }
 .spaces-block-menu-search input:focus { border-color: var(--ring); }
 .spaces-block-menu-empty { padding: 6px 10px; font-size: 13px; color: var(--muted-foreground); }
+
+/* B12 — link mention: favicon + title, hover card */
+.spaces-mention-linkwrap { position: relative; display: inline-block; }
+.spaces-mention-link { font-weight: 500; color: inherit; text-decoration: underline; text-decoration-color: color-mix(in oklab, currentColor 30%, transparent); cursor: pointer; }
+.spaces-mention-link:hover { background: var(--spaces-hover); }
+.spaces-mention-card {
+  display: none; position: absolute; left: 0; top: 100%; z-index: 40; margin-top: 4px; min-width: 220px; max-width: 360px;
+  flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; font-size: 13px; line-height: 1.35;
+  background: hsl(var(--popover)); color: hsl(var(--popover-foreground)); border: 1px solid var(--spaces-rule);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.14);
+}
+.spaces-mention-linkwrap:hover .spaces-mention-card { display: flex; }
+.spaces-mention-card-title { font-weight: 600; }
+.spaces-mention-card-url { color: var(--spaces-ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* A12 — backlinks under the title */
+.spaces-backlinks { margin: 0 0 6px; padding: 0 2px; font-size: 14px; }
+.spaces-backlinks-toggle { color: var(--spaces-ink-soft); background: none; border: 0; padding: 2px 4px; margin-left: -4px; border-radius: 4px; cursor: pointer; }
+.spaces-backlinks-toggle:hover { background: var(--spaces-hover); }
+.spaces-backlinks-list { display: flex; flex-direction: column; margin-top: 2px; }
+.spaces-backlinks-item { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 4px; background: none; border: 0; text-align: left; cursor: pointer; color: inherit; }
+.spaces-backlinks-item:hover { background: var(--spaces-hover); }
+.spaces-backlinks-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

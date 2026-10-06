@@ -203,3 +203,37 @@ describe("Search Console management coverage", () => {
     expect(plan.request?.scopes).not.toContain(GOOGLE_SCOPE.webmasters);
   });
 });
+
+
+describe.each([
+  ["gmail_read", "gmail_modify", "gmail_read", "gmail_modify", GOOGLE_SCOPE.gmailReadonly, GOOGLE_SCOPE.gmailModify],
+  ["contacts", "contacts_edits", "contacts", "contacts_write", GOOGLE_SCOPE.contactsReadonly, GOOGLE_SCOPE.contactsWrite],
+  ["tasks", "tasks_changes", "tasks", "tasks_write", GOOGLE_SCOPE.tasksReadonly, GOOGLE_SCOPE.tasksWrite],
+])("paired read/write consent for %s", (readKey, writeKey, readCapability, writeCapability, readScope, writeScope) => {
+  const rollout = [...catalog(readCapability, true), ...catalog(writeCapability, true)];
+  it("newly requests only the selected write scope", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: [readKey, writeKey], account: null, rollout});
+    expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES, writeScope]));
+    expect(plan.request?.capabilityKeys).toEqual([readCapability, writeCapability]);
+    expect(plan.request?.addedScopes).toEqual([writeScope]);
+  });
+  it("preserves held literal reads while adding writes", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: [readKey, writeKey], account: calendarAccount([readScope]), rollout});
+    expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES, readScope, writeScope]));
+    expect(plan.request?.addedScopes).toEqual([writeScope]);
+  });
+  it("uses held write access for reads without another request", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: [readKey], account: calendarAccount([writeScope]), rollout});
+    expect(plan.request).toBeNull();
+    expect(plan.alreadyGranted.map(product => product.key)).toEqual([readKey]);
+  });
+  it("keeps a read-only selection narrow", () => {
+    const plan = buildConsentPlan({provider: GOOGLE_CONNECTOR_PROVIDER,
+      selectedProductKeys: [readKey], account: null, rollout});
+    expect(new Set(plan.request?.scopes)).toEqual(new Set([...GOOGLE_IDENTITY_SCOPES, readScope]));
+    expect(plan.request?.scopes).not.toContain(writeScope);
+  });
+});

@@ -108,6 +108,8 @@ async function main() {
   }
   if (!results.codeAndTableKept) console.log("EXTRAS", JSON.stringify(extrasBack));
   if (!results.codeAndTableKept || !results.roundTripIdentical || !results.secondSaveIdentical || !results.unknownTypeKept || problems.length) process.exit(1);
+  // The editor leaves handles open (jsdom timers): end the proof once it has answered.
+  process.exit(0);
 }
 
 void main();

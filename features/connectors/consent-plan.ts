@@ -287,6 +287,15 @@ export function buildConsentPlan({
   if (addedSet.has(GOOGLE_SCOPE.webmasters)) {
     addedSet.delete(GOOGLE_SCOPE.webmastersReadonly);
   }
+  if (addedSet.has(GOOGLE_SCOPE.gmailModify)) {
+    addedSet.delete(GOOGLE_SCOPE.gmailReadonly);
+  }
+  if (addedSet.has(GOOGLE_SCOPE.contactsWrite)) {
+    addedSet.delete(GOOGLE_SCOPE.contactsReadonly);
+  }
+  if (addedSet.has(GOOGLE_SCOPE.tasksWrite)) {
+    addedSet.delete(GOOGLE_SCOPE.tasksReadonly);
+  }
   const added = [...addedSet];
   const isolatedYouTube = youtubeAdds;
   return {

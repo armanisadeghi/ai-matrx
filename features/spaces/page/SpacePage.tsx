@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
 
@@ -470,6 +471,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
               </div>
             ) : null}
             <Title value={doc.title} editable={editable} autoFocus={focusTitle} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
+            <Backlinks key={doc.id} spaceId={doc.id} />
           </div>
           <SpaceEditor
             key={`${doc.id}:${editorRound}`}
