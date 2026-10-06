@@ -42,6 +42,7 @@ Source/package evidence does not establish deployed behavior. The current releas
 
 ## Change log
 
+- 2026-10-06 — ALC-17 app side: the host binds `door` (`alchemy-door.ts`, the one write door shared with the surface writeback seam), `approvals` (the seam's own inline approval card) and `serverActions` (`alchemy-server-actions.ts`, aidream `POST /actions/run` over `callApi`). "Save to Notes" is a headless handler on `matrx-user/notes · create_notes`; documents, workbooks and the openers (task, code, chat, attach) are not door writes yet.
 - 2026-09-20 — `sendRowsToSheetOutcome` returns kit 0.16.0's first-class `queued` outcome (sentence + remedy + the approval row as target) for a write the organization reviews first; the `success` + `delivered: "action"` workaround from F-99 is gone, and so is the one-line sentence helper only it read.
 - 2026-09-12 — Reconciled the adapter contract with the package menu and the approved table defaults; removed retired two-icon and all-rows claims.
 

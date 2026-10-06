@@ -18,7 +18,11 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: (input: unknown) => mockCaptureError(input),
 }));
 
+const mockCallApi = jest.fn((config: unknown) => ({ thunkFor: config }));
+jest.mock("@/lib/api/call-api", () => ({ callApi: (config: unknown) => mockCallApi(config) }));
+
 import type { AlchemyHostPorts } from "@ai-matrx/alchemy/ports";
+import { surfaceWriteApprovals } from "@ai-matrx/chat/surfaces/runtime/surface-writeback";
 import { kindValidator } from "@/features/content-ir/registry/kind-schema-source";
 import {
   createAlchemyHostPorts,
@@ -245,5 +249,78 @@ describe("identity port (IdentityPort)", () => {
 describe("absent ports", () => {
   it("leaves the window port unbound unless the host hands it a window system — the workspace window is absent, never stubbed", () => {
     expect(ports().window).toBeUndefined();
+  });
+
+  it("leaves server Actions unbound when the store cannot dispatch", () => {
+    expect(ports().serverActions).toBeUndefined();
+  });
+});
+
+describe("the write door and its approvals (ALC-17)", () => {
+  it("binds the one write door and the surface writeback approval flow", () => {
+    const bound = ports();
+    expect(typeof bound.door?.write).toBe("function");
+    expect(typeof bound.door?.registerHeadless).toBe("function");
+    expect(bound.approvals).toBe(surfaceWriteApprovals);
+  });
+
+  it("an approval nobody is waiting for is refused by the door with a sentence, never a silent no", async () => {
+    await expect(
+      surfaceWriteApprovals.ask({
+        action: "note_title",
+        label: "Note title",
+        description: "",
+        input: "x",
+        by: "agent",
+        surfaceName: "matrx-user/notes",
+      }),
+    ).rejects.toThrow(/No one is here to approve "Note title"/);
+  });
+});
+
+describe("server Actions port (POST /actions/run)", () => {
+  function withDispatch(answer: unknown) {
+    const dispatch = jest.fn(async () => answer);
+    const harness = fakeStore({
+      userAuth: { id: RECYCLING_OWNER, isAdmin: false },
+      appContext: { organization_id: RECYCLING_ORG },
+    });
+    const bound = createAlchemyHostPorts({ store: Object.assign(harness.store, { dispatch }) as never });
+    return { serverActions: bound.serverActions!, dispatch };
+  }
+
+  beforeEach(() => mockCallApi.mockClear());
+
+  it("runs the named action as the caller, on its surface, and returns the server's answer", async () => {
+    const { serverActions } = withDispatch({
+      data: { status: "proposed", message: "Approve to apply.", receipts: [], proposal: { proposal_id: "p-1" } },
+    });
+    const answer = await serverActions.run({
+      name: "mark_reviewed",
+      input: { id: "r-1" },
+      by: "agent",
+      surface_name: "matrx-user/notes",
+      policy: "ask",
+    });
+    expect(mockCallApi).toHaveBeenCalledWith({
+      path: "/actions/run",
+      method: "POST",
+      body: { name: "mark_reviewed", input: { id: "r-1" }, by: "agent", surface_name: "matrx-user/notes", policy: "ask" },
+    });
+    expect(answer).toEqual({ status: "proposed", message: "Approve to apply.", receipts: [], proposal: { proposal_id: "p-1" } });
+  });
+
+  it("a refusal the server states by name is a refused answer carrying the server's sentence", async () => {
+    const { serverActions } = withDispatch({
+      error: { type: "http_error", status: 404, message: "Not found", serverDetail: { user_message: "matrx-user/notes declares no server Action mark_reviewed." } },
+    });
+    await expect(
+      serverActions.run({ name: "mark_reviewed", input: {}, by: "person", surface_name: "matrx-user/notes" }),
+    ).resolves.toEqual({ status: "refused", message: "matrx-user/notes declares no server Action mark_reviewed.", receipts: [] });
+  });
+
+  it("a call that never reached an answer rejects with its message", async () => {
+    const { serverActions } = withDispatch({ error: { type: "network_error", message: "The server could not be reached." } });
+    await expect(serverActions.run({ name: "mark_reviewed", input: {}, by: "person" })).rejects.toThrow("The server could not be reached.");
   });
 });

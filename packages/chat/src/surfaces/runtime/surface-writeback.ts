@@ -41,6 +41,19 @@
  */
 
 import { contentIrKindValidator } from "@ai-matrx/chat/host/content-ir-slots";
+import type {
+  ApprovalPort,
+  DiagnosticsPort,
+  KindValidatorPort,
+} from "@ai-matrx/alchemy/ports";
+import type {
+  Receipt,
+  WriteCaller,
+  WriteDoor,
+  WriteDoorDeclarations,
+  WriteHandler,
+  WriteHandlerResult,
+} from "@ai-matrx/alchemy/operate";
 import { getManifest } from "./registry";
 import {
   isSurfaceWritePatch,
@@ -486,10 +499,14 @@ export type SurfaceWriteResult =
       outcome?: SurfaceWriteOutcome;
       /** THE WRITE RECEIPT (see `SurfaceWriteChange`). Set on every success. */
       change?: SurfaceWriteChange;
+      /** The one write door's receipt (Alchemy ALC-17). Set on every write to a manifest target. */
+      receipt?: Receipt;
     }
   | {
       ok: false;
       error: string;
+      /** The one write door's receipt, when the write reached the door. */
+      receipt?: Receipt;
       /**
        * Where it stopped. `before_approval`: the value was refused by the type
        * check, the value contract or the handler's `validate` — the person
@@ -721,6 +738,203 @@ function resolveApplyPolicy(
     return override;
   }
   return surfaceDefault;
+}
+
+// ---------------------------------------------------------------------------
+// THE ONE WRITE DOOR (Matrx Alchemy ALC-17)
+// ---------------------------------------------------------------------------
+//
+// Every write to a manifest target lands through ONE `createWriteDoor` per app
+// and comes back with a receipt. This seam keeps everything it does before a
+// write (patch → declared type → value contract → the page's `validate`); the
+// door then applies the target's EFFECTIVE policy (the surface default after
+// the binding's overrides, `resolveApplyPolicy`) and calls the page's handler,
+// registered on the door as a LIVE handler for the length of the write.
+//
+// The door's `approvals` port IS this seam's existing approval flow: an agent
+// write registers its approver (`agentWriteAllowed` → the conversation's inline
+// card), and `surfaceWriteApprovals.ask` answers with it. The host binds the
+// same port and the same door (`components/agent-copy/alchemy-door.ts`).
+
+/** Errors this seam already toasted and captured; the door must not capture them twice. */
+const reportedErrors = new WeakSet<object>();
+
+function reportedError(message: string): Error {
+  const error = new Error(message);
+  reportedErrors.add(error);
+  return error;
+}
+
+function stableInput(value: unknown): string {
+  try {
+    return JSON.stringify(value ?? null) ?? "null";
+  } catch {
+    return String(value);
+  }
+}
+
+interface PendingApprover {
+  input: string;
+  approve: () => Promise<boolean>;
+}
+
+const pendingApprovers = new Map<string, PendingApprover[]>();
+
+function doorKey(surfaceName: string, targetName: string): string {
+  return `${surfaceName}\u0000${targetName}`;
+}
+
+/**
+ * The door's approvals port: answered by the existing approval flow of the
+ * write waiting for it (same surface, same target, same value). Nothing
+ * waiting means nobody here can approve — said so, never a silent "no".
+ */
+export const surfaceWriteApprovals: ApprovalPort = {
+  async ask(request) {
+    const key = doorKey(request.surfaceName, request.action);
+    const queue = pendingApprovers.get(key) ?? [];
+    const input = stableInput(request.input);
+    const index = queue.findIndex((entry) => entry.input === input);
+    if (index === -1) {
+      throw new Error(
+        `No one is here to approve "${request.label}". Ask for it again from the conversation or page that should approve it.`,
+      );
+    }
+    const [entry] = queue.splice(index, 1);
+    if (queue.length === 0) pendingApprovers.delete(key);
+    return entry.approve();
+  },
+};
+
+const surfaceWriteDiagnostics: DiagnosticsPort = {
+  capture(error, context) {
+    if (error && typeof error === "object" && reportedErrors.has(error)) return;
+    const message = error instanceof Error ? error.message : String(error);
+    captureError({
+      source: "surface-writeback",
+      message: `[write-door:${context.area}] ${message}`,
+      raw: { area: context.area, detail: context.detail },
+    });
+  },
+};
+
+const surfaceWriteKinds: KindValidatorPort = {
+  async validate(kindKey, value) {
+    const verdict = await contentIrKindValidator().validate(value, kindKey);
+    if (!verdict.checked) {
+      return {
+        ok: false,
+        unverifiable: true,
+        sentence: `The "${kindKey}" contract could not be checked (${verdict.degradedReason}): ${verdict.errors[0] ?? "no detail"}`,
+        remedy: "Check the connection, then try again.",
+      };
+    }
+    if (!verdict.ok) {
+      return {
+        ok: false,
+        sentence: `This value isn't shaped like the "${kindKey}" kind: ${verdict.errors.join("; ")}`,
+        remedy: `Correct the value so it matches the "${kindKey}" kind, then try again.`,
+      };
+    }
+    return { ok: true };
+  },
+};
+
+/**
+ * The declarations the door reads: every manifest, with each target's
+ * EFFECTIVE policy. No `ancestry`: a resolved manifest already carries what it
+ * inherits, so a target resolves on the surface that is writing.
+ */
+export const surfaceWriteDeclarations: WriteDoorDeclarations = {
+  get(surfaceName) {
+    const manifest = getManifest(surfaceName);
+    if (!manifest) return undefined;
+    return {
+      writeTargets: (manifest.writeTargets ?? []).map((target) => ({
+        ...target,
+        applyPolicy: resolveApplyPolicy(target, surfaceName),
+      })),
+      ...(manifest.itemTypes ? { itemTypes: manifest.itemTypes } : {}),
+    };
+  },
+};
+
+let surfaceDoor: Promise<WriteDoor> | null = null;
+
+/**
+ * THE app's one write door. Loaded on the first write (the operate engine is
+ * not in every page's bundle); every caller — this seam, the host's Actions
+ * and destinations — gets the same instance.
+ */
+export function loadSurfaceWriteDoor(): Promise<WriteDoor> {
+  if (!surfaceDoor) {
+    const loading = import("@ai-matrx/alchemy/operate").then(({ createWriteDoor }) =>
+      createWriteDoor({
+        ports: {
+          diagnostics: surfaceWriteDiagnostics,
+          kinds: surfaceWriteKinds,
+          approvals: surfaceWriteApprovals,
+        },
+        declarations: surfaceWriteDeclarations,
+      }),
+    );
+    surfaceDoor = loading;
+    loading.catch(() => {
+      if (surfaceDoor === loading) surfaceDoor = null;
+    });
+  }
+  return surfaceDoor;
+}
+
+/** Per-write page handlers, found by the signal the door hands the live handler. */
+const liveApplies = new WeakMap<AbortSignal, () => Promise<WriteHandlerResult>>();
+const liveRoutes = new Map<string, { count: number; release: () => void }>();
+
+const routeLiveWrite: WriteHandler = (_request, signal) => {
+  const apply = liveApplies.get(signal);
+  if (!apply) {
+    throw new Error(
+      "This page applies only the changes it is asked for itself; open it and make the change there.",
+    );
+  }
+  return apply();
+};
+
+/** One page write through the door: the page's handler is live for exactly this write. */
+async function writeThroughDoor(
+  request: { surfaceName: string; target: string; value: unknown; by: WriteCaller },
+  apply: () => Promise<WriteHandlerResult>,
+  approve?: () => Promise<boolean>,
+): Promise<Receipt> {
+  const door = await loadSurfaceWriteDoor();
+  const controller = new AbortController();
+  liveApplies.set(controller.signal, apply);
+  const key = doorKey(request.surfaceName, request.target);
+  let route = liveRoutes.get(key);
+  if (!route) {
+    route = { count: 0, release: door.registerLive(request.surfaceName, request.target, routeLiveWrite) };
+    liveRoutes.set(key, route);
+  }
+  route.count += 1;
+  const approver: PendingApprover | null = approve
+    ? { input: stableInput(request.value), approve }
+    : null;
+  if (approver) pendingApprovers.set(key, [...(pendingApprovers.get(key) ?? []), approver]);
+  try {
+    return await door.write(request, controller.signal);
+  } finally {
+    if (approver) {
+      const rest = (pendingApprovers.get(key) ?? []).filter((entry) => entry !== approver);
+      if (rest.length) pendingApprovers.set(key, rest);
+      else pendingApprovers.delete(key);
+    }
+    liveApplies.delete(controller.signal);
+    route.count -= 1;
+    if (route.count === 0) {
+      route.release();
+      liveRoutes.delete(key);
+    }
+  }
 }
 
 /** Neither a success nor a defect — the user declined. Silent by design. */
@@ -1369,30 +1583,45 @@ async function applySurfaceWriteNow(
     }
 
     let applyRuntime = runtime;
-    if ((opts?.origin ?? "user") === "agent") {
-      // An anchored edit is re-resolved against the live text after approval
-      // (rebased onto whatever a sibling write left there).
-      const atApply: ApprovedWriteAtApply = {};
-      if (isSurfaceWritePatch(patchInput)) {
-        const patchValue = patchInput;
-        atApply.resolvePatch = (live) =>
-          resolveTargetPatch(target, live, patchValue, registry, writeContext);
-      }
-      // Returns `true` to proceed, or the exact result to hand back (already
-      // reported for a refusal, deliberately silent for a decline).
-      const verdict = await agentWriteAllowed(
-        target,
-        runtime.surfaceName,
-        opts?.actorLabel,
-        value,
-        opts?.requestApproval,
-        runtime,
-        registry,
-        patchExcerpt,
-        atApply,
-        writeContext,
-      );
-      if (verdict !== true) return verdict;
+    const origin = opts?.origin ?? "user";
+    // An anchored edit is re-resolved against the live text after approval
+    // (rebased onto whatever a sibling write left there).
+    const atApply: ApprovedWriteAtApply = {};
+    if (origin === "agent" && isSurfaceWritePatch(patchInput)) {
+      const patchValue = patchInput;
+      atApply.resolvePatch = (live) =>
+        resolveTargetPatch(target, live, patchValue, registry, writeContext);
+    }
+    // What this seam settled while the door ran, in its own words.
+    let settled: SurfaceWriteResult | undefined;
+
+    // THE APPROVAL STEP — the door asks (effective policy `ask`, agent) and
+    // this write's existing flow answers: the inline card, the rebase, the
+    // "changed while you were reviewing" check.
+    const approve =
+      origin === "agent"
+        ? async (): Promise<boolean> => {
+            const verdict = await agentWriteAllowed(
+              target,
+              runtime.surfaceName,
+              opts?.actorLabel,
+              value,
+              opts?.requestApproval,
+              runtime,
+              registry,
+              patchExcerpt,
+              atApply,
+              writeContext,
+            );
+            if (verdict === true) return true;
+            settled = verdict;
+            if (!verdict.ok && verdict.declined) return false;
+            throw reportedError(verdict.ok ? `"${target.label}" was not applied.` : verdict.error);
+          }
+        : undefined;
+
+    // THE PAGE'S HANDLER — live on the door for this write.
+    const apply = async (): Promise<WriteHandlerResult> => {
       if (atApply.runtime) applyRuntime = atApply.runtime;
       if (atApply.value !== undefined && atApply.value !== value) {
         value = atApply.value;
@@ -1402,90 +1631,126 @@ async function applySurfaceWriteNow(
           value,
         );
         if (rebasedContract !== true) {
-          return rebasedContract.ok
+          settled = rebasedContract.ok
             ? rebasedContract
             : { ...rebasedContract, phase: "apply" };
+          throw reportedError(rebasedContract.ok ? `"${target.label}" was not applied.` : rebasedContract.error);
         }
       }
-    }
+      try {
+        // Approval can span renders or navigation. Resolve the current handlers
+        // again so draft/revision guards see the state at the time of the write.
+        // The same SURFACE re-registered is still the page (`liveRuntimeFor`).
+        const liveRuntime = liveRuntimeFor(registry, applyRuntime);
+        if (!liveRuntime)
+          throw new SurfaceWriteRefusalError("The page changed while approval was open. Review the current page before applying this change.");
+        applyRuntime = liveRuntime;
+        const currentHandler = splitHandler(
+          resolveHandlers(applyRuntime, registry)[targetName],
+          writeContext,
+        );
+        if (!currentHandler)
+          throw new SurfaceWriteRefusalError("This operation is no longer available on the current page.");
+        if (currentHandler.validate) {
+          try { await currentHandler.validate(value); }
+          catch (error) {
+            throw new SurfaceWriteRefusalError(error instanceof Error && error.message
+              ? error.message : `"${target.label}" refused this value.`);
+          }
+        }
 
-    try {
-      // Approval can span renders or navigation. Resolve the current handlers
-      // again so draft/revision guards see the state at the time of the write.
-      // The same SURFACE re-registered is still the page (`liveRuntimeFor`).
-      const liveRuntime = liveRuntimeFor(registry, applyRuntime);
-      if (!liveRuntime)
-        throw new SurfaceWriteRefusalError("The page changed while approval was open. Review the current page before applying this change.");
-      applyRuntime = liveRuntime;
-      const currentHandler = splitHandler(
-        resolveHandlers(applyRuntime, registry)[targetName],
-        writeContext,
-      );
-      if (!currentHandler)
-        throw new SurfaceWriteRefusalError("This operation is no longer available on the current page.");
-      if (currentHandler.validate) {
-        try { await currentHandler.validate(value); }
-        catch (error) {
-          throw new SurfaceWriteRefusalError(error instanceof Error && error.message
-            ? error.message : `"${target.label}" refused this value.`);
+        // Read the receipt after approval and current page validation.
+        const before = await readPageValueBeforeWrite(
+          target,
+          applyRuntime,
+          currentHandler.readCurrent,
+        );
+        const outcome = toWriteOutcome(await currentHandler.apply(value));
+        // Hold the queue until the page shows this write, so a queued sibling
+        // edit resolves against the new text, never the pre-write text.
+        const textSource = target.comparisonValue ?? target.updatesValue;
+        // A target read through its handler (a reference, not a scope value)
+        // has persisted by the time `apply` returns — its next read is fresh.
+        if (
+          origin === "agent" &&
+          textSource &&
+          typeof value === "string" &&
+          !currentHandler.readCurrent
+        ) {
+          await awaitPageShows(registry, applyRuntime, textSource, value);
         }
+        // ui-mode writes are self-evident on screen (selection moved, view
+        // changed) — no toast. Draft/entity writes confirm what landed where.
+        if (!opts?.quiet && target.mode !== "ui") {
+          const headline =
+            target.mode === "entity"
+              ? `${target.label} — done.`
+              : `${target.label} staged — review and save.`;
+          if (outcome?.summary) {
+            toast.success(headline, { description: outcome.summary });
+          } else {
+            toast.success(headline);
+          }
+        }
+        settled = {
+          ok: true,
+          surfaceName: runtime.surfaceName,
+          target,
+          ...(outcome ? { outcome } : {}),
+          change: writeReceipt(target, value, before),
+        };
+        return {
+          status: "applied",
+          ...(outcome?.summary ? { sentence: outcome.summary } : {}),
+        };
+      } catch (error) {
+        const message =
+          error instanceof Error && error.message
+            ? error.message
+            : `Applying "${target.label}" failed.`;
+        if (error instanceof SurfaceWriteRefusalError) {
+          settled = { ok: false, refused: true, phase: "apply", error: message };
+          return {
+            status: "cannot-apply",
+            cannotApply: "stale",
+            sentence: message,
+            remedy: "Review the current page, then ask for the change again.",
+          };
+        }
+        const failure = fail(message, {
+          targetName,
+          surfaceName: runtime.surfaceName,
+          error,
+        });
+        settled = failure.ok ? failure : { ...failure, phase: "apply" };
+        throw reportedError(message);
       }
+    };
 
-      // Read the receipt after approval and current page validation.
-      const before = await readPageValueBeforeWrite(
-        target,
-        applyRuntime,
-        currentHandler.readCurrent,
-      );
-      const outcome = toWriteOutcome(await currentHandler.apply(value));
-      // Hold the queue until the page shows this write, so a queued sibling
-      // edit resolves against the new text, never the pre-write text.
-      const textSource = target.comparisonValue ?? target.updatesValue;
-      // A target read through its handler (a reference, not a scope value)
-      // has persisted by the time `apply` returns — its next read is fresh.
-      if (
-        (opts?.origin ?? "user") === "agent" &&
-        textSource &&
-        typeof value === "string" &&
-        !currentHandler.readCurrent
-      ) {
-        await awaitPageShows(registry, applyRuntime, textSource, value);
-      }
-      // ui-mode writes are self-evident on screen (selection moved, view
-      // changed) — no toast. Draft/entity writes confirm what landed where.
-      if (!opts?.quiet && target.mode !== "ui") {
-        const headline =
-          target.mode === "entity"
-            ? `${target.label} — done.`
-            : `${target.label} staged — review and save.`;
-        if (outcome?.summary) {
-          toast.success(headline, { description: outcome.summary });
-        } else {
-          toast.success(headline);
-        }
-      }
-      return {
-        ok: true,
+    const receipt = await writeThroughDoor(
+      {
         surfaceName: runtime.surfaceName,
-        target,
-        ...(outcome ? { outcome } : {}),
-        change: writeReceipt(target, value, before),
-      };
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : `Applying "${target.label}" failed.`;
-      if (error instanceof SurfaceWriteRefusalError) {
-        return { ok: false, refused: true, phase: "apply", error: message };
-      }
-      const failure = fail(message, {
-        targetName,
-        surfaceName: runtime.surfaceName,
-        error,
-      });
-      return failure.ok ? failure : { ...failure, phase: "apply" };
-    }
+        target: targetName,
+        value,
+        by: origin === "agent" ? "agent" : "person",
+      },
+      apply,
+      approve,
+    );
+    const result: SurfaceWriteResult =
+      settled ??
+      // The door refused before this seam was asked anything.
+      (receipt.status === "refused" && receipt.reason === "manual_only"
+        ? fail(
+            `"${target.label}" is not agent-writable on this surface (applyPolicy: manual). A person has to make this change.`,
+            { targetName: target.name, surfaceName: runtime.surfaceName, policy: "manual" },
+          )
+        : fail(receipt.status === "refused" ? receipt.sentence : `"${target.label}" was not applied: ${receipt.sentence}`, {
+            targetName,
+            surfaceName: runtime.surfaceName,
+            receipt,
+          }));
+    return { ...result, receipt };
   }
 
   return failUnapplicable(
