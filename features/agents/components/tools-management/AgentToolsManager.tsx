@@ -2668,7 +2668,7 @@ function McpToolsTab({
       className={`mx-3 mt-3 p-2.5 rounded border text-[11px] flex items-center gap-2 ${
         oauthFeedback.type === "success"
           ? "border-green-500/30 bg-green-500/10 text-green-600 dark:text-green-400"
-          : "border-destructive/30 bg-destructive/5 text-destructive"
+          : "border-destructive/30 bg-destructive/5 text-destructive-ink"
       }`}
     >
       {oauthFeedback.type === "success" ? (
@@ -3590,7 +3590,7 @@ function McpCatalogPicker({
       </div>
 
       {catalogError && (
-        <div className="mx-4 mt-3 p-2.5 rounded border border-destructive/30 bg-destructive/5 type-meta text-destructive flex items-center gap-2">
+        <div className="mx-4 mt-3 p-2.5 rounded border border-destructive/30 bg-destructive/5 type-meta text-destructive-ink flex items-center gap-2">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           {catalogError}
           <ErrorAlchemyMenu error={catalogError} />
@@ -3614,7 +3614,7 @@ function McpCatalogPicker({
             onClick={() => setActiveCategory("all")}
             className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
               activeCategory === "all"
-                ? "bg-primary/10 text-primary"
+                ? "bg-primary/10 text-primary-ink"
                 : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
             }`}
           >
@@ -3626,7 +3626,7 @@ function McpCatalogPicker({
               onClick={() => setActiveCategory(cat)}
               className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${
                 activeCategory === cat
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -3964,7 +3964,7 @@ function CategoryItem({
             className={`text-[10px] font-bold tabular-nums px-1 py-0.5 rounded ${
               active
                 ? `${colors.bg} ${colors.text}`
-                : "text-primary/80 bg-primary/10"
+                : "text-primary-ink/80 bg-primary/10"
             }`}
           >
             {enabledCount}

@@ -187,11 +187,11 @@ export const StatusIcon: React.FC<{ status: RowStatus }> = ({ status }) => {
   const box = "flex size-5 shrink-0 items-center justify-center rounded-full";
   switch (status) {
     case "done":
-      return <span className={cn(box, "bg-success/15 text-success")}><Check className="size-3" /></span>;
+      return <span className={cn(box, "bg-success/15 text-success-ink")}><Check className="size-3" /></span>;
     case "failed":
-      return <span className={cn(box, "bg-destructive/15 text-destructive")}><X className="size-3" /></span>;
+      return <span className={cn(box, "bg-destructive/15 text-destructive-ink")}><X className="size-3" /></span>;
     case "running":
-      return <span className={cn(box, "bg-primary/15 text-primary")}><Spinner size="xs" className="text-current" /></span>;
+      return <span className={cn(box, "bg-primary/15 text-primary-ink")}><Spinner size="xs" className="text-current" /></span>;
     case "skipped":
       return <span className={cn(box, "bg-muted text-muted-foreground")}><SkipForward className="size-3" /></span>;
     default:
@@ -596,7 +596,7 @@ export function FactoryBuildPage({ buildId }: { buildId: string }) {
             ) : null}
           </div>
           {state.error ? (
-            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-destructive/40 bg-destructive/5 p-2.5 font-mono type-secondary text-destructive">
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md border border-destructive/40 bg-destructive/5 p-2.5 font-mono type-secondary text-destructive-ink">
               {state.error}
             </pre>
           ) : null}

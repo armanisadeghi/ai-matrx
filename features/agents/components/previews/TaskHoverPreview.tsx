@@ -38,7 +38,7 @@ const STATUS_COLORS: Record<string, string> = {
   open: "bg-muted text-muted-foreground",
   "in-progress": "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   in_progress: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
-  blocked: "bg-destructive/15 text-destructive",
+  blocked: "bg-destructive/15 text-destructive-ink",
   done: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   completed: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
   cancelled: "bg-muted text-muted-foreground line-through",

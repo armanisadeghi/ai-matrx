@@ -271,7 +271,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                   <button
                     type="button"
                     onClick={() => handlePlace(variable.name)}
-                    className="shrink-0 rounded px-1 text-[10px] font-medium text-primary ring-1 ring-primary/40 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="shrink-0 rounded px-1 text-[10px] font-medium text-primary-ink ring-1 ring-primary/40 hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     title={`Add {{${variable.name}}} to the system prompt`}
                     aria-label={`Place ${variable.name} in the system prompt`}
                   >

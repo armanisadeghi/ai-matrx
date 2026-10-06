@@ -610,8 +610,8 @@ function TemplateEditor({
                 key={i}
                 className={
                   label
-                    ? "mx-0.5 rounded bg-primary/10 px-1.5 py-0.5 type-secondary font-medium text-primary"
-                    : "mx-0.5 rounded bg-warning/10 px-1.5 py-0.5 type-secondary font-medium text-warning"
+                    ? "mx-0.5 rounded bg-primary/10 px-1.5 py-0.5 type-secondary font-medium text-primary-ink"
+                    : "mx-0.5 rounded bg-warning/10 px-1.5 py-0.5 type-secondary font-medium text-warning-ink"
                 }
               >
                 {label ?? "Unknown field"}

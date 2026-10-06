@@ -301,7 +301,7 @@ export default function AddProviderModelDialog({
             </section>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-md bg-destructive/10 text-destructive px-3 py-2 text-xs">
+              <div className="flex items-start gap-2 rounded-md bg-destructive/10 text-destructive-ink px-3 py-2 text-xs">
                 <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                 <span>{error}</span>
                 <ErrorAlchemyMenu error={error} />

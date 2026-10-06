@@ -40,7 +40,7 @@ const STATUS_COLORS: Record<string, string> = {
   running: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   streaming: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   complete: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  error: "bg-destructive/15 text-destructive",
+  error: "bg-destructive/15 text-destructive-ink",
   cancelled: "bg-muted text-muted-foreground",
 };
 

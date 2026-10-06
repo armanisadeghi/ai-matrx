@@ -260,7 +260,7 @@ export function AgentSamplesManager({
                 </span>
                 {sample.status === "approved" ? (
                   <Badge
-                    className="shrink-0 bg-primary/10 text-primary"
+                    className="shrink-0 bg-primary/10 text-primary-ink"
                     variant="outline"
                   >
                     Approved

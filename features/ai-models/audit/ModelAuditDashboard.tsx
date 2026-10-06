@@ -211,7 +211,7 @@ export default function ModelAuditDashboard() {
             retrying={loading}
           />
         ) : error && (
-          <div className="px-4 py-2 bg-destructive/10 border-b text-destructive text-xs shrink-0">
+          <div className="px-4 py-2 bg-destructive/10 border-b text-destructive-ink text-xs shrink-0">
             {error}
             <ErrorAlchemyMenu error={error} />
           </div>
@@ -252,7 +252,7 @@ export default function ModelAuditDashboard() {
                           className={`text-[10px] font-bold px-1 py-0 rounded-full leading-tight ${
                             activeTab === tab
                               ? "bg-primary-foreground/20 text-primary-foreground"
-                              : "bg-destructive/15 text-destructive"
+                              : "bg-destructive/15 text-destructive-ink"
                           }`}
                         >
                           {tabFailCount}

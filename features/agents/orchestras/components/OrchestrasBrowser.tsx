@@ -106,7 +106,7 @@ export function OrchestrasBrowser() {
 
           {empty && (
             <div className="mx-auto flex max-w-md flex-col items-center justify-center py-20 text-center">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
                 <Network className="h-7 w-7" />
               </div>
               <h2 className="text-base font-semibold text-foreground">

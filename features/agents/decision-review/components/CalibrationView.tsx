@@ -10,15 +10,8 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import {
-  SegmentedControl,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Skeleton,
-} from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
@@ -128,8 +121,7 @@ export function CalibrationView({ agentId }: { agentId: string }) {
   return (
     <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <SegmentedControl
-          size="sm"
+        <SegmentedControl aria-label="Signal"
           value={signal}
           onValueChange={(v) => setSignal(v as Signal)}
           data={[

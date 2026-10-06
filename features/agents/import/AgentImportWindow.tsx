@@ -80,7 +80,7 @@ function ImportSidebar({
                     className={cn(
                       "w-full flex items-center gap-2 px-2 py-1 text-[12px] rounded-sm text-left transition-colors",
                       isActive
-                        ? "bg-primary/10 text-primary font-medium"
+                        ? "bg-primary/10 text-primary-ink font-medium"
                         : "text-foreground hover:bg-muted",
                     )}
                   >

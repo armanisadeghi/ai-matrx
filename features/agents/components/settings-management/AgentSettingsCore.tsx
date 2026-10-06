@@ -1680,7 +1680,7 @@ export function AgentSettingsCore({
         </Label>
       </div>
       <div className="flex-1 min-w-0 flex items-center gap-2">
-        <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 type-secondary font-mono text-primary">
+        <span className="inline-flex items-center gap-1 rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 type-secondary font-mono text-primary-ink">
           <Variable className="w-3 h-3" />
           {`{{${variableName}}}`}
         </span>

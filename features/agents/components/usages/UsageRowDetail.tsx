@@ -120,7 +120,7 @@ function ContractColumn({
               className={cn(
                 "rounded px-1 py-0.5 font-mono type-meta",
                 required.includes(k)
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "bg-muted text-foreground",
               )}
               title={required.includes(k) ? "Required" : undefined}

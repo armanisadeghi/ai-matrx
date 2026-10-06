@@ -55,7 +55,7 @@ function SettingsDiffRenderer({ node }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5 border-r border-border",
                 changed && child.changeType !== "added"
-                  ? "bg-destructive/10 text-destructive bg-destructive/15"
+                  ? "bg-destructive/10 text-destructive-ink bg-destructive/15"
                   : "text-foreground/80",
                 child.changeType === "added" ? "text-muted-foreground/50" : "",
               )}
@@ -66,7 +66,7 @@ function SettingsDiffRenderer({ node }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5",
                 changed && child.changeType !== "removed"
-                  ? "bg-success/10 text-success bg-success/15"
+                  ? "bg-success/10 text-success-ink bg-success/15"
                   : "text-foreground/80",
                 child.changeType === "removed"
                   ? "text-muted-foreground/50"

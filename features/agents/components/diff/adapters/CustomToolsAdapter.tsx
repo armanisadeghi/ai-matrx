@@ -90,7 +90,7 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
                 "px-3 py-1.5 border-r border-border whitespace-pre-wrap font-mono type-meta",
                 child.changeType === "removed" ||
                   child.changeType === "modified"
-                  ? "bg-destructive/10 text-destructive bg-destructive/15"
+                  ? "bg-destructive/10 text-destructive-ink bg-destructive/15"
                   : "text-foreground/70",
                 child.changeType === "added" ? "text-muted-foreground/50" : "",
               )}
@@ -101,7 +101,7 @@ function CustomToolsDiffRenderer({ node }: FieldDiffProps) {
               className={cn(
                 "px-3 py-1.5 whitespace-pre-wrap font-mono type-meta",
                 child.changeType === "added" || child.changeType === "modified"
-                  ? "bg-success/10 text-success bg-success/15"
+                  ? "bg-success/10 text-success-ink bg-success/15"
                   : "text-foreground/70",
                 child.changeType === "removed"
                   ? "text-muted-foreground/50"

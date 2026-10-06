@@ -675,7 +675,7 @@ export function AgentVersionDiffPage({
         {/* A snapshot that could not be read says so, in place, with the
             selectors above still live so another version can be chosen. */}
         {snapshotError && (
-          <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-destructive/30 bg-destructive/10 type-secondary text-destructive">
+          <div className="shrink-0 flex items-center gap-2 px-4 py-2 border-b border-destructive/30 bg-destructive/10 type-secondary text-destructive-ink">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             <span className="flex-1">{snapshotError}</span>
             <CopyButtons

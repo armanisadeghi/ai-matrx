@@ -84,7 +84,7 @@ export function VersionHistoryTimeline({
         {/* A load that ran and failed must never fall back to looking like a
             load that was never started. */}
         {failedVersions.length > 0 && (
-          <div className="flex items-start gap-2 max-w-[420px] px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 type-secondary text-destructive">
+          <div className="flex items-start gap-2 max-w-[420px] px-3 py-2 rounded-md border border-destructive/30 bg-destructive/10 type-secondary text-destructive-ink">
             <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
             <span>
               {failedVersions.length} of {progress.total} snapshot

@@ -362,7 +362,7 @@ export function TermListEditor({
               size="sm"
               variant="outline"
               aria-label={MODALITY_LABELS[m]}
-              className="data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+              className="data-[state=on]:border-primary/50 data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink"
             >
               {MODALITY_LABELS[m]}
             </ToggleGroupItem>

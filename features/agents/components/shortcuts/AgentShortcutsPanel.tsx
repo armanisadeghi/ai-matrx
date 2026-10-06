@@ -444,7 +444,7 @@ function CountCard({
         tone === "muted" && "bg-muted/30",
       )}
     >
-      <div className="shrink-0 rounded-md bg-primary/10 text-primary p-2">
+      <div className="shrink-0 rounded-md bg-primary/10 text-primary-ink p-2">
         <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
@@ -530,7 +530,7 @@ function ShortcutRow({
         "hover:bg-accent hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
       )}
     >
-      <div className="shrink-0 rounded-md bg-primary/10 text-primary p-2">
+      <div className="shrink-0 rounded-md bg-primary/10 text-primary-ink p-2">
         {shortcut.iconName ? (
           <IconResolver iconName={shortcut.iconName} size={16} />
         ) : (
@@ -653,7 +653,7 @@ function EmptyState({
 }) {
   return (
     <Card className="p-6 flex flex-col items-center text-center gap-3">
-      <div className="rounded-full bg-primary/10 text-primary p-3">
+      <div className="rounded-full bg-primary/10 text-primary-ink p-3">
         <Rocket className="h-5 w-5" />
       </div>
       <div className="space-y-1">

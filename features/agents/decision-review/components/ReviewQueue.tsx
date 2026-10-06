@@ -16,7 +16,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Check, ChevronLeft, ChevronRight, LineChart, ListChecks, X } from "lucide-react";
-import { SegmentedControl, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@ai-matrx/design-system";
+import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Skeleton } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { DecisionAnswers } from "@ai-matrx/chat/agents/decision-answers/DecisionAnswers";
@@ -280,8 +281,7 @@ export function ReviewQueue({
     <div className="flex h-full min-h-0 flex-col pt-[var(--shell-header-h)]">
       {/* One row of controls. */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2">
-        <SegmentedControl
-          size="sm"
+        <SegmentedControl aria-label="Label status"
           value={filters.status}
           onValueChange={(v) => setFilter("status", v as QueueFilters["status"])}
           data={[
@@ -291,8 +291,7 @@ export function ReviewQueue({
           ]}
         />
         {combined && (
-          <SegmentedControl
-            size="sm"
+          <SegmentedControl aria-label="Source"
             value={filters.source ?? ALL}
             onValueChange={(v) => setFilter("source", v === ALL ? null : (v as DecisionSource))}
             data={[

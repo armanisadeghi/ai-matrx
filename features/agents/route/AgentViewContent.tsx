@@ -561,7 +561,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
         </div>
 
         {dataIssues.length > 0 && (
-          <Alert className="border-warning/50 bg-warning/10 text-warning">
+          <Alert className="border-warning/50 bg-warning/10 text-warning-ink">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>
               Recovered {dataIssues.length} stored data{" "}
