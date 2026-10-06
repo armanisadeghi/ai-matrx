@@ -34,6 +34,7 @@ import {
   StampCell,
 } from "@/features/marketing/seo/keyword-workbench/components/cells";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
+import { TagsCell } from "@/features/marketing/seo/keyword-workbench/components/TagsCell";
 import { OFFERING_UNPLACED } from "@/features/marketing/seo/keyword-workbench/components/OfferingPicker";
 import type { SiteOfferings } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import type { KeywordOfferingPlacement } from "@/features/marketing/seo/keyword-workbench/data";
@@ -89,6 +90,10 @@ export interface KeywordColumnHandlers {
    * of them, not the fifty the browser is holding.
    */
   onFilterByLocation: (value: string | undefined) => void;
+  /** Toggle one tag in the server-side tag filter. */
+  onFilterByTag: (value: string) => void;
+  /** Open the tag panel for one keyword. */
+  onEditTags: (keywordId: string, keyword: string) => void;
 }
 
 export interface BuildKeywordColumnsInput {
@@ -102,6 +107,8 @@ export interface BuildKeywordColumnsInput {
   handlers: KeywordColumnHandlers;
   /** The keywords' homes on the site's topical map — the `map_topic` column's read. */
   mapHomes: KeywordMapHomes;
+  /** Tag value keys the list is filtered on. */
+  activeTagValues?: string[];
 }
 
 export function buildKeywordColumns({
@@ -113,6 +120,7 @@ export function buildKeywordColumns({
   hasCompare,
   handlers,
   mapHomes,
+  activeTagValues = [],
 }: BuildKeywordColumnsInput): MatrxColumnDef<GscBreakdownRow>[] {
   const {
     stampFor,
@@ -231,6 +239,42 @@ export function buildKeywordColumns({
             // No locked dimension: the picker opens on the whole catalog and
             // will create a dimension of their own from whatever they type.
             handlers.onAssign(row.keyword_id, row.key);
+          }}
+        />
+      ),
+    });
+  }
+
+  if (shown.has("tags")) {
+    /**
+     * KEYWORD TAGS — a multi-value column: every tag, not the last one written.
+     * Its funnel is the server tag filter (`tags`, any/all is the tag control's
+     * switch), so it means the whole list.
+     */
+    columns.push({
+      id: "tags",
+      header: "Tags",
+      sortable: true,
+      filter: "select",
+      filterOptions: (data.tagDimension?.values ?? [])
+        .filter((v) => !v.abstain)
+        .map((v) => ({ value: v.key, label: v.label })),
+      width: 180,
+      mobileHidden: true,
+      accessorFn: (row) =>
+        data
+          .tagsFor(row)
+          .map((tag) => tag.valueLabel)
+          .join(", "),
+      cell: (row) => (
+        <TagsCell
+          tags={data.tagsFor(row)}
+          activeValues={activeTagValues}
+          disabled={!row.keyword_id}
+          onFilter={handlers.onFilterByTag}
+          onEdit={() => {
+            if (!row.keyword_id) return;
+            handlers.onEditTags(row.keyword_id, row.key);
           }}
         />
       ),

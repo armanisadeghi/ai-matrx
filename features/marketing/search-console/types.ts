@@ -154,6 +154,18 @@ export interface GscFilters {
    * Query dimension only.
    */
   traffic_classes?: string;
+  /**
+   * KEYWORD TAGS (`tg=`) — the site's Tags dimension, encoded exactly like
+   * `stamps` (`dimension:value|dimension:value`). Its own key so the tag
+   * control owns its chips; `cleanGscFilters` folds it into the RPC's
+   * `stamps` array, so the server has ONE stamp predicate.
+   */
+  tags?: string;
+  /**
+   * `any` (`tm=any`) — a keyword needs ONE of the `tags`; absent means it
+   * needs ALL of them. Never sent to the RPC on its own.
+   */
+  tags_match?: string;
 }
 
 /**
@@ -207,6 +219,8 @@ export const GSC_FILTER_KEYS: readonly GscFilterKey[] = [
   "value_score_min",
   "value_score_max",
   "traffic_classes",
+  "tags",
+  "tags_match",
 ];
 
 export interface GscStampFilter {

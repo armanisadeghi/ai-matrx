@@ -86,6 +86,14 @@ import {
   type AssignTarget,
 } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import { OfferingAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/OfferingAssignPanel";
+import { TagAssignPanel } from "@/features/marketing/seo/keyword-workbench/components/TagAssignPanel";
+import { TagFilterControl } from "@/features/marketing/seo/keyword-workbench/components/TagFilterControl";
+import {
+  tagFilterMatch,
+  tagFilterValues,
+  toggleTagInFilter,
+  withTagFilter,
+} from "@/features/marketing/seo/keyword-workbench/tagFilter";
 import { ServiceFilterControl } from "@/features/marketing/seo/keyword-workbench/components/ServiceFilterControl";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
 import { ClassCell } from "@/features/marketing/seo/keyword-workbench/components/cells";
@@ -156,6 +164,8 @@ export interface KeywordTableControls {
     label: string,
     lockedDimensionSlug?: string,
   ) => void;
+  /** Open the tag panel (add or remove tags) for these keywords. */
+  openTagAssign: (keywordIds: string[], label: string) => void;
   /** Re-read everything a write can change. */
   refresh: () => Promise<void>;
   /**
@@ -344,6 +354,7 @@ export function KeywordTable({
     page: state.page,
     pageSize: state.pageSize,
     dimensions: state.dimensions,
+    withTags: visibleCoreColumns(surface.defaultColumns, state).includes("tags"),
   });
   const { rows, total } = data;
   // Where each keyword on this page lives on the site's topical map (the
@@ -372,6 +383,7 @@ export function KeywordTable({
 
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
   const [serviceTarget, setServiceTarget] = useState<AssignTarget | null>(null);
+  const [tagTarget, setTagTarget] = useState<AssignTarget | null>(null);
   /** P23 — the value you used last, offered as one click until you change it. */
   const [lastUsed, setLastUsed] = useState<PickedValue | null>(null);
 
@@ -393,6 +405,7 @@ export function KeywordTable({
   const controls: KeywordTableControls = {
     openServiceAssign: (keywordIds, label) =>
       setServiceTarget({ keywordIds, label }),
+    openTagAssign: (keywordIds, label) => setTagTarget({ keywordIds, label }),
     openAssign: (keywordIds, label, lockedDimensionSlug) =>
       setAssignTarget({
         keywordIds,
@@ -530,6 +543,14 @@ export function KeywordTable({
     patch({ filters });
   };
 
+  /** KEYWORD TAGS — a server filter (`tg=` + `tm=`), any or all. */
+  const tagValues = tagFilterValues(state.filters);
+  const tagMatch = tagFilterMatch(state.filters);
+  const filterByTag = (value: string) => {
+    if (!data.tagSlug) return;
+    patch({ filters: toggleTagInFilter(state.filters, data.tagSlug, value) });
+  };
+
   /* ---------------------------------------------------------------- columns */
   const coreVisible = visibleCoreColumns(surface.defaultColumns, state);
   const columns: MatrxColumnDef<GscBreakdownRow>[] = [
@@ -541,6 +562,7 @@ export function KeywordTable({
       brandId,
       hasCompare: periods.compare !== null,
       mapHomes,
+      activeTagValues: tagValues,
       handlers: {
         onPlaceService: (keywordId, offeringId, keyword) =>
           void placeService(keywordId, offeringId, keyword),
@@ -557,6 +579,9 @@ export function KeywordTable({
             ...(initial ? { initial } : {}),
           }),
         onFilterByStamp: filterByStamp,
+        onFilterByTag: filterByTag,
+        onEditTags: (keywordId, keyword) =>
+          setTagTarget({ keywordIds: [keywordId], label: `“${keyword}”` }),
       },
     }),
     ...(extraColumns?.(data) ?? []),
@@ -577,6 +602,13 @@ export function KeywordTable({
     tableColumnFilters.location = {
       kind: "select",
       value: state.filters.location,
+    };
+  }
+  if (tagValues.length > 0) {
+    tableColumnFilters.tags = {
+      kind: "select",
+      value: tagValues[0],
+      values: tagValues,
     };
   }
   const levels = parseLevelFilter(state.filters.levels);
@@ -638,6 +670,11 @@ export function KeywordTable({
         const read = (row: GscBreakdownRow) =>
           state.sort.startsWith("dim:")
             ? (data.stampFor(row, state.sort.slice(4))?.valueLabel ?? "")
+            : state.sort === "tags"
+              ? data
+                  .tagsFor(row)
+                  .map((tag) => tag.valueLabel)
+                  .join(", ")
             : state.sort === "traffic_class"
               ? (data.valueFor(row)?.traffic_class ?? "")
               : state.sort === "value_band"
@@ -726,6 +763,24 @@ export function KeywordTable({
       if (nextLevels.length === 0) delete filters.levels;
       else filters.levels = nextLevels.join("|");
       patch({ filters });
+      return;
+    }
+
+    // TAGS — the column funnel writes the same server tag filter as the chip
+    // and the tag control, keeping whichever any/all the control set.
+    const nextTags = (() => {
+      const filter = next.columnFilters.tags;
+      if (!filter || filter.kind !== "select") return [];
+      return filter.values?.length
+        ? filter.values
+        : filter.value
+          ? [filter.value]
+          : [];
+    })();
+    if (data.tagSlug && nextTags.join("|") !== tagValues.join("|")) {
+      patch({
+        filters: withTagFilter(state.filters, data.tagSlug, nextTags, tagMatch),
+      });
       return;
     }
 
@@ -1133,6 +1188,19 @@ export function KeywordTable({
                 onChange={filterByService}
               />
             )}
+            {data.tagSlug && (data.tagDimension?.values.length ?? 0) > 0 ? (
+              <TagFilterControl
+                tags={data.tagDimension?.values ?? []}
+                values={tagValues}
+                match={tagMatch}
+                onChange={(values, match) => {
+                  if (!data.tagSlug) return;
+                  patch({
+                    filters: withTagFilter(state.filters, data.tagSlug, values, match),
+                  });
+                }}
+              />
+            ) : null}
           </>
         ) : null}
         {data.isLoading ? (
@@ -1173,7 +1241,11 @@ export function KeywordTable({
             />
           ) : null}
           <ColumnChooser
-            dimensions={data.dimensionCatalog}
+            // The Tags dimension is the Tags core column (every value); as a
+            // dimension column it would show one tag per keyword.
+            dimensions={data.dimensionCatalog.filter(
+              (dimension) => dimension.slug !== data.tagSlug,
+            )}
             loading={data.dimensionCatalogLoading}
             selected={state.dimensions}
             onSelectedChange={(next) => patch({ dimensions: next })}
@@ -1233,6 +1305,32 @@ export function KeywordTable({
                   ? `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} now map to ${placed.name}.`
                   : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off every offering.`,
               );
+            }}
+          />
+        </div>
+      ) : null}
+
+      {tagTarget ? (
+        <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+          <TagAssignPanel
+            siteId={siteId}
+            tags={data.tagDimension?.values ?? []}
+            target={tagTarget}
+            onCancel={() => setTagTarget(null)}
+            onDone={(_result, change) => {
+              setTagTarget(null);
+              void afterWrite();
+              const count = tagTarget.keywordIds.length;
+              const what = `${count.toLocaleString()} keyword${count === 1 ? "" : "s"}`;
+              toast.success(
+                change.remove
+                  ? `Removed ${change.labels.join(", ")} from ${what}.`
+                  : `Tagged ${what}: ${change.labels.join(", ")}.`,
+              );
+              if (!change.remove && !coreVisible.includes("tags")) {
+                // You just tagged these keywords; show the column that says so.
+                patch(toggleCoreColumn(surface.defaultColumns, state, "tags"));
+              }
             }}
           />
         </div>

@@ -54,17 +54,32 @@ const RANGE_FILTER_KEYS = new Set<string>([
  */
 export function cleanGscFilters(filters: GscFilters): Json {
   const out: Record<string, Json> = {};
+  const stampEntries: Json[] = [];
   for (const [key, value] of Object.entries(filters)) {
     if (typeof value !== "string" || value.trim() === "") continue;
     if (key === "stamps") {
       // C6: `dim:value|dim:value` → [{dimension, value}] (all-of) for the RPC
-      const pairs = parseStampFilter(value).map((p) => ({
-        dimension: p.dimension,
-        value: p.value,
-      }));
-      if (pairs.length > 0) out.stamps = pairs;
+      for (const p of parseStampFilter(value)) {
+        stampEntries.push({ dimension: p.dimension, value: p.value });
+      }
       continue;
     }
+    if (key === "tags") {
+      // KEYWORD TAGS ride the SAME stamp predicate (`seo.gsc_stamp_keyword_set`).
+      // "Any" marks each pair `mode: 'any'`, which the server reads as one
+      // any-of group; "All" sends plain pairs, which are all-of already.
+      const any = filters.tags_match === "any";
+      for (const p of parseStampFilter(value)) {
+        stampEntries.push(
+          any
+            ? { dimension: p.dimension, value: p.value, mode: "any" }
+            : { dimension: p.dimension, value: p.value },
+        );
+      }
+      continue;
+    }
+    // Only meaningful beside `tags`, folded in above; the RPC has no such key.
+    if (key === "tags_match") continue;
     if (key === "levels") {
       const levels = parseLevelFilter(value);
       if (levels.length > 0) out.levels = levels;
@@ -85,6 +100,7 @@ export function cleanGscFilters(filters: GscFilters): Json {
     }
     out[key] = value.trim();
   }
+  if (stampEntries.length > 0) out.stamps = stampEntries;
   return out;
 }
 

@@ -65,29 +65,35 @@ export interface KeywordStamp {
   notes: string | null;
 }
 
-/** keyword_id → dimension slug → the stamp (single-cardinality: last wins). */
+/** keyword_id → dimension slug → the stamp (one answer per dimension). */
 export type KeywordStampMap = Map<string, Map<string, KeywordStamp>>;
+
+/**
+ * keyword_id → dimension slug → EVERY stamp, in value-id order. A
+ * multi-cardinality dimension (the site's Tags) holds several values per
+ * keyword; reading it through `KeywordStampMap` would keep one of them.
+ */
+export type KeywordStampListMap = Map<string, Map<string, KeywordStamp[]>>;
 
 /**
  * THE SCOPE RULE. Ask for the rows you are showing — never the site. The RPC
  * refuses more than 2,000 ids, so the caller slices to the page it renders.
  */
-export async function getKeywordStamps(
+export async function getKeywordStampLists(
   siteId: string,
   keywordIds: string[],
   dimensionSlugs: string[],
   signal?: AbortSignal,
-): Promise<KeywordStampMap> {
-  const map: KeywordStampMap = new Map();
+): Promise<KeywordStampListMap> {
+  const map: KeywordStampListMap = new Map();
   if (keywordIds.length === 0 || dimensionSlugs.length === 0) return map;
   const db = await seoDb();
   const abort = signal ?? new AbortController().signal;
   const ids = Array.from(new Set(keywordIds));
-  // One row per keyword PER DIMENSION — ~7.4 stamps per keyword live, so a
-  // 200-row page is ~1,480 rows and PostgREST's 1,000-row cap was silently
-  // dropping the tail. Read to completion, never a confidently truncated map.
-  // (keyword_id, dimension) is a total order only while every dimension is
-  // single-cardinality (23 of 23 live, 2026-09-12); value_id breaks the tie
+  // One row per keyword PER DIMENSION (per VALUE for a multi dimension) —
+  // ~7.4 stamps per keyword live, so a 200-row page is ~1,480 rows and
+  // PostgREST's 1,000-row cap was silently dropping the tail. Read to
+  // completion, never a confidently truncated map. value_id breaks the tie
   // for a multi-cardinality dimension so paging never repeats or skips a row.
   const rows = await readAllRows(
     ({ from, to }) =>
@@ -118,7 +124,12 @@ export async function getKeywordStamps(
       byDimension = new Map();
       map.set(row.keyword_id, byDimension);
     }
-    byDimension.set(row.dimension, {
+    let list = byDimension.get(row.dimension);
+    if (!list) {
+      list = [];
+      byDimension.set(row.dimension, list);
+    }
+    list.push({
       dimension: row.dimension,
       dimensionLabel: row.dimension_label,
       value: row.value,
@@ -130,6 +141,31 @@ export async function getKeywordStamps(
     });
   }
   return map;
+}
+
+/** The first stamp of every dimension — the single-answer view of a list map. */
+export function firstStamps(lists: KeywordStampListMap): KeywordStampMap {
+  const map: KeywordStampMap = new Map();
+  for (const [keywordId, byDimension] of lists) {
+    const first = new Map<string, KeywordStamp>();
+    for (const [slug, list] of byDimension) {
+      if (list[0]) first.set(slug, list[0]);
+    }
+    map.set(keywordId, first);
+  }
+  return map;
+}
+
+/** One answer per dimension, for readers that show a single value. */
+export async function getKeywordStamps(
+  siteId: string,
+  keywordIds: string[],
+  dimensionSlugs: string[],
+  signal?: AbortSignal,
+): Promise<KeywordStampMap> {
+  return firstStamps(
+    await getKeywordStampLists(siteId, keywordIds, dimensionSlugs, signal),
+  );
 }
 
 /* ------------------------------------------------------- the P23 quick add */
