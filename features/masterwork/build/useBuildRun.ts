@@ -38,6 +38,30 @@ import { estimateSentence } from "@/lib/progress/estimateSentence";
 export const BUILD_PATH = "/masterworks/build" satisfies keyof paths;
 
 const PROGRESS_EVENT = "masterwork_build_progress";
+/** AF-D door #11: one agent of this Build made by the Agent Factory (pipeline only). */
+const AGENT_BUILD_EVENT = "masterwork_agent_build";
+
+/** One agent this Build is making through the Agent Factory — its build is shown live. */
+export interface MasterworkAgentBuild {
+  role: string;
+  name: string;
+  buildId: string | null;
+  outcome: string | null;
+  agentId: string | null;
+}
+
+function parseAgentBuild(data: Record<string, unknown>): MasterworkAgentBuild | null {
+  const role = typeof data.role === "string" ? data.role : "";
+  if (!role) return null;
+  const text = (v: unknown) => (typeof v === "string" && v ? v : null);
+  return {
+    role,
+    name: text(data.agent_name) ?? role,
+    buildId: text(data.build_id),
+    outcome: text(data.outcome),
+    agentId: text(data.agent_id),
+  };
+}
 
 export type MasterworkKind = "edit" | "generate";
 
@@ -100,6 +124,8 @@ export interface BuildRunHandle {
   result: BuiltMasterwork | null;
   /** The canonical non-token progress shape — rendered by `LiveRunProgress`. */
   progress: LiveRunProgressState | null;
+  /** Agents made through the Agent Factory (door #11), in the order they started. Empty on today's path. */
+  agentBuilds: MasterworkAgentBuild[];
   launch: (input: Record<string, unknown>, label: string) => void;
   reset: () => void;
 }
@@ -120,9 +146,23 @@ export function useBuildRun(
   const [reached, setReached] = useState<Record<string, string>>({});
   /** The parts as they come up, by name — a detail line, never a new row. */
   const [parts, setParts] = useState<string[]>([]);
+  const [agentBuilds, setAgentBuilds] = useState<MasterworkAgentBuild[]>([]);
 
   const onDomainEvent = useCallback(
     (name: string, data: Record<string, unknown>) => {
+      if (name === AGENT_BUILD_EVENT) {
+        const build = parseAgentBuild(data);
+        if (!build) return;
+        setAgentBuilds((prev) =>
+          prev.some((b) => b.role === build.role)
+            ? prev.map((b) => (b.role === build.role ? { ...b, ...build, buildId: build.buildId ?? b.buildId } : b))
+            : [...prev, build],
+        );
+        if (build.agentId) {
+          setParts((prev) => (prev.includes(build.name) ? prev : [...prev, build.name]));
+        }
+        return;
+      }
       if (name !== PROGRESS_EVENT) return;
       const step = typeof data.step === "string" ? data.step : "";
       const message = typeof data.message === "string" ? data.message : "";
@@ -244,6 +284,7 @@ export function useBuildRun(
     (input: Record<string, unknown>, label: string) => {
       setReached({});
       setParts([]);
+      setAgentBuilds([]);
       launchedRef.current = true;
       void run.launch(input, label);
     },
@@ -253,6 +294,7 @@ export function useBuildRun(
   const reset = useCallback(() => {
     setReached({});
     setParts([]);
+    setAgentBuilds([]);
     launchedRef.current = false;
     run.reset();
   }, [run]);
@@ -264,6 +306,7 @@ export function useBuildRun(
     error: run.error,
     result: run.result,
     progress,
+    agentBuilds,
     launch,
     reset,
   };

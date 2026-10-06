@@ -14,6 +14,7 @@
 
 export type FactoryStepName =
   | "intake"
+  | "baseline"
   | "contract"
   | "goal"
   | "tool_choice"
@@ -112,6 +113,8 @@ export interface FactoryBuildRequest {
   };
   mandate_key?: string | null;
   idempotency_key?: string | null;
+  /** R53 rebuild mode: the existing agent this build rebuilds (today's version is the baseline). */
+  rebuild_of?: string | null;
 }
 
 export interface FactoryBuildState {
@@ -128,6 +131,8 @@ export interface FactoryBuildState {
   agent_id?: string | null;
   version_ids?: string[];
   proof?: FactoryProofCase[];
+  /** R53 rebuild mode: the row rebuilt and whether today's version has answered every case. */
+  rebuild?: { agent_id?: string; baselined?: boolean; baseline_version_id?: string } | null;
   /** R15: an unpassed build archived the agent it saved. */
   archived_agent?: boolean;
   send_backs?: number;
@@ -177,6 +182,7 @@ export const STEP_ANSWER_KIND: Record<FactoryJudgmentStep, string> = {
 
 export const STEP_LABEL: Record<FactoryStepName, string> = {
   intake: "Intake",
+  baseline: "Baseline",
   contract: "Contract",
   goal: "Goal",
   tool_choice: "Tools",
@@ -190,6 +196,7 @@ export const STEP_LABEL: Record<FactoryStepName, string> = {
 /** Pipeline order — what a running build still has ahead of it. */
 export const STEP_ORDER: FactoryStepName[] = [
   "intake",
+  "baseline",
   "contract",
   "goal",
   "tool_choice",
