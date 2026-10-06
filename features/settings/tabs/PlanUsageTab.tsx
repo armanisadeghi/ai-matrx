@@ -57,7 +57,7 @@ export function PlanUsageTab() {
           onValueChange={setBillingOrganizationId}
           disabled={organizationsLoading}
         >
-          <SelectTrigger id="billing-organization" className="mt-2 w-full sm:max-w-sm">
+          <SelectTrigger id="billing-organization" width="xl" className="mt-2">
             <SelectValue placeholder={organizationsLoading ? "Loading organizations…" : "Choose an organization"} />
           </SelectTrigger>
           <SelectContent>

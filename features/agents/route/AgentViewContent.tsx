@@ -1021,7 +1021,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                     Output Schema
                   </span></CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 pb-0">
+                <CardContent padding="none">
                   <div className="h-64">
                     <JsonInspector showSource
                       data={outputSchema}
@@ -1058,7 +1058,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
                     Messages ({conversationMessages.length})
                   </span></CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent gap="lg">
                   {conversationMessages.map((msg, i) => (
                     <MessageCard
                       key={i}

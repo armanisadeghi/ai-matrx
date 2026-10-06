@@ -54,7 +54,7 @@ export function ViewTab({
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="start" className="w-[240px] p-1">
+      <PopoverContent surface="solid" align="start" width="sm" padding="xs">
         <div className="p-1">
           <Input
             value={name}

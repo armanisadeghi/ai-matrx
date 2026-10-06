@@ -19,11 +19,10 @@ import {
   Select,
   SelectContent,
   SelectItem,
-  SelectTrigger,
   SelectValue,
   Skeleton,
 } from "@ai-matrx/design-system";
-import { Button, Input } from "@ai-matrx/design-system/controls";
+import { Button, Input, SelectTrigger } from "@ai-matrx/design-system/controls";
 import { RoomViewReceipt } from "@ai-matrx/chat/agents/components/context-policies-display/MessageContextReceipt";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import { stripControlLines } from "@/lib/control-tokens/stripControlLines";
@@ -146,7 +145,7 @@ function SeesKeysPicker({
           {full.seesKeys.length ? full.seesKeys.map(nameOf).join(", ") : "Pick…"}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-48 p-1">
+      <PopoverContent align="start" width="xs" padding="xs">
         {options.map((key) => (
           <label key={key} className="flex items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-muted" data-clickable>
             <Checkbox
@@ -232,7 +231,7 @@ function ParticipantRow({
               if (wantsKeys && full.seesKeys.length === 0) setPickerOpen(true);
             }}
           >
-            <SelectTrigger size="sm" className="h-7 w-[6.5rem] text-xs" aria-label="Sees">
+            <SelectTrigger width="xs" aria-label="Sees">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -279,7 +278,7 @@ function ParticipantRow({
               value={full.reveal}
               onValueChange={(v) => change({ reveal: v as FullPolicy["reveal"], revealRounds: full.revealRounds ?? 1 })}
             >
-              <SelectTrigger size="sm" className="h-7 w-[7.5rem] text-xs" aria-label="Reveal">
+              <SelectTrigger width="sm" aria-label="Reveal">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -305,7 +304,7 @@ function ParticipantRow({
               value={full.cadence}
               onValueChange={(v) => change({ cadence: v as FullPolicy["cadence"], cadenceRounds: full.cadenceRounds ?? 1 })}
             >
-              <SelectTrigger size="sm" className="h-7 w-[7rem] text-xs" aria-label="Cadence">
+              <SelectTrigger width="sm" aria-label="Cadence">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -349,7 +348,7 @@ function TurnDetail({
   turn: TurnState | undefined;
   nameOf: (key: string) => string;
 }) {
-  if (!turn || turn.status === "loading") return <Skeleton className="mx-2 my-2 h-16" />;
+  if (!turn || turn.status === "loading") return <Skeleton shape="block" height="md" className="mx-2 my-2" />;
   if (turn.status === "error") return <p className="px-2 py-1 type-secondary text-destructive">{turn.message}</p>;
   if (!turn.turn) return <p className="px-2 py-1 type-secondary text-muted-foreground">No turn yet</p>;
   const { turn: t } = turn;
@@ -402,7 +401,7 @@ export function GroupChatInspector({ anchorType, anchorId, initialKey }: { ancho
     roomTurns * 1000 + refresh,
   );
 
-  if (state.status === "loading") return <Skeleton className="m-2 h-40" />;
+  if (state.status === "loading") return <Skeleton shape="block" height="lg" className="m-2" />;
   if (state.status === "missing") return <p className="px-3 py-2 type-secondary text-muted-foreground">No group chat in this room yet</p>;
   if (state.status === "error") return <p className="px-3 py-2 type-secondary text-destructive">{state.message}</p>;
 

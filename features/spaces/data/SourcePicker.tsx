@@ -84,7 +84,7 @@ export function useSourcePicker(): [React.ReactNode, () => Promise<PickedSource 
   };
   const element = (
     <Dialog open={open} onOpenChange={(o) => (o ? null : finish(null))}>
-      <DialogContent className="max-w-[520px] gap-0 p-0" showCloseButton={false}>
+      <DialogContent padding="none" showCloseButton={false}>
         <DialogTitle className="sr-only">Choose a data source</DialogTitle>
         <div className="border-b border-border p-2">
           <SearchField autoFocus value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search for a data source…" aria-label="Search data sources" />

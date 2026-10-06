@@ -550,8 +550,8 @@ export function MeetReview() {
   if (inventory.isLoading)
     return (
       <div className="space-y-2 p-3">
-        <Skeleton className="h-11 w-full" />
-        <Skeleton className="h-11 w-full" />
+        <Skeleton shape="block" height="sm" />
+        <Skeleton shape="block" height="sm" />
       </div>
     );
   if (inventory.error)

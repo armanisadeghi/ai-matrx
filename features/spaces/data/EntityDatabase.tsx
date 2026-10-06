@@ -242,7 +242,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
       {open ? <EntityPeek entity={entity} rowId={open} as={props.openAs ?? "side"} editable={editable} onClose={() => setOpen(null)} /> : null}
 
       <Dialog open={expanded} onOpenChange={setExpanded}>
-        <DialogContent className="spaces-db-expanded max-w-[min(1200px,96vw)] h-[90dvh] overflow-auto">
+        <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{sourceName}</DialogTitle>
           {body}
         </DialogContent>
@@ -378,7 +378,7 @@ function EntityFilter({ view, columns, onView, editable }: { view: SpaceDbView; 
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<ListFilter size={15} strokeWidth={1.8} />} aria-label="Filter" title="Filter" data-on={count ? "true" : undefined} />
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[280px] p-1">
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
         {Object.entries(filters).map(([k, v]) => (
           <MenuRow
             key={k}
@@ -444,7 +444,7 @@ function EntitySort({ view, columns, onView, editable }: { view: SpaceDbView; co
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<ArrowDownUp size={15} strokeWidth={1.8} />} aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined} />
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
         {sort ? (
           <div className="flex items-center gap-1 p-1 type-body">
             <span className="flex-1 truncate">{columns.find((c) => c.api_name === sort.field)?.name ?? sort.field}</span>
@@ -488,7 +488,7 @@ function EntitySettings({
           <SlidersHorizontal size={15} strokeWidth={1.8} />
         </button>
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[280px] p-1">
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
         {page === "main" ? (
           <>
             <div className="px-2 py-1 type-secondary text-muted-foreground">View options</div>
@@ -594,7 +594,7 @@ function PropRow({ c, value, editable, onWrite }: { c: EntityColumn; value: unkn
             {valueText(c, value) ? null : <span className="text-muted-foreground">Empty</span>}
           </button>
         </PopoverTrigger>
-        <PopoverContent surface="solid" align="start" className="w-[220px] p-1">
+        <PopoverContent surface="solid" align="start" width="sm" padding="xs">
           {c.choices.map((choice) => (
             <MenuRow key={choice} label={choice} active={value === choice} onClick={() => void commit(choice)} />
           ))}

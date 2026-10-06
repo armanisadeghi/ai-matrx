@@ -484,7 +484,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 function DocumentViewer({ doc, onClose }: { doc: { fileId: string; name: string } | null; onClose: () => void }) {
   return (
     <Dialog open={doc !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex h-[85dvh] max-w-4xl flex-col gap-3">
+      <DialogContent size="xl" height="tall" className="flex flex-col">
         <DialogHeader>
           <DialogTitle className="truncate pr-8">{doc?.name}</DialogTitle>
           <DialogDescription className="sr-only">The document as it was sent for signature.</DialogDescription>

@@ -11,8 +11,8 @@ export const AgentDiffViewer = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex-1 p-4 space-y-3">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-64 w-full" />
+        <Skeleton shape="title" width="md" />
+        <Skeleton shape="block" height="xl" />
       </div>
     ),
   },

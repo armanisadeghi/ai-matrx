@@ -69,7 +69,7 @@ export function RedeemCodeField({ autoCode }: { autoCode?: string | null }) {
             placeholder="MX-XXXX-XXXX"
             aria-label="Coupon code"
             autoComplete="off"
-            className="max-w-56"
+            width="lg"
           />
           <Button variant="primary" type="submit" disabled={pending || !code.trim()}>
             {pending ? "Redeeming…" : "Redeem"}

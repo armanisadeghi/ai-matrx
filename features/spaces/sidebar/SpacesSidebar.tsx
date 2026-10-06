@@ -60,7 +60,7 @@ function RowMenu({ space, onRename }: { space: SpaceSummary; onRename: () => voi
       </PopoverTrigger>
       {/* Closes instantly (Notion): a row that leaves the tree (Move to Trash) must not take an open menu
           with it — an anchorless menu would be drawn at the top-left corner during its exit. */}
-      <PopoverContent surface="solid" align="start" side="right" className="w-[240px] p-1 data-[state=closed]:hidden" onClick={(e) => e.stopPropagation()}>
+      <PopoverContent surface="solid" align="start" side="right" width="sm" padding="xs" className="data-[state=closed]:hidden" onClick={(e) => e.stopPropagation()}>
         <button type="button" className="spaces-menu-row" onClick={act(() => spaces.toggleFavorite(space.id))}>
           <span className="spaces-menu-row-icon">{fav ? <StarOff size={16} /> : <Star size={16} />}</span>
           {fav ? "Remove from Favorites" : "Add to Favorites"}
@@ -146,7 +146,7 @@ function RenamePopover({ space, open, onOpenChange, children }: { space: SpaceSu
       }}
     >
       <PopoverAnchor asChild>{children}</PopoverAnchor>
-      <PopoverContent surface="solid" align="start" className="w-[300px] p-1.5">
+      <PopoverContent surface="solid" align="start" width="md" padding="xs">
         <Input
           autoFocus
           value={title}
@@ -303,7 +303,7 @@ function TemplatesPopover() {
           {sample.adding ? <span className="ml-auto type-secondary text-muted-foreground">{sample.progress}</span> : null}
         </button>
       </PopoverTrigger>
-      <PopoverContent surface="solid" side="right" align="end" className="w-[300px] p-1">
+      <PopoverContent surface="solid" side="right" align="end" width="md" padding="xs">
         <button
           type="button"
           className="spaces-menu-row"
@@ -334,7 +334,7 @@ function TrashPopover() {
           Trash
         </Button>
       </PopoverTrigger>
-      <PopoverContent surface="solid" side="right" align="end" className="w-[400px] p-2">
+      <PopoverContent surface="solid" side="right" align="end" width="xl" padding="sm">
         <SearchField placeholder="Search pages in Trash" value={q} onChange={(e) => setQ(e.target.value)} className="w-full" />
         <div className="mt-2 max-h-[320px] overflow-y-auto">
           {list.map((s) => (

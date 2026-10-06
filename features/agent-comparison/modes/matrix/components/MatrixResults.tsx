@@ -299,7 +299,7 @@ function CellButton({
           {shown && <TokenLine m={shown} className="block mt-0.5" />}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[28rem] max-w-[90vw] p-0">
+      <PopoverContent align="start" width="xl" padding="none">
         <div className="px-3 py-2 border-b border-border type-secondary font-medium truncate">
           {rowLabel} × {colLabel}
         </div>

@@ -225,14 +225,14 @@ function DatabaseFrame({
       {open ? <RecordOpen tableId={tableId} recordId={open} as={props.openAs ?? "side"} onClose={() => setOpen(null)} /> : null}
 
       <Dialog open={creating} onOpenChange={setCreating}>
-        <DialogContent className="max-w-[640px]">
+        <DialogContent size="lg">
           <DialogTitle>New {table.data?.name ? `in ${table.data.name}` : "page"}</DialogTitle>
           <RecordForm tableId={tableId} />
         </DialogContent>
       </Dialog>
 
       <Dialog open={expanded} onOpenChange={setExpanded}>
-        <DialogContent className="spaces-db-expanded max-w-[min(1200px,96vw)] h-[90dvh] overflow-auto">
+        <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
           <DatabaseBody tableId={tableId} view={active} fields={fields} onOpenRecord={setOpen} onNew={addRow} editable={editable} sample={sample} />
         </DialogContent>
@@ -312,7 +312,7 @@ function FilterButton({ view, fields, onView, editable }: { view: SpaceDbView; f
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<ListFilter size={15} strokeWidth={1.8} />} aria-label="Filter" title="Filter" data-on={count ? "true" : undefined} />
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[280px] p-1">
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
         {Object.entries(filters).map(([k, v]) => (
           <MenuRow
             key={k}
@@ -374,7 +374,7 @@ function SortButton({ view, fields, onView, editable }: { view: SpaceDbView; fie
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<ArrowDownUp size={15} strokeWidth={1.8} />} aria-label="Sort" title="Sort" data-on={sort ? "true" : undefined} />
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[260px] p-1">
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
         {sort ? (
           <div className="flex items-center gap-1 p-1 type-body">
             <span className="flex-1 truncate">{fields.find((f) => f.key === sort.field)?.label ?? sort.field}</span>
@@ -405,7 +405,7 @@ function NewButton({ onNew }: { onNew: () => void }) {
         <PopoverTrigger asChild>
           <Button variant="quiet" icon={<ChevronDown size={14} />} aria-label="Templates" />
         </PopoverTrigger>
-        <PopoverContent surface="solid" align="end" className="w-[240px] p-1">
+        <PopoverContent surface="solid" align="end" width="sm" padding="xs">
           <div className="px-2 py-1 type-secondary text-muted-foreground">Templates</div>
           <MenuRow icon={<FileText size={15} />} label="Empty page" onClick={onNew} />
         </PopoverContent>
@@ -456,7 +456,7 @@ function ViewSettings({
           <SlidersHorizontal size={compact ? 13 : 15} strokeWidth={1.8} />
         </button>
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" className="w-[280px] p-1">
+      <PopoverContent surface="solid" align="end" width="md" padding="xs">
         {page === "main" ? (
           <>
             <div className="px-2 py-1 type-secondary text-muted-foreground">View options</div>

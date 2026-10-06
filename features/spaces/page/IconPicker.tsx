@@ -60,7 +60,7 @@ export function IconPicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
-      <PopoverContent surface="solid" align="start" className="w-[408px] max-w-[calc(100vw-16px)] p-0" onOpenAutoFocus={(e) => e.preventDefault()}>
+      <PopoverContent surface="solid" align="start" width="xl" padding="none" onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className="flex items-center gap-1 border-b border-border px-2">
           <Tabs<Tab>
             aria-label="Icon source"

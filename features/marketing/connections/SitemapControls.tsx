@@ -64,7 +64,7 @@ export function SitemapControls({
       <CardHeader>
         <CardTitle>Sitemaps</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent gap="md">
         <Button
           variant="outline"
           disabled={busy}

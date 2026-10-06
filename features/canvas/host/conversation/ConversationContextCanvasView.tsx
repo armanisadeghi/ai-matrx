@@ -64,9 +64,9 @@ export default function ConversationContextCanvasView({ data, item, canvas, pres
     }
     return (
       <div className="flex flex-col gap-2 p-3" data-values-tab-state="loading" aria-busy="true">
-        <Skeleton className="h-6 w-2/3" />
-        <Skeleton className="h-6 w-full" />
-        <Skeleton className="h-6 w-5/6" />
+        <Skeleton shape="title" width="2/3" />
+        <Skeleton shape="title" />
+        <Skeleton shape="title" width="3/4" />
       </div>
     );
   }

@@ -76,7 +76,7 @@ export function UsageHistory() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="grid grid-cols-2 gap-2 sm:flex">
           <Select value={query.range} onValueChange={(value) => updateRange(value as UsageHistoryRange)}>
-            <SelectTrigger aria-label="Date interval" className="w-full sm:w-40"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label="Date interval" width="md"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7d">Last 7 days</SelectItem>
               <SelectItem value="30d">Last 30 days</SelectItem>
@@ -85,7 +85,7 @@ export function UsageHistory() {
             </SelectContent>
           </Select>
           <Select value={query.activity} onValueChange={(value) => updateActivity(value as UsageHistoryActivity)}>
-            <SelectTrigger aria-label="Activity filter" className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectTrigger aria-label="Activity filter" width="md"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All activity</SelectItem>
               <SelectItem value="executions">Executions</SelectItem>

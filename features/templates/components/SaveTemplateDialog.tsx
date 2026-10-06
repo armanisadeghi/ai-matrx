@@ -114,7 +114,7 @@ export function SaveTemplateDialog({ isOpen, onClose, initialAgentId }: SaveTemp
 
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-xl" data-save-template="">
+      <DialogContent size="lg" data-save-template="">
         <DialogHeader>
           <DialogTitle>Save as template</DialogTitle>
           <DialogDescription>An agent, the tables it reads and the agents that share them</DialogDescription>

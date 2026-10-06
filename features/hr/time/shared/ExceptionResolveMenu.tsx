@@ -49,7 +49,7 @@ export function ExceptionResolveMenu({
       </PopoverAnchor>
       <PopoverContent
         align="end"
-        className="w-80 max-w-[calc(100vw-2rem)]"
+        width="lg"
         aria-label="Exception decisions"
         onCloseAutoFocus={(event) => {
           event.preventDefault();

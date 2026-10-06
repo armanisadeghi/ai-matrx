@@ -246,7 +246,7 @@ function PasteDialog({
         onOpenChange(o);
       }}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

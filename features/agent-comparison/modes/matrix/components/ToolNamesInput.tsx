@@ -69,7 +69,7 @@ export function ToolNamesInput({
             Tool
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 p-2">
+        <PopoverContent align="start" width="lg" padding="sm">
           <input
             autoFocus
             value={query}

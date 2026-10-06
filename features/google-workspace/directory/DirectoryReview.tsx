@@ -351,8 +351,8 @@ export function DirectoryReview({
   if (!actorId || inventory.isLoading) {
     return (
       <div className="space-y-3 p-3">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-48 w-full" />
+        <Skeleton shape="block" height="md" />
+        <Skeleton shape="block" height="lg" />
       </div>
     );
   }

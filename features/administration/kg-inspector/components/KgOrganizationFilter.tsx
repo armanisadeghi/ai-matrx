@@ -72,13 +72,14 @@ export function KgOrganizationFilter({ organizationId, onChange }: Props) {
             icon={<Building2 />}
             type="button"
             variant="outline"
-            className="w-56 justify-start"
+            width="lg"
+            className="justify-start"
             aria-label="Filter edges by organization"
           >
             <span className="truncate">{label}</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 p-2">
+        <PopoverContent align="start" width="lg" padding="sm">
           <OrganizationPicker
             hideHeading
             organizations={organizations

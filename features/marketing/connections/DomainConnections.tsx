@@ -128,7 +128,7 @@ export function DomainConnections() {
       <CardHeader>
         <CardTitle>Owned domains</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent gap="md">
         <div className="flex flex-wrap items-center gap-2">
           <Select
             value={provider}
@@ -137,7 +137,7 @@ export function DomainConnections() {
               setCredentialId("");
             }}
           >
-            <SelectTrigger className="w-40" aria-label="Domain provider">
+            <SelectTrigger width="md" aria-label="Domain provider">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -149,7 +149,7 @@ export function DomainConnections() {
             </SelectContent>
           </Select>
           <Select value={credentialId} onValueChange={setCredentialId}>
-            <SelectTrigger className="w-56" aria-label="Vault API credential">
+            <SelectTrigger width="lg" aria-label="Vault API credential">
               <SelectValue placeholder="Vault API credential" />
             </SelectTrigger>
             <SelectContent>

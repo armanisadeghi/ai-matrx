@@ -151,7 +151,7 @@ export function ChangePlanDialog({
 
   return (
     <Dialog open={subject !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className={subject?.kind === "organization" && choiceIsEnterprise ? "sm:max-w-2xl" : "sm:max-w-md"}>
+      <DialogContent size={subject?.kind === "organization" && choiceIsEnterprise ? "lg" : "sm"}>
         <DialogHeader>
           <DialogTitle>Change plan</DialogTitle>
           <DialogDescription className="truncate">{subject?.name}</DialogDescription>
