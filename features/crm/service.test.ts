@@ -146,11 +146,11 @@ describe("interaction removal", () => {
       error: { message: "interaction is not writable", code: "42501" },
     };
 
-    await expect(
-      removeInteraction({
-        id: "11111111-1111-4111-8111-111111111111",
-      }),
-    ).rejects.toThrow("interaction is not writable (42501)");
+    const removal = removeInteraction({
+      id: "11111111-1111-4111-8111-111111111111",
+    });
+    await expect(removal).rejects.toThrow(/^interaction is not writable$/);
+    await expect(removal).rejects.toMatchObject({ code: "42501" });
 
     expect(queryState.calls).toContainEqual({
       method: "rpc",
