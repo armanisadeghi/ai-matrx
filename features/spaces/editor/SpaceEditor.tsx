@@ -27,6 +27,11 @@ import { BlockNoteView } from "@blocknote/shadcn";
 import { useEffect, useState } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { mentionCandidates } from "@/features/rich-document/annotations/service";
+import { MessageSquare } from "lucide-react";
+
+import { spaceCommentSource } from "../collab/comments";
+import { PersonAvatar } from "../collab/CommentsPanel";
 
 import type { SpaceBlock } from "../contract";
 import { SpaceIcon } from "../page/SpaceIcon";
@@ -127,13 +132,24 @@ function AskAiButton({ onClick }: { onClick: () => void }) {
   );
 }
 
+function CommentButton({ onClick }: { onClick: () => void }) {
+  const C = useComponentsContext()!;
+  return (
+    <C.FormattingToolbar.Button mainTooltip="Comment" icon={<MessageSquare size={16} />} onClick={onClick} label="Comment">
+      Comment
+    </C.FormattingToolbar.Button>
+  );
+}
+
 export interface SpaceEditorProps {
   spaceId: string;
   initialBlocks: SpaceBlock[];
   editable: boolean;
   onChange: (blocks: SpaceBlock[]) => void;
   slash: SlashContext;
-  menu: Omit<BlockMenuActions, "spaceId">;
+  menu: Omit<BlockMenuActions, "spaceId" | "comment">;
+  /** H1 — start a comment on a block, about `quote` (the selection, or the block's text). */
+  onComment?: (anchor: { blockId: string; quote: string }) => void;
   /** Lets the page reach the editor (title Enter → first block, Move to). */
   onReady?: (editor: SpacesEditor) => void;
 }
@@ -151,7 +167,7 @@ function columnCss(blocks: EngineBlock[]): string {
   return rules.join("\n");
 }
 
-export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady }: SpaceEditorProps) {
+export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment }: SpaceEditorProps) {
   const dark = useDarkMode();
   const { byId } = useSpaces();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
@@ -182,7 +198,20 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
     },
     [spaceId],
   ) as unknown as SpacesEditor;
-  const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu }));
+  const commentOnBlock = (blockId: string) => {
+    const b = editor.getBlock(blockId) as unknown as EngineBlock | undefined;
+    const quote = b ? fromEngine([b]).map((x) => (x.text ?? []).map((t) => t.text).join("")).join(" ") : "";
+    onComment?.({ blockId, quote });
+  };
+  const commentOnSelection = () => {
+    const blocks = editor.getSelection()?.blocks ?? [editor.getTextCursorPosition().block];
+    const first = blocks[0];
+    if (!first) return;
+    const quote = editor.getSelectedText().split("\n")[0] ?? "";
+    if (quote.trim()) onComment?.({ blockId: first.id, quote });
+    else commentOnBlock(first.id);
+  };
+  const [BlockMenu] = useState(() => makeBlockMenu({ spaceId, ...menu, comment: (id) => commentOnBlock(id) }));
   const [widths, setWidths] = useState(() => columnCss(editor.document as unknown as EngineBlock[]));
 
   useEffect(() => {
@@ -264,20 +293,33 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         triggerCharacter="@"
         floatingUIOptions={SLASH_MENU}
         getItems={async (query) => {
-          // B12 — "@" names a page: the mention is the page's address, shown as its current title.
+          // B14/C27 — "@" lists people (who can read this page: its organization's members and the people it
+          // is shared with — cmt_mention_candidates) then pages. A person mention stores the user id.
           const q = query.trim().toLowerCase();
+          const people = await mentionCandidates(spaceCommentSource(spaceId, ""), query.trim()).catch(() => []);
+          const personItems = people.slice(0, 5).map((p) => ({
+            title: p.name,
+            group: "People",
+            icon: <PersonAvatar name={p.name} url={p.avatarUrl} size={20} />,
+            onItemClick: () =>
+              editor.insertInlineContent([
+                { type: "inlineMention", props: { span: JSON.stringify({ text: p.name, mention: { kind: "person", userId: p.userId } }) } },
+                " ",
+              ] as never),
+          }));
           const hits = [...byId.values()]
             .filter((p) => p.id !== spaceId && (p.title || "Untitled").toLowerCase().includes(q))
             .slice(0, 8);
-          return hits.map((p) => ({
+          return [...personItems, ...hits.map((p) => ({
             title: p.title || "Untitled",
+            group: "Link to page",
             icon: <SpaceIcon media={p.icon} size={16} />,
             onItemClick: () =>
               editor.insertInlineContent([
                 { type: "inlineMention", props: { span: JSON.stringify({ text: p.title || "Untitled", mention: { kind: "space", spaceId: p.id } }) } },
                 " ",
               ] as never),
-          }));
+          }))];
         }}
       />
       <SuggestionMenuController triggerCharacter="/" floatingUIOptions={SLASH_MENU} getItems={async (query) => filterSuggestionItems(slashItems(editor, slash), query)} />
@@ -306,6 +348,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
             <BasicTextStyleButton basicTextStyle="strike" key="strikeStyleButton" />
             <BasicTextStyleButton basicTextStyle="code" key="codeStyleButton" />
             <ColorStyleButton key="colorStyleButton" />
+            {onComment ? <CommentButton onClick={commentOnSelection} /> : null}
           </FormattingToolbar>
         )}
       />

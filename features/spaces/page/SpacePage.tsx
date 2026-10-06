@@ -2,9 +2,8 @@
 
 // features/spaces/page/SpacePage.tsx — one open Space: top bar, cover, icon, title, editor (§A).
 
-import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, FileQuestion, ImageIcon, Lock, Menu, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -33,6 +32,12 @@ import { IconPicker, randomIcon } from "./IconPicker";
 import { PageMenu } from "./PageMenu";
 import { SpaceIcon } from "./SpaceIcon";
 import { TocRail } from "./TocRail";
+import { CommentMargin } from "../collab/CommentMargin";
+import { CommentsPanel, PageComments } from "../collab/CommentsPanel";
+import { spaceCommentSource, type SpaceCommentAnchor } from "../collab/comments";
+import { PresenceAvatars, ShareMenu } from "../collab/TopBarCollab";
+import { useSpaceComments } from "../collab/useSpaceComments";
+import { useSpaceRoom } from "../collab/useSpaceRoom";
 import { editedAgo } from "./time";
 
 type Editable = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
@@ -111,6 +116,19 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const [aiTarget, setAiTarget] = useState<AskAiTarget | null>(null);
+  // H1 — the comments panel, a thread being started (undefined = none; null anchor = the page), and the
+  // page comment being written under the title.
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [draft, setDraft] = useState<SpaceCommentAnchor | null | undefined>(undefined);
+  const [addingPageComment, setAddingPageComment] = useState(false);
+  /** Bumped on every edit, so the comment margin re-reads block positions. */
+  const [contentTick, setContentTick] = useState(0);
+  /** H3 — a newer copy saved by someone else arrived while this person was editing. */
+  const [remoteChanged, setRemoteChanged] = useState(false);
+  const remoteDoc = useRef<SpaceDoc | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const comments = useSpaceComments(spaceId, doc?.title ?? "");
+  const room = useSpaceRoom(spaceId, comments.reload);
   useSpacesAiDisclosure();
   const editorRef = useRef<SpacesEditor | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -137,6 +155,9 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     setShownId(spaceId);
     setDoc(undefined);
     setSaveState("saved");
+    setDraft(undefined);
+    setAddingPageComment(false);
+    setRemoteChanged(false);
   }
 
   useEffect(() => {
@@ -215,6 +236,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     pending.current = true;
     setSaveState("saving");
     setDoc((d) => (d ? { ...d, ...patch } : d));
+    if ("blocks" in patch) setContentTick((t) => t + 1);
     if ("title" in patch || "icon" in patch) patchSummary(spaceId, { ...("title" in patch ? { title: patch.title } : {}), ...("icon" in patch ? { icon: patch.icon } : {}) });
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => void flush(), delay);
@@ -224,7 +246,14 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
   useEffect(() => {
     const take = (incoming: SpaceDoc) => {
       if (incoming.id !== spaceId || incoming.version <= baseVersion.current) return;
-      if (pending.current || inFlight.current) return; // the next save will meet it as a conflict
+      // Someone else saved while this person is mid-edit (unsaved changes, or the caret in the page):
+      // never yank the page from under them — the top bar says the page was updated and offers it.
+      const typing = !!document.activeElement?.closest(".spaces-editor, .spaces-title");
+      if (pending.current || inFlight.current || typing) {
+        remoteDoc.current = incoming;
+        setRemoteChanged(true);
+        return;
+      }
       const before = docRef.current;
       adopt(incoming);
       if (!before || !sameBlocks(before.blocks, incoming.blocks)) setEditorRound((r) => r + 1);
@@ -349,6 +378,33 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
     );
   };
 
+  const showLatest = () => {
+    const latest = remoteDoc.current;
+    remoteDoc.current = null;
+    setRemoteChanged(false);
+    if (!latest) return;
+    // Their copy replaces this one; an unsaved local edit is dropped, as a conflicting save would be.
+    pending.current = false;
+    if (timer.current) window.clearTimeout(timer.current);
+    timer.current = null;
+    adopt(latest);
+    setEditorRound((r) => r + 1);
+    setSaveState("saved");
+  };
+
+  const jumpToBlock = (anchor: SpaceCommentAnchor) => {
+    window.location.hash = `block-${anchor.blockId}`;
+  };
+  const openThread = (threadId: string) => {
+    setCommentsOpen(true);
+    window.setTimeout(() => document.querySelector(`.spaces-comments-panel [data-thread-id="${CSS.escape(threadId)}"]`)?.scrollIntoView({ block: "nearest" }), 60);
+  };
+  const startComment = (anchor: SpaceCommentAnchor) => {
+    setDraft(anchor);
+    setCommentsOpen(true);
+  };
+  const commentSource = spaceCommentSource(doc.id, doc.title);
+
   // The page as Markdown — what the AI reads as named variables (never as the person's typed input).
   const mdContext: MarkdownContext = {
     titleOf: (id) => spaces.byId.get(id)?.title ?? "Untitled",
@@ -414,23 +470,28 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             Locked
           </button>
         ) : null}
+        {remoteChanged ? (
+          <button type="button" className="spaces-locked-pill" onClick={showLatest} title="Someone else saved this page">
+            Page updated · Show latest
+          </button>
+        ) : null}
+        <PresenceAvatars viewers={room.viewers} me={room.me} />
         {!doc.isArchived ? <AskPageButton page={pageForAi} /> : null}
         <span className="spaces-edited hidden sm:inline" data-state={saveState} aria-live="polite">
           {saveState === "saving" ? "Saving…" : saveState === "failed" ? "Not saved — retrying" : editedAgo(doc.updatedAt, now)}
           {saveState === "failed" ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
-        <Popover>
-          <PopoverTrigger asChild>
-            <button type="button" className="spaces-topbar-text-button">
-              Share
-            </button>
-          </PopoverTrigger>
-          <PopoverContent surface="solid" align="end" className="w-[320px] p-2">
-            <Button variant="outline" className="w-full" onClick={copyLink}>
-              Copy link
-            </Button>
-          </PopoverContent>
-        </Popover>
+        <ShareMenu spaceId={doc.id} title={doc.title} onCopyLink={copyLink} />
+        <button
+          type="button"
+          className="spaces-topbar-button"
+          aria-label={commentsOpen ? "Close comments" : "View all comments"}
+          aria-pressed={commentsOpen}
+          title="View all comments"
+          onClick={() => setCommentsOpen((o) => !o)}
+        >
+          <MessageSquareText size={17} />
+        </button>
         <button
           type="button"
           className="spaces-topbar-button"
@@ -475,6 +536,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
         />
       </header>
 
+      <div className="spaces-body">
       <div className="spaces-scroll" data-matrx-page-scroll="" ref={scrollRef}>
         <TocRail blocks={doc.blocks} scrollerRef={scrollRef} anchorRef={headerRef} />
         {doc.isArchived ? (
@@ -499,7 +561,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
 
         {doc.cover ? <Cover cover={doc.cover} editable={editable} onChange={(cover) => update({ cover }, 0)} /> : null}
 
-        <div className={`spaces-content ${fontClass}`}>
+        <div className={`spaces-content ${fontClass}`} ref={contentRef}>
           <div className="spaces-header" ref={headerRef} data-has-cover={doc.cover ? "true" : undefined} data-has-icon={doc.icon ? "true" : undefined}>
             {doc.icon ? (
               <IconPicker value={doc.icon} onChange={(icon) => update({ icon }, 0)} disabled={!editable}>
@@ -522,11 +584,17 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
                     Add cover
                   </button>
                 ) : null}
+                <button type="button" className="spaces-header-control" onClick={() => setAddingPageComment(true)}>
+                  <MessageSquare size={15} />
+                  Add comment
+                </button>
               </div>
             ) : null}
             <Title value={doc.title} editable={editable} autoFocus={focusTitle} onChange={(title) => update({ title })} onEnter={focusFirstBlock} />
             <Backlinks key={doc.id} spaceId={doc.id} />
+            <PageComments source={commentSource} comments={comments} adding={addingPageComment} onAddingDone={() => setAddingPageComment(false)} />
           </div>
+          <CommentMargin threads={comments.threads} containerRef={contentRef} tick={`${contentTick}:${editorRound}`} onOpen={openThread} />
           <SpaceEditor
             key={`${doc.id}:${editorRound}`}
             spaceId={doc.id}
@@ -547,6 +615,7 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
               pickSource,
             }}
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
+            onComment={startComment}
           />
           {sourcePicker}
           {aiTarget && editorRef.current ? <AskAiMenu editor={editorRef.current} target={aiTarget} page={pageForAi} onClose={() => setAiTarget(null)} /> : null}
@@ -572,6 +641,20 @@ export function SpacePage({ spaceId }: { spaceId: string }) {
             <div className="spaces-page-end" aria-hidden />
           )}
         </div>
+      </div>
+      {commentsOpen ? (
+        <CommentsPanel
+          source={commentSource}
+          comments={comments}
+          draft={draft}
+          onDraftDone={() => setDraft(undefined)}
+          onClose={() => {
+            setCommentsOpen(false);
+            setDraft(undefined);
+          }}
+          onQuoteClick={jumpToBlock}
+        />
+      ) : null}
       </div>
     </div>
   );
