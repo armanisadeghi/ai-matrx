@@ -30,6 +30,15 @@ describe("markdownToSafeHtml", () => {
     expect(html).not.toContain("alert(1)</script>");
   });
 
+  it("strips style attributes and style/form/object tags; a table survives", () => {
+    const html = markdownToSafeHtml(
+      '<p style="color:red">hi</p><style>p{color:red}</style><form action="/x"><input></form><object data="x"></object>\n\n| a | b |\n|---|---|\n| 1 | 2 |',
+    );
+    expect(html).not.toMatch(/style=|<style|<form|<object|color:red/i);
+    expect(html).toContain("<table>");
+    expect(html).toContain("<td>1</td>");
+  });
+
   it("ships no empty hover anchor in a heading", () => {
     const html = markdownToSafeHtml("# Vendor call prep");
     expect(html).toMatch(/<h1[^>]*>Vendor call prep<\/h1>/);

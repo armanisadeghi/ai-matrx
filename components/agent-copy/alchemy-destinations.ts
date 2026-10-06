@@ -13,6 +13,9 @@ import { chatRouteSurfaceKey } from "@ai-matrx/chat/agents/components/chat/begin
 import { stashChatDraftTransfer } from "@ai-matrx/chat/agents/components/chat/chat-draft-transfer";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 
+/** The folder `attach` saves its note into (the package passes it); that flow needs the note's own id. */
+const ALCHEMY_ATTACH_FOLDER = "Alchemy";
+
 type Host = { getCurrentState(): RootState; dispatch: AppDispatch; navigate(href: string): void };
 
 /** Concrete Matrx bindings for the portable destination workflow. */
@@ -31,8 +34,13 @@ export function createAlchemyDestinationPorts(host: Host) {
     const { receipt, created } = await saveNotesThroughDoor([{ title: content.label, content: content.markdown, folder }]);
     if (receipt.status === "refused") throw new Error(`${receipt.sentence} ${receipt.remedy}`);
     const note = created[0];
-    if (!note) throw new Error(`${receipt.sentence} The new note's link isn't available; find it in Notes.`);
-    return note;
+    if (note) return note;
+    // Saved, but the handler reported no id. A destination that only needs a link gets the Notes list;
+    // "attach" needs the note's real id, so it says the note exists rather than inventing one.
+    if (folder === ALCHEMY_ATTACH_FOLDER) {
+      throw new Error(`${receipt.sentence} The note was saved but its link isn't available; find it in Notes and attach it there — don't save another copy.`);
+    }
+    return { kind: "notes", id: "notes", label: "Notes", href: "/notes" };
   };
   return createMatrxTransferPorts({
     getIdentity: identity,
