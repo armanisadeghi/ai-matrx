@@ -115,7 +115,7 @@ function SectionCard({
   return (
     <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
       <div className="mb-4 flex items-center gap-2">
-        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
           {icon}
         </span>
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>

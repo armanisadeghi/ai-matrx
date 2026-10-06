@@ -367,7 +367,7 @@ export default function ScannerDesktop() {
               >
                 <ImageIcon className="h-4 w-4" />
                 Current scan
-                <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[10px] font-bold text-primary">
+                <span className="ml-auto rounded-full bg-primary/15 px-2 py-0.5 font-mono text-[10px] font-bold text-primary-ink">
                   {/* read-gate-exempt: pages captured in the scan running in this browser, held in memory, not a fetched count */}
                   {itemCount}
                 </span>

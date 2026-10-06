@@ -225,7 +225,7 @@ export function PdfManipulationWorkbench({
           </div>
         ) : resolveError ? (
           <div className="flex flex-1 items-center justify-center p-8">
-            <div className="flex max-w-md items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive">
+            <div className="flex max-w-md items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive-ink">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>{resolveError}</span>
               <ErrorAlchemyMenu error={resolveError} />

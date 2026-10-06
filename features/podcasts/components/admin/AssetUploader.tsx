@@ -244,7 +244,7 @@ export function AssetUploader({ onComplete, currentImageUrl, currentVideoUrl, sh
                                 <button
                                     onClick={removeVideo}
                                     title="Remove video"
-                                    className="shrink-0 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                                    className="shrink-0 p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive-ink transition-colors"
                                 >
                                     <Trash2 className="h-4 w-4" />
                                 </button>

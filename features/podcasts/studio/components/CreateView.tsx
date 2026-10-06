@@ -61,7 +61,7 @@ export function CreateView() {
           }
         />
         <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
             <Mic className="h-7 w-7" />
           </span>
           <h1 title="The podcast studio turns any idea, document, or note into a fully produced two-host episode — with cover art, video, and audio." className="text-xl font-semibold text-foreground">

@@ -149,7 +149,7 @@ export function CreateConsole() {
   const header = (
     <div className="flex w-full min-w-0 items-center gap-1.5 sm:gap-2">
       <ChevronLeftTapButton href="/podcast/studio" ariaLabel="Back to studio" />
-      <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary lg:flex">
+      <span className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink lg:flex">
         <AudioLines className="h-4 w-4" />
       </span>
       <div className="min-w-0 flex-1 shrink leading-tight lg:flex-none">
@@ -315,7 +315,7 @@ function SourceStage({
   return (
     <section>
       <div className="mb-3 flex items-start gap-3">
-        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
           <Icon className="h-4.5 w-4.5" />
         </span>
         <div className="min-w-0">

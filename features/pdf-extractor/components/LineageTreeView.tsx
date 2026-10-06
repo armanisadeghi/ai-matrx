@@ -73,7 +73,7 @@ export function LineageTreeView({ doc }: LineageTreeViewProps) {
       </div>
 
       {error && (
-        <div className="text-[10px] text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
+        <div className="text-[10px] text-destructive-ink border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5">
           {error}
           <ErrorAlchemyMenu error={error} />
         </div>

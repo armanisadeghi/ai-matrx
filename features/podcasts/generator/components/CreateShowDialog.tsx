@@ -110,7 +110,7 @@ export function CreateShowDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
               <Mic className="h-4.5 w-4.5" />
             </span>
             <div>

@@ -304,7 +304,7 @@ export function RunsManageView({
                 onClick={() => setFilter(key)}
                 className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                   active
-                    ? "border-primary/40 bg-primary/10 text-primary"
+                    ? "border-primary/40 bg-primary/10 text-primary-ink"
                     : "border-border bg-card text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -379,7 +379,7 @@ export function RunsManageView({
             </div>
           ) : runs.length === 0 ? (
             <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-muted/20 px-6 py-16 text-center">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
                 <Mic className="h-7 w-7" />
               </span>
               <div className="space-y-1">

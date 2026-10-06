@@ -85,7 +85,7 @@ export function EpisodeContentStudio({ episodeId }: { episodeId: string }) {
             className="overflow-hidden rounded-2xl border border-border bg-card"
           >
             <div className="flex items-start gap-3 p-4">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
                 <Icon className="h-4.5 w-4.5" />
               </span>
               <div className="min-w-0 flex-1">

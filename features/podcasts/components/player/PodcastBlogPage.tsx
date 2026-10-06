@@ -84,7 +84,7 @@ export function PodcastBlogPage({ episode, article }: PodcastBlogPageProps) {
           read" rather than a link buried at the very bottom. */}
       <section className="my-10 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
         <div className="mb-3 flex items-center gap-2">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
             <Headphones className="h-4 w-4" />
           </span>
           <div className="min-w-0">

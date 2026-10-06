@@ -102,7 +102,7 @@ export function SyncedPdfTextView({
       </div>
 
       {error && (
-        <div className="shrink-0 mx-3 my-2 text-[10px] text-destructive border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5 flex items-center gap-1.5">
+        <div className="shrink-0 mx-3 my-2 text-[10px] text-destructive-ink border border-destructive/30 bg-destructive/10 rounded px-2 py-1.5 flex items-center gap-1.5">
           <AlertCircle className="w-3 h-3" />
           {error}
           <ErrorAlchemyMenu error={error} />
@@ -246,7 +246,7 @@ function PaneList({
                   </span>
                 )}
                 {highlightSection && p.sectionKind && (
-                  <span className="px-1 py-px rounded bg-primary/10 text-primary truncate max-w-[140px]">
+                  <span className="px-1 py-px rounded bg-primary/10 text-primary-ink truncate max-w-[140px]">
                     {p.sectionKind}
                     {p.sectionTitle && ` · ${p.sectionTitle}`}
                   </span>

@@ -346,7 +346,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           the desktop toolbar pattern so the user has a steady "the model
           is working" signal that doesn't depend on the toast lifecycle. */}
       {liveStatus && (
-        <div className="shrink-0 border-b border-border bg-primary/5 px-3 py-1.5 flex items-center gap-2 text-[11px] text-primary">
+        <div className="shrink-0 border-b border-border bg-primary/5 px-3 py-1.5 flex items-center gap-2 text-[11px] text-primary-ink">
           <Loader2 className="w-3 h-3 animate-spin" />
           <span className="truncate">{liveStatus}</span>
         </div>
@@ -451,7 +451,7 @@ export function PdfStudioMobile({ initialDocumentId }: PdfStudioMobileProps) {
           <button
             type="button"
             onClick={() => setDrawer("inspector")}
-            className="h-10 rounded-md border border-primary/40 bg-primary/10 px-3 text-primary hover:bg-primary/15 flex items-center justify-center gap-1.5 text-xs font-medium"
+            className="h-10 rounded-md border border-primary/40 bg-primary/10 px-3 text-primary-ink hover:bg-primary/15 flex items-center justify-center gap-1.5 text-xs font-medium"
           >
             <Webhook className="w-4 h-4" />
             Agents

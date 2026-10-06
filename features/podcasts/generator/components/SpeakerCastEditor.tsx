@@ -136,7 +136,7 @@ function SamplePlayButton({
         disabled
           ? "cursor-not-allowed opacity-40"
           : "hover:bg-accent hover:text-foreground",
-        playing && "border-primary/50 bg-primary/10 text-primary",
+        playing && "border-primary/50 bg-primary/10 text-primary-ink",
         className,
       )}
     >
@@ -383,7 +383,7 @@ export function SpeakerCastEditor({
           <button
             type="button"
             onClick={onReload}
-            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium text-primary transition-colors hover:bg-primary/10"
+            className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 font-medium text-primary-ink transition-colors hover:bg-primary/10"
           >
             <RefreshCw className="h-3.5 w-3.5" />
             Retry

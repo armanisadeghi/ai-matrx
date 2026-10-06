@@ -494,7 +494,7 @@ function AiActionsPanel({
                 className={cn(
                   "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-[10px] transition-colors",
                   active
-                    ? "border-primary bg-primary/10 text-primary"
+                    ? "border-primary bg-primary/10 text-primary-ink"
                     : "border-border bg-card text-muted-foreground hover:bg-accent hover:text-foreground",
                 )}
               >

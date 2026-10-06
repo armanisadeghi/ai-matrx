@@ -385,7 +385,7 @@ function StepRow({
             phase === "done"
               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
               : phase === "active"
-                ? "bg-primary/15 text-primary"
+                ? "bg-primary/15 text-primary-ink"
                 : "bg-muted text-muted-foreground",
           )}
         >

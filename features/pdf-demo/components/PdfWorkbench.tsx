@@ -198,7 +198,7 @@ export function PdfWorkbench({
               ) : null}
 
               {error ? (
-                <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
                   <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <pre className="whitespace-pre-wrap break-words font-mono text-xs">
                     {error}

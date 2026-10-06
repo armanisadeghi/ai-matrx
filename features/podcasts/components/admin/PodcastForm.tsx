@@ -122,7 +122,7 @@ export function ShowForm({ show, isNew, onSaved, onCancel }: ShowFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+        <p className="text-sm text-destructive-ink bg-destructive/10 rounded-md px-3 py-2">
           {error}
           <ErrorAlchemyMenu error={error} />
         </p>
@@ -417,7 +417,7 @@ export function EpisodeForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {error && (
-        <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+        <p className="text-sm text-destructive-ink bg-destructive/10 rounded-md px-3 py-2">
           {error}
           <ErrorAlchemyMenu error={error} />
         </p>
@@ -519,7 +519,7 @@ export function EpisodeForm({
       <div
         className={`flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs border ${
           form.og_image_url
-            ? "bg-success/5 border-success/30 text-success"
+            ? "bg-success/5 border-success/30 text-success-ink"
             : "bg-warning/10 border-warning/40 text-warning-foreground"
         }`}
       >

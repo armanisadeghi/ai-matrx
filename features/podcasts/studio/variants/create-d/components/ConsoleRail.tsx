@@ -77,7 +77,7 @@ export function ConsoleRail(props: ConsoleRailProps) {
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm transition-colors",
                   on
-                    ? "border-primary/50 bg-primary/10 font-medium text-primary"
+                    ? "border-primary/50 bg-primary/10 font-medium text-primary-ink"
                     : "border-border bg-background text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -106,7 +106,7 @@ export function ConsoleRail(props: ConsoleRailProps) {
                 className={cn(
                   "flex flex-1 flex-col items-center rounded-lg border py-1.5 transition-colors",
                   on
-                    ? "border-primary/50 bg-primary/10 text-primary"
+                    ? "border-primary/50 bg-primary/10 text-primary-ink"
                     : "border-border bg-background text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -168,7 +168,7 @@ export function ConsoleRail(props: ConsoleRailProps) {
                 className={cn(
                   "flex flex-1 flex-col items-start rounded-lg border px-3 py-1.5 text-left transition-colors",
                   on
-                    ? "border-primary/50 bg-primary/10 text-primary"
+                    ? "border-primary/50 bg-primary/10 text-primary-ink"
                     : "border-border bg-background text-muted-foreground hover:text-foreground",
                 )}
               >
@@ -224,7 +224,7 @@ function LanguagePicker({
                   className={cn(
                     "flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-sm transition-colors",
                     on
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-foreground hover:bg-accent",
                   )}
                 >
@@ -238,7 +238,7 @@ function LanguagePicker({
                   {l.enabled ? (
                     <Badge
                       variant="secondary"
-                      className="ml-auto bg-success/15 text-[10px] text-success"
+                      className="ml-auto bg-success/15 text-[10px] text-success-ink"
                     >
                       Live
                     </Badge>

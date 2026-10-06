@@ -200,7 +200,7 @@ export function AssetCard({
                       type="button"
                       onClick={() => onRegenerate({ modelAlias: defaultAlias })}
                       disabled={busy}
-                      className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-primary transition-colors hover:bg-primary/10 disabled:opacity-50"
+                      className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 text-primary-ink transition-colors hover:bg-primary/10 disabled:opacity-50"
                     >
                       <RotateCcw className="h-3 w-3" />
                       Retry

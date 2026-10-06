@@ -544,7 +544,7 @@ function EnhanceChip({
       className={cn(
         "flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold transition-colors",
         active
-          ? "bg-primary/15 text-primary"
+          ? "bg-primary/15 text-primary-ink"
           : "bg-muted text-muted-foreground hover:bg-accent hover:text-foreground",
         disabled && !active && "opacity-50",
       )}

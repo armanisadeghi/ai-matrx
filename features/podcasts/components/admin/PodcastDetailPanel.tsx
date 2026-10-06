@@ -96,7 +96,7 @@ export function PodcastDetailPanel({
             {!isNew && currentId && (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive-ink transition-colors"
                 title={`Delete ${label}`}
               >
                 <Trash2 className="h-3.5 w-3.5" />

@@ -136,7 +136,7 @@ export function RunRecoveryBanner({
   // user watching a page that will never finish.
   if (orphaned) {
     return (
-      <div className="flex flex-col gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+      <div className="flex flex-col gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-ink">
         <span className="flex min-w-0 items-start gap-2.5">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
           <span className="min-w-0 break-words">
@@ -164,7 +164,7 @@ export function RunRecoveryBanner({
   if (status === "error") {
     const h = humanizeGenerationError(error);
     return (
-      <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+      <div className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-ink">
         <div className="flex min-w-0 items-start gap-2.5">
           <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
           <div className="min-w-0 break-words">

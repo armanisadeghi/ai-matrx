@@ -106,7 +106,7 @@ export function StudioDashboard() {
   if (!isAuthenticated) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-24 text-center">
-        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary-ink">
           <Mic className="h-7 w-7" />
         </span>
         <h1 className="text-xl font-semibold text-foreground">

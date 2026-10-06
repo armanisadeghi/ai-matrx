@@ -217,7 +217,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
               onClick={() => setPanel(tab)}
               className={`px-4 py-2 text-sm font-medium rounded-t-md border-b-2 transition-colors capitalize ${
                 panel === tab
-                  ? "border-primary text-primary bg-primary/5"
+                  ? "border-primary text-primary-ink bg-primary/5"
                   : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -386,7 +386,7 @@ export function ShowDetailClient({ showId }: ShowDetailClientProps) {
                           e.stopPropagation();
                           setPendingDeleteEpId(ep.id);
                         }}
-                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive-ink transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

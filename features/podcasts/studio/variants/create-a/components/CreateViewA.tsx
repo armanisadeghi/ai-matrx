@@ -98,7 +98,7 @@ export function CreateViewA() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
           <Podcast className="h-4.5 w-4.5" />
         </span>
         <h1 className="text-lg font-semibold tracking-tight text-foreground">

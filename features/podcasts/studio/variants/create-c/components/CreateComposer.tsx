@@ -140,7 +140,7 @@ export function CreateComposer() {
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-colors",
                   selected
-                    ? "bg-primary/10 text-primary"
+                    ? "bg-primary/10 text-primary-ink"
                     : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                 )}
               >
@@ -236,7 +236,7 @@ export function CreateComposer() {
                   className={cn(
                     "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors",
                     selected
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-foreground hover:bg-accent/50",
                   )}
                 >
@@ -352,7 +352,7 @@ export function CreateComposer() {
               onClick={() => setShowId(null)}
               className={cn(
                 "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
-                !showId ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent/50",
+                !showId ? "bg-primary/10 text-primary-ink" : "text-foreground hover:bg-accent/50",
               )}
             >
               <span className="flex-1">Standalone episode</span>
@@ -367,7 +367,7 @@ export function CreateComposer() {
                   onClick={() => setShowId(s.id)}
                   className={cn(
                     "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-sm transition-colors",
-                    selected ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent/50",
+                    selected ? "bg-primary/10 text-primary-ink" : "text-foreground hover:bg-accent/50",
                   )}
                 >
                   <span className="flex-1 truncate">{s.title}</span>
@@ -526,7 +526,7 @@ function ProcessingGroup({
               className={cn(
                 "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
                 on
-                  ? "border-primary/40 bg-primary/10 text-primary"
+                  ? "border-primary/40 bg-primary/10 text-primary-ink"
                   : "border-border text-muted-foreground hover:bg-accent/50 hover:text-foreground",
               )}
             >

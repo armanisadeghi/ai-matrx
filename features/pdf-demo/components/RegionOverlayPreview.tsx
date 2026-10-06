@@ -227,7 +227,7 @@ export function RegionOverlayPreview({
             return (
               <div
                 key={page}
-                className="flex h-72 flex-col items-center justify-center rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive"
+                className="flex h-72 flex-col items-center justify-center rounded-md border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive-ink"
               >
                 <span className="font-medium mb-1">Page {page}</span>
                 <span className="break-words">{state.error}</span>

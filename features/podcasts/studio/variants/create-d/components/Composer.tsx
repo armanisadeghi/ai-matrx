@@ -117,7 +117,7 @@ export function Composer({ shows }: ComposerProps) {
                 className={cn(
                   "group flex items-center gap-2 whitespace-nowrap rounded-full border px-3.5 py-2 text-sm font-medium transition-all",
                   selected
-                    ? "border-primary/50 bg-primary/10 text-primary shadow-sm"
+                    ? "border-primary/50 bg-primary/10 text-primary-ink shadow-sm"
                     : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground",
                 )}
               >

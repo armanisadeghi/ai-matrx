@@ -1005,7 +1005,7 @@ function PageReorderView({
       </div>
 
       {saveError && (
-        <p className="shrink-0 px-3 py-1 text-[11px] text-destructive bg-destructive/5 border-b border-destructive/20">
+        <p className="shrink-0 px-3 py-1 text-[11px] text-destructive-ink bg-destructive/5 border-b border-destructive/20">
           {saveError}
           <ErrorAlchemyMenu error={saveError} />
         </p>
@@ -1711,7 +1711,7 @@ function PageBlock({
           </span>
         )}
         {highlightSection && page.sectionKind && (
-          <span className="px-1 py-px rounded bg-primary/10 text-primary truncate max-w-[120px]">
+          <span className="px-1 py-px rounded bg-primary/10 text-primary-ink truncate max-w-[120px]">
             {page.sectionKind}
             {page.sectionTitle && ` · ${page.sectionTitle}`}
           </span>
@@ -1731,7 +1731,7 @@ function PageBlock({
                     e.stopPropagation();
                     void handleReClean();
                   }}
-                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary hover:bg-primary/20 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-primary/10 text-primary-ink hover:bg-primary/20 disabled:opacity-50 transition-colors"
                 >
                   {reCleaning ? (
                     <Loader2 className="w-2.5 h-2.5 animate-spin" />
@@ -1750,7 +1750,7 @@ function PageBlock({
                     e.stopPropagation();
                     void handleSave();
                   }}
-                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-success/10 text-success hover:bg-success/20 disabled:opacity-50 transition-colors"
+                  className="flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] bg-success/10 text-success-ink hover:bg-success/20 disabled:opacity-50 transition-colors"
                 >
                   {saving ? (
                     <Loader2 className="w-2.5 h-2.5 animate-spin" />

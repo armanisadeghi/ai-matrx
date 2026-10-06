@@ -20,7 +20,7 @@ export function StudioHeader() {
         </Link>
         <div className="h-4 w-px bg-border" />
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
             <Mic className="h-3.5 w-3.5" />
           </span>
           New episode

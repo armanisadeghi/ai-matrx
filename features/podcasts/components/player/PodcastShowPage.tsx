@@ -156,7 +156,7 @@ export function PodcastShowPage({ show, episodes }: PodcastShowPageProps) {
           {/* Subscribe / RSS — distribution surface for Apple Podcasts & Spotify */}
           <div className="mb-3 rounded-2xl border border-border bg-card p-3.5">
             <div className="flex items-start gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary-ink">
                 <Rss className="h-4.5 w-4.5" />
               </div>
               <div className="min-w-0 flex-1">

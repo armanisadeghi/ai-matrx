@@ -237,7 +237,7 @@ export function UploadEpisodeDialog({
       <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
               <AudioLines className="h-4.5 w-4.5" />
             </span>
             <div>
@@ -321,7 +321,7 @@ export function UploadEpisodeDialog({
                       if (audioInputRef.current)
                         audioInputRef.current.value = "";
                     }}
-                    className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    className="shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive-ink"
                     title="Remove"
                   >
                     <X className="h-4 w-4" />

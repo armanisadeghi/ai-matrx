@@ -169,7 +169,7 @@ export function PdfStudioSidebar({
               <button
                 type="button"
                 onClick={onAddDocs}
-                className="w-full h-8 flex items-center justify-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 hover:bg-primary/15 text-primary text-xs font-medium transition-colors"
+                className="w-full h-8 flex items-center justify-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 hover:bg-primary/15 text-primary-ink text-xs font-medium transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add documents

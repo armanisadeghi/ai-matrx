@@ -89,7 +89,7 @@ export function PopoverHeader({
 }) {
   return (
     <div className="flex items-start gap-2.5 border-b border-border/60 px-4 py-3">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary-ink">
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0">

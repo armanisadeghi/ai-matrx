@@ -609,7 +609,7 @@ export function PodcastAudioPlayer({
                   playbackSpeed !== 1
                     ? dark
                       ? "bg-white/15 text-white"
-                      : "bg-primary/10 text-primary"
+                      : "bg-primary/10 text-primary-ink"
                     : dark
                       ? "text-white/70 hover:text-white hover:bg-white/10"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted"
