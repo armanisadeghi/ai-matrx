@@ -1,17 +1,16 @@
 /**
  * Assist actions live on the app's ONE action registry (@ai-matrx/alchemy) as
  * the provider `assists.actions`: census of every kind, absent from menus,
- * runnable by id, and an unknown kind is `not-registered` (never a throw).
+ * runnable by id through alchemy's `invokeAction`, and an unknown kind is
+ * `not_registered` (never a throw).
  */
 import {
   createActionRegistry,
   createClickTarget,
-  type RunActionOptions,
+  invokeAction,
+  type InvokeActionOptions,
 } from "@ai-matrx/alchemy/actions";
-import {
-  ensureInvokedProvider,
-  invokeRegisteredAction,
-} from "@/features/content-ir/react/actions/invoked-actions";
+import { ensureInvokedProvider } from "@/features/content-ir/react/actions/invoked-actions";
 import {
   ASSIST_ACTIONS,
   ASSIST_ACTIONS_PROVIDER_ID,
@@ -25,7 +24,7 @@ function setup() {
   const ports = {
     diagnostics: { capture: jest.fn() },
     notify: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
-  } as unknown as RunActionOptions["ports"];
+  } as unknown as InvokeActionOptions["ports"];
   const registry = createActionRegistry({ ports });
   ensureInvokedProvider(registry, assistActionProvider);
   return { registry, ports };
@@ -60,15 +59,18 @@ describe("assist actions on the one action registry", () => {
     const navigate = jest.fn();
     const ctx = { navigate } as unknown as AssistActionContext;
     const assist = { action: { kind: "navigate", href: "/assists" } } as unknown as Assist;
-    const out = await invokeRegisteredAction(registry, ports, assistActionId("navigate"), assist, ctx);
-    expect(out).toEqual({ status: "ran", value: { ok: true, result: { href: "/assists" } } });
+    const out = await invokeAction(registry, assistActionId("navigate"), assist, { ports, context: ctx });
+    expect(out).toEqual({ ok: true, data: { ok: true, result: { href: "/assists" } } });
     expect(navigate).toHaveBeenCalledWith("/assists");
   });
 
-  it("an unknown kind is not-registered, never a throw", async () => {
+  it("an unknown kind is not_registered, never a throw", async () => {
     const { registry, ports } = setup();
     await expect(
-      invokeRegisteredAction(registry, ports, assistActionId("nope"), {}, {}),
-    ).resolves.toEqual({ status: "not-registered" });
+      invokeAction(registry, assistActionId("nope"), {}, { ports, context: {} }),
+    ).resolves.toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "not_registered" }),
+    });
   });
 });

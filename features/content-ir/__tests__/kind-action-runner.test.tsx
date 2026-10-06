@@ -35,11 +35,13 @@ jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({
 
 import { useKindActionRunner, type RunKindAction } from "../react/actions/useKindActionRunner";
 import { KIND_ACTIONS_PROVIDER_ID } from "../react/actions/kind-action-provider";
+import { invokedActionProvider } from "../react/actions/invoked-actions";
 
 describe("useKindActionRunner on the one registry", () => {
   let container: HTMLDivElement;
   let root: Root;
   let registry: ActionRegistry;
+  let ports: AlchemyHostPorts;
   let runAction: RunKindAction | null;
 
   function Probe() {
@@ -51,7 +53,7 @@ describe("useKindActionRunner on the one registry", () => {
     mockToastError.mockReset();
     mockCapture.mockReset();
     mockLaunch = jest.fn(async () => ({ conversationId: "c", requestId: "r" }));
-    const ports = {
+    ports = {
       diagnostics: { capture: jest.fn() },
       notify: { error: jest.fn(), success: jest.fn(), info: jest.fn() },
     } as unknown as AlchemyHostPorts;
@@ -90,6 +92,25 @@ describe("useKindActionRunner on the one registry", () => {
       error: 'No action registered for "does_not_exist".',
     });
     expect(mockToastError).toHaveBeenCalledTimes(1);
+    expect(mockCapture).toHaveBeenCalledTimes(1);
+  });
+
+  it("a throwing handler is an envelope, announced once (by alchemy), never a throw", async () => {
+    registry.register(
+      invokedActionProvider("test.throwing", [
+        {
+          id: "kind.boom",
+          label: "Boom",
+          description: "throws",
+          handler: async () => {
+            throw new Error("kaboom");
+          },
+        },
+      ]),
+    );
+    await expect(runAction!("boom", {})).resolves.toEqual({ ok: false, error: "kaboom" });
+    expect(ports.notify!.error).toHaveBeenCalledTimes(1);
+    expect(mockToastError).not.toHaveBeenCalled();
     expect(mockCapture).toHaveBeenCalledTimes(1);
   });
 

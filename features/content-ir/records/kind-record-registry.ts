@@ -12,9 +12,10 @@
  * declares the disposition inherits the whole mechanism with no new component,
  * no new query, and no new branch anywhere.
  *
- * ## This is NOT `react/actions/kind-action-registry.ts`
+ * ## This is NOT the kind actions (`react/actions/kind-action-provider.ts`)
  *
- * That registry is keyed by CAPABILITY KEY (`trigger_agent`, …) and exists so a
+ * Those live on the app's one action registry (`@ai-matrx/alchemy`), keyed by
+ * CAPABILITY KEY (`kind.trigger_agent`, …), and exist so a
  * kind COMPONENT's own agent-authored code can reach a platform capability. It
  * answers "what may a component do?".
  *

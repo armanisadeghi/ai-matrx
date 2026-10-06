@@ -61,6 +61,8 @@ function regroupingRegistry(inner: ActionRegistry, first: RegroupInputs): Action
     register: (provider) => inner.register(provider),
     providers: () => inner.providers(),
     subscribe: (listener) => inner.subscribe(listener),
+    // By-id lookup (alchemy 0.12): regrouping changes how a menu is arranged, never which Action an id names.
+    get: (id, target) => inner.get(id, target),
     async resolve(target, restrict) {
       const list = await inner.resolve(target, restrict);
       const { value, arrangement, close } = read();

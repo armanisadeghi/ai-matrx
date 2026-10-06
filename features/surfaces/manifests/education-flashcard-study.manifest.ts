@@ -32,10 +32,7 @@ import type {
 
 export const EDUCATION_FLASHCARD_STUDY_SURFACE = "matrx-user/education-flashcard-study";
 
-/**
- * The moment in words (`ui_surface.situation`, AP-6). Synced to the live row; it joins the
- * manifest as `situation` once `@ai-matrx/alchemy` with the field is on npm.
- */
+/** The moment in words (`ui_surface.situation`, AP-6): the server fills the blanks each turn. */
 export const EDUCATION_FLASHCARD_STUDY_SITUATION =
   "{user.name|The person} is using the education area, studying flashcards in {study_mode} mode. " +
   "They opened the deck \"{set_details.name}\" on the topic {set_details.topic|(no topic set)}, which has {card_count} cards. " +
@@ -105,6 +102,7 @@ export const educationFlashcardStudyManifest: SurfaceManifest = {
   // The whole deck as data (set_details, card_count, cards, card_mastery …) is the deck
   // page's vocabulary, inherited — one family, one name per fact. The study page emits it.
   inheritsFrom: "matrx-user/education-flashcard-set",
+  situation: EDUCATION_FLASHCARD_STUDY_SITUATION,
   readiness: "partial",
   readinessNote:
     "AP-6 first proof (2026-10-06): every situation value mapped on study, learn, write and the study window. Live agent proof pending.",
