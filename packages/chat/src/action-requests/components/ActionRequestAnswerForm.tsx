@@ -116,7 +116,13 @@ export function useActionRequestAnswer(
         return;
       }
       if (status < 200 || status >= 300 || !body) {
-        setRefusal({ code: "unreachable", message: ACTION_REQUEST_UNREACHED, remedy: null });
+        // A server that ANSWERED with a reason (a 500 that could not save the
+        // approval, a 403) is not "unreachable": show its own words.
+        setRefusal({
+          code: body?.code ?? (body ? `http_${status}` : "unreachable"),
+          message: body?.message ?? ACTION_REQUEST_UNREACHED,
+          remedy: body?.remedy ?? null,
+        });
         return;
       }
       if (body.state === "done") {

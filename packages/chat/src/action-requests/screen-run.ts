@@ -10,14 +10,12 @@
 // form). `useToolAction` shows that form in place and calls again with
 // `spend_approval_id`.
 //
-// STAND-IN, LOUDLY: the path below is `ENDPOINTS.tools.screenRun` in
-// @ai-matrx/agents. Until the installed release carries that entry, this constant
-// is the path; `screen-run.parity.test.ts` fails if the two ever differ.
+// The path is `ENDPOINTS.tools.screenRun` from @ai-matrx/agents — the one endpoint
+// list. `screen-run.parity.test.ts` pins it to the server route.
 
+import { ENDPOINTS } from "@ai-matrx/agents/matrx";
 import { requestRaw } from "../host/server/python-client";
 import type { ActionRequestRender } from "./render-types";
-
-export const SCREEN_RUN_PATH = "/tools/screen-run";
 
 /** The `seo.tool_envelope` kind every envelope tool returns as its output. */
 export interface ToolEnvelope<TData = unknown> {
@@ -94,7 +92,7 @@ export async function runScreenTool<TOutput = unknown>(
   opts: { signal?: AbortSignal } = {},
 ): Promise<ScreenRunResponse<TOutput>> {
   const response = await requestRaw(
-    SCREEN_RUN_PATH,
+    ENDPOINTS.tools.screenRun,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },

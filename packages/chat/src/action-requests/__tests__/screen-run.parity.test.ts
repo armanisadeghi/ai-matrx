@@ -1,30 +1,43 @@
 /** @jest-environment node */
 
 /**
- * The screen-run path is a LOCAL STAND-IN until this app adopts the
- * @ai-matrx/agents release carrying `ENDPOINTS.tools.screenRun`. It must never
- * drift from that entry: compared against the installed package (once it has the
- * entry) and against the package source when the aidream checkout sits beside this
- * one. aidream's own test compares the source entry with the server route.
+ * The screen-run door's path comes from ONE place — `ENDPOINTS.tools.screenRun`
+ * in @ai-matrx/agents — and must be the server's route. This test never passes
+ * by not checking: the installed package must carry the entry, and the package
+ * SOURCE (aidream checkout beside this one) must agree with it. An environment
+ * without the aidream checkout must say so explicitly with
+ * MATRX_PARITY_WITHOUT_AIDREAM=1; it is never skipped silently. aidream's own
+ * test pins the source entry to the server route.
  */
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { ENDPOINTS } from "@ai-matrx/agents/matrx";
-import { SCREEN_RUN_PATH } from "../screen-run";
 
+const SERVER_ROUTE = "/tools/screen-run";
 const PACKAGE_SOURCE = join(
   __dirname, "..", "..", "..", "..", "..", "..",
   "aidream", "apps", "shared", "matrx-agents", "matrx", "endpoints.ts",
 );
 
-it("matches the installed @ai-matrx/agents entry once it ships", () => {
-  const entry = (ENDPOINTS.tools as Record<string, unknown>).screenRun;
-  if (entry !== undefined) expect(entry).toBe(SCREEN_RUN_PATH);
+it("the installed @ai-matrx/agents carries the screen-run entry", () => {
+  expect((ENDPOINTS.tools as Record<string, unknown>).screenRun).toBe(SERVER_ROUTE);
 });
 
-it("matches the package source entry when the aidream checkout is beside this one", () => {
-  if (!existsSync(PACKAGE_SOURCE)) return;
+it("the package source agrees with the installed entry", () => {
+  if (!existsSync(PACKAGE_SOURCE)) {
+    if (process.env.MATRX_PARITY_WITHOUT_AIDREAM === "1") return;
+    throw new Error(
+      `cannot check: ${PACKAGE_SOURCE} is missing. Check out aidream beside this repo, or set ` +
+        "MATRX_PARITY_WITHOUT_AIDREAM=1 to declare that this environment cannot.",
+    );
+  }
   const m = /screenRun:\s*"([^"]+)"/.exec(readFileSync(PACKAGE_SOURCE, "utf8"));
-  expect(m?.[1]).toBe(SCREEN_RUN_PATH);
+  expect(m?.[1]).toBe(SERVER_ROUTE);
+});
+
+it("the transport takes its path from ENDPOINTS, never a literal", () => {
+  const source = readFileSync(join(__dirname, "..", "screen-run.ts"), "utf8");
+  expect(source).toContain("ENDPOINTS.tools.screenRun");
+  expect(source).not.toMatch(/["']\/tools\/screen-run["']/);
 });

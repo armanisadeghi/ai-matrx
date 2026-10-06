@@ -29,8 +29,9 @@ jest.mock("../../self-service", () => ({
 
 import { registerChatUi, resetChatUiForTests } from "../../../host/ui-slots";
 import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
-import { useToolAction, type ToolActionOutcome } from "../useToolAction";
-import { SCREEN_RUN_PATH, type ToolEnvelope } from "../../screen-run";
+import { APPROVAL_OPEN_MESSAGE, useToolAction, type ToolActionOutcome } from "../useToolAction";
+import { ENDPOINTS } from "@ai-matrx/agents/matrx";
+import type { ToolEnvelope } from "../../screen-run";
 import type { ApproveSpendRender } from "../../render-types";
 
 const RATE = 20_000;
@@ -160,7 +161,7 @@ it("asks in place, then retries with the approval the answer returned", async ()
     { result: { approved: true, approved_amount_usd: 2.5 } },
   );
   expect(requestRaw).toHaveBeenCalledTimes(2);
-  expect(requestRaw.mock.calls[0][0]).toBe(SCREEN_RUN_PATH);
+  expect(requestRaw.mock.calls[0][0]).toBe(ENDPOINTS.tools.screenRun);
   expect(bodyOf(requestRaw.mock.calls[0])).toEqual({
     tool_name: "seo_keywords",
     arguments: { action: "research", keywords: ["a"] },
@@ -226,4 +227,86 @@ it("a tool the server will not run comes back as a typed error, not a throw", as
       suggested_action: null,
     },
   });
+});
+
+
+it("a double click runs once and both clicks get the same answer", async () => {
+  let release!: (v: unknown) => void;
+  requestRaw.mockReturnValueOnce(new Promise((r) => (release = r)));
+
+  let a!: Promise<ToolActionOutcome<unknown>>;
+  let b!: Promise<ToolActionOutcome<unknown>>;
+  await act(async () => {
+    a = hook.run({ action: "overview", force_refresh: true, domain: "x.com" });
+    // Same arguments, different key order: the same run.
+    b = hook.run({ domain: "x.com", force_refresh: true, action: "overview" });
+  });
+  await act(async () => release(ok(ENVELOPE)));
+  const [first, second] = await act(async () => Promise.all([a, b]));
+
+  expect(requestRaw).toHaveBeenCalledTimes(1);
+  expect(second).toBe(first);
+});
+
+it("another run while an approval is open is refused, and the open ask keeps waiting", async () => {
+  requestRaw.mockResolvedValueOnce(NEEDS_APPROVAL).mockResolvedValueOnce(ok(ENVELOPE));
+  completeActionRequestAsSelf.mockResolvedValueOnce({
+    status: 200,
+    body: { state: "done", message: "Approved.", approved: true, spend_approval_id: "sa-9" },
+  });
+
+  let pending!: Promise<ToolActionOutcome<unknown>>;
+  await act(async () => {
+    pending = hook.run({ action: "research" });
+  });
+  const other = await act(async () => hook.run({ action: "overview" }));
+  expect(other).toEqual({ status: "busy", message: APPROVAL_OPEN_MESSAGE });
+  expect(requestRaw).toHaveBeenCalledTimes(1);
+
+  await act(async () => button("Approve this amount")!.click());
+  expect((await act(async () => pending)).status).toBe("ok");
+});
+
+it("closing the approval declines the ask so it is not left open", async () => {
+  requestRaw.mockResolvedValueOnce(NEEDS_APPROVAL);
+  completeActionRequestAsSelf.mockResolvedValue({
+    status: 200,
+    body: { state: "done", message: "Declined. Nothing was spent.", approved: false },
+  });
+
+  let pending!: Promise<ToolActionOutcome<unknown>>;
+  await act(async () => {
+    pending = hook.run({ action: "research" });
+  });
+  await act(async () => {
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+  });
+  const outcome = await act(async () => pending);
+
+  expect(outcome).toEqual({ status: "dismissed" });
+  expect(completeActionRequestAsSelf).toHaveBeenCalledWith("ar-1", "org-ask", {
+    result: { approved: false },
+  });
+  expect(requestRaw).toHaveBeenCalledTimes(1);
+});
+
+it("an approval the server could not save shows the server's reason, not 'unreachable'", async () => {
+  requestRaw.mockResolvedValueOnce(NEEDS_APPROVAL);
+  completeActionRequestAsSelf.mockResolvedValueOnce({
+    status: 500,
+    body: {
+      error: "internal_error",
+      message: "Internal server error: CheckViolationError",
+      user_message: "Something went wrong. Please try again later.",
+    },
+  });
+
+  await act(async () => {
+    void hook.run({ action: "research" });
+  });
+  await act(async () => button("Approve this amount")!.click());
+
+  const text = document.body.textContent ?? "";
+  expect(text).toContain("Internal server error: CheckViolationError");
+  expect(text).not.toContain("did not reach us");
 });

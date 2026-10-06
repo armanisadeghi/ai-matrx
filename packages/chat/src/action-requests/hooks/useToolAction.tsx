@@ -14,10 +14,12 @@
 //   ...
 //   return <>{...}{domain.approvalDialog}</>;
 //
-// Closing the dialog leaves the ask open (it is still on the person's pending
-// list); the run resolves `dismissed` and nothing was spent.
+// Identical runs in flight share one call. While an approval is open, another
+// run on the same screen answers `busy` instead of stranding it; closing the
+// dialog (or leaving the screen) declines the ask — nothing is spent and no ask
+// is left open.
 
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2 } from "lucide-react";
 
 import {
@@ -45,30 +47,68 @@ export type ToolActionOutcome<TOutput> =
   | { status: "error"; error: ScreenRunError }
   /** The person declined the spend. Nothing was spent. */
   | { status: "declined" }
-  /** The person closed the approval without answering. Nothing was spent. */
-  | { status: "dismissed" };
+  /** The person closed the approval without approving. It was declined for them; nothing was spent. */
+  | { status: "dismissed" }
+  /** Another run on this screen is waiting on an approval; this one did not start. */
+  | { status: "busy"; message: string };
 
 type Settle = (answer: { spendApprovalId: string | null; declined: boolean }) => void;
+
+/** Identical runs in flight, app-wide: the same tool + arguments returns the run
+ *  already going (a double click, a re-render, a second component, a force
+ *  refresh tapped twice) instead of starting — and paying for — another. */
+const IN_FLIGHT = new Map<string, Promise<ToolActionOutcome<unknown>>>();
+
+function stable(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stable);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value as Record<string, unknown>)
+        .sort()
+        .map((k) => [k, stable((value as Record<string, unknown>)[k])]),
+    );
+  }
+  return value;
+}
+
+export function toolActionKey(toolName: string, args: Record<string, unknown>): string {
+  return `${toolName}:${JSON.stringify(stable(args))}`;
+}
+
+export const APPROVAL_OPEN_MESSAGE =
+  "Answer the spending approval that is open first. Nothing else ran.";
 
 export function useToolAction<TOutput = unknown>(toolName: string) {
   const [running, setRunning] = useState(false);
   const [last, setLast] = useState<ToolActionOutcome<TOutput> | null>(null);
   const [asking, setAsking] = useState<ScreenRunApproval | null>(null);
   const settleRef = useRef<Settle | null>(null);
+  const askingRef = useRef<ScreenRunApproval | null>(null);
+
+  // Leaving the screen with an approval open: decline it (nothing is spent and
+  // the person's pending list does not keep a stranded ask) and end the run.
+  useEffect(
+    () => () => {
+      const open = askingRef.current;
+      if (open) {
+        void declineQuietly(open);
+        settleRef.current?.({ spendApprovalId: null, declined: false });
+      }
+    },
+    [],
+  );
 
   const call = useCallback(
-    async (args: Record<string, unknown>, spendApprovalId?: string) => {
-      const response = await runScreenTool<TOutput>({
+    (args: Record<string, unknown>, spendApprovalId?: string) =>
+      runScreenTool<TOutput>({
         tool_name: toolName,
         arguments: args,
         ...(spendApprovalId ? { spend_approval_id: spendApprovalId } : {}),
-      });
-      return response;
-    },
+      }),
     [toolName],
   );
 
-  const run = useCallback(
+  const execute = useCallback(
     async (args: Record<string, unknown>): Promise<ToolActionOutcome<TOutput>> => {
       setRunning(true);
       try {
@@ -78,44 +118,61 @@ export function useToolAction<TOutput = unknown>(toolName: string) {
           const answer = await new Promise<{ spendApprovalId: string | null; declined: boolean }>(
             (resolve) => {
               settleRef.current = resolve;
+              askingRef.current = approval;
               setAsking(approval);
             },
           );
           settleRef.current = null;
+          askingRef.current = null;
           setAsking(null);
-          if (answer.declined) {
-            const declined: ToolActionOutcome<TOutput> = { status: "declined" };
-            setLast(declined);
-            return declined;
-          }
-          if (!answer.spendApprovalId) {
-            const dismissed: ToolActionOutcome<TOutput> = { status: "dismissed" };
-            setLast(dismissed);
-            return dismissed;
-          }
+          if (answer.declined) return { status: "declined" };
+          if (!answer.spendApprovalId) return { status: "dismissed" };
           response = await call(args, answer.spendApprovalId);
         }
-        const outcome: ToolActionOutcome<TOutput> =
-          response.status === "ok"
-            ? { status: "ok", output: response.output as TOutput, callId: response.call_id }
-            : {
-                status: "error",
-                error: response.error ?? {
-                  error_type: response.status,
-                  message:
-                    response.status === "needs_approval"
-                      ? "This call needs a spending approval the server did not send."
-                      : "The tool failed and said nothing more.",
-                  suggested_action: null,
-                },
-              };
-        setLast(outcome);
-        return outcome;
+        return response.status === "ok"
+          ? { status: "ok", output: response.output as TOutput, callId: response.call_id }
+          : {
+              status: "error",
+              error: response.error ?? {
+                error_type: response.status,
+                message:
+                  response.status === "needs_approval"
+                    ? "This call needs a spending approval the server did not send."
+                    : "The tool failed and said nothing more.",
+                suggested_action: null,
+              },
+            };
       } finally {
         setRunning(false);
       }
     },
     [call],
+  );
+
+  const run = useCallback(
+    (args: Record<string, unknown>): Promise<ToolActionOutcome<TOutput>> => {
+      const key = toolActionKey(toolName, args);
+      const same = IN_FLIGHT.get(key);
+      if (same) return same as Promise<ToolActionOutcome<TOutput>>;
+      if (askingRef.current) {
+        // A different run while this screen's approval is open would strand
+        // that ask: refuse it cleanly instead of starting it.
+        const busy: ToolActionOutcome<TOutput> = { status: "busy", message: APPROVAL_OPEN_MESSAGE };
+        setLast(busy);
+        return Promise.resolve(busy);
+      }
+      const pending = execute(args).then((outcome) => {
+        setLast(outcome);
+        return outcome;
+      });
+      IN_FLIGHT.set(key, pending as Promise<ToolActionOutcome<unknown>>);
+      const clear = () => {
+        if (IN_FLIGHT.get(key) === pending) IN_FLIGHT.delete(key);
+      };
+      pending.then(clear, clear);
+      return pending;
+    },
+    [execute, toolName],
   );
 
   const approvalDialog: ReactNode = asking ? (
@@ -126,6 +183,19 @@ export function useToolAction<TOutput = unknown>(toolName: string) {
   ) : null;
 
   return { run, running, last, approvalDialog };
+}
+
+/** Close an ask nobody will answer here, as a decline. Never throws. */
+async function declineQuietly(approval: ScreenRunApproval): Promise<void> {
+  try {
+    await completeActionRequestAsSelf(
+      approval.action_request_id,
+      approval.organization_id ?? "",
+      { result: { approved: false } },
+    );
+  } catch {
+    // Unreachable: the ask stays on the person's pending list, still answerable.
+  }
 }
 
 /** The approve_spend form in a dialog, answered as the signed-in person. */
@@ -163,7 +233,10 @@ export function ToolActionApprovalDialog({
     <Dialog
       open
       onOpenChange={(open) => {
-        if (!open && !busy) onSettled({ spendApprovalId: null, declined: false });
+        if (open || busy) return;
+        // Closing without approving declines the ask, so it is not left open.
+        void declineQuietly(approval);
+        onSettled({ spendApprovalId: null, declined: false });
       }}
     >
       <DialogContent className="max-w-md">
