@@ -244,7 +244,7 @@ export function SurfacesListColumn({
       {/* Title block */}
       <div className="shrink-0 px-4 pt-4 pb-3 space-y-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
             <Layers className="h-3.5 w-3.5" />
           </div>
           <div className="min-w-0">
@@ -387,7 +387,7 @@ export function SurfacesListColumn({
           </div>
         )}
         {error && (
-          <div className="mx-4 my-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+          <div className="mx-4 my-2 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </div>

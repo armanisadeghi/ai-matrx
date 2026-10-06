@@ -639,7 +639,7 @@ function AllRow({
       className={cn(
         "w-full flex items-center gap-1.5 px-2 py-0.5 rounded text-xs italic transition-colors",
         active
-          ? "bg-primary/10 text-primary font-medium"
+          ? "bg-primary/10 text-primary-ink font-medium"
           : dimmed
             ? "text-muted-foreground/40 cursor-not-allowed"
             : "text-foreground/80 hover:bg-accent",
@@ -682,7 +682,7 @@ function ContextRow({
       className={cn(
         "w-full flex items-center gap-1.5 px-2 py-0.5 rounded text-xs transition-colors",
         active
-          ? "bg-primary/10 text-primary font-medium"
+          ? "bg-primary/10 text-primary-ink font-medium"
           : dimmed
             ? "text-muted-foreground/40 cursor-not-allowed"
             : "text-foreground/85 hover:bg-accent",

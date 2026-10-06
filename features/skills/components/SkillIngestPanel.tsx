@@ -238,7 +238,7 @@ export function SkillIngestPanel({
           </div>
 
           {error && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive-ink">
               {error}
               <ErrorAlchemyMenu error={error} />
             </div>
@@ -427,7 +427,7 @@ function IngestStatusBadge({ status }: { status: IngestSkillStatus }) {
       : status === "updated"
         ? "text-sky-600 border-sky-500/40 bg-sky-500/10"
         : status === "error"
-          ? "text-destructive border-destructive/40 bg-destructive/10"
+          ? "text-destructive-ink border-destructive/40 bg-destructive/10"
           : "text-muted-foreground border-border bg-muted/40";
   return (
     <span

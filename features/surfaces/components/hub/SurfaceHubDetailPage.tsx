@@ -114,13 +114,13 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
         >
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 pb-10 pt-2">
             {!manifest && (
-              <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
                 No registered manifest for <code>{surfaceName}</code>. Only
                 registered matrx-user surfaces appear in this hub.
               </p>
             )}
             {error && (
-              <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
                 {error}
                 <ErrorAlchemyMenu error={error} />
               </p>
@@ -171,7 +171,7 @@ export function SurfaceHubDetailPage({ segments }: { segments: string[] }) {
             {status === "ready" &&
               (manifest?.agentRoles?.length ?? 0) > 0 &&
               Object.keys(roles).length === 0 && (
-                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
                   This surface&apos;s {manifest?.agentRoles?.length ?? 0} agent
                   role{(manifest?.agentRoles?.length ?? 0) === 1 ? "" : "s"}{" "}
                   {(manifest?.agentRoles?.length ?? 0) === 1 ? "isn't" : "aren't"}{" "}
@@ -265,7 +265,7 @@ function ScopePill({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors",
         active
-          ? "border-primary/50 bg-primary/10 text-primary"
+          ? "border-primary/50 bg-primary/10 text-primary-ink"
           : "border-border/60 text-muted-foreground hover:bg-accent/50",
       )}
     >

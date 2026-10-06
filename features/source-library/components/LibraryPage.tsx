@@ -490,7 +490,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 notice={
                     <div className="space-y-3 pb-3">
                         {loadError && (
-                            <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+                            <p className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive-ink">
                                 <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                                 {loadError}
                               <ErrorAlchemyMenu error={loadError} />

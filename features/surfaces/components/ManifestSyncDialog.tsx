@@ -316,7 +316,7 @@ export function ManifestSyncDialog({ onClose, onSynced, cleanUp = false }: Props
         )}
 
         {error && (
-          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive-ink">
             {error}
             <ErrorAlchemyMenu error={error} />
           </div>

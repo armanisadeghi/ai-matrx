@@ -31,12 +31,12 @@ export const TASK_LABEL_OPTIONS = [
   {
     value: "bug",
     label: "Bug",
-    color: "bg-destructive/10 text-destructive",
+    color: "bg-destructive/10 text-destructive-ink",
   },
   {
     value: "feature",
     label: "Feature",
-    color: "bg-primary/10 text-primary",
+    color: "bg-primary/10 text-primary-ink",
   },
   {
     value: "improvement",
@@ -46,7 +46,7 @@ export const TASK_LABEL_OPTIONS = [
   {
     value: "docs",
     label: "Docs",
-    color: "bg-info/10 text-info",
+    color: "bg-info/10 text-info-ink",
   },
   {
     value: "design",
@@ -56,7 +56,7 @@ export const TASK_LABEL_OPTIONS = [
   {
     value: "research",
     label: "Research",
-    color: "bg-warning/10 text-warning",
+    color: "bg-warning/10 text-warning-ink",
   },
   {
     value: "question",
@@ -66,7 +66,7 @@ export const TASK_LABEL_OPTIONS = [
   {
     value: "blocked",
     label: "Blocked",
-    color: "bg-destructive/15 text-destructive",
+    color: "bg-destructive/15 text-destructive-ink",
   },
 ] as const;
 

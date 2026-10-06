@@ -29,11 +29,11 @@ interface CompactTaskItemProps {
 function getPriorityColor(priority: string | null | undefined) {
   switch (priority) {
     case "high":
-      return "bg-destructive/10 text-destructive border-destructive/30";
+      return "bg-destructive/10 text-destructive-ink border-destructive/30";
     case "medium":
-      return "bg-warning/10 text-warning border-warning/30";
+      return "bg-warning/10 text-warning-ink border-warning/30";
     case "low":
-      return "bg-success/10 text-success border-success/30";
+      return "bg-success/10 text-success-ink border-success/30";
     default:
       return "";
   }

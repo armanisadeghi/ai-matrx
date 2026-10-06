@@ -258,7 +258,7 @@ export default function TaskPreviewWindow({
               {scopeChips.map((s) => (
                 <span
                   key={s.id}
-                  className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-medium"
+                  className="px-1.5 py-0.5 rounded-full bg-primary/10 text-primary-ink text-[10px] font-medium"
                 >
                   {s.name}
                 </span>

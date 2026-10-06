@@ -103,7 +103,7 @@ export function RowControls({
 
   if (capsError) {
     return (
-      <p className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive">
+      <p className="rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive-ink">
         Couldn&apos;t read this item&apos;s sharing options: {capsError}
       </p>
     );
@@ -198,7 +198,7 @@ export function RowControls({
                   value={v}
                   aria-label={SHOWN_TO_WORDS[v].label}
                   title={SHOWN_TO_WORDS[v].says}
-                  className="h-7 px-2 text-xs data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary"
+                  className="h-7 px-2 text-xs data-[state=on]:border-primary data-[state=on]:bg-primary/10 data-[state=on]:text-primary-ink"
                 >
                   {SHOWN_TO_WORDS[v].label}
                 </ToggleGroupItem>

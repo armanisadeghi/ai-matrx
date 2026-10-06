@@ -128,7 +128,7 @@ export function ShareWithAudienceButton({
         {label}
         {offer !== "off" && pending ? (
           <span
-            className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs text-primary"
+            className="ml-0.5 rounded-full bg-primary/15 px-1.5 text-xs text-primary-ink"
             aria-label={`${pending} not shared yet`}
           >
             {pending}

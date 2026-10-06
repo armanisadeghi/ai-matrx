@@ -181,9 +181,9 @@ function TranscriptState({
                 className={cn(
                     "flex h-11 w-11 items-center justify-center rounded-full border",
                     tone === "bad"
-                        ? "border-destructive/30 bg-destructive/10 text-destructive"
+                        ? "border-destructive/30 bg-destructive/10 text-destructive-ink"
                         : tone === "busy"
-                          ? "border-info/30 bg-info/10 text-info"
+                          ? "border-info/30 bg-info/10 text-info-ink"
                           : "border-border bg-muted text-muted-foreground",
                 )}
             >

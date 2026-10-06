@@ -349,7 +349,7 @@ function SortableResourceRow({
             onClick={onDelete}
             aria-label="Delete"
             title="Delete"
-            className="inline-flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+            className="inline-flex items-center justify-center h-6 w-6 rounded text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink transition-colors"
           >
             <Trash2 className="h-3 w-3" />
           </button>

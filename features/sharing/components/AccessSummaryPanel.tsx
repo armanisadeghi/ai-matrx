@@ -163,7 +163,7 @@ export function AccessSummaryPanel({
     return (
       <div
         className={cn(
-          "group rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive",
+          "group rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-[12px] text-destructive-ink",
           className,
         )}
       >

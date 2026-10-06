@@ -342,7 +342,7 @@ export default function TaskTapButton(props: TaskTapButtonProps) {
                     setNewTitle(query || prePopulate?.title || "");
                     setShowCreate(true);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-primary hover:bg-primary/10 transition-colors border-t border-border/40 mt-1"
+                  className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-primary-ink hover:bg-primary/10 transition-colors border-t border-border/40 mt-1"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   Create new task

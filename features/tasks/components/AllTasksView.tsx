@@ -218,7 +218,7 @@ export default function AllTasksView({ selectedTaskId, onTaskSelect, onTaskToggl
                 }}
                 title={`Show the ${taskCount} ${taskCount === 1 ? "task" : "tasks"} in ${project.name}`}
                 aria-label={`Show the ${taskCount} ${taskCount === 1 ? "task" : "tasks"} in ${project.name}`}
-                className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-xs font-medium transition-colors hover:bg-primary/20"
+                className="bg-primary/10 text-primary-ink px-2 py-0.5 rounded-full text-xs font-medium transition-colors hover:bg-primary/20"
               >
                 {taskCount}
               </button>

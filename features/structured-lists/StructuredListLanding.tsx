@@ -55,7 +55,7 @@ export default function StructuredListLanding() {
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
         <div className="relative mx-auto max-w-5xl px-4 sm:px-6 pt-12 sm:pt-20 pb-10 sm:pb-16 text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary-ink">
             <ListChecks className="h-3.5 w-3.5" />
             Picklists
           </div>
@@ -104,7 +104,7 @@ export default function StructuredListLanding() {
                 "hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5",
               )}
             >
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform duration-300 group-hover:scale-110">
+              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary-ink transition-transform duration-300 group-hover:scale-110">
                 <f.icon className="h-4.5 w-4.5" />
               </div>
               <h3 className="text-sm font-semibold">{f.title}</h3>

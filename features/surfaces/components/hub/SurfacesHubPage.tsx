@@ -107,7 +107,7 @@ export function SurfacesHubPage() {
         >
           <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-2">
             {error && (
-              <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive-ink">
                 {error}
                 <ErrorAlchemyMenu error={error} />
               </p>

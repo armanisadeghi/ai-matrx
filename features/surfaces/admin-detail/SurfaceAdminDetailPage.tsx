@@ -549,7 +549,7 @@ export function SurfaceAdminDetailPage({
       <div className="flex-1 min-h-0 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-4 py-4 space-y-6 pb-safe">
           {loadError && (
-            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
+            <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink flex items-center gap-2">
               <AlertCircle className="h-3.5 w-3.5" />
               {loadError}
               <ErrorAlchemyMenu error={loadError} />

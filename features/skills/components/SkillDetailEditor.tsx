@@ -430,7 +430,7 @@ export function SkillDetailEditor({
                 }
                 className={cn(
                   "inline-flex items-center justify-center h-8 w-8 rounded-md",
-                  "text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors",
+                  "text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink transition-colors",
                   "disabled:opacity-40 disabled:cursor-not-allowed",
                 )}
               >

@@ -317,7 +317,7 @@ export function SecureLinkPanel({ resourceType, resourceId, resourceName }: Secu
         <div
           className={
             result.tone === "error"
-              ? "rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-sm text-destructive"
+              ? "rounded-md border border-destructive/30 bg-destructive/10 p-2.5 text-sm text-destructive-ink"
               : result.tone === "warn"
                 ? "rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-sm"
                 : "rounded-md border border-border bg-muted/40 p-2.5 text-sm"

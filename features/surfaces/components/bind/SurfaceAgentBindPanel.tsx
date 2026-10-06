@@ -513,7 +513,7 @@ export function SurfaceAgentBindPanel({
                   className={cn(
                     "rounded px-2 py-0.5 text-[10px] transition-colors",
                     mapTab === key
-                      ? "bg-primary/10 font-medium text-primary"
+                      ? "bg-primary/10 font-medium text-primary-ink"
                       : "text-muted-foreground hover:text-foreground",
                   )}
                 >

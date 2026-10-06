@@ -238,7 +238,7 @@ export function InstalledTemplate({
           <ol className="flex flex-col gap-2" data-template-guide={guide.length}>
             {guide.map((s, i) => (
               <li key={`${i}:${s.title}`} className="flex min-w-0 gap-3 rounded-lg border border-border bg-card p-3">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">{i + 1}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary-ink">{i + 1}</span>
                 <span className="min-w-0">
                   <span className="block text-sm font-medium text-foreground">{s.title}</span>
                   {s.body ? <span className="block text-sm text-muted-foreground">{s.body}</span> : null}

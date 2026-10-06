@@ -1784,7 +1784,7 @@ function BoolPill({
       className={cn(
         "text-[10px] px-1.5 py-0 rounded border inline-block",
         value
-          ? "bg-success/10 text-success border-success/30"
+          ? "bg-success/10 text-success-ink border-success/30"
           : "bg-muted text-muted-foreground border-border",
       )}
     >

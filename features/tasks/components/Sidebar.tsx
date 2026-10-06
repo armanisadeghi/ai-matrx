@@ -115,7 +115,7 @@ export default function Sidebar(): JSX.Element {
               }}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                 showAllProjects && filter === "all"
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-ink"
                   : "text-foreground hover:bg-accent"
               }`}
             >
@@ -137,7 +137,7 @@ export default function Sidebar(): JSX.Element {
                   onClick={() => handleFilterClick(filterType)}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
                     filter === filterType
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-ink"
                       : "text-foreground hover:bg-accent"
                   }`}
                 >
@@ -225,7 +225,7 @@ export default function Sidebar(): JSX.Element {
                     }}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors group/entity-ref group cursor-pointer ${
                       isActive
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary-ink"
                         : "text-foreground hover:bg-accent"
                     } ${isOperating ? "opacity-60 pointer-events-none" : ""}`}
                   >

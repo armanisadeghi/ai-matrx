@@ -43,7 +43,7 @@ export const READINESS_META: Record<
   },
   unregistered: {
     label: "unregistered",
-    className: "border-destructive/40 bg-destructive/5 text-destructive",
+    className: "border-destructive/40 bg-destructive/5 text-destructive-ink",
     iconClassName: "text-destructive",
     description: "No code manifest declares this surface",
   },

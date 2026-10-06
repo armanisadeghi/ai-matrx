@@ -16,7 +16,7 @@ export function PublicChatOpener({ conversationId }: { conversationId: string })
   return (
     <div className="grid min-h-full place-items-center bg-gradient-to-br from-background via-background to-primary/10 px-5 py-16">
       <div className="w-full max-w-md rounded-3xl border border-border/70 bg-card p-7 text-center shadow-2xl shadow-primary/10">
-        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/12 text-primary">
+        <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-primary/12 text-primary-ink">
           <MessageSquareText className="size-7" />
         </div>
         <h1 className="mt-5 text-balance text-2xl font-semibold text-foreground">

@@ -105,7 +105,7 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
         <span
           className={cn(
             "flex h-6 w-6 shrink-0 items-center justify-center rounded-md",
-            asking ? "bg-primary/10 text-primary ring-2 ring-primary" : "bg-muted text-muted-foreground",
+            asking ? "bg-primary/10 text-primary-ink ring-2 ring-primary" : "bg-muted text-muted-foreground",
           )}
           aria-hidden="true"
         >
@@ -169,7 +169,7 @@ export function ShellOrgSwitcher({ variant = "rail" }: { variant?: Variant }) {
         setOpen(false);
       }}
       data-page-object-organization={offer.id}
-      className="mb-1 flex w-full items-center gap-2 rounded-md bg-primary/10 px-2.5 py-2 text-left text-sm text-primary hover:bg-primary/15"
+      className="mb-1 flex w-full items-center gap-2 rounded-md bg-primary/10 px-2.5 py-2 text-left text-sm text-primary-ink hover:bg-primary/15"
     >
       <ArrowRightLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
       <span className="min-w-0 flex-1 truncate">Switch to {offer.name}</span>

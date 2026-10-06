@@ -561,7 +561,7 @@ function SortableCategoryRow({
             onClick={onDelete}
             aria-label="Delete category"
             title="Delete"
-            className="inline-flex items-center justify-center h-6 w-6 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all"
+            className="inline-flex items-center justify-center h-6 w-6 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:bg-destructive/10 hover:text-destructive-ink transition-all"
           >
             <Trash2 className="h-3 w-3" />
           </button>

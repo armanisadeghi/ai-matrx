@@ -103,7 +103,7 @@ export default function TaskAssigneePicker({
             <>
               <Avatar className={cn(size === "sm" ? "w-4 h-4" : "w-5 h-5")}>
                 <AvatarImage src={current.avatar_url ?? undefined} />
-                <AvatarFallback className="text-[9px] bg-primary/10 text-primary">
+                <AvatarFallback className="text-[9px] bg-primary/10 text-primary-ink">
                   {getInitials(current.display_name ?? current.email)}
                 </AvatarFallback>
               </Avatar>
@@ -223,7 +223,7 @@ export default function TaskAssigneePicker({
                 >
                   <Avatar className="w-6 h-6 shrink-0">
                     <AvatarImage src={user.avatar_url ?? undefined} />
-                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                    <AvatarFallback className="text-[10px] bg-primary/10 text-primary-ink">
                       {getInitials(user.display_name ?? user.email)}
                     </AvatarFallback>
                   </Avatar>

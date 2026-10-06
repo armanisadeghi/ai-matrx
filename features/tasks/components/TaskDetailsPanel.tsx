@@ -413,11 +413,11 @@ export default function TaskDetailsPanel({
   const getPriorityColor = (p: string | null) => {
     switch (p) {
       case "high":
-        return "bg-destructive/10 text-destructive";
+        return "bg-destructive/10 text-destructive-ink";
       case "medium":
-        return "bg-warning/10 text-warning";
+        return "bg-warning/10 text-warning-ink";
       case "low":
-        return "bg-success/10 text-success";
+        return "bg-success/10 text-success-ink";
       default:
         return "bg-muted text-muted-foreground";
     }
@@ -708,17 +708,17 @@ export default function TaskDetailsPanel({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="high">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-destructive/10 text-destructive">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-destructive/10 text-destructive-ink">
                   High
                 </span>
               </SelectItem>
               <SelectItem value="medium">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-warning/10 text-warning">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-warning/10 text-warning-ink">
                   Medium
                 </span>
               </SelectItem>
               <SelectItem value="low">
-                <span className="px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success">
+                <span className="px-2 py-1 rounded-md text-xs font-medium bg-success/10 text-success-ink">
                   Low
                 </span>
               </SelectItem>

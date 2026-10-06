@@ -108,7 +108,7 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
       {/* Header — name only, plus counts */}
       <header className="shrink-0 mx-3 mt-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex items-center gap-2.5 mb-1.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
             <Eye className="h-3.5 w-3.5" />
           </div>
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
@@ -189,7 +189,7 @@ export function SurfaceDetailsColumn({ agent }: { agent: AgentDefinition }) {
 function SectionTitle() {
   return (
     <div className="flex items-center gap-2">
-      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary">
+      <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/10 text-primary-ink">
         <Eye className="h-3.5 w-3.5" />
       </div>
       <div className="text-sm font-semibold text-foreground">Surface</div>

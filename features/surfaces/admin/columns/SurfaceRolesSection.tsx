@@ -127,7 +127,7 @@ export function SurfaceRolesSection({
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-accent/30 transition-colors"
       >
-        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+        <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary-ink shrink-0">
           <Users className="h-3.5 w-3.5" />
         </div>
         <div className="min-w-0 flex-1">
