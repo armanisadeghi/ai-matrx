@@ -14,7 +14,7 @@ import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
 import { MatrxDataTable, type MatrxColumnDef } from "@ai-matrx/design-system/data-table";
 import { EntityChartBlock, RecordsMount, TablePage, type ChartKind, type EntityColumn, type EntityRow } from "@ai-matrx/records-ui";
 import { useRecordsClient } from "@ai-matrx/records/react";
-import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, SlidersHorizontal, Square, Table2, X } from "lucide-react";
+import { ArrowDownUp, ArrowUpRight, Database, Kanban, PieChart, List, ListFilter, Maximize2, PanelRight, Plus, Search, SlidersHorizontal, Square, Table2, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -63,7 +63,7 @@ function sentence(e: unknown, fallback: string): string {
  * One built-in source's presented columns and one page of rows for the view's question — the filter
  * and the sort are asked of the store (never applied to a page here), so a count and a page agree.
  */
-function useEntityRows(token: string, view: SpaceDbView) {
+function useEntityRows(token: string, view: SpaceDbView, search: string) {
   const client = useRecordsClient();
   const [tick, setTick] = useState(0);
   const [state, setState] = useState<EntityState>({ label: null, columns: [], rows: [], total: 0, loading: true, error: null });
@@ -78,7 +78,7 @@ function useEntityRows(token: string, view: SpaceDbView) {
   const asked = useRef("");
   useEffect(() => {
     // A new question (filter, sort, source) starts again at one page; a re-read keeps what is held.
-    const question = `${token}|${where}|${sortKey}`;
+    const question = `${token}|${where}|${sortKey}|${search}`;
     if (asked.current !== question) held.current = PAGE;
     asked.current = question;
     let cancelled = false;
@@ -97,6 +97,7 @@ function useEntityRows(token: string, view: SpaceDbView) {
         source,
         ...(Object.keys(filters).length ? { where: filters } : {}),
         ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
+        ...(search ? { search } : {}),
         limit: held.current,
       }),
     ]).then(
@@ -126,7 +127,7 @@ function useEntityRows(token: string, view: SpaceDbView) {
       cancelled = true;
       clearTimeout(stall);
     };
-  }, [client, token, where, sortKey, tick, stalls]);
+  }, [client, token, where, sortKey, search, tick, stalls]);
 
   const reload = () => {
     setStalls(0);
@@ -146,6 +147,7 @@ function useEntityRows(token: string, view: SpaceDbView) {
         source: { kind: "entity", token },
         ...(Object.keys(filters).length ? { where: filters } : {}),
         ...(sort ? { sort: { key: sort.field, direction: sort.direction } } : {}),
+        ...(search ? { search } : {}),
         limit: PAGE,
         offset: rows.length,
       });
@@ -245,7 +247,22 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   // The toolbar filter is the viewer's own the same way, until an editor saves it for everyone.
   const [filterChoices, setFilterChoices] = useState<Record<string, FilterChoice>>({});
   const shown: SpaceDbView = { ...active, sorts: shownSorts(active, sortChoices[active.id]), filters: shownFilters(active, filterChoices[active.id]) };
-  const entity = useEntityRows(token, shown);
+  // The magnifier (Notion's toolbar search): this viewer's own, per view, never saved; asked of the door
+  // (drillRows `search`), so the count and Load more answer the search, not the page held.
+  const [searchChoices, setSearchChoices] = useState<Record<string, string>>({});
+  const [searchOpen, setSearchOpen] = useState<Record<string, boolean>>({});
+  const term = searchChoices[active.id] ?? "";
+  const [asked, setAsked] = useState(term);
+  useEffect(() => {
+    const t = window.setTimeout(() => setAsked(term.trim()), 250);
+    return () => window.clearTimeout(t);
+  }, [term]);
+  const setTerm = (value: string) => setSearchChoices((all) => ({ ...all, [active.id]: value }));
+  const closeSearch = () => {
+    setTerm("");
+    setSearchOpen((all) => ({ ...all, [active.id]: false }));
+  };
+  const entity = useEntityRows(token, shown, asked);
   const [open, setOpen] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const save = (patch: Partial<DatabaseBlockProps>) => onChange({ ...raw, ...patch });
@@ -279,7 +296,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   };
   const sourceName = props.title || entity.label || known || token;
 
-  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} />;
+  const body = <EntityBody token={token} entity={entity} view={shown} onOpen={setOpen} search={asked} />;
 
   return (
     <div className="spaces-db-frame" data-layout={active.layout} data-source="entity">
@@ -330,6 +347,28 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
           ) : null}
         </div>
         <div className="spaces-db-tools">
+          {searchOpen[active.id] || term ? (
+            <div className="spaces-db-search">
+              <Search size={14} strokeWidth={1.8} aria-hidden />
+              <Input
+                autoFocus
+                type="search"
+                aria-label="Search this database"
+                placeholder="Type to search…"
+                value={term}
+                onChange={(e) => setTerm(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") closeSearch();
+                }}
+                onBlur={() => {
+                  if (!term) setSearchOpen((all) => ({ ...all, [active.id]: false }));
+                }}
+              />
+              {term ? <Button variant="quiet" icon={<X size={13} />} aria-label="Clear search" onClick={closeSearch} /> : null}
+            </div>
+          ) : (
+            <Button variant="quiet" icon={<Search size={15} strokeWidth={1.8} />} aria-label="Search" title="Search" onClick={() => setSearchOpen((all) => ({ ...all, [active.id]: true }))} />
+          )}
           <EntityFilter
             view={active}
             columns={entity.columns}
@@ -370,7 +409,7 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   );
 }
 
-function EntityBody({ token, entity, view, onOpen }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void }) {
+function EntityBody({ token, entity, view, onOpen, search }: { token: string; entity: Entity; view: SpaceDbView; onOpen: (id: string) => void; search: string }) {
   const hidden = new Set(view.hiddenFields ?? []);
   const shown = entity.columns.filter((c) => !hidden.has(c.api_name));
   const title = titleColumn(entity.columns);
@@ -432,7 +471,7 @@ function EntityBody({ token, entity, view, onOpen }: { token: string; entity: En
     // records-ui's board over the source: lanes per stage / status, cards move between them.
     return (
       <div className="spaces-db-body">
-        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} />
+        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} searchOverride={search || null} />
       </div>
     );
   }

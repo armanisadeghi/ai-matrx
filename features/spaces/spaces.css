@@ -1249,6 +1249,13 @@
 .spaces-chart-title > svg { flex: none; }
 .spaces-chart-title > span { overflow: hidden; text-overflow: clip; }
 .spaces-db-tools { display: flex; align-items: center; gap: 2px; flex: none; }
+/* The toolbar magnifier opens in place in the icon row (Notion), never as a row of its own. */
+.spaces-db-search { display: inline-flex; align-items: center; gap: 6px; height: 28px; color: var(--spaces-ink-soft); }
+.spaces-db-search input { width: 180px; height: 28px; font-size: 14px; }
+/* Notion shows the tab strip's "+" (add a view) only while the pointer is over the block (or focus is in it). */
+.spaces-db-tabs [aria-label="Add view"] { transition: opacity 120ms ease; }
+.spaces-db-frame:not(:hover):not(:focus-within) .spaces-db-tabs [aria-label="Add view"] { opacity: 0; }
+@media (hover: none) { .spaces-db-frame .spaces-db-tabs [aria-label="Add view"] { opacity: 1; } }
 .spaces-db-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; color: var(--spaces-ink-soft); flex: none; }
 .spaces-db-icon-sm { width: 22px; height: 22px; }
 .spaces-db-icon:hover { background: var(--spaces-hover); color: var(--spaces-ink); }
@@ -1258,6 +1265,12 @@
 .spaces-db-new-more { display: inline-flex; align-items: center; padding: 0 6px; border-left: 1px solid rgb(255 255 255 / 0.25); }
 .spaces-db-new-main:hover, .spaces-db-new-more:hover { background: #0077d4; }
 .spaces-db-body { min-width: 0; overflow-x: auto; }
+/* N1 — BlockNote's `.bn-shadcn svg:not([class*="size-"]) { width: revert }` (unlayered, from the editor
+   around every block) beat the design system's layered sizing of its own glyphs: the table magnifier's
+   glyph grew to the whole field (247px) and pushed the typed text out of sight. A design-system glyph
+   inside the editor takes its own layered size back. */
+.bn-shadcn svg[class*="matrx-"]:not([class*="size-"]) { width: revert-layer; height: revert-layer; }
+.bn-shadcn .matrx-tap-search-input { font-size: 14px; }
 /* A relation cell's linked page reads in body ink (Notion's page chip), not the browser's blue underline
    that BlockNote's `.bn-shadcn .bn-editor a { color: revert }` restores inside the editor. */
 .spaces-editor .spaces-db-frame .spaces-db-body a { color: inherit; text-decoration: none; }
