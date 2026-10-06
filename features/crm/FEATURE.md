@@ -184,10 +184,15 @@ DDL: [`migrations/crm_01_schema.sql`](../../migrations/crm_01_schema.sql),
   Dismissal (`crm_dismiss_merge_candidate`) is durable across scans. A party
   gaining `canonical_id` flips its pending candidates to `merged` via the
   `_z_candidate_on_merge` trigger, whatever path merged it.
-- **`crm.party.name_key` is stamped by `_b_party_name_key`** (from
-  `crm.name_key(display_name)`: lowercase, punctuation→space, trailing legal
-  suffixes stripped). It had NO writer before 2026-08-13 — never write it from
-  a client, and never compare raw display names for identity.
+- **Derived names are stamped by `_b_party_name_key` → `crm._party_name_key()`
+  on every INSERT/UPDATE, whoever writes** (CRM, platform write door, Table API,
+  HR, Applets). `name_key` = `crm.name_key(display_name)` (lowercase,
+  punctuation→space, trailing legal suffixes stripped); `sort_name` =
+  `crm.person_sort_name` ("Last, First"; organizations NULL); a person's
+  `display_name` re-derives from `crm.person_display_name` (preferred else first,
+  plus last) when the parts change ONLY if it was following them — a chosen
+  display name, or `display_name` in `locked_fields`, is kept. Never write these
+  from a client, and never compare raw display names for identity.
 - **`last_touch_at` is deliberately NOT stored on `party`.** `party` is versioned; a
   cold-call floor would snapshot the whole row into `history.row_versions` on every
   dial. Derive it from `crm.interaction` (indexed `(party_id, occurred_at desc)`).
@@ -1086,6 +1091,11 @@ Settings → Configuration, Marketing → Public Relations). 🚨 `service.ts` c
 ---
 
 ## Change log
+
+- 2026-10-06 (AP3-PHASEB-PARTY-NAMES): `crm.party` derived names (display_name
+  from parts, sort_name, name_key) have ONE home, the `_b_party_name_key`
+  trigger; a door write of first/last now updates them. Probes:
+  `scripts/campaign-tests/ap3_party_names_{red,green}.sql`.
 
 - page-pass 2026-09-28 round 8 (/crm/[partyId]), after a blind "mediocre":
   type single-record, posture sharp after Linear. Desktop header shows every
