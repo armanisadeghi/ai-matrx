@@ -61,7 +61,7 @@ export function RunFailureCard({
       {/* Verbatim. The server's words, not ours — and they stay put. Every id
           inside them is a door (THE DOOR LAW): a refusal that names the agent
           or mandate at fault must let the reader go and look at it. */}
-      <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/10 p-2 text-[11.5px] text-destructive">
+      <pre className="max-h-56 overflow-auto whitespace-pre-wrap break-words rounded bg-destructive/10 p-2 text-[11.5px] text-destructive-ink">
         <TextWithDoors text={failure.sentence} />
       </pre>
 

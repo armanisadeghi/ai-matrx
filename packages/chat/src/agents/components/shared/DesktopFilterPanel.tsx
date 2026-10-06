@@ -109,7 +109,7 @@ function RadioSelect<T extends string>({
           className={cn(
             "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors text-left",
             value === opt.value
-              ? "bg-primary/10 text-primary font-medium"
+              ? "bg-primary/10 text-primary-ink font-medium"
               : "text-muted-foreground hover:bg-muted hover:text-foreground",
           )}
         >

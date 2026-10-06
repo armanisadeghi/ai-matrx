@@ -236,7 +236,7 @@ export function ChatCanvasWorkspace({
                 aria-pressed={propertiesOpen}
                 title={propertiesOpen ? "Hide properties" : "Show properties"}
                 onClick={() => setPropertiesOpen(!propertiesOpen)}
-                className={cn(ICON_BUTTON, showProperties && "bg-primary/10 text-primary")}
+                className={cn(ICON_BUTTON, showProperties && "bg-primary/10 text-primary-ink")}
               >
                 <PanelRight className="h-4 w-4" />
               </button>

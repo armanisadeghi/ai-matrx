@@ -146,7 +146,7 @@ export function AssistantError({
         {errorType && RECOVERY_DOORS[errorType] && (
           <Link
             href={RECOVERY_DOORS[errorType].href}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary-ink hover:bg-primary/10"
           >
             {RECOVERY_DOORS[errorType].label}
             <ArrowRight className="h-3 w-3" />
@@ -158,7 +158,7 @@ export function AssistantError({
           <Link
             key={d.href}
             href={d.href}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary-ink hover:bg-primary/10"
           >
             {d.label}
             <ArrowRight className="h-3 w-3" />
@@ -168,7 +168,7 @@ export function AssistantError({
         {door && (
           <Link
             href={door.href}
-            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary hover:bg-primary/10"
+            className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-primary-ink hover:bg-primary/10"
           >
             {door.label}
             <ArrowRight className="h-3 w-3" />

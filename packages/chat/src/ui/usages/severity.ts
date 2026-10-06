@@ -47,7 +47,7 @@ export const DRIFT_SEVERITY_META: Record<DriftSeverity, DriftSeverityMeta> = {
     textClass: "text-destructive",
     bgClass: "bg-destructive/10",
     borderClass: "border-destructive/30",
-    badgeClass: "bg-destructive/10 text-destructive border-destructive/30",
+    badgeClass: "bg-destructive/10 text-destructive-ink border-destructive/30",
   },
   silent_breaking: {
     label: "Silent break",
@@ -57,7 +57,7 @@ export const DRIFT_SEVERITY_META: Record<DriftSeverity, DriftSeverityMeta> = {
     textClass: "text-warning",
     bgClass: "bg-warning/15",
     borderClass: "border-warning/40",
-    badgeClass: "bg-warning/15 text-warning border-warning/40",
+    badgeClass: "bg-warning/15 text-warning-ink border-warning/40",
   },
   warning: {
     label: "Stale pin",
@@ -67,7 +67,7 @@ export const DRIFT_SEVERITY_META: Record<DriftSeverity, DriftSeverityMeta> = {
     textClass: "text-warning",
     bgClass: "bg-warning/5",
     borderClass: "border-warning/20",
-    badgeClass: "bg-warning/5 text-warning border-warning/25",
+    badgeClass: "bg-warning/5 text-warning-ink border-warning/25",
   },
   info: {
     label: "Info",

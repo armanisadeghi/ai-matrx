@@ -462,7 +462,7 @@ export function TesterSettingsPanel({
       />
 
       {c.jsonError && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-1 text-[10.5px] text-destructive leading-tight">
+        <div className="rounded-md border border-destructive/40 bg-destructive/10 px-1.5 py-1 text-[10.5px] text-destructive-ink leading-tight">
           {c.jsonError}
           <ErrorAlchemyMenu />
         </div>

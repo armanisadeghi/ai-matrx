@@ -80,7 +80,7 @@ export function AgentSelectorIsland({
           const adminHref = getAgentModeHref(currentMode, agentId, adminBase);
           const isOnAdmin = basePath === adminBase;
           const className =
-            "text-[0.725rem] font-semibold uppercase tracking-wider leading-none px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/10 text-destructive shrink-0 transition-colors hover:bg-destructive/20";
+            "text-[0.725rem] font-semibold uppercase tracking-wider leading-none px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/10 text-destructive-ink shrink-0 transition-colors hover:bg-destructive/20";
           const title = isOnAdmin
             ? "Public agent — edits affect all users"
             : "Public agent — open in admin (edits affect all users)";

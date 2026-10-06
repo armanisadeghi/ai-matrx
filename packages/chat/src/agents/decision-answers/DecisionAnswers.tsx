@@ -204,7 +204,7 @@ export function DecisionAnswers({
           </span>
         ) : (
           <span
-            className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.5 text-destructive"
+            className="inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.5 text-destructive-ink"
             title="Without a method, there is no way to tell a measured probability from one the model wrote out."
           >
             <AlertTriangle className="w-3 h-3" />

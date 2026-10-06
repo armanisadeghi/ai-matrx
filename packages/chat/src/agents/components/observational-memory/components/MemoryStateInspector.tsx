@@ -136,7 +136,7 @@ export function MemoryStateInspector({
         )}
 
         {state.status === "error" && (
-          <div className="text-xs bg-destructive/5 border border-destructive/20 text-destructive rounded p-2">
+          <div className="text-xs bg-destructive/5 border border-destructive/20 text-destructive-ink rounded p-2">
             {state.error}
             <ErrorAlchemyMenu error={state.error} />
           </div>

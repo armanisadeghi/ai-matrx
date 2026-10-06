@@ -183,7 +183,7 @@ export const CtxBatchInline: React.FC<Props> = ({
           ) : (
             <div
               key={`${r.key}-${i}`}
-              className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive"
+              className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive-ink"
             >
               <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <div className="min-w-0">

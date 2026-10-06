@@ -149,7 +149,7 @@ function MobileAsksDrawer({
               onClick={() => setOpen(true)}
               className="flex w-full items-center gap-2.5 rounded-[10px] bg-card px-3 py-2 text-left transition-colors hover:bg-accent/40"
             >
-              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/12 text-primary">
+              <span className="grid size-7 shrink-0 place-items-center rounded-lg bg-primary/12 text-primary-ink">
                 <MessagesSquare
                   className="size-4 motion-safe:animate-pulse"
                   strokeWidth={2.25}

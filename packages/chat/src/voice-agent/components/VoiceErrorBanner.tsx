@@ -23,7 +23,7 @@ export function VoiceErrorBanner({ error }: VoiceErrorBannerProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.25 }}
-          className="mx-auto max-w-md rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive flex items-start gap-2"
+          className="mx-auto max-w-md rounded-lg border border-destructive/40 bg-destructive/5 px-4 py-2 text-sm text-destructive-ink flex items-start gap-2"
           role="alert"
         >
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
