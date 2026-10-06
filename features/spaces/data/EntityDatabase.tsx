@@ -21,8 +21,9 @@ import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { ensureOrganizationForWrite } from "@/lib/organization/organization-gate";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
+import { whenOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
@@ -198,15 +199,17 @@ function EntityFrame({ token, props, raw, onChange, editable }: EntityDatabasePr
   const addRow = async () => {
     let organization_id: string;
     try {
-      console.log('R9DBG ensure', activeOrganizationId);
-      organization_id = await ensureOrgId(activeOrganizationId);
-      console.log('R9DBG got', organization_id);
+      // "New" is a click, always the person's act: the organization gate reads any press inside the page
+      // editor (a contenteditable) as typing and would refuse without asking, so the act is named here.
+      await whenOrgBootstrapResolved();
+      organization_id = await ensureOrganizationForWrite(activeOrganizationId, { interactive: true });
     } catch (err) {
       if (!isOrganizationSelectionCancelled(err)) toast.error(sentence(err, "A row could not be added here."));
       return;
     }
-    const res = await client.entityRowWrite({ token, record_id: null, organization_id });
-    console.log('R9DBG res', JSON.stringify(res).slice(0, 300));
+    // Notion's new row starts with an empty title ("Untitled" until named); a module's title is required.
+    const title = titleColumn(entity.columns);
+    const res = await client.entityRowWrite({ token, record_id: null, organization_id, columns: title?.writable ? { [title.api_name]: "" } : {} });
     if (!res.ok) {
       toast.error(sentence(res.error, "A row could not be added here."));
       return;
