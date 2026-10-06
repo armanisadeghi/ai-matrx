@@ -85,27 +85,27 @@ export function viewOnInstalledKeys<V extends { groupField?: string | null; date
   return JSON.stringify(next) === JSON.stringify(view) ? view : next;
 }
 
-/** Reads each installed table's fields and maps the spec's keys onto them by title (an upgraded
- *  install's converted column carries a new key; the retired one keeps the old key off the table). */
-async function withInstalledKeys(tables: AgencyTables): Promise<AgencyTables> {
+/** Reads each installed table's fields (custom.applicable_fields — the records client's own fields door)
+ *  and maps the spec's keys onto them by title (an upgraded install's converted column carries a new key;
+ *  the retired one keeps the old key off the table). */
+async function withInstalledKeys(tables: AgencyTables, organizationId: string): Promise<AgencyTables> {
+  const db = createClient().schema("custom");
   const entries = Object.entries(tables) as Array<[string, AgencyTable]>;
-  const { data, error } = await createClient()
-    .schema("custom")
-    .from("field")
-    .select("entity_definition_id, key, label")
-    .in("entity_definition_id", entries.map(([, t]) => t.tableId));
-  if (error) throw new Error(`We couldn't read the sample's fields: ${error.message}`);
   const out = { ...tables } as AgencyTables;
-  for (const [token, table] of entries) {
-    const spec = AGENCY_SPEC.tables.find((t) => t.token === token);
-    const installed = (data ?? []).filter((f) => f.entity_definition_id === table.tableId);
-    const keys: Record<string, string> = {};
-    for (const f of spec?.fields ?? []) {
-      const hit = installed.find((x) => x.label === f.label);
-      if (hit?.key && hit.key !== f.key) keys[f.key] = hit.key;
-    }
-    (out as Record<string, AgencyTable>)[token] = Object.keys(keys).length ? { ...table, keys } : table;
-  }
+  await Promise.all(
+    entries.map(async ([token, table]) => {
+      const { data, error } = await db.rpc("applicable_fields", { p_organization_id: organizationId, p_table_id: table.tableId });
+      if (error) throw new Error(`We couldn't read the sample's ${table.name} fields: ${error.message}`);
+      const installed = ((data ?? []) as unknown as Array<{ data?: { key?: string; label?: string } }>).map((r) => r.data ?? {});
+      const spec = AGENCY_SPEC.tables.find((t) => t.token === token);
+      const keys: Record<string, string> = {};
+      for (const f of spec?.fields ?? []) {
+        const hit = installed.find((x) => x.label === f.label);
+        if (hit?.key && hit.key !== f.key) keys[f.key] = hit.key;
+      }
+      if (Object.keys(keys).length) (out as Record<string, AgencyTable>)[token] = { ...table, keys };
+    }),
+  );
   return out;
 }
 
@@ -206,7 +206,7 @@ export async function installAgencySample(organizationId: string, dispatch: AppD
     // An answer naming a newer version with no upgrade hint: say so instead of drawing the old shape silently.
     toast.info(`Sample tables predate version ${(answer as { newer_version?: number }).newer_version}; this install can't be upgraded.`);
   }
-  const tables = await withInstalledKeys(agencyTablesFrom(answer));
+  const tables = await withInstalledKeys(agencyTablesFrom(answer), organizationId);
   onStage?.("Adding the assistant…");
   await runHostSteps(answer, organizationId, dispatch);
   return tables;
