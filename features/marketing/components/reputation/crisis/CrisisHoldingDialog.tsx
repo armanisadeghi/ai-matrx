@@ -44,7 +44,7 @@ import {
   type Stage,
 } from "@/features/marketing/pr/media-desk/api";
 import { StageList } from "@/features/marketing/pr/media-desk/StageList";
-import { forgetRun, rememberRun, useRejoinRun } from "@/features/marketing/pr/media-desk/rejoin";
+import { forgetRun, rememberRun, useOpenIfRemembered, useRejoinRun } from "@/features/marketing/pr/media-desk/rejoin";
 import {
   AUDIENCES,
   INCIDENT_TYPES,
@@ -293,7 +293,8 @@ export function CrisisHoldingDialog({
   const [running, setRunning] = useState(false);
   const [ownResult, setResult] = useState<CrisisHoldingResult | null>(null);
   const runKey = `crisis:${siteId}`;
-  const rejoin = useRejoinRun<CrisisHoldingResult>(runKey, open && !ownResult);
+  useOpenIfRemembered(runKey, setOpen);
+  const rejoin = useRejoinRun<CrisisHoldingResult>(runKey, open && !running && !ownResult);
   const result = ownResult ?? rejoin.result;
   const [error, setError] = useState<string | null>(null);
 

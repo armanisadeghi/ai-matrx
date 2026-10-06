@@ -15,6 +15,8 @@ import type { TypedStreamEvent } from "@/lib/api/types";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 
+import { followRunToEnd } from "./rejoin";
+
 export type CrisisIntake = components["schemas"]["CrisisIntake"];
 export type CrisisPerson = components["schemas"]["CrisisPerson"];
 export type HeadlineFormat = "news" | "press_release" | "subject_line" | "feature";
@@ -185,18 +187,50 @@ interface RunOptions {
   onRun?: (runId: string) => void;
 }
 
-/** The ONE consumer shape for the three commands. */
-async function consume<T>(
+/** What a stream `error` event (the transport's crash frame) says, in the server's words. */
+export function streamErrorSentence(event: TypedStreamEvent): string | null {
+  if (event.event !== "error") return null;
+  const data = event.data;
+  const message = data?.message?.trim() || null;
+  const userMessage = data?.user_message?.trim() || null;
+  return message ?? userMessage ?? "The server stopped this run with an error it did not describe.";
+}
+
+export interface ConsumeDeps {
+  /** Reads the durable run row when the stream ends without an answer (`rejoin.ts`). */
+  followRun?: (runId: string) => Promise<unknown>;
+}
+
+/**
+ * THE ONE CONSUMER of the three commands. Every way a run can end reaches the
+ * caller as either the result or ONE sentence in the server's own words —
+ * never a spinner, never "no result":
+ *
+ *  - `seo.<final>`            → the result;
+ *  - `seo.command_failed`     → its message (the usage limit, a refused render…);
+ *  - a stream `error` frame   → its message (a crash the server did not plan for);
+ *  - an HTTP refusal          → its message (e.g. the usage gate's 402);
+ *  - the stream simply ended  → the durable run row is followed to its end, so a
+ *    dropped connection still delivers the stored result or the stored reason.
+ */
+export async function consume<T>(
   dispatch: AppDispatch,
   run: (onStreamEvent: (event: TypedStreamEvent) => void) => ReturnType<typeof callApi>,
   finalKind: string,
   what: string,
   options: RunOptions,
+  deps: ConsumeDeps = {},
 ): Promise<T> {
   let completed: T | undefined;
   let failure: string | null = null;
+  let runId: string | null = null;
   const outcome = await dispatch(
     run((event) => {
+      const crash = streamErrorSentence(event);
+      if (crash) {
+        failure = failure ?? crash;
+        return;
+      }
       const data = streamData(event);
       if (!data) return;
       const kind = typeof data.kind === "string" ? data.kind : "";
@@ -206,7 +240,7 @@ async function consume<T>(
       }
       if (kind === "seo.command_failed") {
         const error = data.error as { message?: string } | undefined;
-        failure = error?.message ?? `${what} failed.`;
+        failure = error?.message ?? `${what} failed on the server without a reason.`;
         return;
       }
       if (kind === "seo.run_in_progress") {
@@ -214,16 +248,24 @@ async function consume<T>(
         return;
       }
       if (kind === "seo.command_run" && typeof data.run_id === "string") {
+        runId = data.run_id;
         options.onRun?.(data.run_id);
       }
       const label = stageLabel(data);
       if (label) options.onStage?.({ kind, label });
     }),
   );
-  if (outcome.error) throw new Error(outcome.error.message ?? `${what} failed.`);
+  if (completed) return completed;
   if (failure) throw new Error(failure);
-  if (!completed) throw new Error(`${what} finished without returning a result.`);
-  return completed;
+  if (outcome.error) {
+    throw new Error(outcome.error.message || `${what} was refused by the server without a reason.`);
+  }
+  if (runId) {
+    options.onStage?.({ kind: "follow", label: "The connection closed early — checking the saved run" });
+    const followed = (await (deps.followRun ?? followRunToEnd)(runId)) as T;
+    return followed;
+  }
+  throw new Error(`${what} ended before the server started it. Nothing was charged; try again.`);
 }
 
 export function makePressClip(

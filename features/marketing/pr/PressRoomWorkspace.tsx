@@ -99,6 +99,7 @@ import {
   type StoryAngle,
 } from "@/features/marketing/pr/types";
 import { HeadlinesDialog } from "@/features/marketing/pr/media-desk/HeadlinesDialog";
+import { rememberedRunKeys } from "@/features/marketing/pr/media-desk/rejoin";
 import { MakeClipDialog } from "@/features/marketing/pr/media-desk/MakeClipDialog";
 import { ClipsGallery } from "@/features/marketing/pr/media-desk/ClipsGallery";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
@@ -201,6 +202,15 @@ export default function PressRoomWorkspace({
   }, [brandId, siteId, sites.data, fill]);
 
   const press = usePressRoom(siteId, scenario);
+
+  // A Headlines run outlives a reload: open the angle it belongs to, and its dialog picks the
+  // run back up (media-desk/rejoin.ts). Without this the work would continue unseen.
+  useEffect(() => {
+    if (!siteId) return;
+    const key = rememberedRunKeys(`headlines:${siteId}:`)[0];
+    const angleId = key?.split(":")[2];
+    if (angleId && angleId !== "facts") set({ focus: { kind: "angle", id: angleId } });
+  }, [siteId, set]);
 
   // Rulings are applied OVER the loaded rows so the queue, the funnel, the KPI
   // strip and the readiness numbers all move together the moment one is made.

@@ -39,7 +39,7 @@ import {
   type Stage,
 } from "./api";
 import { StageList } from "./StageList";
-import { forgetRun, rememberRun, useRejoinRun } from "./rejoin";
+import { forgetRun, rememberRun, useOpenIfRemembered, useRejoinRun } from "./rejoin";
 
 export const FORMAT_LABELS: Record<HeadlineFormat, string> = {
   news: "News headline",
@@ -179,6 +179,7 @@ export function HeadlinesDialog({
   const [running, setRunning] = useState(false);
   const [ownResult, setResult] = useState<HeadlinesResult | null>(null);
   const runKey = `headlines:${siteId}:${angleId ?? "facts"}`;
+  useOpenIfRemembered(runKey, setOpen);
   const rejoin = useRejoinRun<HeadlinesResult>(runKey, open && !running && !ownResult);
   const result = running ? null : (ownResult ?? rejoin.result);
   const [error, setError] = useState<string | null>(null);

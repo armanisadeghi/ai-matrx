@@ -87,6 +87,65 @@ function errorText(value: unknown): string {
   return "The run failed on the server.";
 }
 
+/** Past this a followed run that is still processing is reported as still running, not as lost. */
+export const FOLLOW_LIMIT_MS = 12 * 60_000;
+
+/**
+ * Follow one durable run to its end: the stored result, or a thrown sentence with the stored
+ * reason. Used when a stream closes without an answer (a dropped connection, a paused preview).
+ */
+export async function followRunToEnd(
+  runId: string,
+  deps: { read?: (id: string) => Promise<RunRow | null>; sleep?: (ms: number) => Promise<void>; limitMs?: number } = {},
+): Promise<unknown> {
+  const read = deps.read ?? readRun;
+  const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const limit = deps.limitMs ?? FOLLOW_LIMIT_MS;
+  for (let waited = 0; ; waited += POLL_MS) {
+    const row = await read(runId);
+    if (!row) throw new Error("The run you started could not be found.");
+    if (row.status === "completed") {
+      if (row.result == null) throw new Error("The run finished on the server but saved no result.");
+      return row.result;
+    }
+    if (row.status === "failed") throw new Error(errorText(row.error));
+    if (waited >= limit) {
+      throw new Error("The run is still working on the server. Open this again in a few minutes to see it.");
+    }
+    await sleep(POLL_MS);
+  }
+}
+
+/** Remembered, still-fresh runs whose key starts with `prefix` (e.g. `headlines:<site>:`). */
+export function rememberedRunKeys(prefix: string, now = Date.now()): string[] {
+  const store = storage();
+  if (!store) return [];
+  const out: string[] = [];
+  for (let i = 0; i < store.length; i += 1) {
+    const full = store.key(i);
+    if (!full?.startsWith(PREFIX + prefix)) continue;
+    const key = full.slice(PREFIX.length);
+    if (readRememberedRun(key, now)) out.push(key);
+  }
+  return out;
+}
+
+/**
+ * A dialog whose run is still out there opens itself on mount: after a reload or a remount the
+ * person sees the run being picked back up, never an empty page with the work silently gone.
+ */
+export function useOpenIfRemembered(
+  key: string,
+  /** A `useState` setter — stable, so this runs once per mount; a dialog the person closes stays closed. */
+  setOpen: (value: boolean) => void,
+): boolean {
+  const [remembered] = useState(() => readRememberedRun(key) !== null);
+  useEffect(() => {
+    if (remembered) setOpen(true);
+  }, [remembered, setOpen]);
+  return remembered;
+}
+
 export interface RejoinState<T> {
   /** A remembered run is being followed. */
   following: RememberedRun | null;
