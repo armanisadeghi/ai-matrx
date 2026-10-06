@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  AlertTriangle,
   ExternalLink,
   Loader2,
   Play,
@@ -56,6 +57,9 @@ import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationMembers } from "@/features/organizations/hooks";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
 import { DeliveryControls } from "@/features/marketing/news-monitor/DeliveryControls";
+import { ArchiveRecordButton } from "@/features/trash/components/ArchiveRecordButton";
+import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { cn } from "@/lib/utils";
@@ -112,6 +116,8 @@ import {
   type PeopleIndex,
   type PersonOffer,
   blankedFieldsSentence,
+  fittingSchedule,
+  opportunityDraftSentence,
 } from "./model";
 
 const NO_PROOF_SENTENCE =
@@ -231,7 +237,7 @@ function ItemList({
       </p>
       <ul className="mt-1 flex flex-col gap-1">
         {items.map((item, index) => (
-          <li key={`${item.text}-${index}`} className="flex items-center gap-2">
+          <li key={index} className="flex items-center gap-2">
             <Input
               value={item.text}
               aria-label={`${label} ${index + 1}`}
@@ -417,6 +423,31 @@ function MonitorSetupEditorBody({
   const [setupError, setSetupError] = useState<unknown>(null);
   const [setupAttempt, setSetupAttempt] = useState(0);
   const [draft, setDraft] = useState<MonitorDraft | null>(null);
+  // NEVER LOSE THE FORM (defect 3, 2026-10-05): the unsaved draft is kept per
+  // brand + monitor in the shared wizard-draft store, so a remount (a reload, a
+  // dev refresh, an error boundary retry, a session re-key) puts it back — and
+  // says so — instead of re-seeding a fresh form from the brand.
+  const keptDraft = useWizardDraft<MonitorDraft | null>(
+    `news-monitor-setup:${brandCtx.id}:${trackerParam ?? "new"}`,
+    {
+      restore: (data) =>
+        data.draft && typeof data.draft === "object"
+          ? { values: data.draft as MonitorDraft }
+          : { values: null, rejectedKeys: data.draft === undefined ? [] : ["draft"] },
+    },
+  );
+  // The draft as seeded (from the brand or the saved monitor): only a change
+  // the person made after it is worth keeping.
+  const seededDraft = useRef<MonitorDraft | null>(null);
+  const lastKept = useRef<MonitorDraft | null>(null);
+  const keepDraft = keptDraft.patch;
+  const keptStatus = keptDraft.status;
+  const applyKept = keptDraft.applyOnce;
+  useEffect(() => {
+    if (!draft || draft === seededDraft.current || draft === lastKept.current) return;
+    lastKept.current = draft;
+    keepDraft({ draft });
+  }, [draft, keepDraft]);
   const [scheduleTouched, setScheduleTouched] = useState(false);
   const [proposal, setProposal] = useState<ProposalResult | null>(null);
   const [proposing, setProposing] = useState<string | null>(null);
@@ -496,6 +527,17 @@ function MonitorSetupEditorBody({
   useEffect(() => {
     if (draft || !brandRow || sites.isPending) return;
     if (trackerParam && tracker.isPending) return;
+    if (keptStatus === "loading") return;
+    // A kept, unsaved draft wins over a fresh seed — exactly once, announced.
+    if (keptStatus === "found") {
+      applyKept((kept) => {
+        if (kept) {
+          seededDraft.current = kept;
+          setDraft(kept);
+        }
+      });
+      return;
+    }
     // A new draft waits for who-is-a-person, so no alias is preselected by a race.
     if (!trackerParam && (roster.loading || facts.isPending)) return;
     const tz = browserTimezone();
@@ -507,20 +549,22 @@ function MonitorSetupEditorBody({
         timezone: tz,
         people,
       });
-      setDraft(draftFromTracker(tracker.data, fallback.keywords, tz));
+      const seeded = draftFromTracker(tracker.data, fallback.keywords, tz);
+      seededDraft.current = seeded;
+      setDraft(seeded);
       return;
     }
     const siteId =
       siteRows.find((s) => s.id === siteParam)?.id ?? siteRows[0]?.id ?? null;
-    setDraft(
-      newDraft({
-        brandName: brandRow.name,
-        aliases,
-        siteId,
-        timezone: tz,
-        people,
-      }),
-    );
+    const seeded = newDraft({
+      brandName: brandRow.name,
+      aliases,
+      siteId,
+      timezone: tz,
+      people,
+    });
+    seededDraft.current = seeded;
+    setDraft(seeded);
     // `people` is rebuilt every render from the two reads gated above.
   }, [
     draft,
@@ -534,6 +578,8 @@ function MonitorSetupEditorBody({
     aliases,
     roster.loading,
     facts.isPending,
+    keptStatus,
+    applyKept,
   ]);
 
   // A saved schedule preselects its choice once — whichever of the draft and
@@ -589,10 +635,6 @@ function MonitorSetupEditorBody({
     (descriptionFact ? factText(descriptionFact) : "") ||
     "";
   const presets = scheduleOptions(setup?.schedule_presets);
-  const scheduleId =
-    draft.schedule ||
-    defaultSchedule(draft.opportunity, setup?.schedule_default);
-  const preset = presets.find((p) => p.id === scheduleId);
   const xLocations = (setup?.x_trends_locations ?? []).flatMap((loc) => {
     const woeid = Number(loc.woeid);
     return Number.isFinite(woeid)
@@ -604,21 +646,31 @@ function MonitorSetupEditorBody({
   // One run's cost: the measured average, or with no runs yet the org's
   // `news.setup.estimated_run_usd` setting (served since aidream e14812d1e4).
   const estimatedRunUsd = cost?.estimated_run_usd ?? cost?.average_run_usd;
-  const costAdvice = cost
-    ? scheduleCostAdvice(
-        projectSchedules(presets, estimatedRunUsd, cost.monthly_ceiling_usd),
-        scheduleId,
-      )
-    : null;
+  const projections = cost
+    ? projectSchedules(presets, estimatedRunUsd, cost.monthly_ceiling_usd)
+    : [];
+  // What starts preselected, and what is marked recommended, fits the
+  // organization's monthly ceiling (the knob's choice when it fits).
+  const startingSchedule = (opportunity: boolean) =>
+    fittingSchedule(
+      defaultSchedule(opportunity, setup?.schedule_default),
+      presets,
+      projections,
+    );
+  const recommendedId = fittingSchedule(
+    presets.find((p) => p.recommended)?.id ?? "",
+    presets,
+    projections,
+  );
+  const scheduleId = draft.schedule || startingSchedule(draft.opportunity);
+  const preset = presets.find((p) => p.id === scheduleId);
+  const costAdvice = cost ? scheduleCostAdvice(projections, scheduleId) : null;
   const brandSeg = brandCtx.seg;
 
   const setLens = (lens: "coverage" | "opportunity", on: boolean) => {
     const next = { ...draft, [lens]: on };
     if (!scheduleTouched)
-      next.schedule = defaultSchedule(
-        next.opportunity,
-        setup?.schedule_default,
-      );
+      next.schedule = startingSchedule(next.opportunity);
     setDraft(next);
   };
 
@@ -690,7 +742,12 @@ function MonitorSetupEditorBody({
       );
       const blanked = blankedFieldsSentence(saved);
       if (blanked) toast.warning(blanked);
-      setDraft({ ...draft, briefSourceId });
+      keptDraft.clear();
+      const draftSentence = opportunityDraftSentence(saved);
+      if (draftSentence) toast.info(draftSentence);
+      const savedDraft = { ...draft, briefSourceId };
+      seededDraft.current = savedDraft;
+      setDraft(savedDraft);
       setTrackerId(saved.id);
       void invalidate();
       if (saved.id !== trackerParam) {
@@ -792,6 +849,18 @@ function MonitorSetupEditorBody({
     <div className="flex h-full flex-col bg-textured">
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-3 p-3 pt-[calc(var(--shell-header-h)+0.75rem)]">
+          {keptDraft.didRestore ? (
+            <WizardDraftRestored
+              what="your unsaved monitor setup"
+              onStartFresh={() => {
+                keptDraft.discard();
+                seededDraft.current = null;
+                lastKept.current = null;
+                setDraft(null);
+              }}
+              onDismiss={keptDraft.acknowledge}
+            />
+          ) : null}
           <header className="flex flex-wrap items-start justify-between gap-2 px-0.5">
             <div className="min-w-0">
               <h1 className="text-sm font-semibold text-foreground">
@@ -1490,9 +1559,14 @@ function MonitorSetupEditorBody({
                   )}
                 >
                   {p.label}
-                  {p.recommended ? (
+                  {p.id === recommendedId ? (
                     <span className="ml-1 text-[10px] text-primary">
                       recommended
+                    </span>
+                  ) : null}
+                  {projections.find((x) => x.presetId === p.id)?.overCeiling ? (
+                    <span className="ml-1 text-[10px] font-medium text-warning">
+                      over ceiling
                     </span>
                   ) : null}
                 </button>
@@ -1542,10 +1616,12 @@ function MonitorSetupEditorBody({
             </p>
             {costAdvice && cost ? (
               <div
-                className="flex flex-wrap items-center gap-2 rounded-md border border-warning/40 bg-warning/5 px-2 py-1.5 text-xs"
+                role="status"
+                className="flex flex-wrap items-center gap-2 rounded-md border border-warning bg-warning/10 px-3 py-2 text-sm"
                 data-surface-value="setup_cost_warning"
               >
-                <span className="text-warning">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-warning" aria-hidden />
+                <span className="min-w-0 flex-1 font-medium text-foreground">
                   {`"${costAdvice.chosen.label}" projects about ${formatCostDisplay(costAdvice.chosen.monthlyUsd)} a month — over your organization's ${formatCostDisplay(cost.monthly_ceiling_usd)} monthly news ceiling. At the ceiling, scheduled runs pause until someone resumes them.`}{" "}
                   {costAdvice.cheaper
                     ? `"${costAdvice.cheaper.label}" fits at about ${formatCostDisplay(costAdvice.cheaper.monthlyUsd)} a month.`
@@ -1671,6 +1747,20 @@ function MonitorSetupEditorBody({
       </div>
       <div className="shrink-0 border-t border-border bg-card pb-safe">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-end gap-2 p-2">
+          {trackerId ? (
+            <ArchiveRecordButton
+              token="seo_coverage_tracker"
+              id={trackerId}
+              what={draft.name || "this monitor"}
+              noun="news monitor"
+              className="mr-auto"
+              onArchived={() => {
+                void invalidate();
+                router.push(marketingRoutes.brandMonitoring(brandSeg));
+              }}
+              onRestored={() => void invalidate()}
+            />
+          ) : null}
           <Button
             icon={saving === "save" ? (
               <Loader2 className="animate-spin" />

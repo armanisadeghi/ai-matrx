@@ -937,3 +937,47 @@ export function blankedFieldsSentence(saved: unknown): string | null {
   if (!parts.length) return null;
   return `This save emptied ${parts.join(", ")}. If that was not meant, add them back and save again.`;
 }
+
+// ── the schedule a monitor starts on fits the ceiling (2026-10-05) ─────────
+
+/**
+ * The schedule a new monitor starts on, and the one marked "recommended": the
+ * `news.setup.schedule_default` / knob-recommended choice when it fits the
+ * organization's monthly ceiling, else the scheduled choice with the most runs
+ * that still fits, else "No schedule" (a preset with no runs). With nothing to
+ * project (no cost per run yet) the knob's choice stands. A person can still
+ * pick anything — this only decides what is preselected.
+ */
+export function fittingSchedule(
+  preferred: string,
+  presets: ScheduleOption[],
+  projections: ScheduleProjectionView[],
+): string {
+  if (!projections.length) return preferred;
+  const chosen = projections.find((p) => p.presetId === preferred);
+  if (chosen && !chosen.overCeiling) return preferred;
+  const fits = projections
+    .filter((p) => p.runsPerMonth > 0 && !p.overCeiling)
+    .sort((a, b) => b.runsPerMonth - a.runsPerMonth);
+  if (fits[0]) return fits[0].presetId;
+  return presets.find((p) => p.runsPerMonth === 0)?.id ?? preferred;
+}
+
+// ── an opportunity monitor saved with nothing to watch (2026-10-05) ────────
+
+/**
+ * One sentence when the saved monitor's opportunity lens has no topic, search
+ * term or feed: it saved as a draft that watches nothing until it has one.
+ */
+export function opportunityDraftSentence(saved: unknown): string | null {
+  if (!saved || typeof saved !== "object") return null;
+  const row = saved as Record<string, unknown>;
+  const lenses = Array.isArray(row.lenses) ? row.lenses : [];
+  if (!lenses.includes("opportunity")) return null;
+  const any = ["topics", "search_terms", "feed_ids", "feed_urls"].some(
+    (key) => Array.isArray(row[key]) && (row[key] as unknown[]).length > 0,
+  );
+  return any
+    ? null
+    : "Saved as a draft: news we can join watches nothing until you add a topic, search term or feed.";
+}

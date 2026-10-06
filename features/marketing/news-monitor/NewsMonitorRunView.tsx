@@ -48,7 +48,8 @@ import {
   type ScheduleView,
   type SetupFacts,
 } from "@/features/marketing/monitor-setup/api";
-import { useTracker } from "@/features/marketing/monitor-setup/data";
+import { useInvalidateMonitorSetup, useTracker } from "@/features/marketing/monitor-setup/data";
+import { ArchiveRecordButton } from "@/features/trash/components/ArchiveRecordButton";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -123,6 +124,7 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
   const invalidate = useInvalidateNewsMonitor();
+  const invalidateMonitors = useInvalidateMonitorSetup();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   useClippedContentGuard(scrollRef, { label: "news monitor run view" });
 
@@ -378,6 +380,18 @@ export function NewsMonitorRunView({ trackerId }: { trackerId: string }) {
               <Button icon={running ? <Loader2 className="animate-spin" /> : <Play />} variant="primary" onClick={() => void runNow()} disabled={running}>
                 {running ? "Running…" : "Run now"}
               </Button>
+              <ArchiveRecordButton
+                token="seo_coverage_tracker"
+                id={monitor.id}
+                what={monitor.name}
+                noun="news monitor"
+                className=""
+                onArchived={() => {
+                  void invalidateMonitors();
+                  router.push(marketingRoutes.brandMonitoring(brandCtx.seg));
+                }}
+                onRestored={() => void invalidateMonitors()}
+              />
             </div>
           </header>
 
