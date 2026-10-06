@@ -1,5 +1,6 @@
 import { join } from "path";
 import { RouteHeaderData } from "@/components/ssr/RouteHeaderData";
+import { DemosChatUiRegistrations } from "@/providers/DemosChatUiRegistrations";
 import { createRouteMetadata } from "@/utils/route-metadata";
 
 export const metadata = createRouteMetadata("/demos/agents", {
@@ -15,12 +16,15 @@ export default function AgentsDemosLayout({
   children: React.ReactNode;
 }) {
   return (
-    <RouteHeaderData
-      directory={join(process.cwd(), "app", "(dev)", "demos", "agents")}
-      moduleHome="/demos/agents"
-      moduleName="Agent demos"
-    >
-      {children}
-    </RouteHeaderData>
+    <>
+      <DemosChatUiRegistrations />
+      <RouteHeaderData
+        directory={join(process.cwd(), "app", "(dev)", "demos", "agents")}
+        moduleHome="/demos/agents"
+        moduleName="Agent demos"
+      >
+        {children}
+      </RouteHeaderData>
+    </>
   );
 }

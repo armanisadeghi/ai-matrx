@@ -486,6 +486,7 @@
     "check:agent-run-tier": "tsx scripts/check-agent-run-tier.ts && tsx scripts/check-agent-run-tier.ts --self-test",
     "check:agent-list-reads:self-test": "tsx scripts/check-agent-list-reads.ts --self-test",
     "check:chat-package-boundary": "node scripts/check-chat-package-boundary.mjs",
+    "check:demos-chat-registration": "tsx scripts/check-demos-chat-registration.ts",
     "check:chat-db-types": "node packages/chat/scripts/generate-db-types.mjs --check",
     "check:chat-package-boundary:self-test": "node scripts/check-chat-package-boundary.mjs --self-test",
     "test:release-fail-forward": "node --test scripts/release-fail-forward.test.mjs",
