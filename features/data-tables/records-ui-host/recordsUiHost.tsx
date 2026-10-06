@@ -18,6 +18,7 @@
  */
 
 import { RecordBodyEditor } from "@/features/data-tables/records-ui-host/RecordBodyEditor";
+import { RecordBodySpace } from "@/features/spaces/embed/RecordBodySpace";
 import { useCallback, useMemo, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -142,6 +143,14 @@ export function recordsUiHostFor({ ports, merged, gridContext, layouts, rights }
     chat: (ctx) => <RecordScopedChat ctx={ctx} organizationId={ports.organizationId} />,
     // A record page's body, in the platform's one rich editor (records-ui ≥0.96 `editRichText`).
     editRichText: (props) => <RecordBodyEditor {...props} />,
+    // A row with a body Space (record → document, label row_body, from the Notion importer) shows it in the
+    // Spaces editor (records-ui ≥0.101.22 `renderRecordBody`); every other row keeps its own body (fallback).
+    // Spread as its own object: a records-ui build before the port ignores the key.
+    ...{
+      renderRecordBody: (args) => (
+        <RecordBodySpace tableId={args.tableId} recordId={args.recordId} record={args.record} readOnly={args.readOnly} fallback={args.fallback} />
+      ),
+    },
     // "What ran on this record" in the record rail (records-ui `recordSections`, lane 11 wave 2).
     // Spread as its own object: a records-ui build before the port ignores the key.
     ...recordSectionsPort(ports.organizationId),
