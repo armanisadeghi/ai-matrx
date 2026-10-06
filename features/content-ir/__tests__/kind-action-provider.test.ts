@@ -3,15 +3,16 @@
  * the provider `content-ir.kind-actions`. These tests pin:
  *  - the census: every capability a component can name, by key and by id;
  *  - absent from every menu: a plain click target resolves none of them;
- *  - runnable by id: the invocation target resolves exactly one and runs it
- *    with the capability-scoped context, the handler's envelope coming back;
- *  - never throws: an unknown id is `not-registered`, a throwing handler is
- *    `failed` (captured by alchemy's run path).
+ *  - runnable by id: alchemy's `invokeAction` runs it with the
+ *    capability-scoped context, the handler's envelope coming back as `data`;
+ *  - never throws: an unknown id is `not_registered`, a throwing handler is
+ *    `action_failed` (captured + announced once by alchemy).
  */
 import {
   createActionRegistry,
   createClickTarget,
-  type RunActionOptions,
+  invokeAction,
+  type InvokeActionOptions,
 } from "@ai-matrx/alchemy/actions";
 import type { KindActionContext } from "../react/actions/kind-action-context";
 import {
@@ -22,7 +23,6 @@ import {
 } from "../react/actions/kind-action-provider";
 import {
   ensureInvokedProvider,
-  invokeRegisteredAction,
   invokedActionProvider,
 } from "../react/actions/invoked-actions";
 
@@ -34,7 +34,7 @@ jest.mock("@ai-matrx/chat/surfaces/runtime/surface-writeback", () => ({
 function setup() {
   const capture = jest.fn();
   const notify = { error: jest.fn(), success: jest.fn(), info: jest.fn() };
-  const ports = { diagnostics: { capture }, notify } as unknown as RunActionOptions["ports"];
+  const ports = { diagnostics: { capture }, notify } as unknown as InvokeActionOptions["ports"];
   const registry = createActionRegistry({ ports });
   return { registry, ports, capture, notify };
 }
@@ -63,7 +63,7 @@ describe("kind actions on the one action registry", () => {
     }
   });
 
-  it("registers once per registry and is absent from every menu", async () => {
+  it("registers once per registry, is absent from every menu and programmatic-only", async () => {
     const { registry } = setup();
     ensureInvokedProvider(registry, kindActionProvider);
     ensureInvokedProvider(registry, kindActionProvider);
@@ -72,6 +72,9 @@ describe("kind actions on the one action registry", () => {
       createClickTarget({ auth: { authenticated: true } }),
     );
     expect(menu).toEqual([]);
+    const action = await registry.get(kindActionId("trigger_agent"));
+    expect(action?.surfaces).toEqual(["invoke"]);
+    expect(typeof action?.invoke).toBe("function");
   });
 
   it("runs trigger_agent by id with the bound context and returns its envelope", async () => {
@@ -80,14 +83,13 @@ describe("kind actions on the one action registry", () => {
     const launchAgent = jest.fn(
       async () => ({ conversationId: "c", requestId: "r" }) as never,
     );
-    const ran = await invokeRegisteredAction(
+    const ran = await invokeAction(
       registry,
-      ports,
       kindActionId("trigger_agent"),
       { agentId: "agent-1", variables: { prompt: "hi" } },
-      { launchAgent, userId: "u1" } satisfies KindActionContext,
+      { ports, context: { launchAgent, userId: "u1" } satisfies KindActionContext },
     );
-    expect(ran).toEqual({ status: "ran", value: expect.objectContaining({ ok: true }) });
+    expect(ran).toEqual({ ok: true, data: expect.objectContaining({ ok: true }) });
     expect(launchAgent).toHaveBeenCalledWith(
       "agent-1",
       expect.objectContaining({
@@ -97,28 +99,25 @@ describe("kind actions on the one action registry", () => {
     );
 
     // A malformed input is the handler's own safe envelope, never a throw.
-    const bad = await invokeRegisteredAction(
-      registry,
-      ports,
-      kindActionId("trigger_agent"),
-      {},
-      ctx,
-    );
+    const bad = await invokeAction(registry, kindActionId("trigger_agent"), {}, { ports, context: ctx });
     expect(bad).toEqual({
-      status: "ran",
-      value: { ok: false, error: expect.stringContaining("agentId") },
+      ok: true,
+      data: { ok: false, error: expect.stringContaining("agentId") },
     });
   });
 
-  it("an unknown id is not-registered, never a throw", async () => {
+  it("an unknown id is not_registered, never a throw", async () => {
     const { registry, ports } = setup();
     ensureInvokedProvider(registry, kindActionProvider);
     await expect(
-      invokeRegisteredAction(registry, ports, kindActionId("no_such_action"), {}, ctx),
-    ).resolves.toEqual({ status: "not-registered" });
+      invokeAction(registry, kindActionId("no_such_action"), {}, { ports, context: ctx }),
+    ).resolves.toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "not_registered" }),
+    });
   });
 
-  it("a throwing handler is failed, captured and announced once by alchemy's run path", async () => {
+  it("a throwing handler is action_failed, captured and announced once by alchemy", async () => {
     const { registry, ports, capture, notify } = setup();
     registry.register(
       invokedActionProvider("test.throwing", [
@@ -132,8 +131,11 @@ describe("kind actions on the one action registry", () => {
         },
       ]),
     );
-    const out = await invokeRegisteredAction(registry, ports, "test.boom", null, ctx);
-    expect(out.status).toBe("failed");
+    const out = await invokeAction(registry, "test.boom", null, { ports, context: ctx });
+    expect(out).toEqual({
+      ok: false,
+      error: expect.objectContaining({ code: "action_failed", message: "kaboom" }),
+    });
     expect(capture).toHaveBeenCalled();
     expect(notify.error).toHaveBeenCalledTimes(1);
   });

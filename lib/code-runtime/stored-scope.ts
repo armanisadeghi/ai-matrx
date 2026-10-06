@@ -13,7 +13,10 @@
  * bundle time, so this file never knows which world it is in. It must stay
  * free of async `import()` (the frame bundle has no code splitting).
  */
+import * as KindKit from "@ai-matrx/content-ir-react/kind-kit";
+import * as Recharts from "recharts";
 import { provideScopeModules } from "@ai-matrx/code-runtime/scope";
+import "./kind-kit-host";
 
 let provided = false;
 
@@ -21,6 +24,11 @@ let provided = false;
 export function provideStoredComponentScopeModules(): void {
   if (provided) return;
   provided = true;
+  // Packages (kind-kit, recharts) are static ESM imports, never `require`: a
+  // require resolves a package's CommonJS build, which drags a second (CJS)
+  // copy of it — and of the design system — into the frame bundle beside the
+  // ESM one (measured: 6.5 MB with require, 5.7 MB with these imports).
+  const kindKit = () => KindKit;
   const markdown = () => require("@/components/MarkdownStream");
   provideScopeModules({
     "@/components/MarkdownStream": markdown,
@@ -29,12 +37,14 @@ export function provideStoredComponentScopeModules(): void {
     "@/components/mardown": markdown,
     "@/components/agent-copy/CopyButtons": () => require("@/components/agent-copy/CopyButtons"),
     "@/components/agent-copy/CopyForAiButton": () => require("@/components/agent-copy/CopyForAiButton"),
-    "@/components/kind-kit/SortableList": () => require("@/components/kind-kit/SortableList"),
-    "@/components/kind-kit/KindPanelGrid": () => require("@/components/kind-kit/KindPanelGrid"),
-    "@/components/kind-kit/KindPanel": () => require("@/components/kind-kit/KindPanel"),
-    "@/components/kind-kit/KindHeaderBar": () => require("@/components/kind-kit/KindHeaderBar"),
-    "@/components/kind-kit/StreamingSkeleton": () => require("@/components/kind-kit/StreamingSkeleton"),
-    "@/components/kind-kit/TagList": () => require("@/components/kind-kit/TagList"),
+    // kind-kit lives in @ai-matrx/content-ir-react; its copy bar and read
+    // notices are this app's (kind-kit-host.ts, registered above).
+    "@/components/kind-kit/SortableList": kindKit,
+    "@/components/kind-kit/KindPanelGrid": kindKit,
+    "@/components/kind-kit/KindPanel": kindKit,
+    "@/components/kind-kit/KindHeaderBar": kindKit,
+    "@/components/kind-kit/StreamingSkeleton": kindKit,
+    "@/components/kind-kit/TagList": kindKit,
     "@/applets": () => require("@/features/agent-apps/embed/AppletParts"),
     "@/lib/utils": () => require("@/lib/utils"),
     "@/components/ui/button": () => require("@/components/ui/button"),
@@ -61,6 +71,6 @@ export function provideStoredComponentScopeModules(): void {
     "@/components/ui/alert": () => require("@/components/ui/alert"),
     // input, sheet, popover and skeleton have no app export of that name: the
     // package's design-system default serves them (as the old registry did).
-    recharts: () => require("recharts"),
+    recharts: () => Recharts,
   });
 }

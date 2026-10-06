@@ -15,6 +15,7 @@ import { AlertCircle, BookOpen } from "lucide-react";
 import FlashcardItem from "@/components/mardown-display/blocks/flashcards/FlashcardItem";
 import FlashcardMobileView from "@/components/mardown-display/blocks/flashcards/FlashcardMobileView";
 import { useFlashcardStudy } from "@/features/flashcards/data/useFlashcardStudy";
+import { useFlashcardStudySurface } from "@/features/flashcards/components/study/useFlashcardStudySurface";
 import {
   FlashcardStudySidebar,
   StudyCompletionSummary,
@@ -55,6 +56,8 @@ export function FlashcardStudyWindow({
     setId,
     withSession: true,
   });
+  // Only an open window describes itself to the agent.
+  useFlashcardStudySurface({ setId: isOpen ? setId : null, study, mode: "flip cards" });
   const isMobile = useIsMobile();
   const [mobileDismissed, setMobileDismissed] = useState(false);
   const [completed, restartCompletion] = useStudyCompletion(

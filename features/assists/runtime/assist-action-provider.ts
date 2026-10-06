@@ -4,8 +4,8 @@
  * provider `assists.actions`.
  *
  * Each `AssistAction["kind"]` becomes the registry Action `assist.<kind>`:
- * absent from every menu, runnable only by id through `invokeRegisteredAction`
- * (content-ir's `invoked-actions.ts`), which `useAssistRunner` calls. A new
+ * programmatic-only (alchemy `invocableAction`), run by id through alchemy's `invokeAction`
+ * (wrapped by content-ir's `invoked-actions.ts`), which `useAssistRunner` calls. A new
  * kind is one handler file exporting an `AssistActionDefinition` plus one line
  * in `ASSIST_ACTIONS` below.
  */

@@ -53,6 +53,7 @@ import {
     Settings2,
     Hash,
     KeyRound,
+    ScrollText,
 } from 'lucide-react';
 import { toast } from "@/lib/toast";
 import { cn } from '@/lib/utils';
@@ -82,6 +83,7 @@ const feedbackTypeIcons: Record<FeedbackType, React.ReactNode> = {
     suggestion: <Lightbulb className="w-3.5 h-3.5 text-yellow-500" />,
     other: <HelpCircle className="w-3.5 h-3.5 text-gray-500" />,
     request: <KeyRound className="w-3.5 h-3.5 text-sky-500" />,
+    page_story: <ScrollText className="w-3.5 h-3.5 text-emerald-500" />,
 };
 
 const STATUS_OPTIONS: { value: FeedbackStatus | 'all'; label: string }[] = [

@@ -362,8 +362,9 @@ const writeTargets: SurfaceWriteTarget[] = [
     // fields, same enums — so naming it here does not add a second contract,
     // it publishes the one that was already being enforced. The wire now
     // TEACHES it ([kind=masterwork_rule_draft {...}] in the
-    // apply_surface_write spec) and the seam ENFORCES it before the Expert is
-    // ever asked to approve. Schema source: features/content-ir/kinds/masterwork-rule-draft.ts.
+    // apply_surface_write spec) and the one write door ENFORCES it (plan rule 10:
+    // an agent's mismatch is refused before the Expert is ever asked to approve;
+    // a person's applies with a warning and a fix). Schema source: features/content-ir/kinds/masterwork-rule-draft.ts.
     valueKind: "masterwork_rule_draft",
     updatesValue: "active_rule_draft",
     mode: "draft",

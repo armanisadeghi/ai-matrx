@@ -31,11 +31,9 @@ import type {
   AssistActionResult,
 } from "./assist-action-types";
 import { assistActionId, assistActionProvider } from "./assist-action-provider";
-import {
-  ensureInvokedProvider,
-  invokeRegisteredAction,
-} from "@/features/content-ir/react/actions/invoked-actions";
-import { useOptionalAlchemyActions } from "@/features/content-ir/react/actions/useOptionalAlchemyActions";
+import { invokeAction } from "@ai-matrx/alchemy/actions";
+import { useOptionalAlchemyActions } from "@ai-matrx/alchemy/react/host";
+import { ensureInvokedProvider } from "@/features/content-ir/react/actions/invoked-actions";
 import { resolveAssistNavigation } from "./navigation";
 import type { Assist } from "../types";
 
@@ -214,14 +212,13 @@ export function useAssistRunner(): AssistRunnerApi {
         return { ok: false, error: message };
       }
       ensureInvokedProvider(registry, assistActionProvider);
-      const run = await invokeRegisteredAction<AssistActionResult>(
+      const run = await invokeAction<AssistActionResult>(
         registry,
-        ports,
         assistActionId(assist.action.kind),
         assist,
-        ctx,
+        { ports, context: ctx },
       );
-      if (run.status === "not-registered") {
+      if (!run.ok && run.error.code === "not_registered") {
         const message = `Assist action "${assist.action.kind}" is not registered`;
         toast.error(message);
         captureError({
@@ -231,20 +228,19 @@ export function useAssistRunner(): AssistRunnerApi {
         });
         return { ok: false, error: message };
       }
-      if (run.status === "failed") {
-        const message =
-          run.error instanceof Error ? run.error.message : "Assist action failed";
-        // A handler throw is already captured + announced by alchemy's run
-        // path (ports.notify); only announce here when that port is absent.
-        if (!ports.notify) toast.error(message);
+      if (!run.ok) {
+        const message = run.error.message || "Assist action failed";
+        // `action_failed` is already captured + announced once by alchemy's
+        // invokeAction (ports.notify); announce here only otherwise.
+        if (run.error.code !== "action_failed" || !ports.notify) toast.error(message);
         captureError({
           source: "assists",
-          message: `Assist ${assist.sourceKey} failed: ${message}`,
+          message: `Assist ${assist.sourceKey} failed (${run.error.code}): ${message}`,
           details: `assist=${assist.id}`,
         });
         return { ok: false, error: message };
       }
-      const outcome = run.value;
+      const outcome = run.data;
       if (!outcome.ok) {
         toast.error(outcome.error);
         captureError({

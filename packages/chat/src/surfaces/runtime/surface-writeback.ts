@@ -50,6 +50,7 @@ import type {
   Receipt,
   WriteCaller,
   WriteDoor,
+  WriteApplyRequest,
   WriteDoorDeclarations,
   WriteHandler,
   WriteHandlerResult,
@@ -748,13 +749,29 @@ function resolveApplyPolicy(
 // and comes back with a receipt. This seam keeps everything it does before a
 // write (patch → declared type → value contract → the page's `validate`); the
 // door then applies the target's EFFECTIVE policy (the surface default after
-// the binding's overrides, `resolveApplyPolicy`) and calls the page's handler,
-// registered on the door as a LIVE handler for the length of the write.
+// the binding's overrides, `resolveApplyPolicy`) and calls the page's handler.
 //
-// The door's `approvals` port IS this seam's existing approval flow: an agent
-// write registers its approver (`agentWriteAllowed` → the conversation's inline
-// card), and `surfaceWriteApprovals.ask` answers with it. The host binds the
-// same port and the same door (`components/agent-copy/alchemy-door.ts`).
+// A MOUNTED PAGE'S HANDLERS ARE LIVE ON THE DOOR FOR AS LONG AS IT IS MOUNTED
+// (`routeMountedPages`): one route per (surface, target), registered when the
+// page registers its write handlers and released when it unmounts. So an
+// Action or a destination writing to an open page reaches that page's own
+// handler, and with the page closed the door falls back to the headless
+// handler or says `unapplicable`. A seam write is found on that same route by
+// the `runId` it carries, so it runs this seam's own apply (rebase, re-check,
+// receipt); any other write runs the page's handler with the door's value.
+//
+// AN APPROVAL BELONGS TO THE WRITE THAT ASKED FOR IT. Every seam write mints a
+// run id (its conversation + a per-write number) and the door hands that id
+// back on its approval request (`ApprovalRequest.runId`, alchemy 0.12.1), so
+// the door's question is answered by exactly that write's own card — no
+// matching by value, no queue per target. Two conversations writing the same
+// value to the same target each get their own card, and a write from outside
+// this seam is never answered by a seam write's card.
+//
+// THE VALUE CONTRACT IS THE DOOR'S (plan rule 10): a person's kind mismatch is
+// applied with a warning and a fix; an agent's is refused with the reason,
+// before any card. The seam only re-checks a value the door never saw — an
+// agent's anchored edit rebased after approval.
 
 /** Errors this seam already toasted and captured; the door must not capture them twice. */
 const reportedErrors = new WeakSet<object>();
@@ -773,36 +790,44 @@ function stableInput(value: unknown): string {
   }
 }
 
-interface PendingApprover {
-  input: string;
-  approve: () => Promise<boolean>;
-}
-
-const pendingApprovers = new Map<string, PendingApprover[]>();
-
 function doorKey(surfaceName: string, targetName: string): string {
   return `${surfaceName}\u0000${targetName}`;
 }
 
+/** One seam write in flight on the door, found by the `runId` it carries. */
+interface SeamWrite {
+  conversationId: string | null;
+  input: string;
+  apply: () => Promise<WriteHandlerResult>;
+  approve?: () => Promise<boolean>;
+}
+
+const seamWrites = new Map<string, SeamWrite>();
+
+let writeSequence = 0;
+
+function mintRunId(conversationId: string | null): string {
+  writeSequence += 1;
+  return `surface-write:${conversationId ?? "page"}:${writeSequence}`;
+}
+
 /**
- * The door's approvals port: answered by the existing approval flow of the
- * write waiting for it (same surface, same target, same value). Nothing
- * waiting means nobody here can approve — said so, never a silent "no".
+ * The door's approvals port: answered by the approval flow of the seam write
+ * whose run id the door names. No run id, no such write, an already-asked
+ * write, or a different value (a sanity check, never the match) means nobody
+ * here can approve — said so, never a silent "no".
  */
 export const surfaceWriteApprovals: ApprovalPort = {
   async ask(request) {
-    const key = doorKey(request.surfaceName, request.action);
-    const queue = pendingApprovers.get(key) ?? [];
-    const input = stableInput(request.input);
-    const index = queue.findIndex((entry) => entry.input === input);
-    if (index === -1) {
+    const write = request.runId ? seamWrites.get(request.runId) : undefined;
+    const approve = write?.approve;
+    if (!write || !approve || write.input !== stableInput(request.input)) {
       throw new Error(
         `No one is here to approve "${request.label}". Ask for it again from the conversation or page that should approve it.`,
       );
     }
-    const [entry] = queue.splice(index, 1);
-    if (queue.length === 0) pendingApprovers.delete(key);
-    return entry.approve();
+    write.approve = undefined;
+    return approve();
   },
 };
 
@@ -877,7 +902,10 @@ export function loadSurfaceWriteDoor(): Promise<WriteDoor> {
         },
         declarations: surfaceWriteDeclarations,
       }),
-    );
+    ).then((door) => {
+      routeMountedPages(door);
+      return door;
+    });
     surfaceDoor = loading;
     loading.catch(() => {
       if (surfaceDoor === loading) surfaceDoor = null;
@@ -886,54 +914,137 @@ export function loadSurfaceWriteDoor(): Promise<WriteDoor> {
   return surfaceDoor;
 }
 
-/** Per-write page handlers, found by the signal the door hands the live handler. */
-const liveApplies = new WeakMap<AbortSignal, () => Promise<WriteHandlerResult>>();
-const liveRoutes = new Map<string, { count: number; release: () => void }>();
+// ── The mounted pages' routes on the door ───────────────────────────────────
 
-const routeLiveWrite: WriteHandler = (_request, signal) => {
-  const apply = liveApplies.get(signal);
-  if (!apply) {
-    throw new Error(
-      "This page applies only the changes it is asked for itself; open it and make the change there.",
-    );
+interface PageRoute {
+  release: () => void;
+  /** A mounted page on the global registry handles this target. */
+  mounted: boolean;
+  /** Seam writes holding the route open (a dormant copy's write). */
+  holds: number;
+}
+
+const pageRoutes = new Map<string, PageRoute>();
+let routedDoor: WriteDoor | null = null;
+
+function releaseIfUnused(key: string, route: PageRoute): void {
+  if (route.mounted || route.holds > 0) return;
+  route.release();
+  pageRoutes.delete(key);
+}
+
+function openRoute(door: WriteDoor, surfaceName: string, targetName: string): PageRoute {
+  const key = doorKey(surfaceName, targetName);
+  let route = pageRoutes.get(key);
+  if (!route) {
+    route = {
+      release: door.registerLive(surfaceName, targetName, routePageWrite),
+      mounted: false,
+      holds: 0,
+    };
+    pageRoutes.set(key, route);
   }
-  return apply();
+  return route;
+}
+
+/** Every (surface, target) a mounted page handles right now has exactly one live route. */
+function syncMountedRoutes(door: WriteDoor): void {
+  const registry = getGlobalSurfaceRegistry();
+  const handled = new Map<string, { surfaceName: string; targetName: string }>();
+  for (const runtime of registry.stack()) {
+    let handlers: SurfaceWriteHandlers;
+    try {
+      handlers = resolveHandlers(runtime, registry);
+    } catch (error) {
+      captureError({
+        source: "surface-writeback",
+        message: `[write-door:routes] ${runtime.surfaceName} could not list its write handlers: ${error instanceof Error ? error.message : String(error)}`,
+        raw: { surfaceName: runtime.surfaceName },
+      });
+      continue;
+    }
+    for (const targetName of Object.keys(handlers)) {
+      if (!splitHandler(handlers[targetName])) continue;
+      handled.set(doorKey(runtime.surfaceName, targetName), { surfaceName: runtime.surfaceName, targetName });
+    }
+  }
+  for (const { surfaceName, targetName } of handled.values()) {
+    openRoute(door, surfaceName, targetName).mounted = true;
+  }
+  for (const [key, route] of [...pageRoutes]) {
+    if (handled.has(key)) continue;
+    route.mounted = false;
+    releaseIfUnused(key, route);
+  }
+}
+
+function routeMountedPages(door: WriteDoor): void {
+  if (routedDoor === door) return;
+  routedDoor = door;
+  syncMountedRoutes(door);
+  getGlobalSurfaceRegistry().subscribe(() => {
+    if (routedDoor === door) syncMountedRoutes(door);
+  });
+}
+
+/** The ONE live handler every route registers: a seam write by its run id, else the mounted page. */
+const routePageWrite: WriteHandler = (request) => {
+  const seam = request.runId ? seamWrites.get(request.runId) : undefined;
+  if (seam) return seam.apply();
+  return applyMountedPageWrite(request);
 };
 
-/** One page write through the door: the page's handler is live for exactly this write. */
+/**
+ * A write that did not come through this seam (an Action, a destination, a
+ * menu): the door has already checked its type, its kind and its policy, so
+ * the mounted page's own handler checks (`validate`) and applies the value.
+ */
+async function applyMountedPageWrite(request: WriteApplyRequest): Promise<WriteHandlerResult> {
+  const label = request.target.label || request.target.name;
+  if (request.ops) {
+    throw new Error(`"${label}" takes a whole value on ${request.surfaceName}; send the finished text instead of edits.`);
+  }
+  if (request.item) {
+    throw new Error(`"${label}" for one ${request.item.itemType} is applied from the page's own conversation; ask for it there.`);
+  }
+  const registry = getGlobalSurfaceRegistry();
+  const runtime = registry.stack().find((entry) => entry.surfaceName === request.surfaceName);
+  const handler = runtime ? splitHandler(resolveHandlers(runtime, registry)[request.target.name]) : null;
+  if (!handler) {
+    throw new Error(`"${label}" can only be saved with ${request.surfaceName} open, and it is no longer open.`);
+  }
+  if (handler.validate) await handler.validate(request.value);
+  const outcome = toWriteOutcome(await handler.apply(request.value));
+  return { status: "applied", ...(outcome?.summary ? { sentence: outcome.summary } : {}) };
+}
+
+/** One seam write through the door, carrying its own run id end to end. */
 async function writeThroughDoor(
   request: { surfaceName: string; target: string; value: unknown; by: WriteCaller },
+  conversationId: string | null,
   apply: () => Promise<WriteHandlerResult>,
   approve?: () => Promise<boolean>,
 ): Promise<Receipt> {
   const door = await loadSurfaceWriteDoor();
-  const controller = new AbortController();
-  liveApplies.set(controller.signal, apply);
   const key = doorKey(request.surfaceName, request.target);
-  let route = liveRoutes.get(key);
-  if (!route) {
-    route = { count: 0, release: door.registerLive(request.surfaceName, request.target, routeLiveWrite) };
-    liveRoutes.set(key, route);
-  }
-  route.count += 1;
-  const approver: PendingApprover | null = approve
-    ? { input: stableInput(request.value), approve }
-    : null;
-  if (approver) pendingApprovers.set(key, [...(pendingApprovers.get(key) ?? []), approver]);
+  const runId = mintRunId(conversationId);
+  const write: SeamWrite = {
+    conversationId,
+    input: stableInput(request.value),
+    apply,
+    ...(approve ? { approve } : {}),
+  };
+  seamWrites.set(runId, write);
+  // A write from a dormant copy (a board tile's capture) has no mounted route
+  // of its own; it holds one open for exactly its own write.
+  const route = openRoute(door, request.surfaceName, request.target);
+  route.holds += 1;
   try {
-    return await door.write(request, controller.signal);
+    return await door.write({ ...request, runId });
   } finally {
-    if (approver) {
-      const rest = (pendingApprovers.get(key) ?? []).filter((entry) => entry !== approver);
-      if (rest.length) pendingApprovers.set(key, rest);
-      else pendingApprovers.delete(key);
-    }
-    liveApplies.delete(controller.signal);
-    route.count -= 1;
-    if (route.count === 0) {
-      route.release();
-      liveRoutes.delete(key);
-    }
+    seamWrites.delete(runId);
+    route.holds -= 1;
+    releaseIfUnused(key, route);
   }
 }
 
@@ -1190,20 +1301,13 @@ async function agentWriteAllowed(
 }
 
 /**
- * THE VALUE CONTRACT, enforced.
+ * THE VALUE CONTRACT for a value the door never saw.
  *
- * A target that declares `valueKind` has a real contract — the registered
- * kind's `emitted_json_schema` — and this is where it binds. Runs BEFORE the
- * approval gate and before the handler, deliberately:
- *
- *  - Never ask a human to approve a value the platform already knows is
- *    malformed. An approval card for garbage teaches people to click through.
- *  - Never hand a handler a shape it did not declare; the hand-rolled throw
- *    inside a page handler is exactly the per-instance validator this replaces.
- *
- * It applies to USER-origin writes too: the contract is the contract, and a
- * kind-component action button emitting the wrong shape is the same defect as
- * an agent doing it.
+ * The door checks every write's declared `valueKind` (plan rule 10: a
+ * person's mismatch applies with a warning and a fix, an agent's is refused
+ * before any card). This re-check covers only what reaches the handler after
+ * the door's check: an agent's anchored edit rebased onto the live text after
+ * approval, which is agent-origin, so a mismatch is refused.
  *
  * A SKIP IS NEVER A PASS. `kindValidator.validate` (`@ai-matrx/content-ir`'s
  * `createKindValidator` over the app's `SchemaSourcePort`) reports `checked:false` when
@@ -1553,17 +1657,9 @@ async function applySurfaceWriteNow(
     }
     value = typed.value;
 
-    // The declared value contract binds before anything else looks at the
-    // value — no approval card for a malformed payload, no handler asked to
-    // re-validate what the kind already describes.
-    const contract = await valueContractHolds(
-      target,
-      runtime.surfaceName,
-      value,
-    );
-    if (contract !== true) {
-      return contract.ok ? contract : { ...contract, phase: "before_approval" };
-    }
+    // The declared value contract is checked by THE DOOR (plan rule 10): an
+    // agent's malformed value is refused there before any card is shown; a
+    // person's is applied with the door's warning and fix (toasted below).
 
     // THE PAGE'S OWN PRE-APPROVAL CHECK (`{ validate, apply }` handlers). Runs
     // for every origin, before the approval card: a throw is the value's
@@ -1734,9 +1830,13 @@ async function applySurfaceWriteNow(
         value,
         by: origin === "agent" ? "agent" : "person",
       },
+      opts?.conversationId ?? null,
       apply,
       approve,
     );
+    if (receipt.status === "applied" && receipt.warning && !opts?.quiet) {
+      toast.warning(receipt.warning, receipt.fix ? { description: receipt.fix } : undefined);
+    }
     const result: SurfaceWriteResult =
       settled ??
       // The door refused before this seam was asked anything.

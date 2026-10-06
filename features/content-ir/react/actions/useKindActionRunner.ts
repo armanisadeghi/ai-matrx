@@ -20,7 +20,8 @@
  *    re-render storm can't fire an agent (spend) twice.
  *
  * The provider is registered on the registry from a layout effect (and again,
- * idempotently, at run time); `key` runs the registry Action `kind.<key>`.
+ * idempotently, at run time); `key` runs the programmatic registry Action
+ * `kind.<key>` through alchemy's `invokeAction`.
  */
 
 import { useCallback, useLayoutEffect, useRef } from "react";
@@ -35,11 +36,9 @@ import { useAgentLauncher } from "@ai-matrx/chat/agents/hooks/useAgentLauncher";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { KindActionContext, KindActionResult } from "./kind-action-context";
 import { kindActionId, kindActionProvider } from "./kind-action-provider";
-import {
-  ensureInvokedProvider,
-  invokeRegisteredAction,
-} from "./invoked-actions";
-import { useOptionalAlchemyActions } from "./useOptionalAlchemyActions";
+import { invokeAction } from "@ai-matrx/alchemy/actions";
+import { useOptionalAlchemyActions } from "@ai-matrx/alchemy/react/host";
+import { ensureInvokedProvider } from "./invoked-actions";
 
 export type RunKindAction = (
   key: string,
@@ -109,14 +108,13 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
 
       try {
         const context: KindActionContext = { launchAgent, userId };
-        const outcome = await invokeRegisteredAction<KindActionResult>(
+        const outcome = await invokeAction<KindActionResult>(
           registry,
-          ports,
           kindActionId(key),
           input,
-          context,
+          { ports, context },
         );
-        if (outcome.status === "not-registered") {
+        if (!outcome.ok && outcome.error.code === "not_registered") {
           const error = `No action registered for "${key}".`;
           toast.error(error);
           captureError({
@@ -126,21 +124,19 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
           });
           return { ok: false, error };
         }
-        if (outcome.status === "failed") {
-          const err = outcome.error;
-          const message =
-            err instanceof Error ? err.message : `Action "${key}" failed.`;
-          // A handler throw is already captured + announced by alchemy's run
-          // path (ports.notify); only announce here when that port is absent.
-          if (!ports.notify) toast.error(message);
+        if (!outcome.ok) {
+          const message = outcome.error.message || `Action "${key}" failed.`;
+          // `action_failed` is already captured + announced once by alchemy's
+          // invokeAction (ports.notify); announce here only otherwise.
+          if (outcome.error.code !== "action_failed" || !ports.notify) toast.error(message);
           captureError({
             source: "content-ir",
-            message: `[kind-action] action "${key}" threw: ${message}`,
-            raw: { key, error: err },
+            message: `[kind-action] action "${key}" failed (${outcome.error.code}): ${message}`,
+            raw: { key, error: outcome.error },
           });
           return { ok: false, error: message };
         }
-        const result = outcome.value;
+        const result = outcome.data;
         const at = originRef.current;
         if (result.ok && key === "apply_surface_write" && at) {
           const written = result.result as { surfaceName?: string } | undefined;
@@ -159,7 +155,7 @@ export function useKindActionRunner(origin?: KindActionOrigin): RunKindAction {
         }
         return result;
       } catch (err) {
-        // invokeRegisteredAction never throws; this guards the guard.
+        // invokeAction never throws; this guards the guard.
         const message =
           err instanceof Error ? err.message : `Action "${key}" failed.`;
         toast.error(message);

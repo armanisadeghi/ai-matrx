@@ -761,7 +761,7 @@ assist chips, because an assist action runs through `AssistActionContext`,
 which can POST but cannot adopt a STREAM — a chip would therefore have to spin
 silently through a minute-long model call, and a spinner is never the answer
 while AI works. Closing it means a streaming-capable assist capability
-(`features/assists/runtime/assist-action-registry.ts`), which is a platform
+(`features/assists/runtime/assist-action-provider.ts`), which is a platform
 decision, not a content-plan one.
 
 ### General
