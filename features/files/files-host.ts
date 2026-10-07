@@ -5,12 +5,17 @@
  * share links, organization chooser and toasts.
  *
  * Imported for its side effect by `lib/redux/store.ts` (before the store is
- * created) and by `jest.setup.ts`. Every member is read at CALL time — the
+ * created) and by every `features/files` shim whose engine module reaches the
+ * host, so any route that loads one is wired. A host configured first (jest's
+ * lazy test host, a private chat store) is kept. Every member is read at CALL time — the
  * module namespaces and getters below keep a test's `jest.mock` of
  * `@/lib/python-client`, `@/utils/supabase/client` or `@/lib/toast` in force.
  */
 
-import { configureFilesHost } from "@ai-matrx/media/files/engine";
+import {
+  configureFilesHost,
+  isFilesHostConfigured,
+} from "@ai-matrx/media/files/engine/host/configure";
 import * as pythonClient from "@/lib/python-client";
 import * as supabaseClient from "@/utils/supabase/client";
 import * as shareLinks from "@/utils/permissions/shareLinks";
@@ -26,7 +31,7 @@ import type { PermissionLevel } from "@/utils/permissions/types";
 
 type AppContextState = Parameters<typeof selectOrganizationId>[0];
 
-configureFilesHost({
+if (!isFilesHostConfigured()) configureFilesHost({
   get db() {
     return supabaseClient.supabase;
   },
