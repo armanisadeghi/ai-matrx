@@ -256,6 +256,10 @@ if $STRICT; then
         # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
         "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
         "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
+        # A server-only module calling a "use client" export throws when the page renders, failing
+        # the build after compile (rich-content 0.2.20 cn(), v0.4.2937-2940, 2026-10-07).
+        "Server-only module calls a \"use client\" export|pnpm check:server-calls-client"
+        "Server-calls-client guard self-test|pnpm check:server-calls-client:self-test"
         # BROWSER DIALOGS exit 1 under --strict. Zero findings at introduction
         # (2026-09-11) and no lawful exception, so there is no backlog to
         # grandfather. eslint.config.mjs has carried `no-alert` /
@@ -1121,6 +1125,10 @@ else
         # Vercel's 45-minute limit (v0.4.2931-2934, 2026-10-07).
         "Worker reaches the module that starts it (Turbopack hang)|pnpm check:worker-cycles"
         "Worker-cycle guard self-test|pnpm check:worker-cycles:self-test"
+        # A server-only module calling a "use client" export throws when the page renders, failing
+        # the build after compile (rich-content 0.2.20 cn(), v0.4.2937-2940, 2026-10-07).
+        "Server-only module calls a \"use client\" export|pnpm check:server-calls-client"
+        "Server-calls-client guard self-test|pnpm check:server-calls-client:self-test"
         # Browser dialogs — see the strict lane above for why this class is
         # a dead control, not a style nit. Zero backlog, so the report is
         # the whole finding.

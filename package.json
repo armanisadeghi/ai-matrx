@@ -757,6 +757,8 @@
     "check:alchemy-doors:self-test": "tsx scripts/check-alchemy-doors.ts --self-test",
     "check:worker-cycles": "tsx scripts/check-worker-cycles.ts",
     "check:worker-cycles:self-test": "tsx scripts/check-worker-cycles.ts --self-test",
+    "check:server-calls-client": "tsx scripts/check-server-calls-client.ts",
+    "check:server-calls-client:self-test": "tsx scripts/check-server-calls-client.ts --self-test",
     "check:copy-result-gated": "tsx scripts/check-copy-result-gated.ts",
     "check:copy-result-gated:self-test": "tsx scripts/check-copy-result-gated.ts --self-test",
     "preview:start": "bash scripts/agent-dev-server.sh start",
