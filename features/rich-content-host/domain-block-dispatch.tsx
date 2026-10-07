@@ -1,6 +1,5 @@
 "use client";
 import { type RenderBlock, type BlockDispatchContext, type BlockRenderFn, DEFAULT_UNLABELED_FENCE_LANGUAGE, audioMimeFromUrl, isBlockLoading, type FeSynthesizedBlockType, type DetectorProtocolBlockType, type ProtocolBlockType, type ScalarGenericBlockType, type ShapeBlockType, type OpaqueBlockType, type KnownBlockType, reportUnregisteredBlockType } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
-import "./domain-block-components";
 import { BLOCK_DISPATCH as ENGINE_BLOCK_DISPATCH, registerBlockDispatch } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/block-dispatch";
 /**
  * block-dispatch — the declarative render-block dispatch registry.
@@ -51,7 +50,7 @@ import { ReferenceRoleCaption } from "@ai-matrx/chat/agents/image-roles/Referenc
 import { DecisionQuestionsTranscriptView } from "@/features/agents/decision-questions/DecisionQuestionsTranscriptView";
 import { RemarksTranscriptView } from "@ai-matrx/chat/agents/components/messages-display/user/RemarksTranscriptView";
 import { SpeechScriptTranscriptView } from "@ai-matrx/chat/agents/speech-script/SpeechScriptTranscriptView";
-import { BlockComponents } from "@ai-matrx/rich-content/display/chat-markdown/block-registry/BlockComponentRegistry";
+import { BlockComponents } from "./domain-block-components";
 import type {
   TypedRenderBlock,
   ServerOnlyBlockType,
