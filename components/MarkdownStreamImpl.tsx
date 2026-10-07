@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { RichContentHostGate } from "@ai-matrx/rich-content/host";
 import { PlainTextFallback } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/PlainTextFallback";
 import { MarkdownErrorBoundary } from "@ai-matrx/rich-content/display/chat-markdown/internal-handlers/MarkdownErrorBoundary";
 import { StreamAwareChatMarkdown } from "@/components/mardown-display/chat-markdown/StreamAwareChatMarkdown";
@@ -36,42 +37,48 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
   imagePolicy,
 }) => {
   const rendered = (
-    <BlockRenderingProvider strictServerData={strictServerData}>
-      <MarkdownErrorBoundary
-        fallback={<PlainTextFallback content={content} className={className} />}
-        onError={(error, errorInfo) => {
-          console.error(
-            "[MarkdownStream] Top-level error boundary caught:",
-            error,
-            errorInfo,
-          );
-        }}
-      >
-        <StreamAwareChatMarkdown
-          requestId={requestId}
-          recordMessageIds={recordMessageIds}
-          streamSlotStart={streamSlotStart}
-          streamSlotEnd={streamSlotEnd}
-          agentCallId={agentCallId}
-          turnId={turnId}
-          conversationId={conversationId}
-          content={content}
-          events={events}
-          taskId={taskId}
-          className={className}
-          isStreamActive={isStreamActive}
-          onContentChange={onContentChange}
-          applyLocalEdits={applyLocalEdits}
-          analysisData={analysisData}
-          messageId={messageId}
-          allowFullScreenEditor={allowFullScreenEditor}
-          hideCopyButton={hideCopyButton}
-          onError={onError}
-          onPhaseUpdate={onPhaseUpdate}
-          serverProcessedBlocks={serverProcessedBlocks}
-        />
-      </MarkdownErrorBoundary>
-    </BlockRenderingProvider>
+    <RichContentHostGate
+      fallback={<PlainTextFallback content={content} className={className} />}
+    >
+      <BlockRenderingProvider strictServerData={strictServerData}>
+        <MarkdownErrorBoundary
+          fallback={
+            <PlainTextFallback content={content} className={className} />
+          }
+          onError={(error, errorInfo) => {
+            console.error(
+              "[MarkdownStream] Top-level error boundary caught:",
+              error,
+              errorInfo,
+            );
+          }}
+        >
+          <StreamAwareChatMarkdown
+            requestId={requestId}
+            recordMessageIds={recordMessageIds}
+            streamSlotStart={streamSlotStart}
+            streamSlotEnd={streamSlotEnd}
+            agentCallId={agentCallId}
+            turnId={turnId}
+            conversationId={conversationId}
+            content={content}
+            events={events}
+            taskId={taskId}
+            className={className}
+            isStreamActive={isStreamActive}
+            onContentChange={onContentChange}
+            applyLocalEdits={applyLocalEdits}
+            analysisData={analysisData}
+            messageId={messageId}
+            allowFullScreenEditor={allowFullScreenEditor}
+            hideCopyButton={hideCopyButton}
+            onError={onError}
+            onPhaseUpdate={onPhaseUpdate}
+            serverProcessedBlocks={serverProcessedBlocks}
+          />
+        </MarkdownErrorBoundary>
+      </BlockRenderingProvider>
+    </RichContentHostGate>
   );
   return <>{withImagePolicy(imagePolicy, rendered)}</>;
 };
