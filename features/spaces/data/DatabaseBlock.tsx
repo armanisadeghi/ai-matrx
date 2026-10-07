@@ -11,7 +11,8 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { DashboardCanvas, FieldEditor, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type ConditionField, type SavedViewSpec } from "@ai-matrx/records-ui";
+import type { RuleExpression } from "@ai-matrx/records";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
@@ -19,6 +20,7 @@ import {
   BarChart3,
   Calendar,
   ChartNoAxesColumn,
+  ClipboardList,
   Database,
   GalleryHorizontalEnd,
   GanttChart,
@@ -56,7 +58,7 @@ import { NewPropertyPanel } from "./NewProperty";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { AGENCY_SAMPLE_ID, newViewId, readDatabaseProps, type ChartSettings, type DatabaseBlockProps, type SpaceDbView, type SpaceViewLayout } from "./sources";
 
-type Layout = SpaceViewLayout | "dashboard";
+type Layout = SpaceViewLayout | "dashboard" | "form";
 
 const LAYOUTS: Array<{ id: Layout; label: string; icon: typeof Table2 }> = [
   { id: "grid", label: "Table", icon: Table2 },
@@ -67,6 +69,7 @@ const LAYOUTS: Array<{ id: Layout; label: string; icon: typeof Table2 }> = [
   { id: "timeline", label: "Timeline", icon: GanttChart },
   { id: "chart", label: "Chart", icon: PieChart },
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "form", label: "Form", icon: ClipboardList },
 ];
 
 /** A view's icon: any Lucide name it stores ("DollarSign", "UserX") through SpaceIcon (DynamicIcon past the
@@ -192,6 +195,7 @@ function DatabaseFrame({
       sortOverride={sortOverride}
       search={search}
       onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined}
+      onFormId={(formId) => saveView({ formId })}
     />
   );
 
@@ -289,6 +293,7 @@ function DatabaseFrame({
               onChoice={(c) => setFilterChoices((all) => ({ ...all, [active.id]: c }))}
               canSave={editable}
               onSave={(filters) => saveView({ filters })}
+              onSaveWhere={editable && !sample && !published ? (where) => saveView({ where }) : undefined}
             />
             <ViewerSortButton
               view={active}
@@ -356,7 +361,7 @@ function DatabaseFrame({
       <Dialog open={expanded} onOpenChange={setExpanded}>
         <DialogContent size="2xl" height="tall" className="spaces-db-expanded overflow-auto">
           <DialogTitle>{props.title || sourceName}</DialogTitle>
-          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} />
+          <DatabaseBody tableId={tableId} view={shown} fields={fields} onOpenRecord={setOpen} editable={editable} sample={sample} overRows={sample || published} sortOverride={sortOverride} search={search} onSummaries={editable && !sample && !published ? (summaries) => saveView({ summaries } as Partial<SpaceDbView>) : undefined} onFormId={(formId) => saveView({ formId })} />
         </DialogContent>
       </Dialog>
     </div>
@@ -397,6 +402,7 @@ function viewSpec(tableId: string, view: ViewWithSummaries, fields: Field[] = []
     startField: view.dateField ?? null,
     sorts: view.sorts ?? [],
     filters: scalarFilters(view.filters),
+    ...(view.where ? { where: view.where as unknown as RuleExpression } : {}),
     // Notion's inline table: columns at their natural width, one line each, the table scrolling sideways
     // inside the block when it is wider than the column it sits in (screenshot 1) — never squeezed to "…".
     presentation: { fit: "scroll", wrap: false, ...(view.hiddenFields?.length ? { hiddenFields: view.hiddenFields } : {}), ...(hasFormats ? { formats } : {}), ...(view.summaries && Object.keys(view.summaries).length ? { summaries: view.summaries } : {}) },
@@ -414,6 +420,7 @@ function DatabaseBody({
   sortOverride,
   search,
   onSummaries,
+  onFormId,
 }: {
   tableId: string;
   view: ViewWithSummaries;
@@ -427,6 +434,8 @@ function DatabaseBody({
   search: { value: string; onChange: (term: string) => void };
   /** The person picked a column's footer measure (absent: nothing is kept — a reader, the sample). */
   onSummaries?: (summaries: Record<string, string>) => void;
+  /** A Form view keeps the form it edits (made on first open). */
+  onFormId: (formId: string) => void;
 }) {
   if (view.layout === "chart") {
     const settings = { ...DEFAULT_CHART, ...view.chart };
@@ -435,6 +444,7 @@ function DatabaseBody({
     return <ChartView tableId={tableId} settings={settings} title={view.name} overRows={overRows} filter={view.filters ?? {}} sorts={view.sorts ?? []} />;
   }
   if ((view.layout as Layout) === "dashboard") return <DashboardCanvas tableId={tableId} />;
+  if ((view.layout as Layout) === "form") return <FormViewBody tableId={tableId} view={view} editable={editable && !overRows} onFormId={onFormId} />;
   const needsGroup = view.layout === "kanban" && !view.groupField;
   const group = needsGroup ? fields.find((f) => ["select", "status", "list"].includes(kindOf(f)))?.key : undefined;
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
@@ -497,6 +507,71 @@ function AutomationsButton({ tableId, sample }: { tableId: string; sample: boole
 }
 
 /** The toolbar filter (Notion): anyone may filter for themselves; an editor may save it for everyone. */
+/**
+ * N8 — Notion's Form view: the table's own form (records-ui FormBuilder over `custom.forms` /
+ * `custom.form_declare`, the same form the public link `/f/<id>` answers): pick the properties asked,
+ * each question's title, description and required, conditions, then publish and share the link.
+ * An answer is a row of this table. The view keeps its form; the first open makes one.
+ */
+function FormViewBody({ tableId, view, editable, onFormId }: { tableId: string; view: SpaceDbView; editable: boolean; onFormId: (formId: string) => void }) {
+  if (!editable) return <div className="spaces-db-note">Only editors can change this form.</div>;
+  return (
+    <div className="spaces-db-body spaces-db-form">
+      <FormBuilder
+        tableId={tableId as never}
+        activeFormId={(view.formId ?? null) as never}
+        startWithOne={!view.formId}
+        onActiveForm={(form) => {
+          if (form.id && form.id !== view.formId) onFormId(String(form.id));
+        }}
+      />
+    </div>
+  );
+}
+
+/** How many rules a nested question holds (the Filter icon is "on" when any is). */
+function conditionCount(expr: unknown): number {
+  if (!expr || typeof expr !== "object" || Array.isArray(expr)) return 0;
+  const node = expr as { op?: unknown; args?: unknown };
+  if ((node.op === "and" || node.op === "or" || node.op === "not") && Array.isArray(node.args)) return node.args.reduce<number>((n, a) => n + conditionCount(a), 0);
+  return 1;
+}
+
+/** Notion's advanced filter depth: a group, and a group inside it. */
+const ADVANCED_FILTER_DEPTH = 2;
+
+/**
+ * N7 — Notion's advanced filter: rules joined by And / Or, filter groups two levels deep, saved with
+ * the view. The builder is records-ui's one condition builder; the draft applies with one press.
+ */
+function AdvancedFilter({ view, fields, onSave, onClose }: { view: SpaceDbView; fields: Field[]; onSave?: (where: Record<string, unknown> | null) => void; onClose: () => void }) {
+  const [draft, setDraft] = useState<RuleExpression | null>((view.where ?? null) as RuleExpression | null);
+  const conditionFields: ConditionField[] = fields.map((f) => ({ id: f.id, key: f.key, label: f.label || f.key, field: f }));
+  const changed = JSON.stringify(draft) !== JSON.stringify(view.where ?? null);
+  return (
+    <div className="spaces-db-advanced" data-testid="spaces-advanced-filter">
+      <ConditionGroup lead="Where" expr={draft} fields={conditionFields} onChange={setDraft} emptyLabel="every row" maxDepth={ADVANCED_FILTER_DEPTH} />
+      {onSave ? (
+        <div className="spaces-db-advanced-bar">
+          <Button
+            variant="quiet"
+            onClick={() => {
+              setDraft(null);
+              onSave(null);
+              onClose();
+            }}
+          >
+            Delete filter
+          </Button>
+          <Button variant="primary" disabled={!changed} onClick={() => onSave(draft as unknown as Record<string, unknown> | null)}>
+            Apply
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function FilterButton({
   view,
   fields,
@@ -511,19 +586,24 @@ function FilterButton({
   onChoice: (next: FilterChoice) => void;
   canSave: boolean;
   onSave: (filters: NonNullable<SpaceDbView["filters"]>) => void;
+  /** Save the view's advanced filter (N7); left out, the advanced filter is read-only words. */
+  onSaveWhere?: (where: Record<string, unknown> | null) => void;
 }) {
   const [field, setField] = useState<string | null>(null);
   const [value, setValue] = useState("");
+  const [advanced, setAdvanced] = useState(false);
   const filters = shownFilters(view, choice);
   const onView = (p: { filters: NonNullable<SpaceDbView["filters"]> }) => onChoice(p.filters);
-  const count = Object.keys(filters).length;
+  const count = Object.keys(filters).length + conditionCount(view.where);
+  const showAdvanced = advanced || (!!view.where && !!onSaveWhere);
   return (
-    <Popover>
+    <Popover onOpenChange={(o) => !o && setAdvanced(false)}>
       <PopoverTrigger asChild>
         <Button variant="quiet" icon={<ListFilter size={15} strokeWidth={1.8} />} aria-label="Filter" title="Filter" data-on={count ? "true" : undefined} />
       </PopoverTrigger>
-      <PopoverContent surface="solid" align="end" width="md" padding="xs">
-        {Object.entries(filters).map(([k, v]) => (
+      <PopoverContent surface="solid" align="end" width={showAdvanced ? "xl" : "md"} padding={showAdvanced ? "sm" : "xs"}>
+        {showAdvanced ? <AdvancedFilter view={view} fields={fields} onSave={onSaveWhere} onClose={() => setAdvanced(false)} /> : null}
+        {showAdvanced ? null : Object.entries(filters).map(([k, v]) => (
           <MenuRow
             key={k}
             label={`${fields.find((f) => f.key === k)?.label ?? k} is ${String(v)}`}
@@ -534,7 +614,7 @@ function FilterButton({
             }}
           />
         ))}
-        {(
+        {showAdvanced ? null : (
           field && choicesOfField(fields.find((f) => f.key === field)).length ? (
             <div className="flex flex-col p-1">
               <span className="px-1 pb-1 type-secondary text-muted-foreground">{fields.find((f) => f.key === field)?.label} is</span>
@@ -568,7 +648,10 @@ function FilterButton({
               />
             </div>
           ) : (
-            <FieldList fields={fields} onPick={setField} />
+            <>
+              <FieldList fields={fields} onPick={setField} />
+              {onSaveWhere ? <MenuRow icon={<Plus size={15} />} label="Add advanced filter" onClick={() => setAdvanced(true)} /> : null}
+            </>
           )
         )}
         {filtersDiffer(view, choice) ? (
