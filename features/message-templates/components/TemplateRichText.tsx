@@ -27,9 +27,11 @@ export function TemplateRichText({ text, show = "names", className }: { text: st
     return { source: swapped, fields: found };
   }, [text]);
 
+  // The engine renders (and re-renders) on its own schedule, so the chips are put back whenever its DOM moves.
   useLayoutEffect(() => {
     const root = host.current;
     if (!root || fields.length === 0) return;
+    const apply = () => {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes: Text[] = [];
     for (let n = walker.nextNode(); n; n = walker.nextNode()) if (/matrxfield\d+end/.test(n.nodeValue ?? "")) nodes.push(n as Text);
@@ -52,7 +54,12 @@ export function TemplateRichText({ text, show = "names", className }: { text: st
       if (last < value.length) fragment.append(value.slice(last));
       node.replaceWith(fragment);
     }
-  });
+    };
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(root, { childList: true, subtree: true, characterData: true });
+    return () => observer.disconnect();
+  }, [fields, show, source]);
 
   return (
     <div ref={host} className={className}>
