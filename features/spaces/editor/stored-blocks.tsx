@@ -6,7 +6,7 @@
 // `unknownBlock` (a stored type this editor has never heard of, kept whole and said out loud).
 
 import { createReactBlockSpec } from "@blocknote/react";
-import { createExtension, defaultProps } from "@blocknote/core";
+import { createExtension, defaultProps, type Extension, type ExtensionFactoryInstance } from "@blocknote/core";
 import { Plugin } from "@tiptap/pm/state";
 import { DATABASE_EVENT_CLAIMS, DatabaseHost } from "./database-host";
 import katex from "katex";
@@ -285,7 +285,7 @@ const dataProp = { data: { default: "{}" } } as const;
 function storedSpec(
   type: string,
   render: (p: Record<string, unknown>, ctx: { blockId: string; editor: never; update: (next: Record<string, unknown>) => void }) => React.ReactNode,
-  extensions?: Parameters<typeof createReactBlockSpec>[2],
+  extensions?: (ExtensionFactoryInstance | Extension)[],
 ) {
   return createReactBlockSpec(
     { type, propSchema: dataProp, content: "none" },
