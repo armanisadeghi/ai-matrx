@@ -34724,6 +34724,14 @@ export type Database = {
           table_name: string
         }[]
       }
+      data_home_slim: {
+        Args: {
+          p_include_app_tables?: boolean
+          p_organization_id?: string
+          p_search?: string
+        }
+        Returns: Json
+      }
       data_home_tables:
         | {
             Args: { p_organization_id?: string }
@@ -106811,7 +106819,12 @@ export type Database = {
       operation_type: "insert" | "update" | "delete"
       org_role: "owner" | "member" | "admin"
       orientation: "vertical" | "horizontal" | "default"
-      permission_level: "viewer" | "commenter" | "editor" | "admin"
+      permission_level:
+        | "viewer"
+        | "commenter"
+        | "edit_content"
+        | "editor"
+        | "admin"
       project_role: "owner" | "admin" | "member"
       recipe_status:
         | "live"
@@ -139006,7 +139019,13 @@ export const Constants = {
       operation_type: ["insert", "update", "delete"],
       org_role: ["owner", "member", "admin"],
       orientation: ["vertical", "horizontal", "default"],
-      permission_level: ["viewer", "commenter", "editor", "admin"],
+      permission_level: [
+        "viewer",
+        "commenter",
+        "edit_content",
+        "editor",
+        "admin",
+      ],
       project_role: ["owner", "admin", "member"],
       recipe_status: [
         "live",
