@@ -34,6 +34,7 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 import HtmlPreviewModal from "@/features/html-pages/components/HtmlPreviewModal";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface ComponentDisplayProps {
   component?: ComponentEntry;
@@ -437,12 +438,7 @@ const customActions: HeaderAction[] = [
     label: 'Download as markdown',
     onClick: (content) => {
       const blob = new Blob([content], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'content.md';
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadFile('content.md', blob, blob.type);
     }
   }
 ];
@@ -466,14 +462,7 @@ const customActions: HeaderAction[] = [
       label: "Download as markdown",
       onClick: (content) => {
         const blob = new Blob([content], { type: "text/markdown" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "content.md";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadFile("content.md", blob, blob.type);
       },
     },
   ];

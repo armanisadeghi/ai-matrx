@@ -46,6 +46,7 @@ import type { FilesystemAdapter } from "../adapters/FilesystemAdapter";
 // absorbed the former BinaryFilePdfPreview adapter.
 import { PreviewerSwitch } from "@/features/files/components/core/FilePreview/PreviewerSwitch";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadFile } from "@/components/agent-copy/export";
 
 // Loading state shown while a heavy previewer chunk (e.g. react-pdf) loads.
 function PreviewerSkeleton() {
@@ -173,16 +174,9 @@ export function BinaryFileViewer({ tab, className }: BinaryFileViewerProps) {
 
   const handleDownload = useCallback(() => {
     if (!state.blob) return;
-    const url = URL.createObjectURL(state.blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = tab.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    downloadFile(tab.name, state.blob, "application/octet-stream");
     // The temporary anchor URL is independent from `state.url`; revoke
     // it on the next tick so the download has a chance to start.
-    setTimeout(() => URL.revokeObjectURL(url), 0);
   }, [state.blob, tab.name]);
 
   // Reads the blob as text (UTF-8 with replacement characters for any
@@ -377,8 +371,9 @@ async function fetchBinary(
   path: string,
   profileMime: string,
 ): Promise<Blob> {
-  if (typeof filesystem.download === "function") {
-    const raw = await filesystem.download(path);
+  const download = filesystem.download;
+  if (typeof download === "function") {
+    const raw = await download.call(filesystem, path);
     return raw.type ? raw : new Blob([raw], { type: profileMime });
   }
   if (typeof filesystem.readFileBinary === "function") {

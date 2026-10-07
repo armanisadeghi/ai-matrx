@@ -2,6 +2,7 @@
 import { useCallback } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { mimeToExtension } from "@/utils/file-operations/utils";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const toKebabCase = (str: string) => {
   return str
@@ -23,23 +24,13 @@ const useDownloadImage = (src: string, alt: string) => {
           throw new Error(`HTTP error! status: ${response.status}`);
 
         const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
         const kebabAlt = toKebabCase(alt);
         // Use the actual MIME type from the blob (set by Content-Type
         // response header) — never guess from the URL which may have
         // query params, CDN paths, or no extension at all.
         const extension = mimeToExtension(blob.type || "image/png");
         const filename = `ai-matrix-${kebabAlt}${extension}`;
-
-        link.href = blobUrl;
-        link.download = filename;
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
+        downloadFile(filename, blob, blob.type);
 
         toast({ title: "Image download started!" });
       } catch (err) {

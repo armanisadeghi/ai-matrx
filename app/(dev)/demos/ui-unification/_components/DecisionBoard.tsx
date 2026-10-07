@@ -30,6 +30,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { AGREED, DECISIONS, type Decision, type DecisionStatus } from "./decisions";
 import { useAppRecordsConfig } from "@/features/data-tables/records-ui-host/recordsUiHost";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const STORAGE_KEY = "ui-unification-decisions-round2";
 
@@ -331,12 +332,7 @@ export function DecisionBoardView({
   const download = () => {
     try {
       const blob = new Blob([toMarkdown(picks)], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ui-unification-decisions.md";
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadFile("ui-unification-decisions.md", blob, blob.type);
       toast.success("Downloaded");
     } catch {
       toast.error("Download failed");

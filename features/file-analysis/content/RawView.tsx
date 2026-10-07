@@ -20,6 +20,7 @@ import { Braces, Check, Copy, Download, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { formatCount } from "@ai-matrx/kit/format";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface RawViewProps {
   /** What's being shown — gets stamped into copied JSON + the download filename. */
@@ -64,14 +65,7 @@ export function RawView({
 
   const handleDownload = () => {
     const blob = new Blob([jsonText], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label.toLowerCase().replace(/\s+/g, "-")}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`${label.toLowerCase().replace(/\s+/g, "-")}.json`, blob, blob.type);
   };
 
   return (

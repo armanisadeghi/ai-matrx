@@ -75,6 +75,7 @@ import {
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { readOf } from "@/components/read-state/ReadGate";
 import { extractErrorMessage } from "@/utils/errors";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const STATUS_BADGE_MAP: Record<
   string,
@@ -328,14 +329,7 @@ export default function AdminSandboxManagementPage() {
     const blob = new Blob([sshAccess.private_key], {
       type: "application/x-pem-file",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sandbox-${sshTarget.sandbox_id}.pem`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`sandbox-${sshTarget.sandbox_id}.pem`, blob, blob.type);
   };
 
   const activeCount = accessibleSandboxes.filter((i) =>

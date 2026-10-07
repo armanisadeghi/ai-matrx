@@ -20,15 +20,11 @@ import {
   EditableRows,
   PanelSection,
 } from "./panel-primitives";
+import { downloadFile } from "@/components/agent-copy/export";
 
 function downloadBlob(fileName: string, mime: string, content: string) {
   const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(fileName, blob, blob.type);
 }
 
 function csvEscape(value: string): string {

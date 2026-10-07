@@ -5,14 +5,7 @@
 
 /** Trigger a browser download of `content` as a file named `filename`. */
 export function downloadBlob(filename: string, blob: Blob): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }
 
 /** Download a text payload (markdown, csv, tsv, json) as a file. */
@@ -31,3 +24,5 @@ export function safeFileBase(name: string, fallback = "export"): string {
     fallback
   );
 }
+
+import { downloadFile } from "@/components/agent-copy/export";

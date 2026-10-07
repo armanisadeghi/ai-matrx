@@ -15,6 +15,7 @@ import { useAppDispatch, useAppSelector } from '@/lib/redux/hooks';
 import { setNoteEditorMode } from '../redux/slice';
 import { selectNotesMap } from '../redux/selectors';
 import { canonicalNoteEditorMode } from '../redux/notes.types';
+import { downloadFile } from "@/components/agent-copy/export";
 
 type EditorMode = 'plain' | 'wysiwyg' | 'markdown' | 'matrx-split' | 'preview';
 
@@ -304,12 +305,7 @@ export function NoteTabs({
                 description: 'Download as markdown',
                 action: async () => {
                     const blob = new Blob([note.content ?? ""], { type: 'text/markdown' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `${note.label}.md`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    downloadFile(`${note.label}.md`, blob, blob.type);
                 },
                 category: 'Actions',
             },

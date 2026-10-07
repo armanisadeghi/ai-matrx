@@ -36,6 +36,7 @@ import * as Files from "@/features/files/api/files";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import type { Visibility } from "@/features/files/types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface FileActionHandlers {
   rename: (newName: string) => Promise<void>;
@@ -170,16 +171,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
     // A blob: URL is always same-origin, so `a.download` is honoured and
     // the browser saves with the correct filename and extension.
     const { blob, filename } = await Files.downloadFile(fileId);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
     // Prefer the filename from Content-Disposition (set by the Python backend).
     // Fall back to the name stored in Redux, then a generic fallback.
-    a.download = filename ?? file?.fileName ?? "download";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadFile(filename ?? file?.fileName ?? "download", blob, blob.type);
   }, [file?.fileName, fileId, isVirtual]);
 
   const copyShareUrl = useCallback(

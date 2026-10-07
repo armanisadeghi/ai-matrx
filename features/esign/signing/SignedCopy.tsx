@@ -18,6 +18,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { signingAct, SigningRefusal, type SigningDoor } from "./signingService";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { downloadFile } from "@/components/agent-copy/export";
 interface CopyFile {
   name: string;
   base64: string;
@@ -45,14 +46,7 @@ function save(file: CopyFile) {
   const binary = atob(file.base64);
   const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  const url = URL.createObjectURL(new Blob([bytes], { type: "application/octet-stream" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = /\.pdf$/i.test(file.name) ? file.name : `${file.name}.pdf`;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 30_000);
+  downloadFile(/\.pdf$/i.test(file.name) ? file.name : `${file.name}.pdf`, new Blob([bytes], { type: "application/octet-stream" }), "application/octet-stream");
 }
 
 export function SignedCopy({ door }: { door: SigningDoor }) {

@@ -153,14 +153,9 @@ export async function downloadSessionKey(
     ],
     { type: "application/json" },
   );
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `redact-session-${record.session_id}.key.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(`redact-session-${record.session_id}.key.json`, blob, blob.type);
 }
 
 export type { StoredSession };
+
+import { downloadFile } from "@/components/agent-copy/export";

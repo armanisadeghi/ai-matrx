@@ -36,6 +36,7 @@ import {
   type ConnectedBrowseTarget,
 } from "./service";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const KIND_WORDS: Record<string, string> = {
   file: "File",
@@ -245,12 +246,7 @@ function bulkActions(
         const blob = new Blob([[header, ...lines].join("\n")], {
           type: "text/csv;charset=utf-8",
         });
-        const url = URL.createObjectURL(blob);
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.download = "connected-sources.csv";
-        anchor.click();
-        URL.revokeObjectURL(url);
+        downloadFile("connected-sources.csv", blob, blob.type);
         return { message: `Exported ${selection.rows.length} row(s).` };
       },
     },

@@ -62,6 +62,7 @@ import {
   duplicateColumn,
   type TableShape,
 } from "./editing/tableMutations";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface ExportDropdownMenuProps {
   tableData: {
@@ -369,16 +370,11 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
         ),
       ].join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "table_data.csv";
-      link.click();
-      URL.revokeObjectURL(url);
+      downloadFile("table_data.csv", blob, blob.type);
       toast.success("Table exported to CSV", {
         action: {
           label: "Download Again",
-          onClick: () => link.click(),
+          onClick: () => downloadFile("table_data.csv", blob, blob.type),
           className: "font-medium",
         },
       });
@@ -397,25 +393,11 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
       const blob = new Blob([markdownContent], {
         type: "text/markdown;charset=utf-8",
       });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadFile(fileName, blob, blob.type);
       toast.success("Markdown file downloaded", {
         action: {
           label: "Download Again",
-          onClick: () => {
-            const newLink = document.createElement("a");
-            newLink.href = url;
-            newLink.download = fileName;
-            document.body.appendChild(newLink);
-            newLink.click();
-            document.body.removeChild(newLink);
-          },
+          onClick: () => downloadFile(fileName, blob, blob.type),
           className: "font-medium",
         },
       });

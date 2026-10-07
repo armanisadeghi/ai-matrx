@@ -1,3 +1,6 @@
+
+
+import { downloadFile } from "@/components/agent-copy/export";
 // lib/calendar/eventLinks.ts
 //
 // "ADD TO CALENDAR" — ONE builder for every surface that hands a person an
@@ -203,12 +206,5 @@ export function downloadIcs(event: CalendarEvent): void {
   const blob = new Blob([icsContent(event)], {
     type: "text/calendar;charset=utf-8",
   });
-  const href = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = href;
-  anchor.download = icsFileName(event.title);
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(href), 1_000);
+  downloadFile(icsFileName(event.title), blob, blob.type);
 }

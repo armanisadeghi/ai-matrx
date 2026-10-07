@@ -1,6 +1,7 @@
 // features/administration/canonicalization/utils/exportCsv.ts
 
 import Papa from "papaparse";
+import { downloadFile } from "@/components/agent-copy/export";
 
 /** Exports the currently visible (filtered + sorted) rows as a downloadable CSV. */
 export function exportRowsAsCsv<T>(
@@ -21,12 +22,5 @@ export function exportRowsAsCsv<T>(
 
   const csv = Papa.unparse({ fields, data });
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }

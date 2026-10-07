@@ -28,6 +28,7 @@ import { useMediaResolution } from "@ai-matrx/media/core";
 import type { FileSource } from "@ai-matrx/chat/ui/file-source";
 import type { ResultFileRef } from "./shape";
 import { Button } from "@ai-matrx/design-system/controls";
+import { downloadUrl } from "../../agent-copy/export";
 
 export interface ResultFileProps {
     file: ResultFileRef;
@@ -66,14 +67,7 @@ function deriveTypeLabel(file: ResultFileRef, name: string): string | null {
 }
 
 function triggerAnchorDownload(href: string, name: string): void {
-    const a = document.createElement("a");
-    a.href = href;
-    a.download = name;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    downloadUrl(href, name, { newTab: true });
 }
 
 export const ResultFile: React.FC<ResultFileProps> = ({ file, density = "inline", className }) => {

@@ -67,6 +67,7 @@ import {
   getCloudFileKindLabel,
   toggleCloudBrowserSelection,
 } from "./cloudFilesBrowserUtils";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 const MAX_PARALLEL = 4;
 
@@ -140,13 +141,7 @@ export function CloudFilesBrowserTable({
         // Durable download URL — a pure function of the file id; the browser
         // authenticates the navigation via the file-session cookie.
         const url = file.url ?? fileUrls(file.id).download;
-        const a = document.createElement("a");
-        a.href = url;
-        a.rel = "noopener noreferrer";
-        a.download = file.fileName;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        downloadUrl(url, file.fileName);
       });
     } finally {
       setBusyKind(null);

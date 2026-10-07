@@ -23,6 +23,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@ai-matrx/agents/generated/api-types";
 import { downloadFile } from "@/features/files/api/files";
 import { callMatrxLocal } from "./matrxLocalRuntime";
+import { downloadFile as saveFile } from "@/components/agent-copy/export";
 
 export type RawTranscriptSource = components["schemas"]["RawTranscriptSource"];
 
@@ -71,14 +72,7 @@ export async function readRawTranscriptSources(
 }
 
 function saveBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = fileName;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
+  saveFile(fileName, blob, blob.type);
 }
 
 /** One source, resolved through the three steps. Never throws for a "no". */

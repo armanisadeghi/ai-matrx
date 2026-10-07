@@ -20,6 +20,7 @@ import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
 import type { CanvasContentType } from "@/features/canvas/canvasContent";
 import { Button } from "@ai-matrx/design-system/controls";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface BlockHeaderWrapperProps {
   // Header left side
@@ -194,12 +195,7 @@ const BlockHeaderWrapper: React.FC<BlockHeaderWrapperProps> = ({
     const blob = new Blob([JSON.stringify(exportData, null, 2)], {
       type: "application/json",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${exportFilename}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${exportFilename}.json`, blob, blob.type);
   };
 
   // ── Import ────────────────────────────────────────────────────────────────

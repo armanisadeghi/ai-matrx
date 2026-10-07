@@ -80,6 +80,7 @@ import {
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
 import { useOpenArtifactInCanvas } from "@/features/canvas/hooks/useOpenArtifactInCanvas";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
+import { downloadFile, downloadUrl } from "@/components/agent-copy/export";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
 import IconButton from "@/components/official/IconButton";
 import { IconResolver } from "@ai-matrx/icons";
@@ -1586,10 +1587,7 @@ const DiagramFlow: React.FC<{
           .finally(restore);
       })
       .then((canvas) => {
-        const a = document.createElement("a");
-        a.download = `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_diagram${isDark ? "_dark" : "_light"}.png`;
-        a.href = canvas.toDataURL("image/png");
-        a.click();
+        downloadUrl(canvas.toDataURL("image/png"), `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_diagram${isDark ? "_dark" : "_light"}.png`);
       })
       .catch((err) => console.warn("Diagram export failed:", err))
       .finally(() => document.body.removeChild(exportContainer));
@@ -2937,12 +2935,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
     const blob = new Blob([JSON.stringify({ diagram }, null, 2)], {
       type: "application/json",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`, blob, blob.type);
   }, [diagram]);
 
   const toggleEditing = () => {
@@ -2974,10 +2967,7 @@ const InteractiveDiagramBlock: React.FC<InteractiveDiagramBlockProps> = ({
           .finally(restore);
       })
       .then((canvas) => {
-        const a = document.createElement("a");
-        a.download = `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_diagram.png`;
-        a.href = canvas.toDataURL("image/png");
-        a.click();
+        downloadUrl(canvas.toDataURL("image/png"), `${diagram.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_diagram.png`);
       })
       .catch((err) => console.warn("Image export failed:", err));
   }, [diagram.title]);

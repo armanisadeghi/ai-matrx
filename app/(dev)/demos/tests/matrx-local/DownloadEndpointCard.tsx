@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Download, Check, AlertCircle } from "lucide-react";
 import { EndpointCardProps as DownloadEndpointCardProps } from './types';
 import { DirectoryStructureForm, DirectoryStructureParams } from './directory-structure';
+import { downloadFile } from "@/components/agent-copy/export";
 
 export const DownloadEndpointCard = ({ endpoint, baseUrl }: DownloadEndpointCardProps) => {
     const [downloadStatus, setDownloadStatus] = useState<'idle' | 'downloading' | 'success' | 'error'>('idle');
@@ -90,14 +91,7 @@ export const DownloadEndpointCard = ({ endpoint, baseUrl }: DownloadEndpointCard
             const blob = new Blob(chunks);
 
             // Create and click download link
-            const blobUrl = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(blobUrl);
-            document.body.removeChild(a);
+            downloadFile(filename, blob, blob.type);
 
             setDownloadStatus('success');
             setTimeout(() => setDownloadStatus('idle'), 2000);

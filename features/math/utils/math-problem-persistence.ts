@@ -6,6 +6,7 @@
 
 import type { MathProblemProps } from "../types";
 import { copyText } from "@ai-matrx/kit/clipboard";
+import { downloadFile } from "@/components/agent-copy/export";
 
 /**
  * Download math problem as JSON file
@@ -17,15 +18,7 @@ export function downloadMathProblem(problem: Omit<MathProblemProps, "id">, filen
     
     const json = JSON.stringify(data, null, 2);
     const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename || `${problem.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(filename || `${problem.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.json`, blob, blob.type);
 }
 
 /**

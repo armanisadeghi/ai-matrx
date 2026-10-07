@@ -9,6 +9,7 @@ import { useScreenshot } from '@/hooks/useScreenshot';
 import { Loader2, Download } from 'lucide-react';
 import type { ProcessedScreenshotData } from '@/types/screenshot';
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 export default function ScreenshotDemo() {
     const [preview, setPreview] = useState<ProcessedScreenshotData | null>(null);
@@ -29,10 +30,7 @@ export default function ScreenshotDemo() {
     };
 
     const handleDownload = (imageData: string, quality: string) => {
-        const link = document.createElement('a');
-        link.href = imageData;
-        link.download = `screenshot-${quality}-${new Date().toISOString()}.png`;
-        link.click();
+        downloadUrl(imageData, `screenshot-${quality}-${new Date().toISOString()}.png`);
     };
 
     return (

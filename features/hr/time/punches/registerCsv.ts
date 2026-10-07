@@ -26,6 +26,7 @@ import {
   PUNCH_KIND_LABELS,
   PUNCH_SOURCE_LABELS,
 } from "../shared/vocabulary";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const HEADERS = [
   "Employee",
@@ -93,10 +94,5 @@ export function punchRegisterToCsv(
 /** Hand the file to the browser. No server round trip — the rows are already on screen. */
 export function downloadPunchRegisterCsv(csv: string, filename: string): void {
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }

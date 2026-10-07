@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 
 import { imageMime, previewKind } from "./paths";
 import { copyToClipboard } from "@/lib/clipboard/copy";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const TEXT_LIMIT = 262_144;
 const BINARY_LIMIT = 4 * 1024 * 1024;
@@ -78,12 +79,7 @@ export function FilePreview({ client, entry, onOpenChange }: { client: DesktopCl
     if (!entry) return;
     try {
       const res = await client.request("fs.read", { path: entry.path, encoding: "base64", limit: BINARY_LIMIT });
-      const url = URL.createObjectURL(base64ToBlob(res.content, res.mime ?? "application/octet-stream"));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = entry.name;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      downloadFile(entry.name, base64ToBlob(res.content, res.mime ?? "application/octet-stream"), res.mime ?? "application/octet-stream");
     } catch (error) {
       toast.error("Could not download", { description: error instanceof Error ? error.message : String(error) });
     }

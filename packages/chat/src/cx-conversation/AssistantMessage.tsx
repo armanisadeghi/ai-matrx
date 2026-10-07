@@ -25,6 +25,7 @@ import { RichDocumentActions } from "@ai-matrx/chat/host/rich-document-slots";
 import { MessageTimestamp } from "../agents/components/messages-display/MessageTimestamp";
 import type { ConversationMessage } from "./_legacy-stubs";
 import { ErrorAlchemyMenu } from "@ai-matrx/chat/host/ui-slots";
+import { downloadFile } from "../agent-copy/export";
 
 // ============================================================================
 // PROPS
@@ -138,15 +139,8 @@ export function AssistantMessage({
     try {
       const resp = await fetch(audioUrl);
       const blob = await resp.blob();
-      const objectUrl = URL.createObjectURL(blob);
       const ext = audioMimeType?.split("/")[1] ?? "wav";
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `audio-response.${ext}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(objectUrl);
+      downloadFile(`audio-response.${ext}`, blob, blob.type);
     } catch {
       /* silent */
     } finally {

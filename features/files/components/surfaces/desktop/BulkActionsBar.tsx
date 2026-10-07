@@ -65,6 +65,7 @@ import { openFolderPicker } from "@/features/files/components/pickers/CloudFiles
 import { ingestFile } from "@/features/rag/api/ingest";
 import { clearFileDocumentCache } from "@/features/files/api/document-lookup";
 import type { Visibility } from "@/features/files/types";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 const MAX_PARALLEL = 4;
 /**
@@ -148,13 +149,7 @@ export function BulkActionsBar({ className }: { className?: string }) {
         const url = (result as { payload?: { url?: string } } | undefined)
           ?.payload?.url;
         if (!url) return;
-        const a = document.createElement("a");
-        a.href = url;
-        a.rel = "noopener noreferrer";
-        a.download = filesById[id]?.fileName ?? "";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        downloadUrl(url, filesById[id]?.fileName ?? "");
       });
     } finally {
       setBusyKind(null);

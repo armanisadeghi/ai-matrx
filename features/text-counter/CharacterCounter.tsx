@@ -26,6 +26,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const LIMIT_PRESETS = [
   { label: "Custom", value: "custom", limit: null },
@@ -114,14 +115,7 @@ export function CharacterCounter({
   };
 
   const downloadText = () => {
-    const url = URL.createObjectURL(
-      new Blob([text], { type: "text/plain;charset=utf-8" }),
-    );
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "character-counter-text.txt";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadFile("character-counter-text.txt", text, "text/plain;charset=utf-8");
   };
 
   return (

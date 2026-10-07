@@ -83,6 +83,7 @@ import {
   ShieldCheck,
   Trash2,
 } from "lucide-react";
+import { downloadFile } from "@/components/agent-copy/export";
 import { toast } from "@/lib/toast";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
@@ -440,12 +441,7 @@ export default function CollectionItemsPage() {
       }
       const csv = buildCsv(rows, schemaKeys);
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${collection.slug}-${filter}-${new Date().toISOString().slice(0, 10)}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadFile(`${collection.slug}-${filter}-${new Date().toISOString().slice(0, 10)}.csv`, blob, blob.type);
       if (truncated && reason === "size") {
         toast.warning(
           `Exported the first ${rows.length.toLocaleString()} rows — the response hit its size limit. Narrow the export (pick a filter tab, or archive older items) and run it again to get the rest.`,

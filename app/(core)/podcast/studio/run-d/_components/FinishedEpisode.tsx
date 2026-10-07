@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { isReadyMediaSlot, type PodcastRunState } from "@/features/podcasts/generator/types";
 import { episodeHref } from "@/features/podcasts/generator/constants";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 export function FinishedEpisode({ state }: { state: PodcastRunState }) {
   const cover = state.images.find((i) => i.status === "done" && i.url)?.url;
@@ -78,11 +79,12 @@ export function FinishedEpisode({ state }: { state: PodcastRunState }) {
                 Share
               </Button>
               {state.audioUrl && (
-                <Button asChild variant="outline">
-                  <a href={state.audioUrl} download>
-                    <Download className="h-4 w-4" />
-                    Download
-                  </a>
+                <Button
+                  icon={<Download />}
+                  variant="outline"
+                  onClick={() => state.audioUrl && downloadUrl(state.audioUrl, "episode.wav")}
+                >
+                  Download
                 </Button>
               )}
             </div>

@@ -42,6 +42,7 @@ import { openContextMenuForElement } from "@/features/context-menu-v3/utils/open
 import { validateFilesystemEntryName } from "./fileTreePaths";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { copyToClipboard } from "@/lib/clipboard/copy";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface FileTreeNodeProps {
   node: FilesystemNode;
@@ -304,14 +305,7 @@ export const FileTreeNode: React.FC<FileTreeNodeProps> = ({
     setBusy(true);
     try {
       const blob = await adapter.download(node.path);
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = node.name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadFile(node.name, blob, blob.type);
     } catch (err) {
       toast.error(`Download failed: ${extractErrorMessage(err)}`);
     } finally {

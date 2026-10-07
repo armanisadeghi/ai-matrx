@@ -40,6 +40,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { downloadBlob } from "@/lib/python-client";
 import { toast } from "@/lib/toast";
 import type { ExportEnvelope } from "../types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export function ExportArtifactDownload({
   envelope,
@@ -60,14 +61,7 @@ export function ExportArtifactDownload({
       );
       // A blob: URL is same-origin, so `a.download` is honoured and the file lands with the
       // right name and extension — the whole reason we stream the bytes instead of linking.
-      const objectUrl = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = objectUrl;
-      anchor.download = filename ?? filenameHint ?? "payroll-export";
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      URL.revokeObjectURL(objectUrl);
+      downloadFile(filename ?? filenameHint ?? "payroll-export", blob, blob.type);
     } catch (err: unknown) {
       // Scream, never swallow: a download that quietly does nothing reads as "the file vanished".
       toast.error(

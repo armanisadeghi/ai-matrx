@@ -23,6 +23,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedHtml";
 import { cn } from "@/lib/utils";
 import { Button } from "@ai-matrx/design-system/controls";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface SvgBlockProps {
   content?: string;
@@ -78,12 +79,7 @@ export const SvgBlock: React.FC<SvgBlockProps> = ({ content = "", isStreamActive
   const handleDownload = () => {
     try {
       const blob = new Blob([svg], { type: "image/svg+xml" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${(title ?? "illustration").replace(/[^\w-]+/g, "-").toLowerCase()}.svg`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadFile(`${(title ?? "illustration").replace(/[^\w-]+/g, "-").toLowerCase()}.svg`, blob, blob.type);
     } catch {
       toast.error("Couldn't download the SVG");
     }

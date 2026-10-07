@@ -11,6 +11,7 @@ import { Download, ExternalLink, FileArchive, FileText, Image as ImageIcon } fro
 import { Button } from "@/components/ui/button";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import type { BinaryResult } from "../hooks/usePdfDemoApi";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 interface Props {
   result: BinaryResult | null;
@@ -61,10 +62,12 @@ export function PdfBinaryResult({ result }: Props) {
               <ExternalLink className="h-3.5 w-3.5 mr-1" /> Open
             </a>
           </Button>
-          <Button variant="primary" asChild>
-            <a href={objectUrl} download={result.filename}>
-              <Download className="h-3.5 w-3.5 mr-1" /> Download
-            </a>
+          <Button
+            icon={<Download />}
+            variant="primary"
+            onClick={() => downloadUrl(objectUrl, result.filename)}
+          >
+            Download
           </Button>
         </div>
       </div>

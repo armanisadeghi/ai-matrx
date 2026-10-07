@@ -136,6 +136,7 @@ import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice
 import { toast } from "@/lib/toast";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 const RECENTS_WINDOW_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
@@ -389,13 +390,7 @@ export function CloudImagesTab({ providedUrls }: CloudImagesTabProps) {
         const { url } = await dispatch(
           getFileUrl({ fileId: file.id }),
         ).unwrap();
-        const anchor = document.createElement("a");
-        anchor.href = url;
-        anchor.rel = "noopener noreferrer";
-        anchor.download = file.fileName;
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
+        downloadUrl(url, file.fileName);
       }
     } catch (err) {
       const message =

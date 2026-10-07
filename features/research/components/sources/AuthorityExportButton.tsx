@@ -38,6 +38,7 @@ import {
   fetchTopicSourceCount,
   writeExportClipboard,
 } from "../../utils/authorityExportMenu";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface AuthorityExportButtonProps {
   topicId: string;
@@ -156,14 +157,7 @@ export function AuthorityExportButton({
           const blob = new Blob([authorityExportToJson(chunk)], {
             type: "application/json",
           });
-          const href = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = href;
-          a.download = authorityExportFilename(chunk);
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(href);
+          downloadFile(authorityExportFilename(chunk), blob, blob.type);
         }, i * 250);
       });
       toast.success(

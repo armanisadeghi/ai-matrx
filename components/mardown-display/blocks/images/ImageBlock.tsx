@@ -27,6 +27,7 @@ import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -100,16 +101,7 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
       const blob = await response.blob();
 
       // Create a download link
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = src.split("/").pop() || "image";
-      document.body.appendChild(link);
-      link.click();
-
-      // Clean up
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      downloadFile(src.split("/").pop() || "image", blob, blob.type);
     } catch (err) {
       console.error("Failed to download image:", err);
     }

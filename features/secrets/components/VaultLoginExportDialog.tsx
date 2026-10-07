@@ -39,6 +39,7 @@ import {
 } from "../vault-service";
 import { WEBSITE_LOGIN_DEFINITION_KEY, type VaultItem } from "../types";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const DEFAULT_CSV_PROFILE = "matrx_login_csv_v1" as const;
 const EXPORT_FILENAME = "matrx-login-export.csv";
@@ -361,15 +362,7 @@ export function VaultLoginExportDialog({
       if (!isCurrent(operation) || request.signal.aborted || !sameActor(actual, actor)) {
         throw new VaultLoginExportTransportError("context_changed");
       }
-      const objectUrl = URL.createObjectURL(blob);
-      try {
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = EXPORT_FILENAME;
-        link.click();
-      } finally {
-        URL.revokeObjectURL(objectUrl);
-      }
+      downloadFile(EXPORT_FILENAME, blob, blob.type);
       close();
     } catch (cause) {
       if (isCurrent(operation)) handleExportError(cause);

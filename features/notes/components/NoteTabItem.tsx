@@ -80,6 +80,7 @@ import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
+import { downloadFile } from "@/components/agent-copy/export";
 import { copyRichContent } from "@/components/agent-copy/copy-commands";
 import { copyToClipboard } from "@/lib/clipboard/copy";
 
@@ -260,12 +261,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
 
   const handleExport = useCallback(() => {
     const blob = new Blob([content], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label || "note"}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${label || "note"}.md`, blob, blob.type);
     toast.success("Markdown download started");
   }, [content, label]);
 

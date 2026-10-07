@@ -44,6 +44,7 @@ import {
 } from "./utils/render-image-variant";
 import { saveImageFile } from "./utils/save-image-file";
 import type { UnifiedImageBlock } from "./types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface ImageActionsApi {
   // ── Local actions (no network) ─────────────────────────────────────
@@ -150,20 +151,7 @@ export function useImageActions({
         throw new Error(`Download failed: HTTP ${response.status}`);
       }
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      try {
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } finally {
-        // Defer the revoke one tick — Safari sometimes races with the
-        // download trigger and cancels the save if the URL is yanked
-        // synchronously.
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
-      }
+      downloadFile(filename, blob, blob.type);
     },
     [],
   );
