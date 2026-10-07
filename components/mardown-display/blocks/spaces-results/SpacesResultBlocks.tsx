@@ -29,7 +29,7 @@ function PropertyList({ db }: { db: SpacesDatabaseSummary }) {
       {db.properties.map((p) => (
         <Badge key={p.key} tone={p.key === db.titleProperty ? "primary" : "neutral"}>
           {p.name}
-          <span className="text-muted-foreground">{p.type.replace("_", " ")}</span>
+          <span className="ml-1 text-muted-foreground">{p.type.replace("_", " ")}</span>
         </Badge>
       ))}
     </div>
@@ -114,7 +114,7 @@ export function SpaceDatabaseDesignBlock({ serverData }: { serverData?: unknown 
           {data.views.map((v, i) => (
             <Badge key={`${v.name}:${i}`} tone="info">
               {v.name || v.layout}
-              <span className="text-muted-foreground">{v.layout}</span>
+              <span className="ml-1 text-muted-foreground">{v.layout}</span>
             </Badge>
           ))}
         </div>
