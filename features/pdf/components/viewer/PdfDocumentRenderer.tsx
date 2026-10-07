@@ -1090,7 +1090,9 @@ function ContinuousPages({
   const [numPages, setNumPages] = useState(0);
   // Natural size of each page (PDF points), so an overlay knows its page's
   // proportions and a page not yet drawn still holds its height.
-  const [dims, setDims] = useState<Record<number, { width: number; height: number }>>({});
+  const [dims, setDims] = useState<
+    Record<number, { width: number; height: number }>
+  >({});
 
   useLayoutEffect(() => {
     const node = wrapRef.current;
@@ -1110,7 +1112,11 @@ function ContinuousPages({
     <div ref={wrapRef} className={cn("w-full", className)}>
       {numPages === 0 ? (
         <div className="h-64">
-          <PdfLoadingState fileName={fileName} bytesLoaded={0} bytesTotal={null} />
+          <PdfLoadingState
+            fileName={fileName}
+            bytesLoaded={0}
+            bytesTotal={null}
+          />
         </div>
       ) : null}
       {width > 0 ? (
@@ -1123,42 +1129,58 @@ function ContinuousPages({
             onDocumentLoad?.(n);
           }}
           onLoadError={(err) => onLoadError(err.message)}
-          className="flex w-full flex-col items-center"
-          // Wider than the container when zoomed in: the caller's scroll owns the overflow.
-          style={{ gap: CONTINUOUS_GAP_PX, minWidth: pageWidth }}
+          className="w-full"
         >
-          {Array.from({ length: numPages }, (_, i) => {
-            const n = i + 1;
-            const dim = dims[n];
-            const height = dim ? Math.round((pageWidth * dim.height) / dim.width) : undefined;
-            return (
-              <div
-                key={n}
-                data-pdf-page={n}
-                className="relative bg-white shadow-sm"
-                style={{ width: pageWidth, minHeight: height ?? Math.round(pageWidth * 1.294) }}
-              >
-                <Page
-                  pageNumber={n}
-                  width={pageWidth}
-                  renderAnnotationLayer={false}
-                  renderTextLayer
-                  loading={null}
-                  onLoadSuccess={(page) => {
-                    const w = page.originalWidth ?? page.width;
-                    const h = page.originalHeight ?? page.height;
-                    setDims((prev) =>
-                      prev[n]?.width === w && prev[n]?.height === h ? prev : { ...prev, [n]: { width: w, height: h } },
-                    );
+          {/* Wider than the container when zoomed in: the caller's scroll owns the overflow. */}
+          <div
+            className="flex w-full flex-col items-center"
+            style={{ gap: CONTINUOUS_GAP_PX, minWidth: pageWidth }}
+          >
+            {Array.from({ length: numPages }, (_, i) => {
+              const n = i + 1;
+              const dim = dims[n];
+              const height = dim
+                ? Math.round((pageWidth * dim.height) / dim.width)
+                : undefined;
+              return (
+                <div
+                  key={n}
+                  data-pdf-page={n}
+                  className="relative bg-white shadow-sm"
+                  style={{
+                    width: pageWidth,
+                    minHeight: height ?? Math.round(pageWidth * 1.294),
                   }}
-                  onRenderSuccess={() => onPageRendered?.(n)}
-                />
-                {renderOverlay && dim
-                  ? renderOverlay({ pageNumber: n, pageWidthPt: dim.width, pageHeightPt: dim.height, rotation: 0 })
-                  : null}
-              </div>
-            );
-          })}
+                >
+                  <Page
+                    pageNumber={n}
+                    width={pageWidth}
+                    renderAnnotationLayer={false}
+                    renderTextLayer
+                    loading={null}
+                    onLoadSuccess={(page) => {
+                      const w = page.originalWidth ?? page.width;
+                      const h = page.originalHeight ?? page.height;
+                      setDims((prev) =>
+                        prev[n]?.width === w && prev[n]?.height === h
+                          ? prev
+                          : { ...prev, [n]: { width: w, height: h } },
+                      );
+                    }}
+                    onRenderSuccess={() => onPageRendered?.(n)}
+                  />
+                  {renderOverlay && dim
+                    ? renderOverlay({
+                        pageNumber: n,
+                        pageWidthPt: dim.width,
+                        pageHeightPt: dim.height,
+                        rotation: 0,
+                      })
+                    : null}
+                </div>
+              );
+            })}
+          </div>
         </Document>
       ) : null}
     </div>
