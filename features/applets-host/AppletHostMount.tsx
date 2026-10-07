@@ -92,7 +92,6 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
       supabase,
       agents: createIntelligencePort({ transport: createMatrxTransport(store.getState, transportOptions) }),
       activeOrganizationId: selectActiveOrganizationId(store.getState()),
-      surfaces: { live: liveValues },
       nav: {
         async go(to) {
           const tail = to === "/" || to === "" ? "" : to.startsWith("/") ? to : `/${to}`;
