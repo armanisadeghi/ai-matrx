@@ -42,10 +42,10 @@ import { sanitizeInboundEnvelopeMetadata } from "@ai-matrx/rich-content/kinds/re
 import { fingerprintText } from "@ai-matrx/content-ir";
 import { chunkText } from "./seeded-random";
 
-// The inbound-envelope guard lives in the chat package and reports through its diagnostics seam.
+// The inbound-envelope guard lives in @ai-matrx/rich-content and reports through its diagnostics seam.
 const mockPackageDiagnostics: Array<{ source: string; message: string }> = [];
-jest.mock("@ai-matrx/chat/host/diagnostics", () => {
-  const actual = jest.requireActual("@ai-matrx/chat/host/diagnostics");
+jest.mock("@ai-matrx/rich-content/host/diagnostics", () => {
+  const actual = jest.requireActual("@ai-matrx/rich-content/host/diagnostics");
   return {
     ...actual,
     captureError: (entry: { source: string; message: string }) => {
