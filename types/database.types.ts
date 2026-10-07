@@ -46680,6 +46680,27 @@ export type Database = {
         Args: { p_ctx: Json; p_document_id: string; p_purpose?: string }
         Returns: Json
       }
+      _act_handoff_cancel: {
+        Args: { p_ctx: Json; p_handoff_id: string }
+        Returns: Json
+      }
+      _act_handoff_start: {
+        Args: { p_ctx: Json; p_target: string }
+        Returns: Json
+      }
+      _act_handoff_status: {
+        Args: { p_ctx: Json; p_handoff_id: string }
+        Returns: Json
+      }
+      _act_handoff_text: {
+        Args: {
+          p_ctx: Json
+          p_handoff_id: string
+          p_phone: string
+          p_secret: string
+        }
+        Returns: Json
+      }
       _act_history: { Args: { p_ctx: Json }; Returns: Json }
       _act_load: { Args: { p_ctx: Json }; Returns: Json }
       _act_preview_ack: {
@@ -46927,6 +46948,44 @@ export type Database = {
         }
         Returns: Json
       }
+      esign_sign_handoff_cancel: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_start: {
+        Args: {
+          p_ip?: unknown
+          p_signer_id: string
+          p_target: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_status: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_sign_handoff_text: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_phone: string
+          p_secret: string
+          p_signer_id: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
       esign_sign_history: {
         Args: { p_ip?: unknown; p_signer_id: string; p_ua?: string }
         Returns: Json
@@ -46964,6 +47023,44 @@ export type Database = {
           p_document_id: string
           p_ip?: unknown
           p_purpose?: string
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_cancel: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_start: {
+        Args: {
+          p_ip?: unknown
+          p_session: string
+          p_target: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_status: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_session: string
+          p_ua?: string
+        }
+        Returns: Json
+      }
+      esign_signer_handoff_text: {
+        Args: {
+          p_handoff_id: string
+          p_ip?: unknown
+          p_phone: string
+          p_secret: string
           p_session: string
           p_ua?: string
         }
@@ -47017,7 +47114,23 @@ export type Database = {
         }
         Returns: Json
       }
+      finalize_inputs: { Args: { p_envelope_id: string }; Returns: Json }
       generate_certificate: { Args: { p_envelope_id: string }; Returns: Json }
+      handoff_phone_complete: {
+        Args: {
+          p_image_file_id: string
+          p_ip: unknown
+          p_method: string
+          p_secret: string
+          p_strokes: Json
+          p_ua: string
+        }
+        Returns: Json
+      }
+      handoff_phone_open: {
+        Args: { p_ip: unknown; p_secret: string; p_ua: string }
+        Returns: Json
+      }
       materialize_draft: {
         Args: { p_envelope_id: string; p_payload: Json }
         Returns: Json
@@ -47028,14 +47141,23 @@ export type Database = {
         Args: { p_email: string; p_organization_id: string }
         Returns: string
       }
+      outsider_landing: { Args: { p_secret: string }; Returns: Json }
       outsider_token_organization: {
         Args: { p_secret: string }
         Returns: string
       }
       outsider_token_sender: { Args: { p_secret: string }; Returns: Json }
+      record_certificate_file: {
+        Args: { p_certificate_id: string; p_file_id: string }
+        Returns: Json
+      }
       record_signed_copy: {
         Args: { p_document_id: string; p_file_id: string }
         Returns: boolean
+      }
+      record_signed_copy_made: {
+        Args: { p_document_id: string; p_file_id: string; p_sha256: string }
+        Returns: Json
       }
       record_signer_time_zone: {
         Args: { p_signer_id: string; p_time_zone: string }
@@ -75443,7 +75565,6 @@ export type Database = {
         }
         Returns: string
       }
-      default_organization_id: { Args: { p_user_id: string }; Returns: string }
       derive_organization_abbreviation: {
         Args: { p_name: string }
         Returns: string
@@ -91421,6 +91542,10 @@ export type Database = {
         Args: { p_decorations: Json; p_style: Json; p_table: string }
         Returns: Json
       }
+      _device_handoff_live: {
+        Args: { p_expires_at: string; p_status: string }
+        Returns: boolean
+      }
       _door_follows_its_function_impl: {
         Args: { p_schemas: string[] }
         Returns: undefined
@@ -92870,6 +92995,54 @@ export type Database = {
           id_value: string
           type_value: string
         }[]
+      }
+      device_handoff_cancel: {
+        Args: { p_handoff_id: string; p_subject_id: string }
+        Returns: Json
+      }
+      device_handoff_complete: {
+        Args: {
+          p_image_file_id: string
+          p_ip: unknown
+          p_method: string
+          p_secret: string
+          p_strokes: Json
+          p_ua: string
+        }
+        Returns: Json
+      }
+      device_handoff_open: {
+        Args: { p_ip: unknown; p_secret: string; p_ua: string }
+        Returns: Json
+      }
+      device_handoff_start: {
+        Args: {
+          p_envelope_id: string
+          p_organization_id: string
+          p_path: string
+          p_purpose: string
+          p_subject_id: string
+          p_subject_type: string
+          p_target: string
+          p_ttl_minutes: number
+        }
+        Returns: Json
+      }
+      device_handoff_status: {
+        Args: { p_handoff_id: string; p_subject_id: string }
+        Returns: Json
+      }
+      device_handoff_text: {
+        Args: {
+          p_handoff_id: string
+          p_ip: unknown
+          p_per_ip_per_day: number
+          p_per_subject: number
+          p_phone: string
+          p_secret: string
+          p_subject_id: string
+        }
+        Returns: Json
       }
       doctrine_shape_vocabulary: {
         Args: never
@@ -130508,12 +130681,13 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
-          default_organization_id: string | null
           deleted_at: string | null
           id: string
+          last_active_organization_id: string | null
           metadata: Json
           organization_id: string
           preferences: Json
+          startup_organization_id: string | null
           updated_at: string
           updated_by: string | null
           user_id: string
@@ -130524,12 +130698,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
-          default_organization_id?: string | null
           deleted_at?: string | null
           id?: string
+          last_active_organization_id?: string | null
           metadata?: Json
           organization_id: string
           preferences: Json
+          startup_organization_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id: string
@@ -130540,12 +130715,13 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
-          default_organization_id?: string | null
           deleted_at?: string | null
           id?: string
+          last_active_organization_id?: string | null
           metadata?: Json
           organization_id?: string
           preferences?: Json
+          startup_organization_id?: string | null
           updated_at?: string
           updated_by?: string | null
           user_id?: string
@@ -130881,6 +131057,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _set_own_organization_choice: {
+        Args: { p_column: string; p_organization_id: string }
+        Returns: string
+      }
       admin_account_facts: {
         Args: never
         Returns: {
@@ -130961,6 +131141,10 @@ export type Database = {
           vault_access: string
         }[]
       }
+      set_last_active_organization: {
+        Args: { p_organization_id: string }
+        Returns: string
+      }
       set_organization_vault_access: {
         Args: {
           p_access: string
@@ -130968,6 +131152,10 @@ export type Database = {
           p_organization_id: string
           p_user_id: string
         }
+        Returns: string
+      }
+      set_startup_organization: {
+        Args: { p_organization_id: string }
         Returns: string
       }
       user_preferences_drift_report: {
