@@ -56,8 +56,8 @@ const BLOCKTYPE_PY = resolve(
 );
 const STREAM_EVENTS_PATH = resolve(ROOT, "node_modules/@ai-matrx/agents/generated/stream-events.ts");
 const CLIENT_BLOCKS_PATH = resolve(
-  ROOT,
-  "components/mardown-display/markdown-classification/processors/utils/client-blocks.ts",
+  AIDREAM_ROOT,
+  "apps/shared/rich-content/src/display/markdown-classification/processors/utils/client-blocks.ts",
 );
 const ARTIFACT_REGISTRY_PATH = resolve(
   ROOT,
@@ -72,8 +72,8 @@ const PREFILTER_PATH = resolve(
   "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/content-prefilter.ts",
 );
 const SPLITTER_PATH = resolve(
-  ROOT,
-  "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
+  AIDREAM_ROOT,
+  "apps/shared/rich-content/src/display/markdown-classification/processors/utils/content-splitter-core.ts",
 );
 
 // ─── Crosswalk row shape ────────────────────────────────────────────────────
@@ -124,6 +124,7 @@ const PROTOCOL_ITEMS: ReadonlyMap<string, string> = new Map([
       "control tag (SHAPE_SYSTEM.md R2) — stream control/reasoning plumbing, code-owned, never a Shape",
     ],
   ),
+  ["kind_value", "canvas artifact type that opens a registered table kind's value (artifact-type-registry) — routes to that kind, is not itself a Shape"],
   ["consolidated_reasoning", "server-side reasoning consolidation block — reasoning plumbing, not content"],
   ["artifact", "artifact envelope framing (attr XML tag / BlockType) — carries content, is not itself a Shape"],
   ["decision", "decision control block — ratified Wave 1 protocol set"],
