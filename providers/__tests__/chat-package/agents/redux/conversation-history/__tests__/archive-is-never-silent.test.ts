@@ -146,7 +146,8 @@ describe("per-agent conversation lists (Chat window, runner, test history)", () 
     const root = process.cwd();
     const { execSync } = require("node:child_process");
     const consumers = gitGrepFiles(["-e", "makeSelectAgentConversations", "-e", "makeSelectAgentConversationList"], ["features/**/*.tsx", "components/**/*.tsx", "app/**/*.tsx"], ["*.tsx"]).join("\n").split("\n").filter(Boolean);
-    expect(consumers.length).toBeGreaterThanOrEqual(5);
+    // 4 since B1 (2026-10-07) deleted the dead AgentRunsSidebar (no importer anywhere).
+    expect(consumers.length).toBeGreaterThanOrEqual(4);
     const missing = consumers.filter((f: string) => !fs.readFileSync(path.join(root, f), "utf8").includes("<ArchivedDisclosure"));
     expect(missing).toEqual([]);
   });

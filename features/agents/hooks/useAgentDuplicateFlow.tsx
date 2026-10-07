@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { usePathname } from "@ai-matrx/chat/host/navigation";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { getBuilderDoor, requireBuilderDoor } from "@ai-matrx/chat/host/builder-door";
+import { duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import { supabase } from "@ai-matrx/chat/host/db";
 import {
   AgentDuplicateOutcomeDialog,
@@ -91,7 +91,7 @@ export function useAgentDuplicateFlow(
 
       try {
         const id = await dispatch(
-          requireBuilderDoor().duplicateAgent({
+          duplicateAgent({
             agentId,
             asSystem: duplicateAsSystem,
             versionId: opts?.versionId,
@@ -171,6 +171,6 @@ export function useAgentDuplicateFlow(
     dialog,
     isDuplicating: open && state === "loading",
     /** False in a host that registered no builder door: nothing offers a duplicate (reported once). */
-    available: getBuilderDoor() !== null,
+    available: true,
   } as const;
 }

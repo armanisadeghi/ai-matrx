@@ -6,15 +6,6 @@
 
 import dynamic from "next/dynamic";
 import { registerChatUi } from "@ai-matrx/chat/host/ui-slots";
-import { registerBuilderDoor } from "@ai-matrx/chat/host/builder-door";
-import {
-  saveAgent,
-  saveAgentField,
-  createAgent,
-  deleteAgent,
-  duplicateAgent,
-  setAgentFavorite,
-} from "@/features/agents/redux/builder-write.thunks";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { InfoHint } from "@/components/official/InfoHint";
@@ -97,7 +88,6 @@ import {
   useOpenCloudBrowserCanvas,
   cloudBrowserCanvasSourceId,
 } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
-import { SystemInstructionEditor } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionEditor";
 import { SystemInstructionModal } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionModal";
 import { flattenResourcePickerItems } from "@/features/resource-manager/resource-picker/resource-picker-menu-items";
 import { useRunControlCounts } from "@/features/resource-manager/resource-picker/useRunControlCounts";
@@ -163,15 +153,6 @@ const ResourcePickerWindow = dynamic(
   { ssr: false },
 );
 
-registerBuilderDoor({
-  saveAgent,
-  saveAgentField,
-  createAgent,
-  deleteAgent,
-  duplicateAgent,
-  setAgentFavorite,
-});
-
 import { FileRagBadge } from "@/features/files/components/core/FileBadges/FileRagBadge";
 import { MediaAttachmentThumbnail } from "@/features/files/components/inline/MediaAttachmentThumbnail";
 import { UnifiedImageBlockRenderer } from "@/features/files/blocks/image/UnifiedImageBlockRenderer";
@@ -225,7 +206,6 @@ registerChatUi({
   useOverlaySurfaceRenderAck,
   disposeFullScreenEditorCallbackGroup,
   emitFullScreenEditorSave,
-  SystemInstructionEditor,
   SystemInstructionModal,
   RichDocument,
   traceWarRoomRenderPath,

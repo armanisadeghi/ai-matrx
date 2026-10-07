@@ -71,6 +71,13 @@ export interface SpaceDbView {
   filters?: Record<string, string | number | boolean | null | string[]>;
   /** Property keys this view hides (F4 show/hide). */
   hiddenFields?: string[];
+  /**
+   * N7 Notion's advanced filter: the view's nested And/Or question in the store's Rule shape (records-ui
+   * `ConditionGroup`; groups two levels deep), asked together with `filters`. Saved with the view.
+   */
+  where?: Record<string, unknown> | null;
+  /** N8 Notion's Form view: the table's form (`custom.anon_form`, records-ui FormBuilder) this view edits. */
+  formId?: string | null;
   chart?: ChartSettings;
 }
 

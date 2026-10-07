@@ -6,8 +6,8 @@
 
 import { useEffect, useCallback, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import { fetchAgentUsageReport } from "@ai-matrx/chat/host/ui-slots";
-import { makeSelectReport, makeSelectReportSorted, makeSelectReportTotals } from "@ai-matrx/chat/host/ui-slots";
+import { fetchAgentUsageReport } from "@/features/agents/redux/usages/usages.thunks";
+import { makeSelectReport, makeSelectReportSorted, makeSelectReportTotals } from "@/features/agents/redux/usages/usages.selectors";
 import type { ReportSortKey } from "@ai-matrx/chat/ui/usages/usages.types";
 import type { UsageScope } from "@ai-matrx/chat/ui/usages/usages.slice";
 

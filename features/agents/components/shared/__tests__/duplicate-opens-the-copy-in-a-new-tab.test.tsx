@@ -29,7 +29,8 @@ jest.mock("@ai-matrx/chat/agents/redux/agent-definition/selectors", () => ({
   selectAgentById: () => state.record,
   selectAgentReadyForBuilder: () => true,
 }));
-jest.mock("@ai-matrx/chat/host/builder-door", () => ({ getBuilderDoor: () => ({ duplicateAgent }) }));
+jest.mock("@/features/agents/redux/builder-write.thunks", () => ({ duplicateAgent: (id: string) => duplicateAgent(id) }));
+jest.mock("@ai-matrx/chat/agents/redux/agent-definition/thunks", () => ({ fetchFullAgent: () => ({ unwrap: () => Promise.resolve() }) }));
 jest.mock("@ai-matrx/chat/host/notify", () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
 import { AgentPeekDuplicateButton } from "../AgentPeekDuplicateButton";
