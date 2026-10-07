@@ -48,6 +48,8 @@ function block(status: "streaming" | "complete" | "error") {
     type: "news_monitor_kind",
     content: '{"__kind":"news_opportunity_report","headline":"Cut o',
     metadata: {
+      // the splitter's split-time flag, never cleared when the stream stops
+      ...(status === "complete" ? {} : { isComplete: false }),
       [IR_ENVELOPE_KEY]: {
         v: IR_VERSION,
         engine: "test",
