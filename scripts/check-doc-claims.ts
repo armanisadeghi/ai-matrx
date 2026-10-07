@@ -551,6 +551,10 @@ const claims: Claim[] = [
         // job and no gate at all (V-28 NEW-8).
         "run: pnpm check:unbounded-reads\n",
         "run: pnpm check:unbounded-reads --self-test\n",
+        // EVERY BOX A PERSON WRITES IN IS ProTextarea / ProInput (Arman,
+        // 2026-10-07). Both lines, trailing newline for the substring reason above.
+        "run: pnpm check:writing-boxes:strict\n",
+        "run: pnpm check:writing-boxes:self-test\n",
         "check:organization-context",
         "pnpm type-check",
         "test:content-ir",

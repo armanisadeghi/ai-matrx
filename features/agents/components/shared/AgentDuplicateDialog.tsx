@@ -27,7 +27,8 @@ import {
   Alert,
   AlertDescription,
 } from "@ai-matrx/design-system";
-import { Button, Field, Select } from "@ai-matrx/design-system/controls";
+import { Button, Select } from "@ai-matrx/design-system/controls";
+import { ProInput } from "@/components/official/ProInput";
 
 export type AgentDuplicateStep = "choose" | "loading" | "success" | "error";
 
@@ -165,9 +166,9 @@ export function AgentDuplicateDialog({
               <label className="text-xs font-medium text-muted-foreground" htmlFor="agent-duplicate-name">
                 Name
               </label>
-              <Field
+              <ProInput
                 id="agent-duplicate-name"
-                className="w-full"
+                wrapperClassName="w-full"
                 value={name}
                 onChange={(e) => onNameChange(e.target.value)}
                 aria-label="Name of the new agent"

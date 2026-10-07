@@ -3,8 +3,9 @@
  *
  * The Tier 2 default for any input that holds user text (titles, names, search
  * queries, chat prompts, tags, short replies). Tier 1 is the bare shadcn
- * `BasicInput` from `@ai-matrx/design-system`, used only for raw cases (admin
- * diff inputs, debug consoles, etc.).
+ * `BasicInput` / `/controls` `Field`, used only for raw values (slugs, aliases,
+ * ids, numbers, admin diff inputs) and marked `// ui-exception: <reason>` —
+ * `pnpm check:writing-boxes` enforces it.
  *
  * ## Built-in features
  *

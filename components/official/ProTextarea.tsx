@@ -3,8 +3,9 @@
  *
  * The Tier 2 default for any textarea that holds user text (comments,
  * descriptions, notes, bios, prompts, status updates, replies). Tier 1 is the
- * bare shadcn `Textarea` from `@/components/ui/textarea`, used only for raw
- * cases (admin diff inputs, debug consoles, etc.).
+ * bare `Textarea` (`@ai-matrx/design-system/controls`, `@/components/ui/textarea`),
+ * used only for raw values (code, JSON, admin diff inputs, debug consoles) and
+ * marked `// ui-exception: <reason>` — `pnpm check:writing-boxes` enforces it.
  *
  * ## Built-in features
  *
