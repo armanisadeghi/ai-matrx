@@ -54,6 +54,8 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
 - One canonical path: an Applet is a row, never a code registry. The old person-apps registry is deleted.
 - Reads and writes run as the viewer; the host never picks an organization for a read.
 - The surface `applets/<id>` is written by `ui.save_applet_surface` when the record is saved (AP-2 writer).
+- The host's surface is alchemy's `createSurfacePort` (applets >= 0.5.0); this mount binds `surfaces.live`
+  to `liveValues`, so `surface.getValue` answers an unset name from the page's live capture.
 
 ---
 
@@ -63,3 +65,4 @@ record's own `allowed_imports`; app-owned modules come from `lib/code-runtime/st
   + `holloway-content`) with the database-backed host; Holloway is now the `holloway-content` Applet row.
 - 2026-10-06 — The Applet mounts in the route LAYOUT and navigates with `pushState`, so a page change or
   browser Back no longer remounts it (owner saw Back show the old page, then an empty shell, then content at ~10 s).
+- 2026-10-07 — Binds `surfaces: { live: liveValues }` (applets 0.5.0, ALC-18): the Applet's SurfacePort is alchemy's.

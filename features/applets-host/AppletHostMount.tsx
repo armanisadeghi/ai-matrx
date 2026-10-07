@@ -106,6 +106,8 @@ export function AppletHostMount({ appletId, slug }: { appletId: string; slug: st
           return () => listeners.delete(listener);
         },
       },
+      // The page's live values (ALC-18): the Applet's surface answers an unset value from them.
+      surfaces: { live: liveValues },
       reportError(err) {
         captureError({ source: "applet", code: err.code, message: err.message, callSite: err.where, raw: { appletId, slug, diagnostic: err.diagnostic } });
       },
