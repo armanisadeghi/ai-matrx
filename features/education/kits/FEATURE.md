@@ -150,6 +150,17 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **2026-10-07 — a kit holds any number of Sources** (Arman: "Absolutely!"). A new kit is a
+  `scope` under the per-org "Study kit" type (`kitScope.ts`, zero tables): Sources are
+  `kitSource` edges into it, aids are flagged `member` edges, and each generated aid links a
+  `source` edge to EVERY Source stamped `kitId` (`recordSourceLineage`). `/education/start` no
+  longer merges picks into one `.md`; the hub lists Sources, adds them through the shared
+  Source input and archives the link on remove; Make more re-reads all Sources. An older anchor
+  kit is promoted on its first added Source (`promoteAnchorKit`: anchor = Source #1, aids
+  copied, old edges stamped `kitId`, old URL opens the new kit). The "one kit is ONE source"
+  section above is superseded. Live: kit `48f5e446…` built from a Wikipedia page, a YouTube
+  video and a PDF; a 4th Source added from the hub.
+
 - **2026-09-29 — saved-aid membership.** The kit hub opens a source-aware picker for saved
   study aids, including chat-saved decks. Existing non-file kits no longer route through file
   metadata or write file-targeted edges. Source changes isolate drafts and selections; agent
