@@ -189,7 +189,8 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 5000,
-    inlineUpTo: 9000,
+    // 8,000 keeps the page inside the 10,000 budget with the 2,000 custom_fields baseline (typical bundle is 5,000).
+    inlineUpTo: 8000,
     sortOrder: 299,
     group: "app_identity",
   },

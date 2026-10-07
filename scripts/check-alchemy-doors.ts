@@ -71,7 +71,14 @@ const ALLOW: Record<Rule, string[]> = {
   // components/dialogs/clipboard-fallback/: the manual-copy dialog shown when the browser refuses the
   // kit clipboard door; it must try the raw API itself and cannot route through the door that sent it there.
   clipboard: ["packages/chat/src/agent-copy/", "components/agent-copy/", "components/dialogs/clipboard-fallback/"],
-  downloads: ["packages/chat/src/agent-copy/", "components/agent-copy/"],
+  downloads: [
+    "packages/chat/src/agent-copy/",
+    "components/agent-copy/",
+    // A static asset of OUR OWN origin (public/) behind a plain <a download>: same-origin, so the browser
+    // honors the name and saves it; no blob, no script click, no cross-origin navigation for the kit door to fix.
+    "app/(public)/the-landscape/page.tsx",
+    "features/messaging/demo/DemoAttachment.tsx",
+  ],
   formatlibs: ["packages/chat/src/agent-copy/", "components/agent-copy/", "components/rich-editor/core/gfm-lexer.ts"],
   doorbypass: [
     "packages/chat/src/surfaces/runtime/",
@@ -149,7 +156,52 @@ const RUNNABLE_VALUE = /action|handler|command|menu|provider|adapter|resolver|ge
 const LISTENER_SET = /Set<\s*\(\s*\)\s*=>\s*void\s*>/;
 const OBJECT_URL = /URL\.createObjectURL\s*\(|["'`]blob:/;
 
-const DOWNLOAD_MARK = [/\.download\s*=/, /setAttribute\(\s*["']download["']/, /<a\b[^>]*\sdownload\b/, /\bsaveAs\s*\(/];
+const DOWNLOAD_MARK = [/\.download\s*=/, /setAttribute\(\s*["']download["']/, /\bsaveAs\s*\(/];
+/** Whole-source marks (whitespace/newlines allowed inside), so a call split over lines still counts. */
+const DOWNLOAD_MARK_ML = [/\.download\s*=(?!=)/g, /setAttribute\(\s*["']download["']/g, /\bsaveAs\s*\(/g];
+
+/**
+ * 0-based line indexes of every JSX `<a …download…>` opening tag, however many lines the tag spans.
+ * Scans each `<a` tag to its closing `>` at brace depth 0, skipping `{…}` expressions (an `=>` inside
+ * `onClick={() => …}` is not the end of the tag) and quoted strings.
+ */
+export function anchorDownloadLines(src: string): number[] {
+  const out: number[] = [];
+  const re = /<a(?=[\s>])/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src))) {
+    let i = m.index + 2, depth = 0, quote = "";
+    for (; i < src.length; i++) {
+      const c = src[i];
+      if (quote) { if (c === quote) quote = ""; continue; }
+      if (depth === 0 && (c === '"' || c === "'")) quote = c;
+      else if (c === "{") depth++;
+      else if (c === "}") depth--;
+      else if (c === ">" && depth <= 0) break;
+    }
+    const tag = src.slice(m.index, i);
+    // Drop {expression} bodies and quoted values so only attribute NAMES are searched.
+    const names = tag.replace(/\{[\s\S]*?\}/g, "{}").replace(/"[^"]*"|'[^']*'/g, '""');
+    const d = /\sdownload\b/.exec(names);
+    if (d) {
+      // line of the `download` attribute in the original tag
+      const at = tag.search(/\sdownload\b/);
+      out.push(src.slice(0, m.index + (at < 0 ? 0 : at) + 1).split("\n").length - 1);
+    }
+  }
+  return out;
+}
+
+/** 0-based line indexes where a multi-line-safe download mark begins. */
+function downloadMarkLines(src: string): Set<number> {
+  const set = new Set<number>(anchorDownloadLines(src));
+  for (const r of DOWNLOAD_MARK_ML) {
+    r.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = r.exec(src))) set.add(src.slice(0, m.index).split("\n").length - 1);
+  }
+  return set;
+}
 
 /** Remove comments, keeping line structure. */
 function stripComments(src: string): string {
@@ -164,13 +216,15 @@ export interface Hit { rule: Rule; file: string; line: number; text: string }
 
 export function scanSource(file: string, src: string): Hit[] {
   const hits: Hit[] = [];
-  const lines = stripComments(src).split("\n");
+  const stripped = stripComments(src);
+  const lines = stripped.split("\n");
+  const markLines = downloadMarkLines(stripped);
   const base = file.split("/").pop() ?? file;
   const allowed = (rule: Rule) => ALLOW[rule].some((a) => file === a || file.startsWith(a));
   const add = (rule: Rule, i: number) => {
     if (!allowed(rule)) hits.push({ rule, file, line: i + 1, text: lines[i].trim().slice(0, 100) });
   };
-  const hasDownload = lines.some((l) => DOWNLOAD_MARK.some((r) => r.test(l)));
+  const hasDownload = markLines.size > 0;
   const isRegistry = /registry/i.test(base);
   const near = (i: number, back: number, fwd: number, test: (l: string) => boolean) =>
     lines.slice(Math.max(0, i - back), i + fwd + 1).some(test);
@@ -179,7 +233,7 @@ export function scanSource(file: string, src: string): Hit[] {
   const hasRegisterFn = lines.some((l) => /^export\s+(?:async\s+)?(?:function\s+register\w*\s*[(<]|const\s+register\w*\s*[:=])/.test(l));
   lines.forEach((l, i) => {
     if (/navigator\.clipboard\b|execCommand\(\s*["'](copy|cut)["']|new\s+ClipboardItem\b/.test(l)) add("clipboard", i);
-    if (DOWNLOAD_MARK.some((r) => r.test(l)) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
+    if (markLines.has(i) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
     if (LIB_IMPORT.test(l)) add("formatlibs", i);
     if (/\b(applySurfaceWrite|loadSurfaceWriteDoor|surfaceWriteDeclarations)\b/.test(l)) add("doorbypass", i);
     if (
@@ -191,8 +245,8 @@ export function scanSource(file: string, src: string): Hit[] {
     else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && RUNNABLE_VALUE.test(l) && !LISTENER_SET.test(l)) add("registries", i);
     if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 8, 0, (x) => /\.map\(|\.forEach\(/.test(x)) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
     if (readsCsvByHand && CSV_QUOTE_FLAG_TOGGLE.test(l)) add("handcsv", i);
-    if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 0, (x) => OBJECT_URL.test(x))) add("windowopen", i);
-    if (/\.click\s*\(\s*\)/.test(l) && near(i, 6, 0, (x) => /\.href\s*=(?!=)/.test(x)) && !near(i, 8, 3, (x) => DOWNLOAD_MARK.some((r) => r.test(x))))
+    if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 3, (x) => OBJECT_URL.test(x))) add("windowopen", i);
+    if (/\.click\s*\(\s*\)/.test(l) && near(i, 6, 0, (x) => /\.href\s*=(?!=)/.test(x)) && ![...markLines].some((m) => m >= i - 8 && m <= i + 3))
       add("anchorclick", i);
   });
   return hits;
@@ -265,6 +319,11 @@ function selfTest(): number {
     { rule: "handcsv", file: "features/x/Foo.ts", src: "function splitMailboxField(raw: string) {\nlet inQuotes = false;\nfor (const ch of raw) {\n  if (ch === '\"') inQuotes = !inQuotes;\n  else if (ch === ',' && !inQuotes) cut();\n}\n}\n", red: false, what: "quote-aware comma split with no csv/tsv/delimited context (an address-list splitter)" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "let inQuotes = false;\nfor (const ch of text) {\n  if (ch === '\"') inQuotes = !inQuotes;\n}\n", red: false, what: "quote toggle with no comma split (not a CSV reader)" },
     { rule: "registries", file: "features/x/Foo.ts", src: "const subs = new Map<string, Set<() => void>>();\nexport function registerSub(k: string) { subs.set(k, new Set()); }\n", red: false, what: "listener-set Map beside register*" },
+    { rule: "downloads", file: "features/x/Foo.tsx", src: "const x = (\n  <a\n    href={url}\n    target=\"_blank\"\n    download={name}\n    className=\"c\"\n  >\n    Save\n  </a>\n);\n", red: true, what: "multi-line JSX <a download=...> anchor" },
+    { rule: "downloads", file: "features/x/Foo.tsx", src: "const x = (\n  <a\n    href={url}\n    onClick={() => go(url)}\n    className=\"c\"\n  >\n    Open\n  </a>\n);\n", red: false, what: "multi-line JSX <a> with an => handler and no download attribute" },
+    { rule: "downloads", file: "features/x/Foo.tsx", src: "const x = (\n  <a\n    href={url}\n    onClick={() => go(url)}\n    download\n  >\n    Save\n  </a>\n);\n", red: true, what: "multi-line JSX <a> with an => handler THEN a bare download attribute" },
+    { rule: "downloads", file: "features/x/Foo.ts", src: "a.setAttribute(\n  'download',\n  name,\n);\n", red: true, what: "setAttribute('download') split over lines" },
+    { rule: "windowopen", file: "features/x/Foo.ts", src: "const u = URL.createObjectURL(blob);\nwindow.open(\n  u,\n  '_blank',\n);\n", red: true, what: "multi-line window.open of an object URL" },
     { rule: "windowopen", file: "features/x/Foo.ts", src: "window.open('https://example.com', '_blank');\n", red: false, what: "window.open of a plain URL" },
     { rule: "anchorclick", file: "features/x/Foo.ts", src: "const a = document.createElement('a');\na.href = url;\na.download = 'f.csv';\na.click();\n", red: false, what: "anchor click WITH a download attribute (the downloads rule owns it)" },
   ];

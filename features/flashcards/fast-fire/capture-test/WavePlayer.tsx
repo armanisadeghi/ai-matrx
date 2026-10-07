@@ -13,6 +13,7 @@ import { Download } from "lucide-react";
 import { getSharedAudioContext } from "@ai-matrx/browser-audio/core";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadUrl } from "@ai-matrx/kit/download";
 
 interface WavePlayerProps {
   blob: Blob;
@@ -63,14 +64,14 @@ export function WavePlayer({ blob, label, expectedSec }: WavePlayerProps) {
     <div className="rounded-md border border-border bg-card p-3">
       <div className="mb-2 flex items-center justify-between gap-2">
         <span className="truncate text-sm font-medium text-foreground">{label}</span>
-        <a
-          href={url}
-          download={`${label.replace(/\s+/g, "-")}.wav`}
+        <button
+          type="button"
+          onClick={() => downloadUrl(url, `${label.replace(/\s+/g, "-")}.wav`)}
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <Download className="h-3.5 w-3.5" />
           download
-        </a>
+        </button>
       </div>
 
       <canvas

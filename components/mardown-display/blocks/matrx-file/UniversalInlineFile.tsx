@@ -25,6 +25,8 @@
 import React, { useMemo } from "react";
 import { Download, ExternalLink, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@ai-matrx/design-system/controls";
+import { downloadUrl } from "@ai-matrx/kit/download";
 import { useFile } from "@/features/files/handler/hooks/useFile";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { formatFileSize } from "@ai-matrx/kit/format";
@@ -258,16 +260,13 @@ function FileCard({
           </p>
         )}
       </div>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        download={fileName}
-        className="inline-flex items-center gap-1.5 rounded-md border border-input bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-accent"
+      <Button
+        variant="outline"
+        icon={<Download />}
+        onClick={() => downloadUrl(url, fileName, { newTab: true })}
       >
-        <Download className="h-3.5 w-3.5" />
         Download
-      </a>
+      </Button>
     </div>
   );
 }

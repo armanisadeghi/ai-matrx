@@ -88,7 +88,8 @@ const surfaceSpecific: SurfaceValue[] = [
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 8000,
-    inlineUpTo: 7000,
+    // Budget: 6,000 + 1,000 + 1,000 + the 2,000 custom_fields baseline = 10,000; the rest is a guide_content lookup.
+    inlineUpTo: 6000,
     group: "guide",
     sortOrder: 100,
   },
@@ -109,7 +110,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     // The record's own sub-list counts as part of the record (Arman 2026-09-27).
-    inlineUpTo: 1500,
+    inlineUpTo: 1000,
     group: "personal_notes",
     sortOrder: 300,
   },
@@ -121,7 +122,7 @@ const surfaceSpecific: SurfaceValue[] = [
     alwaysAvailable: false,
     typicalCharCount: 1500,
     // The record's own sub-list counts as part of the record (Arman 2026-09-27).
-    inlineUpTo: 1500,
+    inlineUpTo: 1000,
     group: "comments",
     sortOrder: 400,
   },

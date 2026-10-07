@@ -149,7 +149,9 @@ const surfaceSpecific: SurfaceValue[] = [
     // The bundle exists to be read up front: a 7,000-char body plus metadata,
     // tabs and folders. Without a page limit it fell to the 200-char default
     // and always arrived as a lookup (2026-09-30).
-    inlineUpTo: 12_000,
+    // 8,000 = the 7,000-char body + metadata, so the page stays inside the 10,000 budget
+    // with the 2,000 custom_fields baseline; tabs/folders beyond that are a lookup.
+    inlineUpTo: 8000,
     sortOrder: 290,
     group: "note_identity",
   },

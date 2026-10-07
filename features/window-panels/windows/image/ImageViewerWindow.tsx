@@ -49,6 +49,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toast } from "@/lib/toast";
+import { downloadUrl } from "@ai-matrx/kit/download";
 // context-menu-exempt: entity — the fallback viewer for a PLAIN URL image — a durable file_id routes to openFilePreview instead, so a record here does not exist
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -307,17 +308,15 @@ export function ImageViewer({
           </ToolbarBtn>
         </div>
 
-        <a
-          href={url}
-          download
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          type="button"
+          onClick={() => downloadUrl(url, "image", { newTab: true })}
           aria-label="Download"
           title="Download"
           className="p-1.5 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
           <Download className="w-3.5 h-3.5" />
-        </a>
+        </button>
       </div>
     </div>
   );

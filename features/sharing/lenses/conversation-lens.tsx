@@ -38,6 +38,7 @@ import {
   shareChildFileUrls,
 } from "@/features/files/handler/utils/python-base";
 import { formatFileSize } from "@/features/files/utils/format";
+import { downloadUrl } from "@ai-matrx/kit/download";
 import type { ResolvedShareToken } from "@/utils/permissions/shareLinks";
 import {
   readSharedConversation,
@@ -125,15 +126,14 @@ function FileCard({
   const cls =
     "flex w-full max-w-sm items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5";
   return href ? (
-    <a
-      href={href}
-      download={block.title ?? true}
-      rel="noreferrer"
-      className={`${cls} hover:bg-accent`}
+    <button
+      type="button"
+      onClick={() => downloadUrl(href, name, { newTab: true })}
+      className={`${cls} text-left hover:bg-accent`}
       aria-label={`Download ${name}`}
     >
       {body}
-    </a>
+    </button>
   ) : (
     <div className={cls}>{body}</div>
   );
