@@ -52,6 +52,16 @@ if (typeof window !== "undefined") {
   supabase.auth.onAuthStateChange((_e, session) => (cachedToken = session?.access_token ?? null));
 }
 
+/** Template doors need no server round trip — the list page and the editor share these. */
+export async function listTemplateRows(input: { lane: "all" | "mine"; orgId: string | null; search: string }): Promise<TemplateRow[]> {
+  const a = await door("esign_template_list", { p_lane: input.lane, p_org_id: input.orgId, p_search: input.search.trim() || null, p_limit: 200 });
+  return (a.templates as TemplateRow[]) ?? [];
+}
+
+export async function deleteTemplateRow(templateId: string): Promise<void> {
+  await door("esign_template_delete", { p_template_id: templateId });
+}
+
 export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
   const server = async <T,>(path: string, pathParams: Record<string, string> | undefined, body: unknown): Promise<T> => {
     const result = await dispatch(
@@ -167,13 +177,8 @@ export function makeRealEditorApi(dispatch: AppDispatch): EditorApi {
       };
     },
 
-    async listTemplates({ lane, orgId, search }) {
-      const a = await door("esign_template_list", { p_lane: lane, p_org_id: orgId, p_search: search.trim() || null, p_limit: 200 });
-      return (a.templates as TemplateRow[]) ?? [];
-    },
+    listTemplates: listTemplateRows,
 
-    async deleteTemplate(templateId) {
-      await door("esign_template_delete", { p_template_id: templateId });
-    },
+    deleteTemplate: deleteTemplateRow,
   };
 }

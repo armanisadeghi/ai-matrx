@@ -28,6 +28,8 @@ interface Props {
   people: Person[];
   me: Person | null;
   setAccessCode(recipientKey: string, code: string | null): Promise<boolean>;
+  /** A template holds roles, not people. */
+  templateMode?: boolean;
 }
 
 const ROLE_OPTIONS = (Object.keys(ROLE_LABEL) as RecipientRole[]).map((v) => ({ value: v, label: ROLE_LABEL[v] }));
@@ -38,7 +40,8 @@ const VERIFY_OPTIONS: { value: RecipientVerification; label: string }[] = [
 ];
 const MAX_MATCHES = 6;
 
-export function RecipientsPanel({ draft, edit, people, me, setAccessCode }: Props) {
+export function RecipientsPanel({ draft, edit, people, me, setAccessCode, templateMode }: Props) {
+  const [roleName, setRoleName] = useState("");
   const [query, setQuery] = useState("");
   const [guest, setGuest] = useState<{ name: string; email: string } | null>(null);
   const [open, setOpen] = useState<string | null>(null);
@@ -108,7 +111,7 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode }: Prop
 
   return (
     <div className="flex flex-col gap-3">
-      {me && (
+      {me && !templateMode && (
         <SegmentedControl
           aria-label="Who signs"
           fill
@@ -153,10 +156,10 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode }: Prop
               <Button variant="quiet" aria-label={expanded ? "Collapse" : "Expand"} icon={expanded ? <ChevronDown /> : <ChevronRight />} onClick={() => setOpen(expanded ? null : r.key)} />
               {sequential && <span className="w-4 shrink-0 text-center type-secondary tabular-nums text-muted-foreground">{i + 1}</span>}
               <div className="min-w-0 flex-1">
-                <div className="truncate type-title">{r.full_name || "Name needed"}</div>
+                <div className="truncate type-title">{r.full_name || r.template_role || "Name needed"}</div>
                 <div className="flex min-w-0 items-center gap-1.5">
                   {r.user_id ? <Badge tone="info">Member</Badge> : <Badge>Outside</Badge>}
-                  <span className={cn("truncate type-secondary", isEmail(r.email) ? "text-muted-foreground" : "text-destructive")}>{r.email || "Email needed"}</span>
+                  <span className={cn("truncate type-secondary", isEmail(r.email) || templateMode ? "text-muted-foreground" : "text-destructive")}>{r.email || (templateMode ? "Filled in when used" : "Email needed")}</span>
                 </div>
               </div>
               {sequential && recipients.length > 1 && (
@@ -196,6 +199,25 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode }: Prop
         );
       })}
 
+      {templateMode ? (
+        <div className="flex gap-1.5">
+          <Field aria-label="Role name" placeholder="Add a role, such as Client" value={roleName} onChange={(e) => setRoleName(e.target.value)} />
+          <Button
+            variant="primary"
+            disabled={!roleName.trim()}
+            onClick={() => {
+              const name = roleName.trim();
+              edit((d) => {
+                const r = newRecipient(d.recipients, { full_name: "", email: "", user_id: null, template_role: name });
+                return { ...d, recipients: renumber([...d.recipients, r].sort((x, y) => x.order - y.order), d.settings.signing_order === "sequential") };
+              });
+              setRoleName("");
+            }}
+          >
+            Add
+          </Button>
+        </div>
+      ) : (
       <div className="flex flex-col gap-1.5">
         <Field aria-label="Add a person" placeholder="Add a colleague or an email address" value={query} onChange={(e) => setQuery(e.target.value)} />
         {matches.map((c) => (
@@ -225,6 +247,7 @@ export function RecipientsPanel({ draft, edit, people, me, setAccessCode }: Prop
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
