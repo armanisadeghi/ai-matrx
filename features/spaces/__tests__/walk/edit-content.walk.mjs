@@ -14,13 +14,6 @@ const check = (name, ok, extra = {}) => {
 };
 const stamp = Date.now() % 100000;
 const { browser, page } = await open({ member: false, width: 1440, height: 1000 });
-// Leftovers of an earlier run (argv) go to Trash first.
-for (const old of process.argv.slice(2)) {
-  await page.goto(`${originOf(page)}/spaces/${old}`, { waitUntil: "domcontentloaded" });
-  await page.locator(".bn-editor").first().waitFor({ timeout: 90_000 }).catch(() => {});
-  await page.waitForTimeout(2500);
-  console.log(JSON.stringify({ leftover: old, trashed: await trashPage(page).catch(() => false) }));
-}
 const id = await newPage(page);
 console.log(JSON.stringify({ page: id }));
 await page.waitForTimeout(2500);
@@ -103,6 +96,13 @@ await body(page).waitFor({ timeout: 90_000 });
 await page.waitForTimeout(5000);
 check("the owner sees the content editor's words", (await body(page).getByText(words.trim(), { exact: false }).count()) > 0);
 check("scratch page trashed", await act(page, () => trashPage(page)));
+// Leftovers of an earlier run (argv) go to Trash too.
+for (const old of process.argv.slice(2)) {
+  await page.goto(`${originOf(page)}/spaces/${old}`, { waitUntil: "domcontentloaded" });
+  await page.locator(".bn-editor").first().waitFor({ timeout: 90_000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+  console.log(JSON.stringify({ leftover: old, trashed: await trashPage(page).catch(() => false) }));
+}
 await browser.close();
 console.log(JSON.stringify({ page: id, origin: originOf(page) }));
 process.exit(failed ? 1 : 0);
