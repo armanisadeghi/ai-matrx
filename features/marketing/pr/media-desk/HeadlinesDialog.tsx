@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -41,6 +40,7 @@ import {
 import { StageList } from "./StageList";
 import { forgetRun, rememberRun, useOpenIfRemembered, useRejoinRun } from "./rejoin";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export const FORMAT_LABELS: Record<HeadlineFormat, string> = {
   news: "News headline",
   press_release: "Press release",
@@ -270,7 +270,7 @@ export function HeadlinesDialog({
           </fieldset>
           <div className="grid gap-1">
             <Label htmlFor="headline-facts">{angleId ? "More facts (optional)" : "Facts, one per line"}</Label>
-            <Textarea
+            <ProTextarea
               id="headline-facts"
               value={factsText}
               onChange={(e) => setFactsText(e.target.value)}

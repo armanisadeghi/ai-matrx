@@ -21,7 +21,6 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ClipboardType, FileAudio, Link2, Loader2, Plus, Upload } from "lucide-react";
-import { Textarea } from "@ai-matrx/design-system";
 import { Input } from "@ai-matrx/design-system/controls";
 import { TapTargetButtonSolid } from "@ai-matrx/tap-target";
 import { Button } from "@/components/ui/button";
@@ -51,6 +50,7 @@ import { addFailureSentence } from "@/features/sources/addFailure";
 import { SaveSourcePanel, type SaveSourceItem } from "@/features/sources/SaveSourcePanel";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface SaveTarget {
   items: SaveSourceItem[];
   notices: LandingNotice[];
@@ -299,7 +299,7 @@ export function SourceAddMenu({
           </DialogHeader>
           <div className="space-y-3">
             <Input placeholder="Name (optional — the first line is used)" value={textName} onChange={(e) => setTextName(e.target.value)} />
-            <Textarea autoFocus rows={10} placeholder="Paste the text here" value={textInput} onChange={(e) => setTextInput(e.target.value)} />
+            <ProTextarea autoFocus rows={10} placeholder="Paste the text here" value={textInput} onChange={(e) => setTextInput(e.target.value)} />
             {addError && !adding ? (
               <p role="alert" className="text-sm text-destructive">
                 {addError}

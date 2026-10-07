@@ -21,7 +21,7 @@ import { MessageSquareQuote, X } from "lucide-react";
 import { useOptionalCanvas } from "@ai-matrx/canvas/react";
 import { useToolAction } from "@ai-matrx/chat/action-requests/hooks/useToolAction";
 import type { ToolEnvelope } from "@ai-matrx/chat/action-requests/screen-run";
-import { Badge, Button, Chip, Select, Textarea } from "@ai-matrx/design-system/controls";
+import { Badge, Button, Chip, Select } from "@ai-matrx/design-system/controls";
 import { formatUsd } from "@ai-matrx/kit/format";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
@@ -39,6 +39,7 @@ import {
 import { ANSWER_ENGINES, engineStatesFromOutcome, toAsk, type EngineState } from "./engine-state";
 import { readFullAnswer } from "./full-answer";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 type States = Partial<Record<AnswerEngine, EngineState>>;
 
 const engineLabel = (engine: string) =>
@@ -178,7 +179,7 @@ export function TryOnePrompt({
           aria-label="Panel question"
         />
       ) : null}
-      <Textarea
+      <ProTextarea
         aria-label="Prompt"
         placeholder="Type a buyer question"
         value={draft}

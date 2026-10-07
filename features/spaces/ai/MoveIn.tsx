@@ -11,7 +11,7 @@
 //               (`notionMarkdownToBlocks`), a `[[database:N]]` line becomes that table's database block, and the
 //               new page opens.
 
-import { Button, Textarea } from "@ai-matrx/design-system/controls";
+import { Button } from "@ai-matrx/design-system/controls";
 import { useFloatingAgentRun } from "@ai-matrx/chat/agents/hooks/useFloatingAgentRun";
 import { useDeclaredSurfaceMandates } from "@ai-matrx/chat/surfaces/runtime/surface-mandates";
 import { createContext, useContext, useRef, useState, type ReactNode } from "react";
@@ -29,6 +29,7 @@ import { createDesignedDatabase, readDesign } from "../data/designed-database";
 import { useSpaces } from "../state/SpacesProvider";
 import { MOVE_IN_KEY } from "./spaces-ai";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface MovedPage {
   title: string;
   icon: string;
@@ -173,7 +174,7 @@ export function MoveInHost({ children, userId }: { children: ReactNode; userId: 
               void start();
             }}
           >
-            <Textarea
+            <ProTextarea
               autoFocus
               rows={10}
               value={text}

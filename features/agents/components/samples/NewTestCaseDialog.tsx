@@ -10,7 +10,6 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system/controls";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -24,6 +23,7 @@ import {
   type AgentContractHead,
 } from "@/features/agents/samples/service";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export interface NewTestCaseDialogProps {
   agentId: string;
   head: AgentContractHead | null;
@@ -89,7 +89,7 @@ export function NewTestCaseDialog({
               <span className="type-meta text-muted-foreground">
                 {declaration.label ?? declaration.name}
               </span>
-              <Textarea
+              <ProTextarea
                 aria-label={declaration.label ?? declaration.name}
                 data-variable={declaration.name}
                 rows={2}
@@ -105,7 +105,7 @@ export function NewTestCaseDialog({
           ))}
           <label className="block space-y-1">
             <span className="type-meta text-muted-foreground">Typed text</span>
-            <Textarea
+            <ProTextarea
               aria-label="Typed text"
               rows={2}
               value={userInput}
@@ -114,7 +114,7 @@ export function NewTestCaseDialog({
           </label>
           <label className="block space-y-1">
             <span className="type-meta text-muted-foreground">Answer</span>
-            <Textarea
+            <ProTextarea
               aria-label="Answer"
               rows={3}
               value={referenceOutput}

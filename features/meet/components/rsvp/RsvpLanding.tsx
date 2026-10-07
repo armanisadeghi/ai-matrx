@@ -35,7 +35,6 @@ import {
   type RsvpInvitation,
 } from "@ai-matrx/meet/react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/lib/redux/hooks";
 import { supabase } from "@/utils/supabase/client";
@@ -47,6 +46,7 @@ import {
   zoneLabel,
 } from "@/features/meet/lib/zoned-time";
 
+import { ProTextarea } from "@/components/official/ProTextarea";
 export const RSVP_ROUTE = "/api/v1/meet/rsvp";
 
 const ANSWERS: {
@@ -361,7 +361,7 @@ export function RsvpLanding({
             </div>
             {noteOpen ? (
               <div className="space-y-2">
-                <Textarea
+                <ProTextarea
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
                   placeholder="Add a note for the host"
