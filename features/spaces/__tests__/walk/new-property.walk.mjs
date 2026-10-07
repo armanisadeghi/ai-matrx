@@ -39,11 +39,16 @@ await act(page, async () => {
     await page.waitForTimeout(2500);
     await page.keyboard.press("Escape");
     await page.waitForTimeout(1500);
-    const header = await frame.getByText(name, { exact: true }).count();
+    // The column is in the table: the view's Properties list names it.
+    await frame.hover();
+    await frame.getByRole("button", { name: "View settings" }).click();
+    await page.getByText("Properties", { exact: true }).click();
+    const header = await page.locator("[data-radix-popper-content-wrapper]").last().getByText(name, { exact: true }).count();
+    await page.keyboard.press("Escape");
     check(`New property ${name} (${typeLabel})`, header > 0, { panel: panel && { w: Math.round(panel.width), h: Math.round(panel.height) }, frameW: fw });
   }
   // Three rows through the table's own New button.
-  const rowsBefore = await frame.locator("[role=row]").count();
+  const rowsBefore = await frame.locator("[data-row-id]").count();
   for (let i = 0; i < 3; i++) {
     await frame.hover();
     await frame.getByRole("button", { name: /^New$/ }).first().click();
@@ -51,7 +56,7 @@ await act(page, async () => {
     await page.keyboard.press("Escape");
   }
   await page.waitForTimeout(2000);
-  const rowsAfter = await frame.locator("[role=row]").count();
+  const rowsAfter = await frame.locator("[data-row-id]").count();
   check("3 rows added", rowsAfter - rowsBefore >= 3, { rowsBefore, rowsAfter });
 });
 await page.screenshot({ path: process.env.SHOT ?? "/tmp/r26-newprop.png" });
