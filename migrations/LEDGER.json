@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-07T16:34:23.862Z",
+  "generated_at": "2026-10-07T18:21:50.162Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -6745,6 +6745,24 @@
       "filename": "sharetails_no_lane_row_is_the_organization_default.sql",
       "checksum": "f4a529ab1e87c26a2808ec9e5bb489704f64402037b10f9e2903fc4fbeca47fc",
       "applied_at": "2026-09-25 15:38:14.923511+00"
+    },
+    "migrations/campaign/sheetleft_a_a_view_the_old_sheet_saved_is_a_view_of_its_table_again.sql": {
+      "source": "matrx-frontend",
+      "filename": "sheetleft_a_a_view_the_old_sheet_saved_is_a_view_of_its_table_again.sql",
+      "checksum": "8c7dea2298bd7e1920dcf24c18ec3cde42e64903e5601d918b441814f4cce0c2",
+      "applied_at": "2026-10-07 18:20:24.390294+00"
+    },
+    "migrations/campaign/sheetleft_b_no_live_view_keeps_the_retired_sheet_layout.sql": {
+      "source": "matrx-frontend",
+      "filename": "sheetleft_b_no_live_view_keeps_the_retired_sheet_layout.sql",
+      "checksum": "ff3629f1ecddd846af7179b59a6cee43e8376cb8ef6e2cc5420a50e4b6a114e9",
+      "applied_at": "2026-10-07 18:21:03.908321+00"
+    },
+    "migrations/campaign/sheetleft_c_the_four_sheet_knobs_are_archived_not_deleted.sql": {
+      "source": "matrx-frontend",
+      "filename": "sheetleft_c_the_four_sheet_knobs_are_archived_not_deleted.sql",
+      "checksum": "6221fcabd8f3ffb573c4b58560c462ba6f6280b3f5a5f3a2bfeae1d5e6a17269",
+      "applied_at": "2026-10-07 18:21:49.33693+00"
     },
     "migrations/campaign/signupdoor_the_dormant_second_signup_door_is_closed_loudly.sql": {
       "source": "matrx-frontend",
