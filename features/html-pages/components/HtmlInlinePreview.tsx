@@ -162,14 +162,17 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
           html: code,
         };
 
-  const shouldConvert = isComplete && analysis.previewable && !!user?.id;
+  const userId = user?.id;
+  const shouldConvert = isComplete && analysis.previewable && !!userId;
+  const publishHtml = analysis.html;
 
   useEffect(() => {
-    if (!shouldConvert) return undefined;
+    if (!shouldConvert || !userId) return undefined;
     if (convertedForRef.current === code) return undefined;
 
     convertedForRef.current = code;
     let cancelled = false;
+    let settled = false;
     setShowCode(false);
     setShowError(false);
     setErrorMessage(null);
@@ -179,18 +182,20 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
       try {
         const title = extractTitleFromHTML(code) || "HTML Preview";
         const result = await HTMLPageService.createPage(
-          analysis.html,
+          publishHtml,
           title,
           "Generated from chat",
-          user!.id,
+          userId,
           {},
           { sourceMessageId: messageId, sourceConversationId: conversationId },
         );
+        settled = true;
         if (cancelled) return;
         setUrl(result.url);
         setPageId(typeof result.pageId === "string" ? result.pageId : null);
         setPhase("preview");
       } catch (err) {
+        settled = true;
         if (cancelled) return;
         console.error("[HtmlInlinePreview] conversion failed:", err);
         setErrorMessage(
@@ -202,8 +207,12 @@ const HtmlInlinePreview: React.FC<HtmlInlinePreviewProps> = ({
 
     return () => {
       cancelled = true;
+      // A run cancelled by a dependency change BEFORE its answer arrived must be
+      // allowed to start again: leaving the ref set made the next pass skip it,
+      // and the pane spun on "Rendering webpage" forever with its result discarded.
+      if (!settled) convertedForRef.current = null;
     };
-  }, [shouldConvert, code, analysis.html, user, messageId, conversationId]);
+  }, [shouldConvert, code, publishHtml, userId, messageId, conversationId]);
 
   const title = extractTitleFromHTML(code) || "HTML Preview";
 

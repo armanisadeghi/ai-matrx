@@ -311,6 +311,26 @@ export async function ensureOrganizationContext(
   }
 }
 
+/**
+ * THE press of a "Choose organization" button that rides the gate: opens the
+ * ONE picker and waits for the person. "Not now" (a dismissal) is nothing; any
+ * OTHER failure (no picker mounted yet, a read that failed) is announced — a
+ * button that answers a press with nothing is a dead end, so it is never
+ * `.catch(() => undefined)`. Guard: organization-gate-press-never-silent.test.ts.
+ */
+export async function chooseOrganizationFromButton(): Promise<void> {
+  try {
+    await ensureOrganizationContext({ interactive: true });
+  } catch (error) {
+    if (isOrganizationSelectionCancelled(error)) return;
+    console.error("[organization-gate] the organization picker could not be opened", error);
+    const { toast } = await import("@/lib/toast");
+    toast.error("The organization picker could not open", {
+      description: "Try again in a moment, or choose one from the sidebar.",
+    });
+  }
+}
+
 /** Ask for an explicit destination; never reuse the active organization. */
 export async function requestOrganizationContextChoice(): Promise<string> {
   if (typeof window === "undefined" || !isOrganizationPickerAvailable()) {
@@ -502,7 +522,7 @@ function announceWorkspaceNeeded(): void {
       action: {
         label: "Choose organization",
         onClick: () => {
-          void ensureOrganizationContext({ interactive: true }).catch(() => undefined);
+          void chooseOrganizationFromButton();
         },
       },
     }),

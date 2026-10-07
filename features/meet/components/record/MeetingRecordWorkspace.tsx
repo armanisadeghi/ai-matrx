@@ -51,7 +51,7 @@ import {
 import { Skeleton, Button as SurfaceButton, } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
+import { chooseOrganizationFromButton } from "@/lib/organization/organization-gate";
 import { meetingOrigin } from "@/features/meet/components/invite/MeetingInviteButton";
 import { ActionItemsSection } from "@/features/meet/components/record/ActionItemsSection";
 import { AttendancePanel } from "@/features/meet/components/record/AttendancePanel";
@@ -101,7 +101,7 @@ function ChooseOrganizationNotice() {
         type="submit"
         variant="outline"
         className="mt-3"
-        onClick={() => void ensureOrganizationContext().catch(() => undefined)}
+        onClick={() => void chooseOrganizationFromButton()}
       >
         Choose organization
       </Button>

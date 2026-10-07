@@ -76,8 +76,7 @@ import {
   WAITING_FOR_ORGANIZATION,
 } from "@ai-matrx/agents/sources/runtime";
 import {
-  ensureOrganizationContext,
-  isOrganizationSelectionCancelled,
+  chooseOrganizationFromButton,
 } from "@/lib/organization/organization-gate";
 import type { SourceCardModel } from "@ai-matrx/agents/sources/runtime";
 import type { UseSourceSetResult } from "../useSourceSet";
@@ -393,13 +392,7 @@ export function SourceCard({
  * lets every waiting card go on by itself (`useSourceRecovery`); closing it is
  * "not now" and changes nothing.
  */
-async function chooseOrganization(): Promise<void> {
-  try {
-    await ensureOrganizationContext({ interactive: true });
-  } catch (err) {
-    if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : String(err));
-  }
-}
+const chooseOrganization = chooseOrganizationFromButton;
 
 function isUploadKind(kind: SourceCardModel["draft"]["kind"]): boolean {
   return kind === "upload" || kind === "image" || kind === "audio";
