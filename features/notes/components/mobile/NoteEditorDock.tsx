@@ -209,6 +209,32 @@ export function NoteEditorDock({
     setPill({ x: clampedX, width: clampedW, height: dockH - PILL_INSET_Y * 2 });
   }, [activeIndex, sheetOpen]);
 
+  // A toast rests ABOVE this dock, never over its Copy chevron. The dock sits above the shell's own
+  // foot (its notes container ends before the viewport does), so the shell's floating-clearance measure
+  // does not reach it; the dock publishes its own top as `--matrx-toast-floor`, which the Toaster's
+  // phone offset reads (components/ui/sonner.tsx).
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return;
+    const root = document.documentElement;
+    const publish = () => {
+      const top = nav.getBoundingClientRect().top;
+      const shown = nav.offsetParent !== null && nav.getBoundingClientRect().height > 0;
+      root.style.setProperty("--matrx-toast-floor", shown ? `${Math.ceil(window.innerHeight - top) + 12}px` : "0px");
+    };
+    publish();
+    const observer = new ResizeObserver(publish);
+    observer.observe(nav);
+    window.addEventListener("resize", publish);
+    const timer = window.setInterval(publish, 1000);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", publish);
+      window.clearInterval(timer);
+      root.style.removeProperty("--matrx-toast-floor");
+    };
+  }, []);
+
   useEffect(() => {
     measurePill();
   }, [measurePill]);
@@ -241,9 +267,6 @@ export function NoteEditorDock({
           sheetOpen && "opacity-0",
         )}
         aria-hidden={sheetOpen ? true : undefined}
-        // Floating chrome: the shell measures it, so a toast rests ABOVE this dock (sonner's offset reads
-        // `--matrx-floating-clearance`) instead of covering its Copy chevron.
-        data-matrx-floating-bottom=""
       >
         <div
           ref={navRef}

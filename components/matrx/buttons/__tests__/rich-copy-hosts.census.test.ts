@@ -373,14 +373,16 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     expect(src).toMatch(/richCopyFlavors=\{\[\]\}/);
   });
 
-  test("I. a saved template has one editor, and the phone note dock is measured floating chrome", () => {
+  test("I. a saved template has one editor, and the phone note dock keeps toasts off its controls", () => {
     const editRoute = fs.readFileSync(path.join(REPO_ROOT, "app/(core)/chat/message-templates/edit/[id]/page.tsx"), "utf8");
     expect(editRoute).toMatch(/redirect\(/);
     expect(editRoute).not.toMatch(/TemplateEditor/);
     const editor = fs.readFileSync(path.join(REPO_ROOT, "features/message-templates/components/TemplateEditor.tsx"), "utf8");
     expect(editor).not.toMatch(/updateTemplate/);
     const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
-    expect(dock).toMatch(/data-matrx-floating-bottom/);
+    expect(dock).toMatch(/--matrx-toast-floor/);
+    const toaster = fs.readFileSync(path.join(REPO_ROOT, "components/ui/sonner.tsx"), "utf8");
+    expect(toaster).toMatch(/mobileOffset[\s\S]*--matrx-toast-floor/);
   });
 
   test("E/F/G detectors go red on planted files and green once routed (self-proof)", () => {

@@ -268,7 +268,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
       mobileOffset={{
         left: "16px",
         right: "16px",
-        bottom: "max(16px, var(--matrx-floating-clearance))",
+        // `--matrx-toast-floor`: a dock that floats above the shell's foot (the phone note dock) keeps
+        // toasts off its controls; 0px when none is up.
+        bottom: "max(16px, var(--matrx-floating-clearance), var(--matrx-toast-floor, 0px))",
         top: "calc(12px + env(safe-area-inset-top, 0px))",
       }}
       toastOptions={{
