@@ -310,8 +310,12 @@
   align-items: center;
   gap: 2px;
 }
+/* A row whose menu is open keeps its ••• button: the menu is anchored to it, and a hidden
+   (display:none) anchor measures 0x0 at the page origin, so the menu jumps to the top-left
+   corner and flickers back whenever the pointer leaves and re-enters the row. */
 .spaces-row:hover .spaces-row-actions,
-.spaces-row:focus-within .spaces-row-actions {
+.spaces-row:focus-within .spaces-row-actions,
+.spaces-row:has([data-state="open"]) .spaces-row-actions {
   display: inline-flex;
 }
 .spaces-row-action {
