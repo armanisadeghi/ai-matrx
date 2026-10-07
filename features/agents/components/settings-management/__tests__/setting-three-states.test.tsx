@@ -254,14 +254,16 @@ describe("three setting states — saved JSON says absent / off / value", () => 
 });
 
 describe("model switch keeps the person's setting", () => {
-  it("a value the new model lacks is kept and shown as translated, never cleared", () => {
+  it("a value the new model lacks is kept and shown as translated, never cleared", async () => {
     const store = makeStore({ reasoning_effort: "high", max_output_tokens: 8000 });
     render(store);
     mockNextModelId = PLAIN_MODEL;
     const switcher = container.querySelector<HTMLButtonElement>(
       "[data-test-switch-model]",
     )!;
-    act(() => switcher.click());
+    // The picker parks the click and commits in a microtask; flush it as the
+    // browser would before the next paint.
+    await act(async () => switcher.click());
 
     const agent = store.getState().agentDefinition.agents[AGENT_ID];
     expect(agent.modelId).toBe(PLAIN_MODEL); // committed without a dialog
@@ -275,11 +277,11 @@ describe("model switch keeps the person's setting", () => {
     expect(container.textContent).not.toContain("Settings Warnings");
   });
 
-  it("an explicit off survives a switch too (off is a setting, not absence)", () => {
+  it("an explicit off survives a switch too (off is a setting, not absence)", async () => {
     const store = makeStore({ reasoning_effort: "none" });
     render(store);
     mockNextModelId = PLAIN_MODEL;
-    act(() =>
+    await act(async () =>
       container
         .querySelector<HTMLButtonElement>("[data-test-switch-model]")!
         .click(),
