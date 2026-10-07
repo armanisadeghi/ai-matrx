@@ -4,12 +4,13 @@
 // become new top-level pages (one per file); the last one opens.
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
-import { Code2, FileDown, FileText, Table } from "lucide-react";
+import { Code2, FileDown, FileInput, FileText, Table } from "lucide-react";
 import { useRef, useState, type ReactNode } from "react";
 
 import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { toast } from "@/lib/toast";
 
+import { useMoveIn } from "../ai/MoveIn";
 import { IMPORT_ACCEPT, readImport, type ImportKind } from "../io/import";
 import { useSpaces } from "../state/SpacesProvider";
 
@@ -25,6 +26,7 @@ export function ImportButton() {
   const [busy, setBusy] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const kindRef = useRef<ImportKind>("markdown");
+  const moveIn = useMoveIn();
 
   const pick = (kind: ImportKind) => {
     kindRef.current = kind;
@@ -74,6 +76,14 @@ export function ImportButton() {
               <span className="flex-1 truncate text-left">{k.label}</span>
             </button>
           ))}
+          {moveIn.wired ? (
+            <button type="button" className="spaces-menu-row" onClick={() => (setOpen(false), moveIn.ask())}>
+              <span className="spaces-menu-row-icon">
+                <FileInput size={16} />
+              </span>
+              <span className="flex-1 truncate text-left">From Notion</span>
+            </button>
+          ) : null}
         </PopoverContent>
       </Popover>
       <input

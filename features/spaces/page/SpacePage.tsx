@@ -3,7 +3,7 @@
 // features/spaces/page/SpacePage.tsx — one open Space: top bar, cover, icon, title, editor (§A).
 
 import { Button, EmptyState } from "@ai-matrx/design-system/controls";
-import { ChevronsRight, CloudOff, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
+import { ChevronsRight, CloudOff, FileInput, FileQuestion, ImageIcon, Lock, Menu, MessageSquare, MessageSquareText, SmilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,6 +19,7 @@ import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker } from "../data/SourcePicker";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
+import { useMoveIn } from "../ai/MoveIn";
 import { createPageDatabase } from "../data/new-database";
 import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
@@ -78,9 +79,13 @@ function Title({
     const el = ref.current;
     if (el && el.textContent !== value) el.textContent = value;
   }, [value]);
+  // A page the person just made opens with its title ready to type in (Notion) — once. Edit access that
+  // settles (or is re-read) later must never pull the caret back here from the line being typed.
+  const focused = useRef(false);
   useEffect(() => {
-    // A page the person just made opens with its title ready to type in (Notion).
-    if (autoFocus && editable) ref.current?.focus();
+    if (!autoFocus || !editable || focused.current) return;
+    focused.current = true;
+    ref.current?.focus();
   }, [autoFocus, editable]);
   return (
     <h1
@@ -548,6 +553,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   // Every hook runs before the loading / missing returns below (React's order of hooks).
   const builder = useSpaceBuilder();
   const designer = useDatabaseDesigner();
+  const moveIn = useMoveIn();
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -935,6 +941,11 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               <Button variant="quiet" icon={<AGENT_ICON size={15} />} onClick={() => builder.ask(null)}>
                 Build with AI
               </Button>
+              {moveIn.wired ? (
+                <Button variant="quiet" icon={<FileInput size={15} />} onClick={moveIn.ask}>
+                  Import from Notion
+                </Button>
+              ) : null}
             </div>
           ) : null}
           {editable ? (

@@ -13,6 +13,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 import { DatabaseDesignerHost } from "../ai/DatabaseDesigner";
+import { MoveInHost } from "../ai/MoveIn";
 import { SpaceBuilderHost } from "../ai/SpaceBuilder";
 import { QuickFind } from "../nav/QuickFind";
 import { SpacesSidebarContent } from "../sidebar/SpacesSidebar";
@@ -107,7 +108,9 @@ export function SpacesWorkspace({ children }: { children: ReactNode }) {
     <SpacesProvider>
       <SpaceBuilderHost>
         <DatabaseDesignerHost userId={userId}>
-          <Frame>{children}</Frame>
+          <MoveInHost userId={userId}>
+            <Frame>{children}</Frame>
+          </MoveInHost>
         </DatabaseDesignerHost>
       </SpaceBuilderHost>
     </SpacesProvider>
