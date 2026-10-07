@@ -342,6 +342,12 @@ An agent made for a mandate is not done until the mandate runs it. Two REQUIRED 
    prompt (observed), `use_default` shows the default, `fail` returns an error naming it.
    Done when both runs behave as the map says. The approval package carries both as the
    "door dry run" artifact (see the showable artifacts below).
+3. **The UI run: the approval gate (Arman, 2026-10-06).** The dry runs above are only a
+   pre-check. No agent is approved for a mandate until ONE real run through that mandate is
+   driven through the product UI: a real browser session pressing the real button or door a
+   person uses, with every mapped input visibly arriving. Scripted, API, `dry_run` and
+   direct-agent runs never count. Evidence: the run or conversation URL plus a screenshot
+   showing the inputs. Reviewers reject an approval without that UI trail.
 
 ## Anatomy of a great agent
 
@@ -467,6 +473,9 @@ request:
 
 5. **The door dry run** (mandate agents only) — the two step-10 runs: request, the marker
    found in the returned `messages`/`system_prompt`, and the omit-one run's result.
+6. **The UI run** (mandate agents only) — the run or conversation URL from one real browser
+   session through the mandate's door, plus a screenshot showing every mapped input. No
+   scripted, API, `dry_run` or direct-agent run substitutes; no UI trail, no approval.
 
 No artifacts, no agent. "It has the right tools" is not a defense — tools without a
 taught mission produced a Steward that refused to build.

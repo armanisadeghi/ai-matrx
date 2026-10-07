@@ -210,6 +210,14 @@ Per [`policies/feature-registry.md`](/policies/feature-registry.md) § THE REGIS
 **Never stuff your thing into a wrong node because proposing felt slow** — that is the
 behaviour this system exists to end.
 
+## Approving an agent for a mandate (Arman, 2026-10-06)
+
+Reject any approval that lacks ONE real run through the mandate, driven through the product UI:
+a real browser session pressing the door a person would, every mapped input visibly arriving.
+Required evidence: the run or conversation URL plus a screenshot showing the inputs. A scripted,
+API, `dry_run` or direct-agent run does NOT count; the door dry run in create-agent step 10 is
+only the pre-check. No UI trail, no approval.
+
 ## When to add an item (end of task)
 
 Add a row when you produced **anything reviewable in the UI that Arman didn't explicitly walk through with you live**: a demo page, a new route, a reworked surface, an admin panel, a feature needing validation/approval. Skip it only when the work has no UI surface, or Arman already reviewed it in this conversation.
