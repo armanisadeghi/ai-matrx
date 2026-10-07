@@ -27,9 +27,11 @@ import {
   appendBuildEntry,
   claimBuildEntry,
   isOpenEntry,
+  isStaleClaim,
   newBuildEntry,
   patchBuildEntry,
   readBuildRecord,
+  releaseStaleClaim,
   startBuildRecord,
   type BuildEntry,
   type BuildRecord,
@@ -131,8 +133,15 @@ export function useAppletBuildSession(opts: {
 
   // Reopen: the row is the truth. A request still open is rejoined once per page.
   const reopen = useEffectEvent(async (appletId: string) => {
-    const next = await refresh(appletId);
-    const latest = next?.requests.at(-1);
+    let next = await refresh(appletId);
+    let latest = next?.requests.at(-1);
+    // A claim whose tab died between claiming the answer and saving it would hold the request in
+    // "saving" forever: release it, then rejoin like any open run (the claim decides again).
+    if (isStaleClaim(latest)) {
+      await releaseStaleClaim(createClient(), appletId, latest.id).catch((err) => console.error("[applet-build] could not release a stale claim", err));
+      next = await refresh(appletId);
+      latest = next?.requests.at(-1);
+    }
     if (isOpenEntry(latest) && latest.state !== "saving" && reopened.current !== latest.id) {
       reopened.current = latest.id;
       await rejoin(appletId, latest);

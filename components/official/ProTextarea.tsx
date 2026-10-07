@@ -120,6 +120,7 @@ import React, {
   useRef,
   useEffect,
   useLayoutEffect,
+  useEffectEvent,
   useId,
   lazy,
   Suspense,
@@ -710,6 +711,27 @@ export const ProTextarea = React.forwardRef<
       },
       [editor],
     );
+
+    // THE PRE-HYDRATION KEEP. A server-rendered box is on screen — and takes
+    // typing, a paste or dictation — before React hydrates it (11 s on
+    // /applets/build in production). Hydration records that text as the box's
+    // last value, so no change ever reaches the host and its next render writes
+    // the host's empty value back over it: what she typed vanished and the
+    // Build button bound to it stayed disabled (lane P, 2026-10-07). On mount,
+    // text the box holds that the host does not know is handed to the host
+    // through its own onChange, exactly as if she had typed it after hydration.
+    const keepPreHydrationText = useEffectEvent(() => {
+      const el = internalRef.current;
+      if (editor || !el || !onChange) return;
+      const typed = el.value;
+      if (!typed || typed === String(value ?? "")) return;
+      // Through React's value tracker, so the input event below reads as a change.
+      el.value = "";
+      pushToTextarea(typed);
+    });
+    useLayoutEffect(() => {
+      keepPreHydrationText();
+    }, []);
 
     // Voice-to-text now rides the ONE shared recorder (start-always-wins,
     // one-at-a-time, survives navigation) via the reusable `useMicField`

@@ -7,7 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { Database } from "@/types/database.types";
 
-import { appendBuildEntry, claimBuildEntry, draftNameOf, isOpenEntry, newBuildEntry, patchBuildEntry, readBuildRequests } from "./build-session";
+import { STALE_CLAIM_MS, appendBuildEntry, claimBuildEntry, draftNameOf, isOpenEntry, isStaleClaim, newBuildEntry, patchBuildEntry, readBuildRequests, releaseStaleClaim } from "./build-session";
 
 type Row = { id: string; organization_id: string; slug: string; name: string; version: number; status: string; entry: string | null; metadata: unknown };
 
@@ -76,5 +76,33 @@ describe("build session", () => {
     expect(await claimBuildEntry(client, "a1", entry.id)).toBe(true);
     expect(await claimBuildEntry(client, "a1", entry.id)).toBe(false);
     expect(readBuildRequests(row.metadata)[0]?.state).toBe("saving");
+  });
+
+  it("a claim whose tab died is released once, and the claim then decides again", async () => {
+    const { client, row } = fakeClient(base());
+    const entry = { ...newBuildEntry("A reading list", null), state: "running" as const, conversation_id: "c1" };
+    row.metadata = { build: { requests: [entry] } };
+    expect(await claimBuildEntry(client, "a1", entry.id)).toBe(true);
+    const claimed = readBuildRequests(row.metadata)[0];
+    expect(claimed?.claimed_at).toBeTruthy();
+    // A live save is never taken over.
+    expect(isStaleClaim(claimed)).toBe(false);
+    expect(await releaseStaleClaim(client, "a1", entry.id)).toBe(false);
+    // The claiming tab crashed: past the window, one releaser moves it back to running.
+    const later = Date.parse(claimed?.claimed_at ?? "") + STALE_CLAIM_MS + 1;
+    expect(isStaleClaim(claimed, later)).toBe(true);
+    expect(await releaseStaleClaim(client, "a1", entry.id, later)).toBe(true);
+    expect(await releaseStaleClaim(client, "a1", entry.id, later)).toBe(false);
+    const released = readBuildRequests(row.metadata)[0];
+    expect(released?.state).toBe("running");
+    expect(released?.claimed_at).toBeUndefined();
+    expect(released?.conversation_id).toBe("c1");
+    expect(await claimBuildEntry(client, "a1", entry.id)).toBe(true);
+  });
+
+  it("an entry stuck in saving from before claims were stamped counts from when it started", () => {
+    const old = { ...newBuildEntry("x", null), state: "saving" as const, started_at: new Date(Date.now() - STALE_CLAIM_MS - 5_000).toISOString() };
+    expect(isStaleClaim(old)).toBe(true);
+    expect(isStaleClaim({ ...old, state: "saved" })).toBe(false);
   });
 });

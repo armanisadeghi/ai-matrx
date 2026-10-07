@@ -68,7 +68,7 @@
 
 "use client";
 
-import React, { useCallback, useState, useRef, useEffect, useId } from "react";
+import React, { useCallback, useState, useRef, useEffect, useEffectEvent, useId, useLayoutEffect } from "react";
 import {
   hoverRevealsCluster,
   proInputClusterTier,
@@ -282,6 +282,22 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
       return () => observer.disconnect();
     }, []);
     const inputRef = (ref as React.RefObject<HTMLInputElement>) || internalRef;
+    // THE PRE-HYDRATION KEEP (twin of ProTextarea's): text typed, pasted or dictated into the
+    // server-rendered field before React hydrates it reaches the host through its own onChange,
+    // instead of being written over by the host's empty value on the next render.
+    const keepPreHydrationText = useEffectEvent(() => {
+      const el = inputRef.current;
+      if (!el || !onChange) return;
+      const typed = el.value;
+      if (!typed || typed === String(value ?? "")) return;
+      // Through React's value tracker, so the input event below reads as a change.
+      el.value = "";
+      Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value")?.set?.call(el, typed);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    useLayoutEffect(() => {
+      keepPreHydrationText();
+    }, []);
     useEffect(() => {
       const el = inputRef.current;
       if (!el || typeof ResizeObserver === "undefined") return;

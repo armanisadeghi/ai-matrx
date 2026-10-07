@@ -104,6 +104,13 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
 
 ## Change Log
 
+- 2026-10-07 — Lane P: a claim whose tab died while saving is released after `STALE_CLAIM_MS` (90 s) and the next opener
+  rejoins and saves (`claimed_at`, `isStaleClaim`, `releaseStaleClaim`); an unbuilt draft opens as its build from EVERY
+  owner page (`manage/[id]/layout.tsx`, one redirect; `getApplet` is `cache`d per request); `appletSources` keeps
+  `new_table` sources, so Settings never saves a draft without its pending tables; text typed into the builder's box before
+  hydration reaches Build (ProTextarea/ProInput pre-hydration keep). Choices read back in the order declared
+  (`custom.field_options` ORDER BY `option_position`). The builder runs on Gemini 3.8 Flash at low reasoning; the server's
+  completed-turn replay no longer takes ~90 s on a 56 KB answer (aidream `kind_records`).
 - 2026-10-07 — A build is a record with its own URL (lane G): `/applets/build/<id>` (the draft Applet, born at Build), request history in `metadata.build.requests` (`BuildHistory`), refresh/later visit rejoins the live run or saves the finished answer once (claim), the held-for-organization Build resumes with the pick (`ensureOrganizationForWrite`), the preview says "Saved vN", the list card shows "building". `saveBuiltApplet` no longer overwrites `metadata`; an empty draft claims the builder's slug on its first save.
 - 2026-10-07 — THE BUILDER MAKES THE TABLES IT NEEDS (lane F, applets 0.9.1, CONTRACTS v2.10). An answer may declare
   `new_table` sources; `checkBuildAnswer` runs `checkAppletSources` (refuses a table of another organization than the

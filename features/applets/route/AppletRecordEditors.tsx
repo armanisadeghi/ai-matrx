@@ -308,6 +308,7 @@ export function AppletJobsEditor({ app }: { app: AppletDefinition }) {
 // ── Sources ──────────────────────────────────────────────────────────────────
 
 function sourceValue(source: AppletSource): string {
+  if ("new_table" in source) return `new:${source.alias}`;
   return "entity" in source ? `entity:${source.entity}` : `table:${source.organization_id}:${source.table_id}`;
 }
 
@@ -333,8 +334,13 @@ export function AppletSourcesEditor({ app }: { app: AppletDefinition }) {
     })),
     ...(catalogue?.entities ?? []).map((e) => ({ value: `entity:${e.token}`, label: e.label, meta: "Platform" })),
   ];
-  const optionsFor = (value: string): SelectOption[] =>
-    options.some((o) => o.value === value) ? options : [{ value, label: value.split(":").pop() ?? value }, ...options];
+  // A table the draft will make keeps its own option, so its row reads as that table, not an id.
+  const optionsFor = (source: AppletSource): SelectOption[] => {
+    const value = sourceValue(source);
+    if (options.some((o) => o.value === value)) return options;
+    const own = "new_table" in source ? { value, label: source.new_table.name, meta: "New table" } : { value, label: value.split(":").pop() ?? value };
+    return [own, ...options];
+  };
   const setAlias = (i: number, alias: string) =>
     setSources((prev) => prev.map((s, k) => (k === i ? { ...s, alias } : s)));
   const setTarget = (i: number, value: string) =>
@@ -362,7 +368,7 @@ export function AppletSourcesEditor({ app }: { app: AppletDefinition }) {
                 <Select
                   aria-label="Table or record type"
                   value={sourceValue(source)}
-                  options={optionsFor(sourceValue(source))}
+                  options={optionsFor(source)}
                   onValueChange={(value) => setTarget(i, value)}
                   className="min-w-48 flex-1"
                 />

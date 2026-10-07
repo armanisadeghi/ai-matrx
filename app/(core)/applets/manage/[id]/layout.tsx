@@ -1,5 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createDynamicRouteMetadata } from "@/utils/route-metadata";
 import { getApplet } from "@/lib/applets/data";
 import { AppletHydratorServer } from "@/features/applets/route/AppletHydratorServer";
@@ -34,6 +35,11 @@ export default async function AppletIdLayout({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  // A build that has not saved an app yet is still being built: EVERY owner page (overview, run,
+  // code, settings, versions) opens as its build. A row that is not there falls through to the
+  // page's own not-found.
+  const app = await getApplet(id).catch(() => null);
+  if (app && !app.entry) redirect(`/applets/build/${app.id}`);
   return (
     <>
       {/* Hydrate the applet row into Redux for every sub-route. Streamed in
