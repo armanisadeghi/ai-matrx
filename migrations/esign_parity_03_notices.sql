@@ -1,4 +1,7 @@
 -- chair-step: esign._notify gains two trailing defaulted parameters (decision J); the 11-argument overload is dropped and the 13-argument one accepts every old positional call unchanged.
+-- based-on: esign._notify_actionable(uuid, text) ecb094853e572a4bd870d45d049a67353e8a208db614351f102d754ab5ae6ff2
+-- based-on: communication.stamp_notification_render(uuid, text, text, text) 261dffa9cac2e5011132b6dd1ddeba2b21459a654338d8414a8e2f2a0f6c79ed
+-- based-on: esign._notify(uuid, text, uuid, uuid, text, uuid, text, text, text, jsonb, text) 9027698bc955c3f0149347183bd456bbff1f1860893288436e86d1f77ad1decc
 -- E-signature parity, wave A, step 3 — every notice (CONTRACT.md v2 §8.2, §9; decisions E, J; A-F10,
 -- A-F11, A-R6). Words live only in the registry; SQL writes facts. Reminders and expiry warnings are
 -- FUTURE-DATED notification rows timed from when each signer was told — no new schedule.

@@ -200,6 +200,7 @@ function requestOrganizationSelection(
   pending = { promise, settle };
   prefetchedOrganizationsForPending = prefetchedOrganizations;
 
+  console.warn("TMPTRACE-ORGPICKER " + new Error().stack);
   try {
     openPicker?.();
   } catch {
