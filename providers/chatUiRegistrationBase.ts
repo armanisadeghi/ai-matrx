@@ -83,6 +83,7 @@ import { MessageFilesStrip } from "@/features/code/views/history/MessageFilesStr
 import { RulebookNudge } from "@/features/masterwork/oracle/RulebookNudge";
 import { NegativeVerdictFollowUp } from "@/features/review-walk/components/NegativeVerdictFollowUp";
 import { SpeakerButton } from "@/features/tts/components/SpeakerButton";
+import { TextCopySplit as CopySplit } from "@/components/agent-copy/TextCopySplit";
 import { GmailReviewCard } from "@/features/google-workspace/agent/GmailReviewCard";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { ReviewAnswersLink } from "@/features/agents/decision-review/components/ReviewAnswersLink";
@@ -235,6 +236,7 @@ registerChatUi({
   RulebookNudge,
   NegativeVerdictFollowUp,
   SpeakerButton,
+  CopySplit,
   GmailReviewCard,
   ShareButton,
   ShareModal,

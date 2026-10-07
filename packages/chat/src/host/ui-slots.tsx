@@ -113,6 +113,8 @@ export interface ChatUiSlots {
   RulebookNudge: AnyComponent;
   NegativeVerdictFollowUp: AnyComponent;
   SpeakerButton: AnyComponent;
+  /** The split Copy (one click = the person's flavor; the chevron offers markdown or plain text) over one markdown string: `{ text, label?, size? }`. */
+  CopySplit: AnyComponent;
   GmailReviewCard: AnyComponent;
   ShareButton: AnyComponent;
   ShareModal: AnyComponent;
@@ -663,6 +665,7 @@ export const MessageFilesStrip = slotComponent("MessageFilesStrip", unregistered
 export const RulebookNudge = slotComponent("RulebookNudge", unregisteredWidget("RulebookNudge"));
 export const NegativeVerdictFollowUp = slotComponent("NegativeVerdictFollowUp", unregisteredWidget("NegativeVerdictFollowUp"));
 export const SpeakerButton = slotComponent("SpeakerButton", unregisteredWidget("SpeakerButton"));
+export const CopySplit = slotComponent("CopySplit", unregisteredWidget("CopySplit"));
 export const GmailReviewCard = slotComponent("GmailReviewCard", unregisteredWidget("GmailReviewCard"));
 export const ShareButton = slotComponent("ShareButton", unregisteredWidget("ShareButton"));
 export const ShareModal = slotComponent("ShareModal", unregisteredWidget("ShareModal"));

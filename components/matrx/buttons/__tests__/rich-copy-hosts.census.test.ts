@@ -107,7 +107,7 @@ describe("rich-content copy goes through the one module", () => {
 //   D. inside one host, every copy copies the SAME source (button = menu).
 // ═══════════════════════════════════════════════════════════════════════════
 
-const SPLIT = /\b(CopySplitButton|RichCopySplit)\b/;
+const SPLIT = /\b(CopySplitButton|RichCopySplit|TextCopySplit|TextCopyChevron)\b/;
 const ALCHEMY_TRIGGER = /<(CopyButtons|MatrxCopyMenu|ContentTransferMenu|AlchemyDocumentMenu)\b([\s\S]*?)\/>/g;
 
 /** Hosts that copy one flavor on purpose — file → why there is no plain-text choice to make. */
@@ -121,11 +121,6 @@ const ONE_FLAVOR: Record<string, string> = {
   "features/notes/components/NoteTabItem.tsx": "the tab's menu row; the note's split Copy sits in its bar",
   "features/rich-document/actions/handlers/copy.ts":
     "the registry's Copy row; its siblings Copy markdown / Copy plain text (transfer.ts) sit beside it in the same menu",
-  // Open follow-ups (2026-10-07): one-click copies still waiting for the split.
-  "packages/chat/src/agents/components/messages-display/user/UserActionBar.tsx":
-    "FOLLOW-UP: the person's own message; the chat package reaches rich-content only through host slots — the split needs a slot",
-  "features/flashcards/components/flashcard-menu.tsx": "FOLLOW-UP: Copy front / Copy back menu rows copy in the person's flavor only",
-  "features/notes/components/mobile/NoteEditorDock.tsx": "FOLLOW-UP: the phone dock's Copy copies in the person's flavor only",
 };
 
 /** Files whose copies copy different sources on purpose — file → why. */

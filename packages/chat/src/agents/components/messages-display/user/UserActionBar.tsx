@@ -28,7 +28,7 @@
 
 import { RegistryActionMenu, buildChatMessageActions, useDocumentDialogsHost } from "@ai-matrx/chat/host/rich-document-slots";
 import React, { useState, Suspense, useCallback } from "react";
-import { Copy, Check, Edit, Send, MoreHorizontal, Pin, PinOff, Loader2 } from "lucide-react";
+import { Edit, Send, MoreHorizontal, Pin, PinOff, Loader2 } from "lucide-react";
 import {
   togglePinnedMessage,
   usePendingPinMessageIds,
@@ -38,8 +38,7 @@ import {
   TapTargetButtonForGroup,
   TapTargetButtonGroup,
 } from "@ai-matrx/tap-target";
-import { copyRichContent } from "@ai-matrx/chat/host/ui-slots";
-import { SpeakerButton } from "../../../../host/ui-slots";
+import { CopySplit, SpeakerButton } from "../../../../host/ui-slots";
 import { useAppDispatch, useAppSelector, useAppStore } from "../../../../store/hooks";
 import { useOpenFullScreenMarkdownEditorBridge } from "../../../../host/window-openers";
 import { selectMessagePosition } from "../../../redux/execution-system/messages/messages.selectors";
@@ -142,7 +141,6 @@ export function UserActionBar({
   const store = useAppStore();
   const openEditor = useOpenFullScreenMarkdownEditorBridge();
 
-  const [isCopied, setIsCopied] = useState(false);
   // Pin lives IN this bar (lit amber while pinned) and in the ⋯ menu — the
   // same store the "p" key and the registry action write.
   const isPinned = usePinnedMessageIds().has(messageId);
@@ -166,13 +164,6 @@ export function UserActionBar({
     selectShowUserMessageOptions(conversationId),
   );
 
-  const handleCopy = async () => {
-    // THE one copy (formatted + markdown); Copy markdown / Copy text are in the ⋯ menu's Copy as.
-    if (await copyRichContent(content, "default", { toast: false })) {
-      setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
-    }
-  };
 
   // Route a footer action from the edit modal to its flow — the shared
   // `routeUserEditAction` owns all three outcomes (save / resubmit / fork) and
@@ -306,17 +297,7 @@ export function UserActionBar({
   return (
     <>
       <TapTargetButtonGroup surface="solid">
-        <TapTargetButtonForGroup
-          onClick={handleCopy}
-          ariaLabel="Copy message"
-          icon={
-            isCopied ? (
-              <Check className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-            ) : (
-              <Copy className="w-4 h-4 text-muted-foreground" />
-            )
-          }
-        />
+        <CopySplit text={content} label="Copy message" />
 
         <SpeakerButton text={content} variant="group" />
 

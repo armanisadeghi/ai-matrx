@@ -39,6 +39,7 @@ import { useOpenNoteKnowledgePanel } from "@/features/notes/canvas/noteKnowledge
 import { useNoteIngestStatus } from "../../hooks/useNoteIngestStatus";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
+import { TextCopyChevron } from "@/components/agent-copy/TextCopySplit";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -298,6 +299,7 @@ export function NoteEditorDock({
                     {item.label}
                   </span>
                 </button>
+                {item.key === "copy" ? <TextCopyChevron text={content} label="Copy note" /> : null}
               </div>
             );
           })}

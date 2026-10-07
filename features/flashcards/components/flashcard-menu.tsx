@@ -102,12 +102,12 @@ export function buildFlashcardMenuSection(opts: {
     if (r && fn) fn(r);
   };
 
-  const copyText = (text: string | null, label: string) => async () => {
+  const copyText = (text: string | null, label: string, flavor: "default" | "markdown" | "text" = "default") => async () => {
     const r = getRow();
     const value = text ?? (r ? (label === "Front" ? r.front : r.back) : null);
     if (!value) return;
-    // Card faces are markdown: the one copy (formatted + markdown).
-    await copyRichContent(value, "default", { toast: `${label} copied` });
+    // Card faces are markdown: the one copy; "Copy as" offers markdown or plain text one click deeper.
+    await copyRichContent(value, flavor, { toast: `${label} copied` });
   };
 
   const items: ContextMenuExtraItem[] = [
@@ -126,6 +126,19 @@ export function buildFlashcardMenuSection(opts: {
       icon: Copy,
       onSelect: copyText(row?.back ?? null, "Back"),
       disabled: !row?.back,
+    },
+    {
+      kind: "submenu",
+      id: "flashcard-copy-as",
+      label: "Copy as",
+      icon: Copy,
+      disabled: !row?.front && !row?.back,
+      children: [
+        { kind: "item", id: "flashcard-copy-front-markdown", label: "Front as markdown", onSelect: copyText(row?.front ?? null, "Front", "markdown"), disabled: !row?.front },
+        { kind: "item", id: "flashcard-copy-front-text", label: "Front as plain text", onSelect: copyText(row?.front ?? null, "Front", "text"), disabled: !row?.front },
+        { kind: "item", id: "flashcard-copy-back-markdown", label: "Back as markdown", onSelect: copyText(row?.back ?? null, "Back", "markdown"), disabled: !row?.back },
+        { kind: "item", id: "flashcard-copy-back-text", label: "Back as plain text", onSelect: copyText(row?.back ?? null, "Back", "text"), disabled: !row?.back },
+      ],
     },
     {
       kind: "item",
