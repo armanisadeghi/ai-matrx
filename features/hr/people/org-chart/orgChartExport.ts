@@ -111,9 +111,10 @@ export function buildOrgChartCsv(chart: HrOrgChart): string {
     );
   }
 
-  // A header line before the columns, so the date survives being opened in a
-  // spreadsheet and re-saved.
-  return `# Org chart as of ${chart.as_of}\n${toDelimitedText(ORG_CHART_COLUMNS, rows, { spreadsheetSafe: true })}`;
+  // The date travels IN the data (the `as_of` column on every row) and in the
+  // filename — never as a `# …` comment line above the header, which a strict
+  // CSV reader takes as the header row itself.
+  return toDelimitedText(ORG_CHART_COLUMNS, rows, { spreadsheetSafe: true });
 }
 
 export function downloadOrgChartCsv(chart: HrOrgChart): void {
