@@ -474,7 +474,7 @@ function EntityBody({ token, entity, view, onOpen, search }: { token: string; en
     // records-ui's board over the source: lanes per stage / status, cards move between them.
     return (
       <div className="spaces-db-body">
-        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} searchOverride={search || null} />
+        <TablePage source={{ kind: "entity", token }} presentation="embedded" layout="board" groupBy={view.groupField ?? choice?.api_name} onOpenRecord={onOpen} searchOverride={search || null} searchBox={false} />
       </div>
     );
   }

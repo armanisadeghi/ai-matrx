@@ -442,8 +442,9 @@ function DatabaseBody({
   const needsDate = (view.layout === "calendar" || view.layout === "timeline") && !view.dateField;
   const date = needsDate ? fields.find((f) => ["datetime", "date"].includes(kindOf(f)))?.key : undefined;
   const spec = viewSpec(tableId, { ...view, groupField: view.groupField ?? group ?? null, dateField: view.dateField ?? date ?? null }, fields);
-  // Notion's inline database: records-ui's embedded grid (no search box, tick-boxes, Actions column or
-  // pager; one-line rows; its own "New page" line, which writes the row in place).
+  // Notion's inline database: records-ui's embedded grid (no tick-boxes, Actions column or pager; one-line
+  // rows; its own "New page" line, which writes the row in place). The magnifier is this block's own, in
+  // its toolbar row beside filter and sort (searchBox={false}; N-19).
   return (
     <div className="spaces-db-body">
       <ViewSwitcher
@@ -454,6 +455,7 @@ function DatabaseBody({
         sortOverride={sortOverride}
         searchOverride={search.value || null}
         onSearchChange={search.onChange}
+        searchBox={false}
         onOpenRecord={onOpenRecord}
         filter={view.filters && Object.keys(view.filters).length ? scalarFilters(view.filters) : undefined}
         onViewChange={
