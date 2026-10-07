@@ -25,11 +25,14 @@ import { agentGoHref } from "../../addressing/agentAddress";
 
 export function AgentPeekDuplicateButton({
   agentId,
-  onDuplicated,
+  onStart,
 }: {
   agentId: string;
-  /** Close the peek once the copy opens. */
-  onDuplicated?: () => void;
+  /**
+   * Close the peek as the copy starts: the organization question (when none is
+   * chosen) and the new tab must never open behind a menu.
+   */
+  onStart?: () => void;
 }) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
@@ -45,24 +48,28 @@ export function AgentPeekDuplicateButton({
   const duplicate = async () => {
     if (busy) return;
     setBusy(true);
-    // The tab opens INSIDE the click, so no popup blocker stops it; the copy's
-    // address arrives once the database has made it.
-    const tab = window.open("about:blank", "_blank");
+    onStart?.();
     try {
       // Always a personal copy: the viewer's own agent, in the organization
       // they are working in (the door holds for one when none is chosen).
       const newId = await dispatch(door.duplicateAgent(agentId)).unwrap();
       const href = agentGoHref(newId, "/build");
+      // Opened once the copy exists: the click (or the organization answer)
+      // is still a fresh gesture. A browser that blocks it gets the door in
+      // the notice instead — never a silent no-op.
+      // (No "noopener" flag: with it the browser answers null even when the
+      // tab opened, and a blocked tab could not be told apart.)
+      const tab = window.open(href, "_blank");
       if (tab) {
         tab.opener = null;
-        tab.location.href = href;
+        toast.success(`Duplicated "${record.name}" — opened in a new tab`);
       } else {
-        window.open(href, "_blank", "noopener");
+        toast.success(`Duplicated "${record.name}"`, {
+          description: "Your browser kept the new tab closed",
+          action: { label: "Open", onClick: () => window.open(href, "_blank", "noopener") },
+        });
       }
-      toast.success(`Duplicated "${record.name}" — opened in a new tab`);
-      onDuplicated?.();
     } catch (err) {
-      tab?.close();
       if (!isOrganizationSelectionCancelled(err)) {
         toast.error("Could not duplicate agent", { description: getUserMessage(err) });
       }

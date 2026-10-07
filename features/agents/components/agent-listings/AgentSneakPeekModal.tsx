@@ -968,7 +968,7 @@ export function AgentSneakPeekModal({
             </Button>
             <AgentPeekDuplicateButton
               agentId={currentId}
-              onDuplicated={onClose}
+              onStart={onClose}
             />
             <Link href={`/agents/go/${currentId}/build`} onClick={onClose}>
               <Button icon={<Pencil />} type="submit" variant={onSelect ? "quiet" : "outline"}>

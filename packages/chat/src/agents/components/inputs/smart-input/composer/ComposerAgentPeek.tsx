@@ -60,7 +60,7 @@ export function ComposerAgentPeek({ agentId, onDone }: { agentId: string; onDone
   return (
     <AgentDetailCard
       agent={agent}
-      actions={<AgentPeekDuplicateButton agentId={agentId} onDuplicated={onDone} />}
+      actions={<AgentPeekDuplicateButton agentId={agentId} onStart={onDone} />}
     />
   );
 }

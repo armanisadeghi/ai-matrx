@@ -37,7 +37,7 @@ export default function AgentPeekWindow({
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
       actionsRight={
         <div className="flex items-center gap-1.5">
-          <AgentPeekDuplicateButton agentId={agentId} onDuplicated={onClose} />
+          <AgentPeekDuplicateButton agentId={agentId} onStart={onClose} />
           <AgentSneakPeekCopyMenu agentId={agentId} />
         </div>
       }
