@@ -45,6 +45,11 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — N2 Remind on a date mention: clicking a date mention opens its card (day, optional time, Remind: None / at
+  time / 5 min / 1 h / 1 d / 2 d / 1 week before; a day without a time counts from 9:00). `editor/reminders.ts` hands this
+  person's reminders on the page to `communication.reconcile_my_notices` (scope `spaces:<pageId>:`) after every change, so
+  moving, unsetting or deleting the mention moves or cancels the reminder; the notice deep-links to `/spaces/<id>#block-<id>`
+  and is delivered by the existing notification dispatcher. Walks: `remind.walk.mjs`, `remind-cancel.walk.mjs`.
 - 2026-10-07 — builder round 29: (1) no hidden page body — the 3 s React-block hold and the 4 s first-visit table hold are gone.
   Reserved geometry instead: every save writes each database block's painted size per window width (`props.paintedSize`,
   `editor/database-host.tsx` `withPaintedSizes`; never content — `contentKey` skips it; a size the store does not hold rides as

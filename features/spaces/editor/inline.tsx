@@ -3,13 +3,18 @@
 // features/spaces/editor/inline.tsx — inline nodes the engine lacks: mentions (@page, @person, @date)
 // and inline equations. Each node holds its whole stored span (convert.ts), so marks and links survive.
 
-import { dateWords } from "./date-mention";
+import { REMIND_CHOICES, dateTimeWords, joinDayTime } from "./date-mention";
 import { createReactInlineContentSpec } from "@blocknote/react";
-import { ArrowUpRight, FileText, Globe } from "lucide-react";
+import { ArrowUpRight, Bell, FileText, Globe } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
+import { Field, Select } from "@ai-matrx/design-system/controls";
 import { useState } from "react";
 import { useLinkPreview } from "@/lib/link-preview";
 
 import type { RichSpan } from "../contract";
+import type { SpaceRemindOffset } from "@/lib/spaces-blocks/types";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { SpaceIcon } from "../page/SpaceIcon";
 import { useSpaces } from "../state/SpacesProvider";
 import { InlineMath } from "./stored-blocks";
@@ -90,16 +95,69 @@ function LinkMention({ url, title: storedTitle, icon: storedIcon }: { url: strin
   );
 }
 
+type DateSpan = RichSpan & { mention: Extract<NonNullable<RichSpan["mention"]>, { kind: "date" }> };
+
+/** N2 — a date mention opens Notion's date card: the day, an optional time, and Remind. */
+function DateMention({ span, editable, onChange }: { span: DateSpan; editable: boolean; onChange: (next: DateSpan) => void }) {
+  const me = useAppSelector(selectUserId);
+  const m = span.mention;
+  const day = m.iso.slice(0, 10);
+  const time = m.iso.length > 10 ? m.iso.slice(11, 16) : "";
+  const mine = m.remind && m.remind.userId === me ? m.remind.offset : null;
+  const set = (patch: Partial<DateSpan["mention"]>) => {
+    const mention = { ...m, ...patch };
+    if (!mention.remind) delete mention.remind;
+    onChange({ ...span, text: dateTimeWords(mention.iso), mention });
+  };
+  const chip = (
+    <span className="spaces-mention spaces-mention-muted" data-date={m.iso} data-remind={m.remind ? m.remind.offset : undefined}>
+      @{dateTimeWords(m.iso)}
+      {m.remind ? <Bell size={11} strokeWidth={2} aria-label="Reminder set" style={{ marginLeft: 3, display: "inline", verticalAlign: "-1px" }} /> : null}
+    </span>
+  );
+  if (!editable) return chip;
+  return (
+    <Popover>
+      <PopoverTrigger asChild onMouseDown={(e) => e.stopPropagation()}>
+        <button type="button" className="spaces-mention-datebtn" contentEditable={false}>
+          {chip}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent surface="solid" side="bottom" align="start" width="sm" padding="xs">
+        <div className="flex flex-col gap-1.5" data-spaces-date-card>
+          <Field type="date" aria-label="Date" value={day} onChange={(e) => e.target.value && set({ iso: joinDayTime(e.target.value, time) })} />
+          <Field type="time" aria-label="Time" value={time} onChange={(e) => set({ iso: joinDayTime(day, e.target.value) })} />
+          <Select<SpaceRemindOffset | "none">
+            aria-label="Remind"
+            icon={<Bell size={14} />}
+            value={mine ?? "none"}
+            options={REMIND_CHOICES}
+            disabled={!me}
+            onValueChange={(v) => set({ remind: v === "none" || !me ? undefined : { offset: v, userId: me } })}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export const mentionInline = createReactInlineContentSpec(
   { type: "inlineMention", propSchema: { span: { default: "{}" } }, content: "none" },
   {
-    render: ({ inlineContent }) => {
+    render: ({ inlineContent, updateInlineContent, editor }) => {
       const s = readSpan(inlineContent.props.span);
       const m = s.mention;
+      if (m?.kind === "date")
+        return (
+          <DateMention
+            span={{ ...s, mention: m }}
+            editable={editor.isEditable}
+            onChange={(next) => updateInlineContent({ type: "inlineMention", props: { span: JSON.stringify(next) } })}
+          />
+        );
       if (m?.kind === "space") return <PageMention spaceId={m.spaceId} fallback={s.text} />;
       if (m?.kind === "link") return <LinkMention url={m.url} title={m.title ?? s.text} icon={m.icon} />;
       if (m?.kind === "person") return <span className="spaces-mention spaces-mention-person" data-user-id={m.userId}>@{s.text.replace(/^@/, "")}</span>;
-      if (m?.kind === "date") return <span className="spaces-mention spaces-mention-muted" data-date={m.iso}>@{dateWords(m.iso)}</span>;
       return <span className="spaces-mention spaces-mention-muted">@{s.text.replace(/^@/, "")}</span>;
     },
   },

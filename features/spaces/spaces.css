@@ -1820,3 +1820,13 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
   font-size: 14px;
   color: var(--spaces-ink-soft);
 }
+
+/* N2 — a date mention is a button that opens its date card (day, time, Remind). */
+.spaces-mention-datebtn {
+  all: unset;
+  display: inline;
+}
+.spaces-mention-datebtn:focus-visible .spaces-mention {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}

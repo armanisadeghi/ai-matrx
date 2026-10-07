@@ -2,6 +2,8 @@
 // "@" menu offers under Date for what was typed. A date mention stores `{ kind: "date", iso: "YYYY-MM-DD" }`
 // (lib/spaces-blocks SpaceMention) and reads, like Notion, as Today / Tomorrow / Yesterday, else the date.
 
+import type { SpaceRemindOffset } from "@/lib/spaces-blocks/types";
+
 const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
 
 export function isoDay(d: Date): string {
@@ -53,4 +55,51 @@ export function dateWords(iso: string, now: Date = new Date()): string {
   if (day === isoDay(addDays(now, 1))) return "Tomorrow";
   if (day === isoDay(addDays(now, -1))) return "Yesterday";
   return d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+}
+
+// ── Remind (N2, Notion's "Remind" on a date) ──────────────────────────────────────────────────────────
+
+/** Notion's choices, in its order. A day with no time counts from 9:00 that morning, as in Notion. */
+export const REMIND_CHOICES: ReadonlyArray<{ value: SpaceRemindOffset | "none"; label: string }> = [
+  { value: "none", label: "None" },
+  { value: "at", label: "At time of event" },
+  { value: "5m", label: "5 minutes before" },
+  { value: "1h", label: "1 hour before" },
+  { value: "1d", label: "1 day before" },
+  { value: "2d", label: "2 days before" },
+  { value: "1w", label: "1 week before" },
+];
+
+const OFFSET_MS: Record<SpaceRemindOffset, number> = {
+  at: 0,
+  "5m": 5 * 60_000,
+  "1h": 60 * 60_000,
+  "1d": 24 * 60 * 60_000,
+  "2d": 2 * 24 * 60 * 60_000,
+  "1w": 7 * 24 * 60 * 60_000,
+};
+
+/** The moment a date mention stands for: its time, else 9:00 local on its day. Null when unreadable. */
+export function eventTime(iso: string): Date | null {
+  const d = new Date(iso.length === 10 ? `${iso}T09:00:00` : iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** When the reminder fires. */
+export function remindAt(iso: string, offset: SpaceRemindOffset): Date | null {
+  const t = eventTime(iso);
+  return t ? new Date(t.getTime() - OFFSET_MS[offset]) : null;
+}
+
+/** "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm" from a day and an optional "HH:mm". */
+export function joinDayTime(day: string, time: string): string {
+  return time ? `${day}T${time}` : day;
+}
+
+/** How a date mention reads with its time: "Tomorrow 3:00 PM". */
+export function dateTimeWords(iso: string, now: Date = new Date()): string {
+  if (iso.length === 10) return dateWords(iso, now);
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${dateWords(iso.slice(0, 10), now)} ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
 }
