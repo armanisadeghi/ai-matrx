@@ -19,11 +19,13 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 ## Entry points
 
 **Routes**
-- `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves), so it is never
+- `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves + not a template), so it is never
   remounted when its page changes (a page under `[[...path]]` remounts per path; that rebuilt the host and
   re-read everything on every page change and on browser Back).
-- `app/(link)/applets/[slug]/[[...path]]/page.tsx` — renders nothing; signed-in only (signed-out →
-  `/login?redirectTo=…`); resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
+- `app/(link)/applets/[slug]/[[...path]]/page.tsx` — signed in: renders nothing and resolves the slug; signed out
+  (or any visitor of a template): the Applet's introductory page when its owner published one
+  (`showsAppletIntro` in `features/marketing/applets/publicApplets.server.ts`, shared with the layout), else
+  `/login?redirectTo=…`. `build`/`manage`/`new` can never be a slug (`features/applets/reserved-slugs.ts`). Resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
 - `app/(core)/applets/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
@@ -102,3 +104,5 @@ record's own `scope` (`{ entries, shadowDangerousGlobals }`); app-owned modules 
   `openRun`, mandate streams adopted into the execution system).
 - 2026-10-07 — Build by talking (AP-0 lane D, G5): `/applets/build`, `AppletBuilder`, preview mode on `AppletHostMount` (held writes via `@ai-matrx/applets/preview`, in-memory pages, errors to Fix it); `basePath` prop (default `/applets/<slug>`).
 - 2026-10-07 — Adopted `@ai-matrx/applets` 0.7.3: `hrefFor` on every Link; the code preview overlays the open unsaved file (`files`); the record's `scope` replaces `allowed_imports`/`component_code` (writers and DB readers rewritten).
+- 2026-10-07 — "agent app" retired (lane A): the Applet runs at `/applets/<slug>` (was `/apps/<slug>`), the old
+  `(public)/applets/[slug]` intro folded into the same route; owner tools at `/applets/manage/<id>/…`.
