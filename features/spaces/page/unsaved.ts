@@ -9,6 +9,7 @@
 import { validateSnapshot } from "@/lib/spaces-blocks/schema";
 
 import type { SpaceDoc } from "../contract";
+import { contentKey } from "./content-key";
 
 type Body = Pick<SpaceDoc, "title" | "icon" | "cover" | "settings" | "blocks">;
 
@@ -62,6 +63,57 @@ export function forgetUnsaved(storage: KeepStorage | null, spaceId: string): voi
   } catch {
     // nothing to clear
   }
+}
+
+const wroteKey = (spaceId: string) => `spaces:wrote:${spaceId}`;
+
+/** This device stored `version` of the page (a save it made landed). */
+export function noteWritten(storage: KeepStorage | null, spaceId: string, version: number): void {
+  try {
+    storage?.setItem(wroteKey(spaceId), String(version));
+  } catch {
+    // Storage blocked: a kept copy older than the stored version is then offered, never applied.
+  }
+}
+
+/** The newest version of the page this device stored itself (null: none known). */
+export function wroteVersion(storage: KeepStorage | null, spaceId: string): number | null {
+  try {
+    const v = Number(storage?.getItem(wroteKey(spaceId)));
+    return Number.isFinite(v) && v > 0 ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A change is kept on this device the moment it is made when this member made it (a typed title, a
+ * cover, a block), when this member is the host (it writes everyone's), or when a copy is already kept.
+ * A change only a peer made is in the room and the peer's own device.
+ */
+export function keepsChange(args: { local: boolean; host: boolean; keptLocally: boolean }): boolean {
+  return args.local || args.host || args.keptLocally;
+}
+
+/**
+ * What to do with a kept copy when the page opens:
+ *   forget — it is what is stored (the last save, or the save sent as the tab closed, landed);
+ *   apply  — it is newer than what is stored: put it back without a word. That is so when it was edited
+ *            from the stored version, or when the stored version is one this device wrote itself (a save
+ *            that landed while later edits were still waiting);
+ *   ask    — someone else stored a newer version since: offer it, never overwrite theirs.
+ */
+export function restoreDecision(args: {
+  copy: UnsavedCopy;
+  /** The stored page: its content key (page/content-key.ts) and version. */
+  stored: { key: string; version: number };
+  wrote: number | null;
+}): "forget" | "apply" | "ask" {
+  const { copy, stored, wrote } = args;
+  if (contentKey(copy.doc) === stored.key) return "forget";
+  if (copy.baseVersion >= stored.version) return "apply";
+  if (wrote !== null && stored.version <= wrote) return "apply";
+  return "ask";
 }
 
 /** What the database would refuse in this body (BLOCK-SCHEMA's rules, mirrored by validateSnapshot). */

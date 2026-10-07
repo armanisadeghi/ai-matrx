@@ -52,7 +52,7 @@ import { useSpaceCollab } from "../collab/useSpaceCollab";
 import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
-import { attemptSave, deviceStorage, forgetUnsaved, keepUnsaved, readUnsaved } from "./unsaved";
+import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten, readUnsaved, restoreDecision, wroteVersion } from "./unsaved";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
 import { copyToClipboard } from "@/lib/clipboard/copy";
@@ -184,6 +184,10 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   const dirtySince = useRef<number | null>(null);
   /** Every block id of that stored version — the merge base for a version written outside the room. */
   const savedIds = useRef<Set<string>>(new Set());
+  /** This member changed the page since the last save that landed (set before the room is joined too). */
+  const localEdits = useRef(false);
+  /** Title / icon / cover / settings changed before the room was joined: the room takes them on join. */
+  const preRoomMeta = useRef<Partial<SpaceMeta> | null>(null);
 
   const adopt = (d: SpaceDoc) => {
     docRef.current = d;
@@ -202,13 +206,18 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   const activeOrg = useAppSelector(selectActiveOrganizationId);
   const applyMeta = (meta: Partial<SpaceMeta>) => {
     if (!docRef.current) return;
-    const patch = meta as Partial<Editable>;
+    // A field this member changed before joining keeps this member's value (it goes into the room on join).
+    const held = preRoomMeta.current;
+    const incoming = held ? Object.fromEntries(Object.entries(meta).filter(([k]) => !(k in held))) : meta;
+    if (!Object.keys(incoming).length) return;
+    const patch = incoming as Partial<Editable>;
     docRef.current = { ...docRef.current, ...patch };
     setDoc((d) => (d ? { ...d, ...patch } : d));
     if ("title" in patch || "icon" in patch) patchSummary(spaceId, { ...("title" in patch ? { title: patch.title } : {}), ...("icon" in patch ? { icon: patch.icon } : {}) });
     schedule();
   };
   const hostAtLastRender = useRef(false);
+  const hostKnown = useRef(false);
   /** The page was made by this tab a moment ago (its room cannot hold anything yet). */
   const [madeHere, setMadeHere] = useState(false);
   const collab = useSpaceCollab({
@@ -226,10 +235,17 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     },
   });
   hostAtLastRender.current = collab.isHost;
+  /** The room is joined: its host (this member or another) writes the page. */
+  hostKnown.current = collab.session !== null;
   // Built from the stored snapshot: the body the editor will hold (BlockNote's normalisation of the stored
   // blocks) IS the stored version, so it is the save baseline — opening a page never writes a version.
   useEffect(() => {
     const s = collab.session;
+    // Fields changed before the room was joined go into it now (everyone sees them; the save carries them).
+    if (s && preRoomMeta.current) {
+      s.setMeta(preRoomMeta.current);
+      preRoomMeta.current = null;
+    }
     const d = docRef.current;
     if (!s || !d || !s.seededBlocks) return;
     docRef.current = { ...d, blocks: fromEngine(s.seededBlocks as EngineBlock[]) };
@@ -315,8 +331,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     const storage = deviceStorage();
     const copy = readUnsaved(storage, spaceId);
     const d = docRef.current;
-    if (!copy || !d) return;
-    if (contentKey(copy.doc) === savedKey.current) {
+    if (!copy || !d || savedKey.current === null) return;
+    const decision = restoreDecision({ copy, stored: { key: savedKey.current, version: d.version }, wrote: wroteVersion(storage, spaceId) });
+    if (decision === "forget") {
       forgetUnsaved(storage, spaceId);
       return;
     }
@@ -326,12 +343,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       keptLocally.current = true;
       update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
     };
-    if (copy.baseVersion >= d.version) {
-      apply();
-      toast.info("Unsaved changes restored");
-    } else {
-      toast.warning("Unsaved changes from this device", { duration: Infinity, action: { label: "Restore", onClick: () => { apply(); toast.info("Unsaved changes restored"); } } });
-    }
+    // Newer than what is stored: back on the page without a word (the person never lost it).
+    if (decision === "apply") apply();
+    else toast.warning("Unsaved changes from this device", { duration: Infinity, action: { label: "Restore", onClick: () => { apply(); toast.info("Unsaved changes restored"); } } });
   };
   const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   /**
@@ -389,6 +403,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
         return;
       }
       const saved = r.saved;
+      noteWritten(storage, spaceId, saved.version);
       keptLocally.current = false;
       lastToast.current = null;
       baseVersion.current = saved.version;
@@ -398,6 +413,10 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       setDoc((d) => (d ? { ...d, version: saved.version, updatedAt: saved.updatedAt } : d));
       setNow(Date.now());
       setSaveState("saved");
+      // Edits made while this save was in flight are not in it: the save cleared the device copy, so
+      // keep them again now (a reload before their own save must still find them).
+      if (pending.current && docRef.current && contentKey(docRef.current) !== savedKey.current) keepUnsaved(storage, spaceId, docRef.current, baseVersion.current);
+      else localEdits.current = false;
     } finally {
       inFlight.current = false;
       // Changes made while this save was in flight wait for the cadence like any other (never a fixed retry).
@@ -408,12 +427,14 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
    * Something changed (here or from a peer): every editor marks it, the host saves it on the cadence —
    * `debounceMs` after the last change, and at least every `maxWaitMs` while changes keep coming.
    */
-  const schedule = () => {
+  const schedule = (local = false) => {
     if (!docRef.current || !canEditRef.current) return;
     pending.current = true;
-    // The host (a solo editor included) keeps every unsaved change on this device the moment it is made: a
-    // tab that closes or crashes before the save lands loses nothing. Others' edits are already in the room.
-    if (keptLocally.current || collab.hostRef.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
+    if (local) localEdits.current = true;
+    // Every change this member makes (and, as host, everyone's) is kept on this device the moment it is
+    // made — before the room is joined or the host elected too: a tab that closes or crashes before the
+    // save lands loses nothing.
+    if (keepsChange({ local, host: collab.hostRef.current, keptLocally: keptLocally.current })) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
     const now = Date.now();
     dirtySince.current ??= now;
     // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
@@ -432,8 +453,12 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     if ("title" in patch || "icon" in patch) patchSummary(spaceId, { ...("title" in patch ? { title: patch.title } : {}), ...("icon" in patch ? { icon: patch.icon } : {}) });
     // Title, icon, cover and settings travel through the room's meta map; the body through the fragment.
     const { blocks: _blocks, ...meta } = patch;
-    if (Object.keys(meta).length) collab.session?.setMeta(meta);
-    schedule();
+    if (Object.keys(meta).length) {
+      if (collab.session) collab.session.setMeta(meta);
+      // Before the room is joined: held, and written into the room when it is (never overwritten by it).
+      else preRoomMeta.current = { ...preRoomMeta.current, ...meta };
+    }
+    schedule(true);
   };
 
   // A stored version newer than this member knows: the host's save (or this tab's sidebar rename / icon
@@ -483,13 +508,18 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   useEffect(() => {
     trackAccessToken();
     /** This member holds edits the store does not have yet (only the host writes; a peer's are in the room). */
-    const leaving = () => !!docRef.current && hostAtLastRender.current && !trashedRef.current && (pending.current || inFlight.current) && contentKey(docRef.current) !== savedKey.current;
+    // Before the room is joined nobody else can hold this member's edits: they count as this member's to send.
+    const leaving = () => !!docRef.current && (hostAtLastRender.current || (localEdits.current && !hostKnown.current)) && !trashedRef.current && (pending.current || inFlight.current) && contentKey(docRef.current) !== savedKey.current;
     // The tab is going (closed, reloaded, navigated away): keep the page on this device, then send it as a
     // keepalive save the browser finishes after the tab is gone (page/leave-save.ts).
-    const onPageHide = () => {
+    // beforeunload and pagehide both fire on a reload; the same page is sent once.
+    let sentKey: string | null = null;
+    const onLeave = () => {
       if (!leaving() || !docRef.current) return;
       keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
-      sendOnLeave(docRef.current, baseVersion.current);
+      const key = contentKey(docRef.current);
+      if (key === sentKey) return;
+      if (sendOnLeave(docRef.current, baseVersion.current)) sentKey = key;
     };
     // Hidden (tab switched, phone locked — a phone may end the page without another word): save now.
     const onHidden = () => {
@@ -497,20 +527,14 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
       void flush();
     };
-    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("pagehide", onLeave);
     document.addEventListener("visibilitychange", onHidden);
-    const warn = (e: BeforeUnloadEvent) => {
-      // Only the host holds unsaved work for everyone; any other member's edits are already in the room.
-      if (!hostAtLastRender.current || ((!pending.current || (docRef.current && contentKey(docRef.current) === savedKey.current)) && !inFlight.current)) return;
-      // The save below may not finish before the tab goes: the page waits on this device meanwhile.
-      if (docRef.current) keepUnsaved(deviceStorage(), spaceId, docRef.current, baseVersion.current);
-      void flush(true);
-      e.preventDefault();
-    };
+    // No "Leave site?" prompt (Notion asks nothing): the page is on this device and on its way to the store.
+    const warn = onLeave;
     window.addEventListener("beforeunload", warn);
     return () => {
       window.removeEventListener("beforeunload", warn);
-      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("pagehide", onLeave);
       document.removeEventListener("visibilitychange", onHidden);
       // Leaving this Space: write what is pending now (and keep it here until that lands).
       if (timer.current) window.clearTimeout(timer.current);
@@ -519,6 +543,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     };
     // Flush on leaving this Space only.
   }, [spaceId]);
+
+  // Every hook runs before the loading / missing returns below (React's order of hooks).
+  const builder = useSpaceBuilder();
 
   if (doc === undefined) return <div className="spaces-page" aria-busy="true" />;
   if (doc === null) {
@@ -631,7 +658,6 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     titleOf: (id) => spaces.byId.get(id)?.title ?? "Untitled",
     hrefOf: (id) => `${window.location.origin}/spaces/${id}`,
   };
-  const builder = useSpaceBuilder();
   const pageForAi = () => {
     const d = docRef.current ?? doc;
     return { title: d.title, markdown: spaceToMarkdown(d.title, d.blocks, mdContext) };
