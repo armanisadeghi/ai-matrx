@@ -41,7 +41,7 @@ const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
 const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
 
 const HTML_SITE_URL =
-  process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://mymatrx.com";
+  process.env.NEXT_PUBLIC_HTML_SITE_URL || "https://www.mymatrx.com";
 
 type HtmlPageListRow = Omit<HtmlPageSummary, "url">;
 type LegacyHtmlPageListRow = Pick<
