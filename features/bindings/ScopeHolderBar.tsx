@@ -32,8 +32,6 @@ import {
 } from "@/components/official/ConfigurationFields";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type { AgentTab } from "@ai-matrx/agents/catalog";
 import { BindingTargetPicker } from "@/features/scopes/components/active-context/binding-target/BindingTargetPicker";
 import {
@@ -51,6 +49,8 @@ import {
   type DefaultHolderRungOffer,
 } from "./default-holder-rung";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /**
  * The rungs a mandate binding can actually be written at. There is no `global`
@@ -374,7 +374,7 @@ export function ScopeHolderBar({
   const restricted = restriction.sentence !== null;
   useEffect(() => {
     if (!restricted) return;
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
   }, [restricted, dispatch]);
 
   // 🚨 THE BELT ON A PIN THAT ALREADY EXISTS. Restricting the picker stops a
@@ -383,7 +383,7 @@ export function ScopeHolderBar({
   // a screen that shows a forbidden holder without saying so is the lie the
   // fourth law forbids. Silent until the catalogue is actually read — an empty
   // list is "not loaded", never "not a system agent".
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   const systemHolderViolation = useMemo(() => {
     // The one rung whose blast radius is the whole platform: a SYSTEM-homed
     // mandate's own default. An org-homed default is a different scope and a

@@ -18,7 +18,6 @@
 
 import { ChevronsLeftRight } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { cn } from "@/lib/utils";
 import { BattleColumnHeader } from "./BattleColumnHeader";
 import { BoundColumn } from "../shared/BoundColumn";
@@ -26,6 +25,7 @@ import { BlindColumnHeader } from "../shared/BlindColumnHeader";
 import { selectBlindActive } from "../redux/selectors";
 import { BATTLE_SURFACE_KEY, removeBattleColumn } from "../redux/thunks";
 import type { BattleColumn as BattleColumnType } from "../types";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface BattleColumnProps {
   column: BattleColumnType;
@@ -87,9 +87,7 @@ function CollapsedColumnView({
   column: BattleColumnType;
   onExpand: () => void;
 }) {
-  const agentName = useAppSelector((s) =>
-    column.agentId ? selectAgentName(s, column.agentId) : null,
-  );
+  const agentName = useAgentName(column.agentId) ?? null;
   return (
     <button
       type="button"

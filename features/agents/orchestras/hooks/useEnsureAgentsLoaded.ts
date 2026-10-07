@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
-import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /**
  * Load the user's agent list ONCE for the whole orchestras surface. Uses the
@@ -18,6 +18,6 @@ export function useEnsureAgentsLoaded(enabled = true) {
   const dispatch = useAppDispatch();
   useEffect(() => {
     if (!enabled) return;
-    dispatch(initializeChatAgents());
+    void ensureAgentCatalog();
   }, [dispatch, enabled]);
 }

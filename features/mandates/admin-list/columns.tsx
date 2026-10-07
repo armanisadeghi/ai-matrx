@@ -48,7 +48,6 @@ import {
 import { ShieldCheck } from "lucide-react";
 import { holderOfMandate } from "@/lib/supabase/mandateStorage";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentLineageIndex } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { invalidateMandateAdminList } from "./store";
 import { MandateStatusControl } from "@/features/mandates/status/MandateStatusControl";
 import {
@@ -63,6 +62,7 @@ import {
   adminMandateRecordHref,
   adminMandateSupportRecordHref,
 } from "@/features/mandates/admin-routes";
+import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 type Spec = EntityColumnSpec<MandateAdminRow>;
 
@@ -154,7 +154,7 @@ function BlockerCell({ row }: { row: MandateAdminRow }) {
  * import; a save reloads the list and the server reports it reads.
  */
 function HealthCell({ row }: { row: MandateAdminRow }) {
-  const lineageIndex = useAppSelector(selectAgentLineageIndex);
+  const lineageIndex = useAgentLineageIndex();
   const twin = row.agentId ? (lineageIndex[row.agentId]?.systemTwin ?? null) : null;
   const reload = () => invalidateMandateAdminList(true);
   // The code declarations decide the worst health a row can have, so until

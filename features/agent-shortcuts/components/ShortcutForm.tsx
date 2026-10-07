@@ -77,11 +77,9 @@ import { RESULT_DISPLAY_OPTIONS } from "../constants";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
-  selectBuiltinAgents,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchAgentExecutionMinimal,
-  fetchAgentsListFull,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { StoredModelOverridesField } from "@ai-matrx/chat/agents/components/run-controls/StoredModelOverridesField";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
@@ -96,6 +94,8 @@ import type {
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { ClampedNumberInput } from "@/components/official/ClampedNumberInput";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface ShortcutFormProps extends ScopeProps {
   /**
@@ -351,13 +351,13 @@ export function ShortcutForm({
   // agents break every user the shortcut serves the moment ownership,
   // sharing, or archival shifts.
   const isGlobalScope = scope === "global";
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   useEffect(() => {
     if (!open || !isGlobalScope) return;
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
   }, [open, isGlobalScope, dispatch]);
   const builtinIds = useMemo(
-    () => new Set(builtinAgents.map((a) => a.id)),
+    () => new Set<string>(builtinAgents.map((a) => a.id)),
     [builtinAgents],
   );
   const globalScopeAgentViolation =

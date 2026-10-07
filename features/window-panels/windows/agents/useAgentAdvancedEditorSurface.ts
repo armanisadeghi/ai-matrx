@@ -44,12 +44,10 @@ import {
   selectAgentById,
   selectAgentCategory,
   selectAgentDefinition,
-  selectAgentDescription,
   selectAgentDirtyFields,
   selectAgentIsDirty,
   selectAgentIsReadOnly,
   selectAgentMessages,
-  selectAgentName,
   selectAgentOutputSchema,
   selectAgentSystemMessage,
   selectAgentTags,
@@ -69,6 +67,7 @@ import {
   parseOutputSchemaWrite,
   requireProseText,
 } from "./agentAdvancedEditorWrite";
+import { readAgentDescription, readAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /**
  * Refuse before staging anything the user could never save — an edit that
@@ -152,8 +151,8 @@ export function useAgentAdvancedEditorSurface(
 
     return createAgentAdvancedEditorScope({
       agent_id: id,
-      agent_name: selectAgentName(state, id) ?? undefined,
-      agent_description: selectAgentDescription(state, id) ?? undefined,
+      agent_name: readAgentName(state, id) ?? undefined,
+      agent_description: readAgentDescription(state, id) ?? undefined,
       agent_category: selectAgentCategory(state, id) ?? undefined,
       agent_tags: selectAgentTags(state, id) ?? undefined,
 

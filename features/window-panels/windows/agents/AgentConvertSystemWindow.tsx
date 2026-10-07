@@ -22,13 +22,13 @@ import {
   putMandateDefaultHolder,
 } from "@/features/mandates/overrides";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/menu/agent-actions";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentConvertSystemWindowProps {
   isOpen: boolean;
@@ -59,9 +59,7 @@ export default function AgentConvertSystemWindow({
   mandateLabel,
 }: AgentConvertSystemWindowProps) {
   const dispatch = useAppDispatch();
-  const agentName = useAppSelector((s) =>
-    agentId ? (selectAgentName(s, agentId) ?? null) : null,
-  );
+  const agentName = useAgentName(agentId) ?? null;
   const agentSection = buildAgentMenuSection({
     agentId: agentId ?? "",
     agentName,

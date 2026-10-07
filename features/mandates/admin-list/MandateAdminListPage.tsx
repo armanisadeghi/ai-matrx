@@ -47,7 +47,6 @@ import {
 } from "@/features/mandates/admin/impact";
 import { useImpactAdvance } from "@/features/mandates/admin/impact-advance";
 import { AdvanceResultsCard, ImpactLegend } from "@/features/mandates/admin/impact-cells";
-import { selectBuiltinAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   SurfaceRuntimeProvider,
   type SurfaceWriteHandlers,
@@ -64,7 +63,6 @@ import {
 import type { WorkflowImpactVerdict } from "@/features/mandates/admin/workflow-impact";
 import { recordToast, toast } from "@/lib/toast";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { adminMandateListConfig, supportMandateListConfig } from "./listConfig";
 import type { MandateAdminLane } from "./rpc";
 import { MandateAdminPagesNav } from "./MandateAdminPagesNav";
@@ -77,6 +75,8 @@ import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceF
 import { createMandateAdminService } from "./service";
 import { healthSummaryOf, toMandateSummary } from "./surface-scope";
 import type { MandateAdminRow } from "./types";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /** What each secondary read feeds, in the words of the columns it fills. */
 const SOURCE_LABEL: Record<string, string> = {
@@ -99,7 +99,7 @@ export function MandateAdminListPage({
   const dispatch = useAppDispatch();
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const systemAgentCount = useAppSelector(selectBuiltinAgents).length;
+  const systemAgentCount = useBuiltinAgents().length;
   const accessToken = useAppSelector(selectAccessToken);
   const authReady = useAppSelector(selectAuthReady);
   const organizationId = useServerOrganizationId();
@@ -118,7 +118,7 @@ export function MandateAdminListPage({
 
   // The Health cell's twin fixes read the agent lineage index.
   useEffect(() => {
-    if (accessToken) dispatch(fetchAgentsListFull());
+    if (accessToken) ensureAgentCatalog();
   }, [accessToken, dispatch]);
 
   const verdictByRung = new Map<string, ImpactVerdict>();

@@ -22,12 +22,11 @@ import {
   selectLatestRequestStatus,
 } from "@ai-matrx/chat/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
-  selectAgentDescription,
-  selectAgentName,
   selectAgentVersion,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { RootState } from "@/lib/redux/store";
 import type { SurfaceScopePayload } from "@ai-matrx/chat/surfaces/types";
+import { readAgentDescription, readAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const MODEL_SURFACE_NAME = "matrx-user/agent-comparison-model";
 
@@ -185,9 +184,9 @@ export function buildModelBattleScope(state: RootState): SurfaceScopePayload {
     locked_agent: locked.agentId
       ? {
           id: locked.agentId,
-          name: selectAgentName(state, locked.agentId) ?? undefined,
+          name: readAgentName(state, locked.agentId) ?? undefined,
           description:
-            selectAgentDescription(state, locked.agentId) ?? undefined,
+            readAgentDescription(state, locked.agentId) ?? undefined,
           version: locked.agentVersion ?? undefined,
           version_id: locked.agentVersionId ?? undefined,
           current_version:

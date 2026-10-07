@@ -10,12 +10,12 @@
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   AgentSneakPeekContent,
   AgentSneakPeekCopyMenu,
 } from "@/features/agents/components/agent-listings/AgentSneakPeekModal";
 import { AgentPeekDuplicateButton } from "@/features/agents/components/shared/AgentPeekDuplicateButton";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export default function AgentPeekWindow({
   agentId,
@@ -24,7 +24,7 @@ export default function AgentPeekWindow({
   agentId: string;
   onClose: () => void;
 }) {
-  const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const agent = useAgentView(agentId);
   return (
     <WindowPanel
       id={`agent-peek-${agentId}`}

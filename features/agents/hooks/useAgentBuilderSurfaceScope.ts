@@ -36,12 +36,10 @@ import {
   selectAgentContextPolicies,
   selectAgentCustomTools,
   selectAgentDefinition,
-  selectAgentDescription,
   selectAgentDirtyFields,
   selectAgentIsActive,
   selectAgentIsArchived,
   selectAgentIsDirty,
-  selectAgentIsFavorite,
   selectAgentIsForked,
   selectAgentIsOwner,
   selectAgentIsReadOnly,
@@ -51,7 +49,6 @@ import {
   selectAgentMessages,
   selectAgentModelId,
   selectAgentModelTiers,
-  selectAgentName,
   selectAgentOutputSchema,
   selectAgentParentAgentId,
   selectAgentSettings,
@@ -65,6 +62,7 @@ import {
   selectAgentVariableDefinitions,
   selectAgentVersion,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { readAgentDescription, readAgentName, readAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /**
  * Returns a builder that snapshots the active agent definition from Redux at
@@ -90,8 +88,8 @@ export function useAgentBuilderSurfaceScope(
     return createAgentBuilderScope({
       // ── Identity ───────────────────────────────────────────────────────
       agent_id: agentId,
-      agent_name: selectAgentName(state, agentId) ?? undefined,
-      agent_description: selectAgentDescription(state, agentId) ?? "",
+      agent_name: readAgentName(state, agentId) ?? undefined,
+      agent_description: readAgentDescription(state, agentId) ?? "",
       agent_type: selectAgentType(state, agentId) ?? undefined,
       agent_category: selectAgentCategory(state, agentId) ?? "",
       agent_tags: selectAgentTags(state, agentId) ?? undefined,
@@ -141,7 +139,7 @@ export function useAgentBuilderSurfaceScope(
       agent_is_forked: selectAgentIsForked(state, agentId),
       agent_is_active: selectAgentIsActive(state, agentId),
       agent_is_archived: selectAgentIsArchived(state, agentId),
-      agent_is_favorite: selectAgentIsFavorite(state, agentId),
+      agent_is_favorite: readAgentView(state, agentId)?.isFavorite ?? false,
       agent_access_level: selectAgentAccessLevel(state, agentId) ?? undefined,
       // `null` = access metadata not fetched yet. Omit rather than lie —
       // the manifest says never infer ownership from its absence.

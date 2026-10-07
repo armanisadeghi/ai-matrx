@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ShareModal } from "@/features/sharing/components/ShareModal";
 import { AgentActionModal } from "./AgentActionModal";
 import { AgentSneakPeekModal } from "./AgentSneakPeekModal";
@@ -40,6 +39,7 @@ import {
   systemAgentRosterEntrySummary,
 } from "@ai-matrx/chat/agents/format";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentCardProps {
   id: string;
@@ -70,7 +70,7 @@ export function AgentCard({
   basePath = "/agents",
 }: AgentCardProps) {
   const dispatch = useAppDispatch();
-  const record = useAppSelector((state) => selectAgentById(state, id));
+  const record = useAgentView(id);
   // The organization a converted template is filed in — carried to the route
   // as `X-Organization-Id`, never resolved server-side into a personal one.
   const selectedOrganizationId = useAppSelector(selectOrganizationId);

@@ -21,7 +21,6 @@ import {
   selectAgentById,
   selectAgentCanUndo,
   selectAgentCanRedo,
-  selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   undoAgentEdit, redoAgentEdit, clearAgentUndoHistory,
@@ -33,6 +32,7 @@ import {
 } from "../../hooks/useAgentUndoRedo";
 import { AiModelRef, AiToolRef } from "@ai-matrx/chat/host/ui-slots";
 import { ModelTierIdentityList } from "@ai-matrx/chat/agents/components/model-tiers/ModelTierIdentityList";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const FIELD_LABELS: Partial<Record<string, string>> = {
   messages: "Messages",
@@ -123,7 +123,7 @@ interface AgentEditHistoryProps {
 export function AgentEditHistory({ agentId }: AgentEditHistoryProps) {
   const dispatch = useAppDispatch();
   const record = useAppSelector((s) => selectAgentById(s, agentId));
-  const agentName = useAppSelector((s) => selectAgentName(s, agentId));
+  const agentName = useAgentName(agentId);
   const canUndo = useAppSelector((s) => selectAgentCanUndo(s, agentId));
   const canRedo = useAppSelector((s) => selectAgentCanRedo(s, agentId));
 

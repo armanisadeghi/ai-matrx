@@ -42,15 +42,10 @@ import {
   type CountRead,
 } from "@/components/official/stale-data/UntrustedCount";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import {
-  selectBuiltinAgents,
-  selectLiveAgents,
-} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { selectShortcutsByAgentId } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
 import type { RootState } from "@/lib/redux/store";
-import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { AgentSummary as AgentDefinitionRecord } from "@ai-matrx/agents/catalog";
 import type { AgentShortcutRecord } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
 import {
   fetchAgentAppsAdmin,
@@ -59,13 +54,15 @@ import {
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { readOf } from "@/components/read-state/ReadGate";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
+import { useAgentCatalogError, useBuiltinAgents, useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const ADMIN_AGENT_BASE = "/administration/agents/system-agents/agents";
 
 export function AgentLineageTree() {
   const dispatch = useAppDispatch();
-  const builtins = useAppSelector(selectBuiltinAgents);
-  const allAgents = useAppSelector(selectLiveAgents);
+  const builtins = useBuiltinAgents();
+  const allAgents = useCatalogAgents();
 
   // Hydrate both shortcut scopes so selectShortcutsByAgentId returns everything
   // the admin should see (global + anything else visible via RLS).
@@ -75,14 +72,12 @@ export function AgentLineageTree() {
   const [apps, setApps] = useState<AgentAppAdminView[]>([]);
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<unknown>(null);
-  const [agentsError, setAgentsError] = useState<unknown>(null);
+  // The list read's failure is the catalog's own error.
+  const agentsError = useAgentCatalogError();
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    setAgentsError(null);
-    dispatch(fetchAgentsListFull())
-      .unwrap()
-      .catch((e: unknown) => setAgentsError(e));
+    void ensureAgentCatalog();
     setAppsLoading(true);
     setAppsError(null);
     fetchAgentAppsAdmin({ limit: 500 })
@@ -437,7 +432,7 @@ function LineageCard({
             nest inside one, so this renders as an absolute sibling overlay. */}
         <CopyButtons
           size="icon"
-          label={agent.name}
+          label={agent.name ?? agent.id}
           className="absolute right-2 top-1/2 -translate-y-1/2 z-10"
           human={() =>
             `${agent.name} — ${derived.length} derived, ${shortcuts.length} shortcuts, ${apps.length} apps`
@@ -476,7 +471,7 @@ function LineageCard({
                 <LineageRow
                   key={d.id}
                   href={`${ADMIN_AGENT_BASE}/${d.id}`}
-                  title={d.name}
+                  title={d.name ?? d.id}
                   subtitle={`${d.agentType} · updated ${formatDate(
                     d.updatedAt,
                   )}`}

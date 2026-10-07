@@ -2,16 +2,12 @@
 
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import {
-  selectLiveAgents,
-  selectAgentsSliceStatus,
-  selectAgentsSliceError,
-} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
+import type { AgentSummary } from "@ai-matrx/agents/catalog";
+import { useAgentCatalogError, useAgentCatalogStatus, useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface UseAgentsResult {
-  agents: AgentDefinitionRecord[];
+  agents: AgentSummary[];
   loading: boolean;
   error: string | null;
   reload: () => void;
@@ -19,13 +15,13 @@ export interface UseAgentsResult {
 
 export function useAgents(): UseAgentsResult {
   const dispatch = useAppDispatch();
-  const agents = useAppSelector(selectLiveAgents);
-  const status = useAppSelector(selectAgentsSliceStatus);
-  const sliceError = useAppSelector(selectAgentsSliceError);
+  const agents = useCatalogAgents();
+  const status = useAgentCatalogStatus();
+  const sliceError = useAgentCatalogError();
 
   useEffect(() => {
     if (status === "idle") {
-      void dispatch(fetchAgentsList());
+      void ensureAgentCatalog();
     }
   }, [status, dispatch]);
 
@@ -38,7 +34,7 @@ export function useAgents(): UseAgentsResult {
       loading,
       error,
       reload: () => {
-        void dispatch(fetchAgentsList());
+        void ensureAgentCatalog();
       },
     }),
     [agents, loading, error, dispatch],

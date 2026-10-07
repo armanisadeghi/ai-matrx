@@ -9,7 +9,6 @@ import {
   selectAgentAccessResolved,
   selectAgentById,
   selectAgentIsReadOnly,
-  selectAllAgentsArray,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { DEFAULT_AGENT_CATALOG_LABELS } from "@ai-matrx/agents/catalog";
 import { saveAgentField } from "@/features/agents/redux/builder-write.thunks";
@@ -45,6 +44,7 @@ import {
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { useAgentModelLabel } from "@ai-matrx/chat/agents/hooks/useAgentModelLabel";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 interface AgentSettingsFormProps {
   agentId: string;
@@ -88,7 +88,7 @@ export function AgentSettingsForm({
   const dispatch = useAppDispatch();
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
   const modelId = agent?.modelId || "";
-  const allAgents = useAppSelector(selectAllAgentsArray);
+  const allAgents = useCatalogAgents();
 
   const [draft, setDraft] = useState<Partial<AgentDefinition>>({});
   const [tagsInput, setTagsInput] = useState("");

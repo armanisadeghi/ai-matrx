@@ -22,7 +22,6 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { DEFAULT_AGENT_EXECUTION_CONFIG } from "@ai-matrx/chat/agents/types/agent-execution-config.types";
 import type { ResultDisplayMode } from "@ai-matrx/chat/agents/types/instance.types";
 import type { VariablesPanelStyle } from "@ai-matrx/chat/agents/components/inputs/variable-input-variations/variable-input-options";
@@ -37,6 +36,7 @@ import { useAgentShortcuts } from "./useAgentShortcuts";
 import { useAgentShortcutCrud } from "./useAgentShortcutCrud";
 import type { ShortcutFormData } from "../types";
 import type { AgentVariableDefinition } from "../components/ScopeMappingEditor";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 // ───────────────────────────────────────────────────────────────────────────
 // Tabs
@@ -101,7 +101,7 @@ export function useShortcutQuickCreate({
   const dispatch = useAppDispatch();
   const { toast } = useToast();
   const isAdmin = useAppSelector((s) => selectAdminFeature(s, "agent.global-shortcut"));
-  const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const agent = useAgentView(agentId);
 
   useEffect(() => {
     dispatch(fetchAgentExecutionMinimal(agentId)).catch(() => {

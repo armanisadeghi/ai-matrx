@@ -20,8 +20,8 @@
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { IntelligenceIndicator } from "@/features/mandates/feature-intelligence/IntelligenceIndicator";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useResolvedStaffHolder } from "../staff-holder-store";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface StaffHeaderProps {
   /** The Holder the page resolved at SSR, for first paint. */
@@ -33,9 +33,7 @@ export interface StaffHeaderProps {
 export function StaffHeader({ seedAgentId, seedAgentName }: StaffHeaderProps) {
   const resolved = useResolvedStaffHolder();
   const agentId = resolved?.agentId ?? seedAgentId;
-  const liveName = useAppSelector((state) =>
-    agentId ? selectAgentName(state, agentId) : undefined,
-  );
+  const liveName = useAgentName(agentId);
   const holderName =
     liveName?.trim() || resolved?.agentName?.trim() || seedAgentName?.trim() || "";
 

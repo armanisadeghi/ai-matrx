@@ -35,7 +35,6 @@ import { fetchAgentVersionSnapshot, resolveAgentVersionId } from "@/features/age
 import { fetchAgentExecutionFull } from "@/features/agents/redux/builder-tier.thunks";
 import {
   selectAgentCustomExecutionPayload,
-  selectBuiltinAgents,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   initInstanceOverrides,
@@ -109,6 +108,7 @@ import {
 import { agentSettingDisplay } from "./format-setting-value";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { useBuiltinAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 export type {
   OverridesLevel,
@@ -207,7 +207,7 @@ function OverridesBody({
   // Admin feature "mandate.system-seat": the system answer of a SYSTEM mandate.
   const holdsSystemSeat = useMandateSystemSeat(data.mandate);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin) || holdsSystemSeat;
-  const builtinAgents = useAppSelector(selectBuiltinAgents);
+  const builtinAgents = useBuiltinAgents();
   const { organizations } = useUserOrganizations();
 
   const ownHolder =

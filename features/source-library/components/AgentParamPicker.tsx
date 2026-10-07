@@ -32,7 +32,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
+import { useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export function AgentParamPicker({
     label,
@@ -44,12 +45,12 @@ export function AgentParamPicker({
     onChange: (next: string | null) => void;
 }) {
     const dispatch = useAppDispatch();
-    const agents = useAppSelector(selectAllAgents);
+    const agents = useAgentsById();
 
     // The canonical list, loaded through the agent-definition slice — never a raw
     // `agent.definition` query from inside this feature.
     useEffect(() => {
-        void dispatch(fetchAgentsList());
+        void ensureAgentCatalog();
     }, [dispatch]);
 
     // `selectAllAgents` is the registry RECORD, keyed by id — not an array. Reading

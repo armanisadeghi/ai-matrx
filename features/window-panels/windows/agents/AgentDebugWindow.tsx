@@ -36,10 +36,7 @@ import { buildAgentMenuSection, agentEntityRef } from "@ai-matrx/chat/agents/men
 
 // ─── Agent definition selectors ───────────────────────────────────────────────
 import {
-  selectAllAgentsArray,
   selectAgentById,
-  selectAgentName,
-  selectAgentDescription,
   selectAgentVariableDefinitions,
   selectAgentSettings,
   selectAgentMessages,
@@ -86,6 +83,8 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import type { MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
 import { CHAT_WINDOWS } from "@ai-matrx/chat/host/windows";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { useAgentName, useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 // ─── Tab definitions ──────────────────────────────────────────────────────────
 
@@ -216,7 +215,7 @@ function OverviewTab({
   agentId: string;
   conversationId: string | null;
 }) {
-  const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const agent = useAgentView(agentId);
   const instance = useAppSelector(
     conversationId ? selectInstance(conversationId) : () => undefined,
   );
@@ -365,7 +364,7 @@ function OverviewTab({
 // ─── Tab: Agent Definition ────────────────────────────────────────────────────
 
 function DefinitionTab({ agentId }: { agentId: string }) {
-  const agent = useAppSelector((s) => selectAgentById(s, agentId));
+  const agent = useAgentView(agentId);
   return <JsonPane data={agent} label="agentDefinition" />;
 }
 
@@ -849,7 +848,7 @@ function AgentDebugSidebar({
   onSelectAgent: (agentId: string) => void;
   onSelectInstance: (agentId: string, conversationId: string) => void;
 }) {
-  const allAgents = useAppSelector(selectAllAgentsArray);
+  const allAgents = useCatalogAgents();
   const instancesByAgent = useAppSelector(selectConversationIdsByAgent);
 
   const withInstances: SidebarAgent[] = [];
@@ -966,7 +965,7 @@ function AgentDebugWindowInner({
   initialAgentId: string | null;
   initialConversationId: string | null;
 }) {
-  const allAgents = useAppSelector(selectAllAgentsArray);
+  const allAgents = useCatalogAgents();
   const allConversationIds = useAppSelector(selectAllConversationIds);
 
   // Find the first agent that has instances, or just the first agent
@@ -1009,11 +1008,7 @@ function AgentDebugWindowInner({
     [selectedAgentId, selectedConversationId],
   );
 
-  const agentName = useAppSelector(
-    selectedAgentId
-      ? (s) => selectAgentById(s, selectedAgentId)?.name
-      : () => undefined,
-  );
+  const agentName = useAgentName(selectedAgentId);
 
   const title = selectedConversationId
     ? `${agentName ?? "Agent"} — ${selectedConversationId.slice(0, 8)}…`

@@ -5,7 +5,6 @@ import { toast as copyToast } from "@/lib/toast";
 import { useState, useEffect, type ReactNode } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
 import {
-  selectAgentById,
   selectAgentDefinition,
   selectAgentMessages,
   selectAgentVariableDefinitions,
@@ -88,6 +87,7 @@ import { useAgentAddressViewer } from "@ai-matrx/chat/agents/addressing/useAgent
 import { asClause } from "@ai-matrx/kit/text";
 import { selectIsSuperAdmin } from "@ai-matrx/chat/host/identity";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 function extractTextContent(msg: AgentDefinitionMessage): string {
   if (!msg.content || !Array.isArray(msg.content)) return "";
@@ -294,7 +294,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
     dispatch(fetchModelOptions());
   }, [dispatch]);
 
-  const agent = useAppSelector((state) => selectAgentById(state, agentId));
+  const agent = useAgentView(agentId);
   // A builtin's own page is reached by members too; its ID link must not
   // send them into the admin tree.
   const addressViewer = useAgentAddressViewer();

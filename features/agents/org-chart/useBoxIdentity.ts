@@ -13,16 +13,16 @@
 
 import { useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById, selectAgentsSliceStatus } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
+import { selectAgentById, } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   selectOrgPositions,
   selectOrgPositionsStatus,
   selectSeatJobs,
 } from "@/features/agents/redux/orchestras/selectors";
-import { selectAllAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { listTeams, type Team } from "@/features/organizations/service/teamsService";
 import { getOrganizationMembers, getUserOrganizations } from "@/features/organizations/service";
 import type { OrgBoxType } from "./constants";
+import { useAgentCatalogStatus, useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 // ── the people and teams the viewer can place, loaded once per session ───────
 
@@ -147,11 +147,11 @@ export type SeatStage = "noted" | "defined" | "staffed" | "retired";
 
 export function useBoxIdentity(type: OrgBoxType, id: string): BoxIdentity {
   const agent = useAppSelector((s) => (type === "agent" ? selectAgentById(s, id) : undefined));
-  const agentsStatus = useAppSelector(selectAgentsSliceStatus);
+  const agentsStatus = useAgentCatalogStatus();
   const positions = useAppSelector(selectOrgPositions);
   const positionsStatus = useAppSelector(selectOrgPositionsStatus);
   const seatJobs = useAppSelector(selectSeatJobs);
-  const allAgents = useAppSelector(selectAllAgents);
+  const allAgents = useAgentsById();
   const position = type === "position" ? positions.find((p) => p.id === id) : undefined;
   const [dir, setDir] = useState<Directory | null>(null);
 

@@ -17,9 +17,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
   selectAgentById,
-  selectAllAgents,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import {
   selectActiveAssistantAgentId,
@@ -35,6 +33,8 @@ import { ActiveContextLensChip } from "@/features/scopes/components/active-conte
 import { selectHasActiveContext } from "@/features/scopes/redux/selectors/active-context";
 import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import { useAgentsById } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AssistantAgentBarProps {
   sessionId: string;
@@ -46,12 +46,12 @@ export function AssistantAgentBar({
   compact,
 }: AssistantAgentBarProps) {
   const dispatch = useAppDispatch();
-  const agents = useAppSelector(selectAllAgents);
+  const agents = useAgentsById();
   // Ensure the full agent list (owned + shared + builtins, incl. the War Room
   // Thread persona a tile defaults to) is loaded so the active agent's NAME
   // resolves immediately instead of "Select agent". TTL-guarded, safe per mount.
   useEffect(() => {
-    void dispatch(initializeChatAgents());
+    void ensureAgentCatalog();
   }, [dispatch]);
   const activeAgentId = useAppSelector(selectActiveAssistantAgentId(sessionId));
   const hasActiveContext = useAppSelector(selectHasActiveContext);

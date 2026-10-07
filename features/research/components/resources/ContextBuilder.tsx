@@ -35,11 +35,9 @@ import { Badge } from "@/components/ui/badge";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import {
-  selectLiveAgents,
   selectAgentExecutionPayload,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
-  fetchAgentsListFull,
   fetchAgentExecutionMinimal,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
@@ -78,6 +76,8 @@ import { VariablePreview } from "./VariablePreview";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { variableRunLabel } from "@ai-matrx/agents";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /** What the agent is asked to do when the user does not say otherwise. */
 /** The research surface, for agent-surface binding value mappings. */
@@ -279,7 +279,7 @@ export default function ContextBuilder() {
   };
 
   useEffect(() => {
-    void dispatch(fetchAgentsListFull());
+    void ensureAgentCatalog();
   }, [dispatch]);
 
   if (builder.loading) {
@@ -525,7 +525,7 @@ function AgentRunnerBody({
   const store = useAppStore();
   const { topicId } = useTopicContext();
   const { launchAgent, launchMandate } = useAgentLauncher();
-  const liveAgents = useAppSelector(selectLiveAgents);
+  const liveAgents = useCatalogAgents();
   const setAgentId = onSelectAgent;
   const [launching, setLaunching] = useState(false);
   /**

@@ -19,7 +19,6 @@ import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versio
 import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import {
   selectAgentById,
-  selectAgentName,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import SearchableSelect from "@/components/matrx/SearchableSelect";
@@ -32,6 +31,7 @@ import {
   selectVariationsInputConversationId,
 } from "../redux/selectors";
 import { setLockedSourceAgent, setLockedVersion } from "../redux/thunks";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export function LockedInputSection() {
   const dispatch = useAppDispatch();
@@ -44,9 +44,7 @@ export function LockedInputSection() {
   const agent = useAppSelector((s) =>
     sourceAgentId ? selectAgentById(s, sourceAgentId) : undefined,
   );
-  const agentName = useAppSelector((s) =>
-    sourceAgentId ? selectAgentName(s, sourceAgentId) : null,
-  );
+  const agentName = useAgentName(sourceAgentId) ?? null;
 
   const [versionHistory, setVersionHistory] = useState<
     AgentVersionHistoryItem[]

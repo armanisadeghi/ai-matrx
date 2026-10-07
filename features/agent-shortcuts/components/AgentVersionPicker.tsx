@@ -41,9 +41,9 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { fetchAgentVersionHistory } from "@/features/agents/redux/builder-versions.thunks";
 import { type AgentVersionHistoryItem } from "@ai-matrx/chat/agents/types/agent-definition.types";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { CopyableUuid } from "./CopyableUuid";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface AgentVersionPickerProps {
   /**
@@ -138,7 +138,7 @@ export function AgentVersionPicker({
 }: AgentVersionPickerProps) {
   const dispatch = useAppDispatch();
 
-  const agent = useAppSelector((state) => selectAgentById(state, agentId));
+  const agent = useAgentView(agentId);
   const liveVersionNumber = agent?.version ?? null;
 
   // Folded by default WHEN foldable; a non-collapsible call site is always

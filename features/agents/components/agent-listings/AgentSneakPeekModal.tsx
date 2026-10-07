@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/tabs";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectAgentById,
   selectAgentDefinition,
   selectAgentOutputSchema,
   selectAgentReadyForBuilder,
@@ -75,6 +74,7 @@ import {
 import { variableRunLabel } from "@ai-matrx/agents";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { Badge } from "@ai-matrx/design-system/controls";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const OVERVIEW_MESSAGE_PREVIEW_CHARS = 200;
 
@@ -279,7 +279,7 @@ export function AgentSneakPeekContent({
 }: AgentSneakPeekContentProps) {
   const dispatch = useAppDispatch();
 
-  const record = useAppSelector((state) => selectAgentById(state, agentId));
+  const record = useAgentView(agentId);
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, agentId),
   );
@@ -750,7 +750,7 @@ export function AgentSneakPeekCopyMenu({ agentId }: { agentId: string }) {
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
-  const record = useAppSelector((state) => selectAgentById(state, agentId));
+  const record = useAgentView(agentId);
   const definition = useAppSelector((state) =>
     selectAgentDefinition(state, agentId),
   );
@@ -902,7 +902,7 @@ export function AgentSneakPeekModal({
     return () => window.removeEventListener("keydown", handler);
   }, [isOpen, hasNav, currentIndex, navigationIds]);
 
-  const record = useAppSelector((state) => selectAgentById(state, currentId));
+  const record = useAgentView(currentId);
   const isReady = useAppSelector((state) =>
     selectAgentReadyForBuilder(state, currentId),
   );

@@ -54,12 +54,7 @@ import {
   selectAllAgentTags,
   selectTotalSharedAgentsCount,
 } from "@ai-matrx/agents/catalog";
-import {
-  selectAgentsSliceStatus,
-  selectAgentsSliceError,
-} from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { fetchAgentsList } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { resolveAgentVersionId } from "@/features/agents/redux/builder-versions.thunks";
 import { deleteAgent, duplicateAgent } from "@/features/agents/redux/builder-write.thunks";
 import type {
@@ -80,6 +75,8 @@ import { SORT_OPTIONS } from "@ai-matrx/agents/catalog/react";
 import { getUserMessage } from "@/lib/api/errors";
 import { isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
+import { useAgentCatalogError, useAgentCatalogStatus } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 const CONSUMER_ID = "agents-main";
 
 function AgentsSkeleton({ count = 4 }: { count?: number }) {
@@ -111,12 +108,12 @@ export function AgentsGrid() {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    dispatch(fetchAgentsList());
+    ensureAgentCatalog();
   }, [dispatch]);
 
-  const sliceStatus = useAppSelector(selectAgentsSliceStatus);
+  const sliceStatus = useAgentCatalogStatus();
   const isLoading = sliceStatus === "idle" || sliceStatus === "loading";
-  const listError = useAppSelector(selectAgentsSliceError);
+  const listError = useAgentCatalogError();
 
   const [, startTransition] = useTransition();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
@@ -859,7 +856,7 @@ export function AgentsGrid() {
           <ReadFailure
             error={listError ?? true}
             what="your agents"
-            onRetry={() => void dispatch(fetchAgentsList())}
+            onRetry={() => void ensureAgentCatalog()}
           />
         ) : activeTab === "mine" ? (
           filteredOwnedAgents.length === 0 ? (

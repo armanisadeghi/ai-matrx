@@ -16,8 +16,8 @@ import { useEffect } from "react";
 import { Webhook } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { initializeChatAgents } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 interface WarRoomAgentSelectorProps {
   /** The active agent id — null while the conversation is still resolving. */
@@ -42,7 +42,7 @@ export function WarRoomAgentSelector({
   // personas) is loaded so the active agent's NAME resolves immediately — the
   // tier no longer shows an unnamed default. TTL-guarded, safe on every mount.
   useEffect(() => {
-    void dispatch(initializeChatAgents());
+    void ensureAgentCatalog();
   }, [dispatch]);
 
   return (

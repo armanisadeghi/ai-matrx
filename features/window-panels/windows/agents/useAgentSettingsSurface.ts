@@ -48,7 +48,6 @@ import {
   selectAgentById,
   selectAgentIsReadOnly,
   selectAgentOfferingPin,
-  selectAllAgentsArray,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   selectModelLabelWithClass,
@@ -56,6 +55,7 @@ import {
 } from "@ai-matrx/chat/agents/model-registry/modelRegistrySlice";
 import { agentOwnershipLabel } from "@/features/agents/components/settings/AgentSettingsForm";
 import { readAgentSettingsDraft } from "@/features/agents/components/settings/agentSettingsDraftRegistry";
+import { readCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 /** Empty strings and empty arrays are absence, not data — keep them out of the
  * scope so `alwaysAvailable: false` means what it says. */
@@ -121,7 +121,7 @@ export function useAgentSettingsSurface(
     // the options the user is offered.
     const categoryOptions = Array.from(
       new Set(
-        selectAllAgentsArray(redux)
+        readCatalogAgents()
           .map((entry) => entry.category)
           .filter((category): category is string => Boolean(category)),
       ),

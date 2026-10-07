@@ -25,8 +25,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
-import { fetchAgentsListFull } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
-import { selectAgentLineageIndex } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { onMandateCacheInvalidated } from "@ai-matrx/chat/mandates/service";
 import { fetchAgentOutputSchemas } from "@ai-matrx/chat/mandates/output-contract";
 import { buildRow, type MandateRow } from "@/features/mandates/admin/mandate-health";
@@ -47,6 +45,8 @@ import { usePathname } from "next/navigation";
 import { isAdminLanePath } from "@/utils/supabase/adminLane";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
 import { storedMandateKey, type AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useAgentLineageIndex } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 type AdminSection = "test" | "permissions" | "source" | "diagnostics";
 
@@ -91,7 +91,7 @@ export function RecordAdminPanels({
 }) {
   const dispatch = useAppDispatch();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin) || enabled;
-  const lineageIndex = useAppSelector(selectAgentLineageIndex);
+  const lineageIndex = useAgentLineageIndex();
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<
     Record<string, MandateCodeTruth>
@@ -139,7 +139,7 @@ export function RecordAdminPanels({
   useEffect(() => {
     if (!wanted) return;
     load();
-    dispatch(fetchAgentsListFull());
+    ensureAgentCatalog();
   }, [dispatch, wanted, load]);
 
   useEffect(() => {

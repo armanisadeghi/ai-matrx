@@ -49,7 +49,6 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { selectIsDebugMode } from "@/lib/redux/preferences/adminDebugSlice";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import {
   fetchFullAgent,
 } from "@/features/agents/redux/fetch-full-agent.thunk";
@@ -118,6 +117,7 @@ import { normalizeExtraInputs } from "@/features/page-extraction/utils/extra-inp
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface ChunkingConfigFormProps {
   fileId: string;
@@ -192,9 +192,7 @@ export function ChunkingConfigForm({
     void dispatch(fetchFullAgent(loadedAgentId));
   }, [loadedAgentId, dispatch]);
 
-  const loadedAgent = useAppSelector((s) =>
-    loadedAgentId ? selectAgentById(s, loadedAgentId) : undefined,
-  );
+  const loadedAgent = useAgentView(loadedAgentId);
 
   const draft = useAppSelector((s) => selectDraftForFile(s, fileId));
   const userId = useAppSelector(selectUserId);
@@ -743,9 +741,7 @@ function TemplateEditor({
     [allJobs, selectedJobId],
   );
 
-  const agent = useAppSelector((s) =>
-    draft.agentId ? selectAgentById(s, draft.agentId) : undefined,
-  );
+  const agent = useAgentView(draft.agentId);
 
   // Fetch full agent definition (variable_definitions live there, not
   // in the listing). Without this the mapping editor has nothing to

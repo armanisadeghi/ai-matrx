@@ -21,7 +21,6 @@ import {
   cancelAssignmentDemo,
   runAssignmentDemo,
 } from "@/features/agents/redux/agent-assignments/agent-assignments.thunks";
-import { selectLiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useAppDispatch, useAppSelector, useDispatchThunk } from "@/lib/redux/hooks";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
+import { useCatalogAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 const MODES: Array<{
   value: AssignmentDemoMode;
@@ -73,7 +73,7 @@ export function AgentAssignmentsDemo() {
   const dispatch = useAppDispatch();
   const dispatchThunk = useDispatchThunk();
   const state = useAppSelector(selectAgentAssignmentsDemo);
-  const agents = useAppSelector(selectLiveAgents);
+  const agents = useCatalogAgents();
   const running = state.runStatus === "running";
   const progress = state.total > 0 ? (state.completed / state.total) * 100 : 0;
 

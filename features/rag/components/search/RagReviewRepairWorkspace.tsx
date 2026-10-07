@@ -25,7 +25,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { BasicMarkdownContent } from "@ai-matrx/rich-content/display/chat-markdown/BasicMarkdownContent";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import type { VariableDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { createJob } from "@/features/page-extraction/api/jobs";
@@ -47,6 +46,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 type RepairKind = "table" | "text" | "missing_context" | "other";
 
@@ -275,9 +275,7 @@ function RepairPane({
   const [agentId, setAgentId] = useState<string | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [launching, setLaunching] = useState(false);
-  const agent = useAppSelector((state) =>
-    agentId ? selectAgentById(state, agentId) : undefined,
-  );
+  const agent = useAgentView(agentId);
   const activeRun = useAppSelector((state) =>
     selectActiveRunByJob(state, jobId),
   );

@@ -21,7 +21,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectInstance } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
-import { selectAgentName } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectMessageCount } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import {
   CircuitBoard,
@@ -34,6 +33,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast-service";
+import { useAgentName } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -71,9 +71,7 @@ export function ConversationPreviewContent({
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const conv = useAppSelector(selectInstance(conversationId));
-  const agentName = useAppSelector((state) =>
-    selectAgentName(state, conv?.agentId ?? ""),
-  );
+  const agentName = useAgentName(conv?.agentId ?? "");
   const messageCount = useAppSelector(selectMessageCount(conversationId));
   // The count is of messages this browser holds; before they are loaded it is
   // not an answer (a preview of an unloaded conversation would say "0 msgs").

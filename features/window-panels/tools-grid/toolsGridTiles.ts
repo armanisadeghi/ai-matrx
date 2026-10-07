@@ -93,12 +93,12 @@ import { INTELLIGENCE_ICON } from "@/components/icons/domain-icons";
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import { selectActiveAgentId } from "@ai-matrx/chat/agents/redux/agent-settings/selectors";
-import { selectOwnedAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@ai-matrx/chat/agents/components/chat/chat-quick-actions.config";
 import { resolveMandateAsking } from "@ai-matrx/chat/mandates/resolve-asking";
 import { isOrganizationSelectionCancelled } from "@ai-matrx/chat/host/org";
 import { GENERIC_CODE_EDITOR_AGENT } from "@/features/code-editor/agent-code-editor/agents";
+import { readOwnedAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
 
 /**
  * Grid-tab buckets. "admin" is gated on `isAdmin`; the rest show for every
@@ -146,7 +146,7 @@ export interface TileContext {
 function seedAgentId(ctx: TileContext): { agentId: string } | undefined {
   const state = ctx.getState();
   const id =
-    selectActiveAgentId(state) ?? selectOwnedAgents(state)[0]?.id ?? null;
+    selectActiveAgentId(state) ?? readOwnedAgents()[0]?.id ?? null;
   return id ? { agentId: id } : undefined;
 }
 
@@ -156,7 +156,7 @@ function seedInitialAgentId(
 ): { initialAgentId: string } | undefined {
   const state = ctx.getState();
   const id =
-    selectActiveAgentId(state) ?? selectOwnedAgents(state)[0]?.id ?? null;
+    selectActiveAgentId(state) ?? readOwnedAgents()[0]?.id ?? null;
   return id ? { initialAgentId: id } : undefined;
 }
 

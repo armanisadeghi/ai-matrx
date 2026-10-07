@@ -45,7 +45,6 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   fetchAgentExecutionMinimal,
-  fetchAgentsListFull,
 } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import {
   selectAgentExecutionPayload,
@@ -70,6 +69,8 @@ import {
 } from "@/lib/supabase/mandateStorage";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import type { AnyMandateKey } from "@ai-matrx/agents/mandates";
+import { useOwnedAgents, useSharedWithMeAgents } from "@ai-matrx/chat/agents/identity/agent-catalog-lists";
+import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 /** Externally-owned override store (e.g. research's per-topic
  * `rs_topic.agent_config`). When provided, picking a candidate still runs the
@@ -118,8 +119,8 @@ export function MandateAgentPicker({
   const [saving, setSaving] = useState(false);
   const [preflight, setPreflight] = useState<string | null>(null);
 
-  const ownedAgents = useAppSelector(selectOwnedAgents);
-  const sharedAgents = useAppSelector(selectSharedWithMeAgents);
+  const ownedAgents = useOwnedAgents();
+  const sharedAgents = useSharedWithMeAgents();
 
   const load = useCallback(() => {
     if (!userId) return;
@@ -142,7 +143,7 @@ export function MandateAgentPicker({
   useEffect(() => {
     if (!open) return;
     load();
-    void dispatch(fetchAgentsListFull());
+    void ensureAgentCatalog();
   }, [open, load, dispatch]);
 
   const overrideAgentId = override

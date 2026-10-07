@@ -15,7 +15,6 @@ import { ExternalLink, FileText, Network, Play, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { useOpenAgentContentWindow } from "@/features/overlays/openers/agentAdvancedEditorWindow";
 import { Button as ControlButton } from "@ai-matrx/design-system/controls";
 import { AgentPeekButton } from "./AgentPeekButton";
@@ -23,6 +22,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AgentIODetails } from "./AgentIODetails";
 import { accentClasses } from "./accents";
 import type { OrchestraAccent } from "../constants";
+import { useAgentView } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 export interface ConductorInspectorProps {
   conductorId: string;
@@ -36,7 +36,7 @@ export function ConductorInspector({
   onClose,
 }: ConductorInspectorProps) {
   const a = accentClasses(accent);
-  const agent = useAppSelector((s) => selectAgentById(s, conductorId));
+  const agent = useAgentView(conductorId);
   const openAgentContentWindow = useOpenAgentContentWindow();
 
   const openSystemPrompt = () =>
