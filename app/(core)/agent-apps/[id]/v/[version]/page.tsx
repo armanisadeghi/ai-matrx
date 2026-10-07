@@ -5,7 +5,6 @@ import {
   Code as CodeIcon,
   History,
   Tag,
-  Webhook,
 } from "lucide-react";
 import { getAgentApp, getAgentAppVersion } from "@/lib/agent-apps/data";
 import { AgentAppHeader } from "@/features/agent-apps/components/route-header/AgentAppHeader";
@@ -14,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { VersionCodeCompare } from "./VersionCodeCompare";
+import { appletFiles, appletJobs, appletPages, appletSources } from "@/features/agent-apps/types";
 import { VersionRecordCopy } from "./VersionRecordCopy";
 import { formatDateTime } from "@/features/agent-apps/format";
 
@@ -33,17 +33,18 @@ export default async function AgentAppVersionPage({
   if (!snapshot) notFound();
 
   const isCurrent = snapshot.version_number === app.version;
-  const codeLines =
-    typeof snapshot.component_code === "string"
-      ? snapshot.component_code.split("\n").length
-      : 0;
+  const snapshotFiles = appletFiles(snapshot);
+  const currentFiles = appletFiles(app);
+  const fileNames = [...new Set([...Object.keys(snapshotFiles), ...Object.keys(currentFiles)])].sort();
+  const jobs = appletJobs(snapshot);
+  const sources = appletSources(snapshot);
+  const pages = appletPages(snapshot);
 
   return (
     <>
       <AgentAppHeader
         appId={app.id}
         appName={app.name}
-        agentId={app.agent_id}
         initialStatus={app.status}
         initialPublishedToWeb={app.published_to_web}
         active="versions"
@@ -119,56 +120,64 @@ export default async function AgentAppVersionPage({
             </Card>
 
             <Card>
-              <CardHeader className="pb-2 flex-row items-center gap-2">
-                <Webhook className="w-4 h-4 text-muted-foreground" />
-                <CardTitle className="text-sm">
-                  Agent binding (snapshot)
-                </CardTitle>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Pages, jobs and sources</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                <KV label="Agent ID" value={snapshot.agent_id ?? "—"} mono />
+                <KV label="Entry" value={snapshot.entry ?? "—"} mono />
                 <KV
-                  label="Agent version"
-                  value={snapshot.agent_version_id ?? "—"}
+                  label="Pages"
+                  value={pages.length ? pages.map((p) => `${p.path} → ${p.file}`).join(", ") : "—"}
+                  mono
+                />
+                <KV
+                  label="Jobs"
+                  value={jobs.length ? jobs.map((j) => `${j.alias} → ${j.key}`).join(", ") : "—"}
+                  mono
+                />
+                <KV
+                  label="Sources"
+                  value={
+                    sources.length
+                      ? sources.map((s) => ("entity" in s ? `${s.alias} → ${s.entity}` : `${s.alias} → table`)).join(", ")
+                      : "—"
+                  }
                   mono
                 />
               </CardContent>
             </Card>
 
             <Card className="lg:col-span-2">
-              <CardHeader className="pb-2 flex-row items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CodeIcon className="w-4 h-4 text-muted-foreground" />
-                  <CardTitle className="text-sm">Code</CardTitle>
-                </div>
-                {!isCurrent && (
-                  <VersionCodeCompare
-                    snapshotCode={snapshot.component_code ?? ""}
-                    currentCode={app.component_code ?? ""}
-                    language={snapshot.component_language ?? "typescript"}
-                    snapshotVersion={snapshot.version_number}
-                  />
-                )}
+              <CardHeader className="pb-2 flex-row items-center gap-2">
+                <CodeIcon className="w-4 h-4 text-muted-foreground" />
+                <CardTitle className="text-sm">Files</CardTitle>
               </CardHeader>
-              <CardContent className="text-sm text-muted-foreground space-y-1">
-                <KV
-                  label="Language"
-                  value={snapshot.component_language ?? "—"}
-                />
-                <KV
-                  label="Lines"
-                  value={codeLines > 0 ? String(codeLines) : "—"}
-                />
-                {isCurrent ? (
-                  <p className="text-xs pt-2">
-                    This is the current version — its code is what the app
-                    renders now.
-                  </p>
+              <CardContent className="space-y-1 text-sm">
+                {fileNames.length === 0 ? (
+                  <p className="text-xs text-muted-foreground">No files.</p>
                 ) : (
-                  <p className="text-xs pt-2">
-                    Use “Compare with current” to see exactly how this version’s
-                    code differs from the live app.
-                  </p>
+                  fileNames.map((name) => {
+                    const then = snapshotFiles[name];
+                    const now = currentFiles[name];
+                    const state =
+                      then === undefined ? "not in this version" : now === undefined ? "removed since" : then === now ? "same as current" : "changed since";
+                    return (
+                      <div key={name} className="flex items-center justify-between gap-3">
+                        <span className="font-mono text-xs">{name}</span>
+                        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                          {state}
+                          {!isCurrent && then !== undefined && now !== undefined && then !== now && (
+                            <VersionCodeCompare
+                              snapshotCode={then}
+                              currentCode={now}
+                              language="typescript"
+                              snapshotVersion={snapshot.version_number}
+                            />
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })
                 )}
               </CardContent>
             </Card>

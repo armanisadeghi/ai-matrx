@@ -20,7 +20,6 @@ import { useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAppById } from "@/features/agents/redux/agent-apps/selectors";
 import { setAgentAppPublication } from "@/features/agents/redux/agent-apps/thunks";
-import { useOpenAgentRunHistoryWindow } from "@/features/overlays/openers/agentRunHistoryWindow";
 import { toast } from "@/lib/toast";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
 import { copyReferenceFence } from "@/features/matrx-envelope/referenceClipboard";
@@ -33,7 +32,6 @@ export type AgentAppHeaderTab =
 interface AgentAppHeaderProps {
   appId: string;
   appName: string;
-  agentId: string;
   initialStatus: AppStatus;
   initialPublishedToWeb: boolean;
   active: AgentAppHeaderTab;
@@ -53,7 +51,6 @@ interface AgentAppHeaderProps {
 export function AgentAppHeader({
   appId,
   appName,
-  agentId,
   initialStatus,
   initialPublishedToWeb,
   active,
@@ -62,7 +59,6 @@ export function AgentAppHeader({
 }: AgentAppHeaderProps) {
   const dispatch = useAppDispatch();
   const app = useAppSelector((state) => selectAppById(state, appId));
-  const openRunHistory = useOpenAgentRunHistoryWindow();
   const [publicationBusy, setPublicationBusy] = useState(false);
 
   const status = app?.status ?? initialStatus;
@@ -81,25 +77,6 @@ export function AgentAppHeader({
     },
   ];
   const actions: EntityHeaderAction[] = [];
-  if (active === "run") {
-    actions.push({
-      label: "Run history",
-      icon: History,
-      // Open on the run this page is showing, never "Select a conversation".
-      onPress: () =>
-        openRunHistory({
-          agentId,
-          // "Run History — Recipe Scaler", never "— Agent".
-          subject: appName,
-          initialSelectedConversationId:
-            typeof window !== "undefined"
-              ? new URLSearchParams(window.location.search).get("conversationId")
-              : null,
-        }),
-    });
-  }
-  // The phone ⋮ carries Copy reference too — on desktop it is the tap button
-  // passed through `right`, which the phone header hides.
   actions.push({
     label: "Copy reference",
     icon: Bookmark,
@@ -132,7 +109,7 @@ export function AgentAppHeader({
             }
           : {
               title: `Publish ${appName}?`,
-              description: `Anyone with the link can open and run it at ${publicUrl}, without signing in.`,
+              description: `Anyone with the link can open it at ${publicUrl}, without signing in.`,
               confirmLabel: "Publish",
             },
       );

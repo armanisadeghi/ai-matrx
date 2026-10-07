@@ -28,13 +28,47 @@ export const USE_ON_RETURN = "use";
 
 type Copy = { phase: "idle" } | { phase: "copying" } | { phase: "done"; applet: CopiedApplet } | { phase: "failed"; why: string };
 
-export function AppletUseTemplate({ appletId, templateId, signUpHref }: { appletId: string; templateId: string; signUpHref: string }) {
+export function AppletUseTemplate({
+  appletId,
+  appletName,
+  templateId,
+  signUpHref,
+}: {
+  appletId: string;
+  appletName: string;
+  templateId: string;
+  signUpHref: string;
+}) {
   const signedIn = useSignedIn();
   const params = useSearchParams();
   const active = useOrganizationRequired();
   const organizationId = active.organizationState === "ready" ? active.organizationId : null;
   const [copy, setCopy] = useState<Copy>({ phase: "idle" });
   const [alreadyInstalled, setAlreadyInstalled] = useState(false);
+  // The person's live copy of this Applet (an archived one is gone): known before any organization is chosen.
+  const [mine, setMine] = useState<CopiedApplet | null>(null);
+
+  useEffect(() => {
+    if (!signedIn) return;
+    let alive = true;
+    let q = createClient()
+      .schema("app")
+      .from("definition")
+      .select("id, slug, name")
+      .eq("metadata->from_template->>applet_id", appletId)
+      .is("deleted_at", null);
+    if (organizationId) q = q.eq("organization_id", organizationId);
+    void q
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (alive) setMine(data ? { ...data, existed: true } : null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [signedIn, organizationId, appletId, copy.phase]);
 
   // Does the chosen organization already have the data template? Then the app is added over it.
   useEffect(() => {
@@ -110,13 +144,25 @@ export function AppletUseTemplate({ appletId, templateId, signUpHref }: { applet
           {copy.why}
         </p>
       ) : null}
-      {alreadyInstalled && copy.phase !== "done" ? (
+      {mine && copy.phase !== "done" ? (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card p-3" data-applet-template-have={mine.slug}>
+          <span className="text-sm font-medium">Your app is ready</span>
+          <Link
+            href={appletOpenHref(mine.slug)}
+            className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Open your app
+          </Link>
+        </div>
+      ) : null}
+      {alreadyInstalled && !mine && copy.phase !== "done" ? (
         <Button variant="primary" onClick={() => void addOverInstall()} disabled={copy.phase === "copying"} className="self-start">
           Add the app
         </Button>
       ) : null}
       <TemplatePreview
         templateId={templateId}
+        productName={appletName}
         bare
         autoInstall={params.get(USE_ON_RETURN) === "1"}
         onInstalled={(answer, orgId) => void addApp(answer, orgId)}

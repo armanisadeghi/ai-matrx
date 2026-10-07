@@ -3,15 +3,23 @@
 /**
  * AgentAppVersionsContent — /agent-apps/[id]/versions page body.
  *
- * Renders a list of `aga_versions` snapshots for an app, newest first.
- * Each row is a link to /agent-apps/[id]/v/[versionNumber] — viewing a
- * historical snapshot. The list itself is fetched on the server and
- * passed in as props (no client-side cache yet; we'll add a thunk + slice
- * if/when interactive editing of version metadata becomes a thing).
+ * The Applet's `app.definition_version` snapshots, newest first, each with a
+ * one-line summary of what changed from the version before it and a Restore.
+ * Restore writes that version's content (files, entry, pages, jobs, sources)
+ * back onto the record — the snapshot trigger records it as a NEW version, so
+ * nothing is lost and the version number only moves forward.
  */
 
 import Link from "next/link";
-import { History } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { History, RotateCcw } from "lucide-react";
+import { Button } from "@ai-matrx/design-system/controls";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast-service";
+import { saveAppletRecord } from "@/features/agents/redux/agent-apps/thunks";
+import { appletFiles, appletJobs, appletPages, appletSources } from "@/features/agent-apps/types";
 import type { AgentAppVersionRow } from "@/lib/agent-apps/data";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { formatDateTime } from "@/features/agent-apps/format";
@@ -34,11 +42,64 @@ function versionHuman(v: AgentAppVersionRow, isCurrent: boolean): string {
     .join("\n");
 }
 
+/** What changed from `prev` to `v`, in a few words ("2 files changed, 1 page added"). */
+function changeSummary(v: AgentAppVersionRow, prev: AgentAppVersionRow | undefined): string {
+  if (!prev) return "First version";
+  const parts: string[] = [];
+  const fa = appletFiles(prev);
+  const fb = appletFiles(v);
+  const added = Object.keys(fb).filter((k) => !(k in fa)).length;
+  const removed = Object.keys(fa).filter((k) => !(k in fb)).length;
+  const changed = Object.keys(fb).filter((k) => k in fa && fa[k] !== fb[k]).length;
+  const n = (count: number, noun: string, verb: string) =>
+    count ? `${count} ${noun}${count === 1 ? "" : "s"} ${verb}` : null;
+  parts.push(
+    ...[n(added, "file", "added"), n(removed, "file", "removed"), n(changed, "file", "changed")].filter(
+      (x): x is string => x !== null,
+    ),
+  );
+  if (prev.entry !== v.entry) parts.push("entry changed");
+  const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
+  if (!same(appletPages(prev), appletPages(v))) parts.push("pages changed");
+  if (!same(appletJobs(prev), appletJobs(v))) parts.push("jobs changed");
+  if (!same(appletSources(prev), appletSources(v))) parts.push("sources changed");
+  if (prev.name !== v.name) parts.push("renamed");
+  return parts.length ? parts.join(", ") : "No content change";
+}
+
 export function AgentAppVersionsContent({
   appId,
   versions,
   currentVersion,
 }: AgentAppVersionsContentProps) {
+  const dispatch = useAppDispatch();
+  const router = useRouter();
+  const [restoring, setRestoring] = useState<number | null>(null);
+
+  const restore = async (v: AgentAppVersionRow) => {
+    const ok = await confirm({
+      title: `Restore v${v.version_number}?`,
+      description: `Its files, pages, jobs and sources become the current Applet as a new version. v${currentVersion} stays in the list.`,
+      confirmLabel: "Restore",
+    });
+    if (!ok) return;
+    setRestoring(v.version_number);
+    try {
+      await dispatch(
+        saveAppletRecord({
+          appId,
+          patch: { files: v.files, entry: v.entry, pages: v.pages, mandates: v.mandates, sources: v.sources },
+        }),
+      ).unwrap();
+      toast.success(`Restored v${v.version_number}.`);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Restore failed.");
+    } finally {
+      setRestoring(null);
+    }
+  };
+
   return (
     <div
       className="h-full overflow-y-auto"
@@ -65,9 +126,9 @@ export function AgentAppVersionsContent({
               }
               json={() => versions}
               agent={() => ({
-                kind: "agent-app-versions",
-                location: `AI Matrx — Agent App — Versions`,
-                description: "All version snapshots for this agent app.",
+                kind: "applet-versions",
+                location: `AI Matrx — Applet — Versions`,
+                description: "All version snapshots for this Applet.",
                 data: versions,
                 attributes: { appId, count: versions.length, currentVersion },
               })}
@@ -77,18 +138,18 @@ export function AgentAppVersionsContent({
 
         {versions.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No version snapshots yet. Versions are created automatically as
-            you save changes to the app.
+            No versions yet.
           </div>
         ) : (
           <div className="rounded-lg border border-border divide-y divide-border bg-card">
-            {versions.map((v) => {
+            {versions.map((v, i) => {
               const isCurrent = v.version_number === currentVersion;
+              const summary = changeSummary(v, versions[i + 1]);
               return (
                 <div key={v.id} className="group/x relative flex items-stretch">
                   <Link
                     href={`/agent-apps/${appId}/v/${v.version_number}`}
-                    className="flex items-start gap-3 p-3 pr-28 flex-1 min-w-0 hover:bg-muted/50 transition-colors"
+                    className="flex items-start gap-3 p-3 pr-40 flex-1 min-w-0 hover:bg-muted/50 transition-colors"
                   >
                     <div className="flex-shrink-0 w-12 text-sm font-mono font-semibold text-foreground tabular-nums pt-0.5">
                       v{v.version_number}
@@ -109,8 +170,8 @@ export function AgentAppVersionsContent({
                           </span>
                         )}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {formatDateTime(v.changed_at)}
+                      <div className="text-xs text-muted-foreground truncate">
+                        {formatDateTime(v.changed_at)} · {summary}
                       </div>
                       {v.change_note && (
                         <p className="text-xs text-muted-foreground/90 italic">
@@ -119,6 +180,17 @@ export function AgentAppVersionsContent({
                       )}
                     </div>
                   </Link>
+                  {!isCurrent && (
+                    <Button
+                      variant="quiet"
+                      icon={<RotateCcw />}
+                      className="absolute right-14 top-1/2 -translate-y-1/2"
+                      disabled={restoring !== null}
+                      onClick={() => void restore(v)}
+                    >
+                      {restoring === v.version_number ? "Restoring…" : "Restore"}
+                    </Button>
+                  )}
                   <CopyButtons
                     size="icon"
                     label={`v${v.version_number}`}
@@ -126,8 +198,8 @@ export function AgentAppVersionsContent({
                     human={() => versionHuman(v, isCurrent)}
                     json={() => v}
                     agent={() => ({
-                      kind: "agent-app-version",
-                      location: `AI Matrx — Agent App — Versions`,
+                      kind: "applet-version",
+                      location: `AI Matrx — Applet — Versions`,
                       description: "A single version snapshot row.",
                       data: v,
                       summary: versionHuman(v, isCurrent),

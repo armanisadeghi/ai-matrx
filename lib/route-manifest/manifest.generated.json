@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1339,
+  "routeCount": 1342,
   "routes": [
     {
       "pattern": "/",
@@ -27,6 +27,11 @@
       "pattern": "/_flashcard/[category]/[id]",
       "status": "live",
       "source": "app/(transitional)/_flashcard/[category]/[id]/page.tsx"
+    },
+    {
+      "pattern": "/account/restore",
+      "status": "live",
+      "source": "app/(auth-pages)/account/restore/page.tsx"
     },
     {
       "pattern": "/acquisition",
@@ -199,11 +204,6 @@
       "source": "app/(admin)/administration/agents/system-agents/agents/[id]/page.tsx"
     },
     {
-      "pattern": "/administration/agents/system-agents/agents/[id]/apps",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/system-agents/agents/[id]/apps/page.tsx"
-    },
-    {
       "pattern": "/administration/agents/system-agents/agents/[id]/build",
       "status": "live",
       "source": "app/(admin)/administration/agents/system-agents/agents/[id]/build/page.tsx"
@@ -277,11 +277,6 @@
       "pattern": "/administration/agents/system-agents/apps",
       "status": "live",
       "source": "app/(admin)/administration/agents/system-agents/apps/page.tsx"
-    },
-    {
-      "pattern": "/administration/agents/system-agents/apps/new",
-      "status": "live",
-      "source": "app/(admin)/administration/agents/system-agents/apps/new/page.tsx"
     },
     {
       "pattern": "/administration/agents/system-agents/categories",
@@ -1384,19 +1379,9 @@
       "source": "app/(core)/agent-apps/[id]/versions/page.tsx"
     },
     {
-      "pattern": "/agent-apps/new",
+      "pattern": "/agent-apps/build",
       "status": "live",
-      "source": "app/(core)/agent-apps/new/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/templates",
-      "status": "live",
-      "source": "app/(core)/agent-apps/templates/page.tsx"
-    },
-    {
-      "pattern": "/agent-apps/templates/[mode]",
-      "status": "live",
-      "source": "app/(core)/agent-apps/templates/[mode]/page.tsx"
+      "source": "app/(core)/agent-apps/build/page.tsx"
     },
     {
       "pattern": "/agent-connections",
@@ -1492,11 +1477,6 @@
       "pattern": "/agents/[id]/answers/calibration",
       "status": "live",
       "source": "app/(core)/agents/[id]/answers/calibration/page.tsx"
-    },
-    {
-      "pattern": "/agents/[id]/apps",
-      "status": "live",
-      "source": "app/(core)/agents/[id]/apps/page.tsx"
     },
     {
       "pattern": "/agents/[id]/build",
@@ -1689,6 +1669,11 @@
       "source": "app/(core)/agents/browse/page.tsx"
     },
     {
+      "pattern": "/agents/builds/[buildId]",
+      "status": "live",
+      "source": "app/(core)/agents/builds/[buildId]/page.tsx"
+    },
+    {
       "pattern": "/agents/categories",
       "status": "live",
       "source": "app/(core)/agents/categories/page.tsx"
@@ -1802,6 +1787,11 @@
       "pattern": "/agents/templates/[id]",
       "status": "live",
       "source": "app/(core)/agents/templates/[id]/page.tsx"
+    },
+    {
+      "pattern": "/applets/[slug]",
+      "status": "live",
+      "source": "app/(public)/applets/[slug]/page.tsx"
     },
     {
       "pattern": "/appointment-reminder",
@@ -3846,31 +3836,6 @@
       "source": "app/(core)/libraries/[id]/page.tsx"
     },
     {
-      "pattern": "/pick-lists",
-      "status": "live",
-      "source": "app/(core)/pick-lists/page.tsx"
-    },
-    {
-      "pattern": "/pick-lists/[id]",
-      "status": "live",
-      "source": "app/(core)/pick-lists/[id]/page.tsx"
-    },
-    {
-      "pattern": "/pick-lists",
-      "status": "live",
-      "source": "app/(core)/pick-lists/page.tsx"
-    },
-    {
-      "pattern": "/pick-lists",
-      "status": "live",
-      "source": "app/(core)/pick-lists/page.tsx"
-    },
-    {
-      "pattern": "/pick-lists",
-      "status": "live",
-      "source": "app/(core)/pick-lists/page.tsx"
-    },
-    {
       "pattern": "/local",
       "status": "live",
       "source": "app/(transitional)/local/page.tsx"
@@ -3894,11 +3859,6 @@
       "pattern": "/make",
       "status": "live",
       "source": "app/(core)/make/page.tsx"
-    },
-    {
-      "pattern": "/make/templates/[id]",
-      "status": "live",
-      "source": "app/(core)/make/templates/[id]/page.tsx"
     },
     {
       "pattern": "/mandates",
@@ -4201,6 +4161,11 @@
       "source": "app/(core)/marketing/[brandId]/locations/[locationId]/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/locations/[locationId]/grid",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/locations/[locationId]/grid/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/planning",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/planning/page.tsx"
@@ -4366,6 +4331,11 @@
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/changes/untracked/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/context",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/context/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/seo/[siteId]/coverage",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/coverage/page.tsx"
@@ -4459,6 +4429,11 @@
       "pattern": "/marketing/[brandId]/seo/[siteId]/rankings",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/seo/[siteId]/rankings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/seo/[siteId]/reports",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/seo/[siteId]/reports/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/seo/[siteId]/search-console",
@@ -4976,6 +4951,11 @@
       "source": "app/(core)/marketing/tools/page.tsx"
     },
     {
+      "pattern": "/marketing/tools/domain",
+      "status": "live",
+      "source": "app/(core)/marketing/tools/domain/page.tsx"
+    },
+    {
       "pattern": "/marketing/tools/youtube",
       "status": "live",
       "source": "app/(core)/marketing/tools/youtube/page.tsx"
@@ -5480,6 +5460,16 @@
       "pattern": "/p/e/[resourceType]/[id]",
       "status": "live",
       "source": "app/(public)/p/e/[resourceType]/[id]/page.tsx"
+    },
+    {
+      "pattern": "/pick-lists",
+      "status": "live",
+      "source": "app/(core)/pick-lists/page.tsx"
+    },
+    {
+      "pattern": "/pick-lists/[id]",
+      "status": "live",
+      "source": "app/(core)/pick-lists/[id]/page.tsx"
     },
     {
       "pattern": "/podcast",
@@ -6292,6 +6282,16 @@
       "source": "app/(public)/sms/personal-staff/page.tsx"
     },
     {
+      "pattern": "/spaces",
+      "status": "live",
+      "source": "app/(core)/spaces/page.tsx"
+    },
+    {
+      "pattern": "/spaces/[spaceId]",
+      "status": "live",
+      "source": "app/(core)/spaces/[spaceId]/page.tsx"
+    },
+    {
       "pattern": "/staff",
       "status": "live",
       "source": "app/(core)/staff/page.tsx"
@@ -6342,9 +6342,24 @@
       "source": "app/(public)/templates/page.tsx"
     },
     {
-      "pattern": "/templates/[catalogueId]",
+      "pattern": "/templates/[slug]",
       "status": "live",
-      "source": "app/(public)/templates/[catalogueId]/page.tsx"
+      "source": "app/(public)/templates/[slug]/page.tsx"
+    },
+    {
+      "pattern": "/templates/apps",
+      "status": "live",
+      "source": "app/(public)/templates/apps/page.tsx"
+    },
+    {
+      "pattern": "/templates/category/[industry]",
+      "status": "live",
+      "source": "app/(public)/templates/category/[industry]/page.tsx"
+    },
+    {
+      "pattern": "/templates/job/[job]",
+      "status": "live",
+      "source": "app/(public)/templates/job/[job]/page.tsx"
     },
     {
       "pattern": "/terms-and-conditions",

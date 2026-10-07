@@ -2,7 +2,7 @@
 //
 // Memoized selector factories for the agent-app list system.
 //
-// All filter, sort, search-scoring, category/tag/agent extraction, and
+// All filter, sort, search-scoring, category/tag extraction, and
 // pagination logic lives here — not in components. Components call the
 // factory once (stable reference across renders when bound to a fixed
 // consumerId) and consume the result directly from useAppSelector.
@@ -19,13 +19,12 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import { selectLiveAgents } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import type { AgentDefinitionRecord } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import type {
   AgentApp,
   AgentAppRecord,
 } from "@/features/agents/redux/agent-apps/types";
 import { selectAllApps } from "@/features/agents/redux/agent-apps/selectors";
+import { appletJobs } from "@/features/agent-apps/types";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   DEFAULT_AGENT_APP_CONSUMER_STATE,
@@ -59,11 +58,8 @@ export interface AgentAppCardModel {
   category: string | null;
   tags: string[];
 
-  // Agent binding
-  agent_id: string;
-  agent_name: string | null;
-  agent_version_id: string | null;
-  use_latest: boolean;
+  // The jobs the Applet runs (mandate keys)
+  job_keys: string[];
 
   // Status & web state
   status: AgentApp["status"];
@@ -107,7 +103,6 @@ export function computeAppSearchScore(
   const tagline = (app.tagline ?? "").toLowerCase();
   const desc = (app.description ?? "").toLowerCase();
   const slug = (app.slug ?? "").toLowerCase();
-  const agentName = (app.agent_name ?? "").toLowerCase();
 
   if (name === q) score += 10000;
   else if (name.startsWith(q)) score += 5000;
@@ -120,10 +115,7 @@ export function computeAppSearchScore(
   if (app.category?.toLowerCase().includes(q)) score += 300;
   if (app.tags?.some((t) => t.toLowerCase().includes(q))) score += 300;
 
-  // Agent identity — exact agent_id match wins; agent name partial also helps.
-  if (app.agent_id?.toLowerCase() === q) score += 100000;
-  else if (app.agent_id?.toLowerCase().includes(q)) score += 5000;
-  if (agentName.includes(q)) score += 600;
+  if (app.job_keys.some((k) => k.toLowerCase().includes(q))) score += 600;
 
   // App ID exact match
   if (app.id?.toLowerCase() === q) score += 100000;
@@ -151,8 +143,6 @@ const SORT_COMPARATORS: Record<AgentAppSortOption, Comparator> = {
   "name-desc": (a, b) => (b.name ?? "").localeCompare(a.name ?? ""),
   "category-asc": (a, b) =>
     (a.category ?? "").localeCompare(b.category ?? ""),
-  "agent-asc": (a, b) =>
-    (a.agent_name ?? "").localeCompare(b.agent_name ?? ""),
   "executions-desc": (a, b) =>
     (b.total_executions ?? 0) - (a.total_executions ?? 0),
   "last-run-desc": (a, b) =>
@@ -225,11 +215,6 @@ const matchesTags: FilterPredicate = (app, { consumer }) => {
   return app.tags!.some((t) => consumer.includedTags.includes(t));
 };
 
-const matchesAgents: FilterPredicate = (app, { consumer }) => {
-  if (consumer.includedAgents.length === 0) return true;
-  return consumer.includedAgents.includes(app.agent_id);
-};
-
 const matchesSearch: FilterPredicate = (app, { consumer }) =>
   consumer.searchTerm === "" || appMatchesSearch(app, consumer.searchTerm);
 
@@ -239,7 +224,6 @@ const FILTER_PREDICATES: FilterPredicate[] = [
   matchesVisibility,
   matchesCategories,
   matchesTags,
-  matchesAgents,
   matchesSearch,
 ];
 
@@ -254,32 +238,23 @@ const makeSelectAgentAppConsumerState =
 const selectCurrentUserId = (state: RootState): string | null =>
   selectUserId(state);
 
-// ── Joined card models (apps × agents) ────────────────────────────────────────
-
-const selectAgentsById = createSelector(selectLiveAgents, (agents) => {
-  const byId: Record<string, AgentDefinitionRecord> = {};
-  for (const a of agents) byId[a.id] = a;
-  return byId;
-});
+// ── Card models ──────────────────────────────────────────────────────────────
 
 /**
- * Project all live `aga_apps` records into card models, joining the agent
- * name from the live agents slice. Stable reference until apps OR agents
+ * Project all live Applet records into card models (with their job keys).
+ * Stable reference until apps
  * change.
  */
 export const selectAllAppCardModels = createSelector(
   selectAllApps,
-  selectAgentsById,
   selectCurrentUserId,
   (
     appsById,
-    agentsById,
     currentUserId,
   ): AgentAppCardModel[] => {
     const models: AgentAppCardModel[] = [];
     for (const id of Object.keys(appsById)) {
       const r = appsById[id] as AgentAppRecord;
-      const agent = agentsById[r.agent_id];
       models.push({
         id: r.id,
         slug: r.slug,
@@ -288,10 +263,7 @@ export const selectAllAppCardModels = createSelector(
         description: r.description,
         category: r.category,
         tags: r.tags ?? [],
-        agent_id: r.agent_id,
-        agent_name: agent?.name ?? null,
-        agent_version_id: r.agent_version_id,
-        use_latest: r.use_latest,
+        job_keys: appletJobs(r).map((j) => j.key),
         status: r.status,
         published_to_web: r.published_to_web,
         is_featured: r.is_featured,
@@ -317,7 +289,7 @@ export const selectAllAppCardModels = createSelector(
   },
 );
 
-// ── Derived metadata (categories, tags, agents-in-use) ────────────────────────
+// ── Derived metadata (categories, tags) ────────────────────────
 
 export const selectAllAppCategories = createSelector(
   selectAllAppCardModels,
@@ -334,25 +306,6 @@ export const selectAllAppTags = createSelector(
     const tags = new Set<string>();
     for (const m of models) m.tags?.forEach((t) => tags.add(t));
     return Array.from(tags).sort();
-  },
-);
-
-/**
- * The set of agents that actually power at least one app, paired with their
- * names so the filter UI can render readable labels. Sorted by agent name.
- */
-export const selectAllAppAgents = createSelector(
-  selectAllAppCardModels,
-  (models): { id: string; name: string }[] => {
-    const seen = new Map<string, string>();
-    for (const m of models) {
-      if (!seen.has(m.agent_id)) {
-        seen.set(m.agent_id, m.agent_name ?? m.agent_id);
-      }
-    }
-    return Array.from(seen, ([id, name]) => ({ id, name })).sort((a, b) =>
-      a.name.localeCompare(b.name),
-    );
   },
 );
 

@@ -152,21 +152,26 @@ export const AGENT_APP_COLUMNS: MatrxColumnDef<AgentAppAdminView>[] = [
     ),
   },
   {
-    id: "mandate",
-    header: "Mandate",
-    accessorFn: (app) => app.mandate_key ?? "",
+    id: "jobs",
+    header: "Jobs",
+    accessorFn: (app) => app.job_keys.join(", "),
     filter: "text",
     width: 180,
     mobileHidden: true,
     cell: (app) =>
-      app.mandate_key ? (
-        <AppLink
-          href={`/mandates/${encodeURIComponent(app.mandate_key)}`}
-          className="block truncate font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
-          title="Open this app's mandate"
-        >
-          {app.mandate_key}
-        </AppLink>
+      app.job_keys.length > 0 ? (
+        <span className="flex min-w-0 flex-wrap gap-x-2">
+          {app.job_keys.map((key) => (
+            <AppLink
+              key={key}
+              href={`/mandates/${encodeURIComponent(key)}`}
+              className="truncate font-mono text-xs text-muted-foreground hover:text-foreground hover:underline"
+              title="Open this job"
+            >
+              {key}
+            </AppLink>
+          ))}
+        </span>
       ) : (
         <span className="text-xs text-muted-foreground">—</span>
       ),

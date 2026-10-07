@@ -15,16 +15,16 @@
  */
 
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
+import { guardedUpdate } from "@ai-matrx/data/db";
+import type { Json } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
 import {
   assignField,
   fieldFlagsKeys,
 } from "@ai-matrx/agents/field-flags";
-import { readAllRows } from "@ai-matrx/data/db";
 import type { AgentApp } from "./types";
 import { agentAppActions } from "./slice";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
@@ -34,59 +34,6 @@ import { tryWriteOne } from "@/utils/supabase/writeOne";
 interface ThunkApi {
   dispatch: AppDispatch;
   state: RootState;
-}
-
-/**
- * Attach `mandate_key` to app rows.
- *
- * 🚨 `app.definition` stores the JOB by **id**, and `useAppHolder` resolves it
- * by **key** — so a row read straight from the table has `mandate_id` and no
- * `mandate_key`, and the signed-in cutover branch reads it as "this app does
- * not name a mandate yet". With `APP_MANDATE_CUTOVER` ON that is not a cosmetic
- * gap: the holder returns `agentId: null` and the renderer refuses before
- * spend, so EVERY app breaks for a signed-in caller while guests (who take the
- * public RPC, which already carries the key) keep working. Found on the flip
- * day, on `/agent-apps/<id>/settings` → Agent, over an app whose `mandate_id`
- * was populated.
- *
- * The key is looked up by identity, never derived from the slug — a key that
- * merely looks right is the name-coincidence bug class THE MODEL bans.
- */
-async function withMandateKeys(rows: AgentApp[]): Promise<AgentApp[]> {
-  const ids = [
-    ...new Set(
-      rows.map((row) => row.mandate_id).filter((id): id is string => Boolean(id)),
-    ),
-  ];
-  if (ids.length === 0) return rows;
-
-  let keyRows: { id: string; mandate_key: string | null }[];
-  try {
-    keyRows = await readAllRows<{ id: string; mandate_key: string | null }>(
-      ({ from, to }) =>
-        supabase
-          .schema("mandate")
-          .from("definition")
-          .select("id, mandate_key", { count: "exact" })
-          .in("id", ids)
-          .order("id", { ascending: true })
-          .range(from, to),
-      { label: "mandate.definition (app keys)" },
-    );
-  } catch (err) {
-    // A key we could not read is reported as absent, LOUDLY — never guessed.
-    console.error(
-      "[agent-apps] could not resolve mandate keys; signed-in app runs will refuse:",
-      err instanceof Error ? err.message : String(err),
-    );
-    return rows;
-  }
-  const keyById = new Map(keyRows.map((row) => [row.id, row.mandate_key]));
-  return rows.map((row) =>
-    row.mandate_id
-      ? { ...row, mandate_key: keyById.get(row.mandate_id) ?? null }
-      : row,
-  );
 }
 
 // ---------------------------------------------------------------------------
@@ -124,7 +71,7 @@ export const fetchAppsInitial = createAsyncThunk<void, void, ThunkApi>(
       throw pgErrorToError(error);
     }
 
-    for (const row of await withMandateKeys((data ?? []) as AgentApp[])) {
+    for (const row of (data ?? []) as AgentApp[]) {
       dispatch(agentAppActions.upsertApp(row));
     }
     dispatch(agentAppActions.setAppsInitialLoaded(true));
@@ -164,8 +111,7 @@ export const fetchAppById = createAsyncThunk<void, string, ThunkApi>(
       throw error ? pgErrorToError(error) : unavailable;
     }
 
-    const [hydrated] = await withMandateKeys([data as AgentApp]);
-    dispatch(agentAppActions.upsertApp(hydrated));
+    dispatch(agentAppActions.upsertApp(data as AgentApp));
     dispatch(agentAppActions.setAppLoading({ id: appId, loading: false }));
   },
 );
@@ -200,9 +146,7 @@ export const saveApp = createAsyncThunk<void, string, ThunkApi>(
     // Update type has no `null` variant), but the domain type allows null
     // before the field is set. A dirty patch should never carry a null org
     // id — omit it rather than send a value the column will reject.
-    // `mandate_key` is HYDRATED onto the cached row (withMandateKeys above),
-    // not a column on `app.definition` — it must never ride a write.
-    const { mandate_key: _hydratedKey, ...columnPatch } = patch;
+    const columnPatch = patch;
     const dbPatch = {
       ...columnPatch,
       organization_id: columnPatch.organization_id ?? undefined,
@@ -243,8 +187,7 @@ export const saveAppField = createAsyncThunk<
   const patch: Partial<AgentApp> = {};
   assignField(patch, field, value);
   // See saveApp: organization_id is NOT NULL in the DB; never send null.
-  // Hydrated, not a column — see the note on the other write above.
-  const { mandate_key: _hydratedKey2, ...columnPatch } = patch;
+  const columnPatch = patch;
   const dbPatch = {
     ...columnPatch,
     organization_id: columnPatch.organization_id ?? undefined,
@@ -300,57 +243,6 @@ export const setAgentAppPublication = createAsyncThunk<
   }
 
   dispatch(agentAppActions.mergePartialApp({ id: appId, ...patch }));
-});
-
-/**
- * Insert a new app. Returns the new id so callers can route to the edit page.
- * Most fields fall back to DB defaults; the caller must supply at least
- * `name`, `slug`, `agent_id`, `component_code`, `organization_id`
- * (`organization_id` is NOT NULL on `app.definition` — there is no DB default).
- */
-export const createApp = createAsyncThunk<
-  string,
-  Partial<AgentApp> & {
-    name: string;
-    slug: string;
-    agent_id: string;
-    component_code: string;
-    organization_id: string;
-  },
-  ThunkApi
->("agentApp/create", async (fullPayload, { dispatch }) => {
-  // `mandate_key` is hydrated onto cached rows, never a column — strip it
-  // before anything reaches the insert.
-  const { mandate_key: _hydratedCreateKey, ...payload } = fullPayload;
-  const insert = {
-    id: payload.id ?? uuidv4(),
-    component_language: payload.component_language ?? "tsx",
-    allowed_imports: payload.allowed_imports ?? [],
-    variable_schema: payload.variable_schema ?? [],
-    layout_config: payload.layout_config ?? {},
-    styling_config: payload.styling_config ?? {},
-    use_latest: payload.use_latest ?? true,
-    ...payload,
-    // A completed app is live on creation. Draft is reserved for the
-    // recoverable, incomplete AI-generation row in auto-create-draft.ts.
-    ...agentAppPublicationPatch(true),
-  };
-
-  const { data, error } = await supabase
-    .schema("app")
-    .from("definition")
-    .insert(insert)
-    .select()
-    .single();
-
-  if (error || !data) {
-    dispatch(agentAppActions.setAppsError(error?.message ?? "Insert failed"));
-    throw error ? pgErrorToError(error) : new Error("Insert failed");
-  }
-
-  const row = data as AgentApp;
-  dispatch(agentAppActions.upsertApp(row));
-  return row.id;
 });
 
 /**
@@ -412,25 +304,77 @@ export const deleteApp = createAsyncThunk<void, string, ThunkApi>(
 );
 
 // ---------------------------------------------------------------------------
-// Composition — shortcuts embedded within an app
-// Stubbed until the composition table lands (Phase 10).
+// The Applet record's content (CONTRACTS §8) — version-guarded writes
 // ---------------------------------------------------------------------------
 
-const COMPOSITION_NOT_IMPLEMENTED =
-  "Embedded-shortcut composition lands in Phase 10; the shared_context_policies column on aga_apps is the persistence target but no UI/RPC exists yet.";
+/** The record columns the editor writes as whole values. */
+export interface AppletRecordPatch {
+  files?: Json;
+  entry?: string | null;
+  pages?: Json;
+  mandates?: Json;
+  sources?: Json;
+}
+type AppletRecordPart = keyof AppletRecordPatch;
 
-export const addEmbeddedShortcut = createAsyncThunk<
-  void,
-  { appId: string; shortcutId: string },
-  ThunkApi
->("agentApp/addEmbeddedShortcut", async () => {
-  throw new Error(COMPOSITION_NOT_IMPLEMENTED);
-});
+type AppletPartRow = { version: number } & AppletRecordPatch;
 
-export const removeEmbeddedShortcut = createAsyncThunk<
-  void,
-  { appId: string; shortcutId: string },
+/**
+ * Write one or more content columns of an Applet, guarded on `version`: a
+ * write based on a version someone else already moved is refused with a
+ * sentence, never applied over their change. A version that moved only for a
+ * column this write does not touch is a phantom and is rebased. The snapshot
+ * trigger records the new version (`app.definition_version`).
+ */
+export const saveAppletRecord = createAsyncThunk<
+  number,
+  { appId: string; patch: AppletRecordPatch },
   ThunkApi
->("agentApp/removeEmbeddedShortcut", async () => {
-  throw new Error(COMPOSITION_NOT_IMPLEMENTED);
+>("agentApp/saveAppletRecord", async ({ appId, patch }, { dispatch, getState }) => {
+  const record = getState().agentApp.apps[appId];
+  if (!record) throw new Error(`Applet ${appId} is not loaded.`);
+  const columns = Object.keys(patch) as AppletRecordPart[];
+  const base = Object.fromEntries(columns.map((c) => [c, record[c] ?? null]));
+  const select = ["version", ...columns].join(", ");
+  const result = await guardedUpdate<AppletPartRow>({
+    expectedVersion: record.version,
+    applyUpdate: ({ expectedVersion, nextVersion }) =>
+      supabase
+        .schema("app")
+        .from("definition")
+        .update({ ...patch, version: nextVersion })
+        .eq("id", appId)
+        .eq("version", expectedVersion)
+        .select(select)
+        .maybeSingle<AppletPartRow>(),
+    fetchCurrent: () =>
+      supabase
+        .schema("app")
+        .from("definition")
+        .select(select)
+        .eq("id", appId)
+        .maybeSingle<AppletPartRow>(),
+    rebase: {
+      isPhantom: (current) =>
+        columns.every(
+          (c) => JSON.stringify(current[c] ?? null) === JSON.stringify(base[c]),
+        ),
+    },
+  });
+  if (result.status === "not_found") {
+    throw new Error("This Applet is gone or you can no longer edit it.");
+  }
+  if (result.status === "conflict") {
+    throw new Error(
+      "Someone else changed this Applet since you opened it. Reload to see their version, then make your change again.",
+    );
+  }
+  dispatch(
+    agentAppActions.mergePartialApp({
+      id: appId,
+      ...patch,
+      version: result.row.version,
+    } as Partial<AgentApp> & { id: string }),
+  );
+  return result.row.version;
 });

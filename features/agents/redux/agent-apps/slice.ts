@@ -34,29 +34,13 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     category: null,
     tags: [],
 
-    agent_id: "",
-    agent_version_id: null,
-    use_latest: true,
-    mandate_id: null,
-
-    app_kind: "single",
-    shared_context_policies: null,
-    search_tsv: null,
-
-    component_code: "",
-    component_language: "tsx",
-    allowed_imports: [],
-
-    variable_schema: [],
-    layout_config: {},
-    styling_config: {},
-
-    shell_kind: "chat",
-    shell_config: {},
-    slot_overrides: {},
-    slot_code: {},
-
     preview_image_url: null,
+    files: {},
+    entry: null,
+    pages: [],
+    mandates: [],
+    sources: [],
+    parent_applet_id: null,
     favicon_url: null,
 
     status: "draft",
@@ -70,7 +54,6 @@ function makeEmptyRecord(id: string): AgentAppRecord {
     rate_limit_authenticated: null,
 
     version: 1,
-    pinned_version: null,
 
     total_executions: 0,
     total_tokens_used: 0,

@@ -8,71 +8,18 @@ import "server-only";
 import { notFound } from "next/navigation";
 import * as z from "zod";
 import { createClient } from "@/utils/supabase/server";
-import type { Database } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import type {
   AgentApp,
   AgentAppRecord,
-  AgentAppShellKind,
   AppStatus,
-  ComponentLanguage,
 } from "@/features/agent-apps/types";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 
-// ---------------------------------------------------------------------------
-// Runtime validation of the `app.definition` row.
-//
-// The generated Row (`Database["app"]["Tables"]["definition"]["Row"]`) types
-// several domain columns as plain `string` because Postgres stores them as
-// text. `AgentAppRecord` (features/agent-apps/types.ts) narrows exactly three
-// of them to literal unions — `component_language` (ComponentLanguage),
-// `shell_kind` (AgentAppShellKind), and `status` (AppStatus). That narrowing
-// is a LIE unless something checks it at read time: a stray DB value would
-// flow in typed-but-wrong. We validate those three fields with Zod here and
-// throw loudly on any out-of-domain value rather than casting or silently
-// defaulting. (`app_kind` is left as `string` in AgentAppRecord — it has no
-// closed domain to validate against — so it is not enumerated here.)
-//
-// Every other column is trusted as generated: Supabase's types are the source
-// of truth for the shapes Postgres actually returns, and the Json-typed
-// columns keep their `Json` interiors un-narrowed per the type-safety doctrine.
+// The generated Row types `status` as plain text; `AgentAppRecord` narrows it.
+// Validated at read time — a stray DB value fails loudly, never a silent default.
 
 type AppDefinitionRow = Database["app"]["Tables"]["definition"]["Row"];
-
-/**
- * `Assert<T>` compiles only when `T` is exactly `true`; feeding it `false`
- * violates the `extends true` constraint and is a hard compile error. This is
- * the mechanism that turns the drift checks below into build breaks.
- */
-type Assert<T extends true> = T;
-/** True iff every member of `TUnion` appears in the tuple `TTuple`. */
-type TupleCoversUnion<
-  TUnion extends string,
-  TTuple extends readonly string[],
-> = [TUnion] extends [TTuple[number]] ? true : false;
-
-const COMPONENT_LANGUAGES = [
-  "tsx",
-  "jsx",
-  "typescript",
-  "javascript",
-  "html",
-  "react",
-] as const satisfies readonly ComponentLanguage[];
-
-const SHELL_KINDS = [
-  "chat",
-  "form_to_result",
-  "widget",
-  "compact_modal",
-  "full_modal",
-  "sidebar_overlay",
-  "floating_bubble",
-  "inline_overlay",
-  "panel_overlay",
-  "toast_overlay",
-  "card_stack",
-  "fully_custom",
-] as const satisfies readonly AgentAppShellKind[];
 
 const APP_STATUSES = [
   "draft",
@@ -81,33 +28,7 @@ const APP_STATUSES = [
   "suspended",
 ] as const satisfies readonly AppStatus[];
 
-// Bidirectional closure check: the `satisfies` above proves every tuple member
-// is a valid union member (no extras); these `Assert`s prove every union member
-// is in the tuple (no omissions). Together they force EXACT equality — add or
-// remove a value on either the TS union or the tuple without matching the other
-// and this file fails to compile, so the Zod enums can never silently disagree
-// with `AgentAppRecord`. (Unused type aliases don't trip noUnusedLocals — that
-// rule targets values — so these stay purely as compile-time guards.)
-type _AssertComponentLanguages = Assert<
-  TupleCoversUnion<ComponentLanguage, typeof COMPONENT_LANGUAGES>
->;
-type _AssertShellKinds = Assert<
-  TupleCoversUnion<AgentAppShellKind, typeof SHELL_KINDS>
->;
-type _AssertAppStatuses = Assert<
-  TupleCoversUnion<AppStatus, typeof APP_STATUSES>
->;
-
-/**
- * Validates the three narrowed domain columns of an `app.definition` row and
- * normalizes `tags` (DB `string[] | null` → `string[]`). Everything else is
- * carried through from the already-typed row. `.parse()` throws a
- * `ZodError` naming the offending field + value on any out-of-domain value —
- * a loud failure, never a silent default.
- */
 const narrowedColumnsSchema = z.object({
-  component_language: z.enum(COMPONENT_LANGUAGES),
-  shell_kind: z.enum(SHELL_KINDS),
   status: z.enum(APP_STATUSES),
   tags: z
     .array(z.string())
@@ -115,11 +36,6 @@ const narrowedColumnsSchema = z.object({
     .transform((t) => t ?? []),
 });
 
-/**
- * Parse a raw `app.definition` row into a fully-typed `AgentAppRecord` with no
- * `as unknown as` and no `any`. Throws loudly (with the app id in context) if
- * a domain column holds a value outside its literal union.
- */
 function parseAgentAppRow(row: AppDefinitionRow): AgentAppRecord {
   const parsed = narrowedColumnsSchema.safeParse(row);
   if (!parsed.success) {
@@ -127,14 +43,9 @@ function parseAgentAppRow(row: AppDefinitionRow): AgentAppRecord {
       .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
       .join("; ");
     throw new Error(
-      `[getAgentApp] app.definition row ${row.id} failed domain validation ` +
-        `(component_language/shell_kind/status). This is a data-integrity ` +
-        `defect — the DB holds a value outside the app's known domain: ${detail}`,
+      `[getAgentApp] app.definition row ${row.id} failed domain validation: ${detail}`,
     );
   }
-  // The generated Row supplies every non-narrowed field with its correct type;
-  // `parsed.data` supplies the three validated literal-union fields + non-null
-  // tags. Merging yields an AgentAppRecord with zero assertions.
   return { ...row, ...parsed.data };
 }
 
@@ -145,10 +56,12 @@ export interface AgentAppVersionRow {
   changed_at: string;
   change_note: string | null;
   name: string | null;
-  agent_id: string | null;
-  agent_version_id: string | null;
   status: string | null;
-  pinned_version: number | null;
+  files: Json;
+  entry: string | null;
+  pages: Json;
+  mandates: Json;
+  sources: Json;
 }
 
 /** Fetch by id-or-slug; calls notFound() if RLS hides it or no row exists. */
@@ -166,33 +79,7 @@ export async function getAgentApp(idOrSlug: string): Promise<AgentApp> {
   if (result.error || !result.data) {
     notFound();
   }
-  // `definition`'s generated Row types several domain columns as plain
-  // `string`; `AgentAppRecord` narrows them to literal unions. `parseAgentAppRow`
-  // validates those literals at read time (throwing loudly on a bad DB value)
-  // so we hand back a genuinely-typed record with no `as unknown as`.
-  const app = parseAgentAppRow(result.data);
-
-  // 🚨 `app.definition` stores the JOB by id; `useAppHolder` resolves it by
-  // KEY. This is the row every `/agent-apps/[id]/**` route hydrates Redux
-  // from, so without the key the signed-in cutover branch reads a fully
-  // migrated app as "does not name a mandate yet", returns `agentId: null`,
-  // and the renderer refuses before spend. Resolved by IDENTITY — never
-  // derived from the slug.
-  if (!app.mandate_id) return app;
-  const mandate = await supabase
-    .schema("mandate")
-    .from("definition")
-    .select("mandate_key")
-    .eq("id", app.mandate_id)
-    .maybeSingle();
-  if (mandate.error) {
-    console.error(
-      `[agent-apps] could not read mandate ${app.mandate_id} for app ${app.id}; ` +
-        `this app will refuse to run for signed-in callers: ${mandate.error.message}`,
-    );
-    return app;
-  }
-  return { ...app, mandate_key: mandate.data?.mandate_key ?? null };
+  return parseAgentAppRow(result.data);
 }
 
 /** Fetch all version snapshots for an app, newest first. RLS scopes by app. */
@@ -204,7 +91,7 @@ export async function getAgentAppVersions(
     .schema("app")
     .from("definition_version")
     .select(
-      "id, app_id, version_number, changed_at, change_note, name, agent_id, agent_version_id, status, pinned_version",
+      "id, app_id, version_number, changed_at, change_note, name, status, files, entry, pages, mandates, sources",
     )
     .eq("app_id", appId)
     .is("deleted_at", null)
@@ -213,26 +100,12 @@ export async function getAgentAppVersions(
   return result.data ?? [];
 }
 
-export interface AgentAppVersionDetail {
-  id: string;
-  app_id: string;
-  version_number: number;
-  changed_at: string;
-  change_note: string | null;
-  name: string | null;
+export interface AgentAppVersionDetail extends AgentAppVersionRow {
   tagline: string | null;
   description: string | null;
   category: string | null;
   tags: string[] | null;
-  status: string | null;
-  agent_id: string | null;
-  agent_version_id: string | null;
-  pinned_version: number | null;
-  component_code: string | null;
-  component_language: string | null;
-  layout_config: unknown;
-  styling_config: unknown;
-  variable_schema: unknown;
+  parent_applet_id: string | null;
 }
 
 /**
@@ -248,7 +121,7 @@ export async function getAgentAppVersion(
     .schema("app")
     .from("definition_version")
     .select(
-      "id, app_id, version_number, changed_at, change_note, name, tagline, description, category, tags, status, agent_id, agent_version_id, pinned_version, component_code, component_language, layout_config, styling_config, variable_schema",
+      "id, app_id, version_number, changed_at, change_note, name, tagline, description, category, tags, status, files, entry, pages, mandates, sources, parent_applet_id",
     )
     .eq("app_id", appId)
     .eq("version_number", versionNumber)

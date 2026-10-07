@@ -33,7 +33,6 @@ export type AgentAppSortOption =
   | "name-asc"
   | "name-desc"
   | "category-asc"
-  | "agent-asc"
   | "executions-desc"
   | "last-run-desc";
 
@@ -61,13 +60,6 @@ export interface AgentAppConsumerState {
   /** INCLUSION model: empty = show all; non-empty = only matching. */
   includedTags: string[];
 
-  /**
-   * INCLUSION model on agent_id: empty = show all; non-empty = only apps
-   * powered by one of these agents. Resolved against the live agents slice
-   * at selection time so the filter UI can show agent names without
-   * duplicating data here.
-   */
-  includedAgents: string[];
 
   archFilter: AgentAppArchFilter;
   visibilityFilter: AgentAppVisibilityFilter;
@@ -82,7 +74,6 @@ export const DEFAULT_AGENT_APP_CONSUMER_STATE: AgentAppConsumerState = {
   searchTerm: "",
   includedCats: [],
   includedTags: [],
-  includedAgents: [],
   archFilter: "active",
   visibilityFilter: "all",
   listPage: 1,

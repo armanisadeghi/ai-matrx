@@ -54,6 +54,7 @@ export function AppletIntroPage({ applet, related }: { applet: AppletIntro; rela
               <Suspense fallback={null}>
                 <AppletUseTemplate
                   appletId={applet.id}
+                  appletName={applet.name}
                   templateId={applet.template.template_id}
                   signUpHref={signUpHref(`${path}?${USE_ON_RETURN}=1`)}
                 />

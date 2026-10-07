@@ -1,5 +1,6 @@
 "use client";
 
+import AppLink from "@/components/navigation/AppLink";
 import React, { useCallback, useEffect, useState, useTransition } from "react";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -21,8 +22,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
-import { AgentAppsGrid } from "@/features/agent-apps/components/layouts/AgentAppsGrid";
-import type { AgentApp } from "@/features/agent-apps/types";
 import {
   fetchAgentAppCategories,
   fetchAgentAppsAdmin,
@@ -399,12 +398,8 @@ export default function AgentAppsAdminDashboardPage() {
                 </CardContent>
               </Card>
             ) : (
-              <AgentAppsGrid
-                // fetchAgentAppsAdmin() selects("*") from app.definition, so
-                // AgentAppAdminView rows carry every AgentApp field at
-                // runtime even though the hand-narrowed view type omits
-                // component_code/variable_schema/etc.
-                apps={featuredApps as unknown as AgentApp[]}
+              <AdminAppletGrid
+                apps={featuredApps}
                 hrefFor={getAppHref}
                 emptyLabel="No featured apps."
               />
@@ -490,8 +485,8 @@ export default function AgentAppsAdminDashboardPage() {
                 onRetry={() => void load()}
               />
             ) : (
-              <AgentAppsGrid
-                apps={recentlyUpdated as unknown as AgentApp[]}
+              <AdminAppletGrid
+                apps={recentlyUpdated}
                 hrefFor={getAppHref}
                 emptyLabel="No agent apps yet."
               />
@@ -503,5 +498,38 @@ export default function AgentAppsAdminDashboardPage() {
       </div>
     </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+/** A compact grid of Applets for this console: name, tagline, runs; each opens its admin page. */
+function AdminAppletGrid({
+  apps,
+  hrefFor,
+  emptyLabel,
+}: {
+  apps: AgentAppAdminView[];
+  hrefFor: (app: AgentAppAdminView) => string;
+  emptyLabel: string;
+}) {
+  if (apps.length === 0) {
+    return <div className="py-10 text-center text-sm text-muted-foreground">{emptyLabel}</div>;
+  }
+  return (
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      {apps.map((app) => (
+        <AppLink
+          key={app.id}
+          href={hrefFor(app)}
+          className="flex h-full flex-col gap-1 rounded-lg border border-border bg-card p-4 hover:border-primary/40"
+        >
+          <span className="truncate text-sm font-semibold text-foreground">{app.name}</span>
+          {app.tagline && <span className="truncate text-xs text-muted-foreground">{app.tagline}</span>}
+          <span className="mt-auto pt-2 text-xs text-muted-foreground">
+            {app.total_executions ?? 0} runs
+            {app.job_keys.length > 0 ? ` · ${app.job_keys.length} job${app.job_keys.length === 1 ? "" : "s"}` : ""}
+          </span>
+        </AppLink>
+      ))}
+    </div>
   );
 }

@@ -4,7 +4,7 @@
  * AgentAppCard
  *
  * Card view for a single agent-app row, used by the main /agent-apps list and
- * its scoped variants. Receives a pre-joined card model (apps × agents) from
+ * its scoped variants. Receives a card model from
  * the parent's `makeSelectAppCards` selector so the same model is computed
  * once per render rather than re-resolved per card.
  *
@@ -158,22 +158,11 @@ export function AgentAppCard({
             {app.tagline}
           </p>
         )}
-        {/* The app names the agent it runs — a record with an id, so it gets
-            its own door instead of being an unreachable string. */}
-        <div className="mt-auto pt-2 flex items-center gap-2 text-xs text-muted-foreground min-w-0">
-          <span className="opacity-70 shrink-0">Agent:</span>
-          {app.agent_id ? (
-            <EntityRef
-              token="agent"
-              id={app.agent_id}
-              name={app.agent_name}
-              showIcon={false}
-              className="text-foreground font-medium"
-            />
-          ) : (
-            <span className="text-foreground font-medium">—</span>
-          )}
-        </div>
+        {app.job_keys.length > 0 && (
+          <div className="mt-auto pt-2 truncate text-xs text-muted-foreground" title={app.job_keys.join(", ")}>
+            {app.job_keys.length === 1 ? "1 job" : `${app.job_keys.length} jobs`}
+          </div>
+        )}
         <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
           <span title="Total executions">
             {formatNumber(app.total_executions)} runs

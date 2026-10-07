@@ -17,7 +17,6 @@ export default async function AgentAppSettingsPage({
       <AgentAppHeader
         appId={app.id}
         appName={app.name}
-        agentId={app.agent_id}
         initialStatus={app.status}
         initialPublishedToWeb={app.published_to_web}
         active="settings"
