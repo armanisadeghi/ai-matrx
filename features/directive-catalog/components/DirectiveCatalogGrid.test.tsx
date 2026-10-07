@@ -19,6 +19,8 @@ import type {
 let tableProps: MatrxDataTableProps<NounDirectives> | null = null;
 
 jest.mock("@ai-matrx/design-system/data-table", () => ({
+  // records-ui reads COLOR_RULE_OPS at import time: keep every real export, stub only the table.
+  ...jest.requireActual("@ai-matrx/design-system/data-table"),
   MatrxDataTable: (props: MatrxDataTableProps<NounDirectives>) => {
     tableProps = props;
     return <div>{props.toolbar?.leading}</div>;
