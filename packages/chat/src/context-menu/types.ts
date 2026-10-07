@@ -21,6 +21,7 @@ import type { SourceFeature } from "@ai-matrx/chat/agents/types/instance.types";
 import type { Scope } from "@ai-matrx/chat/agents/redux/shared/scope";
 import type { ApplicationScope } from "@ai-matrx/chat/agents/types/scope.types";
 import type { EntityTypeToken } from "@ai-matrx/associations";
+import type { ResolvedItem } from "@ai-matrx/alchemy/declare";
 
 /**
  * The few shapes the host owns (the rich document's content source and actions, the sharing
@@ -526,6 +527,12 @@ export interface MenuContentProps {
   variant: MenuVariant;
   /** The clicked target's own name for the header (`CONTEXT_MENU_HEADING_KEY`). */
   heading?: ContextMenuHeading | null;
+  /**
+   * The declared item the menu opened on (a table row: `table_row`, identity `table_id` + `row_id`),
+   * raw-free, as `itemSources` resolved it. It becomes the click target's `item`, so Actions and
+   * menu rows read the declared item instead of re-deriving it. Null = not on an item.
+   */
+  item?: ResolvedItem | null;
 
   // identity + value sources
   sourceFeature: SourceFeature;

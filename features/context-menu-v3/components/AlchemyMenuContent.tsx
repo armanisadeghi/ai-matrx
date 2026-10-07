@@ -104,6 +104,8 @@ export default function AlchemyMenuContent(props: AlchemyMenuContentProps): Reac
     (Boolean(m.richDocCtx.sourceAdapter.edit) || Boolean(menuProps.isEditable));
   const makeTarget = (withRich: boolean) =>
     createClickTarget({
+      // The declared item under the pointer (a table row), as itemSources resolved it.
+      item: menuProps.item ?? null,
       readOnly: hasRichDocument ? !sourceWritable : !menuProps.isEditable,
       writable: sourceWritable ? [SOURCE_WRITE_TARGET] : [],
       // The strip's Copy IS the registry's one-tap copy here — one row, not two.
