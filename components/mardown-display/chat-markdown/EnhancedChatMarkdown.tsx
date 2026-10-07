@@ -35,7 +35,7 @@ function MaybeSourceEdit({ source, save, children }: { source: string; save?: (n
     </OptionalMarkdownSourceEditProvider>
   );
 }
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { ShimmerText } from "@/components/loaders/ShimmerText";
 import {
   RunJobWorkingLine,
@@ -1653,7 +1653,7 @@ export const EnhancedChatMarkdownInternal: React.FC<
                 console.error("[MarkdownStream] CopyButton error:", error)
               }
             >
-              <CopyButtons
+              <RichCopySplit
                 label="Content"
                 human={currentContent}
                 contentFlavor="markdown"

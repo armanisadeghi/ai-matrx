@@ -24,7 +24,7 @@
  * sends each key to the note being worked in.
  */
 
-import { useEffect, type KeyboardEvent } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { TapTargetButtonGroup } from "@ai-matrx/tap-target";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
@@ -45,6 +45,9 @@ import { handleNoteShortcut } from "../utils/noteShortcuts";
 import { NoteContentEditor } from "./NoteContentEditor";
 import { NoteMetadataBar } from "./NoteMetadataBar";
 import { NoteModeSwitch } from "./NoteModeSwitch";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
+import { useNoteEditorMode } from "../hooks/usePreferredDefaultEditorMode";
 import { NotePresenceBanner } from "./NotePresenceBanner";
 import { NoteRecordTools } from "./NoteRecordTools";
 import { NoteStatsFooter } from "./NoteStatsFooter";
@@ -59,6 +62,8 @@ export interface NoteWorkspaceProps {
 
 export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspaceProps) {
   const dispatch = useAppDispatch();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const editorMode = useNoteEditorMode(noteId);
 
   // The instance holds this note as its only, active tab — what the editor,
   // find/replace, outline and presence read.
@@ -102,6 +107,7 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
   return (
     <NotesInstanceProvider value={instanceId}>
       <div
+        ref={rootRef}
         className={cn("@container flex h-full min-h-0 w-full min-w-0 flex-col bg-card", className)}
         onKeyDown={onKeyDown}
       >
@@ -111,6 +117,9 @@ export function NoteWorkspace({ instanceId, noteId, className }: NoteWorkspacePr
               so the capsule can not overlap the outline / versions group. */}
           <div className="flex min-w-0 flex-1 items-center justify-start overflow-x-auto [scrollbar-width:none] @[18rem]:justify-center [&::-webkit-scrollbar]:hidden">
             <NoteModeSwitch noteId={noteId} labels="container" />
+            {(editorMode === "plain" || editorMode === "split") && (
+              <FormatButtons size="xs" className="ml-1" resolve={() => formatTargetWithin(rootRef.current)} />
+            )}
           </div>
           <TapTargetButtonGroup surface="solid">
             <NoteRecordTools

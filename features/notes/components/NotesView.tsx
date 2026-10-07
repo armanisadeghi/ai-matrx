@@ -106,6 +106,8 @@ import { NoteTabBar } from "./NoteTabBar";
 import { NoteSidebar } from "./NoteSidebar";
 import { FolderQuickPick } from "./FolderQuickPick";
 import { cn } from "@/lib/utils";
+import { FormatButtons } from "@ai-matrx/rich-editor/format/FormatButtons";
+import { formatTargetWithin } from "@ai-matrx/rich-editor/format/format-target";
 import { useRecordTitle } from "@/lib/record-title/record-title";
 import {
   NAV_ITEM_SELECTED,
@@ -754,6 +756,14 @@ export function NotesView({
               </button>
             ))}
           </div>
+        )}
+        {/* Plain and Split are plain text: their format buttons sit in THIS row,
+            acting on the note's text field (the one command layer). */}
+        {headerNoteId && !narrowShowsList && (editorMode === "plain" || editorMode === "split") && (
+          <FormatButtons
+            className="ml-2 hidden md:flex"
+            resolve={() => formatTargetWithin(typeof document === "undefined" ? null : document.getElementById("notes-main"))}
+          />
         )}
       </div>
 

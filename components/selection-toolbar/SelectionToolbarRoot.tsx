@@ -386,7 +386,8 @@ export function SelectionToolbarRoot(): React.ReactElement | null {
   }, []);
   const coarse = typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(pointer: coarse)").matches;
   // Button: 28px (44px touch floor on coarse pointers) + 2px gap; frame: 8px gutters, 2px padding + border.
-  const slots = isMobile ? Math.max(3, Math.floor((viewportWidth - 16 - 6) / ((coarse ? 44 : 28) + 2))) : null;
+  // The split Copy (copy + chevron) leads the bar outside the strip: two buttons fewer for the strip.
+  const slots = isMobile ? Math.max(3, Math.floor((viewportWidth - 16 - 6) / ((coarse ? 44 : 28) + 2)) - 2) : null;
 
   // ONE target per selection (a new object only when the selection changes),
   // so the engine resolves once per selection, not per render.

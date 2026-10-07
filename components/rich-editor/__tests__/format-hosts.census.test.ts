@@ -156,7 +156,8 @@ describe("plain-text hosts SHOW the format buttons", () => {
   test("render: a wired textarea's container shows the six buttons and Bold formats its selection", () => {
     /* eslint-disable @typescript-eslint/no-require-imports -- jsdom render inside a node-path census */
     const React = require("react") as typeof import("react");
-    const { render, fireEvent } = require("@testing-library/react") as typeof import("@testing-library/react");
+    const { act } = require("react") as typeof import("react");
+    const { createRoot } = require("react-dom/client") as typeof import("react-dom/client");
     const { FormatButtons } = require("@ai-matrx/rich-editor/format/FormatButtons") as typeof import("@ai-matrx/rich-editor/format/FormatButtons");
     const { formatTargetWithin } = require("@ai-matrx/rich-editor/format/format-target") as typeof import("@ai-matrx/rich-editor/format/format-target");
     const { useTextareaFormatting } = require("@ai-matrx/rich-editor/format/useTextareaFormatting") as typeof import("@ai-matrx/rich-editor/format/useTextareaFormatting");
@@ -172,13 +173,19 @@ describe("plain-text hosts SHOW the format buttons", () => {
         React.createElement("textarea", { ref: setField, defaultValue: "make this bold" }),
       );
     }
-    const { container } = render(React.createElement(Host));
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => root.render(React.createElement(Host)));
     const buttons = Array.from(container.querySelectorAll("[data-format-buttons] button"));
     expect(buttons.map((b) => b.getAttribute("aria-label"))).toEqual(["Bold (⌘B)", "Italic (⌘I)", "Inline code (⌘E)", "Link (⌘K)", "Heading", "Bulleted list (⌘⇧8)"]);
     const textarea = container.querySelector("textarea")!;
     textarea.focus();
     textarea.setSelectionRange(10, 14);
-    fireEvent.click(container.querySelector('[data-format-command="bold"]')!);
+    act(() => (container.querySelector('[data-format-command="bold"]') as HTMLButtonElement).click());
     expect(textarea.value).toBe("make this **bold**");
+    act(() => root.unmount());
+    container.remove();
   });
 });

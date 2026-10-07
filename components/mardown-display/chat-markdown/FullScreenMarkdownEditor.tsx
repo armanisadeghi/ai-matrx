@@ -16,7 +16,7 @@ import React, {
 } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { useThemeMode } from "@/styles/themes/useThemeMode";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import FullScreenOverlay, {
   TabDefinition,
 } from "@/components/official/FullScreenOverlay";
@@ -1539,7 +1539,7 @@ const FullScreenMarkdownEditor: React.FC<FullScreenMarkdownEditorProps> = ({
         />
       )}
       {showCopyButton && (
-        <CopyButtons
+        <RichCopySplit
           label="Content"
           human={editedContent}
           contentFlavor="markdown"
