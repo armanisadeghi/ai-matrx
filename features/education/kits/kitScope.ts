@@ -24,7 +24,8 @@
 
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { scopeStore } from "@/features/scopes/service/scopeStore";
-import { readScopeTypes, readScopesById } from "@/features/scopes/service/storeScopeReads";
+import { readScopeTypes, readScopesById, readTypeScopesPage } from "@/features/scopes/service/storeScopeReads";
+import { organizationsIAmIn } from "@/features/organizations/organizationsIAmIn";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import { peekHref } from "@/features/organizations/peek/peekHref";
 import { keepSource } from "@/features/sources/api/sourcesApi";
@@ -115,6 +116,27 @@ export async function createKitScope(orgId: string, name: string): Promise<KitSc
   });
   if (isScopesRpcErr(made)) throw new Error("Could not create the study kit. Try again.");
   return { id: made.data.id, name: clean, organizationId: orgId };
+}
+
+/** EVERY kit scope the person is in, across all their organizations (aids or not). */
+export async function listKitScopes(): Promise<KitScopeRow[]> {
+  const orgs = await organizationsIAmIn();
+  if (!orgs || orgs.size === 0) return [];
+  const types = await readScopeTypes([...orgs], false);
+  if (!types.ok) throw new Error("Could not read your study kits. Try again.");
+  const kitTypes = types.data.types.filter((t) => t.slug === KIT_SCOPE_TYPE_SLUG);
+  const rows: KitScopeRow[] = [];
+  for (const type of kitTypes) {
+    for (let offset: number | null = 0; offset !== null; ) {
+      const page = await readTypeScopesPage(type.id, offset);
+      if (!page.ok) throw new Error("Could not read your study kits. Try again.");
+      for (const s of page.data.scopes) {
+        rows.push({ id: s.id, name: s.name?.trim() || "Study kit", organizationId: s.organization_id });
+      }
+      offset = page.data.nextOffset;
+    }
+  }
+  return rows;
 }
 
 export async function readKitScope(kitId: string): Promise<KitScopeRow | null> {

@@ -10,18 +10,25 @@ const mockAdd = jest.fn();
 const mockListForEntity = jest.fn();
 const mockReadScopesById = jest.fn();
 const mockFetchEducationLibraryPage = jest.fn();
+const mockListForSources = jest.fn();
+const mockReadScopeTypes = jest.fn();
+const mockReadTypeScopesPage = jest.fn();
 
 jest.mock("@/features/scopes/service/associationsService", () => ({
   associationsService: {
     add: (...args: unknown[]) => mockAdd(...args),
     listForEntity: (...args: unknown[]) => mockListForEntity(...args),
-    listForSources: jest.fn(),
+    listForSources: (...args: unknown[]) => mockListForSources(...args),
     remove: jest.fn(),
   },
 }));
 jest.mock("@/features/scopes/service/storeScopeReads", () => ({
   readScopesById: (...args: unknown[]) => mockReadScopesById(...args),
-  readScopeTypes: jest.fn(),
+  readScopeTypes: (...args: unknown[]) => mockReadScopeTypes(...args),
+  readTypeScopesPage: (...args: unknown[]) => mockReadTypeScopesPage(...args),
+}));
+jest.mock("@/features/organizations/organizationsIAmIn", () => ({
+  organizationsIAmIn: async () => new Set(["org-1"]),
 }));
 jest.mock("@/features/scopes/service/scopeStore", () => ({ scopeStore: {} }));
 jest.mock("@/features/sources/api/sourcesApi", () => ({ keepSource: jest.fn() }));
@@ -35,7 +42,7 @@ jest.mock("@/features/education/media/service", () => ({
 import { recordSourceLineage } from "@/features/education/convert/recordSourceLineage";
 import { kitSourceRefs } from "@/features/education/onboard/kitSources";
 import { buildSourceTrust } from "@/features/education/convert/sourceTrust";
-import { readKit } from "../kitService";
+import { listKits, readKit } from "../kitService";
 import type { ResolvedSourceSet } from "@ai-matrx/agents/sources";
 
 const KIT = "11111111-1111-4111-8111-111111111111";
@@ -103,6 +110,20 @@ describe("multi-source study kits", () => {
     expect(kit?.title).toBe("Cell biology");
     expect(kit?.sources.map((s) => s.id)).toEqual(["pd-wiki", "f-pdf"]);
     expect(kit?.artifacts.map((a) => a.artifactId)).toEqual(["deck-1"]);
+  });
+
+  it("lists a kit that has Sources and no aids yet", async () => {
+    mockListForSources.mockResolvedValue({ ok: true, data: { edges: [] } });
+    mockReadScopeTypes.mockResolvedValue({ ok: true, data: { types: [{ id: "t-1", slug: "study-kit" }, { id: "t-2", slug: "class" }], counts: null } });
+    mockReadTypeScopesPage.mockResolvedValue({ ok: true, data: { scopes: [{ id: KIT, name: "Cell biology", organization_id: "org-1" }], total: 1, nextOffset: null } });
+    mockListForEntity.mockResolvedValue({
+      ok: true,
+      data: { edges: [edge({ otherType: "file", otherId: "f-pdf", metadata: { kitSource: true, title: "Chapter 3.pdf" }, createdAt: "2026-10-07T00:00:02Z" })] },
+    });
+    const kits = await listKits();
+    expect(mockReadTypeScopesPage).toHaveBeenCalledTimes(1);
+    expect(kits.map((k) => [k.sourceType, k.sourceId, k.title, k.artifacts.length])).toEqual([["scope", KIT, "Cell biology", 0]]);
+    expect(kits[0].createdAt).toBe("2026-10-07T00:00:02Z");
   });
 
   it("an anchor whose edges were handed to a kit opens that kit", async () => {
