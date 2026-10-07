@@ -297,10 +297,6 @@ export default function AssistsDock() {
         dragging && "select-none",
       )}
       style={style}
-      // Floating chrome: page scroll owners reserve its height (lib/layout/floating-chrome.ts).
-      data-matrx-floating-bottom=""
-      // It rests above a list's pager (--page-bottom-dock-h): a page-end surface must not pad for it.
-      data-matrx-floating-follows-page=""
     >
       {open && (
         <div className="pointer-events-auto flex max-h-[50dvh] w-72 flex-col gap-1.5 overflow-y-auto rounded-lg border border-border bg-background/95 p-2 shadow-lg backdrop-blur">
@@ -321,8 +317,13 @@ export default function AssistsDock() {
           </Link>
         </div>
       )}
+      {/* Floating chrome is the PILL only (lib/layout/floating-chrome.ts): the open panel is a
+          transient overlay — measuring it grew every page's runway by up to 50dvh when it opened.
+          It rests above a list's pager (--page-bottom-dock-h): a page-end surface must not pad for it. */}
       <div
         data-assists-dock=""
+        data-matrx-floating-bottom=""
+        data-matrx-floating-follows-page=""
         className={cn(
           "pointer-events-auto group flex items-center gap-0.5 rounded-full border border-primary/30 bg-card pl-1 pr-1 shadow-md transition-opacity data-[assist-dock-yield]:pointer-events-none data-[assist-dock-yield]:opacity-30",
           dragging && "ring-1 ring-primary/40",

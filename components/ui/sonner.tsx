@@ -257,18 +257,18 @@ const Toaster = ({ ...props }: ToasterProps) => {
       // (--app-right-inset, styles/shell.css). 24px is sonner's own gap.
       // Bottom: a toast rests ABOVE whatever floats over the viewport's foot
       // (the mobile dock, the composer dock, the dev error pills) — the shell's
-      // `--matrx-toast-clearance` (lib/layout/floating-chrome.ts), never a
+      // `--matrx-floating-clearance` (lib/layout/floating-chrome.ts), never a
       // literal that lands on top of them. Sonner's own 24px is the floor.
-      // A toast is floating chrome itself: while one shows, the page's runway
-      // (--matrx-floating-clearance) grows by it, so nothing stays under it.
+      // A toast is a transient overlay, never floating chrome: it floats OVER
+      // the page and never moves it (TRANSIENT_OVERLAY_SELECTOR).
       offset={{
         right: "calc(24px + var(--app-right-inset, 0px))",
-        bottom: "max(24px, var(--matrx-toast-clearance))",
+        bottom: "max(24px, var(--matrx-floating-clearance))",
       }}
       mobileOffset={{
         left: "16px",
         right: "16px",
-        bottom: "max(16px, var(--matrx-toast-clearance))",
+        bottom: "max(16px, var(--matrx-floating-clearance))",
         top: "calc(12px + env(safe-area-inset-top, 0px))",
       }}
       toastOptions={{

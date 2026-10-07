@@ -14,9 +14,7 @@
 
 import { useEffect } from "react";
 import {
-  FLOATING_BELOW_TOASTS_VAR,
   FLOATING_BOTTOM_SELECTOR,
-  FLOATING_TOAST_SELECTOR,
   FLOATING_FIXED_MEASURED_VAR,
   FLOATING_FOLLOWS_PAGE_ATTR,
   FLOATING_MEASURED_VAR,
@@ -40,7 +38,6 @@ export default function FloatingClearanceSync() {
     let timer: ReturnType<typeof setTimeout> | null = null;
     let lastPublished = -1;
     let lastFixed = -1;
-    let lastBelowToasts = -1;
     const observed = new Set<Element>();
     const resizeObserver = new ResizeObserver(() => schedule());
 
@@ -59,14 +56,6 @@ export default function FloatingClearanceSync() {
       if (fixed !== lastFixed) {
         lastFixed = fixed;
         root.style.setProperty(FLOATING_FIXED_MEASURED_VAR, `${fixed}px`);
-      }
-      const belowToasts = measureFloatingClearance(
-        boxes.filter((box) => !box.element.matches(FLOATING_TOAST_SELECTOR)),
-        window.innerHeight,
-      );
-      if (belowToasts !== lastBelowToasts) {
-        lastBelowToasts = belowToasts;
-        root.style.setProperty(FLOATING_BELOW_TOASTS_VAR, `${belowToasts}px`);
       }
       // Observe exactly the chrome present now.
       const present = new Set(document.querySelectorAll(FLOATING_BOTTOM_SELECTOR));
