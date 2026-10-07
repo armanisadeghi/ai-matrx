@@ -65,3 +65,65 @@ export function parseReviewWalkUrlId(id: string | null | undefined): WalkUnitRef
   if (/[,:]/.test(unitId)) return null;
   return { unitKind, unitId };
 }
+
+/**
+ * The walk's LABELS ride the address too (FX-D2), so a reload keeps the title.
+ * The `?panels=` URL hydrator runs on mount, before the local window workspace
+ * has been read, and an open walk is never overwritten by that later read — so
+ * whatever the address does not carry is lost on reload. Keys are one letter
+ * (the `?panels=` arg grammar is `k-v_k-v`); values are free text, so they are
+ * percent-encoded with `_` escaped too (`_` separates args; a `-` inside a
+ * value is safe because the parser splits each pair on its FIRST hyphen).
+ * A link without these args still opens (agent-name / unit-kind fallback).
+ */
+export interface WalkLabels {
+  agentId?: string | null;
+  agentName?: string | null;
+  roleLabel?: string | null;
+  detailLabel?: string | null;
+}
+
+const LABEL_ARG = {
+  agentId: "a",
+  agentName: "n",
+  roleLabel: "r",
+  detailLabel: "d",
+} as const satisfies Record<keyof WalkLabels, string>;
+
+/** Labels longer than this never reach the address (a title is ≤ 40 chars). */
+const LABEL_ARG_MAX = 80;
+
+function encodeArg(value: string): string {
+  return encodeURIComponent(value.slice(0, LABEL_ARG_MAX)).replace(/_/g, "%5F");
+}
+
+function decodeArg(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    const decoded = decodeURIComponent(value).trim();
+    return decoded ? decoded.slice(0, LABEL_ARG_MAX) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The `?panels=` args for a walk's labels; absent labels write nothing. */
+export function reviewWalkUrlArgs(labels: WalkLabels): Record<string, string> | undefined {
+  const out: Record<string, string> = {};
+  for (const key of Object.keys(LABEL_ARG) as (keyof WalkLabels)[]) {
+    const value = labels[key]?.trim();
+    if (value) out[LABEL_ARG[key]] = encodeArg(value);
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
+}
+
+/** Read the labels back from a `review_walk` token's args. */
+export function reviewWalkLabelsFromUrlArgs(args: Record<string, string> | undefined): WalkLabels {
+  const out: WalkLabels = {};
+  if (!args) return out;
+  for (const key of Object.keys(LABEL_ARG) as (keyof WalkLabels)[]) {
+    const value = decodeArg(args[LABEL_ARG[key]]);
+    if (value) out[key] = value;
+  }
+  return out;
+}

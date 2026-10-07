@@ -1,6 +1,6 @@
 # Spaces — Notion-style pages (FEATURE)
 
-**Status:** building (2026-10-05). Route `/spaces` (not in any menu until the switch-over).
+**Status:** building (2026-10-05). Route `/spaces` — first row of the main menu's Content group (round 32, members only).
 Product truth: `../common-docs/systems/content/spaces/` — `VISION.md` (Arman's words), `PARITY.md`
 (the checklist: builder's to-do, reviewer's scorecard), `STATE.md`.
 
@@ -45,6 +45,20 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 32: (0) block format: `synced` { sourceId }, `button` { label, icon?, actions }, span mark
+  `suggestion` { id, kind, by, at }; live `content.space_snapshot_schema` regenerated (check OK); fence guard opens
+  lib/spaces-blocks to `spaces:` commits by owner brief. (1) Form view for non-editors re-walked live
+  (`form-answer.walk.mjs` all checks pass). (2) C18 synced blocks (`editor/synced-block.tsx`, `SyncedBody.tsx`,
+  `state/synced-sources.ts`): the content is ONE source Space (a sub-page of the page it was made on, hidden from the
+  tree by the `synced_source` association); every copy holds the same `sourceId` and edits it in place (version-guarded
+  saves, re-read on others' saves); "Copy and sync" + paste makes a linked copy; `synced_block` edges per page give
+  "Editing in N pages"; Unsync turns a copy into plain blocks. (3) C19 Button (`editor/button-block.tsx`): insert blocks,
+  add a page / edit pages in a database (records client), open a page or link, send a notification
+  (`content.space_button_notify`, new door), run an agent (`launchAgentExecution`). (4) Person @mentions in the page body
+  already notify through the `space_payload` trigger (`content._space_mention_notify`, once per page per person, deep link
+  to the block) — a duplicate client door was not kept. (5) Spaces in the main menu (Content, first row). (7) N3 suggested
+  edits (`editor/suggest.tsx`): a "Suggest edits" switch in the page menu (per page, this device); typing becomes an insert
+  suggestion, deleting marks text as a delete suggestion; the card under a click accepts or rejects (editors).
 - 2026-10-07 — builder round 31: (1) N5 property menu in records-ui 0.103.7 (ccdddefded): "Wrap column" per column (kept on the
   view as `wrapColumns`; store key `presentation.wrapColumns` added to `custom.view_keys()`; Spaces passes it both ways, ca80b9e66f)
   and "Duplicate property" (the new-column panel starts from the original, named "<name> (1)"; values are not copied — NEEDS). Change

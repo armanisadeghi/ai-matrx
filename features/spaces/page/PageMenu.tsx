@@ -5,7 +5,8 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Switch } from "@ai-matrx/design-system/controls";
-import { Copy, CornerUpRight, FileUp, History, LayoutTemplate, Link, Lock, MoreHorizontal, MoveHorizontal, Trash2, Type, Undo2 } from "lucide-react";
+import { Copy, CornerUpRight, FileUp, History, LayoutTemplate, Link, Lock, MoreHorizontal, MoveHorizontal, PenLine, Trash2, Type, Undo2 } from "lucide-react";
+import { setSuggesting, useSuggesting } from "../editor/suggest";
 import { useState, type ReactNode } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
@@ -60,6 +61,7 @@ export function PageMenu({
   onTemplate,
   updatedLabel,
   counts,
+  suggestPageId,
 }: {
   settings: Settings;
   onSettings: (patch: Partial<Settings>) => void;
@@ -79,8 +81,11 @@ export function PageMenu({
   updatedLabel: string;
   /** A14 — the page's words and characters, Notion's "Word count" line. */
   counts: { words: number; characters: number };
+  /** N3 — the page whose "Suggest edits" switch this menu shows (absent: the person cannot edit). */
+  suggestPageId?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const suggesting = useSuggesting(suggestPageId ?? null);
   const act = (fn: () => void) => () => {
     setOpen(false);
     fn();
@@ -111,6 +116,9 @@ export function PageMenu({
           end={<Switch checked={settings.fullWidth} tabIndex={-1} aria-hidden />}
         />
         <Row icon={<Lock size={16} />} label="Lock page" onClick={() => onSettings({ locked: !settings.locked })} end={<Switch checked={settings.locked} tabIndex={-1} aria-hidden />} />
+        {suggestPageId ? (
+          <Row icon={<PenLine size={16} />} label="Suggest edits" onClick={() => setSuggesting(suggestPageId, !suggesting)} end={<Switch checked={suggesting} tabIndex={-1} aria-hidden />} />
+        ) : null}
         <div className="my-1 border-t border-border" />
         {onAskAiChange ? <Row icon={<AGENT_ICON size={16} />} label="Ask AI to change this page" onClick={act(onAskAiChange)} /> : null}
         <Row icon={<Link size={16} />} label="Copy link" onClick={act(onCopyLink)} />

@@ -423,6 +423,7 @@ function AnswersBlock({
           error={payload ? payload.live_error : undefined}
           errorCode={run.live_error_code ?? null}
           conversationId={run.live_conversation_id ?? null}
+          pairLabel={`Pair ${run.number}`}
           agentId={candidate?.baseline_holder_type === "agent" ? (candidate.baseline_holder_id ?? null) : null}
           withheld={!payload}
         />
@@ -437,6 +438,7 @@ function AnswersBlock({
           error={payload ? payload.candidate_error : undefined}
           errorCode={run.candidate_error_code ?? null}
           conversationId={run.candidate_conversation_id ?? null}
+          pairLabel={`Pair ${run.number}`}
           agentId={candidate?.holder_type === "agent" ? candidate.holder_id : null}
           withheld={!payload}
           pending={run.status === "queued" || run.status === "running"}
@@ -458,6 +460,8 @@ function AnswerColumn(props: {
   error: unknown;
   errorCode: string | null;
   conversationId: string | null;
+  /** Tells this pair's walk windows from another pair's ("Pair 3"). */
+  pairLabel: string;
   agentId: string | null;
   withheld: boolean;
   pending?: boolean;
@@ -497,6 +501,7 @@ function AnswerColumn(props: {
         conversationId={props.conversationId}
         agentId={props.agentId}
         agentName={props.holder}
+        pairLabel={props.pairLabel}
       />
     </div>
   );
@@ -542,11 +547,13 @@ function SawButton({
   conversationId,
   agentId,
   agentName,
+  pairLabel,
 }: {
   side: "live" | "candidate";
   conversationId: string | null;
   agentId: string | null;
   agentName: string | null;
+  pairLabel: string;
 }) {
   const unit = useTranscriptUnit(conversationId);
   const openWalk = useOpenReviewWalkWindow();
@@ -564,13 +571,13 @@ function SawButton({
     if (!conversationId) return;
     setClickFailure(null);
     if (unit.state === "ready") {
-      openWalk({ ...unit.unit, agentId, agentName, roleLabel });
+      openWalk({ ...unit.unit, agentId, agentName, roleLabel, detailLabel: pairLabel });
       return;
     }
     setResolving(true);
     try {
       const fresh = await findTranscriptUnit(conversationId);
-      if (fresh.state === "ready") openWalk({ ...fresh.unit, agentId, agentName, roleLabel });
+      if (fresh.state === "ready") openWalk({ ...fresh.unit, agentId, agentName, roleLabel, detailLabel: pairLabel });
       else if (fresh.state === "error") setClickFailure(fresh.message);
       else setClickFailure("No transcript you can open.");
     } finally {

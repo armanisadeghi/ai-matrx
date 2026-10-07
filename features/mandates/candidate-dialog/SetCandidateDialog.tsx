@@ -142,11 +142,19 @@ function SetCandidateBody({
   const liveRung = followLiveRung
     ? liveRungOf(live.holder?.provenance ?? null, live.holder?.organizationId ?? activeOrgId, userId)
     : null;
-  // V2 D18: until the live holder's rung is known the picker shows no rung at
-  // all (and Start waits) — never the seat's rung for a beat before the read
-  // lands, which painted the wrong level and could be confirmed in that beat.
-  const liveRungPending = followLiveRung && live.loading;
-  const initialRung = liveRung ?? seatRung;
+  // V2 D18 + FX-D1: the picker never names a level it does not KNOW is the
+  // live one. While the read runs it shows the waiting state; when the read
+  // cannot answer (no organization selected, the read failed, a verdict that
+  // names no rung) it shows NO level and Start stays unavailable until the
+  // person picks one themselves — their pick always wins. It used to fall back
+  // to the seat's rung ("Personal") ~11 ms after open, and that guess could be
+  // confirmed.
+  const { pending: liveRungPending, rung: initialRung } = appliesToDefault({
+    followLiveRung,
+    liveLoading: live.loading,
+    liveRung,
+    seatRung,
+  });
   const [picked, setRung] = useState<CandidateRungChoice | null>(null);
   const rung = picked ?? initialRung;
   const [runs, setRuns] = useState("");
@@ -157,7 +165,12 @@ function SetCandidateBody({
   const [busy, setBusy] = useState(false);
 
   const rungChoices = useMemo(
-    () => rungChoicesOf([initialRung, seatRung], activeOrgId, userId),
+    () =>
+      rungChoicesOf(
+        initialRung ? [initialRung, seatRung] : [seatRung],
+        activeOrgId,
+        userId,
+      ),
     [initialRung, seatRung, activeOrgId, userId],
   );
 
@@ -177,7 +190,7 @@ function SetCandidateBody({
   }, [dispatch, mandateKey]);
 
   // The default the server will apply when "runs" is left empty — the same knob.
-  const knobOrg = rung.rung === "org" ? rung.principalId : activeOrgId;
+  const knobOrg = rung?.rung === "org" ? rung.principalId : activeOrgId;
   useEffect(() => {
     let cancelled = false;
     // org-filter: server-call the default the server applies to a run, and a run executes in the active org
@@ -210,13 +223,14 @@ function SetCandidateBody({
     runsNumber !== null && (!Number.isInteger(runsNumber) || runsNumber < 1 || runsNumber > 50);
   const replaces = (state?.open ?? []).find(
     (c) =>
+      rung !== null &&
       c.status === "collecting" &&
       c.rung === rung.rung &&
       (c.rung_principal_id ?? null) === (rung.principalId ?? null),
   );
 
   async function confirm() {
-    if (!holder) return;
+    if (!holder || !rung) return;
     setBusy(true);
     setRefusal(null);
     try {
@@ -260,7 +274,7 @@ function SetCandidateBody({
       <div className="grid gap-x-3 gap-y-2 sm:grid-cols-[9.5rem_minmax(0,1fr)] sm:items-center">
         <span className="type-secondary font-medium">Applies to</span>
         <Select
-          value={liveRungPending ? "" : rungValue(rung)}
+          value={liveRungPending || !rung ? "" : rungValue(rung)}
           onValueChange={(value) => {
             const found = rungChoices.find((c) => rungValue(c) === value);
             if (found) {
@@ -271,7 +285,7 @@ function SetCandidateBody({
           disabled={busy || liveRungPending}
         >
           <SelectTrigger className="w-full max-w-[22rem]" aria-label="Applies to" aria-busy={liveRungPending || undefined}>
-            <SelectValue placeholder={liveRungPending ? "Finding the live level…" : undefined} />
+            <SelectValue placeholder={liveRungPending ? "Finding the live level…" : "Pick a level"} />
           </SelectTrigger>
           <SelectContent>
             {rungChoices.map((choice) => (
@@ -285,7 +299,7 @@ function SetCandidateBody({
 
         <span className="hidden sm:block" />
         <span className="min-h-4 type-meta text-muted-foreground" data-candidate-rung-collects>
-          {liveRungPending ? null : RUNG_COLLECTS[rung.rung]}
+          {liveRungPending ? null : rung ? RUNG_COLLECTS[rung.rung] : "Couldn't read the live level"}
         </span>
 
         <label htmlFor="candidate-runs" className="text-[12px] font-medium">
@@ -324,7 +338,7 @@ function SetCandidateBody({
           variant="primary"
           type="button"
           data-testid="set-candidate-confirm"
-          disabled={!holder || busy || Boolean(knownRefusal) || runsInvalid || liveRungPending}
+          disabled={!holder || !rung || busy || Boolean(knownRefusal) || runsInvalid || liveRungPending}
           onClick={() => void confirm()}
         >
           Start collecting
@@ -332,6 +346,23 @@ function SetCandidateBody({
       </div>
     </div>
   );
+}
+
+/**
+ * The level "Applies to" starts on. A door that names its own rung keeps it.
+ * A door that follows the live rung starts on the live rung ONLY once it is
+ * known: `pending` while the read runs, `rung: null` (no selection) when the
+ * read could not answer — never the seat's rung as a guess.
+ */
+export function appliesToDefault(args: {
+  followLiveRung: boolean;
+  liveLoading: boolean;
+  liveRung: CandidateRungChoice | null;
+  seatRung: CandidateRungChoice;
+}): { pending: boolean; rung: CandidateRungChoice | null } {
+  if (!args.followLiveRung) return { pending: false, rung: args.seatRung };
+  if (args.liveLoading) return { pending: true, rung: null };
+  return { pending: false, rung: args.liveRung };
 }
 
 function sameRung(a: CandidateRungChoice, b: CandidateRungChoice): boolean {
