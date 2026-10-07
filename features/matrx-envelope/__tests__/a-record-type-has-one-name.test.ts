@@ -33,9 +33,11 @@ describe("a record type has one name on a card and in the picker", () => {
   it("every noun's card label is the picker's display name", () => {
     const mismatches = nouns
       .map((noun) => {
-        const canonical = (CATALOG_ALIASES as Record<string, string>)[noun] ?? noun;
+        // The picker's own rule resolves aliases — and a REAL record type never
+        // reads as an alias of its own name (`document`, `context_item_value`
+        // are both a type and a catalog alias; G11A, 2026-10-07).
         const card = matrxDirectiveNouns(noun)?.label ?? null;
-        const picker = referenceTypeDisplayLabel(canonical);
+        const picker = referenceTypeDisplayLabel(noun);
         return card === picker ? null : `${noun}: card "${card}" ≠ picker "${picker}"`;
       })
       .filter(Boolean);

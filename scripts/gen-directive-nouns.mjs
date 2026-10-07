@@ -49,9 +49,15 @@ const aliases = catalog.aliases ?? {};
  * catalog's word. Guard: reference-picker/__tests__/a-type-names-its-group-once.
  */
 function familyOf(n) {
-  // A legacy wire noun is the record type it aliases (`document` → `udt_document`).
+  // A legacy wire noun is the record type it aliases — but a REAL record type
+  // never reads as an alias of its own name: the catalog lists `document`
+  // (content.document) AND aliases `document` → `udt_document` (G11A, 2026-10-07).
   const alias = aliases[n.noun];
-  const token = alias && isEntityTypeToken(alias) ? alias : n.noun;
+  const token = isEntityTypeToken(n.noun)
+    ? n.noun
+    : alias && isEntityTypeToken(alias)
+      ? alias
+      : n.noun;
   if (isEntityTypeToken(token)) return referenceTypeGroup(token);
   return (n.family ?? "").trim();
 }
