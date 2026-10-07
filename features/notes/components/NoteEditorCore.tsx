@@ -28,7 +28,7 @@
 // - Conflict resolution UI
 
 import React, { useRef, useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
@@ -49,11 +49,11 @@ import {
   NOTE_READONLY_SAVE_MESSAGE,
 } from "../utils/writeErrors";
 import { cn } from "@/lib/utils";
-import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
+import { EditInPlace } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import RichEditor, {
   type RichEditorController,
   type RichEditorView,
-} from "@/components/rich-editor/RichEditor";
+} from "@ai-matrx/rich-editor/editor/RichEditor";
 import { noteIdentityContentSource } from "../richDocumentSource";
 import type { ImagePolicyDeclaration } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
 import { NOTE_EXCLUDED_ACTIONS } from "../constants/noteExcludedActions";

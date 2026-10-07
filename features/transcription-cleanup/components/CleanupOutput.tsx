@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
-import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
+import { EditInPlace } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
 interface CleanupOutputProps {

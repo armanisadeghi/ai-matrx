@@ -2,8 +2,8 @@
 // textarea host). Every case asserts the whole output string, so a command that
 // moves one byte outside its span fails.
 
-import { formatMarkdown, isFormatActive, formatCommandForKey, keyNameOf, type FormatCommandId } from "../core/markdown-format";
-import { applySourceEdit } from "../core/source-format";
+import { formatMarkdown, isFormatActive, formatCommandForKey, keyNameOf, type FormatCommandId } from "@ai-matrx/rich-editor/core/markdown-format";
+import { applySourceEdit } from "@ai-matrx/rich-editor/core/source-format";
 
 /** `[` and `]` mark the selection in the input; returns the output with the new selection marked. */
 function run(marked: string, command: FormatCommandId): string {

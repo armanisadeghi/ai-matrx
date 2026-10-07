@@ -12,7 +12,7 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createSandboxTestStore, SandboxStoreProvider } from "@/test-utils/sandbox-store";
 
-jest.mock("@/components/rich-editor/RichEditor", () => {
+jest.mock("@ai-matrx/rich-editor/editor/RichEditor", () => {
   function StandInEditor(props: { value: string; onChange?: (t: string) => void; onCancel?: () => void }) {
     return (
       <div>

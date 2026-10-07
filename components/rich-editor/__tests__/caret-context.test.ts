@@ -2,7 +2,7 @@
 // travels as the rendered text around it and is found again in the editor's
 // text (core/caret-context.ts).
 
-import { locateCaret } from "../core/caret-context";
+import { locateCaret } from "@ai-matrx/rich-editor/core/caret-context";
 
 describe("locateCaret", () => {
   const text = "The quick brown fox\njumps over the lazy dog.\n\nA second paragraph about the fox.";

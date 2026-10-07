@@ -30,7 +30,7 @@ import {
 } from "@/features/agents/components/builder/message-builders/MessageViewModeMenu";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import {
   BlockList,
   BlockType,

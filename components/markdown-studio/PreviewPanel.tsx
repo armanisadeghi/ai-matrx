@@ -42,7 +42,7 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { runV2Parser } from "@/components/admin/markdown-tester/utils/run-v2-parser";
 import { RichDocument } from "@ai-matrx/rich-content/rich-document/RichDocument";
-import { EditInPlace } from "@/components/rich-editor/in-place/EditInPlace";
+import { EditInPlace } from "@ai-matrx/rich-editor/in-place/EditInPlace";
 import { RichDocumentActionSurface } from "@ai-matrx/rich-content/rich-document/RichDocumentActionSurface";
 import type {
   ContentSource,

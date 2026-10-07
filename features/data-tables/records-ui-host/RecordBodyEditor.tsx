@@ -7,7 +7,7 @@
 // (Notion's page: no toolbar row; slash menu, shortcuts and the selection toolbar still work). The
 // package owns the saving; this only reports every change.
 
-import RichEditor from "@/components/rich-editor/RichEditor";
+import RichEditor from "@ai-matrx/rich-editor/editor/RichEditor";
 import type { RichTextEditProps } from "@ai-matrx/records-ui";
 
 export function RecordBodyEditor({ value, onChange, readOnly, placeholder }: RichTextEditProps) {

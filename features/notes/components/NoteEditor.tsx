@@ -48,7 +48,7 @@ import {
   NOTES_EDITOR_CONTEXT_MENU_PROPS,
 } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
-import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
+import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { CreateFolderDialog } from "./CreateFolderDialog";
 
 // Universal v3 context menu — the SAME menu everywhere. The wrappers are the
@@ -58,7 +58,7 @@ import { CreateFolderDialog } from "./CreateFolderDialog";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
-import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
+import { insertAtRichCaret } from "@ai-matrx/rich-editor/editor/caretInsert";
 
 declare global {
   interface Window {

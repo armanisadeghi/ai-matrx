@@ -8,9 +8,9 @@
  * Use case: a kiln-loading checklist whose first step carries a caution.
  */
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
-import { createRichEditorExtensions } from "../core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../core/visual-document";
-import { planSave } from "../core/save-plan";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
+import { planSave } from "@ai-matrx/rich-editor/core/save-plan";
 
 const extensions = createRichEditorExtensions();
 const schema = getSchema(extensions);

@@ -33,12 +33,12 @@ import { useTablesEverywhere } from "@/features/unified-data/hub/useTablesEveryw
 import { FileResourceChip } from "@/features/files/components/preview/FileResourceChip";
 import { ConnectorMark } from "@/features/connectors/ConnectorMark";
 import { connectorDefinitionFromMcp } from "@/features/connectors/live-connectors";
-import { InPlaceEditor } from "@/components/rich-editor/in-place/InPlaceEditor";
+import { InPlaceEditor } from "@ai-matrx/rich-editor/in-place/InPlaceEditor";
 import {
   EditInPlace,
   useInPlaceTrigger,
-} from "@/components/rich-editor/in-place/EditInPlace";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+} from "@ai-matrx/rich-editor/in-place/EditInPlace";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import { useClipboardPaste } from "@/components/ui/file-upload/useClipboardPaste";
 import { useCenterControlFit } from "@/features/shell/components/header/useCenterControlFit";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";

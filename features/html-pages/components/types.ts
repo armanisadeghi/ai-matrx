@@ -1,5 +1,5 @@
 import type { Ref } from "react";
-import type { RichEditorController } from "@/components/rich-editor/RichEditor";
+import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 /**
  * Types for HTML Preview components
  *

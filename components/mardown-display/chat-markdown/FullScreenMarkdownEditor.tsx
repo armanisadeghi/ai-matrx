@@ -29,9 +29,9 @@ import LinesViewer, {
 } from "./analyzer/analyzer-options/lines-viewer";
 import SectionViewerV2 from "./analyzer/analyzer-options/section-viewer-V2";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import RichEditor, { type RichEditorController } from "@/components/rich-editor/RichEditor";
+import RichEditor, { type RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
-import { useTextareaFormatting } from "@/components/rich-editor/format/useTextareaFormatting";
+import { useTextareaFormatting } from "@ai-matrx/rich-editor/format/useTextareaFormatting";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

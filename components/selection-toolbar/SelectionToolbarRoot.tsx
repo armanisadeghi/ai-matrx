@@ -59,7 +59,7 @@ import type { Rect } from "@ai-matrx/rich-content/selection-toolbar/SelectionToo
 import "@ai-matrx/rich-content/selection-toolbar/common-actions";
 import { textareaSelectionRect } from "@ai-matrx/rich-content/selection-toolbar/textarea-caret";
 // The formatting buttons for every engine (no Tiptap in this chunk).
-import "@/components/rich-editor/format/format-actions";
+import "@ai-matrx/rich-editor/format/format-actions";
 import { liveSelectionShapeText } from "@ai-matrx/rich-content/selection-toolbar/selection-shape";
 
 /**

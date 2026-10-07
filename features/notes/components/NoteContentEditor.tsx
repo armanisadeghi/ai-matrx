@@ -51,7 +51,7 @@ import {
   useRememberNoteEditorMode,
 } from "../hooks/usePreferredDefaultEditorMode";
 import { NoteEditorCore, isRichEditorMode, type EditorMode } from "./NoteEditorCore";
-import type { RichEditorController } from "@/components/rich-editor/RichEditor";
+import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useNoteWorkingCopy } from "../hooks/useNoteWorkingCopy";
 import { noteWorkingCopy } from "../utils/noteLiveContent";
@@ -97,7 +97,7 @@ import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { usePreparedNoteContentSource } from "../usePreparedNoteContentSource";
 import { NoteWorkingCopyAlert } from "./NoteWorkingCopyAlert";
 import { authoredBy } from "@ai-matrx/rich-content/levels/prose/remote-image-policy";
-import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
+import { insertAtRichCaret } from "@ai-matrx/rich-editor/editor/caretInsert";
 import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 
 interface NoteContentEditorProps {

@@ -34,7 +34,7 @@ import type { ChatAnswerSaveReceipt, RichDocumentActionContext } from "@ai-matrx
 import { commitInlineContentEdit, flushPendingInlineEdit } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { removeThinkingContent } from "@ai-matrx/print/markdown";
 import { listIslands, tokenizeSource } from "@ai-matrx/content-ir/source";
-import { planSave } from "@/components/rich-editor/core/save-plan";
+import { planSave } from "@ai-matrx/rich-editor/core/save-plan";
 
 const rpc = jest.fn();
 const rpcReturns = jest.fn();

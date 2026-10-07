@@ -12,7 +12,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
-import { kindOf } from "@/components/rich-editor/islands/island-meta";
+import { kindOf } from "@ai-matrx/rich-editor/islands/island-meta";
 import {
   ALL_KIND_SPELLINGS,
   firstKindSlug,

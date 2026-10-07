@@ -1,8 +1,8 @@
 import { Editor, getSchema } from "@tiptap/core";
 import { marked } from "marked";
 import fs from "node:fs";
-import { createRichEditorExtensions } from "@/components/rich-editor/core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@/components/rich-editor/core/visual-document";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
 const ext = createRichEditorExtensions(); const schema = getSchema(ext);
 const text = fs.readFileSync(process.argv[2], "utf8");
 const alpha = ["a", " ", "\\", "|", "`", "*", "_", "\\|", "<", "$", "[", "]", "-", "#", ">", "1.", "~", "&"];

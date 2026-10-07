@@ -8,10 +8,10 @@
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
 import { EditorState, EditorSelection } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { createRichEditorExtensions } from "../core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../core/visual-document";
-import { applyEditToTextarea, textFormatTarget, textareaFormatTarget } from "../format/format-target";
-import { visualFormatTarget } from "../visual/visual-format-target";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
+import { applyEditToTextarea, textFormatTarget, textareaFormatTarget } from "@ai-matrx/rich-editor/format/format-target";
+import { visualFormatTarget } from "@ai-matrx/rich-editor/visual/visual-format-target";
 
 const NOTE = "# Alton stops\n\nPick up totes at Alton today.\n\n* weigh in\n* photograph\n";
 

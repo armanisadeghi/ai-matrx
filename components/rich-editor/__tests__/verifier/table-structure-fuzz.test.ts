@@ -16,8 +16,8 @@
  * flattens "\n" and "\r\n", not a bare "\r"); the refusal is the honest outcome.
  */
 import { Editor, getSchema } from "@tiptap/core";
-import { createRichEditorExtensions } from "../../core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../../core/visual-document";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
 import { rewriteTableSource, TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { oracleTableGrids } from "@/scripts/lib/gfm-table-oracle";

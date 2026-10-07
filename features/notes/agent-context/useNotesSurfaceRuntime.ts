@@ -28,7 +28,7 @@
 import { useCallback, useMemo, type RefObject } from "react";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import type { RichEditorController } from "@/components/rich-editor/RichEditor";
+import type { RichEditorController } from "@ai-matrx/rich-editor/editor/RichEditor";
 import type { SurfaceWriteHandlers } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import type { EditorMode } from "@/features/notes/components/NoteEditorCore";

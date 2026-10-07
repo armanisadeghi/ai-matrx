@@ -7,8 +7,8 @@
  * shape below is what remark-gfm reads (scripts/lib/gfm-table-oracle.ts).
  */
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
-import { createRichEditorExtensions } from "../core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../core/visual-document";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
 import { oracleTableGrids } from "@/scripts/lib/gfm-table-oracle";
 
 const extensions = createRichEditorExtensions();

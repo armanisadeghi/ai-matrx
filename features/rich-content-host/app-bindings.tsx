@@ -96,9 +96,9 @@ configureRichContent({
   readSessionKnob: (knob) => getSessionKnob(knob as never),
   loadHtmlToMarkdown: () =>
     Promise.all([
-      import("@/components/rich-editor/core/html-to-markdown"),
+      import("@ai-matrx/rich-editor/core/html-to-markdown"),
       import("@tiptap/core"),
-      import("@/components/rich-editor/core/extensions"),
+      import("@ai-matrx/rich-editor/core/extensions"),
     ]).then(([{ htmlToMarkdown }, { getSchema }, { createRichEditorExtensions }]) => {
       const schema = getSchema(createRichEditorExtensions());
       return (html: string) => htmlToMarkdown(html, schema);

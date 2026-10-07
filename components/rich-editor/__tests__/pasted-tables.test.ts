@@ -11,10 +11,10 @@
  * (verify-RC-B4 R2-1).
  */
 import { Editor, getSchema, type JSONContent } from "@tiptap/core";
-import { createRichEditorExtensions } from "../core/extensions";
-import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "../core/visual-document";
-import { htmlToMarkdown } from "../core/html-to-markdown";
-import { normalizePastedHtml } from "../core/paste-html";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
+import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@ai-matrx/rich-editor/core/visual-document";
+import { htmlToMarkdown } from "@ai-matrx/rich-editor/core/html-to-markdown";
+import { normalizePastedHtml } from "@ai-matrx/rich-editor/core/paste-html";
 import { PASTED_TABLES, type PastedTableFixture } from "./fixtures/pasted-tables";
 
 const notices: string[] = [];

@@ -63,14 +63,14 @@ import {
   readCorpusSource,
   type CorpusSourceName,
 } from "./lib/rich-content-corpus";
-import { createRichEditorExtensions } from "../components/rich-editor/core/extensions";
+import { createRichEditorExtensions } from "@ai-matrx/rich-editor/core/extensions";
 import {
   buildVisualDocument,
   captureBaseline,
   serializeVisualDocument,
   type VisualPlan,
-} from "../components/rich-editor/core/visual-document";
-import { planSave } from "../components/rich-editor/core/save-plan";
+} from "@ai-matrx/rich-editor/core/visual-document";
+import { planSave } from "@ai-matrx/rich-editor/core/save-plan";
 import { rewriteTableSource, splitRowSegments, TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
 import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { oracleTableGrid } from "./lib/gfm-table-oracle";
