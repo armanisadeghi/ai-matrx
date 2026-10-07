@@ -149,6 +149,7 @@ export function loadSidecar(
   const request = (async () => {
     const [threads, edges, editable] = await Promise.allSettled([
       listCommentThreads(source),
+      // org-filter: default-for-new the store's organization serves create paths only; this edge read carries none
       listEdgeItems(source, (token, ids) => titles.fetch(token, ids)),
       source.save ? canEditSource(source) : Promise.resolve(false),
     ]);

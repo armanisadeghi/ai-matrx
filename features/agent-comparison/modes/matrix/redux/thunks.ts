@@ -75,6 +75,7 @@ export const saveMatrixBattle = createAsyncThunk<SavedMatrix, void, ThunkApi>(
       dispatch(markSaved());
       return { id: activeSetId, name: activeSetName ?? "Matrix battle", created: false };
     }
+    // org-filter: write-target the new battle is filed in the organization the person works in
     const organizationId = await ensureOrgId(null);
     const set = await createComparisonSet({
       name: autoBattleName("Matrix battle", baseAgentName(state)),
@@ -96,6 +97,7 @@ export const saveMatrixBattleAs = createAsyncThunk<SavedMatrix, { name: string }
     const state = getState();
     const userId = selectUserId(state);
     if (!userId) throw new Error("Sign in to save this battle.");
+    // org-filter: write-target the copied battle is filed in the organization the person works in
     const organizationId = await ensureOrgId(null);
     const set = await createComparisonSet({
       name: trimmed,
@@ -162,6 +164,7 @@ export const runMatrixBattle = createAsyncThunk<void, MatrixRunBody, ThunkApi>(
     const problems = setupProblems(getState().agentComparisonMatrix.setup);
     if (problems.length > 0) throw new Error(problems.join(" "));
     const saved = await dispatch(saveMatrixBattle()).unwrap();
+    // org-filter: server-call the run executes in the organization the person works in
     const organizationId = await ensureOrgId(null);
     dispatch(setRunError(null));
     dispatch(setRunInFlight(true));
@@ -182,6 +185,7 @@ export const cancelMatrixBattle = createAsyncThunk<void, void, ThunkApi>(
   async (_arg, { dispatch, getState }) => {
     const setId = getState().agentComparisonMatrix.activeSetId;
     if (!setId) throw new Error("This battle has not been saved yet.");
+    // org-filter: server-call the cancel goes to the organization that ran the battle
     const organizationId = await ensureOrgId(null);
     const outcome = await cancelMatrixRun(dispatch, setId, organizationId);
     void dispatch(refreshMatrixCells());
