@@ -54,7 +54,7 @@ import { useSpaceCollab } from "../collab/useSpaceCollab";
 import type { SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
-import { attemptSave, deviceStorage, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
+import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
 import { useRestoreKept } from "./useRestoreKept";
 import { sendOnLeave, trackAccessToken } from "./leave-save";
 import { contentKey } from "./content-key";
@@ -343,7 +343,17 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     apply: (copy) => {
       const editor = editorRef.current;
       if (!editor) return;
-      editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
+      // A copy that is what the page already shows (the stored body as this editor normalises it, kept
+      // by a host on open) changes nothing: cleared, never re-drawn. Only a body that differs is put
+      // back — replacing every block re-draws the whole page (a late layout shift, D2).
+      const shown = { ...(docRef.current ?? copy.doc), blocks: fromEngine(editor.document as unknown as EngineBlock[]) };
+      if (contentKey(shown) === contentKey(copy.doc)) {
+        forgetUnsaved(deviceStorage(), spaceId);
+        return;
+      }
+      if (JSON.stringify(shown.blocks) !== JSON.stringify(copy.doc.blocks)) {
+        editor.replaceBlocks(editor.document, toEngine(copy.doc.blocks) as never);
+      }
       keptLocally.current = true;
       update({ title: copy.doc.title, icon: copy.doc.icon, cover: copy.doc.cover, settings: copy.doc.settings, blocks: fromEngine(editor.document as unknown as EngineBlock[]) });
     },
@@ -360,7 +370,10 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   });
   /** Keep the page on this device — never over a kept copy still waiting for its decision. */
   const keep = (d: SpaceDoc, base: number) => {
-    if (!restore.awaiting()) keepUnsaved(deviceStorage(), spaceId, d, base);
+    if (restore.awaiting()) return;
+    // What is stored needs no copy (a host keeps every change, a peer's echo and its own seed included).
+    if (contentKey(d) === savedKey.current) forgetUnsaved(deviceStorage(), spaceId);
+    else keepUnsaved(deviceStorage(), spaceId, d, base);
   };
   const [sourcePicker, pickSource] = useSourcePicker(spaceId);
   /**

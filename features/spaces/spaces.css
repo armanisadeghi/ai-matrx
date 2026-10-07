@@ -252,6 +252,9 @@
 .spaces-sidebar-foot {
   padding-top: 4px;
   border-top: 1px solid var(--spaces-rule);
+  /* Its three rows (Templates, Import, Trash; 30px each) are held from the first paint — they draw a
+     moment after the tree and moved it up by 94px (D2). */
+  min-height: calc(4px + 1px + 3 * 30px);
 }
 .spaces-section-head {
   display: flex;
@@ -977,7 +980,9 @@
 
 /* ---------- callout: icon + text, children inside the same box ---------- */
 
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"]) {
+/* Layout keys on the node view's own wrapper (drawn with the editor), never on what React renders into
+   it a moment later: a selector on the rendered content drew the box late and shifted the page (D2). */
+.spaces-editor .bn-block:has(> .react-renderer.node-callout) {
   padding: 16px 16px 16px 12px;
   border-radius: 4px;
   margin: 4px 0;
@@ -988,14 +993,16 @@
 .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"]) > .react-renderer > .bn-block-content {
   padding: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"]) > .bn-block-group {
-  margin-left: 0;
+.spaces-editor .bn-block:has(> .react-renderer.node-callout) > .bn-block-group {
+  margin-left: 32px;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"]) > .bn-block-group > .bn-block-outer::before {
+.spaces-editor .bn-block:has(> .react-renderer.node-callout) > .bn-block-group > .bn-block-outer::before {
   display: none;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="true"]) > .bn-block-group {
-  margin-left: 32px;
+/* Children sit beside the icon from the first paint (most callouts carry one); a callout without one
+   lets them back to the edge once drawn. */
+.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="false"]) > .bn-block-group {
+  margin-left: 0;
 }
 /* An empty callout line with blocks inside draws only the box (the screenshot's link boxes). */
 .spaces-editor .bn-block:has(> .bn-block-group):has(> .react-renderer > .bn-block-content[data-content-type="callout"] .spaces-callout[data-has-icon="false"][data-empty="true"]) > .react-renderer > .bn-block-content {
@@ -1037,6 +1044,9 @@
   border-radius: 4px;
   font-weight: 500;
   line-height: 1.5;
+  /* One line of title (and its underline) whether or not the title has arrived: the tree is read after
+     the page, and rows that grew 3px each on its arrival shifted the page (D2). */
+  min-height: calc(1.5em + 1px);
   color: inherit;
 }
 .spaces-page-link:hover {
@@ -1070,17 +1080,17 @@
 
 /* ---------- columns ---------- */
 
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .react-renderer > .bn-block-content,
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content {
+.spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .react-renderer > .bn-block-content,
+.spaces-editor .bn-block:has(> .react-renderer.node-column) > .react-renderer > .bn-block-content {
   padding: 0;
   height: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group {
+.spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group {
   display: flex;
   margin-left: 0;
   gap: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer {
+.spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer {
   flex: 1 1 0;
   min-width: 0;
   /* Notion's column gutter: 46px between two columns, the resize handle in its middle. Notion has no
@@ -1089,31 +1099,31 @@
   padding: 0 var(--spaces-col-half, 23px);
   margin-top: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer:first-child {
+.spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer:first-child {
   padding-left: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer:last-child {
+.spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer:last-child {
   padding-right: 0;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer::before,
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .bn-block-group > .bn-block-outer::before {
+.spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer::before,
+.spaces-editor .bn-block:has(> .react-renderer.node-column) > .bn-block-group > .bn-block-outer::before {
   display: none;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) {
+.spaces-editor .bn-block:has(> .react-renderer.node-column) {
   position: relative;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .bn-block-group {
+.spaces-editor .bn-block:has(> .react-renderer.node-column) > .bn-block-group {
   margin-left: 0;
 }
 /* A column row inside a column (the KPI tiles): Notion's reference draws tiles 172px wide with 63px between
    them at 1699px, so the gutter is 62px there (it narrows with the window); five or more across take 16px so each tile stays a tile. */
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group {
+.spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group {
   --spaces-col-half: clamp(8px, calc(3.4vw - 27px), 31px);
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group:has(> .bn-block-outer:nth-child(5)) {
+.spaces-editor .bn-block:has(> .react-renderer.node-column) .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group:has(> .bn-block-outer:nth-child(5)) {
   --spaces-col-half: 8px;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content {
+.spaces-editor .bn-block:has(> .react-renderer.node-column) > .react-renderer > .bn-block-content {
   position: absolute;
   z-index: 3;
   top: 0;
@@ -1146,11 +1156,11 @@
   background: transparent;
   transition: background 120ms ease, width 120ms ease;
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]):hover > .react-renderer > .bn-block-content .spaces-column-resizer::after {
+.spaces-editor .bn-block:has(> .react-renderer.node-column):hover > .react-renderer > .bn-block-content .spaces-column-resizer::after {
   background: var(--spaces-rule);
 }
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content .spaces-column-resizer:hover::after,
-.spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content .spaces-column-resizer:active::after {
+.spaces-editor .bn-block:has(> .react-renderer.node-column) > .react-renderer > .bn-block-content .spaces-column-resizer:hover::after,
+.spaces-editor .bn-block:has(> .react-renderer.node-column) > .react-renderer > .bn-block-content .spaces-column-resizer:active::after {
   width: 4px;
   background: hsl(var(--primary) / 0.6);
 }
@@ -1234,14 +1244,14 @@
   .spaces-title {
     font-size: 32px;
   }
-  .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group {
+  .spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group {
     flex-direction: column;
   }
-  .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="columnList"]) > .bn-block-group > .bn-block-outer {
+  .spaces-editor .bn-block:has(> .react-renderer.node-columnList) > .bn-block-group > .bn-block-outer {
     padding: 0;
     flex-grow: 1 !important;
   }
-  .spaces-editor .bn-block:has(> .react-renderer > .bn-block-content[data-content-type="column"]) > .react-renderer > .bn-block-content {
+  .spaces-editor .bn-block:has(> .react-renderer.node-column) > .react-renderer > .bn-block-content {
     display: none;
   }
 }

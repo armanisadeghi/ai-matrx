@@ -624,7 +624,7 @@
     "display_label": "Custom Object",
     "url_path_template": "",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "custom_field_definition",
@@ -646,7 +646,7 @@
     "display_label": "Custom Record",
     "url_path_template": "",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "cx_agent_memory",
@@ -690,7 +690,7 @@
     "display_label": "Dataset",
     "url_path_template": "/data/{id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "derive_run",
@@ -965,7 +965,7 @@
     "display_label": "Flexible Data",
     "url_path_template": "",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "folder",
@@ -2271,7 +2271,7 @@
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
-    "display_label": "Processed document",
+    "display_label": "Source",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -2692,7 +2692,7 @@
     "display_label": "Pick list",
     "url_path_template": "/pick-lists/{id}",
     "rls_uses_has_permission": true,
-    "is_active": true
+    "is_active": false
   },
   {
     "resource_type": "studio_recording_chunks",
@@ -2722,7 +2722,7 @@
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
-    "display_label": "Audio Session",
+    "display_label": "Transcript Studio session",
     "url_path_template": "/transcripts/studio?session={id}",
     "rls_uses_has_permission": true,
     "is_active": true
@@ -3107,7 +3107,7 @@
     "id_column": "id",
     "owner_column": "created_by",
     "is_public_column": null,
-    "display_label": "Canonical Page",
+    "display_label": "Site page",
     "url_path_template": "/marketing/pages/{id}",
     "rls_uses_has_permission": true,
     "is_active": true
