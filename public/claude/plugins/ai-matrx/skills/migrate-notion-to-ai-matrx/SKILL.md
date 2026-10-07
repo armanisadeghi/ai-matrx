@@ -37,10 +37,14 @@ With Notion's search and fetch tools, list everything and keep a ledger as you g
 - every database row's page: whether it has body content;
 - comments (on pages and rows).
 
-**Starting again in a new conversation?** Rebuild the ledger first: `pages`
-`{"action": "list", "key_prefix": "notion:", "limit": 200}` gives `external_key → space_id`, and
-`tables` `{"action": "list_rows", "table": "<id>", "limit": 200}` gives each row's "Notion ID" →
-row `id` (tables you made earlier: look for the "Notion ID" column via `columns`).
+**Starting again in a new conversation?** Rebuild the ledger without listing anything: send each
+`create_table` again exactly as before — it answers `created: false` with the same table `id` and
+its `organization_id`. Then `pages` `{"action": "list", "key_prefix": "notion:",
+"in_organization": "<that organization_id>", "limit": 200}` gives `external_key → space_id` for
+THIS organization (the same Notion workspace imported elsewhere has the same keys), and `tables`
+`{"action": "list_rows", "table": "<id>", "limit": 200}` gives each row's "Notion ID" → row `id`.
+(To look for a table: `tables` `{"action": "list_tables", "search": "<words in its name>",
+"organization": "<organization_id>"}`.)
 
 As you create things, add the AI Matrx ids to the ledger: Notion database id → table id,
 Notion page id → `space_id`, Notion row id → row id. Every key you send is `"notion:<id>"` for
@@ -177,9 +181,10 @@ and send the page again.
 - Each table: `tables` `{"action": "aggregate", "table": "<id>", "measure": "count"}` against the
   Notion row count. Spot-check links, roll-ups and files with `tables` `{"action": "get_row",
   "table": "<id>", "row_id": "<id>"}` or `{"action": "list_rows", "table": "<id>"}`.
-- Pages: `pages` `{"action": "list", "key_prefix": "notion:", "limit": 200}` (follow
-  `next_offset`). Other imports may appear there too, so check that every `space_id` in YOUR
-  ledger is listed — don't compare totals.
+- Pages: `pages` `{"action": "list", "key_prefix": "notion:", "in_organization": "<organization_id>",
+  "limit": 200}` (follow `next_offset`): every `space_id` in your ledger must be listed.
+- Name the organization in your final message ("filed under <organization name>"); the
+  `list_tables` answer with `organization` set names it.
 - Tell the person a short list: one line per database ("✓ Posts — 54 of 54"), one for pages
   ("✓ 31 pages, 5 comments"), then "Could not carry over:" with each item and why in plain words
   (unsupported blocks, template page text, files whose links had expired, people kept as names,
