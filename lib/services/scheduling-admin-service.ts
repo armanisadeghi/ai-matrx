@@ -9,6 +9,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import { buildSearchOr } from "@/utils/supabase-search";
 import { applyServerTableState } from "@/features/admin/shared/server-table/postgrest";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
@@ -414,9 +415,12 @@ export async function disableTaskAdmin(
   taskId: string,
   reason?: string,
 ): Promise<void> {
-  const { data, error } = await schedulerDb(supabase).rpc(
-    "admin_disable_task",
-    { p_task_id: taskId, ...(reason ? { p_reason: reason } : {}) },
+  const { data, error } = await withAdminFeature(
+    "scheduler.system-jobs",
+    schedulerDb(supabase).rpc("admin_disable_task", {
+      p_task_id: taskId,
+      ...(reason ? { p_reason: reason } : {}),
+    }),
   );
   if (error) throw pgErrorToError(error);
   assertDoorAnswer(data, "task_id", taskId, "scheduled task");
