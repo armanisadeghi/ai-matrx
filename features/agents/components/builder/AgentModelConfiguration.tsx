@@ -9,7 +9,8 @@
  * admin-variant toggle inside the dropdown itself. All writes go through Redux.
  */
 
-import { useCallback } from "react";
+import { useRef } from "react";
+import { withOfferingPin } from "@/features/ai-models/utils/offering-pin";
 import { useAppSelector, useAppDispatch } from "@/lib/redux/hooks";
 import {
   selectAgentModelId,
@@ -53,51 +54,69 @@ export function AgentModelConfiguration({
   const pinnedOfferingId =
     (settings as FeLlmParams | null)?.offering_id ?? null;
 
-  const handleModelChange = useCallback(
-    (newModelId: string) => {
-      dispatch(
-        setAgentField({ id: agentId, field: "modelId", value: newModelId }),
-      );
-    },
-    [agentId, dispatch],
-  );
+  // The picker reports the class (offering pin) and the model in one click.
+  // Both are parked for that click and committed together: the new model
+  // runs on the class picked with it, or on none — never the old model's
+  // class (ai.resolve_model_config refuses that pair with P0002).
+  const clickRef = useRef<{
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  } | null>(null);
+
+  const parkForClick = (update: {
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  }) => {
+    if (!clickRef.current) {
+      clickRef.current = {};
+      queueMicrotask(() => {
+        const click = clickRef.current;
+        clickRef.current = null;
+        if (!click) return;
+        if (click.modelId) {
+          dispatch(
+            setAgentField({ id: agentId, field: "modelId", value: click.modelId }),
+          );
+        }
+        const current = (settings ?? {}) as Record<string, unknown>;
+        if (!click.pin && current.offering_id == null) return;
+        // Same FeLlmParams → LLMParams cast used at every setAgentSettings call
+        // site (see AgentSettingsCore).
+        dispatch(
+          setAgentSettings({
+            id: agentId,
+            settings: withOfferingPin(current, click.pin?.offeringId) as LLMParams,
+          }),
+        );
+      });
+    }
+    Object.assign(clickRef.current, update);
+  };
+
+  const handleModelChange = (newModelId: string) => {
+    if (!newModelId || newModelId === modelId) return;
+    parkForClick({ modelId: newModelId });
+  };
 
   /**
    * Pin/unpin the exact ai.offering the agent's calls route through.
    * `undefined` = "Auto (preferred)" — the key is REMOVED from settings (never
    * stored as null/undefined) so the server picks the preferred offering.
-   * Same save path as every other setting (temperature, top_p, ...).
    */
-  const handleOfferingPinChange = useCallback(
-    (offeringId: string | undefined) => {
-      // Loud guard: settings === null means the agent record hasn't hydrated —
-      // writing `{ offering_id }` over it would silently drop every real
-      // setting on save (same round-trip bug AgentSettingsCore guards against).
-      if (settings === null) {
-        console.error(
-          `[AgentModelConfiguration] Refused to pin offering ${String(
-            offeringId,
-          )} — agent ${agentId} settings not hydrated yet; the write would clobber existing settings.`,
-        );
-        return;
-      }
-      const next: Record<string, unknown> = {
-        ...(settings as Record<string, unknown>),
-      };
-      if (offeringId === undefined) {
-        delete next.offering_id;
-      } else {
-        next.offering_id = offeringId;
-      }
-      // Same FeLlmParams → LLMParams cast used at every setAgentSettings call
-      // site (see AgentSettingsCore) — the FE superset isn't structurally
-      // identical to the backend contract.
-      dispatch(
-        setAgentSettings({ id: agentId, settings: next as LLMParams }),
+  const handleOfferingPinChange = (offeringId: string | undefined) => {
+    // Loud guard: settings === null means the agent record hasn't hydrated —
+    // writing `{ offering_id }` over it would silently drop every real
+    // setting on save (same round-trip bug AgentSettingsCore guards against).
+    if (settings === null) {
+      console.error(
+        `[AgentModelConfiguration] Refused to pin offering ${String(
+          offeringId,
+        )} — agent ${agentId} settings not hydrated yet; the write would clobber existing settings.`,
       );
-    },
-    [agentId, dispatch, settings],
-  );
+      return;
+    }
+    parkForClick({ pin: { offeringId } });
+  };
 
   return (
     <div className="flex items-center justify-between gap-3">
