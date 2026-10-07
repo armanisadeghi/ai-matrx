@@ -110,13 +110,6 @@ export const ADMIN_FEATURES_ON_USER_PAGES = {
     doors: ["ui.ui_surface_agent_pref (insert/delete, platform rows)"],
     ruling: "Arman, 2026-10-06: features \"explicitly actions in the normal ui that were for admins\" keep working; admin status must not widen what an admin SEES on a user page.",
   },
-  "content.kind-activation": {
-    level: "super_admin",
-    allows: "Activate a kind or its component platform-wide from the fix-it bar.",
-    where: "Any page rendering kind blocks → fix-it bar",
-    doors: ["content_ir.set_kind_activation", "content_ir.kind_component (update)"],
-    ruling: "Arman, 2026-10-06: features \"explicitly actions in the normal ui that were for admins\" keep working; admin status must not widen what an admin SEES on a user page.",
-  },
   "library.publish": {
     level: "admin",
     allows: "Publish to or revoke from the platform Library, and list existing grants (data stores, rulebooks).",
