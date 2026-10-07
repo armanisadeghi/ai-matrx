@@ -65,8 +65,3 @@ export async function exportChart(
   );
   save(pdf, fileName(opts.title, "pdf"));
 }
-
-<<<<<<< Updated upstream
-import { downloadFile } from "@ai-matrx/kit/download";
-=======
->>>>>>> Stashed changes
