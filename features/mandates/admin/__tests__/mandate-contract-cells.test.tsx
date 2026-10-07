@@ -54,6 +54,7 @@ const mandate: MandateDefinitionRow = {
   required_output_keys: [],
   // Authored here, not copied from another mandate (aidream 0592 lineage).
   source_mandate_id: null,
+  typed_input_complete: false,
   updated_at: "2026-08-29T00:00:00.000Z",
   updated_by: null,
   version: 1,
