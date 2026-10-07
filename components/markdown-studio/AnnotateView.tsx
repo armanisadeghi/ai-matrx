@@ -154,6 +154,7 @@ export function AnnotateView({
       await saveDocumentBody(doc, next);
       await reload(doc.id);
     },
+    // Studio-internal: this doc is already open in the Studio as markdown, so it is not a Space.
     href: `/markdown-studio?source=document&id=${doc.id}`,
   };
 
