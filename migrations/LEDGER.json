@@ -1,6 +1,6 @@
 {
   "note": "Checked-in snapshot of public._schema_migrations for the files under migrations/campaign and migrations/inverse. Written by `pnpm db:apply` on every successful production apply and refreshed whole by the nightly catch-up. Never hand-edited: a self-written checksum is a claim nobody can check. Guard: pnpm check:ledgered-files-unedited.",
-  "generated_at": "2026-10-06T10:50:17.450Z",
+  "generated_at": "2026-10-07T05:59:27.926Z",
   "files": {
     "migrations/campaign/a_chunk_is_the_size_the_client_door_can_actually_carry.sql": {
       "source": "matrx-frontend",
@@ -4555,6 +4555,12 @@
       "filename": "navfix_the_code_half_follows_the_one_switch.sql",
       "checksum": "39af1f2a4acb5b7fbf9b4ed751ee2b7d8901f50dfcdf132252dfef30b0c50a59",
       "applied_at": "2026-09-19 21:57:04.992896+00"
+    },
+    "migrations/campaign/nightsmall_the_archived_read_door_carries_the_reason_a_column_is_empty.sql": {
+      "source": "matrx-frontend",
+      "filename": "nightsmall_the_archived_read_door_carries_the_reason_a_column_is_empty.sql",
+      "checksum": "17097e7b6aeb7320592f4db3a571035432b275c2f3963669ad4c23c2611b1250",
+      "applied_at": "2026-10-07 05:59:26.655704+00"
     },
     "migrations/campaign/olderdoors_a_moved_older_table_reads_marked_and_refuses_writes.sql": {
       "source": "matrx-frontend",
