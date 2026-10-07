@@ -16,8 +16,9 @@
  *              pptxgenjs pdf-lib pdfmake docx mammoth marked dompurify papaparse
  *              -> buildFile (/operate), readFile/readWorkbook/parseDelimited (/operate/read),
  *              captureElement/renderElement/pagesToPdf (/operate/capture), buildZip/readZip (/operate/zip),
- *              buildPresentation (/operate/pptx). The editor's
- *              gfm-lexer `marked` is ruled to stay.
+ *              buildPresentation (/operate/pptx). No app file is exempt. Also a VALUE import of `@ai-matrx/print/pdf`: app code
+ *              reaches the PDF engine through @ai-matrx/alchemy/operate/capture (captureDocumentPdf, renderElement
+ *              + pagesToPdf; rasteriser ruling A6).
  *  doorbypass  applySurfaceWrite / loadSurfaceWriteDoor / surfaceWriteDeclarations referenced as
  *              code outside surfaces/runtime, components/agent-copy/alchemy-door.ts and the agent write thunk
  *              -> dispatch through the surface write door (a declared write target + handler).
@@ -207,6 +208,8 @@ const closureDecl = (l: string) => l.replace(/new\s+Map\s*(<[^(]*>)?\s*\(.*$/, "
 const LINE_JOIN = /\.join\(\s*(?:["'`](?:\\r)?\\n["'`]|lineEnding|eol|EOL|newline)\s*\)/;
 /** A Map made inside a function: an object-literal property (`actions: new Map(`) or an indented assignment. */
 const CLOSURE_MAP = /\b\w+\s*:\s*new\s+Map\b|^\s+(?:(?:const|let)\s+)?\w+\s*(?::[^=]*)?=\s*new\s+Map\b/;
+/** A VALUE import of print's PDF engine: app code reaches it through @ai-matrx/alchemy/operate/capture (ruling A6). */
+const PRINT_PDF_IMPORT = /(?:from\s*|import\s*\(\s*|require\s*\(\s*)["']@ai-matrx\/print\/pdf["']/;
 /** A module-level object store: `const X: Record<…> = {}`, `const X: { [k: string]: … } = {}`, `= {} as Record<…>`, `Object.create(null)`. */
 const MODULE_OBJECT = /^(export\s+)?(const|let)\s+(\w+)\s*(?::\s*([^=]+?))?\s*=\s*(?:\{\s*\}|Object\.create\(\s*null\s*\))\s*(?:as\s+([^;]+))?;?\s*$/;
 /**
@@ -311,6 +314,7 @@ export function scanSource(file: string, src: string): Hit[] {
     if (RAW_CLIPBOARD.test(l)) add("clipboard", i);
     if (markLines.has(i) || (hasDownload && /URL\.createObjectURL\s*\(/.test(l))) add("downloads", i);
     if (LIB_IMPORT.test(l)) add("formatlibs", i);
+    if (PRINT_PDF_IMPORT.test(l) && !/^\s*(?:import|export)\s+type\b/.test(l)) add("formatlibs", i);
     if (/\b(applySurfaceWrite|loadSurfaceWriteDoor|surfaceWriteDeclarations)\b/.test(l)) add("doorbypass", i);
     if (
       isRegistry &&
@@ -471,6 +475,10 @@ function selfTest(): number {
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const t = [\n  `orgs=${r.orgs.map((o) => o.name).join(\",\") || \"none\"}`,\n  `id=${r.id}`,\n].join(\"\\n\");\n", red: false, what: "a comma list inside a template, lines joined by newline (a label)" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const t = lines.map((l) => l.trim()).join(\"\\n\");\n", red: false, what: "lines trimmed and joined by newline" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "return toDelimited([header, ...rows], { format: \"tsv\" });\n", red: false, what: "the one writer" },
+    { rule: "formatlibs", file: "components/mardown-display/blocks/x/Block.tsx", src: "const { captureBlockElement } = await import(\"@ai-matrx/print/pdf\");\n", red: true, what: "a markdown block loading print/pdf directly" },
+    { rule: "formatlibs", file: "features/x/Review.tsx", src: "import { captureElementsToPDF } from \"@ai-matrx/print/pdf\";\n", red: true, what: "a static print/pdf import in app code" },
+    { rule: "formatlibs", file: "features/x/Review.tsx", src: "import type { PdfPage } from \"@ai-matrx/print/pdf\";\n", red: false, what: "a type-only print/pdf import" },
+    { rule: "formatlibs", file: "features/x/Review.tsx", src: "const { captureDocumentPdf } = await import(\"@ai-matrx/alchemy/operate/capture\");\n", red: false, what: "the alchemy capture door" },
     { rule: "clipboard", file: "components/dialogs/clipboard-fallback/ClipboardFallbackDialog.tsx", src: "await navigator.clipboard.writeText(url);\n", red: true, what: "the clipboard-fallback dialog is NOT exempt (it retries through kit copyText)" },
     { rule: "registries", file: "features/x/provider.ts", src: "function store() {\n  let s = g[key];\n  if (!s) {\n    s = { actions: new Map(), listeners: new Set() };\n    g[key] = s;\n  }\n  return s;\n}\nexport function registerAction(a: A) { store().actions.set(a.id, a); }\n", red: true, what: "a CLOSURE store `{ actions: new Map() }` filled by registerAction" },
     { rule: "registries", file: "features/x/Foo.ts", src: "function watch() {\n  const watching = new Map<string, () => void>();\n}\nexport function registerThing() {}\n", red: false, what: "a closure Map of bare callbacks (cancel handles) beside register*" },

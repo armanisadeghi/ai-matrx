@@ -9,6 +9,7 @@
  */
 
 import React from "react";
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import { Table } from "lucide-react";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { getTablePage, readTableDetails } from "@/features/data-tables/service";
@@ -38,7 +39,7 @@ const oneLine = (value: unknown) => (value === null || value === undefined ? "" 
 export function tableCopyText(view: TableView, flavor: SplitCopyFlavor): string {
   const head = view.fields.map((f) => oneLine(f.label));
   const body = view.rows.map((r) => view.fields.map((f) => oneLine(r.data[f.name])));
-  if (flavor === "text") return [head, ...body].map((cells) => cells.join("\t")).join("\n");
+  if (flavor === "text") return toDelimitedText(head, body, { format: "tsv", spreadsheetSafe: false });
   const cell = (c: string) => c.replace(/\|/g, "\\|");
   return [`| ${head.map(cell).join(" | ")} |`, `| ${head.map(() => "---").join(" | ")} |`, ...body.map((cells) => `| ${cells.map(cell).join(" | ")} |`)].join("\n");
 }
