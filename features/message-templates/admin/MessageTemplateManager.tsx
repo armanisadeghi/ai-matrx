@@ -3,7 +3,7 @@
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast as copyToast } from "@/lib/toast";
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { AutoResizeTextarea } from "@/features/message-templates/components/AutoResizeTextarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
 import { ADMIN_UTILITIES_SURFACE_NAME, createAdminUtilitiesScope } from "@/features/surfaces/manifests/admin-utilities.manifest";
 import { PUBLISHED_TO_WEB_LABEL } from "@/lib/row-access";
@@ -971,7 +971,7 @@ export function MessageTemplateManager({
                         getTextarea={() => editTextareaRef.current}
                         onTextReplace={(next) => handleEditChange("content", next)}
                       >
-                        <AutoResizeTextarea
+                        <ProTextarea sourceFeature="messages" autoGrow
                           ref={editTextareaRef}
                           value={editData.content || ""}
                           onChange={(e) =>
@@ -980,6 +980,7 @@ export function MessageTemplateManager({
                           placeholder="Enter the template content..."
                           className="font-mono text-sm"
                           minHeight={300}
+                          maxHeight={600}
                         />
                       </EditableContextMenu>
                     )}
@@ -1004,7 +1005,7 @@ export function MessageTemplateManager({
                             getTextarea={() => editTextareaRef.current}
                             onTextReplace={(next) => handleEditChange("content", next)}
                           >
-                            <AutoResizeTextarea
+                            <ProTextarea sourceFeature="messages" autoGrow
                               ref={editTextareaRef}
                               value={editData.content || ""}
                               onChange={(e) =>
@@ -1013,6 +1014,7 @@ export function MessageTemplateManager({
                               placeholder="Enter the template content..."
                               className="font-mono text-sm h-full"
                               minHeight={300}
+                              maxHeight={600}
                             />
                           </EditableContextMenu>
                         </div>
@@ -1047,7 +1049,7 @@ export function MessageTemplateManager({
                             getTextarea={() => editTextareaRef.current}
                             onTextReplace={(next) => handleEditChange("content", next)}
                           >
-                            <AutoResizeTextarea
+                            <ProTextarea sourceFeature="messages" autoGrow
                               ref={editTextareaRef}
                               value={editData.content || ""}
                               onChange={(e) =>
@@ -1056,6 +1058,7 @@ export function MessageTemplateManager({
                               placeholder="Enter the template content..."
                               className="font-mono text-sm h-full"
                               minHeight={300}
+                              maxHeight={600}
                             />
                           </EditableContextMenu>
                         </div>
@@ -1255,7 +1258,7 @@ export function MessageTemplateManager({
                   setCreateFormData({ ...createFormData, content: next })
                 }
               >
-                <AutoResizeTextarea
+                <ProTextarea sourceFeature="messages" autoGrow
                   ref={createTextareaRef}
                   id="create-content"
                   value={createFormData.content || ""}
@@ -1268,6 +1271,7 @@ export function MessageTemplateManager({
                   placeholder="Enter the template content..."
                   className="font-mono"
                   minHeight={200}
+                  maxHeight={600}
                 />
               </EditableContextMenu>
             </div>

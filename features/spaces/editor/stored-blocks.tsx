@@ -9,12 +9,13 @@ import { createReactBlockSpec } from "@blocknote/react";
 import { createExtension, defaultProps, type Extension, type ExtensionFactoryInstance } from "@blocknote/core";
 import { Plugin } from "@tiptap/pm/state";
 import { DATABASE_EVENT_CLAIMS, DatabaseHost } from "./database-host";
-import katex from "katex";
+import DisplayMath from "@/features/math/components/DisplayMath";
+import InlineMathText from "@/features/math/components/InlineMathText";
 import { FileText, Globe, Paperclip, TriangleAlert } from "lucide-react";
 import { useLinkPreview } from "@/lib/link-preview";
 import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
-import { Component, useEffect, useMemo, useRef, useSyncExternalStore, type ReactNode } from "react";
+import { Component, useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 
@@ -82,17 +83,13 @@ function Caption({ spans }: { spans: unknown }) {
   );
 }
 
-function katexHtml(expression: string, displayMode: boolean): string {
-  try {
-    return katex.renderToString(expression, { displayMode, throwOnError: false });
-  } catch {
-    return expression;
-  }
-}
-
 export function InlineMath({ expression }: { expression: string }) {
-  const html = useMemo(() => katexHtml(expression, false), [expression]);
-  return <span className="spaces-inline-equation" dangerouslySetInnerHTML={{ __html: html }} />;
+  // Through the ONE markdown core (math preset), never a direct KaTeX call.
+  return (
+    <span className="spaces-inline-equation">
+      <InlineMathText text={expression ? `$${expression}$` : ""} />
+    </span>
+  );
 }
 
 function hostOf(url: string): string {
@@ -195,9 +192,10 @@ function EmbedBlock({ p }: { p: Record<string, unknown> }) {
 
 function EquationBlock({ p }: { p: Record<string, unknown> }) {
   const expression = String(p.expression ?? "");
-  const html = useMemo(() => katexHtml(expression, true), [expression]);
   return expression ? (
-    <div className="spaces-equation" contentEditable={false} dangerouslySetInnerHTML={{ __html: html }} />
+    <div className="spaces-equation" contentEditable={false}>
+      <DisplayMath math={expression} />
+    </div>
   ) : (
     <div className="spaces-media-empty" contentEditable={false}>Add a TeX equation</div>
   );

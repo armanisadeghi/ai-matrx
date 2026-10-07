@@ -204,8 +204,10 @@ export function KnowledgeChunkInline({
       actions={actions}
     >
       <div className="max-h-[440px] overflow-y-auto p-3">
-        <div className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">
-          {chunk.content || (
+        <div className="text-xs leading-relaxed text-foreground">
+          {chunk.content ? (
+            <RichContent source={chunk.content} level="standard" />
+          ) : (
             <span className="text-muted-foreground">Empty chunk.</span>
           )}
         </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { AutoResizeTextarea } from "@/features/message-templates/components/AutoResizeTextarea";
+import { ProTextarea } from "@/components/official/ProTextarea";
 import { MobileOverlayWrapper } from "@/components/official/MobileOverlayWrapper";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@ai-matrx/design-system/controls";
@@ -219,13 +219,14 @@ export function SaveTemplateModal({
                             onTextInsertBefore={(text) => setContent(`${text}${content}`)}
                             onTextInsertAfter={(text) => setContent(`${content}${text}`)}
                         >
-                            <AutoResizeTextarea
+                            <ProTextarea sourceFeature="messages" autoGrow
                                 ref={textareaRef}
                                 value={content}
                                 onChange={(e) => setContent(e.target.value)}
                                 placeholder="Enter template content..."
                                 className="font-mono text-sm"
                                 minHeight={200}
+                                maxHeight={600}
                             />
                         </EditableContextMenu>
                     </div>
@@ -246,13 +247,14 @@ export function SaveTemplateModal({
                         onTextInsertBefore={(text) => setContent(`${text}${content}`)}
                         onTextInsertAfter={(text) => setContent(`${content}${text}`)}
                     >
-                        <AutoResizeTextarea
+                        <ProTextarea sourceFeature="messages" autoGrow
                             ref={textareaRef}
                             value={content}
                             onChange={(e) => setContent(e.target.value)}
                             placeholder="Enter template content..."
                             className="font-mono text-sm"
                             minHeight={200}
+                            maxHeight={600}
                         />
                     </EditableContextMenu>
                 </div>

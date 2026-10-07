@@ -16,7 +16,7 @@ export function provideAppScopeModules(): void {
   provided = true;
   provideScopeModules({
     "motion/react": () => import("motion/react"),
-    "react-katex": () => import("react-katex"),
+    "react-katex": () => import("./react-katex-scope"),
     "react-pdf": () => import("react-pdf"),
     // A person's code imports `xlsx`: it gets the SheetJS module Alchemy's workbook engine bundles (one copy in the app).
     xlsx: async () => (await import("@ai-matrx/alchemy/operate/formats/xlsx")).loadSheetJs(),

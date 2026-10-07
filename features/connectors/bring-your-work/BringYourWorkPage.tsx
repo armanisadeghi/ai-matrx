@@ -30,6 +30,7 @@ import { BrandGlyph } from "@/components/icons/brand-glyphs";
 import { copyContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { GoogleSheetsMark, NotionMark } from "@/features/connectors/marks";
 import { cn } from "@/lib/utils";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 const MATRX_MCP_URL = "https://server.app.matrxserver.com/api/matrx-mcp";
 
@@ -339,7 +340,7 @@ export function BringYourWorkPage() {
                   </Button>
                 </div>
                 {open ? (
-                  <p className="m-0 whitespace-pre-line rounded-md bg-muted/50 px-3 py-2 type-secondary text-muted-foreground">{promptText}</p>
+                  <div className="m-0 rounded-md bg-muted/50 px-3 py-2 type-secondary text-muted-foreground"><RichContent source={promptText} level="standard" /></div>
                 ) : null}
               </div>
             );

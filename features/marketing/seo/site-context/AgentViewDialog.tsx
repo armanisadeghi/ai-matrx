@@ -121,6 +121,7 @@ export function AgentViewDialog({
               {view === "exact" ? (
                 <pre
                   data-testid="agent-view-exact"
+                  /* rich-content-exempt: the exact bytes the agent receives, shown verbatim on purpose */
                   className="whitespace-pre-wrap break-all rounded-md border border-border bg-card p-2 font-mono text-xs"
                 >
                   {text}

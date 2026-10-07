@@ -262,7 +262,7 @@ function MessageCard({ role, content }: { role?: string; content: string }) {
           actions={{ exclude: ["announcements", "preferences"] }}
         />
       ) : (
-        <pre className="type-body font-mono whitespace-pre-wrap break-words p-3 rounded-md bg-muted/30 border border-border/40 leading-relaxed">
+        <pre /* rich-content-exempt: the Text half of the MD/Text toggle: the person chose to see the raw source */ className="type-body font-mono whitespace-pre-wrap break-words p-3 rounded-md bg-muted/30 border border-border/40 leading-relaxed">
           {content || "—"}
         </pre>
       )}

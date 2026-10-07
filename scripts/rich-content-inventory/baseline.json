@@ -8,20 +8,14 @@
     "FullScreenMarkdownEditor :: components/mardown-display/chat-markdown/FullScreenMarkdownEditorBridge.tsx",
     "FullScreenMarkdownEditor :: features/overlays/openers/fullScreenEditor.tsx",
     "hand-rolled:AutoTextarea :: components/admin/ContentBlocksManager.tsx",
-    "hand-rolled:AutoTextarea :: features/message-templates/admin/MessageTemplateManager.tsx",
-    "hand-rolled:AutoTextarea :: features/message-templates/components/SaveTemplateModal.tsx",
-    "hand-rolled:AutoTextarea :: features/message-templates/components/TemplateEditor.tsx",
     "official/ContentEditor :: app/(admin)/administration/ui/official-components/component-displays/content-editor.tsx",
     "official/ContentEditor :: components/official/content-editor/ContentEditorStack.tsx",
     "official/ContentEditor :: components/official/content-editor/ContentEditorTabs.tsx",
     "official/ContentEditor :: features/window-panels/windows/content-editors/ContentEditorListWindow.tsx",
     "official/ContentEditor :: features/window-panels/windows/content-editors/ContentEditorWindow.tsx",
-    "pkg:react-katex :: features/dynamic-react/toolRendererScope.ts",
     "pkg:react-markdown :: components/mardown-display/MarkdownRenderer.tsx",
-    "pkg:react-markdown :: components/mardown-display/chat-markdown/ConfigurableMarkdownContent.tsx",
     "pkg:react-markdown :: components/mardown-display/markdown-classification/custom-views/common/MarkdownTextDisplay.tsx",
     "pkg:react-markdown :: components/mardown-display/markdown-classification/parts/CodeComponent.tsx",
-    "pkg:react-markdown :: components/markdown-core/markdown-core-types.ts",
     "pkg:react-markdown :: components/message-display/MarkdownWithPlugins.tsx",
     "pkg:react-markdown :: components/message-display/MessageContentDisplay.tsx",
     "pkg:react-markdown :: features/content-ir/sandbox/runtime/FrameMarkdown.tsx",
@@ -36,7 +30,6 @@
     "prompt:HighlightedText :: features/agents/components/builder/message-builders/SpeechScriptEditor.tsx",
     "prompt:HighlightedText :: features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx",
     "prompt:MessageViewModeMenu :: features/agents/components/builder/message-builders/MessageItem.tsx",
-    "prompt:MessageViewModeMenu :: features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx",
-    "regex-markdown-link-in-jsx :: components/rich-editor/visual/nodes/InlineIslandView.tsx"
+    "prompt:MessageViewModeMenu :: features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx"
   ]
 }

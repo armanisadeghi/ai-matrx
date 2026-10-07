@@ -44,6 +44,7 @@ import {
   type ChipTone,
   type ResultKindBlockProps,
 } from "@/components/mardown-display/blocks/result-kinds/result-kind-shared";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 type ViewProps = { value: unknown; className?: string };
 
@@ -80,15 +81,15 @@ export const LongText: React.FC<{ text: string | null; className?: string; maxHe
   maxHeight = "max-h-80",
 }) =>
   text ? (
-    <pre
+    <div
       className={cn(
-        "overflow-auto whitespace-pre-wrap break-words rounded-md border border-border bg-muted/30 p-2.5 font-mono text-xs leading-relaxed text-foreground",
+        "overflow-auto break-words rounded-md border border-border bg-muted/30 p-2.5 text-xs leading-relaxed text-foreground",
         maxHeight,
         className,
       )}
     >
-      {text}
-    </pre>
+      <RichContent source={text} level="standard" />
+    </div>
   ) : (
     <Missing />
   );

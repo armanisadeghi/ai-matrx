@@ -17,6 +17,7 @@ import { resolveDocumentContentView } from "./documentContentView";
 import { useMediaResolution } from "@ai-matrx/media/core";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 
 /**
  * Inline renderer for `document_content` — random access into a processed
@@ -60,8 +61,12 @@ function TextBody({ result }: { result: Record<string, unknown> }) {
   const hasMore = result.has_more === true;
   return (
     <div className="max-h-[440px] overflow-y-auto p-3">
-      <div className="whitespace-pre-wrap text-xs leading-relaxed text-foreground">
-        {text || <span className="text-muted-foreground">No text on these pages.</span>}
+      <div className="text-xs leading-relaxed text-foreground">
+        {text ? (
+          <RichContent source={text} level="standard" />
+        ) : (
+          <span className="text-muted-foreground">No text on these pages.</span>
+        )}
       </div>
       {hasMore ? (
         <div className="mt-2 text-[11px] text-muted-foreground">

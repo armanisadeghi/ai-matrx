@@ -511,7 +511,7 @@ function UserInputTab({ conversationId }: { conversationId: string | null }) {
       <SectionHeader title="Text" />
       <div className="px-3 pb-2">
         {text ? (
-          <pre className="type-secondary font-mono text-foreground whitespace-pre-wrap bg-muted/10 rounded p-2">
+          <pre /* rich-content-exempt: debug or inspector output: the raw text of the instance */ className="type-secondary font-mono text-foreground whitespace-pre-wrap bg-muted/10 rounded p-2">
             {text}
           </pre>
         ) : (
