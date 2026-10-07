@@ -90,7 +90,7 @@ export const PIECES: Piece[] = [
   {
     id: "enter-to-send",
     name: "Enter-to-send (composerKeyIntent)",
-    canonical: ["../aidream/apps/shared/chat/src/ui/composer/composerSubmit.ts", "components/official/composer/composerSubmit.ts"],
+    canonical: ["../aidream/apps/shared/kit/src/composer-keys.ts", "components/official/composer/composerSubmit.ts"],
     approved: [],
     scope: notTest,
     detect: ({ code }) => {

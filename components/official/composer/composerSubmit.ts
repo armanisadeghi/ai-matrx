@@ -1,2 +1,2 @@
-/** Moved into @ai-matrx/chat (package-local); this path stays as a shim for app importers. */
-export * from "@ai-matrx/chat/ui/composer/composerSubmit";
+/** The ONE composer key rule lives in @ai-matrx/kit/composer-keys; this path stays for app importers. */
+export * from "@ai-matrx/kit/composer-keys";
