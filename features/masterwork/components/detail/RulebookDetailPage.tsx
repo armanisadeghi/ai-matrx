@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectIsSuperAdmin,
+  selectAdminFeature,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { resolveLibraryOrgId } from "@/lib/organizations/systemOrg";
@@ -1429,7 +1429,9 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
       cancelled = true;
     };
   }, [masterworkIdKey, rulebookId]);
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "library.publish"),
+  );
   const openAddRule = useOpenAddRuleWindow();
 
   // Resolved once, and only for the admins who can actually issue a grant.
