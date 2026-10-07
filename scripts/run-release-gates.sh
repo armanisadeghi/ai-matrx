@@ -858,6 +858,9 @@ if $STRICT; then
         "On-screen \"context\" that is not context (scopes, rules, settings)|pnpm check:context-word --strict"
         # RAW IDENTIFIERS — a key, variable name, slug, kind or tool name never renders as words
         # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
+        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
+        # route segment or visible string. Shrink-only baseline; advisory here.
+        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
         "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
         # RETIRED WORDS — renamed schemas and actor tiers stay renamed (word list:
@@ -1541,6 +1544,9 @@ else
         # (Arman, 2026-10-02): the label, else the one humanizer. Baseline ratchet; advisory here.
         "Rendered raw identifier (snake_case key on screen)|pnpm check:raw-identifiers --strict"
         "Raw identifier guard self-test|pnpm check:raw-identifiers:self-test"
+        # LEXICON — a retired product name (the lexicon's "Retired aliases") in a
+        # route segment or visible string. Shrink-only baseline; advisory here.
+        "Retired product name in a route or visible string (platform lexicon)|pnpm check:lexicon"
         # RETIRED WORDS — renamed schemas and actor tiers stay renamed (word list:
         # common-docs retired-words.json; ONE-HOME, 2026-10-02). Baseline ratchet: exits 1 only on a NEW use; advisory here.
         "Retired word used (old schema or actor-tier name)|pnpm check:retired-words"
