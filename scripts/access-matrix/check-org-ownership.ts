@@ -563,6 +563,8 @@ async function verifyCohortOnly(env: Env): Promise<number> {
 ` +
       `    delete from iam.memberships   where container_id in (select id from iam.organizations where slug like '${FIXTURE_PREFIX}%');
 ` +
+      `    select iam.arm_fixture_delete(array(select id from auth.users where email like '${FIXTURE_PREFIX}%${FIXTURE_EMAIL_DOMAIN}'));  -- account deletes are refused unless tagged fixtures are armed (2026-10-06)
+` +
       `    delete from auth.users        where email like '${FIXTURE_PREFIX}%${FIXTURE_EMAIL_DOMAIN}';
 ` +
       `    delete from iam.organizations where slug  like '${FIXTURE_PREFIX}%';
