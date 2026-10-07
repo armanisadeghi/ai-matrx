@@ -45,6 +45,9 @@ function initialsForName(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
+/** The retired database's project ref — its storage host serves nothing any more. */
+const RETIRED_STORAGE_HOST_REF = "txzxabzwovsujtloxrus";
+
 /**
  * Agent-app tab icon.
  *
@@ -58,7 +61,9 @@ export function getAgentAppIconsMetadata(
   name?: string | null,
   _variant: AgentAppIconsVariant = "default",
 ): Metadata["icons"] {
-  if (faviconUrl) {
+  // A stored URL on the RETIRED database host points at a file that no longer exists (20 legacy
+  // published Applets carried one — feedback c59b2e74): it is never honoured, the badge is drawn.
+  if (faviconUrl && !faviconUrl.includes(RETIRED_STORAGE_HOST_REF)) {
     return {
       icon: [{ url: faviconUrl, type: "image/svg+xml" }],
     };

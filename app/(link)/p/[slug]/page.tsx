@@ -28,6 +28,8 @@ async function resolveAgentAppMetadata(
   slug: string,
 ): Promise<AgentAppMetadata | null> {
   const supabase = await createClient();
+  // A slug may itself be UUID-shaped (apps whose slug was minted from a uuid): an id-shaped
+  // address is tried as the id first, then as the slug (feedback c59b2e74).
   const isId = isUuidShape(slug);
   const column = isId ? "id" : "slug";
 
@@ -43,6 +45,19 @@ async function resolveAgentAppMetadata(
     .eq("status", "published")
     .eq("published_to_web", true)
     .maybeSingle();
+
+  if (!data && isId) {
+    const { data: bySlug } = await supabase
+      .schema("app")
+      .from("definition")
+      .select("name, tagline, description, preview_image_url, favicon_url")
+      .is("deleted_at", null)
+      .eq("slug", slug)
+      .eq("status", "published")
+      .eq("published_to_web", true)
+      .maybeSingle();
+    return bySlug;
+  }
 
   return data;
 }
@@ -104,7 +119,13 @@ export default async function PublicAppPage({
     p_slug: !isId ? slug : undefined,
     p_app_id: isId ? slug : undefined,
   });
-  const rpcRow = rpcRows?.[0];
+  let rpcRow = rpcRows?.[0];
+  // A UUID-shaped slug is an address too, not only an id: no app with that id means ask by slug
+  // (two published Applets answered "Sign in to open this item" to everyone signed out — c59b2e74).
+  if (!rpcRow && isId) {
+    const { data: bySlug } = await supabase.rpc("get_aga_public_data", { p_slug: slug });
+    rpcRow = bySlug?.[0];
+  }
 
   if (!rpcRow) {
     if (isId) {
