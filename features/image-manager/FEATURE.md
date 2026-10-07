@@ -16,6 +16,8 @@
 
 ## Entry points
 
+The `/images` landing publishes its rendered Manager and Studio catalogs through `matrx-user/image-manager`: section titles, home routes, each link label/description/route, and link count. The provider surrounds the canonical read-only menu. Landing selection values are absent because the page offers navigation, not selectable files; shared hub tabs require their own emitter audits.
+
 **Routes (under `/images/*`)**
 
 - `/images/public-search` → `<PublicImagesSection>`

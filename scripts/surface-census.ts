@@ -24,13 +24,17 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { readdirSync, writeFileSync } from "node:fs";
+import { readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { getAllManifests } from "@/features/surfaces/manifests/registry";
 
-// The app's manifests, and the chat package's own (moved there in P19).
-const MANIFEST_DIRS = ["features/surfaces/manifests", "../aidream/apps/shared/chat/src/surfaces/manifests"];
+// Inspect the same published modules the host registry consumes. Requiring a
+// sibling package's TS source bypasses its exports and breaks after extraction.
+const LOCAL_MANIFEST_DIR = "features/surfaces/manifests";
+const PACKAGE_MANIFESTS = [...readFileSync(`${LOCAL_MANIFEST_DIR}/registry.ts`, "utf8")
+  .matchAll(/from ["'](@ai-matrx\/chat\/surfaces\/manifests\/[^"']+)["']/g)]
+  .flatMap((match) => match[1] ? [match[1]] : []);
 // Same resolution path as the registry's own static imports (a dynamic import()
 // by file URL takes the ESM path, which one package's exports map refuses).
 const requireModule = createRequire(__filename);
@@ -70,12 +74,13 @@ async function main() {
 
   // Map each manifest module to its surface name(s) and its scope builders.
   const buildersBySurface = new Map<string, { file: string; builders: string[] }>();
-  for (const rel of MANIFEST_DIRS.flatMap((dir) =>
-    readdirSync(dir)
+  for (const rel of [
+    ...readdirSync(LOCAL_MANIFEST_DIR)
       .filter((f) => f.endsWith(".manifest.ts"))
-      .map((f) => path.join(dir, f)),
-  )) {
-    const mod = requireModule(path.resolve(rel)) as Record<string, unknown>;
+      .map((f) => path.join(LOCAL_MANIFEST_DIR, f)),
+    ...new Set(PACKAGE_MANIFESTS),
+  ]) {
+    const mod = requireModule(rel.startsWith("@") ? rel : path.resolve(rel)) as Record<string, unknown>;
     const builders = Object.entries(mod)
       .filter(([k, v]) => typeof v === "function" && /^create[A-Za-z0-9]*Scope$/.test(k))
       .map(([k]) => k);
