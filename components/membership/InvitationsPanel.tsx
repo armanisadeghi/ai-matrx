@@ -608,7 +608,7 @@ export function InvitationsPanel({
 
               const handleCopyLink = async () => {
                 try {
-                  await copyText(invitationLink, "Invitation link copied to clipboard");
+                  if (!(await copyText(invitationLink, "Invitation link copied to clipboard"))) return;
                 } catch {
                   toast.error("Failed to copy link");
                 }

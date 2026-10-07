@@ -136,3 +136,33 @@ test("an editor writing back the value a clean field already holds is not an uns
   });
   expect(record(store)._dirty).toBe(false);
 });
+
+test("a settings-only edit backs up the model with it, so a class pin never restores beside another model", () => {
+  // Captured 2026-10-07: a restore brought back settings.offering_id (a class
+  // of another model) without that model — ai.resolve_model_config refused the
+  // pair with P0002 and the settings panel locked.
+  jest.useFakeTimers();
+  try {
+    localStorage.clear();
+    const store = makeStore();
+    serverFetch(store);
+    mount(store);
+    act(() => {
+      store.dispatch(
+        setAgentField({
+          id: AGENT,
+          field: "settings",
+          value: { ...SAVED, offering_id: "cb1f1119-911a-49f7-8bf1-fbc28e21f8ae" },
+        }),
+      );
+    });
+    act(() => {
+      jest.advanceTimersByTime(2_500);
+    });
+    const backup = JSON.parse(localStorage.getItem(KEY) ?? "{}");
+    expect(backup.settings).toMatchObject({ offering_id: "cb1f1119-911a-49f7-8bf1-fbc28e21f8ae" });
+    expect(backup.modelId).toBe("gpt-image-2");
+  } finally {
+    jest.useRealTimers();
+  }
+});

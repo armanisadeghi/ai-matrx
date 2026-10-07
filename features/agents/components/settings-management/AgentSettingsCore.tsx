@@ -23,6 +23,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { SwitchLegacy as Switch } from "@/components/ui/switch";
 import { Button } from "@ai-matrx/design-system";
+import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { Input } from "@ai-matrx/design-system";
 import { TextareaLegacy as Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1205,70 +1206,20 @@ export function AgentSettingsCore({
     offeringPin?: { offeringId: string | undefined };
   } | null>(null);
 
-  // The picker reports the class (offering pin) and the model in the SAME
-  // click, in either order. Both are parked for that click and applied once
-  // its handlers have run: a model change carries the class into its commit
-  // (immediate or after the reconciliation dialog); a class-only change is
-  // written directly. The class is never written ahead of its model — that
-  // interim pair (old model + new model's class) is refused by
-  // ai.resolve_model_config / ai.model_message_flag_profile with P0002.
-  const clickRef = useRef<{
-    modelId?: string;
-    pin?: { offeringId: string | undefined };
-  } | null>(null);
-
-  const parkForClick = (update: {
-    modelId?: string;
-    pin?: { offeringId: string | undefined };
-  }) => {
-    if (!clickRef.current) {
-      clickRef.current = {};
-      queueMicrotask(() => {
-        const click = clickRef.current;
-        clickRef.current = null;
-        if (!click) return;
-        if (click.modelId) {
-          commitModelChange(click.modelId, click.pin);
-        } else if (click.pin) {
-          dispatch(
-            setAgentSettings({
-              id: agentId,
-              settings: withOfferingPin(currentSettings, click.pin.offeringId),
-            }),
-          );
-        }
-      });
-    }
-    Object.assign(clickRef.current, update);
-  };
-
-  const handleOfferingPinChange = (offeringId: string | undefined) => {
-    // settings === null → the agent record hasn't hydrated; writing over it
-    // would drop every real setting on save (same guard as the builder row).
-    if (settings === null) {
-      console.error(
-        `[AgentSettingsCore] Refused to pin offering ${String(offeringId)} — agent ${agentId} settings not hydrated yet.`,
-      );
-      return;
-    }
-    parkForClick({ pin: { offeringId } });
-  };
-
-  const handleModelChange = (newModelId: string) => {
-    if (!newModelId || newModelId === modelId) return;
-    parkForClick({ modelId: newModelId });
-  };
+  // Handlers run only after hydration (the panel renders a loader while
+  // settings === null), so they read the store's settings directly.
+  const hydratedSettings = (settings ?? {}) as FeLlmParams;
 
   // A class belongs to exactly one model: the new model runs on the class
   // picked with it, or on none (its preferred class) — never the old model's.
   const commitClassWithModel = (
     clickPin: { offeringId: string | undefined } | undefined,
   ) => {
-    if (!clickPin && currentSettings.offering_id == null) return;
+    if (!clickPin && hydratedSettings.offering_id == null) return;
     dispatch(
       setAgentSettings({
         id: agentId,
-        settings: withOfferingPin(currentSettings, clickPin?.offeringId),
+        settings: withOfferingPin(hydratedSettings, clickPin?.offeringId),
       }),
     );
   };
@@ -1278,8 +1229,8 @@ export function AgentSettingsCore({
     clickPin: { offeringId: string | undefined } | undefined,
   ) => {
     const planSettings: FeLlmParams = clickPin
-      ? withOfferingPin(currentSettings, clickPin.offeringId)
-      : currentSettings;
+      ? withOfferingPin(hydratedSettings, clickPin.offeringId)
+      : hydratedSettings;
 
     const newModel = models.find((m) => m.id === newModelId);
     if (!newModel) {
@@ -1334,6 +1285,60 @@ export function AgentSettingsCore({
       plan,
       ...(clickPin ? { offeringPin: clickPin } : {}),
     });
+  };
+
+  // The picker reports the class (offering pin) and the model in the SAME
+  // click, in either order. Both are parked for that click and applied once
+  // its handlers have run: a model change carries the class into its commit
+  // (immediate or after the reconciliation dialog); a class-only change is
+  // written directly. The class is never written ahead of its model — that
+  // interim pair (old model + new model's class) is refused by
+  // ai.resolve_model_config / ai.model_message_flag_profile with P0002.
+  const clickRef = useRef<{
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  } | null>(null);
+
+  const parkForClick = (update: {
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  }) => {
+    if (!clickRef.current) {
+      clickRef.current = {};
+      queueMicrotask(() => {
+        const click = clickRef.current;
+        clickRef.current = null;
+        if (!click) return;
+        if (click.modelId) {
+          commitModelChange(click.modelId, click.pin);
+        } else if (click.pin) {
+          dispatch(
+            setAgentSettings({
+              id: agentId,
+              settings: withOfferingPin(hydratedSettings, click.pin.offeringId),
+            }),
+          );
+        }
+      });
+    }
+    Object.assign(clickRef.current, update);
+  };
+
+  const handleOfferingPinChange = (offeringId: string | undefined) => {
+    // settings === null → the agent record hasn't hydrated; writing over it
+    // would drop every real setting on save (same guard as the builder row).
+    if (settings === null) {
+      console.error(
+        `[AgentSettingsCore] Refused to pin offering ${String(offeringId)} — agent ${agentId} settings not hydrated yet.`,
+      );
+      return;
+    }
+    parkForClick({ pin: { offeringId } });
+  };
+
+  const handleModelChange = (newModelId: string) => {
+    if (!newModelId || newModelId === modelId) return;
+    parkForClick({ modelId: newModelId });
   };
 
   const handleReconciliationCommit = (nextSettings: LLMParams) => {
@@ -1574,6 +1579,8 @@ export function AgentSettingsCore({
   // the FeLlmParams superset (every extra key is optional) — no cast, and no
   // `?? {}` fallback that could mask the pre-hydration null and drop settings.
   const currentSettings: FeLlmParams = settings;
+
+
 
   const handleFixAll = () => {
     const next = applyAllFixableIssues(
@@ -2114,22 +2121,22 @@ export function AgentSettingsCore({
     );
   }
 
-  if (error) {
-    return (
-      <div className="type-secondary text-red-600 dark:text-red-400 px-1 py-2">
-        Error loading model controls: {error}
-        <ErrorAlchemyMenu error={error} />
-      </div>
-    );
-  }
-
+  // A controls problem (refused class pin, model missing from the catalog) is
+  // shown INSIDE the panel, never instead of it: the model picker, the class
+  // pin and Raw Edit must stay reachable so the person can fix the setting.
+  const classPinRefused = classControls?.failed === true;
   const noControls = !normalizedControls;
+  // With a controls problem the panel still opens on Settings, where the
+  // notice and the model picker are; every other tab stays reachable.
+  const controlsReady = !noControls;
+  const settingsTabOpen = activeTab === "settings" || (noControls && !error);
+  const tabsReachable = controlsReady || Boolean(error);
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col h-full">
       {/* Tab bar */}
-      {!noControls && (
+      {tabsReachable && (
         <TabBar
           active={activeTab}
           onChange={setActiveTab}
@@ -2142,8 +2149,31 @@ export function AgentSettingsCore({
         className={`flex-1 min-h-0 ${activeTab === "raw-edit" || activeTab === "output-schema" ? "flex flex-col" : "overflow-y-auto"} pt-3`}
       >
         {/* ── SETTINGS TAB ───────────────────────────────────────────────── */}
-        {(activeTab === "settings" || noControls) && (
+        {settingsTabOpen && (
           <div className="space-y-1.5">
+            {error && (
+              <ErrorNotice
+                size="compact"
+                message={
+                  classPinRefused
+                    ? "Pinned class is not offered for this model"
+                    : error
+                }
+                error={error}
+                operation="Load this model's settings"
+                actions={
+                  classPinRefused ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleOfferingPinChange(undefined)}
+                    >
+                      Use Auto
+                    </Button>
+                  ) : undefined
+                }
+              />
+            )}
             {/* Model selector */}
             <div className="flex items-center gap-2 pb-1 border-b border-border">
               <Label className="text-xs text-muted-foreground flex-shrink-0 w-36">
@@ -2160,7 +2190,7 @@ export function AgentSettingsCore({
               </div>
             </div>
 
-            {noControls && (
+            {noControls && !error && (
               <p className="type-secondary text-muted-foreground">
                 Select a model to see available settings.
               </p>

@@ -24,6 +24,8 @@
  *              -> register with Alchemy's registry instead of a private one.
  *  handcsv     a hand-rolled CSV/TSV writer: quote-doubling (`.replace(/"/g, '""')`) or a
  *              `.join(",")` / `.join("\t")` over rows within 15 lines of a csv/tsv mime or filename
+ *              (the join counts only when it follows a row `.map(` / `.forEach(` — a join of a plain list, e.g. a file-extension
+ *              accept string beside the word "csv", is not a writer)
  *              -> toDelimitedText (/operate/read) or buildFile (/operate): ONE dialect, spreadsheet-safe.
  *  windowopen  `window.open(` of a blob / object URL (a file handed to a popup, which blockers kill)
  *              -> downloadFile / downloadUrl (kit), or the Alchemy menu's open/preview action.
@@ -93,9 +95,33 @@ const ALLOW: Record<Rule, string[]> = {
     // A lookup of owner getters by element key; the rows' actions reach the registry the same way
     // every other extraSections row does. Not an action store.
     "features/context-menu-v3/record-menu-registry.ts",
+    // AP-2 triage (2026-10-07): each holds ADAPTERS / DATA / HANDLES, no runnable menu or toolbar action.
+    // Mermaid structural-editing adapters (parse / serialize / applyOp per diagram type) - the workbench's model layer.
+    "components/mermaid/model/adapter.ts",
+    // Library tab-source adapters (tab-id prefix -> loader); a data-source lookup.
+    "features/code/library-sources/registry.ts",
+    // Content-conversion generators keyed by target kind - the converter contract's dispatch table, not a menu.
+    "features/education/convert/registry.ts",
+    // Cloud-files virtual-root storage adapters (read/write a source); not actions.
+    "features/files/virtual-sources/registry.ts",
+    // Declared mandate PLACES (where a feature's agent runs) - declarations read by the intelligence page.
+    "features/mandates/feature-intelligence/page-intelligence-doors.ts",
+    // Live-instance lookup providerId -> getCtx + the resolved action list of a mounted RichDocument; those
+    // actions are the SAME ones the Alchemy richDocumentActionProvider owns and run through the Alchemy ClickTarget.
+    "features/rich-document/runtime/providerBridge.ts",
+    // WindowPanel's own imperative openPopout handle by window id; not a menu action.
+    "features/window-panels/popout/usePopoutControl.ts",
+    // Providers of client-state payloads sent WITH an agent request (client.capabilities), not user-invoked actions.
+    "packages/chat/src/agents/redux/execution-system/client-capabilities/registry.ts",
+    // Promise resolvers for a pending ask_user tool call (callId -> resolve); a rendezvous, not an action.
+    "packages/chat/src/agents/ui-first-tools/redux/ask-resolver-registry.ts",
+    // Mounted custom-fields section doors (the surface write door's targets for `custom_fields`); not menu actions.
+    "packages/chat/src/surfaces/runtime/custom-field-targets.ts",
   ],
   handcsv: [],
-  windowopen: [],
+  // QuickHtmlShareModal opens the author's HTML in a new tab as a PREVIEW of the page (a blob URL they look
+  // at, with the real download one button over) - there is nothing to save, so it is not a download.
+  windowopen: ["features/agent-apps/components/QuickHtmlShareModal.tsx"],
   // The sandbox escape probe clicks a `javascript:` anchor on purpose, to PROVE the sandbox refuses it —
   // it saves nothing and navigates nowhere.
   anchorclick: ["features/content-ir/sandbox/browser/probes.ts"],
@@ -111,6 +137,8 @@ const CSV_JOIN = /\.join\(\s*["'`](?:,|\\t)["'`]\s*\)/;
 const CSV_NAME = /text\/csv|text\/tab-separated|["'`.][\w-]*\.(?:csv|tsv)\b|\b(?:csv|tsv)\b/i;
 /** A module Map whose declared value can RUN (a handler, action, command, provider, adapter, resolver, door, callback). */
 const RUNNABLE_VALUE = /action|handler|command|menu|provider|adapter|resolver|generator|door|callback|=>|Fn\b/i;
+/** A Map/Set of bare `() => void` listeners (pub/sub, abort waiters) holds subscriptions, not runnable actions. */
+const LISTENER_SET = /Set<\s*\(\s*\)\s*=>\s*void\s*>/;
 const OBJECT_URL = /URL\.createObjectURL\s*\(|["'`]blob:/;
 
 const DOWNLOAD_MARK = [/\.download\s*=/, /setAttribute\(\s*["']download["']/, /<a\b[^>]*\sdownload\b/, /\bsaveAs\s*\(/];
@@ -150,8 +178,8 @@ export function scanSource(file: string, src: string): Hit[] {
       /action|handler/i.test(l)
     )
       add("registries", i);
-    else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && RUNNABLE_VALUE.test(l)) add("registries", i);
-    if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
+    else if (hasRegisterFn && /^(export\s+)?(const|let)\s+\w+\s*(:[^=]*)?=\s*new\s+Map\b/.test(l) && RUNNABLE_VALUE.test(l) && !LISTENER_SET.test(l)) add("registries", i);
+    if (CSV_QUOTE_DOUBLING.test(l) || (CSV_JOIN.test(l) && near(i, 8, 0, (x) => /\.map\(|\.forEach\(/.test(x)) && near(i, 15, 15, (x) => CSV_NAME.test(x)))) add("handcsv", i);
     if (/\bwindow\.open\s*\(/.test(l) && near(i, 6, 0, (x) => OBJECT_URL.test(x))) add("windowopen", i);
     if (/\.click\s*\(\s*\)/.test(l) && near(i, 6, 0, (x) => /\.href\s*=(?!=)/.test(x)) && !near(i, 8, 3, (x) => DOWNLOAD_MARK.some((r) => r.test(x))))
       add("anchorclick", i);
@@ -221,6 +249,8 @@ function selfTest(): number {
     { rule: "registries", file: "features/x/Foo.ts", src: "const store = new Map<string, number>();\nexport function lookup(k: string) { return store.get(k); }\n", red: false, what: "module Map with no register*" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const mime = 'text/csv';\nconst body = rows.map((r) => r.join(','));\n", red: true, what: "join(',') beside a csv mime" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const label = parts.join(',');\n", red: false, what: "join(',') with no csv nearby" },
+    { rule: "handcsv", file: "features/x/Foo.ts", src: "const ACCEPT = '.pdf,.csv';\nconst only = ACCEPT.split(',').filter(ok).join(',');\n", red: false, what: "join(',') of an extension list beside the word csv" },
+    { rule: "registries", file: "features/x/Foo.ts", src: "const subs = new Map<string, Set<() => void>>();\nexport function registerSub(k: string) { subs.set(k, new Set()); }\n", red: false, what: "listener-set Map beside register*" },
     { rule: "windowopen", file: "features/x/Foo.ts", src: "window.open('https://example.com', '_blank');\n", red: false, what: "window.open of a plain URL" },
     { rule: "anchorclick", file: "features/x/Foo.ts", src: "const a = document.createElement('a');\na.href = url;\na.download = 'f.csv';\na.click();\n", red: false, what: "anchor click WITH a download attribute (the downloads rule owns it)" },
   ];

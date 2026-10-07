@@ -213,7 +213,10 @@ function savedAssistant(metadata: Record<string, unknown>): MessageRecord {
 }
 
 test("a reloaded turn the provider stopped early reads as failed, with a sentence", () => {
-  const record = savedAssistant({ finish_reason: "recitation" });
+  // A safety stop never lets the half-written body stand as the answer. (A
+  // recitation or length stop WITH content is an incomplete answer instead —
+  // see an-incomplete-answer-reads-the-same-live-and-reloaded.test.ts.)
+  const record = savedAssistant({ finish_reason: "safety" });
   expect(isFailedRecord(record)).toBe(true);
   const message = extractRecordError(record) ?? "";
   expect(message).not.toContain("Front:");

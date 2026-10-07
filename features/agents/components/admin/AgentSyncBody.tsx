@@ -5,11 +5,15 @@
  *
  * Linked Agent Sync: every agent linked to the viewed one by lineage — its
  * parent (`source_agent_id`) and every child copy — user or system alike. Pick
- * any relative to compare; the pair is oriented baseline → copy (a system agent
- * is the baseline when exactly one side is system, otherwise the parent is):
+ * any relative to compare. Internally the pair is oriented base → copy (the
+ * system agent is "base" when exactly one side is system, otherwise the parent);
+ * that is plumbing for the diff only. ON SCREEN the agents are "this agent",
+ * "the system agent" and "the linked agent", and the buttons say "Copy to …" /
+ * "Copy from …" from where the person stands — never "baseline"/"original"
+ * (Arman, 2026-10-06: system agents are usually made FROM a person's agent).
  *
- *   - Pull  (baseline → copy)  — copy's owner, or super admin for a system copy
- *   - Push  (copy → baseline)  — baseline's owner, or super admin for a system baseline
+ *   - Pull  (base → copy)  — copy's owner, or super admin for a system copy
+ *   - Push  (copy → base)  — base's owner, or super admin for a system base
  *   - Create my personal copy  — from a system agent with none of mine yet
  *   - Make system agent        — super admin, user agent with no system relative
  *
@@ -217,9 +221,9 @@ function defaultRelativeId(
 }
 
 /**
- * Orient the (self, relative) pair as baseline → copy. When exactly one side is
- * a system agent it is the baseline (a system agent is what copies follow, even
- * when it was converted FROM a user agent); otherwise the lineage parent is.
+ * Orient the (self, relative) pair as base → copy for the diff. When exactly one
+ * side is a system agent it is the base; otherwise the lineage parent is. These
+ * names never reach the screen (see the header).
  */
 function resolvePair(
   self: LinkedAgentRef,
@@ -359,7 +363,8 @@ export function AgentSyncBody({
     message: string;
   } | null>(null);
   const [comparisonRetry, setComparisonRetry] = useState(0);
-  const [confirmPushOpen, setConfirmPushOpen] = useState(false);
+  // Both directions overwrite an agent, so both confirm first and name the agent replaced.
+  const [confirmDirection, setConfirmDirection] = useState<"pull" | "push" | null>(null);
   const [rebindBusy, setRebindBusy] = useState(false);
 
   const counterpart =
@@ -434,8 +439,33 @@ export function AgentSyncBody({
   const baseIsSystem = baseSide?.agentType === "builtin";
   const copyIsSystem = copySide?.agentType === "builtin";
   const systemTwin = baseIsSystem ? baseSide : copyIsSystem ? copySide : null;
-  const baseNoun = baseIsSystem ? "system baseline" : "original";
-  const copyNoun = copyIsSystem ? "system copy" : "copy";
+  // Words name each agent for what it IS to the person looking — this agent,
+  // the system agent, or the linked agent — never "baseline"/"original"/"copy":
+  // system agents are usually made FROM a person's agent, so neither side is
+  // "first" (Arman, 2026-10-06).
+  const selfId = counterpart?.self.id ?? null;
+  const sideNoun = (side: LinkedAgentRef | null): string =>
+    side?.id === selfId
+      ? "this agent"
+      : side?.agentType === "builtin"
+        ? "the system agent"
+        : "the linked agent";
+  const sideLabel = (side: LinkedAgentRef | null): string =>
+    side?.id === selfId
+      ? "This agent"
+      : side?.agentType === "builtin"
+        ? "System agent"
+        : "Linked agent";
+  const otherShort = (side: LinkedAgentRef | null): string =>
+    side?.agentType === "builtin" ? "system agent" : "linked agent";
+  const baseNoun = sideNoun(baseSide);
+  const copyNoun = sideNoun(copySide);
+  // Pull writes base → copy; push writes copy → base. Each button says the
+  // direction from where the person stands.
+  const pullLabel =
+    copySide?.id === selfId ? `Copy from ${otherShort(baseSide)}` : `Copy to ${otherShort(copySide)}`;
+  const pushLabel =
+    baseSide?.id === selfId ? `Copy from ${otherShort(copySide)}` : `Copy to ${otherShort(baseSide)}`;
   const hasPair = !!copySide && !!baseSide;
   const comparisonKey =
     copySide && baseSide ? `${baseSide.id}:${copySide.id}` : null;
@@ -546,23 +576,23 @@ export function AgentSyncBody({
         fields[fieldKey] = {
           old: systemFieldMoment
             ? {
-                label: `${baseIsSystem ? "System" : "Original"} last changed`,
+                label: `${sideLabel(baseSide)} last changed`,
                 timestamp: systemFieldMoment.changedAt,
                 version: systemFieldMoment.versionNumber,
               }
             : {
-                label: `${baseIsSystem ? "System" : "Original"} record saved; exact field date unavailable`,
+                label: `${sideLabel(baseSide)} record saved; exact field date unavailable`,
                 timestamp: baseAgent.updatedAt,
                 version: baseAgent.version,
               },
           new: personalFieldMoment
             ? {
-                label: "Copy last changed",
+                label: `${sideLabel(copySide)} last changed`,
                 timestamp: personalFieldMoment.changedAt,
                 version: personalFieldMoment.versionNumber,
               }
             : {
-                label: "Copy record saved; exact field date unavailable",
+                label: `${sideLabel(copySide)} record saved; exact field date unavailable`,
                 timestamp: copyAgent.updatedAt,
                 version: copyAgent.version,
               },
@@ -836,9 +866,7 @@ export function AgentSyncBody({
         : undefined;
   const relationshipCreatedAt = derivedAgent?.createdAt ?? null;
   const relationshipCreatedLabel =
-    derivedRef?.id === baseSide.id
-      ? "System twin linked"
-      : "Copy linked";
+    "Linked";
   const behaviorDifferenceCount = comparison?.behaviorFields.length ?? 0;
   const comparisonAvailable =
     comparison !== null && currentComparisonError === null;
@@ -985,8 +1013,8 @@ export function AgentSyncBody({
               <AgentDiffViewer
                 oldAgent={baseAgent}
                 newAgent={copyAgent}
-                oldLabel={`${baseIsSystem ? "System" : "Original"} — ${baseSide.name}${baseAgent.version != null ? ` v${baseAgent.version}` : ""}`}
-                newLabel={`${copyIsSystem ? "System copy" : "Copy"} — ${copySide.name}${copyAgent.version != null ? ` v${copyAgent.version}` : ""}`}
+                oldLabel={`${sideLabel(baseSide)} — ${baseSide.name}${baseAgent.version != null ? ` v${baseAgent.version}` : ""}`}
+                newLabel={`${sideLabel(copySide)} — ${copySide.name}${copyAgent.version != null ? ` v${copyAgent.version}` : ""}`}
                 temporalMetadata={temporalMetadata}
                 className="h-full min-h-0 flex-1"
               />
@@ -1047,7 +1075,7 @@ export function AgentSyncBody({
                           ? `Synced behavior matches, but local record state differs: ${comparison.localStateFields.map((field) => humanizeIdentifier(field.key)).join(", ")}${comparison.profileFields.length > 0 ? `; profile details also differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}` : ""}.`
                           : comparison.profileFields.length > 0
                             ? `Only profile details differ: ${comparison.profileFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`
-                            : `The current runtime configuration matches the ${baseNoun}.`
+                            : `The runtime configuration matches ${baseNoun}.`
                         : `Changed behavior: ${comparison.behaviorFields.map((field) => humanizeIdentifier(field.key)).join(", ")}.`}
                     </p>
                   </div>
@@ -1077,14 +1105,14 @@ export function AgentSyncBody({
                     Current relationship
                   </h3>
                   <span className="type-meta text-muted-foreground">
-                    {baseIsSystem ? "System baseline" : "Original"} → {copyNoun}
+                    {sideLabel(baseSide)} · {sideLabel(copySide)}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
                   <AgentHeadCard
                     agentRef={baseSide}
                     agent={baseAgent}
-                    label={baseIsSystem ? "System baseline" : "Original"}
+                    label={sideLabel(baseSide)}
                   />
                   <div className="flex items-center justify-center gap-1 text-muted-foreground sm:flex-col">
                     <div className="h-px flex-1 bg-border sm:h-full sm:min-h-6 sm:w-px" />
@@ -1099,13 +1127,7 @@ export function AgentSyncBody({
                   <AgentHeadCard
                     agentRef={copySide}
                     agent={copyAgent}
-                    label={
-                      copyIsSystem
-                        ? "System copy"
-                        : copySide.isOwnedByMe
-                          ? "My copy"
-                          : "Copy"
-                    }
+                    label={sideLabel(copySide)}
                   />
                 </div>
               </section>
@@ -1235,7 +1257,7 @@ export function AgentSyncBody({
                 <ArrowDownToLine />
               )}
               variant="outline"
-              onClick={runPull}
+              onClick={() => setConfirmDirection("pull")}
               disabled={
                 !canPull ||
                 busy !== null ||
@@ -1247,14 +1269,14 @@ export function AgentSyncBody({
                   ? !comparisonAvailable
                     ? "Wait for the comparison to finish"
                     : !pullHasChanges
-                      ? `The selected pull would not change the ${copyNoun}`
-                      : `Copy the ${baseNoun} into the ${copyNoun}`
+                      ? `This would not change ${copyNoun}`
+                      : `Copy ${baseNoun} into ${copyNoun}`
                   : copyIsSystem
-                    ? "Only super admins can update a system agent"
-                    : "You can only pull into a copy you own"
+                    ? "Only super admins can change a system agent"
+                    : "You can only change an agent you own"
               }
             >
-              {copyIsSystem ? "Update system copy" : "Update copy"}
+              {pullLabel}
             </Button>
             <Button
               icon={busy === "push" ? (
@@ -1263,7 +1285,7 @@ export function AgentSyncBody({
                 <ArrowUpFromLine />
               )}
               variant="primary"
-              onClick={() => setConfirmPushOpen(true)}
+              onClick={() => setConfirmDirection("push")}
               disabled={
                 !canPush ||
                 busy !== null ||
@@ -1275,43 +1297,58 @@ export function AgentSyncBody({
                   ? !comparisonAvailable
                     ? "Wait for the comparison to finish"
                     : !pushHasChanges
-                      ? `The ${copyNoun} has no syncable changes`
-                      : `Replace the ${baseNoun} with the ${copyNoun}`
+                      ? `This would not change ${baseNoun}`
+                      : `Copy ${copyNoun} into ${baseNoun}`
                   : baseIsSystem
-                    ? "Only super admins can update a system agent"
-                    : "You can only push into an agent you own"
+                    ? "Only super admins can change a system agent"
+                    : "You can only change an agent you own"
               }
             >
-              {baseIsSystem ? "Update system baseline" : "Update original"}
+              {pushLabel}
             </Button>
           </div>
         </div>
       </div>
 
-      <AlertDialog open={confirmPushOpen} onOpenChange={setConfirmPushOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {baseIsSystem
-                ? "Update the shared system baseline?"
-                : `Update "${baseSide.name}"?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {baseIsSystem
-                ? "This replaces the system agent's runtime configuration and profile with the copy. It can affect every user and mandate that follows this system agent."
-                : `This replaces the original's runtime configuration and profile with "${copySide.name}".`}
-              {comparison && !comparison.comparedConfigurationMatches
-                ? ` The current comparison contains ${comparison.changedFields.length} changed ${comparison.changedFields.length === 1 ? "section" : "sections"}.`
-                : ""}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Keep current {baseNoun}</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void runPush()}>
-              {baseIsSystem ? "Update system baseline" : "Update original"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+      <AlertDialog
+        open={confirmDirection !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDirection(null);
+        }}
+      >
+        {(() => {
+          const pushing = confirmDirection === "push";
+          const target = pushing ? baseSide : copySide;
+          const source = pushing ? copySide : baseSide;
+          const targetIsSystem = target.agentType === "builtin";
+          return (
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{`Replace "${target.name}"?`}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {targetIsSystem
+                    ? `Its configuration and profile become "${source.name}"'s. Everyone and every mandate using this system agent gets the change.`
+                    : `Its configuration and profile become "${source.name}"'s.`}
+                  {comparison && !comparison.comparedConfigurationMatches
+                    ? ` ${comparison.changedFields.length} ${comparison.changedFields.length === 1 ? "section differs" : "sections differ"}.`
+                    : ""}
+                  {" The previous version stays in its history."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setConfirmDirection(null);
+                    void (pushing ? runPush() : runPull());
+                  }}
+                >
+                  {pushing ? pushLabel : pullLabel}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          );
+        })()}
       </AlertDialog>
     </div>
   );

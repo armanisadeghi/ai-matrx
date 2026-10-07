@@ -1,5 +1,7 @@
 // CX Dashboard Export Utilities
 
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
+import type { Json } from "@ai-matrx/alchemy/operate";
 import type { CopyExportConfig } from "@ai-matrx/design-system/data-table/copy-types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
@@ -39,23 +41,12 @@ export function buildCxCsvExport(
 ): CxExportFile | null {
   if (!data.length) return null;
   const headers = Object.keys(data[0]);
-  const csvRows = [
-    headers.join(","),
-    ...data.map((row) =>
-      headers
-        .map((h) => {
-          const val = row[h];
-          if (val === null || val === undefined) return "";
-          const str = typeof val === "object" ? JSON.stringify(val) : String(val);
-          return str.includes(",") || str.includes('"') || str.includes("\n")
-            ? `"${str.replace(/"/g, '""')}"`
-            : str;
-        })
-        .join(",")
-      ),
-  ];
+  const content = toDelimitedText(
+    headers,
+    data.map((row) => headers.map((h) => (row[h] ?? null) as Json)),
+  );
   return {
-    content: csvRows.join("\n"),
+    content,
     extension: "csv",
     filename: `${buildFilename(viewName, filters)}.csv`,
     mime: "text/csv;charset=utf-8;",

@@ -17,6 +17,7 @@ import {
   type LiveAgentCallTrace,
 } from "../utils/agent-call-trace";
 import { createSelector } from "@reduxjs/toolkit";
+import { isAnswerKeptWarning } from "./answer-kept-warning";
 import { blockMediaFileId } from "../utils/block-media-identity";
 import { DECISION_ANSWERS_BLOCK_TYPE } from "@ai-matrx/chat/utils/content-ir/decision-answers-ids";
 import { decisionAnswersText } from "@ai-matrx/agents/presentation/decision-answers";
@@ -2097,7 +2098,8 @@ const PROMOTED_WARNING_CODES: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * High-severity warnings plus any warning whose `code` is explicitly
+ * High-severity warnings, any warning that says the answer was kept (an
+ * incomplete answer, never silent) and any warning whose `code` is explicitly
  * promoted (see `PROMOTED_WARNING_CODES`). This is the set `AssistantWarning`
  * actually renders inline — `selectHighWarnings` stays available for callers
  * that want the stricter, level-only cut.
@@ -2108,7 +2110,10 @@ export const selectVisibleWarnings = (requestId: string) =>
     (warnings): WarningPayload[] | undefined => {
       if (!warnings) return undefined;
       return warnings.filter(
-        (w) => w.level === "high" || PROMOTED_WARNING_CODES.has(w.code),
+        (w) =>
+          w.level === "high" ||
+          PROMOTED_WARNING_CODES.has(w.code) ||
+          isAnswerKeptWarning(w),
       );
     },
   );

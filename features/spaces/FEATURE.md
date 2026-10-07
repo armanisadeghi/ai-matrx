@@ -45,6 +45,17 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-06 — round 22: co-editing convergence proved — `collab/__tests__/convergence.test.ts` (two members over the
+  real provider + realtime manager, jittered out-of-order delivery, 300 keys each, 5 seeds: identical, no pending) and
+  `__tests__/walk/convergence.walk.mjs` (two browsers, 30 s / 60 s, same line + own blocks: editors, Yjs state vectors
+  and the stored page identical). A frame LOST while connected never heals (provider has no anti-entropy) — `it.failing`
+  in that test. A database in a narrow column stays inside it: the block host is a size container, the toolbar wraps
+  and padding shrinks under 440px, the table scrolls sideways (`__tests__/walk/narrow-database.walk.mjs`). Walk helper `trashPage`.
+- 2026-10-06 — a chart counts what its view shows: the view's "is" filters (saved + the viewer's unsaved) go to both
+  `record_aggregate` asks and to the read-rows fallback (`ChartView` `filter`); the CHURN ring reads 1, not the table's 10.
+- 2026-10-06 — a chart tile's title pill takes the tile's whole width (the view-settings icon shows on hover / open /
+  focus, always on touch) and carries the full name as its hover title.
+
 - 2026-10-06 — AP-3 U7: from `@ai-matrx/records-ui` 0.102.0 the built-in boards (`TablePage source={{kind:"entity"}}`)
   read and write through `@ai-matrx/entity-data`'s one engine (keyset pages, a card move drawn at once and rolled back
   with the store's sentence, live updates); `EntityDatabase.tsx` keeps the drill shapes `EntityColumn` / `EntityRow`.
@@ -174,6 +185,15 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
   of an open toggle's title writes its first child (`editor/toggle-enter.ts`). Inline tables at natural widths, scrolling
   sideways; grey toggle triangles; no selection ring between columns. Viewer search on table blocks (records-ui
   `searchOverride`); built-in Load more reads one 50-row page by offset.
+- 2026-10-06 — builder round 21 (by-hand rebuild): a margin click beside a line puts the caret there (`editor/rubber-band.ts`
+  `lineBeside`; the next "/" went nowhere); "/2 columns" in a column and a drop beside a block sharing its column nest a
+  column row there (`slash-insert.ts`, `column-drop.ts`); colour "Default" (renamed from Auto) draws the callout's border;
+  Enter in a callout writes inside the box (`toggle-enter.ts`); Link to page / `[[` / `[+` offer New page "name"
+  (QuickFind `create`); `/Database - Inline|Full page` make a real table (`data/new-database.ts`); Properties → edit / New
+  property in records-ui `FieldEditor`; view names and database titles typed in place; column gutter bar on hover; any
+  Lucide name draws (DynamicIcon) and the icon search reaches all of Lucide; Use template into another organization
+  copies its tables (`state/template-tables.ts`); collab resync rebuild removed, teardown synchronous. Walk tooling:
+  `__tests__/walk/lib.mjs` (dev-login, org pick, sample-page guard, block menu / colour helpers).
 - 2026-10-06 — builder round 20 (Arman: Use template on the Traveling SMM™ OS "set up" but the first page was empty):
   the sample page gets its content the moment it is made and every later write lands on its CURRENT version
   (`store/sample.ts` `saveOnCurrent`) — opening it mid-install used to write the editor's empty starting line and the
