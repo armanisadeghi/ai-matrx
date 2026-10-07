@@ -248,10 +248,11 @@ export default function MobileNotesView({
 
       {/* ── Page container ── */}
       <div className="h-full w-full bg-background overflow-hidden relative">
+        {/* The view at rest carries NO transform: a transform makes this panel the containing block of every fixed bar inside it (the action bar then rode the runway it measures: CLS 0.24). */}
         {/* List view */}
         <div
           className={`absolute inset-0 flex flex-col transition-transform duration-300 ease-in-out ${
-            currentView === "list" ? "translate-x-0" : "-translate-x-full"
+            currentView === "list" ? "" : "-translate-x-full"
           }`}
         >
           {/* Same realtime honesty as the desktop sidebar — this is the
@@ -269,7 +270,7 @@ export default function MobileNotesView({
         {/* Editor view — split into scrollable content + fixed dock outside transform */}
         <div
           className={`absolute inset-0 flex flex-col transition-transform duration-300 ease-in-out ${
-            currentView === "editor" ? "translate-x-0" : "translate-x-full"
+            currentView === "editor" ? "" : "translate-x-full"
           }`}
         >
           {selectedUnavailable && selectedNoteId && (
