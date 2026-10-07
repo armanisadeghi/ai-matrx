@@ -43,6 +43,9 @@ function isWritable(noun: NounDirectives): boolean {
   );
 }
 
+/** Rows per page of the type table (the pager offers more). */
+export const DIRECTIVE_CATALOG_PAGE_SIZE = 50;
+
 export function DirectiveCatalogGrid({
   catalog,
   busyToggle,
@@ -167,7 +170,10 @@ export function DirectiveCatalogGrid({
         columns={columns}
         getRowId={(noun) => noun.noun}
         defaultSort={{ id: "noun", direction: "asc" }}
-        pageSize={0}
+        // PAGED, never "show all" (G10B review, 2026-10-02): all 1,089 types
+        // put ~69,000 nodes on the page, so every dialog's scroll lock cost a
+        // ~800 ms style pass and the first confirm opened late.
+        pageSize={DIRECTIVE_CATALOG_PAGE_SIZE}
         // Keep the catalog-wide count that the old toolbar exposed, inside the
         // one canonical footer. Decision: table owner applying Arman's footer rule.
         paginationLabelFormat={(start, end, total) =>
@@ -198,7 +204,7 @@ export function DirectiveCatalogGrid({
               />
               <Select value={familyFilter} onValueChange={setFamilyFilter}>
                 <SelectTrigger
-                  className="w-auto min-w-0 flex-1 sm:w-56 sm:flex-none"
+                  className="w-full sm:w-56"
                   aria-label="Filter directive nouns by family"
                 >
                   <SelectValue placeholder="All families" />

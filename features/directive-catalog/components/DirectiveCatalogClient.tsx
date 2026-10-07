@@ -154,10 +154,13 @@ export function DirectiveCatalogClient() {
           height, then the other actions, then the builder. Splitting a 375px
           height between them left the table ~0px tall and the builder in a
           strip under the floating chips. From lg up the panes sit side by
-          side and each scrolls itself. */}
+          side and each scrolls itself. As the page's scroll owner it takes
+          the shell's floating-clearance runway (`data-matrx-page-scroll`), so
+          the builder's last line ends clear of the floating chips. */}
       <div
         className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:overflow-hidden"
         data-directive-catalog-body=""
+        data-matrx-page-scroll=""
       >
         {isLoading && !catalog ? (
           <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
