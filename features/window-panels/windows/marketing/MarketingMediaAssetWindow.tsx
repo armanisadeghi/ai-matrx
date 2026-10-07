@@ -364,7 +364,7 @@ function AssetInspector({
   const standardCheck = nearestStandardSlot(asset, standards);
 
   const copySrc = async () => {
-    await copyText(asset.src);
+    if (!(await copyText(asset.src))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

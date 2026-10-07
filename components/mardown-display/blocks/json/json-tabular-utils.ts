@@ -9,6 +9,7 @@
  */
 
 import { buildFile } from "@ai-matrx/alchemy/operate";
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 export type TabularSource =
@@ -145,32 +146,25 @@ export function cellToCsv(value: unknown): string {
 }
 
 /**
- * CSV escape: wrap in quotes when needed, double internal quotes.
+ * Rows -> CSV/TSV text through Alchemy's one writer (quoting, line breaks, `'` before a leading
+ * = + - @ text; real numbers stay numbers, so -5 is never altered).
  */
-function escapeCsv(value: string, delimiter: string): string {
-  const needsQuote =
-    value.includes(delimiter) ||
-    value.includes('"') ||
-    value.includes("\n") ||
-    value.includes("\r");
-  if (!needsQuote) return value;
-  return `"${value.replace(/"/g, '""')}"`;
-}
-
 export function rowsToCsv(
   rows: Record<string, unknown>[],
   columns: string[],
   delimiter = ",",
 ): string {
-  const header = columns.map((c) => escapeCsv(c, delimiter)).join(delimiter);
-  const body = rows
-    .map((row) =>
-      columns
-        .map((c) => escapeCsv(cellToCsv(row[c]), delimiter))
-        .join(delimiter),
-    )
-    .join("\n");
-  return body ? `${header}\n${body}` : header;
+  return toDelimitedText(
+    columns,
+    rows.map((row) => columns.map((c) => cellToCsvValue(row[c]))),
+    { format: delimiter === "\t" ? "tsv" : "csv", spreadsheetSafe: true },
+  );
+}
+
+function cellToCsvValue(value: unknown): string | number | boolean {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  return cellToCsv(value);
 }
 
 export function rowsToNdjson(rows: unknown[]): string {

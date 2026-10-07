@@ -83,7 +83,7 @@ export function DiffHistory({
     e: React.MouseEvent,
   ) => {
     e.stopPropagation();
-    await copyText(content);
+    if (!(await copyText(content))) return;
     setCopiedIds((prev) => new Set(prev).add(id));
     setTimeout(() => {
       setCopiedIds((prev) => {

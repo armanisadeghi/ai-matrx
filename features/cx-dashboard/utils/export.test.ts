@@ -12,13 +12,13 @@ describe("CX source-page exports", () => {
 
   afterEach(() => jest.useRealTimers());
 
-  it("keeps the established CSV and JSON bytes and filenames in the canonical menu contract", () => {
+  it("keeps the CSV (Alchemy dialect) and JSON bytes and filenames in the canonical menu contract", () => {
     const rows = [
       { id: "cx-1", title: 'Needs, "quotes"', metadata: { source: "page" } },
     ];
 
     expect(buildCxCsvExport(rows, "conversations")).toEqual({
-      content: 'id,title,metadata\ncx-1,"Needs, ""quotes""","{""source"":""page""}"',
+      content: 'id,title,metadata\ncx-1,"Needs, ""quotes""","{ ""source"": ""page"" }"',
       extension: "csv",
       filename: "cx-conversations-2026-09-17.csv",
       mime: "text/csv;charset=utf-8;",

@@ -84,7 +84,7 @@ function ConvIdCopyButton({ text }: { text: string }) {
           className="flex-shrink-0"
           disabled={!text}
           onClick={async () => {
-            await copyText(text);
+            if (!(await copyText(text))) return;
             setCopied(true);
             setTimeout(() => setCopied(false), 1800);
           }}
@@ -113,7 +113,7 @@ function CopyButton({ text }: { text: string }) {
       variant="quiet"
       disabled={!text}
       onClick={async () => {
-        await copyText(text);
+        if (!(await copyText(text))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       }}

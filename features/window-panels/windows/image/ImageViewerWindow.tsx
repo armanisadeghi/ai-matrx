@@ -494,8 +494,8 @@ export function ImageViewerWindow({
                   label: "Copy all image URLs",
                   icon: Copy,
                   disabled: images.length < 2,
-                  onSelect: () => {
-                    void copyText(images.join("\n"));
+                  onSelect: async () => {
+                    if (!(await copyText(images.join("\n")))) return;
                     toast.success(`${images.length} image URLs copied`);
                   },
                 },

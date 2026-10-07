@@ -297,7 +297,7 @@ function CopyButton({
       variant="quiet"
       disabled={!text}
       onClick={async () => {
-        await copyText(text);
+        if (!(await copyText(text))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1800);
       }}

@@ -113,7 +113,7 @@ export default function OrgApiKeysPage() {
 
   const handleCopy = async () => {
     if (!created) return;
-    await copyText(created.api_key);
+    if (!(await copyText(created.api_key))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -217,7 +217,7 @@ export function useCodeEditorWindowState({
   // ── Clipboard ─────────────────────────────────────────────────────────────
   const handleCopy = useCallback(async () => {
     if (!currentFile) return;
-    await copyText(currentFile.content);
+    if (!(await copyText(currentFile.content))) return;
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   }, [currentFile]);

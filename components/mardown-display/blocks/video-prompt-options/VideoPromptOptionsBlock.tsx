@@ -112,7 +112,8 @@ function CopyPromptButton({ prompt }: { prompt: string }) {
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    void copyText(prompt).then(() => {
+    void copyText(prompt).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

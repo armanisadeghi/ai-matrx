@@ -72,7 +72,8 @@ const StructuredPlanViewer: React.FC<StructuredPlanViewerProps> = ({
   // Handle copy section
   const handleCopy = () => {
     onCopySection(content);
-    copyText(content).then(() => {
+    copyText(content).then((copied) => {
+      if (!copied) return;
       setCopiedSection('full');
       setTimeout(() => setCopiedSection(null), 2000);
     });

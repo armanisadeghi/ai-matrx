@@ -267,7 +267,8 @@ const TranscriptViewer = ({
   // Copy segment text
   const handleCopySegment = (text: string, id: string) => {
     onCopySegment(text);
-    copyText(text).then(() => {
+    copyText(text).then((copied) => {
+      if (!copied) return;
       setCopiedSegmentId(id);
       setTimeout(() => setCopiedSegmentId(null), 2000);
     });

@@ -43,7 +43,7 @@ const MarkdownPreviewBlock: React.FC<MarkdownPreviewBlockProps> = ({
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await copyText(content);
+    if (!(await copyText(content))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

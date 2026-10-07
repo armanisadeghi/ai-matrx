@@ -288,7 +288,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
     const payload = jsonRaw ?? (data ? JSON.stringify(data, null, 2) : null);
     if (!payload) return;
     try {
-      await copyText(payload);
+      if (!(await copyText(payload))) return;
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1600);
     } catch {

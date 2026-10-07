@@ -165,7 +165,7 @@ export default function AssetsPanel({ sites }: { sites: ClientSiteSummary[] }) {
     };
 
     const handleCopy = async (asset: ClientAsset) => {
-        await copyText(asset.file_path);
+        if (!(await copyText(asset.file_path))) return;
         setCopiedId(asset.id);
         setTimeout(() => setCopiedId((prev) => (prev === asset.id ? null : prev)), 1500);
     };

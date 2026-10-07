@@ -84,7 +84,7 @@ export function ConversationPreviewContent({
 
   const handleCopyId = async () => {
     try {
-      await copyText(conversationId);
+      if (!(await copyText(conversationId))) return;
       setCopied(true);
       toast.success("Conversation ID copied");
       setTimeout(() => setCopied(false), 1500);

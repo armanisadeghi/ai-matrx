@@ -89,7 +89,7 @@ function TranscriptIntegrityCopyButtonInner({
       effectiveVisibleGroupLimit,
     });
     try {
-      await copyText(formatTranscriptIntegrityReport(report));
+      if (!(await copyText(formatTranscriptIntegrityReport(report)))) return;
       toast.success(
         report.anomalies.length === 0
           ? "Transcript report copied — no anomalies detected"

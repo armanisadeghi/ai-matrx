@@ -29,7 +29,7 @@ export function OutlinePanel({
   const copyLink = async (entry: OutlineEntry) => {
     const url = `${window.location.origin}${window.location.pathname}${window.location.search}#${entry.slug}`;
     try {
-      await copyText(url);
+      if (!(await copyText(url))) return;
       toast.success(`Link to “${entry.text}” copied.`);
     } catch {
       toast.error("Copy failed — your browser blocked clipboard access.");

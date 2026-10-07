@@ -33,7 +33,7 @@ export default function KindTryInputTab({ kind }: KindTryInputTabProps) {
   async function copySubmitted(): Promise<void> {
     if (submitted === null) return;
     try {
-      await copyText(submitted);
+      if (!(await copyText(submitted))) return;
       toast.success(`Copied ${kind} instance`);
     } catch (error) {
       toast.error(

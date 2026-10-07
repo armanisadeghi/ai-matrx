@@ -338,7 +338,7 @@ export function WebpageResourcePickerCore({
 
   const handleCopy = async () => {
     if (!effectiveContent) return;
-    await copyText(effectiveContent);
+    if (!(await copyText(effectiveContent))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

@@ -61,7 +61,8 @@ function CopyableValue({
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = () => {
-    void copyText(value).then(() => {
+    void copyText(value).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     });

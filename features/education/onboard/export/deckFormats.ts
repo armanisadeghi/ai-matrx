@@ -11,6 +11,7 @@
 // "Anki-compatible" is the TSV Anki imports out of the box — no SQLite writing
 // required, and lossless for front/back. (Reading .apkg is a separate import.)
 
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
 import type { FcSetRow, CardWithDetails } from "@/features/flashcards/data/types";
 
 export type DeckExportFormat = "json" | "md" | "anki" | "csv";
@@ -148,10 +149,6 @@ export function toPortableDeck(
   };
 }
 
-function csvField(v: string): string {
-  return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
-}
-
 /** Strip newlines/tabs for the single-line TSV/CSV columns Anki/Quizlet expect. */
 function oneLine(v: string): string {
   return v.replace(/\r?\n/g, " ").replace(/\t/g, " ").trim();
@@ -180,9 +177,7 @@ export function buildDeckExport(
       // Anki's default import: tab-separated, one note per line, front<TAB>back.
       return cards.map((c) => `${oneLine(c.front)}\t${oneLine(c.back)}`).join("\n");
     case "csv": {
-      const rows = ["front,back"];
-      for (const c of cards) rows.push(`${csvField(c.front)},${csvField(c.back)}`);
-      return rows.join("\r\n");
+      return toDelimitedText(["front", "back"], cards.map((c) => [c.front, c.back]));
     }
   }
 }

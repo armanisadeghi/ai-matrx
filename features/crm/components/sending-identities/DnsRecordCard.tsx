@@ -59,7 +59,8 @@ function CopyField({ label, value }: { label: string; value: string }) {
         type="button"
         className="flex w-full min-w-0 items-center justify-between gap-2 rounded-md border border-border bg-muted/50 px-2.5 py-1.5 text-left transition-colors hover:bg-muted"
         onClick={() => {
-          void copyText(value).then(() => {
+          void copyText(value).then((copied) => {
+            if (!copied) return;
             setCopied(true);
             setTimeout(() => setCopied(false), 1600);
           });

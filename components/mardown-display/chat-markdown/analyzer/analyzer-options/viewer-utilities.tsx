@@ -399,7 +399,7 @@ export const JsonFallback: React.FC<JsonFallbackProps> = ({
   const handleCopy = async () => {
     try {
       const jsonString = JSON.stringify(data, null, 2);
-      await copyText(jsonString);
+      if (!(await copyText(jsonString))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       onCopy?.();
@@ -465,36 +465,6 @@ export const InvalidDataDisplay: React.FC<InvalidDataDisplayProps> = ({
         {JSON.stringify(data, null, 2)}
       </pre>
     </div>
-  );
-};
-
-interface CopyButtonProps {
-  onCopy: () => void;
-  copied: boolean;
-  size?: number;
-  className?: string;
-  title?: string;
-}
-
-export const CopyButton: React.FC<CopyButtonProps> = ({ 
-  onCopy, 
-  copied, 
-  size = 16, 
-  className = "",
-  title = "Copy to clipboard"
-}) => {
-  return (
-    <button
-      onClick={onCopy}
-      className={`p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group ${className}`}
-      title={title}
-    >
-      {copied ? (
-        <Check size={size} className="text-green-500" />
-      ) : (
-        <Copy size={size} className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300" />
-      )}
-    </button>
   );
 };
 

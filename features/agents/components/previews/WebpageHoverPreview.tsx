@@ -49,7 +49,7 @@ export function WebpagePreviewContent({
 
   const handleCopyUrl = async () => {
     try {
-      await copyText(url);
+      if (!(await copyText(url))) return;
       setCopied(true);
       toast.success("URL copied");
       setTimeout(() => setCopied(false), 1500);

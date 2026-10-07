@@ -165,7 +165,7 @@ export function AgentAppOverviewContent({ appId }: AgentAppOverviewContentProps)
 
   const handleCopy = async (key: string, text: string, label: string) => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(key);
       toast.success(label);
       setTimeout(() => setCopied(null), 1500);

@@ -167,7 +167,7 @@ export default function SaveHeatmapModal({
 
   const handleCopyUrl = async () => {
     if (shareUrl) {
-      await copyText(shareUrl);
+      if (!(await copyText(shareUrl))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

@@ -127,7 +127,7 @@ const DiffSpecBlock: React.FC<DiffBlockProps> = ({ content = "", isStreamActive 
 
   const handleCopy = async () => {
     try {
-      await copyText(content.trim());
+      if (!(await copyText(content.trim()))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

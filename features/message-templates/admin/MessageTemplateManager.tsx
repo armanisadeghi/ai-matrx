@@ -145,9 +145,9 @@ export function MessageTemplateManager({
   const abortRef = useRef<AbortController | null>(null);
   const rawApiDataRef = useRef<string>("");
 
-  const copyRawApiData = useCallback(() => {
+  const copyRawApiData = useCallback(async () => {
     if (!rawApiDataRef.current) return;
-    copyText(rawApiDataRef.current);
+    if (!(await copyText(rawApiDataRef.current))) return;
     setRawCopied(true);
     setTimeout(() => setRawCopied(false), 1500);
   }, []);

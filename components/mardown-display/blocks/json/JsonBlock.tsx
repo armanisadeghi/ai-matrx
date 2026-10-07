@@ -747,7 +747,7 @@ const JsonViewHeader: React.FC<JsonViewHeaderProps> = ({
 
   const handleCopy = async () => {
     try {
-      await copyText(content);
+      if (!(await copyText(content))) return;
       setCopied(true);
       toast.success("Copied JSON to clipboard");
       setTimeout(() => setCopied(false), 1500);

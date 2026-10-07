@@ -50,7 +50,7 @@ function CopyButton({ content, label = "Copy" }: { content: string; label?: stri
     const handleCopy = async () => {
         if (!content) return;
         try {
-            await copyText(content);
+            if (!(await copyText(content))) return;
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {

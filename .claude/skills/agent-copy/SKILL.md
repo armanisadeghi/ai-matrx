@@ -6,7 +6,7 @@ description: "Compact two-icon Copy / Copy-for-AI controls (components/agent-cop
 # agent-copy — copy data (human + AI) anywhere
 
 > **Current UI (2026-09-27):** `<CopyButtons>` renders the package-owned Alchemy
-> copy menu (`MatrxCopyMenu` from `@ai-matrx/design-system/content-transfer`, one
+> copy menu (`MatrxCopyMenu` from `@ai-matrx/alchemy/react/workspace`, one
 > icon since 2026-09-12). Where this skill says "two-icon pair", read "the
 > canonical CopyButtons menu" — never hand-build two icons beside it. The
 > payload rules below are unchanged.

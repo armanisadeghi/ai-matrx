@@ -333,7 +333,7 @@ export function PublicFormRunner({ form, prefill }: { form: PublicForm; prefill?
 
   async function copyResumeLink(url: string) {
     try {
-      await copyText(url);
+      if (!(await copyText(url))) return;
       setCopied("copied");
       window.setTimeout(() => setCopied("idle"), 1600);
     } catch {

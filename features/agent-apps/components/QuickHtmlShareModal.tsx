@@ -92,7 +92,7 @@ export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title =
 
     const handleCopy = useCallback(async () => {
         try {
-            await copyText(standaloneHtml);
+            if (!(await copyText(standaloneHtml))) return;
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         } catch {

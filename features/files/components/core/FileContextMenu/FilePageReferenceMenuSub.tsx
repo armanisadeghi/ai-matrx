@@ -27,13 +27,13 @@ export function FilePageReferenceMenuSub({
   });
   const copyPage = async (pageNumber: number) => {
     try {
-      await copyText(
+      if (!(await copyText(
         buildFilePageReferenceFence({
           fileId,
           pageNumber,
           label: fileName,
         }),
-      );
+      ))) return;
       toast.success("Page reference copied", {
         description: fileName
           ? `${fileName} · p.${pageNumber}`

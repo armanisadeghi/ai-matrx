@@ -238,7 +238,7 @@ export function AssistantMessage({
                 variant="quiet"
                 onClick={async () => {
                   if (!audioUrl) return;
-                  await copyText(audioUrl);
+                  if (!(await copyText(audioUrl))) return;
                   setIsAudioLinkCopied(true);
                   setTimeout(() => setIsAudioLinkCopied(false), 2000);
                 }}

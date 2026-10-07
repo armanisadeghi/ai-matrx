@@ -256,7 +256,7 @@ export function TaskEditorBody({
   });
 
   const handleCopyId = async () => {
-    await copyText(taskId);
+    if (!(await copyText(taskId))) return;
     setIdCopied(true);
     setTimeout(() => setIdCopied(false), 1500);
   };

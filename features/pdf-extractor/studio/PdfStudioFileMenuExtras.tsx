@@ -39,9 +39,9 @@ export function PdfStudioFileMenuExtras({
         onClick={() => {
           void (async () => {
             try {
-              await copyText(
+              if (!(await copyText(
                 resolveAbsoluteHref(studioHref),
-              );
+              ))) return;
               toast.success("Link copied");
             } catch {
               toast.error(

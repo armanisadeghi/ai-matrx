@@ -53,7 +53,7 @@ export default function MediaDebugPanel({
 
   const handleCopyAll = useCallback(async () => {
     try {
-      await copyText(json);
+      if (!(await copyText(json))) return;
       setCopied(true);
       toast.success("Copied media debug summary");
       window.setTimeout(() => setCopied(false), 2000);

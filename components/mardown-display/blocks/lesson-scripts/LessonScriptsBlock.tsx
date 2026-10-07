@@ -97,8 +97,8 @@ export function readLessonScriptsData(serverData: unknown): LessonScriptsData {
 // Copy affordances — one click, three formats, per-section narration.
 // ---------------------------------------------------------------------------
 
-async function copyText(text: string, what: string) {
-  await copyToClipboard(text, `${what} copied`);
+async function copyText(text: string, what: string): Promise<boolean> {
+  return copyToClipboard(text, `${what} copied`);
 }
 
 /** The wire-spelling value object — what JSON copy hands to another tool. */
@@ -175,7 +175,7 @@ export function LessonScriptSectionCard({
   const streaming = section.script === null;
 
   const handleCopy = async () => {
-    await copyText(section.script ?? "", "Section script");
+    if (!(await copyText(section.script ?? "", "Section script"))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

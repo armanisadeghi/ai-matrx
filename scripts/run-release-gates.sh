@@ -879,6 +879,10 @@ if $STRICT; then
         # surface-write door bypass, private action registries. Shrink-only baseline; advisory here.
         "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)|pnpm check:alchemy-doors"
         "Alchemy doors guard self-test|pnpm check:alchemy-doors:self-test"
+        # COPIED STATE FOLLOWS A COPY THAT LANDED — copyText/copyImage/copyLink resolve a boolean; a copied
+        # flag or success toast after a discarded result is a lie. Zero baseline.
+        "Copied state set after a discarded copy result (copy-result-gated)|pnpm check:copy-result-gated"
+        "Copy-result-gated guard self-test|pnpm check:copy-result-gated:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.
@@ -1548,6 +1552,10 @@ else
         # surface-write door bypass, private action registries. Shrink-only baseline; advisory here.
         "Raw clipboard/download/format-lib/door-bypass in app code (Alchemy doors)|pnpm check:alchemy-doors"
         "Alchemy doors guard self-test|pnpm check:alchemy-doors:self-test"
+        # COPIED STATE FOLLOWS A COPY THAT LANDED — copyText/copyImage/copyLink resolve a boolean; a copied
+        # flag or success toast after a discarded result is a lie. Zero baseline.
+        "Copied state set after a discarded copy result (copy-result-gated)|pnpm check:copy-result-gated"
+        "Copy-result-gated guard self-test|pnpm check:copy-result-gated:self-test"
         # ERROR-MESSAGE FALLBACK — a hand-rolled "instanceof Error ? x.message :
         # fallback" hides an RTK SerializedError's real message (2026-09-27).
         # Baseline ratchet: exits 1 only on a NEW site; advisory here.

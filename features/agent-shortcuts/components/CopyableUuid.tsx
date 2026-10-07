@@ -67,7 +67,7 @@ export function CopyableUuid({
     e.preventDefault();
     e.stopPropagation();
     try {
-      await copyText(value);
+      if (!(await copyText(value))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

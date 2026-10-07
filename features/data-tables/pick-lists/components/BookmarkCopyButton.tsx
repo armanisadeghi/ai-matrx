@@ -32,7 +32,7 @@ export function BookmarkCopyButton({
     e.stopPropagation();
     e.preventDefault();
     try {
-      await copyText(buildBookmarkReferenceFence(bookmark));
+      if (!(await copyText(buildBookmarkReferenceFence(bookmark)))) return;
       setCopied(true);
       toast.success("Bookmark copied to clipboard", {
         description: label,

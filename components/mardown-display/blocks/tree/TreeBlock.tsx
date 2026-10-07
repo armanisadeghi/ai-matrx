@@ -128,7 +128,7 @@ const TreeBlock: React.FC<TreeBlockProps> = ({ content, className }) => {
   const wrap = treeWrapsLines(useCanvasPresentation());
 
   const handleCopy = async () => {
-    await copyText(content);
+    if (!(await copyText(content))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

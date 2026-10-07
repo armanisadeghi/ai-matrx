@@ -269,7 +269,7 @@ function JsonInspectorBody({
   const handleCopy = async () => {
     const text = value === "json" ? rawJsonText : prettyJson;
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch (err) {
@@ -281,7 +281,7 @@ function JsonInspectorBody({
     if (!agentCopy) return;
     const input = typeof agentCopy === "function" ? agentCopy() : agentCopy;
     try {
-      await copyText(buildAgentPayload(input));
+      if (!(await copyText(buildAgentPayload(input)))) return;
       setAgentCopied(true);
       setTimeout(() => setAgentCopied(false), 1500);
     } catch (err) {

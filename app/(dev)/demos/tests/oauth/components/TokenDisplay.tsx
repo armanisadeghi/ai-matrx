@@ -35,7 +35,8 @@ const TokenDisplay: React.FC<TokenDisplayProps> = ({ providerStates }) => {
 
   // Handle copy token to clipboard
   const copyToClipboard = (token: string, providerId: string) => {
-    copyText(token).then(() => {
+    copyText(token).then((copied) => {
+      if (!copied) return;
       setCopiedToken(providerId);
       setTimeout(() => setCopiedToken(null), 2000);
     });

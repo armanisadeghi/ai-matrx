@@ -80,7 +80,7 @@ function JsonDisplay({ data, label }: { data: unknown; label: string }) {
   const json = JSON.stringify(data, null, 2);
 
   const handleCopy = async () => {
-    await copyText(json);
+    if (!(await copyText(json))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

@@ -64,7 +64,7 @@ export function EmbedSnippet({
 
   const copy = async (text: string, key: string) => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopiedKey(key);
       setTimeout(() => setCopiedKey(null), 2000);
     } catch (err) {

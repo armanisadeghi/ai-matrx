@@ -59,7 +59,7 @@ export function KeyHandoff({
 
   const copyKey = async () => {
     if (!record) return;
-    await copyText(record.session_key_b64);
+    if (!(await copyText(record.session_key_b64))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

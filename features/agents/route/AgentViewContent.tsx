@@ -421,7 +421,7 @@ export function AgentViewContent({ agentId, recordSections }: { agentId: string;
 
   const handleCopy = async (key: string, text: string, message: string) => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(key);
       toast.success(message);
       setTimeout(() => setCopied(null), 1500);

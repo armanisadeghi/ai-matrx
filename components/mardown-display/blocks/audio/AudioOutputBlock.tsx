@@ -258,7 +258,7 @@ function useFileActions(url: string, mimeType?: string) {
 
   const copyLink = useCallback(async () => {
     try {
-      await copyText(url);
+      if (!(await copyText(url))) return;
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {

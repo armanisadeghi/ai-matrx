@@ -302,8 +302,8 @@ function InlineCopyButton({ text }: { text: string }) {
   return (
     <button
       type="button"
-      onClick={() => {
-        copyText(text);
+      onClick={async () => {
+        if (!(await copyText(text))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}

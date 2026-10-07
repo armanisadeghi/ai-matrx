@@ -282,7 +282,7 @@ export function IdCopyChip({ id }: { id: string }) {
 
   const copy = async () => {
     try {
-      await copyText(id);
+      if (!(await copyText(id))) return;
       setCopied(true);
       toast.success("Note ID copied");
       setTimeout(() => setCopied(false), 1500);

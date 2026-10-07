@@ -641,8 +641,8 @@ function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <button
-      onClick={() => {
-        copyText(text);
+      onClick={async () => {
+        if (!(await copyText(text))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}

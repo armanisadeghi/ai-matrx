@@ -43,7 +43,7 @@ export function DeliverablePane({
 
   const copyDoc = async () => {
     try {
-      await copyText(content);
+      if (!(await copyText(content))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 900);
     } catch {

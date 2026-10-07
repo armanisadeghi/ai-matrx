@@ -200,7 +200,7 @@ function JsonExplorer({ data }: { data: unknown }) {
 
   const handleCopy = useCallback(async () => {
     try {
-      await copyText(JSON.stringify(data, null, 2));
+      if (!(await copyText(JSON.stringify(data, null, 2)))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -245,7 +245,7 @@ function RawJsonView({ data }: { data: unknown }) {
 
   const handleCopy = useCallback(async () => {
     try {
-      await copyText(jsonString);
+      if (!(await copyText(jsonString))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -326,7 +326,7 @@ export function ResponseViewer({
   const copyDiagnostics = useCallback(async () => {
     if (!diagnosticsText) return;
     try {
-      await copyText(diagnosticsText);
+      if (!(await copyText(diagnosticsText))) return;
       setDiagnosticsCopied(true);
       setTimeout(() => setDiagnosticsCopied(false), 2000);
     } catch {

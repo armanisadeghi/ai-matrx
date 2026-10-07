@@ -154,11 +154,11 @@ export function DirectTestMode({
     conversationId,
   ]);
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (responseText) {
       // The button is a plain "Copy" beside a drawn answer: a person gets what
       // they see (a kind as its markdown), never raw `{"__kind":…}` JSON.
-      copyText(kindTextToMarkdown(responseText));
+      if (!(await copyText(kindTextToMarkdown(responseText)))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

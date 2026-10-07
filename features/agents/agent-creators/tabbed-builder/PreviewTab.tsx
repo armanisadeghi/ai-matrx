@@ -25,8 +25,8 @@ export const PreviewTab: React.FC = () => {
   }, [generateFinalPrompt, enabledSections]);
   
   // Function to copy the prompt to clipboard
-  const copyToClipboard = () => {
-    copyText(localFinalPrompt);
+  const copyToClipboard = async () => {
+    if (!(await copyText(localFinalPrompt))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

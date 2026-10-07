@@ -141,9 +141,9 @@ const ArtifactBlock: React.FC<ArtifactBlockProps> = ({
    */
   const handleCopyMarkdown = async () => {
     try {
-      await copyText(
+      if (!(await copyText(
         artifactContentToMarkdown(content, artifactType),
-      );
+      ))) return;
       toast.success("Copied as Markdown");
     } catch {
       toast.error("Couldn't copy to clipboard");

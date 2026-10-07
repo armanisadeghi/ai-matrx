@@ -209,7 +209,7 @@ export default function RecoveryWindowImpl() {
 
   const handleCopyJson = async () => {
     if (!payloadJson.trim()) return;
-    await copyText(payloadJson);
+    if (!(await copyText(payloadJson))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -223,7 +223,7 @@ export default function RecoveryWindowImpl() {
           ? draftText
           : humanReadableText;
     if (!text.trim()) return;
-    await copyText(text);
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };

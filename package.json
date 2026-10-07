@@ -755,6 +755,8 @@
     "check:cursor-law:self-test": "node scripts/check-cursor-law.mjs --self-test",
     "check:alchemy-doors": "tsx scripts/check-alchemy-doors.ts",
     "check:alchemy-doors:self-test": "tsx scripts/check-alchemy-doors.ts --self-test",
+    "check:copy-result-gated": "tsx scripts/check-copy-result-gated.ts",
+    "check:copy-result-gated:self-test": "tsx scripts/check-copy-result-gated.ts --self-test",
     "preview:start": "bash scripts/agent-dev-server.sh start",
     "preview:stop": "bash scripts/agent-dev-server.sh stop",
     "preview:status": "bash scripts/agent-dev-server.sh status",

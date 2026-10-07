@@ -118,10 +118,10 @@ export function useEncoreRowActions(
             id: "copy-link",
             label: "Copy link",
             icon: Link2,
-            onSelect: () => {
-              void copyText(
+            onSelect: async () => {
+              if (!(await copyText(
                 `${window.location.origin}${doorHref(row)}`,
-              );
+              ))) return;
               toast.success("Link copied");
             },
           },

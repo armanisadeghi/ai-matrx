@@ -6,6 +6,9 @@
  * Pure browser utils (Blob + anchor). No SDKs, no server round-trip.
  */
 
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
+import type { Json } from "@ai-matrx/alchemy/operate";
+
 export interface ExportItem {
   id: string;
   /** Menu row label, e.g. "JSON (raw data)" or "CSV (current view)". */
@@ -94,11 +97,7 @@ export function textExportItem(
   };
 }
 
-function csvEscape(value: string): string {
-  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-}
-
-/** Rows → CSV. Columns: explicit list, or the union of keys across rows. */
+/** Rows → CSV (Alchemy's one writer). Columns: explicit list, or the union of keys across rows. */
 export function rowsToCsv(
   rows: Array<Record<string, unknown>>,
   columns?: Array<{ key: string; header: string }>,
@@ -109,21 +108,10 @@ export function rowsToCsv(
       key,
       header: key,
     }));
-  const lines = [cols.map((c) => csvEscape(c.header)).join(",")];
-  for (const row of rows) {
-    lines.push(
-      cols
-        .map((c) => {
-          const value = row[c.key];
-          if (value === null || value === undefined) return "";
-          return csvEscape(
-            typeof value === "object" ? JSON.stringify(value) : String(value),
-          );
-        })
-        .join(","),
-    );
-  }
-  return lines.join("\n");
+  return toDelimitedText(
+    cols.map((c) => c.header),
+    rows.map((row) => cols.map((c) => (row[c.key] ?? null) as Json)),
+  );
 }
 
 export function csvExportItem(

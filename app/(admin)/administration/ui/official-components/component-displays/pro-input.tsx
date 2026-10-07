@@ -382,10 +382,10 @@ import { Field } from '@/components/official/Field';
           <div className="flex gap-2 pt-1">
             <Button
               variant="outline"
-              onClick={() => {
-                copyText(
+              onClick={async () => {
+                if (!(await copyText(
                   `import { ProInput } from "@/components/official/ProInput";`,
-                );
+                ))) return;
                 toast.success("Import copied");
               }}
             >

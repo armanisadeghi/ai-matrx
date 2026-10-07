@@ -191,7 +191,7 @@ function JsonTreeViewerBody({ data }: { data: unknown }) {
 
   const handleCopy = useCallback(async () => {
     try {
-      await copyText(JSON.stringify(data, null, 2));
+      if (!(await copyText(JSON.stringify(data, null, 2)))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -236,7 +236,7 @@ function RawJsonView({ data }: { data: unknown }) {
 
   const handleCopy = useCallback(async () => {
     try {
-      await copyText(jsonString);
+      if (!(await copyText(jsonString))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {

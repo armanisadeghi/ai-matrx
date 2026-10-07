@@ -59,8 +59,8 @@ export function AIHelpButton(
         }
     };
 
-    const handleCopy = (text: string) => {
-        copyText(text);
+    const handleCopy = async (text: string) => {
+        if (!(await copyText(text))) return;
         toast({
             title: "Copied!",
             description: "Content copied to clipboard",

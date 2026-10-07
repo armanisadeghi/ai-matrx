@@ -219,9 +219,9 @@ export const EditableJsonViewer: React.FC<EditableJsonViewerProps> = ({
     setIsEnhancedMode(!isEnhancedMode);
   };
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     const stringified = jsonUtils.stringify(parsedData);
-    copyText(stringified);
+    if (!(await copyText(stringified))) return;
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

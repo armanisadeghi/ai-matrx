@@ -143,7 +143,7 @@ export function DataTable({ data, dimension, title }: DataTableProps) {
     };
 
     const handleCopy = async (text: string) => {
-        await copyText(text);
+        if (!(await copyText(text))) return;
         setCopiedText(text);
         setTimeout(() => setCopiedText(null), 2000);
     };

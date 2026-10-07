@@ -697,7 +697,7 @@ function ResultCard({
 
   const handleCopy = async () => {
     if (!result?.content) return;
-    await copyText(result.content);
+    if (!(await copyText(result.content))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

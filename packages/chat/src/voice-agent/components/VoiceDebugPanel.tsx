@@ -120,7 +120,7 @@ export function VoiceDebugPanel({
       ),
     ];
     try {
-      await copyText(lines.join("\n"));
+      if (!(await copyText(lines.join("\n")))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
       toast.success("Voice debug copied");

@@ -102,9 +102,9 @@ const VoicesList: React.FC = () => {
     return filtered;
   }, [availableVoices, searchTerm, sortBy]);
 
-  const handleCopyId = useCallback((id: string, e: React.MouseEvent) => {
+  const handleCopyId = useCallback(async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    copyText(id);
+    if (!(await copyText(id))) return;
     toast({
       title: "Voice ID Copied",
       description: "The voice ID has been copied to your clipboard.",

@@ -1035,7 +1035,7 @@ function useFeedbackForm({
     if (!submittedItem) return;
     const prompt = buildAgentPrompt(submittedItem);
     try {
-      await copyText(prompt);
+      if (!(await copyText(prompt))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {

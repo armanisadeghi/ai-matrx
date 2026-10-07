@@ -295,7 +295,7 @@ function FieldRow({ label, value, secret }: { label: string; value: string; secr
             variant="quiet"
             aria-label={`Copy ${label}`}
             onClick={async () => {
-              await copyText(value);
+              if (!(await copyText(value))) return;
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             }}

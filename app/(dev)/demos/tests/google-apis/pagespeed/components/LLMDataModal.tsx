@@ -28,7 +28,7 @@ export function LLMDataModal({ open, onOpenChange, data }: LLMDataModalProps) {
     const formattedData = format === "markdown" ? formatAsMarkdown(data) : formatAsJSON(data);
 
     const handleCopy = async () => {
-        await copyText(formattedData);
+        if (!(await copyText(formattedData))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

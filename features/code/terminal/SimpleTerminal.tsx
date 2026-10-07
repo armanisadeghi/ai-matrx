@@ -123,7 +123,7 @@ export const SimpleTerminal: React.FC<SimpleTerminalProps> = ({
       })
       .join("\n");
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
