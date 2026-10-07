@@ -125,22 +125,13 @@ describe("CRM native contact import parsing", () => {
   });
 
   it("reads the first non-empty Excel worksheet and reports other sheets", async () => {
-    const XLSX = await import("xlsx");
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.aoa_to_sheet([
-        ["First Name", "Email"],
-        ["Ada", "ada@example.com"],
-      ]),
-      "Contacts",
-    );
-    XLSX.utils.book_append_sheet(
-      workbook,
-      XLSX.utils.aoa_to_sheet([["Company"], ["Analytical Engines"]]),
-      "Companies",
-    );
-    const bytes = XLSX.write(workbook, { type: "array", bookType: "xlsx" });
+    const { writeWorkbookBytes } = await import("@ai-matrx/alchemy/operate/formats/xlsx");
+    const bytes = await writeWorkbookBytes({
+      sheets: [
+        { name: "Contacts", rows: [["First Name", "Email"], ["Ada", "ada@example.com"]] },
+        { name: "Companies", rows: [["Company"], ["Analytical Engines"]] },
+      ],
+    });
     const file = {
       name: "outlook-contacts.xlsx",
       size: bytes.byteLength,

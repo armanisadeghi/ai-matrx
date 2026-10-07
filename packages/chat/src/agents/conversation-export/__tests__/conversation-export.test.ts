@@ -19,7 +19,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import JSZip from "jszip";
+import { readZip } from "@ai-matrx/alchemy/operate/zip";
 import { buildConversationMarkdown } from "../conversation-markdown";
 import {
   conversationDocumentSource,
@@ -192,8 +192,8 @@ describe("every message reaches the file (the one Alchemy engine, real print)", 
     const { snapshot } = await capture(conversationPayloadFor(conv, "docx"), signal);
     const artifact = await sealDraft(createDraft(snapshot), "docx", { filename: `${conv.fileBase}.docx` }, signal);
     expect(artifact.file?.filename).toBe("Pool-route-plan.docx");
-    const zip = await JSZip.loadAsync(artifact.file!.bytes);
-    const doc = await zip.file("word/document.xml")!.async("string");
+    const zip = await readZip(artifact.file!.bytes);
+    const doc = await zip.get("word/document.xml")!.text();
     const text = doc.replace(/<[^>]+>/g, "");
     const at = (s: string) => text.indexOf(s);
     expect(at("Plan Tuesday")).toBeGreaterThan(-1);

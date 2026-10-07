@@ -1,11 +1,12 @@
 import { captureElementThumbnail } from "@/hooks/useScreenCapture";
-import * as htmlToImage from "html-to-image";
+import * as capture from "@ai-matrx/alchemy/operate/capture";
 
-jest.mock("html-to-image", () => ({
-  toCanvas: jest.fn(),
+jest.mock("@ai-matrx/alchemy/operate/capture", () => ({
+  renderElement: jest.fn(),
+  renderElementToDataUrl: jest.fn(),
 }));
 
-const mockedToCanvas = jest.mocked(htmlToImage.toCanvas);
+const mockedToCanvas = jest.mocked(capture.renderElement);
 
 describe("captureElementThumbnail", () => {
   it("caps the longest edge, uses one-pixel density, and encodes WebP", async () => {

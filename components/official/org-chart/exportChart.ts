@@ -25,10 +25,10 @@ export async function exportChart(
   size: { width: number; height: number },
   opts: { title: string; format: ChartExportFormat },
 ): Promise<void> {
-  const { toCanvas } = await import("html-to-image");
+  const { renderElement, canvasToBlob, pagesToPdf } = await import("@ai-matrx/alchemy/operate/capture");
   const background = getComputedStyle(document.body).backgroundColor || "#ffffff";
   const pad = 32;
-  const chart = await toCanvas(world, {
+  const chart = await renderElement(world, {
     width: size.width + pad * 2,
     height: size.height + pad * 2,
     pixelRatio: 2,
@@ -52,7 +52,6 @@ export async function exportChart(
   ctx.font = "28px system-ui, -apple-system, Segoe UI, sans-serif";
   ctx.fillText(caption, pad * 2, chart.height + 46);
 
-  const { canvasToBlob, pagesToPdf } = await import("@ai-matrx/alchemy/operate/capture");
   if (opts.format === "png") {
     save(await canvasToBlob(out, "image/png"), fileName(opts.title, "png"));
     return;

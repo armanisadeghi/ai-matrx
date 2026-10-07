@@ -2,9 +2,8 @@
 //
 // Client-side Markdown export for notes. Single note → a plain .md Blob
 // download (same as the long-standing per-row export). Multiple notes →
-// a JSZip bundle, mirroring features/image-studio/utils/download-bundle.ts.
+// a zip bundle, mirroring features/image-studio/utils/download-bundle.ts.
 
-import JSZip from "jszip";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface ExportableNote {
@@ -40,7 +39,7 @@ export async function downloadNotesAsMarkdownZip(
     return;
   }
 
-  const zip = new JSZip();
+  const zipEntries: { path: string; data: string }[] = [];
   const usedNames = new Set<string>();
 
   for (const note of notes) {
@@ -50,9 +49,10 @@ export async function downloadNotesAsMarkdownZip(
       filename = `${base}-${note.id.slice(0, 8)}.md`;
     }
     usedNames.add(filename);
-    zip.file(filename, note.content ?? "");
+    zipEntries.push({ path: filename, data: note.content ?? "" });
   }
 
-  const blob = await zip.generateAsync({ type: "blob" });
+  const { buildZip } = await import("@ai-matrx/alchemy/operate/zip");
+  const blob = await buildZip(zipEntries);
   downloadFile(zipFilename, blob, blob.type);
 }

@@ -93,9 +93,9 @@ export async function exportSpace(source: ExportSource, rootId: SpaceId, format:
     downloadBlob(new Blob([await render(root)], { type }), `${root.path}.${ext}`);
     return "Exported";
   }
-  const { default: JSZip } = await import("jszip");
-  const zip = new JSZip();
-  for (const e of entries) zip.file(`${e.path}.${ext}`, await render(e));
-  downloadBlob(await zip.generateAsync({ type: "blob" }), `${root.path}.zip`);
+  const { buildZip } = await import("@ai-matrx/alchemy/operate/zip");
+  const zipEntries: { path: string; data: string }[] = [];
+  for (const e of entries) zipEntries.push({ path: `${e.path}.${ext}`, data: await render(e) });
+  downloadBlob(await buildZip(zipEntries), `${root.path}.zip`);
   return `Exported ${entries.length} pages`;
 }

@@ -100,10 +100,9 @@ export function useDataOwnership(): UseDataOwnership {
   const exportAll = useCallback(async () => {
     setExportingAll(true);
     try {
-      const { default: JSZip } = await import("jszip");
-      const zip = new JSZip();
+      const { buildZip } = await import("@ai-matrx/alchemy/operate/zip");
+      const zipEntries: { path: string; data: string }[] = [];
       const stamp = new Date().toISOString();
-      const folder = zip.folder("matrx-flashcards");
       const seen = new Map<string, number>();
       let written = 0;
       const failed: string[] = [];
@@ -123,7 +122,7 @@ export function useDataOwnership(): UseDataOwnership {
         const n = seen.get(base) ?? 0;
         seen.set(base, n + 1);
         if (n > 0) base = `${base}_${n}`;
-        folder?.file(`${base}.json`, json);
+        zipEntries.push({ path: `matrx-flashcards/${base}.json`, data: json });
         written++;
       }
       // Manifest reflects what was ACTUALLY written, not what was requested.
@@ -135,8 +134,8 @@ export function useDataOwnership(): UseDataOwnership {
         ...(failed.length ? { failed_decks: failed } : {}),
         ...(partial.length ? { decks_missing_extras: partial } : {}),
       };
-      zip.file("manifest.json", JSON.stringify(manifest, null, 2));
-      const blob = await zip.generateAsync({ type: "blob" });
+      zipEntries.push({ path: "manifest.json", data: JSON.stringify(manifest, null, 2) });
+      const blob = await buildZip(zipEntries);
       downloadBlob("matrx-education-data.zip", blob);
       if (partial.length) {
         toast.warning(

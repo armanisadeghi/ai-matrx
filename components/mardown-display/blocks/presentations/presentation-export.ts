@@ -175,131 +175,123 @@ export const exportToPowerPoint = async (
     }
 
     try {
-        // Dynamic import to avoid SSR bundling issues
-        const pptxgenModule = await import('pptxgenjs');
-        const pptxgen = pptxgenModule.default;
-        const pptx = new pptxgen();
-        
+        const { buildPresentation } = await import('@ai-matrx/alchemy/operate/pptx');
+        const { downloadFile } = await import('@ai-matrx/kit/download');
+
         const { filename = 'presentation' } = options;
         const { slides } = presentationData;
         const theme = palette(resolveDeckTheme(presentationData.theme));
 
-        // Set presentation properties
-        pptx.author = 'AI Matrx';
-        pptx.title = slides[0]?.title || filename;
-        pptx.subject = 'Presentation';
-        
-        // Define layout (16:9 widescreen)
-        pptx.layout = 'LAYOUT_WIDE';
-        
-        // Process each slide
-        for (const slideData of slides) {
-            const slide = pptx.addSlide();
+        const blob = await buildPresentation((pptx) => {
+            // Process each slide
+            for (const slideData of slides) {
+                const slide = pptx.addSlide();
             
-            // Add background color
-            slide.background = { color: 'FFFFFF' };
+                // Add background color
+                slide.background = { color: 'FFFFFF' };
             
-            if (slideData.type === 'intro') {
-                // Intro slide layout
+                if (slideData.type === 'intro') {
+                    // Intro slide layout
                 
-                // Add "Introduction" badge
-                slide.addText('Introduction', {
-                    x: '35%',
-                    y: '15%',
-                    w: '30%',
-                    h: '6%',
-                    align: 'center',
-                    fontSize: 14,
-                    color: theme.primary.replace('#', ''),
-                    fill: { color: theme.primary.replace('#', '') + '20' },
-                    bold: true
-                });
+                    // Add "Introduction" badge
+                    slide.addText('Introduction', {
+                        x: '35%',
+                        y: '15%',
+                        w: '30%',
+                        h: '6%',
+                        align: 'center',
+                        fontSize: 14,
+                        color: theme.primary.replace('#', ''),
+                        fill: { color: theme.primary.replace('#', '') + '20' },
+                        bold: true
+                    });
                 
-                // Add title with markdown support
-                const titleSegments = parseMarkdownForPPT(slideData.title);
-                slide.addText(titleSegments, {
-                    x: '10%',
-                    y: '30%',
-                    w: '80%',
-                    h: '20%',
-                    align: 'center',
-                    fontSize: 44,
-                    color: theme.primary.replace('#', ''),
-                    bold: true,
-                    valign: 'middle'
-                });
+                    // Add title with markdown support
+                    const titleSegments = parseMarkdownForPPT(slideData.title);
+                    slide.addText(titleSegments, {
+                        x: '10%',
+                        y: '30%',
+                        w: '80%',
+                        h: '20%',
+                        align: 'center',
+                        fontSize: 44,
+                        color: theme.primary.replace('#', ''),
+                        bold: true,
+                        valign: 'middle'
+                    });
                 
-                // Add subtitle with markdown support
-                const subtitleSegments = parseMarkdownForPPT(slideData.subtitle);
-                slide.addText(subtitleSegments, {
-                    x: '15%',
-                    y: '55%',
-                    w: '70%',
-                    h: '15%',
-                    align: 'center',
-                    fontSize: 24,
-                    color: '4B5563',
-                    valign: 'top'
-                });
-            } else {
-                // Content slide layout
+                    // Add subtitle with markdown support
+                    const subtitleSegments = parseMarkdownForPPT(slideData.subtitle);
+                    slide.addText(subtitleSegments, {
+                        x: '15%',
+                        y: '55%',
+                        w: '70%',
+                        h: '15%',
+                        align: 'center',
+                        fontSize: 24,
+                        color: '4B5563',
+                        valign: 'top'
+                    });
+                } else {
+                    // Content slide layout
                 
-                // Add title with markdown support
-                const titleSegments = parseMarkdownForPPT(slideData.title);
-                slide.addText(titleSegments, {
-                    x: '5%',
-                    y: '8%',
-                    w: '90%',
-                    h: '12%',
-                    fontSize: 36,
-                    color: theme.primary.replace('#', ''),
-                    bold: true,
-                    valign: 'bottom'
-                });
+                    // Add title with markdown support
+                    const titleSegments = parseMarkdownForPPT(slideData.title);
+                    slide.addText(titleSegments, {
+                        x: '5%',
+                        y: '8%',
+                        w: '90%',
+                        h: '12%',
+                        fontSize: 36,
+                        color: theme.primary.replace('#', ''),
+                        bold: true,
+                        valign: 'bottom'
+                    });
                 
-                // Add description with markdown support
-                const descriptionSegments = parseMarkdownForPPT(slideData.description);
-                slide.addText(descriptionSegments, {
-                    x: '5%',
-                    y: '22%',
-                    w: '90%',
-                    h: '8%',
-                    fontSize: 18,
-                    color: '6B7280',
-                    valign: 'top'
-                });
+                    // Add description with markdown support
+                    const descriptionSegments = parseMarkdownForPPT(slideData.description);
+                    slide.addText(descriptionSegments, {
+                        x: '5%',
+                        y: '22%',
+                        w: '90%',
+                        h: '8%',
+                        fontSize: 18,
+                        color: '6B7280',
+                        valign: 'top'
+                    });
                 
-                // Add bullets with markdown support
-                const bulletPoints = (slideData.bullets ?? []).map((bullet: string) => {
-                    const segments = parseMarkdownForPPT(bullet);
-                    return {
-                        text: markdownToPlainText(bullet), // For simple bullets
-                        options: {
-                            bullet: { code: '2022' }, // Bullet character
-                            color: '1F2937',
-                            fontSize: 18,
-                            paraSpaceBefore: 8,
-                            paraSpaceAfter: 8
-                        }
-                    };
-                });
+                    // Add bullets with markdown support
+                    const bulletPoints = (slideData.bullets ?? []).map((bullet: string) => {
+                        const segments = parseMarkdownForPPT(bullet);
+                        return {
+                            text: markdownToPlainText(bullet), // For simple bullets
+                            options: {
+                                bullet: { code: '2022' }, // Bullet character
+                                color: '1F2937',
+                                fontSize: 18,
+                                paraSpaceBefore: 8,
+                                paraSpaceAfter: 8
+                            }
+                        };
+                    });
                 
-                slide.addText(bulletPoints, {
-                    x: '5%',
-                    y: '35%',
-                    w: '90%',
-                    h: '55%',
-                    fontSize: 18,
-                    color: '1F2937',
-                    bullet: true,
-                    valign: 'top'
-                });
+                    slide.addText(bulletPoints, {
+                        x: '5%',
+                        y: '35%',
+                        w: '90%',
+                        h: '55%',
+                        fontSize: 18,
+                        color: '1F2937',
+                        bullet: true,
+                        valign: 'top'
+                    });
+                }
             }
-        }
         
-        // Save the presentation
-        await pptx.writeFile({ fileName: `${filename}.pptx` });
-        
+        }, { author: 'AI Matrx', title: slides[0]?.title || filename, subject: 'Presentation' });
+
+        downloadFile(`${filename}.pptx`, blob, blob.type);
+
         return {
             success: true,
             message: `PowerPoint exported successfully: ${filename}.pptx`

@@ -15,7 +15,6 @@
  * nothing navigates.
  */
 
-import JSZip from "jszip";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 export interface BundleEntry {
@@ -40,7 +39,7 @@ export async function downloadVariantsAsZip(
 ): Promise<void> {
     if (entries.length === 0) return;
 
-    const zip = new JSZip();
+    const zipEntries: { path: string; data: Uint8Array }[] = [];
 
     // Fetch every entry's bytes (data:/blob:/ephemeral URL) in parallel, then
     // add to the ZIP. A failed entry is skipped rather than aborting the
@@ -63,12 +62,13 @@ export async function downloadVariantsAsZip(
         const path = entry.folder
             ? `${entry.folder}/${entry.filename}`
             : entry.filename;
-        zip.file(path, bytes);
+        zipEntries.push({ path, data: bytes });
         added += 1;
     }
     if (added === 0) throw new Error("No variants could be downloaded");
 
-    const blob = await zip.generateAsync({ type: "blob" });
+    const { buildZip } = await import("@ai-matrx/alchemy/operate/zip");
+    const blob = await buildZip(zipEntries);
     triggerBlobDownload(blob, zipFilename);
 }
 

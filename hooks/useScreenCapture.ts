@@ -69,7 +69,7 @@ export const RESILIENT_IMAGE_OPTIONS = {
 export async function captureTabViaCanvas(
   opts: { filename?: string; ignoreSelector?: string } = {},
 ): Promise<ScreenCaptureResult> {
-  const htmlToImage = await import("html-to-image");
+  const { renderElementToDataUrl } = await import("@ai-matrx/alchemy/operate/capture");
 
   const ignoreSelector = opts.ignoreSelector;
   const filter = ignoreSelector
@@ -81,7 +81,7 @@ export async function captureTabViaCanvas(
       }
     : undefined;
 
-  const dataUrl = await htmlToImage.toPng(document.body, {
+  const dataUrl = await renderElementToDataUrl(document.body, {
     pixelRatio: window.devicePixelRatio || 1,
     filter,
     // Exactly what the person sees: the viewport, shell header included (it
@@ -120,8 +120,8 @@ export async function captureElementThumbnail(
   const scale = Math.min(1, maxEdge / Math.max(sourceWidth, sourceHeight));
   const canvasWidth = Math.max(1, Math.round(sourceWidth * scale));
   const canvasHeight = Math.max(1, Math.round(sourceHeight * scale));
-  const htmlToImage = await import("html-to-image");
-  const canvas = await htmlToImage.toCanvas(element, {
+  const { renderElement } = await import("@ai-matrx/alchemy/operate/capture");
+  const canvas = await renderElement(element, {
     pixelRatio: 1,
     canvasWidth,
     canvasHeight,

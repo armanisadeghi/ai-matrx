@@ -19,14 +19,14 @@ jest.mock("@/lib/toast", () => ({
 import "../handlers";
 import { getAction } from "@ai-matrx/rich-content/rich-document/actions/provider";
 import { chatContext } from "../../test-utils/chatContext";
-import JSZip from "jszip";
+import { readZip } from "@ai-matrx/alchemy/operate/zip";
 
 it("writes a .docx whose document body holds the table text", async () => {
   await getAction("download-docx")!.run(chatContext("assistant"));
   expect(captured).not.toBeNull();
   expect(captured!.fileName).toMatch(/\.docx$/);
-  const zip = await JSZip.loadAsync(captured!.bytes);
-  const xml = await zip.file("word/document.xml")!.async("string");
+  const zip = await readZip(captured!.bytes);
+  const xml = await zip.get("word/document.xml")!.text();
   expect(xml).toContain("Gold");
   expect(xml).toContain("60 days");
 });

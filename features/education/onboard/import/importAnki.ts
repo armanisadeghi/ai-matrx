@@ -100,20 +100,20 @@ function factorToDifficulty(factor: number): number {
 }
 
 async function parseApkg(bytes: Uint8Array): Promise<ParsedAnki> {
-  const { default: JSZip } = await import("jszip");
-  const zip = await JSZip.loadAsync(bytes);
+  const { readZip } = await import("@ai-matrx/alchemy/operate/zip");
+  const zip = await readZip(bytes);
 
   // Prefer the plain-SQLite collection; the newer zstd `anki21b` we can't read.
-  const legacy = zip.file("collection.anki2") ?? zip.file("collection.anki21");
+  const legacy = zip.get("collection.anki2") ?? zip.get("collection.anki21");
   if (!legacy) {
-    if (zip.file("collection.anki21b")) {
+    if (zip.get("collection.anki21b")) {
       throw new Error(
         "This is a newer (compressed) Anki export we can't read yet. In Anki, re-export with “Support older Anki versions” checked, then import the .apkg again.",
       );
     }
     throw new Error("No Anki collection found in that .apkg.");
   }
-  const dbBytes = await legacy.async("uint8array");
+  const dbBytes = await legacy.bytes();
 
   const initSqlJs = (await import("sql.js")).default;
   const SQL = await initSqlJs({ locateFile: () => "/sql-wasm.wasm" });
@@ -185,12 +185,12 @@ async function parseApkg(bytes: Uint8Array): Promise<ParsedAnki> {
     // maps zip name → real filename.
     const mediaByRealName = new Map<string, () => Promise<Uint8Array>>();
     try {
-      const mediaEntry = zip.file("media");
+      const mediaEntry = zip.get("media");
       if (mediaEntry) {
-        const map = JSON.parse(await mediaEntry.async("string")) as Record<string, string>;
+        const map = JSON.parse(await mediaEntry.text()) as Record<string, string>;
         for (const [zipName, realName] of Object.entries(map)) {
-          const f = zip.file(zipName);
-          if (f) mediaByRealName.set(realName, () => f.async("uint8array"));
+          const f = zip.get(zipName);
+          if (f) mediaByRealName.set(realName, () => f.bytes());
         }
       }
     } catch {

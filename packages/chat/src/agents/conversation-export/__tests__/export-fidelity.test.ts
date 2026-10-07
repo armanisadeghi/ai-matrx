@@ -6,7 +6,7 @@
  * math pre-pass paired them and printed "Energy FormulaE = \\int…").
  */
 
-import JSZip from "jszip";
+import { readZip } from "@ai-matrx/alchemy/operate/zip";
 import { exportDocument } from "@ai-matrx/print/document";
 import { documentMarkdown } from "../document-markdown";
 import { loadFullConversationHistory } from "../load-full-history";
@@ -57,8 +57,8 @@ describe("the package receives real structure and typesets the math", () => {
 
   it("Word: a real table (w:tbl) and a native equation (m:oMath)", async () => {
     const exp = await exportDocument(documentMarkdown(ANSWER), "docx", { fileName: "x" });
-    const zip = await JSZip.loadAsync(exp.bytes as Uint8Array);
-    const doc = await zip.file("word/document.xml")!.async("string");
+    const zip = await readZip(exp.bytes as Uint8Array);
+    const doc = await zip.get("word/document.xml")!.text();
     expect(doc).toMatch(/<w:tbl[ >]/);
     expect(doc).toContain("<m:oMath>");
     expect(doc).not.toContain("&lt;artifact");

@@ -206,19 +206,19 @@ export async function importLibraryJson(raw: string): Promise<LibraryImportOutco
 /** Import the whole-library ZIP that "Export all" produces
  * (`matrx-flashcards/<name>.json` per deck + manifest). */
 export async function importLibraryZip(file: File): Promise<LibraryImportOutcome> {
-  const { default: JSZip } = await import("jszip");
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const { readZip } = await import("@ai-matrx/alchemy/operate/zip");
+  const zip = await readZip(await file.arrayBuffer());
   const decks: ImportOutcome[] = [];
   const failed: { name: string; error: string }[] = [];
-  const entries = Object.values(zip.files).filter(
-    (f) => !f.dir && /\.json$/i.test(f.name) && !/(^|\/)manifest\.json$/i.test(f.name),
+  const entries = zip.files.filter(
+    (f) => !f.directory && /\.json$/i.test(f.path) && !/(^|\/)manifest\.json$/i.test(f.path),
   );
   if (entries.length === 0) throw new Error("No deck files found in that zip.");
   for (const entry of entries) {
-    const text = await entry.async("string");
+    const text = await entry.text();
     const deck = parseDeckJson(text);
     if (!deck) {
-      failed.push({ name: entry.name, error: "not a readable deck file" });
+      failed.push({ name: entry.path, error: "not a readable deck file" });
       continue;
     }
     try {

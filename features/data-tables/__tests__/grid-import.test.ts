@@ -3,10 +3,10 @@
  * manager starts a customer table from the one customer she has typed so far,
  * and from a header plus that customer.
  */
-import Papa from "papaparse";
+import { parseDelimited } from "@ai-matrx/alchemy/operate/read";
 import { cleanGrid, firstRowLooksLikeHeader, tableFromGrid } from "../grid-import";
 
-const grid = (csv: string) => cleanGrid(Papa.parse<string[]>(csv, { header: false, skipEmptyLines: true }).data);
+const grid = (csv: string) => cleanGrid(parseDelimited(csv, { header: false, skipEmptyLines: true }).data);
 
 describe("reading an imported file", () => {
   it("a single row with no header is ONE record, not an empty file", () => {

@@ -20,7 +20,8 @@
 //   node scripts/safety-net/run.mjs --target clone --origin http://safety-net-t2.localhost:3001 --only tables.walk-bulk
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import XLSX from "xlsx";
+import { readWorkbook } from "@ai-matrx/alchemy/operate/read";
+import { writeWorkbookBytes } from "@ai-matrx/alchemy/operate/formats/xlsx";
 
 import { openWalk, bodyText, cloneRead, sleep, until, STAMP, TARGET, OUT } from "../lib/harness.mjs";
 
@@ -56,12 +57,8 @@ const GRID_BLOCK = [
 ];
 const PATIENTS = ["María José Fernández", "Zoë Brennan", "Siobhán O'Neill", "Mateo Álvarez", "Renée Dubois", "Nguyễn Thị Lan", "Björn Lindqvist", "Amara Okafor", "José Hernández", "Åsa Bergström", "Chloé Martin", "Dmitri Volkov", "Aiko Tanaka", "Priya Raman", "Luis Ortega", "Dana Whitfield", "Léa Moreau", "Tomás Castillo", "Ingrid Solberg", "Kofi Mensah"];
 const csvText = ["Patient,Visit date,Minutes,Paid", ...CSV_ROWS.map((r) => r.map((c) => (/[,"]/.test(String(c)) ? `"${c}"` : c)).join(","))].join("\n") + "\n";
-const xlsxBuffer = (() => {
-  const ws = XLSX.utils.aoa_to_sheet([["Patient", "Visit date", "Minutes", "Paid"], ...XLSX_ROWS]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Visits");
-  return XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
-})();
+const xlsxBuffer = Buffer.from(await writeWorkbookBytes({ sheets: [{ name: "Visits", rows: [["Patient", "Visit date", "Minutes", "Paid"], ...XLSX_ROWS] }] }));
+
 const visit = (k) => `V-${String(k).padStart(4, "0")}`;
 const BIG = Array.from({ length: 300 }, (_, i) => {
   const k = ((i * 157) % 300) + 1; // scrambled, so order proves nothing
@@ -345,8 +342,8 @@ try {
     const d = await dl;
     const file = join(OUT, "tables-bulk-export.xlsx");
     await d.saveAs(file);
-    const wb = XLSX.read(readFileSync(file));
-    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1 });
+    const wb = await readWorkbook(readFileSync(file));
+    const rows = wb.sheets[0].grid();
     const flat = JSON.stringify(rows);
     const missing = wanted.filter((p) => !flat.includes(p));
     return { ok: missing.length === 0, detail: `${d.suggestedFilename()}: ${rows.length - 1} rows, header ${JSON.stringify(rows[0])}${missing.length ? `; MISSING ${missing.join(", ")}` : `; all ${wanted.length} patients are in the workbook`}` };

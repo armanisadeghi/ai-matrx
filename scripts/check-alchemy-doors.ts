@@ -12,9 +12,11 @@
  *              -> an id or plain string: @ai-matrx/kit/clipboard (useClipboard in a component); content: the Alchemy copy menu (CopyButtons).
  *  downloads   hand-built URL.createObjectURL + anchor download / a.click() / saveAs(
  *              -> @ai-matrx/kit/download (downloadFile / downloadUrl); content exports: the Alchemy menu's download action.
- *  formatlibs  direct import of xlsx exceljs jspdf html2canvas marked dompurify papaparse
+ *  formatlibs  direct import of xlsx exceljs jspdf html2canvas html-to-image dom-to-image file-saver jszip
+ *              pptxgenjs pdf-lib pdfmake docx mammoth marked dompurify papaparse
  *              -> buildFile (/operate), readFile/readWorkbook/parseDelimited (/operate/read),
- *              captureElement/pagesToPdf (/operate/capture). The editor's
+ *              captureElement/renderElement/pagesToPdf (/operate/capture), buildZip/readZip (/operate/zip),
+ *              buildPresentation (/operate/pptx). The editor's
  *              gfm-lexer `marked` is ruled to stay.
  *  doorbypass  applySurfaceWrite / loadSurfaceWriteDoor / surfaceWriteDeclarations referenced as
  *              code outside surfaces/runtime, components/agent-copy and the agent write thunk
@@ -56,7 +58,7 @@ const RULES: Rule[] = ["clipboard", "downloads", "formatlibs", "doorbypass", "re
 const ADVICE: Record<Rule, string> = {
   clipboard: "copy an id or plain string through @ai-matrx/kit/clipboard (useClipboard), and content through the Alchemy copy menu (CopyButtons)",
   downloads: "save a file with downloadFile / downloadUrl from @ai-matrx/kit/download (the one download door), never a hand-built blob + anchor",
-  formatlibs: "export with buildFile (@ai-matrx/alchemy/operate), read with readFile/readWorkbook/parseDelimited (@ai-matrx/alchemy/operate/read), capture with @ai-matrx/alchemy/operate/capture — never a direct library import",
+  formatlibs: "export with buildFile (@ai-matrx/alchemy/operate), read with readFile/readWorkbook/parseDelimited (@ai-matrx/alchemy/operate/read), capture with @ai-matrx/alchemy/operate/capture, zip with /operate/zip, decks with /operate/pptx — never a direct library import",
   doorbypass: "write through the surface write door (declared write target + handler), never applySurfaceWrite directly",
   registries: "register the action with Alchemy's registry; no private action/handler map",
   handcsv: "write CSV/TSV with toDelimitedText (@ai-matrx/alchemy/operate/read) or buildFile (@ai-matrx/alchemy/operate) — never a hand-rolled quote/join writer",
@@ -127,7 +129,9 @@ const ALLOW: Record<Rule, string[]> = {
   anchorclick: ["features/content-ir/sandbox/browser/probes.ts"],
 };
 
-const LIBS = "xlsx|exceljs|jspdf|jspdf-autotable|html2canvas|marked|dompurify|isomorphic-dompurify|papaparse";
+const LIBS =
+  "xlsx|exceljs|jspdf|jspdf-autotable|html2canvas|marked|dompurify|isomorphic-dompurify|papaparse" +
+  "|html-to-image|dom-to-image|dom-to-image-more|modern-screenshot|file-saver|jszip|pptxgenjs|pdf-lib|pdfmake|html2pdf\\.js|docx|mammoth|canvas-to-blob";
 const LIB_IMPORT = new RegExp(
   `(?:from\\s*|import\\s*\\(\\s*|require\\s*\\(\\s*|import\\s+)["'](?:${LIBS})(?:/[^"']*)?["']`,
 );
@@ -255,6 +259,13 @@ function selfTest(): number {
     { rule: "anchorclick", file: "features/x/Foo.ts", src: "const a = document.createElement('a');\na.href = url;\na.download = 'f.csv';\na.click();\n", red: false, what: "anchor click WITH a download attribute (the downloads rule owns it)" },
   ];
   let bad = 0;
+  for (const lib of ["html-to-image", "jszip", "pptxgenjs", "file-saver", "docx", "pdf-lib", "dom-to-image-more"]) {
+    const src = `const m = await import("${lib}");\n`;
+    const red = scanSource("features/x/Foo.ts", src).some((h) => h.rule === "formatlibs");
+    const exempt = scanSource("components/agent-copy/x.ts", src).length === 0;
+    console.log(`[self-test] formatlibs ${lib}: ${red ? "RED" : "NOT RED"}, allowlist ${exempt ? "exempt" : "NOT exempt"} ${red && exempt ? "ok" : "FAIL"}`);
+    if (!(red && exempt)) bad++;
+  }
   for (const r of RULES) {
     const [file, src] = plant[r];
     const hits = scanSource(file, src).filter((h) => h.rule === r);
