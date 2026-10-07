@@ -117,7 +117,7 @@ export function fragmentBlockIds(fragment: Y.XmlFragment): string[] {
  * to the body's block list after joining is recorded — when, from where (seed / room / this editor), the
  * fragment's top-level shape, and which block ids came and went. Off (no array) costs nothing.
  */
-function trace(entry: Record<string, unknown>): void {
+export function trace(entry: Record<string, unknown>): void {
   const log = (globalThis as { __spacesCollabTrace?: unknown[] }).__spacesCollabTrace;
   if (Array.isArray(log)) log.push({ t: Math.round(performance.now()), ...entry });
 }

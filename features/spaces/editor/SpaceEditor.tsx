@@ -191,18 +191,7 @@ function columnCss(blocks: EngineBlock[]): string {
   return rules.join("\n");
 }
 
-/** The longest the body waits for its React blocks to draw before it shows (spaces.css). */
-const HOLD_BODY_MAX_MS = 3000;
-
 export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash, menu, onReady, onComment, collab }: SpaceEditorProps) {
-  // The body shows once every React block (database, callout, page link, column) has drawn into its node
-  // view (spaces.css): BlockNote draws those through portals a frame after the text, and a table or
-  // callout appearing under text already shown moved it (round 28). Past HOLD_BODY_MAX_MS it shows anyway.
-  const [bodyCap, setBodyCap] = useState(false);
-  useEffect(() => {
-    const t = window.setTimeout(() => setBodyCap(true), HOLD_BODY_MAX_MS);
-    return () => window.clearTimeout(t);
-  }, []);
   const dark = useDarkMode();
   const { byId } = useSpaces();
   const [pasted, setPasted] = useState<PastedUrl | null>(null);
@@ -390,7 +379,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
         setWidths(columnCss(doc));
         onChange(fromEngine(doc));
       }}
-      className={bodyCap ? "spaces-editor spaces-editor-shown" : "spaces-editor"}
+      className="spaces-editor"
     >
       <SuggestionMenuController
         triggerCharacter="@"

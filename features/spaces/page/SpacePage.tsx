@@ -17,7 +17,8 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAccess } from "@/utils/permissions/access";
 
-import { useSourcePicker } from "../data/SourcePicker";
+import { useSourcePicker, type PickedSource } from "../data/SourcePicker";
+import { withPaintedSizes } from "../editor/database-host";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
 import { useMoveIn } from "../ai/MoveIn";
 import { createPageDatabase } from "../data/new-database";
@@ -51,7 +52,7 @@ import { PresenceAvatars, ShareMenu } from "../collab/TopBarCollab";
 import { useSpaceComments } from "../collab/useSpaceComments";
 import { useSpaceRoom } from "../collab/useSpaceRoom";
 import { useSpaceCollab } from "../collab/useSpaceCollab";
-import type { SpaceMeta } from "../collab/space-collab";
+import { trace, type SpaceMeta } from "../collab/space-collab";
 import { editedAgo } from "./time";
 import { mayWrite, roomCanEdit, trashedByList } from "./trash-state";
 import { attemptSave, deviceStorage, forgetUnsaved, keepsChange, keepUnsaved, noteWritten } from "./unsaved";
@@ -392,7 +393,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     // A copy kept on this device still waits for its decision: a save now would store the page without
     // it and clear it. Held; the decision schedules it (useRestoreKept onDecided).
     if (restore.awaiting()) return;
-    const sent = docRef.current;
+    // Each database block carries the size it is painted at (the next visit holds it from its first frame).
+    const sent = { ...docRef.current, blocks: withPaintedSizes(docRef.current.blocks) };
     const key = contentKey(sent);
     pending.current = false;
     // The cadence's max wait runs from the first change AFTER what this save carries.
@@ -403,6 +405,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
       return;
     }
     inFlight.current = true;
+    urgentUntil.current = 0;
+    trace({ ev: "save", base: baseVersion.current });
     setSaveState("saving");
     const storage = deviceStorage();
     const attempt = (d: SpaceDoc, base: number) => attemptSave({ spaceId, doc: d, baseVersion: base, storage, save: (x, b) => store.saveFrom(origin, x, b) });
@@ -470,11 +474,50 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     dirtySince.current ??= now;
     // The cadence is a knob; until it is read nothing is timed (its arrival schedules what is pending).
     const cadence = collab.cadence;
+    trace({ ev: "schedule", local, host: collab.hostRef.current, cadence: !!cadence });
     if (!collab.hostRef.current || !cadence) return;
     // "Saving…" is the write in flight only (Notion): changes waiting for the cadence read as edited.
-    const wait = Math.max(0, Math.min(cadence.debounceMs, dirtySince.current + cadence.maxWaitMs - now));
+    // An insert that points at something just made elsewhere (a database designed or created from "/") saves
+    // at once: the table already exists, and a tab closed inside the debounce would leave it with no page.
+    const urgent = urgentUntil.current > now;
+    const wait = urgent ? 0 : Math.max(0, Math.min(cadence.debounceMs, dirtySince.current + cadence.maxWaitMs - now));
     if (timer.current) window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => void flush(), wait);
+  };
+  /** Until this time the next change saves without the debounce (saveSoon). */
+  const urgentUntil = useRef(0);
+  /**
+   * `made` resolved with something that already exists in the store (a new table): the block the caller
+   * inserts for it saves at once — whatever is pending flushes on the next tick, and the change event still
+   * on its way (if any) is timed at zero.
+   */
+  const saveSoon = <T,>(made: Promise<T>): Promise<T> =>
+    made.then((value) => {
+      if (value) {
+        urgentUntil.current = Date.now() + 1500;
+        window.setTimeout(() => {
+          if (pending.current && collab.hostRef.current && collab.cadence) schedule();
+        }, 0);
+      }
+      return value;
+    });
+  /** "/" → Database (inline or full page): a new table in this page's organization, as a sub-page when asked. */
+  const newDatabase = async (fullPage: boolean): Promise<{ table: PickedSource; pageId?: string } | null> => {
+    try {
+      const table = await createPageDatabase(spaceId, activeOrg, userId);
+      if (!fullPage) return { table };
+      const view = { id: newViewId(), name: "Table", layout: "grid" as const };
+      const sub = await spaces.createSpace(spaceId, {
+        open: false,
+        title: table.name,
+        blocks: [{ id: crypto.randomUUID(), type: "database", props: { source: { kind: "table", tableId: table.tableId }, inline: false, title: table.name, linked: false, views: [view], activeViewId: view.id } }],
+      });
+      window.setTimeout(() => spaces.open(sub.id), 60);
+      return { table, pageId: sub.id };
+    } catch (err) {
+      if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "The database could not be made.");
+      return null;
+    }
   };
   const update = (patch: Partial<Editable>) => {
     if (!docRef.current) return;
@@ -924,24 +967,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
                   }),
                 ),
               pickSource,
-              designDatabase: designer.wired ? () => designer.design({ spaceId: doc.id, ...pageForAi() }) : undefined,
-              newDatabase: async (fullPage) => {
-                try {
-                  const table = await createPageDatabase(doc.id, activeOrg, userId);
-                  if (!fullPage) return { table };
-                  const view = { id: newViewId(), name: "Table", layout: "grid" as const };
-                  const sub = await spaces.createSpace(doc.id, {
-                    open: false,
-                    title: table.name,
-                    blocks: [{ id: crypto.randomUUID(), type: "database", props: { source: { kind: "table", tableId: table.tableId }, inline: false, title: table.name, linked: false, views: [view], activeViewId: view.id } }],
-                  });
-                  window.setTimeout(() => spaces.open(sub.id), 60);
-                  return { table, pageId: sub.id };
-                } catch (err) {
-                  if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "The database could not be made.");
-                  return null;
-                }
-              },
+              designDatabase: designer.wired ? () => saveSoon(designer.design({ spaceId: doc.id, ...pageForAi() })) : undefined,
+              newDatabase: (fullPage) => saveSoon(newDatabase(fullPage)),
             }}
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
             onComment={startComment}
