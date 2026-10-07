@@ -45,6 +45,16 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 30: (1) built-in tables: a magnifier search holds still (rows held dimmed while the read
+  runs, the grid remounts per answer, the body keeps its height while a term is on, the count keeps its width; CLS 0.21 -> 0,
+  walk `entity-search.walk.mjs`); the "70 unrelated rows" were the page's other tables counted page-wide; built-in tables get
+  Notion's "+ New page" row and the custom tables' New + templates button (`NewButton` in `menu-parts.tsx`). (2) records 0.76.19
+  knows percent_empty / percent_filled / range. (3a) N7 advanced filter: Filter -> Add advanced filter (records-ui
+  `ConditionGroup`, `maxDepth` 2), saved as the view's `where` (walk `advanced-filter.walk.mjs`). (3b) N8 Form view: Layout ->
+  Form draws records-ui `FormBuilder` for the table, the view keeps `formId`; an answer at `/f/<id>` is a row (walk
+  `form-view.walk.mjs`). (3c) N5: inline tables mount the merged grid (`DataMount`), whose header menu renames, edits
+  options, changes type, inserts, hides and deletes a property; widths and column order are kept per view. NEEDS: per-column
+  wrap, Duplicate property.
 - 2026-10-07 — N2 Remind on a date mention: clicking a date mention opens its card (day, optional time, Remind: None / at
   time / 5 min / 1 h / 1 d / 2 d / 1 week before; a day without a time counts from 9:00). `editor/reminders.ts` hands this
   person's reminders on the page to `communication.reconcile_my_notices` (scope `spaces:<pageId>:`) after every change, so
