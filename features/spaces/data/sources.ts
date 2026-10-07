@@ -74,6 +74,20 @@ export interface SpaceDbView {
   chart?: ChartSettings;
 }
 
+export type AutofillKind = "summary" | "keywords" | "translation" | "custom";
+/** One AI autofill property (data/ai-autofill.tsx): a text column of the table plus its job. */
+export interface AiFieldSpec {
+  key: string;
+  label: string;
+  kind: AutofillKind;
+  instruction?: string;
+  language?: string;
+}
+
+export function readAiFields(raw: unknown): AiFieldSpec[] {
+  return Array.isArray(raw) ? (raw as AiFieldSpec[]).filter((f) => f && typeof f.key === "string" && typeof f.label === "string") : [];
+}
+
 /** The stored props of a `database` block (BLOCK-SCHEMA C24 plus the view list this builder adds). */
 export interface DatabaseBlockProps {
   source: SpaceDataSource;
@@ -88,6 +102,8 @@ export interface DatabaseBlockProps {
   openAs?: "side" | "center" | "page";
   views?: SpaceDbView[];
   activeViewId?: string;
+  /** AI autofill properties (data/ai-autofill.tsx): a text column of the table plus its job. */
+  aiFields?: AiFieldSpec[];
 }
 
 export function readDatabaseProps(p: Record<string, unknown>): DatabaseBlockProps | null {
@@ -103,6 +119,7 @@ export function readDatabaseProps(p: Record<string, unknown>): DatabaseBlockProp
     openAs: p.openAs === "center" || p.openAs === "page" ? p.openAs : "side",
     views: Array.isArray(p.views) ? (p.views as SpaceDbView[]) : undefined,
     activeViewId: typeof p.activeViewId === "string" ? p.activeViewId : undefined,
+    aiFields: readAiFields(p.aiFields),
   };
 }
 

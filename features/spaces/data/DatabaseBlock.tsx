@@ -49,6 +49,7 @@ import { toast } from "@/lib/toast";
 import { DataMount } from "./DataMount";
 import { EntityDatabase } from "./EntityDatabase";
 import { useDatabaseDesigner } from "../ai/DatabaseDesigner";
+import { AutofillRows } from "./ai-autofill";
 import { designMarkdown } from "./designed-database";
 import { FieldList, MenuRow, SidePeek, ViewerSaveBar, ViewerSortButton, ViewTab, filtersDiffer, shownFilters, shownSorts, type FilterChoice, type SortChoice } from "./menu-parts";
 import { ChartView, choicesOfField } from "./ChartView";
@@ -689,6 +690,9 @@ function ViewSettings({
                   <MenuRow key={id} icon={<Icon size={15} />} label={text} active={(props.openAs ?? "side") === id} onClick={() => editable && onBlock({ openAs: id })} />
                 ))}
                 <MenuRow icon={<Database size={15} />} label="Show database title" end={<Switch checked={props.showTitle !== false} tabIndex={-1} aria-hidden />} onClick={() => editable && onBlock({ showTitle: props.showTitle === false })} />
+                {canShape ? (
+                  <AutofillRows tableId={tableId} databaseName={props.title ?? "Database"} fields={fields} aiFields={props.aiFields ?? []} client={client} onAiFields={(aiFields) => onBlock({ aiFields })} />
+                ) : null}
                 {canShape && designer.wired ? (
                   <MenuRow
                     icon={<AGENT_ICON size={15} />}

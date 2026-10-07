@@ -32,6 +32,8 @@ export const BUILD_KEY = declaredKey("spaces__build");
 export const DESIGN_DATABASE_KEY = declaredKey("spaces__design_database");
 /** "Import from Notion" — the Move-in Assistant (ai/MoveIn.tsx). */
 export const MOVE_IN_KEY = declaredKey("spaces__move_in");
+/** AI autofill properties of a database block (data/ai-autofill.tsx). */
+export const AUTOFILL_KEY = declaredKey("spaces__autofill");
 
 const SURFACE_KEY = "spaces-page";
 const SOURCE_FEATURE = "documents" as const;
