@@ -18,13 +18,13 @@ controls, never hidden — see `features/shell/FEATURE.md`.
 
 | File | Role |
 |---|---|
-| `components/InboxHeaderButton.tsx` | The bell. Badge = unseen Needs-you + For-you notices + anything new from a counting source since the bell was last opened; clears on open (ruling 1). Updates add a dot, never a number; an unreadable part shows a neutral dot. Toggles the Notifications canvas tab (`canvas/notificationsKind.tsx`), opened in a pane below what the canvas shows; pressed while in front. `G` then `N` opens the inbox window from anywhere. |
-| `components/BellPanel.tsx` | THE bell body — the Notifications canvas tab (`variant="pane"`, touch-sized on a phone; the phone ⋮ sheet opens the same tab). For you / Updates tabs, Needs-you section (3 + "N more"), time buckets, grouped rows, All places strip, footer "Open inbox" as a WINDOW (Ctrl/Cmd-click: new tab). No bulk, no filters. |
+| `components/InboxHeaderButton.tsx` | The bell. Badge = unseen Needs-you + For-you notices + anything new from a counting source since the bell was last opened (`badge.ts`); clears on open (ruling 1). Source marks live in synced preferences (`preferences.inbox`, `useInboxMemory.ts`), so they follow the person to every device. Updates add a dot, never a number; an unreadable part shows a neutral dot. Toggles the Notifications canvas tab (`canvas/notificationsKind.tsx`), opened in a pane below what the canvas shows; pressed while in front. `G` then `N` opens the inbox window from anywhere. |
+| `components/BellPanel.tsx` | THE bell body — the Notifications canvas tab (`variant="pane"`, touch-sized on a phone; the phone ⋮ sheet opens the same tab). For you / Updates tabs, Needs-you section (3 + "N more"), time buckets, grouped rows, All places strip, footer "Open inbox" as a WINDOW (Ctrl/Cmd-click: new tab). **Clear all** (every Inbox notice Done, every page, one call, Undo in the toast) and ⋯ **Clear a kind** (every kind with its count, `my_inbox_kinds`). |
 | `components/InboxWorkspace.tsx` | THE inbox — `/notifications` (`InboxPage`, `?org_filter=`, `?view=`) and the inbox window (`windows/InboxWindow.tsx`). Rail (views + Places), grouped list, detail pane, Snoozed (with `HiddenElsewhere`) and Done views, keyboard (J/K, Enter/O, E, Shift+E, U, H, X, Z, ?), bulk, search, type filter, organization filter (default All, never the active org). |
 | `components/NoticeRow.tsx` | ONE row anatomy for bell, sheet and page: unread dot, lead (avatar or type icon), actor · title, context · plain preview, time → hover Done / Snooze / ⋯; 52/64px fixed; swipe on the phone (left Done, right read). |
 | `components/NoticeDetail.tsx` | Detail pane: triage bar, full body (`NotificationBody`), group members. |
 | `components/HiddenElsewhere.tsx` | Snoozed view's cross-source half: snoozed/silenced assists, snoozed/dismissed tasks, snoozed record-store items — each with its way back (ruling 3). |
-| `components/PlacesStrip.tsx` | "All places" strip and the rail's `SourceItem`. |
+| `components/PlacesStrip.tsx` | "All places" strip and the rail's `SourceItem`. Each place's number is its count above what the person last cleared; its ⋯ holds **Clear** and **Hide from bell** (hidden places come back from "Hidden · N"). |
 | `sources/registry.tsx` | THE notice-source registry (ruling 3): approvals, record-store work, workflows waiting, assists, tasks, HR tasks. Each opens its CANONICAL list as a window (or a new tab when the list owns the address). A new system joins here, never by editing the bell. |
 | `openNotice.ts` | `useOpenNotice` — the one opener. `?panels=` → window in place; route with a window → that window; any other link → NEW TAB, announced (`notice-no-window` / `notice-no-hydrator`). Never the router. |
 | `useInbox.ts` | `useInboxCounts` (badge, dot, shared seen-store), `useInboxFeed` (paged view), `useInboxActions` (optimistic triage + undo), `useWorkWaiting`. |
@@ -38,7 +38,9 @@ Windows that wrap canonical lists (registered in `features/overlays/catalogue.ts
 
 Pre-triage (live since 2026-09-19): `my_notifications`, `my_notification_unread_count`, `mark_my_notifications_read`, `mark_notification_read`, `custom.inbox_counts`.
 
-Triage (`migrations/notifications_inbox_triage.sql`, **applied on the nightly clone only, held by its `-- draft:` line until the owner is told** — it alters `communication.notification`): columns `seen_at`, `done_at`, `snoozed_until`; `config.bucket` defaults on every event type; doors `inbox_notifications(p_state, p_limit, p_before, p_unread_only, p_org_id)`, `my_inbox_summary()`, `mark_inbox_seen()`, `set_notifications_state(p_ids, p_action, p_until)`, `my_inbox_organizations()`. Snooze needs no schedule: a past `snoozed_until` reads as back, unread, sorted at that moment. Inverse: `migrations/inverse/notifications_inbox_triage_down.sql`. After it lands on live: regenerate types, drop the `as never` seam, delete the pre-triage fallback and `my_notifications` / `my_notification_unread_count` (aidream `scripts/check_db_memory_budget.py` names the latter).
+Triage (`migrations/notifications_inbox_triage.sql`, **live since 2026-10-07, approved by Arman**): columns `seen_at`, `done_at`, `snoozed_until`; `config.bucket` defaults on every event type; doors `inbox_notifications(p_state, p_limit, p_before, p_unread_only, p_org_id)`, `my_inbox_summary()`, `mark_inbox_seen()`, `set_notifications_state(p_ids, p_action, p_until)`, `my_inbox_organizations()`. Snooze needs no schedule: a past `snoozed_until` reads as back, unread, sorted at that moment. Inverse: `migrations/inverse/notifications_inbox_triage_down.sql`. Still to do now that it is live: regenerate types, drop the `as never` seam, delete the pre-triage fallback and `my_notifications` / `my_notification_unread_count` (aidream `scripts/check_db_memory_budget.py` names the latter).
+
+Clear by kind (`migrations/notifications_inbox_clear_by_kind.sql`, live 2026-10-07): `my_inbox_kinds()` (every kind in the Inbox with its count and unseen) and `clear_inbox(p_action done|read|snooze, p_event_keys text[] null = all, p_until)` → the ids it changed, for Undo through `set_notifications_state(ids, 'undone')`. Inverse: `migrations/inverse/notifications_inbox_clear_by_kind_down.sql`.
 
 All `SECURITY DEFINER`, `auth.uid()` resolved inside, anon holds no EXECUTE, each declared in `platform.client_callable_door`.
 
@@ -46,6 +48,7 @@ All `SECURITY DEFINER`, `auth.uid()` resolved inside, anon holds no EXECUTE, eac
 
 - **One home.** Anything that tells a person something that they did not just do is a declared spine event, delivered to `in_app`, read here. Toasts are for the person's own action.
 - 🚨 **The bell never moves the page** (owner ruling 4, 2026-10-01, widening 2026-09-30). The bell, the phone sheet, the inbox window and every source open a window over the page or a new tab — never the router, never a same-tab link. Guard: `__tests__/bell-never-navigates.test.tsx` clicks every control of the bell with one notice of every link kind and fails on any router call or same-tab anchor; a static half refuses `useRouter` / `next/link` / `AppLink` in the bell's tree. Shown red on the pre-2026-10-01 `InboxPanel` (5 router pushes + the same-tab footer link), green after. Opener contract: `__tests__/notice-opens-without-moving-the-page.test.tsx`.
+- 🚨 **Never a number the person cannot clear** (Arman, 2026-10-07). The badge counts only what is new since the bell was opened. Every notice, every kind (`Clear a kind`, `Turn off this type` clears its kind too), the whole Inbox (`Clear all`) and every place (`Clear`, `Hide from bell`) leaves the bell in one or two clicks; hard work (38 workflows waiting) lives on its own page. Guards: `__tests__/the-badge-counts-only-what-is-new.test.ts`, `__tests__/a-waiting-place-clears-in-one-click.test.tsx`, `__tests__/the-badge-asks-the-triage-doors.test.ts`; live walk `scripts/bell-zero-walk.mjs`.
 - **Triage to zero** (ruling 2). Done is the main gesture; every action is undoable (`Z`, toast Undo) and Done is recoverable from the Done view. Opening never marks Done.
 - **Honest badge** (ruling 1). Counts only what is new and needs you or is addressed to you. Never "N unread" in the header.
 - **One door to every notice system** (ruling 3) — the source registry; hidden things are listed in Snoozed.
@@ -64,7 +67,7 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 
 ## Follow-ups (owned, not optional)
 
-1. **Live apply of `notifications_inbox_triage.sql`** — announced to the owner first (it alters a live table). Then `pnpm db-types`, derive types, delete the fallback.
+1. **Types after the live apply** — `pnpm db-types`, derive types, delete the pre-triage fallback.
 2. **Grouped door** `my_notification_groups(...)` so grouping is exact across pages (today: client-side over the loaded page).
 3. **Mute a record** — needs a `notification_mute` table (`platform.create_entity_table` + certification, owner first). "Turn off this type" ships today.
 4. **Mark-unread on the pre-triage door** does not exist; until live apply, unread toggles only work on the clone.
@@ -79,6 +82,8 @@ through `@ai-matrx/realtime` — invoke the `supabase-realtime` skill first.
 13. **HiddenElsewhere** lists snoozed assists from the newest 100 pending (the count in All places is exact); `listMyTaskUserStates` logs and returns [] on failure, so a task-state read failure reads as "nothing hidden" — fix in the tasks service.
 
 ## Change log
+
+- `2026-10-07` — BELL-OWNER: **the bell people never learn to ignore.** Triage migration approved by Arman and applied live (the badge's `my_inbox_summary` 404 is gone); badge = only what is new since the bell was opened, marks synced across devices; Clear all, Clear a kind, per-place Clear / Hide from bell; Turn off this type clears its kind. New doors `my_inbox_kinds`, `clear_inbox`.
 
 - `2026-10-03` — claude: **A short pane keeps its notices.** In a split canvas the Notifications pane was ~270px and the pinned All places strip plus the footer took all of it — "Needs you · 24" was clipped under the strip. The notices now keep a 96px floor and the strip yields first, scrolling inside itself (`BellPanel`). Verified live at a 215px pane: the Needs you label and its first row show, All places scrolls.
 
