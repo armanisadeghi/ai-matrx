@@ -152,8 +152,8 @@ export function AppletOverviewContent({ appId }: AppletOverviewContentProps) {
           {isPublished && (
             <SettingRow label="Public link">
               <Button variant="quiet" asChild>
-                <a href={`${siteConfig.url}/p/${app.slug}`} target="_blank" rel="noopener noreferrer">
-                  /p/{app.slug}
+                <a href={`${siteConfig.url}/applets/${app.slug}`} target="_blank" rel="noopener noreferrer">
+                  /applets/{app.slug}
                 </a>
               </Button>
             </SettingRow>

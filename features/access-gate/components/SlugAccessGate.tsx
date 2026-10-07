@@ -4,7 +4,7 @@
  * SlugAccessGate — the canonical access gate for a SLUG-addressed page.
  *
  * `<AccessGate>` is keyed on the record's uuid, but pages like `/shapes/[kind]`,
- * `/education/learn/[...slug]`, `/podcast/[slug]` and `/p/[slug]` address their
+ * `/education/learn/[...slug]`, `/podcast/[slug]` and `/applets/[slug]` address their
  * item by slug. When their read comes back empty they cannot know the uuid —
  * RLS hid the very row that would say it. `access_gate_resolve_slug` (signed-in
  * only, existence-level disclosure; see migrations/access_gate_slug_resolver.sql)

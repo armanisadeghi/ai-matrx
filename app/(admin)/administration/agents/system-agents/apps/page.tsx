@@ -419,7 +419,7 @@ export default function AdminSystemAppsListPage() {
                           title="Open public URL"
                         >
                           <AppLink
-                            href={`/p/${app.slug}`}
+                            href={`/applets/${app.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

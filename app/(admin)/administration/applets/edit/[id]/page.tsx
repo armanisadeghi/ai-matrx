@@ -393,12 +393,12 @@ export default function AdminEditAppletPage({
             {app.status}
           </Badge>
           <a
-            href={`/p/${app.slug}`}
+            href={`/applets/${app.slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-primary inline-flex items-center gap-1 text-xs hover:underline"
           >
-            /p/{app.slug}
+            /applets/{app.slug}
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>

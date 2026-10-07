@@ -407,7 +407,7 @@ export function appletAdminEditHuman(view: AppletAdminEditView): string {
     });
 
   return [
-    `Editing ${view.app.name} [${view.app.status}] — /p/${view.app.slug}`,
+    `Editing ${view.app.name} [${view.app.status}] — /applets/${view.app.slug}`,
     `Analytics: ${kpiLine(kpis)}`,
     `Tab: ${view.activeTab === "code" ? "Component Code" : "Admin Controls"}`,
     "",

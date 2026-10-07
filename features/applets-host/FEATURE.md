@@ -19,13 +19,15 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
 ## Entry points
 
 **Routes**
-- `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet (signed in + slug resolves + not a template), so it is never
+- `app/(link)/applets/[slug]/layout.tsx` — MOUNTS the Applet whenever `resolveAppletView` says run, so it is never
   remounted when its page changes (a page under `[[...path]]` remounts per path; that rebuilt the host and
   re-read everything on every page change and on browser Back).
-- `app/(link)/applets/[slug]/[[...path]]/page.tsx` — signed in: renders nothing and resolves the slug; signed out
-  (or any visitor of a template): the Applet's introductory page when its owner published one
-  (`showsAppletIntro` in `features/marketing/applets/publicApplets.server.ts`, shared with the layout), else
-  `/login?redirectTo=…`. `build`/`manage`/`new` can never be a slug (`features/applets/reserved-slugs.ts`). Resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
+- `app/(link)/applets/[slug]/[[...path]]/page.tsx` — the Applet's ONE address. `resolveAppletView`
+  (`resolve-applet-route.ts`, shared with the layout): a template → its introductory page; signed in → the running
+  Applet; signed out + published public Applet (`get_aga_public_data`) → the running Applet on the guest lane plus
+  the `MadeWithAiMatrx` row (`?embed=widget` drops it); signed out otherwise → the introductory page when the owner
+  published one, else `/login?redirectTo=…`. An id-shaped address redirects to the slug. `/p/<slug>` was folded in
+  and deleted. `build`/`manage`/`new` can never be a slug (`features/applets/reserved-slugs.ts`). Resolves the slug (`resolve-applet-route.ts`, the viewer's server client — row
   security decides); a miss falls to `not-found.tsx`, which answers through `SlugAccessGate` (token `app`).
 
 - `app/(core)/applets/build/page.tsx` — **build by talking** (`?applet=<id>` changes an existing one):
@@ -38,7 +40,7 @@ Package mechanics: `aidream/apps/shared/applets/FEATURE.md`.
   the saved files — the code workspace's preview), `embedded` (a Space block: pages navigate in place, writes live;
   `features/applets/embed/AppletInPage.tsx` passes it). Always binds `renderDataPage` → `features/applets/embed/DataPage.tsx`
   (`<DataPage id>` inside an Applet), and declares the record's `mandates` in the top Agents menu
-  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/applets/<slug>` and `/p/<slug>` both mount it.
+  (`useDeclaredSurfaceMandates`, `does` = the job's described goal) — no chips on the page. `/applets/<slug>` mounts it.
 - `AppletForeignKind.tsx` — `renderKind` (`AppletKind`): a kind the app's registry routes renders through
   `KindInstanceRender`; a kind the APPLET's organization owns (read through `host.kinds` → `app.applet_kind`, so a
   viewer from another organization gets it too) compiles its stored web component with `compileStoredComponent`

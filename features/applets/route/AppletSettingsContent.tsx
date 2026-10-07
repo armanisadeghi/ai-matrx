@@ -260,7 +260,7 @@ export function AppletSettingsContent({
 
   const handleCopyUrl = async () => {
     if (!app) return;
-    await copyText(`${siteConfig.url}/p/${app.slug}`, "Public URL copied");
+    await copyText(`${siteConfig.url}/applets/${app.slug}`, "Public URL copied");
   };
 
   const handlePublicationChange = async (published: boolean) => {
@@ -287,7 +287,7 @@ export function AppletSettingsContent({
     );
   }
 
-  const publicUrl = `${siteConfig.url}/p/${app.slug}`;
+  const publicUrl = `${siteConfig.url}/applets/${app.slug}`;
 
   // ── Copy-for-AI: the form as it stands RIGHT NOW ────────────────────────
   // Built inside the click handler (CopyButtons resolves these lazily) so the

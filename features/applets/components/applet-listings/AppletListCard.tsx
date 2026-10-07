@@ -82,7 +82,7 @@ export function AppletListCard({
   const codeHref = `/applets/manage/${app.id}/code`;
   const versionsHref = `/applets/manage/${app.id}/versions`;
   const settingsHref = `/applets/manage/${app.id}/settings`;
-  const viewHref = `/p/${app.slug}`;
+  const viewHref = `/applets/${app.slug}`;
 
   return (
     <Card

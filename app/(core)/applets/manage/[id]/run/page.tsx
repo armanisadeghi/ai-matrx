@@ -8,7 +8,7 @@ interface RunPageProps {
 
 /**
  * /applets/manage/[id]/run — runs the user's actual Applet inside the management
- * shell, through the same Applet host as `/applets/<slug>` and `/p/<slug>`,
+ * shell, through the same Applet host as `/applets/<slug>`,
  * framed by the sub-route header so the user can flip back to Code or Settings.
  */
 export default async function AppletRunPage({ params }: RunPageProps) {

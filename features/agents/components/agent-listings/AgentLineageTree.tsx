@@ -8,7 +8,8 @@
  *   - Derived agents (other agents whose `sourceAgentId` points here — the
  *     typical "promoted from user → system" linkage).
  *   - Shortcuts pointing at this agent (via `selectShortcutsByAgentId`).
- *   - Applets backed by this agent (fetched from `agent_apps`).
+ *   - Applets whose jobs this agent runs: an Applet's job is a mandate, and the
+ *     mandate's agent is its default holder or a binding's holder.
  *
  * Each row is a click-through into the matching admin editor. No write
  * operations happen here — this is a read-only map.
@@ -51,6 +52,8 @@ import {
   fetchAppletsAdmin,
   type AppletAdminView,
 } from "@/lib/services/applets-admin-service";
+import { fetchMandateConsoleData } from "@/features/mandates/admin/service";
+import { storedMandateKey } from "@ai-matrx/agents/mandates";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { readOf } from "@/components/read-state/ReadGate";
 import { jsonExportItem, csvExportItem } from "@/components/agent-copy/export";
@@ -58,6 +61,23 @@ import { useAgentCatalogError, useBuiltinAgents, useCatalogAgents } from "@ai-ma
 import { ensureAgentCatalog } from "@ai-matrx/chat/agents/identity/agent-identity";
 
 const ADMIN_AGENT_BASE = "/administration/agents/system-agents/agents";
+
+/** The agents behind each job key the Applets name: the mandate's default holder plus every binding's holder. */
+async function agentsByJobKey(rows: AppletAdminView[]): Promise<Map<string, string[]>> {
+  const out = new Map<string, string[]>();
+  const keys = [...new Set(rows.flatMap((r) => r.job_keys))];
+  if (keys.length === 0) return out;
+  const data = await fetchMandateConsoleData({ mandateKeys: keys.map(storedMandateKey) });
+  for (const m of data.mandates) {
+    const ids = new Set<string>();
+    if (m.default_holder_type === "agent" && m.default_holder_id) ids.add(m.default_holder_id);
+    for (const b of data.bindingsByMandateId[m.id] ?? []) {
+      if (b.holder_type === "agent" && b.holder_id) ids.add(b.holder_id);
+    }
+    out.set(m.mandate_key, [...ids]);
+  }
+  return out;
+}
 
 export function AgentLineageTree() {
   const dispatch = useAppDispatch();
@@ -70,6 +90,7 @@ export function AgentLineageTree() {
   const userQuery = useAgentShortcuts({ scope: "user" });
 
   const [apps, setApps] = useState<AppletAdminView[]>([]);
+  const [jobAgents, setJobAgents] = useState<Map<string, string[]>>(new Map());
   const [appsLoading, setAppsLoading] = useState(true);
   const [appsError, setAppsError] = useState<unknown>(null);
   // The list read's failure is the catalog's own error.
@@ -81,9 +102,14 @@ export function AgentLineageTree() {
     setAppsLoading(true);
     setAppsError(null);
     fetchAppletsAdmin({ limit: 500 })
-      .then((rows) => setApps(rows))
+      .then(async (rows) => {
+        const agents = await agentsByJobKey(rows);
+        setApps(rows);
+        setJobAgents(agents);
+      })
       .catch((e: unknown) => {
         setApps([]);
+        setJobAgents(new Map());
         setAppsError(e);
       })
       .finally(() => setAppsLoading(false));
@@ -105,13 +131,15 @@ export function AgentLineageTree() {
   const appsByAgent = useMemo(() => {
     const map = new Map<string, AppletAdminView[]>();
     for (const app of apps) {
-      if (!app.agent_id) continue;
-      const list = map.get(app.agent_id) ?? [];
-      list.push(app);
-      map.set(app.agent_id, list);
+      const agentIds = new Set(app.job_keys.flatMap((key) => jobAgents.get(storedMandateKey(key)) ?? []));
+      for (const agentId of agentIds) {
+        const list = map.get(agentId) ?? [];
+        list.push(app);
+        map.set(agentId, list);
+      }
     }
     return map;
-  }, [apps]);
+  }, [apps, jobAgents]);
 
   const isShortcutsLoading = globalQuery.isLoading || userQuery.isLoading;
   const shortcutsError = globalQuery.error ?? userQuery.error;

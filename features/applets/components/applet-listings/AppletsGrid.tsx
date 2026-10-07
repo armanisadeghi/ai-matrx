@@ -213,7 +213,7 @@ export function AppletsGrid({
 
   const handleCopyUrl = useCallback(async (app: AppletCardModel) => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const url = `${origin}/p/${app.slug}`;
+    const url = `${origin}/applets/${app.slug}`;
     await copyText(url, "Public URL copied to clipboard.", "Could not copy to clipboard. URL: " + url.slice(0, 80) + "…");
   }, []);
 

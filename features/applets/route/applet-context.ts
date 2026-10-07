@@ -53,7 +53,7 @@ export function buildAppletBundle(app: AppletBundleSource, activeView?: string):
       id: app.id,
       name: app.name,
       slug: app.slug,
-      public_url: app.published_to_web ? `/p/${app.slug}` : null,
+      public_url: app.published_to_web ? `/applets/${app.slug}` : null,
       status: app.status,
       published_to_web: app.published_to_web,
       category: app.category,

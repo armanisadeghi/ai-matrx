@@ -11,7 +11,7 @@
  *   - `href` is overridden to the ADMIN editor. The registry route for the
  *     `app` token is `/applets/manage/<id>` (the owner-side shell); an operator
  *     working in `/administration/applets/*` wants the admin record.
- *   - the public renderer (`/p/<slug>`) is offered as an EXTRA door, never as
+ *   - the running Applet (`/applets/<slug>`) is offered as an EXTRA door, never as
  *     the record. The public page is what visitors see, not the app row —
  *     handing it over as "the app" is the dead end this component removes.
  *
@@ -34,7 +34,7 @@ export function appletExecutionsHref(appId: string): string {
 
 /** Public renderer for a published app. An extra door, never the record. */
 export function appletPublicHref(slug: string): string {
-  return `/p/${slug}`;
+  return `/applets/${encodeURIComponent(slug)}`;
 }
 
 const CONTROL_CLASS =
@@ -46,7 +46,7 @@ export interface AppletRefProps {
   appId: string;
   /** Display name; falls back to a truncated id when the join didn't resolve. */
   name?: string | null;
-  /** Public slug — adds the `/p/<slug>` door when present. */
+  /** Public slug — adds the `/applets/<slug>` door when present. */
   slug?: string | null;
   /** Controls stay visible instead of appearing on hover/focus. */
   alwaysShowActions?: boolean;
@@ -75,8 +75,8 @@ export function AppletRef({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            title={`Open the public page /p/${slug}`}
-            aria-label={`Open the public page /p/${slug}`}
+            title={`Open /applets/${slug}`}
+            aria-label={`Open /applets/${slug}`}
             className={CONTROL_CLASS}
           >
             <Globe className="h-3 w-3" />

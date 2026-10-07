@@ -18,12 +18,11 @@ import { APPLET_TEMPLATES_PATH, appletHref } from '@/features/marketing/applets/
  * leaves the sitemap on the next read. Anyone-link and secure-link pages never appear.
  */
 async function getIndexedRecordUrls(baseUrl: string) {
-  const [episodes, shows, articles, apps, canvases, flashcards, notes, templates] =
+  const [episodes, shows, articles, canvases, flashcards, notes, templates] =
     await Promise.all([
       listSearchEngineIndexedRecords('pc_episode'),
       listSearchEngineIndexedRecords('pc_show'),
       listSearchEngineIndexedRecords('pc_article'),
-      listSearchEngineIndexedRecords('app'),
       listSearchEngineIndexedRecords('shared_canvas_item'),
       listSearchEngineIndexedRecords('fc_set'),
       listSearchEngineIndexedRecords('note'),
@@ -58,7 +57,6 @@ async function getIndexedRecordUrls(baseUrl: string) {
       }
     }
   }
-  for (const r of apps) out.push({ loc: `${baseUrl}/p/${encodeURIComponent(r.slug ?? r.id)}`, changefreq: 'monthly', priority: '0.5' })
   for (const r of canvases) out.push({ loc: `${baseUrl}/canvas/shared/${r.id}`, changefreq: 'monthly', priority: '0.5' })
   for (const [type, rows] of [['fc_set', flashcards], ['note', notes], ['message_template', templates]] as const) {
     for (const r of rows) out.push({ loc: `${baseUrl}/p/e/${type}/${r.id}`, changefreq: 'monthly', priority: '0.4' })

@@ -98,7 +98,7 @@ export function AppletHeader({
     onPress: async () => {
       // A publication change reaches strangers, so the click says what it
       // will do before it happens (the destructive-click rule).
-      const publicUrl = app?.slug ? `aimatrx.com/p/${app.slug}` : "its public link";
+      const publicUrl = app?.slug ? `aimatrx.com/applets/${app.slug}` : "its public link";
       const ok = await confirm(
         isPublished
           ? {
