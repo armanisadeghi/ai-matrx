@@ -27,7 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { errorSentence, toast } from "@/lib/toast";
 import {
   softDeleteMandate,
   updateMandateDefinition,
@@ -94,7 +94,7 @@ export function MandateStatusControl({
     } catch (error) {
       toast.error(
         `Could not ${enabled ? "enable" : "disable"} ${name}: ${
-          error instanceof Error ? error.message : String(error)
+          errorSentence(error)
         }`,
       );
     } finally {
@@ -117,7 +117,7 @@ export function MandateStatusControl({
       toast.success(`${name} archived. Restore it from Trash.`);
       onChanged?.("archived");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error));
+      toast.error(errorSentence(error));
     } finally {
       setBusy(false);
     }

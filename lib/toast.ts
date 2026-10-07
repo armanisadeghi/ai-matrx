@@ -590,13 +590,52 @@ function decorateError(
   }
 }
 
+const UNREADABLE_ERROR_SENTENCE =
+  "Something went wrong and the system gave no readable reason. Nothing was changed.";
+
+/**
+ * 🚨 AN ERROR TOAST IS ALWAYS A SENTENCE. A Supabase/PostgREST error is a plain
+ * object, not an `Error`, so the ubiquitous `error instanceof Error ?
+ * error.message : String(error)` produced the literal "[object Object]"
+ * (mandate archive, 2026-10-06). The shared error path reads the sentence out
+ * of an error-shaped object, and replaces a literal "[object Object]" that a
+ * caller already stringified.
+ */
+export function errorSentence(error: unknown): string {
+  if (typeof error === "string") {
+    return error.includes("[object Object]")
+      ? error.replace(/\[object Object\]/g, UNREADABLE_ERROR_SENTENCE).trim()
+      : error;
+  }
+  if (error && typeof error === "object") {
+    const o = error as { message?: unknown; details?: unknown };
+    if (typeof o.message === "string" && o.message.trim() !== "") {
+      return typeof o.details === "string" && o.details.trim() !== "" && !(error instanceof Error)
+        ? `${o.message} ${o.details}`
+        : o.message;
+    }
+    if (typeof o.details === "string" && o.details.trim() !== "") return o.details;
+  }
+  return UNREADABLE_ERROR_SENTENCE;
+}
+
+function readableErrorMessage(message: unknown): unknown {
+  if (typeof message === "string") return errorSentence(message);
+  if (message && typeof message === "object" && !(message instanceof Error) && !("$$typeof" in message)) {
+    return errorSentence(message);
+  }
+  return message;
+}
+
 /** The error twin of `onWallClock`: silent notices dropped, Alchemy attached. */
 function errorOnWallClock(emit: Emit | undefined) {
   if (typeof emit !== "function") return undefined;
-  return (message: unknown, options?: RecordToastOptions) =>
-    isSilentNotice(message, options)
+  return (rawMessage: unknown, options?: RecordToastOptions) => {
+    const message = readableErrorMessage(rawMessage);
+    return isSilentNotice(message, options)
       ? ("" as ToastId)
       : track(emit, message, decorateError(message, options, null), null, MIN_ERROR_TOAST_MS);
+  };
 }
 
 /**

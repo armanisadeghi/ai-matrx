@@ -18,7 +18,7 @@
 import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 import { useState } from "react";
 import { Copy, ExternalLink, Eye, Trash2 } from "lucide-react";
-import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
+import { dismissRecordToasts, errorSentence, recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { softDeleteMandate } from "@/features/mandates/admin/service";
 import { invalidateMandateAdminList } from "./store";
@@ -71,7 +71,7 @@ async function removeMandate(row: MandateAdminRow): Promise<void> {
     recordToast.success(ref, `Removed "${row.name}" — resolving it now refuses.`);
     invalidateMandateAdminList();
   } catch (error: unknown) {
-    toast.error(error instanceof Error ? error.message : "That job was not removed.");
+    toast.error(errorSentence(error));
   }
 }
 

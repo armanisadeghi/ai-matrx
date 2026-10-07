@@ -17,7 +17,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: mockCaptureError,
 }));
 
-import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import { errorSentence, toast, toastErrorAlreadyCaptured } from "@/lib/toast";
 
 describe("captured toast boundary", () => {
   beforeEach(() => {
@@ -49,5 +49,20 @@ describe("captured toast boundary", () => {
       expect.objectContaining({ duration: Infinity }),
     );
     expect(mockCaptureError).not.toHaveBeenCalled();
+  });
+});
+
+describe("an error toast is always a readable sentence", () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it("reads the sentence out of a PostgREST-shaped error object", () => {
+    toast.error({ code: "42501", message: "Edit access does not include deleting this mandate." } as unknown as string);
+    expect(mockToastError.mock.calls[0][0]).toBe("Edit access does not include deleting this mandate.");
+  });
+
+  it("never lets a stringified object reach the screen", () => {
+    toast.error(String({ code: "42501" }));
+    expect(mockToastError.mock.calls[0][0]).not.toContain("[object Object]");
+    expect(errorSentence({})).not.toContain("[object Object]");
   });
 });
