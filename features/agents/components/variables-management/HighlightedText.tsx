@@ -11,11 +11,14 @@ interface HighlightedTextProps {
 // mistake — they resolve to nothing at run time); tokens that can never be a
 // variable name ({{step_N.output.field}}) are neutral, because the runtime
 // substitutes by exact declared-name match and passes those through verbatim.
+// This is the author's own prompt source, so a kind schema written into it
+// (`"__kind": …`) is shown as written: the wrapper marks it a deliberate source
+// view for the kind-leak sentinel; `contents` keeps it out of layout.
 export const HighlightedText = ({ text, validVariables = [] }: HighlightedTextProps) => {
     const parts = text.split(/(\{\{[^}]+\}\})/g);
 
     return (
-        <>
+        <span data-kind-source="explicit" className="contents">
             {parts.map((part, idx) => {
                 const variableMatch = part.match(/^\{\{([^}]+)\}\}$/);
                 if (variableMatch) {
@@ -47,7 +50,7 @@ export const HighlightedText = ({ text, validVariables = [] }: HighlightedTextPr
                 }
                 return <span key={idx}>{part}</span>;
             })}
-        </>
+        </span>
     );
 };
 

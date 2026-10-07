@@ -25,6 +25,8 @@ const MARKED: Array<[string, RegExp, number]> = [
   ["features/notes/components/NoteEditorCore.tsx", /<(?:Pro)?Textarea\s+ref=\{textareaRef\}\s+data-kind-source="explicit"/g, 2],
   ["features/notes/components/mobile/MobileNoteEditor.tsx", /<textarea\s+ref=\{textareaRef\}\s+data-kind-source="explicit"/g, 1],
   ["features/notes/components/FindMatchOverlay.tsx", /data-kind-source="explicit"/g, 1],
+  // The agent builder's read view of an author's own prompt text (a kind schema written into a system prompt).
+  ["features/agents/components/variables-management/HighlightedText.tsx", /<span data-kind-source="explicit" className="contents">/g, 1],
 ];
 
 describe("raw views and editors are marked (R5, R6)", () => {
