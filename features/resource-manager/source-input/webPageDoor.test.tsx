@@ -82,6 +82,7 @@ function fakeSet() {
     settle: jest.fn(),
     restart: jest.fn(() => true),
     updateDraft: jest.fn(),
+    setAsking: jest.fn(),
     hasRef: jest.fn(() => false),
     addReady: jest.fn(),
   } as unknown as SourceSetActions & Record<string, jest.Mock>;
