@@ -2,7 +2,7 @@
 
 import { registerFunction, FunctionDependencies } from './function-registry';
 import { extractErrorMessage } from '@/utils/errors';
-import { toDelimitedText } from '@ai-matrx/alchemy/operate/read';
+import { parseDelimited, toDelimitedText } from '@ai-matrx/alchemy/operate/read';
 import type { Json } from '@ai-matrx/alchemy/operate';
 
 /**
@@ -198,28 +198,22 @@ export function registerUtilityFunctions() {
       // Simple CSV to JSON conversion
       if (params.fromFormat === 'csv' && params.toFormat === 'json') {
         try {
-          const lines = input.split('\n');
-          if (lines.length < 2) {
+          // THE one reader (kit `parseDelimited`, via Alchemy's re-export): quoted commas, doubled
+          // quotes, embedded newlines and our own formula guard are all handled there.
+          const parsed = parseDelimited(input, {
+            header: true,
+            skipEmptyLines: 'greedy',
+            transformHeader: (h) => h.trim(),
+          });
+          if (parsed.data.length < 1) {
             return 'Input must have at least a header row and one data row';
           }
 
-          const headers = lines[0].split(',').map(h => h.trim());
-          const result: Record<string, string | number | boolean>[] = [];
-          
-          for (let i = 1; i < lines.length; i++) {
-            if (!lines[i].trim()) continue;
-            
-            const values = lines[i].split(',');
+          const headers = parsed.meta.fields ?? [];
+          const result: Record<string, string | number | boolean>[] = parsed.data.map((row) => {
             const obj: Record<string, string | number | boolean> = {};
-            
-            headers.forEach((header, index) => {
-              let value = values[index] ? values[index].trim() : '';
-              
-              // Handle quoted values
-              if (value.startsWith('"') && value.endsWith('"')) {
-                value = value.slice(1, -1).replace(/""/g, '"');
-              }
-              
+            for (const header of headers) {
+              const value = (row[header] ?? '').trim();
               // Try to convert numeric values
               if (!isNaN(Number(value)) && value !== '') {
                 obj[header] = Number(value);
@@ -230,11 +224,10 @@ export function registerUtilityFunctions() {
               } else {
                 obj[header] = value;
               }
-            });
-            
-            result.push(obj);
-          }
-          
+            }
+            return obj;
+          });
+
           return JSON.stringify(result, null, 2);
         } catch (err) {
           return `Error converting data: ${extractErrorMessage(err)}`;
