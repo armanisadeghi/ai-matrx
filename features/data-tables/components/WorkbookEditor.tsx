@@ -464,6 +464,8 @@ export default function WorkbookEditor({
       if (!apiRef.current) return;
       const workbook = apiRef.current.getActiveWorkbook();
       if (!workbook) return;
+      // Entries already in the shared mutation log are inside this snapshot.
+      const logMark = collabSessionRef.current?.logLength() ?? 0;
       const snapshot = workbook.save();
       setSaveStatus("saving");
 
@@ -481,6 +483,11 @@ export default function WorkbookEditor({
         return;
       }
       setSaveStatus("saved");
+      // The host's saved snapshot now holds those mutations; trim them from
+      // the shared log so a joiner does not replay them onto it.
+      if (collabSessionRef.current && collabIsHostRef.current) {
+        collabSessionRef.current.compactLog(logMark);
+      }
       if (origin === "manual") {
         toast({ title: "Snapshot saved", variant: "success" });
       }

@@ -222,8 +222,51 @@ async function stageA() {
     JSON.stringify({ electA, electB }),
   );
 
+  // A6: a saved snapshot trims the shared log, so a joiner never replays
+  // mutations the loaded workbook already holds (feedback 88184e53).
+  const mark = sessionA.logLength();
+  check("A6 log holds the pushed mutation", mark === 1, `length ${mark}`);
+  sessionA.compactLog(mark);
+  const userC = makeMockCommandService();
+  const sessionC = new WorkbookCollabSession({
+    workbookId: roomId,
+    uid: "ccc-user",
+    clientId: "client-c",
+    commandService: userC.service,
+    makeProvider: ({ workbookId, doc, awareness }) =>
+      makeLoopbackProvider({ workbookId, doc, awareness }),
+  });
+  await sessionC.start();
+  await sleep(50);
+  check("A6 late joiner replays nothing after a checkpoint", userC.executed.length === 0, `${userC.executed.length} replayed`);
+
+  // A7: an op the workbook refuses must not throw out of the channel handler.
+  const userD = makeMockCommandService();
+  userD.service.syncExecuteCommand = () => {
+    throw new Error("Trying to overwrite value at key");
+  };
+  const sessionD = new WorkbookCollabSession({
+    workbookId: roomId,
+    uid: "ddd-user",
+    clientId: "client-d",
+    commandService: userD.service,
+    makeProvider: ({ workbookId, doc, awareness }) =>
+      makeLoopbackProvider({ workbookId, doc, awareness }),
+  });
+  await sessionD.start();
+  let threw = false;
+  try {
+    userA.fireLocalMutation({ id: "sheet.mutation.set-range-values", type: 2, params: { v: 1 } });
+    await sleep(50);
+  } catch {
+    threw = true;
+  }
+  check("A7 a refused remote op is contained, not thrown", !threw);
+
   sessionA.stop();
   sessionB.stop();
+  sessionC.stop();
+  sessionD.stop();
 }
 
 // ─── Stage B: real Supabase Broadcast e2e ───────────────────────────────────
@@ -267,6 +310,7 @@ async function stageB() {
       doc: docA,
       awareness: awarenessA,
       manager: managerA,
+      acceptOwnSessionFrames: true,
     });
     await providerA.connect();
     await providerA.ready();
@@ -282,6 +326,7 @@ async function stageB() {
       doc: docB,
       awareness: awarenessB,
       manager: managerB,
+      acceptOwnSessionFrames: true,
     });
     await providerB.connect();
     await providerB.ready();

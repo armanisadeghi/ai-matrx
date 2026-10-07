@@ -212,6 +212,31 @@ export class WorkbookCollabSession {
   }
 
   /**
+   * How many mutations the shared log holds right now. Read it BEFORE
+   * `workbook.save()`: that many entries are guaranteed to be inside the
+   * snapshot that save produces.
+   */
+  logLength(): number {
+    return this.doc?.getArray<CollabMutationInfo>(MUTATIONS_ARRAY_KEY).length ?? 0;
+  }
+
+  /**
+   * Drop the first `upTo` mutations from the shared log once a snapshot that
+   * contains them has been SAVED. Without this a joiner loads the saved
+   * workbook (which already has every mutation baked in) and then catches up
+   * the whole log on top of it, replaying edits into a workbook that already
+   * holds them — Univer refuses with "Trying to overwrite value at key"
+   * (feedback 88184e53). Only the host calls this; peers receive it as a
+   * delete, which the inbound observer ignores (it acts on inserts only).
+   */
+  compactLog(upTo: number): void {
+    if (!this.doc || upTo <= 0) return;
+    const yArray = this.doc.getArray<CollabMutationInfo>(MUTATIONS_ARRAY_KEY);
+    const n = Math.min(upTo, yArray.length);
+    if (n > 0) this.doc.transact(() => yArray.delete(0, n));
+  }
+
+  /**
    * Update the local awareness cursor. Call this from Univer's selection
    * listener (`worksheet.onSelectionChange(...)`). Throttle at the call site
    * (~50ms is plenty); the provider broadcasts on its own debounced cycle.
@@ -306,10 +331,20 @@ export class WorkbookCollabSession {
           }
         : op.params;
 
-    this.options.commandService.syncExecuteCommand(op.id, taggedParams, {
-      onlyLocal: true,
-      fromCollab: true,
-    });
+    try {
+      this.options.commandService.syncExecuteCommand(op.id, taggedParams, {
+        onlyLocal: true,
+        fromCollab: true,
+      });
+    } catch (err) {
+      // One unappliable op (already baked into the loaded snapshot, or a
+      // stale target) must not throw into the realtime channel handler and
+      // abort the rest of the catch-up. Said, never swallowed.
+      console.warn(
+        `[collab] could not apply remote mutation "${op.id}" — skipped`,
+        err,
+      );
+    }
   }
 }
 

@@ -114,6 +114,14 @@ export type SupabaseYjsProviderOptions = {
   /** Fires when this holder gains or loses tab leadership of its room. */
   onLeaderChange?: () => void;
   /**
+   * Take frames the package believes came from this same client session.
+   * The package stamps every frame with ONE per-process session id and drops
+   * frames carrying its own, so two managers in one process (the verification
+   * harness) silence each other. Safe here: doc updates are idempotent CRDT
+   * updates and the control frames filter their own `clientId`. Off in the app.
+   */
+  acceptOwnSessionFrames?: boolean;
+  /**
    * Base period (ms) of the anti-entropy tick. Defaults to the
    * `collab.anti_entropy_interval_ms` feature knob; tests pass a number.
    */
@@ -213,6 +221,7 @@ function hasPending(doc: Y.Doc): boolean {
 export class SupabaseYjsProvider {
   private readonly workbookId: string;
   private readonly clientId: string;
+  private readonly acceptOwnSessionFrames: boolean;
   private readonly doc: Y.Doc;
   private readonly awareness: Awareness;
   private readonly chunkSize: number;
@@ -276,6 +285,7 @@ export class SupabaseYjsProvider {
     this.chunkSize = options.chunkSize ?? DEFAULT_CHUNK_SIZE;
     this.manager = options.manager ?? currentRealtimeManager();
     this.onLeaderChange = options.onLeaderChange;
+    this.acceptOwnSessionFrames = options.acceptOwnSessionFrames === true;
     this.antiEntropyIntervalOption = options.antiEntropyIntervalMs;
     this.channelName = yjsChannel.topic({
       prefix: options.channelPrefix ?? "workbook",
@@ -346,6 +356,7 @@ export class SupabaseYjsProvider {
           : `${frame.batchId}:${String(frame.seq)}`;
       },
       onLeaderChange: () => this.onLeaderChange?.(),
+      ...(this.acceptOwnSessionFrames ? { echoSuppression: false } : {}),
       onStatusChange: (status) => {
         if (typeof process !== "undefined" && process.env?.COLLAB_DEBUG) {
           console.debug(`[collab:debug] ${this.channelName} status=${status}`);
