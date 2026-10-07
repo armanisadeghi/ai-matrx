@@ -286,8 +286,14 @@ export function isBlockLoading(block: {
   // not reached its first renderable unit then fell through to JsonBlock and
   // exposed a registered Shape as raw JSON until the next token arrived.
   // Keep that balanced partial frame in the kind loading/component path.
+  // Only "streaming" is still arriving. "error" is TERMINAL: the producer
+  // stopped (max_tokens, provider safety stop, dropped stream) and the parser
+  // stamped the cut-off region `error`. Calling that "loading" parked every
+  // complete-only kind block (news_opportunity_report, ...) on "Initializing
+  // Matrx..." forever under the "response is incomplete" note (2026-10-06).
+  // A stopped region renders what it has.
   const envelope = readEnvelope(block.metadata);
-  if (envelope?.root.kind && envelope.root.status !== "complete") return true;
+  if (envelope?.root.kind && envelope.root.status === "streaming") return true;
   if (
     block.metadata?.isComplete === false &&
     isGenuinelyIncomplete(block.content)
