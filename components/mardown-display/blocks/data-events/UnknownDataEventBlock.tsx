@@ -53,7 +53,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
 
   const handleCopy = async () => {
     try {
-      await copyText(pretty);
+      if (!(await copyText(pretty))) return;
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {
@@ -78,7 +78,7 @@ const UnknownDataEventBlock: React.FC<UnknownDataEventBlockProps> = ({
       `</artifact_failure>`,
     ].join("\n");
     try {
-      await copyText(payload);
+      if (!(await copyText(payload))) return;
       setAiCopied(true);
       setTimeout(() => setAiCopied(false), 2000);
     } catch {

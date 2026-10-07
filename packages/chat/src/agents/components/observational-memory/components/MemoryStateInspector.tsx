@@ -354,9 +354,9 @@ function BufferedObservationCard({
   const text = cycle.observations ?? "";
   const hasText = text.length > 0;
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (!hasText) return;
-    copyText(text);
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [text, hasText]);
@@ -681,9 +681,9 @@ function TextPayload({
   const [copied, setCopied] = useState(false);
   const hasText = typeof text === "string" && text.length > 0;
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (!text) return;
-    copyText(text);
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [text]);

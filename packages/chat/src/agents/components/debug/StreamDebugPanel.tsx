@@ -84,8 +84,8 @@ function useCopy() {
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const [copied, setCopied] = useState<string | null>(null);
-  const copy = (text: string, id: string) => {
-    copyText(text);
+  const copy = async (text: string, id: string) => {
+    if (!(await copyText(text))) return;
     setCopied(id);
     setTimeout(() => setCopied(null), 1500);
   };

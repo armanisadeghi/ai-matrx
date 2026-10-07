@@ -99,7 +99,7 @@ export function RowControls({
   const copyAddress = useCallback(async () => {
     if (!publicUrl) return;
     try {
-      await copyText(publicUrl);
+      if (!(await copyText(publicUrl))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

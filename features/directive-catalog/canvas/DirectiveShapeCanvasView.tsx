@@ -35,7 +35,7 @@ export default function DirectiveShapeCanvasView({ data }: CanvasKindProps) {
 
   async function copy(value: unknown, target: "example" | "schema") {
     try {
-      await copyText(JSON.stringify(value, null, 2));
+      if (!(await copyText(JSON.stringify(value, null, 2)))) return;
       setCopied(target);
       toast.success(
         target === "schema" ? "JSON Schema copied" : "Example copied",

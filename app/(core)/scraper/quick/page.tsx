@@ -159,7 +159,7 @@ export default function QuickScrapePage() {
 
   const handleCopy = async () => {
     if (data?.textContent) {
-      await copyText(data.textContent);
+      if (!(await copyText(data.textContent))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }

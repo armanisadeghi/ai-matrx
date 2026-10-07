@@ -105,7 +105,7 @@ function RecoveryItem({ item, onDismiss, onClose }: RecoveryItemProps) {
 
   const handleCopyText = async () => {
     if (!localText) return;
-    await copyText(localText);
+    if (!(await copyText(localText))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
     toast.success("Text copied to clipboard");

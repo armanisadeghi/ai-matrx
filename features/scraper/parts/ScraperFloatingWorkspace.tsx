@@ -346,7 +346,7 @@ export function ScraperFloatingWorkspace({
     const text =
       selectedScraped.textContent || selectedScraped.plainTextContent || "";
     if (!text) return;
-    await copyText(text);
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [selectedScraped]);

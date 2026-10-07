@@ -131,7 +131,7 @@ export default function ToolOverlay({ entry, events, onOpenOverlay, toolGroupId 
     const text = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
 
     const handleCopy = async () => {
-        await copyText(text);
+        if (!(await copyText(text))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

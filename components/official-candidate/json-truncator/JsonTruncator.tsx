@@ -2080,7 +2080,7 @@ export function JsonTruncator({
     });
   }, []);
   const handleCopy = useCallback(async () => {
-    await copyText(outputText);
+    if (!(await copyText(outputText))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }, [outputText]);

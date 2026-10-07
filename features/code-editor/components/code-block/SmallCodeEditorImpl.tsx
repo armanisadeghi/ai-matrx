@@ -344,7 +344,7 @@ const SmallCodeEditor = ({
     if (editorRef.current) {
       const code = editorRef.current.getValue();
       try {
-        await copyText(code);
+        if (!(await copyText(code))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {

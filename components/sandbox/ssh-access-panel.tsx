@@ -80,7 +80,7 @@ export function SshAccessPanel({
   }, [sandboxId, apiBasePath]);
 
   const copyToClipboard = useCallback(async (text: string, field: string) => {
-    await copyText(text);
+    if (!(await copyText(text))) return;
     setCopiedField(field);
     setTimeout(() => setCopiedField(null), 2000);
   }, []);

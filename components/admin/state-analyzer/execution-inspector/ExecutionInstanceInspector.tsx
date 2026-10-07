@@ -146,9 +146,9 @@ function IdWithTooltip({ id, label }: { id: string; label?: string }) {
             </code>
             <button
               className="inline-flex items-center justify-center h-5 w-5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              onClick={(e) => {
+              onClick={async (e) => {
                 e.stopPropagation();
-                copyText(id);
+                if (!(await copyText(id))) return;
                 setCopied(true);
                 setTimeout(() => setCopied(false), 1500);
               }}

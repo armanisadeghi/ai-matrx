@@ -177,7 +177,7 @@ export function LintDebtConsole({
 
   const copy = async (key: string, text: string, label: string) => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopiedKey(key);
       window.setTimeout(
         () => setCopiedKey((k) => (k === key ? null : k)),

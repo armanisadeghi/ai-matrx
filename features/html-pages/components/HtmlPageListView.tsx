@@ -273,7 +273,7 @@ export default function HtmlPageListView({
 
   const copyUrl = async (page: HtmlPageSummary) => {
     try {
-      await copyText(page.url);
+      if (!(await copyText(page.url))) return;
       setCopiedId(page.id);
       toast.success("URL copied");
       setTimeout(() => setCopiedId(null), 1500);

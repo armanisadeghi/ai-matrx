@@ -68,7 +68,7 @@ function CopyButton({
   const handleCopy = async () => {
     if (!content) return;
     try {
-      await copyText(content);
+      if (!(await copyText(content))) return;
       setCopied(true);
       toast.success("Copied to clipboard");
       setTimeout(() => setCopied(false), 2000);

@@ -331,7 +331,7 @@ export function OfficePreview({
   const onCopy = useCallback(async () => {
     if (!extraction?.markdown) return;
     try {
-      await copyText(extraction.markdown);
+      if (!(await copyText(extraction.markdown))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

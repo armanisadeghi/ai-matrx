@@ -356,7 +356,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
 
   const copySlug = async (slug: string) => {
     try {
-      await copyText(slug);
+      if (!(await copyText(slug))) return;
       toast.success(`Copied "${slug}"`);
     } catch {
       toast.error(`Could not reach the clipboard — the slug is ${slug}`);

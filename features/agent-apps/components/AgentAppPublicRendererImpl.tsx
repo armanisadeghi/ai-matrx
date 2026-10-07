@@ -590,7 +590,7 @@ function CustomComponentRenderer({
     if (!responseText) return;
     try {
       // A person's copy reads a kind as its markdown (kind-never-raw R1).
-      await copyText(kindTextToMarkdown(responseText));
+      if (!(await copyText(kindTextToMarkdown(responseText)))) return;
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
     } catch {

@@ -143,7 +143,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
 
   const copyToClipboard = async (data: unknown, index: number) => {
     try {
-      await copyText(JSON.stringify(data, null, 2));
+      if (!(await copyText(JSON.stringify(data, null, 2)))) return;
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
@@ -155,7 +155,7 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
 
   const copyAll = async () => {
     try {
-      await copyText(JSON.stringify(resources, null, 2));
+      if (!(await copyText(JSON.stringify(resources, null, 2)))) return;
       setCopiedIndex(-1);
       setTimeout(() => setCopiedIndex(null), 2000);
     } catch (error) {
@@ -287,9 +287,9 @@ export const ResourceDebugIndicator: React.FC<ResourceDebugIndicatorProps> = ({
                   <Button
                     variant="quiet"
                     onClick={async () => {
-                      await copyText(
+                      if (!(await copyText(
                         previewData.fullMessage,
-                      );
+                      ))) return;
                       setCopiedIndex(-2);
                       setTimeout(() => setCopiedIndex(null), 2000);
                     }}

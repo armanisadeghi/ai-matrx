@@ -97,7 +97,8 @@ function CopyTitleButton({ title }: { title: string }) {
   });
   const [copied, setCopied] = useState(false);
   const handleCopy = useCallback(() => {
-    void copyText(title).then(() => {
+    void copyText(title).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });

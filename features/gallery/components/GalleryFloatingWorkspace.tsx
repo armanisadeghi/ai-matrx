@@ -245,7 +245,7 @@ export function GalleryFloatingWorkspace() {
     }
   }, []);
 
-  const copyLoadedImageLinks = useCallback(() => {
+  const copyLoadedImageLinks = useCallback(async () => {
     const links = photos
       .map((p: any) => p.urls?.regular || p.urls?.small || p.links?.html)
       .filter(Boolean);
@@ -253,7 +253,7 @@ export function GalleryFloatingWorkspace() {
       toast.error("No images loaded yet");
       return;
     }
-    copyText(links.join("\n"));
+    if (!(await copyText(links.join("\n")))) return;
     toast.success(`Copied ${links.length} image links`);
   }, [photos]);
 

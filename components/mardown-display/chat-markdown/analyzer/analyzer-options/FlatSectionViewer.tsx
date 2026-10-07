@@ -37,7 +37,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
   });
   const [copied, setCopied] = useState(false);
   const copy = async (text: string): Promise<boolean> => {
-    await copyText(text, "Copied");
+    if (!(await copyText(text, "Copied"))) return false;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     return true;
@@ -87,7 +87,7 @@ const FlatSectionViewer = ({ data, bookmark }: FlatSectionViewerProps) => {
     if (!selectedSection?.bookmarkPath) return;
     
     try {
-      await copyText(selectedSection.bookmarkPath);
+      if (!(await copyText(selectedSection.bookmarkPath))) return;
       setBookmarkCopied(true);
       setTimeout(() => setBookmarkCopied(false), 2000);
     } catch (err) {

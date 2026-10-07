@@ -1364,7 +1364,7 @@ function JsonLdCard({ location }: { location: BusinessLocation }) {
 
   const handleCopy = async () => {
     try {
-      await copyText(script);
+      if (!(await copyText(script))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

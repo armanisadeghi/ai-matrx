@@ -138,7 +138,7 @@ export const InlineCodeSnippet: React.FC<InlineCodeSnippetProps> = ({
 
   const handleCopy = async () => {
     try {
-      await copyText(code);
+      if (!(await copyText(code))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

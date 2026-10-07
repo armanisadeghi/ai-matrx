@@ -130,7 +130,7 @@ const LargeIndicator: React.FC<LargeIndicatorProps> = ({
     const context = page
       ? `${baseContext}\n\n## Page capture\n\n${pageCaptureMarkdown(page).replace(/^# /, "### ")}`
       : baseContext;
-    await copyText(context);
+    if (!(await copyText(context))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   }, [

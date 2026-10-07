@@ -163,13 +163,13 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
       icon: <Bookmark className="h-4 w-4" />,
       onSelect: async () => {
         try {
-          await copyText(
+          if (!(await copyText(
             buildRecordReferenceFence({
               type: "transcript_session",
               id: sessionId,
               label: session?.title,
             }),
-          );
+          ))) return;
           toast.success("Reference copied to clipboard", {
             description: session?.title ?? "Session",
           });
@@ -188,13 +188,13 @@ export function ScribeScreen({ sessionId, onBack }: ScribeScreenProps) {
             icon: <Bookmark className="h-4 w-4" />,
             onSelect: async () => {
               try {
-                await copyText(
+                if (!(await copyText(
                   buildSessionTranscriptReferenceFence({
                     sessionId,
                     transcriptId: session.transcriptId!,
                     label: session.title ?? undefined,
                   }),
-                );
+                ))) return;
                 toast.success("Transcript reference copied");
               } catch {
                 toast.error("Failed to copy reference");

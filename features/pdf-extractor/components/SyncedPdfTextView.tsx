@@ -305,7 +305,7 @@ function CopyIconButton({
     async (e: React.MouseEvent) => {
       e.stopPropagation();
       try {
-        await copyText(getText());
+        if (!(await copyText(getText()))) return;
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       } catch {

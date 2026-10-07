@@ -1101,7 +1101,8 @@ export default function CoolifyLogViewer({
         : filteredLines.filter((l) => l.raw.trim() !== "");
 
     const text = linesToCopy.map((l) => l.raw).join("\n");
-    copyText(text).then(() => {
+    copyText(text).then((copied) => {
+      if (!copied) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });

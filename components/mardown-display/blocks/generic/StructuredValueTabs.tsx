@@ -115,7 +115,7 @@ export function StructuredValueTabs({
 
   const copy = async () => {
     try {
-      await copyText(json);
+      if (!(await copyText(json))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

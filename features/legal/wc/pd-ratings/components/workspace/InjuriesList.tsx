@@ -92,7 +92,7 @@ export function InjuriesList({
     if (rows.length === 0) return;
     const tsv = rowsToTsv(rows);
     try {
-      await copyText(tsv);
+      if (!(await copyText(tsv))) return;
       toast.success(`Copied ${rows.length} injuries`, {
         description: "Tab-separated — paste into Excel or Sheets.",
       });

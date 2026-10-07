@@ -249,7 +249,7 @@ export const AgentExecutionDebugPanel: React.FC<
   };
 
   const copyToClipboard = async (content: string, section: string) => {
-    await copyText(content);
+    if (!(await copyText(content))) return;
     setCopiedSection(section);
     setTimeout(() => setCopiedSection(null), 2000);
   };

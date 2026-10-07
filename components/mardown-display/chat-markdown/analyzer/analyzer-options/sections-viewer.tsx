@@ -55,7 +55,7 @@ const JsonFallback = ({ data, onCopy }: { data: unknown; onCopy: () => void }) =
   const handleCopy = async () => {
     try {
       const jsonString = JSON.stringify(data, null, 2);
-      await copyText(jsonString);
+      if (!(await copyText(jsonString))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
       onCopy();
@@ -300,7 +300,7 @@ const SectionsViewer = ({ data }: { data: unknown }) => {
         .join('\n');
       
       if (textContent.trim()) {
-        await copyText(textContent);
+        if (!(await copyText(textContent))) return;
         setCopiedData(true);
         setTimeout(() => setCopiedData(false), 2000);
       }

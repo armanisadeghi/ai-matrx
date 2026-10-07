@@ -204,7 +204,7 @@ export default function MultiFileCodeEditor({
       textToCopy = paddedLines.join("\n");
     }
 
-    await copyText(textToCopy);
+    if (!(await copyText(textToCopy))) return;
     setIsCopied(true);
     setTimeout(() => setIsCopied(false), 2000);
   };

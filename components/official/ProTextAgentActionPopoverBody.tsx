@@ -66,7 +66,7 @@ export function ProTextAgentActionPopoverBody({
   const hasRun = phase !== "idle";
 
   const handleCopyResult = async () => {
-    await copyText(kindTextToMarkdown(result));
+    if (!(await copyText(kindTextToMarkdown(result)))) return;
     setResultCopied(true);
     toast.success(`${title} result copied to clipboard`);
     window.setTimeout(() => setResultCopied(false), 1500);

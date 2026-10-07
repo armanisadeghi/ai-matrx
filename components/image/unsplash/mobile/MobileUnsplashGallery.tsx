@@ -131,7 +131,7 @@ export function MobileUnsplashGallery({ initialSearchTerm }: MobileUnsplashGalle
         if (!isDisplayPhoto(photo)) return;
         try {
             const imageUrl = photo.urls.full || photo.urls.regular;
-            await copyText(imageUrl);
+            if (!(await copyText(imageUrl))) return;
             setIsSharing(true);
             toast({
                 title: 'Image link copied',

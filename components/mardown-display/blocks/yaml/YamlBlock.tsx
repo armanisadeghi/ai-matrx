@@ -120,7 +120,7 @@ const YamlBlock: React.FC<YamlBlockProps> = ({ content, className }) => {
   const lines = parseYamlLines(content);
 
   const handleCopy = async () => {
-    await copyText(content);
+    if (!(await copyText(content))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

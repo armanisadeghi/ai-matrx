@@ -268,7 +268,7 @@ const LinesViewer = ({ data }: { data: LineItem[] }) => {
   const copyToClipboard = async () => {
     try {
       const textContent = selectedLine.content.replace(/<[^>]*>/g, '');
-      await copyText(textContent);
+      if (!(await copyText(textContent))) return;
       setCopiedData(true);
       setTimeout(() => setCopiedData(false), 2000);
     } catch (err) {

@@ -71,9 +71,9 @@ export function useShapeRowActions(
               label: "Copy link",
               icon: Link2,
               onSelect: async () => {
-                await copyText(
+                if (!(await copyText(
                   `${window.location.origin}${href}`,
-                );
+                ))) return;
                 toast.success("Shape link copied");
               },
             },
@@ -82,13 +82,13 @@ export function useShapeRowActions(
               label: "Copy reference",
               icon: ClipboardCopy,
               onSelect: async () => {
-                await copyText(
+                if (!(await copyText(
                   buildRecordReferenceFence({
                     type: "content_ir_kind",
                     id: row.id,
                     label: row.label,
                   }),
-                );
+                ))) return;
                 toast.success("Shape reference copied");
               },
             },

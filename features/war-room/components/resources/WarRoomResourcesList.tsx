@@ -669,7 +669,7 @@ function ResourceIdCopy({ id }: { id: string }) {
 
   const handleCopy = async () => {
     try {
-      await copyText(id);
+      if (!(await copyText(id))) return;
       setCopied(true);
       toast.success("ID copied");
       setTimeout(() => setCopied(false), 1500);

@@ -319,16 +319,16 @@ const RawJsonExplorerBody: React.FC<RawJsonExplorerProps> = ({
   };
 
   // Function for copying access path to clipboard
-  const copyAccessPath = () => {
-    copyToClipboard(generateAccessPath(currentPath));
+  const copyAccessPath = async () => {
+    if (!(await copyToClipboard(generateAccessPath(currentPath)))) return;
     if (onPathCopy) {
       onPathCopy(generateAccessPath(currentPath));
     }
   };
 
-  const handleExportBookmarks = () => {
+  const handleExportBookmarks = async () => {
     const exported = exportBookmarks(bookmarks);
-    copyToClipboard(exported);
+    if (!(await copyToClipboard(exported))) return;
     toast.success("Bookmarks copied to clipboard as JSON");
   };
 

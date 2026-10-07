@@ -35,7 +35,7 @@ export const PresentationPublishModal: React.FC<PresentationPublishModalProps> =
 
     const handleCopyUrl = async () => {
         if (publishedUrl) {
-            await copyText(publishedUrl);
+            if (!(await copyText(publishedUrl))) return;
             setCopiedUrl(true);
             setTimeout(() => setCopiedUrl(false), 2000);
         }

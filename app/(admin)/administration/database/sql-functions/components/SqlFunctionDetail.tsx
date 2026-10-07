@@ -44,8 +44,8 @@ function CopyButton({
       kind === "error" ? toast.error(message) : toast.success(message),
   });
   const [copied, setCopied] = useState(false);
-  const handleCopy = () => {
-    copyText(text);
+  const handleCopy = async () => {
+    if (!(await copyText(text))) return;
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -100,9 +100,9 @@ export default function SqlFunctionDetail({
     ? `-- Description for ${fnLabel}\n${func.description}`
     : "";
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
     if (func.definition) {
-      copyText(func.definition);
+      if (!(await copyText(func.definition))) return;
       setDefCopied(true);
       setTimeout(() => setDefCopied(false), 1500);
     }

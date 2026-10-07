@@ -171,7 +171,7 @@ export function ShortcutDirectory({
   };
   const copyId = async (id: string) => {
     try {
-      await copyText(id);
+      if (!(await copyText(id))) return;
       setCopiedId(id);
       toast({ title: "Copied", description: "Shortcut ID copied" });
       setTimeout(

@@ -883,7 +883,7 @@ function ExternalUrlBanner({
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
     try {
-      await copyText(url);
+      if (!(await copyText(url))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
@@ -1233,7 +1233,7 @@ function VariantCard({
   const handleCopy = async () => {
     if (!publicUrl) return;
     try {
-      await copyText(publicUrl);
+      if (!(await copyText(publicUrl))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {

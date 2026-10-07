@@ -515,9 +515,9 @@ export function InvitationsPanel({
                 variant="outline"
                 onClick={async () => {
                   try {
-                    await copyText(
+                    if (!(await copyText(
                       deliveryNotice.acceptUrl,
-                    );
+                    ))) return;
                     toast.success("Invitation link copied to clipboard");
                   } catch {
                     toast.error(

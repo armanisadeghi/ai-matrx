@@ -31,7 +31,7 @@ export function PdfJsonResult({ data, title = "Response" }: Props) {
 
   async function copy() {
     try {
-      await copyText(json);
+      if (!(await copyText(json))) return;
       setCopied(true);
       toast.success("Copied JSON.");
       setTimeout(() => setCopied(false), 1500);

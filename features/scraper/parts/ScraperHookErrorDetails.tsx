@@ -24,7 +24,7 @@ export function ScraperHookErrorDetails({
 
   const handleCopy = useCallback(async () => {
     try {
-      await copyText(text);
+      if (!(await copyText(text))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {

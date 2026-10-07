@@ -316,13 +316,14 @@ function RagAiCopyWindowInner({
             onClick={() => {
               void copyText(
                 combineSelectedHumanText(bundle, options),
-              ).then(
-                () => {
-                  flash("text");
-                  toast.success("Selected Knowledge content copied");
-                },
-                () => toast.error("Could not copy selected Knowledge content"),
-              );
+              ).then((copiedOk) => {
+                if (!copiedOk) {
+                  toast.error("Could not copy selected Knowledge content");
+                  return;
+                }
+                flash("text");
+                toast.success("Selected Knowledge content copied");
+              });
             }}
           >
             Copy selected content
@@ -338,13 +339,14 @@ function RagAiCopyWindowInner({
             onClick={() => {
               void copyText(
                 buildAgentPayload(buildRagAiPayload(bundle, options)),
-              ).then(
-                () => {
-                  flash("ai");
-                  toast.success("Knowledge result copied for AI");
-                },
-                () => toast.error("Could not copy Knowledge result for AI"),
-              );
+              ).then((copiedOk) => {
+                if (!copiedOk) {
+                  toast.error("Could not copy Knowledge result for AI");
+                  return;
+                }
+                flash("ai");
+                toast.success("Knowledge result copied for AI");
+              });
             }}
           >
             Copy for AI

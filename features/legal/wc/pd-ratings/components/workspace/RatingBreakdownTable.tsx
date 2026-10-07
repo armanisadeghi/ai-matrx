@@ -237,7 +237,7 @@ export function RatingBreakdownTable({
 
   const handleCopyAll = async () => {
     try {
-      await copyText(buildExportText(result, rows));
+      if (!(await copyText(buildExportText(result, rows)))) return;
       toast.success("Breakdown copied", {
         description:
           "Paste anywhere — formulas and per-injury detail included.",

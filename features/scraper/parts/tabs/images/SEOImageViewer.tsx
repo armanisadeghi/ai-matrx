@@ -96,7 +96,8 @@ export function SEOImageViewer({
   // Copy text to clipboard
   const copyToClipboard = (text: string, type: string) => {
     copyText(text)
-      .then(() => {
+      .then((copied) => {
+        if (!copied) return;
         setIsCopied(type);
         setTimeout(() => setIsCopied(null), 2000);
         toast({

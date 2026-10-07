@@ -35,7 +35,7 @@ function CopyValue({
 
   const copy = async () => {
     try {
-      await copyText(value);
+      if (!(await copyText(value))) return;
       setCopied(true);
       toast.success("Copied");
       window.setTimeout(() => setCopied(false), 1500);

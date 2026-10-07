@@ -42,7 +42,7 @@ export function SettingsReadOnlyValue({
 
   const handleCopy = async () => {
     try {
-      await copyText(value);
+      if (!(await copyText(value))) return;
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch {
