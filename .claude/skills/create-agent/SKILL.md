@@ -306,6 +306,43 @@ response, capture that response → bake it into the system prompt as an example
 agent gets permanently better. Never let an agent (including you) pad a prompt with
 plausible-looking invented examples; that is fake specificity.
 
+### 10. Mandate's agent → bind it with an explicit map, then run it through the door
+
+An agent made for a mandate is not done until the mandate runs it. Two REQUIRED outputs:
+
+1. **The binding.** On the mandate's Binding tab (or `PUT /mandates/{key}/default-holder`,
+   the same writer), key every offered value the agent consumes to its variable, set
+   `when_absent` on each optional one, and Save. Done when the tab says "Every input this
+   Mandate Holder needs is fed" and aidream `scripts/check_mandate_default_maps.py --only <key>`
+   prints `ok`. An empty map still delivers by name at run time, but nobody can see or review
+   it — 2026-10-06, `spaces.writing_assist` shipped that way and read "0 of 7 fed".
+2. **Two runs through the mandate door**, never only `agent_run` on the agent. Mint the
+   token with aidream `scripts/shared/matrx_session.py` `admin_access_token()` (reads
+   `AI_ADMIN_USERNAME`/`AI_ADMIN_PASSWORD` from aidream `.env`; never print either). Body
+   fields are `conversation_id` (fresh uuid), `is_new: true`, `store: false`, `dry_run: true`,
+   `organization_id`, `user_input`, `variables`; `X-Organization-Id` must ALSO be sent as a
+   header (the body field alone returns 400 `organization_required`). The admin
+   organization is `884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f` (`scripts/ci_live_target.py`).
+   Verified 2026-10-06 against `spaces.ask_page`:
+
+   ```python
+   httpx.post("https://server.app.matrxserver.com/ai/mandates/spaces.ask_page",
+     headers={"Authorization": f"Bearer {admin_access_token()}", "X-Organization-Id": ORG},
+     json={"conversation_id": str(uuid4()), "is_new": True, "store": False, "dry_run": True,
+           "organization_id": ORG, "user_input": "What is still open?",
+           "variables": {"page_markdown": "...", "space_id": "...", "page_title": "Zephyr Title Marker"}})
+   ```
+
+   The 200 body has `model, system_prompt, messages, tools, params, ...`. Check that each
+   value you sent appears in `messages` (here `messages[0]` carried the title and page body;
+   the value can land in `system_prompt` instead, depending on the variable) — search for a
+   distinctive marker string, not a word the page body also contains.
+   **Run A** sends every offered value. **Run B** omits one OPTIONAL value (`page_title`) and
+   must match that mapping's `when_absent`: `skip` returns 200 with the value absent from the
+   prompt (observed), `use_default` shows the default, `fail` returns an error naming it.
+   Done when both runs behave as the map says. The approval package carries both as the
+   "door dry run" artifact (see the showable artifacts below).
+
 ## Anatomy of a great agent
 
 What the Keyword Analysis Master shows, and every agent you create should have:
@@ -404,6 +441,7 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Kind emitted with no registered shape/component | A kind without a component is useless |
 | Invented category/tags | Reuse the live facet tree |
 | Never actually run | Two real runs minimum before "done" |
+| Mandate's agent tested only by running the agent directly ("not verified: a run through the mandate") | Direct runs skip the binding; bind with an explicit map and run the mandate door once (step 10) |
 | Agent asked a question its inputs cannot answer | The whole point of agent-manifest — it will answer anyway, and the fabrication gets STORED as evidence |
 | "Verified" meaning the response had the right shape | A response is not a result; measure input coverage and count fabricated entities |
 | Raw `agx_agent` insert / SQL | Everything goes through the MCP and the trained builder |
@@ -413,7 +451,7 @@ on the Masterwork Approach Selector and Coherence Partner (2026-08-22):
 | Always-needed reference data left out of the prompt | The agent fetches or GUESSES it every session (the Steward invented step-type names live); bake it in — it caches |
 | Outcome-owning agent framed as an assistant | It defers to the user instead of solving; posture is part of identity |
 
-## The four showable artifacts — how this skill is enforced
+## The four showable artifacts (plus the door dry run for a mandate's agent) — how this skill is enforced
 
 The minimum-effort failure is real: coding agents asked to "define an agent" as one step
 of a bigger task reliably do the least that produces a row. So a create or update is
@@ -427,6 +465,9 @@ request:
 4. **The WHAT user message** — the authored conversational user turn that puts the agent
    to work on the result.
 
+5. **The door dry run** (mandate agents only) — the two step-10 runs: request, the marker
+   found in the returned `messages`/`system_prompt`, and the omit-one run's result.
+
 No artifacts, no agent. "It has the right tools" is not a defense — tools without a
 taught mission produced a Steward that refused to build.
 
@@ -438,4 +479,5 @@ mandatory/optional marked · kind(s) registered and component rendering · agent
 via the builder with a pretty name, teaching description and help text, conversational
 embedded user message · model overridden and settings tuned · tools exact and minimal ·
 run at least twice on real sample data and judged against the deliverable · the save returns no contract `warnings` · `agent_id` +
-pinned `version_id` recorded for any code caller.
+pinned `version_id` recorded for any code caller · for a mandate's agent: bound with an explicit
+consumption map (`when_absent` on every optional) and one mandate-door run showing every value arrived.

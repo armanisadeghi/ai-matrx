@@ -40,7 +40,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { extractErrorMessage } from "@/utils/errors";
 import {
   BackendFailureDetails,
@@ -159,7 +159,9 @@ export function SiteAnalyticsPanel({
     useState<BackendFailureExplanation | null>(null);
   const dispatch = useAppDispatch();
   const queryClient = useQueryClient();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "google.internal-review"),
+  );
   const campaignActive = canUseGoogleAnalytics(isSuperAdmin);
   const googleInventory = useGoogleConnectionInventory();
   const ga4Binding = parseSiteIntegrations(site.integrations).googleAnalytics4;

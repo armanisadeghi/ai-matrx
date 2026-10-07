@@ -92,8 +92,8 @@ export interface BindingMiddleProps {
   pinnedContext: readonly string[];
   value: ConsumptionMap;
   onChange: (next: ConsumptionMap) => void;
-  /** Inputs seeded by the exact-name match this session (P4). */
-  autoBound: ReadonlySet<string>;
+  /** Inputs the server feeds by name today (empty map) — shown as fed. */
+  byName: ReadonlySet<string>;
   disabled?: boolean;
 }
 
@@ -105,7 +105,7 @@ export function BindingMiddle({
   pinnedContext,
   value,
   onChange,
-  autoBound,
+  byName,
   disabled = false,
 }: BindingMiddleProps) {
   if (targets.length === 0) return null;
@@ -122,7 +122,7 @@ export function BindingMiddle({
           pinnedContext={pinnedContext}
           value={value}
           onChange={onChange}
-          autoBound={autoBound}
+          fedByName={byName.has(target.name)}
           disabled={disabled}
         />
       ))}
@@ -148,6 +148,7 @@ export function BindingMiddleRow({
   pinnedContext,
   value,
   onChange,
+  fedByName = false,
   disabled = false,
 }: {
   holderKind: "agent" | "workflow";
@@ -157,7 +158,8 @@ export function BindingMiddleRow({
   pinnedContext: readonly string[];
   value: ConsumptionMap;
   onChange: (next: ConsumptionMap) => void;
-  autoBound: ReadonlySet<string>;
+  /** Fed by name today, not yet in the saved map. */
+  fedByName?: boolean;
   disabled?: boolean;
 }) {
   const offeredByName = new Map(offered.map((v) => [v.name, v]));
@@ -273,6 +275,12 @@ export function BindingMiddleRow({
                 ) : null;
               })()
             : null}
+
+          {fedByName ? (
+            <p className="text-[11.5px] text-muted-foreground">
+              By name · not in the saved map yet
+            </p>
+          ) : null}
 
           {awaitingPick ? (
             <p className="flex items-start gap-1.5 px-0.5 text-[11.5px] leading-relaxed text-amber-700 dark:text-amber-400">

@@ -38,8 +38,6 @@ import { sourceLabelsFor } from "../words";
 import type { PlaceOfferState } from "./batch-model";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 
-const NOTHING_AUTO_BOUND: ReadonlySet<string> = new Set<string>();
-
 export function PlaceBindingCell({
   placeLabel,
   holderKind,
@@ -113,7 +111,6 @@ export function PlaceBindingCell({
             pinnedContext={pinnedContext}
             value={map}
             onChange={onChange}
-            autoBound={NOTHING_AUTO_BOUND}
             disabled={disabled}
           />
         }

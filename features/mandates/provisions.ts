@@ -43,9 +43,29 @@ export interface ProvisionOffer {
    * registered in content_ir by aidream's boot sync. */
   offerKindSlug: string | null;
   values: OfferedValue[];
+  /** Offered values declared `pass_by_name: false` — never delivered by name. */
+  mappingOnly?: readonly string[];
   isEnabled: boolean;
   /** Exact declaring module/path recorded by the provision synchronizer. */
   codePath: string | null;
+}
+
+/** Names of offered values a Holder receives only through a map entry
+ * (`pass_by_name: false`) — the server never delivers them by name. */
+export function mappingOnlyNames(raw: unknown): string[] {
+  if (!Array.isArray(raw)) return [];
+  const out: string[] = [];
+  for (const entry of raw) {
+    if (
+      entry !== null &&
+      typeof entry === "object" &&
+      (entry as { pass_by_name?: unknown }).pass_by_name === false &&
+      typeof (entry as { name?: unknown }).name === "string"
+    ) {
+      out.push((entry as { name: string }).name);
+    }
+  }
+  return out;
 }
 
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -80,6 +100,7 @@ export async function fetchProvision(
         description: data.description ?? "",
         offerKindSlug: data.derived_input_kind,
         values: parseOfferedValues(data.offered_values),
+        mappingOnly: mappingOnlyNames(data.offered_values),
         isEnabled: data.is_enabled,
         codePath: data.code_path,
       }
@@ -142,6 +163,7 @@ export async function fetchProvisions(
         description: row.description ?? "",
         offerKindSlug: row.derived_input_kind,
         values: parseOfferedValues(row.offered_values),
+        mappingOnly: mappingOnlyNames(row.offered_values),
         isEnabled: row.is_enabled,
         codePath: row.code_path,
       };

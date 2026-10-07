@@ -20,7 +20,7 @@ import {
   useAppDispatch,
   useAppSelector,
 } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
@@ -74,7 +74,7 @@ function AgentCreateAppWindowInner({
   // When an admin creates an app for a builtin/system agent, the app belongs
   // to the system (scope="global"), not to the admin personally. Surface that
   // context as a header chip (read-only) instead of a banner in the body.
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) => selectAdminFeature(s, "agent.system-app"));
   const presetAgent = useAppSelector((state) =>
     agentId ? selectAgentById(state, agentId) : null,
   );
@@ -119,7 +119,7 @@ function CreateAppWindowBody({
   const dispatch = useAppDispatch();
   const router = useRouter();
 
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) => selectAdminFeature(s, "agent.system-app"));
   const presetAgent = useAppSelector((state) =>
     agentId ? selectAgentById(state, agentId) : null,
   );

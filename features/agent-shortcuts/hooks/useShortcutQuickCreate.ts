@@ -20,7 +20,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { fetchAgentExecutionMinimal } from "@ai-matrx/chat/agents/redux/agent-definition/thunks";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { DEFAULT_AGENT_EXECUTION_CONFIG } from "@ai-matrx/chat/agents/types/agent-execution-config.types";
@@ -100,7 +100,7 @@ export function useShortcutQuickCreate({
 }: UseShortcutQuickCreateArgs) {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) => selectAdminFeature(s, "agent.global-shortcut"));
   const agent = useAppSelector((s) => selectAgentById(s, agentId));
 
   useEffect(() => {

@@ -18,6 +18,7 @@
  * argument. Lazy by design: nothing fires until a consumer mounts.
  */
 
+import { withAdminFeature } from "@/utils/auth/adminFeaturesOnUserPages";
 import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
@@ -68,10 +69,13 @@ export async function fetchLibraryGrants(
   entityId: string,
 ): Promise<LibraryGrant[]> {
   const supabase = createClient();
-  const { data, error } = await supabase.rpc("library_list_grants", {
-    p_entity_type: entityType,
-    p_entity_id: entityId,
-  });
+  const { data, error } = await withAdminFeature(
+    "library.publish",
+    supabase.rpc("library_list_grants", {
+      p_entity_type: entityType,
+      p_entity_id: entityId,
+    }),
+  );
   // The RPC answers only an admin, the store's creator or the pack's curator;
   // anyone else gets a refusal that must not be shown verbatim.
   if (error) {
@@ -125,13 +129,16 @@ export function useLibraryGrants(
       if (!entityId) return false;
       try {
         const supabase = createClient();
-        const { error: rpcError } = await supabase.rpc("library_publish", {
-          p_entity_type: entityType,
-          p_entity_id: entityId,
-          p_audience: input.audience,
-          p_industry_id: input.industryId ?? undefined,
-          p_organization_id: input.organizationId ?? undefined,
-        });
+        const { error: rpcError } = await withAdminFeature(
+          "library.publish",
+          supabase.rpc("library_publish", {
+            p_entity_type: entityType,
+            p_entity_id: entityId,
+            p_audience: input.audience,
+            p_industry_id: input.industryId ?? undefined,
+            p_organization_id: input.organizationId ?? undefined,
+          }),
+        );
         if (rpcError) throw rpcError;
         refresh();
         return true;
@@ -148,9 +155,12 @@ export function useLibraryGrants(
       if (!entityId) return false;
       try {
         const supabase = createClient();
-        const { error: rpcError } = await supabase.rpc("library_revoke", {
-          p_grant_id: grantId,
-        });
+        const { error: rpcError } = await withAdminFeature(
+          "library.publish",
+          supabase.rpc("library_revoke", {
+            p_grant_id: grantId,
+          }),
+        );
         if (rpcError) throw rpcError;
         refresh();
         return true;

@@ -31,7 +31,7 @@ import {
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
 import { updateWindowRect } from "@/lib/redux/slices/windowManagerSlice";
 import {
@@ -446,7 +446,9 @@ function useFeedbackForm({
     setPageSurface(activeSurface);
   }
   const reduxUser = useAppSelector(selectUser);
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "feedback.triage-fields"),
+  );
   // The organization the report is filed in — a Server Action carries no
   // `X-Organization-Id` header, so the selection travels as an argument.
   const selectedOrganizationId = useAppSelector(selectOrganizationId);

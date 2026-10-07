@@ -70,7 +70,7 @@ import {
 import type { DataStoreWithMemberCount } from "@/features/rag/types/data-stores";
 import { fileHandler } from "@/features/files/handler/handler";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature, selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { LibraryPublishPanel } from "@/features/rag/components/library/LibraryPublishPanel";
 import { AccessSummaryPanel } from "@/features/sharing/components/AccessSummaryPanel";
 import { useStoreProvenance } from "@/features/rag/hooks/useLibraryProvenance";
@@ -594,7 +594,9 @@ function StoreDetailPanel({
   const [dragActive, setDragActive] = useState(false);
   const [dropPending, setDropPending] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const canPublishLibrary = useAppSelector((s) =>
+    selectAdminFeature(s, "library.publish"),
+  );
 
   // Rich members — server-enriched view of what's actually in the store
   // (file name, size, processing status, page/chunk counts). Replaces
@@ -833,7 +835,7 @@ function StoreDetailPanel({
   // caller may search but not mutate — writes are gated server-side too.
   const readOnly = !!s.readOnly;
   // The Publish action is for super-admins curating library-owned stores.
-  const canPublish = isSuperAdmin && s.kind === "library" && !readOnly;
+  const canPublish = canPublishLibrary && s.kind === "library" && !readOnly;
 
   return (
     <div

@@ -19,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
@@ -89,7 +89,9 @@ export function SkillDetailEditor({
   onDraftSnapshot,
 }: SkillDetailEditorProps) {
   const dispatch = useAppDispatch();
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "skills.system-catalogue"),
+  );
   const { skill, loading: skillLoading } = useSkill({
     skillRef: isNew ? null : skillId,
   });

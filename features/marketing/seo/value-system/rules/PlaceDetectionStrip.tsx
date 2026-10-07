@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { cn } from "@/styles/themes/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { extractErrorMessage } from "@/utils/errors";
 import { fetchFeatureKnobValues } from "@/features/admin/limits/service";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
@@ -50,7 +50,9 @@ function pct(part: number, whole: number): number {
 
 export function PlaceDetectionStrip({ siteId }: { siteId: string }) {
   const queryClient = useQueryClient();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "seo.place-detection"),
+  );
   const [lastPass, setLastPass] = useState<string | null>(null);
 
   const knobs = useQuery({

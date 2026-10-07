@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -97,7 +97,9 @@ function CaseRow({ item }: { item: RegressionCase }) {
 }
 
 export function RegressionCasesFromFinding({ finding }: { finding: Finding }) {
-  const isAdmin = useAppSelector(selectIsAdmin);
+  const isAdmin = useAppSelector((s) =>
+    selectAdminFeature(s, "agent.hindsight-cases"),
+  );
   const queryClient = useQueryClient();
   const snapshotIds = finding.snapshot_ids ?? [];
 

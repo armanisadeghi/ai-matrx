@@ -37,6 +37,7 @@ import {
   type MandateDefinitionRow,
 } from "./service";
 import { contractOfMandate } from "@/lib/supabase/mandateStorage";
+import type { ConsumptionMap } from "@/features/mandates/provisions";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
 
 export interface RebindRequest {
@@ -48,6 +49,8 @@ export interface RebindRequest {
   versionId?: string | null;
   useLatest?: boolean;
   successMessage: string;
+  /** The map to write with the Holder. Omitted = the stored map stays. */
+  consumptionMap?: ConsumptionMap;
 }
 
 /** Reads an agent's declared variables, or null when they can't be read. */
@@ -123,6 +126,9 @@ export function useGuardedRebind({
             request.agentId,
             request.useLatest === false ? (request.versionId ?? null) : null,
           ),
+          request.consumptionMap !== undefined
+            ? { consumptionMap: request.consumptionMap }
+            : undefined,
         );
         toast.success(request.successMessage);
         setPending(null);

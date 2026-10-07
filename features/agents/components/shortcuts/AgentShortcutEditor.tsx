@@ -23,7 +23,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { useAgentShortcuts } from "@/features/agent-shortcuts/hooks/useAgentShortcuts";
 import { ShortcutForm } from "@/features/agent-shortcuts/components/ShortcutForm";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectAdminFeature } from "@/lib/redux/selectors/userSelectors";
 import { selectAgentById } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
 import { selectShortcutById } from "@ai-matrx/chat/agents/redux/agent-shortcuts/selectors";
 import type { AgentShortcut } from "@ai-matrx/chat/agents/redux/agent-shortcuts/types";
@@ -50,7 +50,7 @@ export function AgentShortcutEditor({
   const [isPending, startTransition] = useTransition();
 
   const isCreate = shortcutId === "new";
-  const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const isAdmin = useAppSelector((s) => selectAdminFeature(s, "agent.global-shortcut"));
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
 
   // When an admin creates a shortcut for a builtin/system agent, it belongs
