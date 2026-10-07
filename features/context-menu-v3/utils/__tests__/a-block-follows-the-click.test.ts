@@ -1,9 +1,11 @@
 /**
- * A block lands on the side of the click (G11B review, 2026-10-07: every
- * reference and button became its own block AFTER the paragraph, even from a
- * right-click at the start of a line). From the start or the first half of the
- * caret's line → BEFORE it; anywhere else → AFTER it. Every caret position is
- * swept, in a textarea and in a contentEditable editor.
+ * A block goes ABOVE the caret's line only from its very start (offset 0);
+ * anywhere else → AFTER it (G11B review: a right-click at the start of a line
+ * must put it above; G15 review, 2026-10-07: the old "first half → before"
+ * rule put a block above a wrapped paragraph from a click 89% along its first
+ * visual line). Every caret position is swept, in a textarea and in a
+ * contentEditable editor. The rule is `blockBoundary(…, "nearest")`
+ * (@ai-matrx/rich-editor ≥ 0.3.1).
  */
 
 import { insertIntoEditor, ownParagraph } from "../insert-into-editor";
@@ -24,7 +26,7 @@ function block() {
 
 describe("a textarea puts the block on the side of the click", () => {
   for (let offset = 0; offset <= LINE.length; offset += 1) {
-    const side = offset * 2 < LINE.length ? "before" : "after";
+    const side = offset === 0 ? "before" : "after";
     it(`caret at ${offset}/${LINE.length} → ${side}`, () => {
       const field = document.createElement("textarea");
       document.body.appendChild(field);
@@ -44,7 +46,7 @@ describe("a textarea puts the block on the side of the click", () => {
 describe("a contentEditable editor puts the block on the side of the click", () => {
   for (const [offset, side] of [
     [0, "before"],
-    [3, "before"],
+    [3, "after"],
     [10, "after"],
     [LINE.length, "after"],
   ] as const) {
@@ -68,4 +70,18 @@ describe("a contentEditable editor puts the block on the side of the click", () 
       editor.remove();
     });
   }
+});
+
+describe("a wrapped paragraph (G15)", () => {
+  it("a click 89% along its first visual line puts the block AFTER it", () => {
+    const long = "Wrapped words keep going across the page ".repeat(8).trim();
+    const field = document.createElement("textarea");
+    document.body.appendChild(field);
+    field.value = `Intro\n\n${long}\n\nNext line`;
+    const caret = field.value.indexOf(long) + Math.round(80 * 0.89);
+    field.setSelectionRange(caret, caret);
+    expect(insertIntoEditor({ getTextarea: () => field }, block())).toBe("textarea");
+    expect(field.value).toBe(`Intro\n\n${long}\n\n${FENCE}\n\nNext line`);
+    field.remove();
+  });
 });

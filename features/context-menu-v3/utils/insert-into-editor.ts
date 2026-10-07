@@ -19,10 +19,11 @@ import { blockBoundary } from "@ai-matrx/rich-editor/core/text-insertion";
 /**
  * `inline` goes exactly at the caret; `block` (a reference fence, a section)
  * goes on its own line, never inside a word (G5 review, 2026-10-02: "of" became
- * "o" + block + "f") — and on the side of the click: BEFORE the caret's line
- * from its start or first half, AFTER it otherwise (G11B review, 2026-10-07:
- * every block went after, even from a right-click at the start of a line). The
- * one rule is `blockBoundary(…, "nearest")` (@ai-matrx/rich-editor).
+ * "o" + block + "f") — BEFORE the caret's line only from its very start,
+ * AFTER it otherwise (G11B: a right-click at the start of a line goes above;
+ * G15, 2026-10-07: a character "first half" rule surprised wrapped
+ * paragraphs). The one rule is `blockBoundary(…, "nearest")`
+ * (@ai-matrx/rich-editor ≥ 0.3.1).
  */
 export type EditorInsertPlacement = "inline" | "block";
 
@@ -110,8 +111,8 @@ function attempt(target: EditorInsertTarget, insert: () => boolean): boolean {
 }
 
 /**
- * A collapsed caret inside a contentEditable text node moves to the nearer edge
- * of its line (start from the first half, end otherwise), so a block never
+ * A collapsed caret inside a contentEditable text node moves to an edge of its
+ * line (the start only from the very start, else the end), so a block never
  * lands inside a word. A selection is left alone: it is replaced where it is.
  */
 function moveEditorCaretToLineEnd(editorId: string): void {

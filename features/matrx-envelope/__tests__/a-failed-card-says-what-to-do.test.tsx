@@ -76,7 +76,21 @@ describe("a failed action card in this app", () => {
   it("a person-ready server reason is the sentence, with the remedy", async () => {
     const card = await failedCard("Nothing was applied — title is required.");
     expect(card.querySelector("[data-apply-failure]")!.textContent).toContain(
-      "Nothing was applied — Title is required. Ask for a corrected version, then apply it.",
+      "Nothing was applied — Title is required. Correct it, then apply again.",
+    );
+  });
+
+  it("a hand-inserted button's failure assumes no AI, and Details use the form's field names (G15)", async () => {
+    const card = await failedCard("Nothing was applied — name is required.", "directive_v1_create_project");
+    const text = card.querySelector("[data-apply-failure]")!.textContent!;
+    expect(text).toContain("Nothing was applied — Title is required. Correct it, then apply again.");
+    expect(text).not.toMatch(/Ask for|corrected version/);
+    const toggle = card.querySelector<HTMLButtonElement>("[data-apply-failure-details-toggle]")!;
+    await act(async () => {
+      toggle.click();
+    });
+    expect(card.querySelector("[data-apply-failure-details]")!.textContent).toBe(
+      "Nothing was applied — Title is required.",
     );
   });
 });
