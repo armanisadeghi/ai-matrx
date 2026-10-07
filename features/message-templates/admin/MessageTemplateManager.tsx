@@ -73,7 +73,7 @@ import {
   getAllTags,
   clearTemplateCache,
 } from "@/features/message-templates/services/message-templates-service";
-import { RichContent } from "@/components/rich-content/RichContent";
+import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import MarkdownStream from "@/components/MarkdownStream";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { requestRaw } from "@/lib/python-client";
