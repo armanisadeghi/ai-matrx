@@ -199,6 +199,52 @@ export function deriveAnswerText(
   return stripThinkingStreaming(answer).visible;
 }
 
+/**
+ * The answer text FOR DATA CAPTURE (JSON extraction). Identical to
+ * {@link deriveAnswerText} except where a JSON wrapper holding kinds was split
+ * for display (A7: kinds + a residual that has the kinds REMOVED): those
+ * blocks are replaced by the bytes they were cut from. Without this, a
+ * structured answer whose arrays hold `{"__kind": …}` items was captured with
+ * those arrays EMPTY — an Applet's `sources` saved as `[]` (2026-10-07).
+ * A split whose blocks are no longer all present (a rewind) falls back to the
+ * blocks themselves.
+ */
+export function deriveAnswerDataText(
+  request: Pick<
+    ActiveRequest,
+    "renderBlockOrder" | "renderBlocks" | "editedText"
+  >,
+  wrapperSplits: ReadonlyArray<{ blockIds: string[]; source: string }>,
+): string {
+  if (wrapperSplits.length === 0) return deriveAnswerText(request);
+  const { renderBlockOrder: order, renderBlocks: blocks, editedText } = request;
+  if (editedText !== null && editedText !== undefined) return editedText;
+  if (!order || !blocks || order.length === 0) return "";
+  const present = new Set(order);
+  const splitOf = new Map<string, { blockIds: string[]; source: string }>();
+  for (const split of wrapperSplits) {
+    if (split.blockIds.length === 0) continue;
+    if (!split.blockIds.every((id) => present.has(id))) continue;
+    for (const id of split.blockIds) splitOf.set(id, split);
+  }
+  const emitted = new Set<{ blockIds: string[]; source: string }>();
+  const parts: string[] = [];
+  for (const id of order) {
+    const split = splitOf.get(id);
+    if (split) {
+      if (!emitted.has(split)) {
+        emitted.add(split);
+        parts.push(split.source);
+      }
+      continue;
+    }
+    const block = blocks[id];
+    if (!block || NON_ANSWER_BLOCK_TYPES.has(block.type)) continue;
+    if (block.content) parts.push(block.content);
+  }
+  return stripThinkingStreaming(parts.join("\n")).visible;
+}
+
 function hasKindMarker(value: unknown): value is Record<string, unknown> {
   return (
     typeof value === "object" &&
