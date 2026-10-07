@@ -19,9 +19,9 @@ import { getScriptSupabaseClient } from "@/utils/supabase/getScriptClient";
 import { createClient } from "@/utils/supabase/server";
 
 /** The Applet `slug` names for THIS viewer (their own server client: row security decides). */
-export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: string; slug: string; name: string } | null> => {
+export const resolveAppletRoute = cache(async (slug: string): Promise<{ id: string; slug: string; name: string; entry: string | null } | null> => {
   const supabase = await createClient();
-  const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name").eq("slug", slug).is("deleted_at", null).maybeSingle();
+  const { data, error } = await supabase.schema("app").from("definition").select("id, slug, name, entry").eq("slug", slug).is("deleted_at", null).maybeSingle();
   if (error) throw new Error(`Could not read the Applet "${slug}": ${error.message}`);
   return data ?? null;
 });
@@ -67,6 +67,8 @@ export const readPublicApplet = cache(async (key: string): Promise<PublicApplet 
 export type AppletView =
   | { kind: "intro"; intro: AppletIntro }
   | { kind: "run"; id: string; slug: string; guest: PublicApplet | null }
+  /** A build still being made (born empty at Build, no app saved yet): it opens as its build. */
+  | { kind: "unbuilt"; id: string }
   | { kind: "sign-in" }
   | { kind: "missing" };
 
@@ -76,7 +78,8 @@ export async function resolveAppletView(key: string, signedIn: boolean): Promise
   if (intro?.template) return { kind: "intro", intro };
   if (signedIn) {
     const applet = await resolveAppletRoute(key);
-    return applet ? { kind: "run", id: applet.id, slug: applet.slug, guest: null } : { kind: "missing" };
+    if (!applet) return { kind: "missing" };
+    return applet.entry ? { kind: "run", id: applet.id, slug: applet.slug, guest: null } : { kind: "unbuilt", id: applet.id };
   }
   const guest = await readPublicApplet(key);
   if (guest) return { kind: "run", id: guest.id, slug: guest.slug, guest };
