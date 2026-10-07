@@ -185,6 +185,8 @@ export function registerUtilityFunctions() {
           const csv = toDelimitedText(
             headers,
             jsonData.map(row => headers.map(field => (row[field] ?? null) as Json)),
+            // The conversion result returns to the agent, so preserve the source data exactly.
+            { spreadsheetSafe: false },
           );
 
           return csv;
@@ -858,4 +860,4 @@ export function registerUtilityFunctions() {
     },
     []
   );
-} 
+}

@@ -123,7 +123,8 @@ export function entriesToCsv(entries: DictEntry[]): string {
     category: e.category ?? "",
     is_active: e.is_active ? "true" : "false",
   }));
-  return toDelimitedText([...DICT_CSV_COLUMNS], rows);
+  // This CSV can be re-imported through parseDictCsv; preserve values exactly.
+  return toDelimitedText([...DICT_CSV_COLUMNS], rows, { spreadsheetSafe: false });
 }
 
 /** Serialise entries to a pretty JSON string. */

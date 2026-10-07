@@ -23,7 +23,7 @@ export async function focusLastPara(page, side){ const p=await lastParaIn(page,s
 export async function addPageLink(page, title, side){
   const {slash}=await import("./lib.mjs");
   await focusLastPara(page, side);
-  await slash(page,"Page","Page");
+  for(let a=0;a<3;a++){ try{ await page.waitForTimeout(700); await slash(page,"Page","Page"); break; }catch(e){ if(a==2) throw e; await page.keyboard.press("Escape"); await page.keyboard.press("Backspace"); await page.keyboard.press("Backspace"); await page.keyboard.press("Backspace"); await page.keyboard.press("Backspace"); await page.keyboard.press("Backspace"); } }
   await page.waitForURL(u=>true); await page.waitForTimeout(2500);
   const t = page.locator('[contenteditable="true"]').first();
   await page.mouse.click(700,237); await page.keyboard.type(title); await page.waitForTimeout(4500);

@@ -118,6 +118,8 @@ function rowsToCsv(
       row.id,
       ...fields.map((f) => (row.data?.[f.field_name] ?? null) as Json),
     ]),
+    // This CSV is agent context, not a spreadsheet download; keep cell values exact.
+    { spreadsheetSafe: false },
   );
 }
 

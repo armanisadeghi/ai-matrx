@@ -144,7 +144,10 @@ export function parsedRowsToCardInputs(
 
 /** Build a downloadable CSV string (`front,back` header + one row per card). */
 export function buildSetCsv(cards: Pick<CardWithDetails, "front" | "back">[]): string {
-  return toDelimitedText(["front", "back"], cards.map((c) => [c.front, c.back]));
+  // This CSV is a product import/export format; preserve exact card text on re-import.
+  return toDelimitedText(["front", "back"], cards.map((c) => [c.front, c.back]), {
+    spreadsheetSafe: false,
+  });
 }
 
 /** Trigger a browser download of the set's cards as CSV. Client-only. */
