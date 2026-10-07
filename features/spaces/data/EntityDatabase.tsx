@@ -425,7 +425,6 @@ function EntityBody({ token, entity, view, onOpen, search }: { token: string; en
         cell: (row: EntityRow) =>
           c === title ? (
             <button type="button" className="spaces-entity-open" onClick={() => onOpen(String(row.id))}>
-              <span className="spaces-row-dot" aria-hidden />
               <span className="truncate">{valueText(c, row[c.api_name]) || "Untitled"}</span>
               <span className="spaces-entity-openpill" aria-hidden>
                 <PanelRight size={12} strokeWidth={2} />

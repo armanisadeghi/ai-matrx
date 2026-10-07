@@ -23,14 +23,16 @@ jest.mock("@ai-matrx/records/react", () => {
     },
   };
 });
-jest.mock("@ai-matrx/records-ui", () => ({
-  ChartBlock: (props: { block: { rows: Array<{ groups: Record<string, unknown> }> } }) => (
-    <ol data-testid="bars">{props.block.rows.map((r) => <li key={String(r.groups.status)}>{String(r.groups.status)}</li>)}</ol>
-  ),
-}));
 jest.mock("@/components/errors/ErrorAlchemyMenu", () => ({ ErrorAlchemyMenu: () => null }));
 
 import { ChartView } from "../ChartView";
+
+// recharts measures its container through ResizeObserver; jsdom has none.
+(globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
 
 const doc = (status: string) => ({ id: status + Math.random(), document: { status } });
 const ROWS = [doc("Active"), doc("Active"), doc("Onboarding"), doc("Churned")];
@@ -48,8 +50,11 @@ beforeEach(() => {
     ok: true,
     data: ask.groupBy?.length
       ? [
-          { groups: { status: "Onboarding" }, measures: { count: 1 }, row_count: 1 },
-          { groups: { status: "Active" }, measures: { count: 2 }, row_count: 2 },
+          // The store's native order: neither A→Z nor Z→A, neither by value up nor down, so a chart that
+          // ignores its sort draws this order and fails every ordering test below.
+          { groups: { status: "Onboarding" }, measures: { count: 3 }, row_count: 3 },
+          { groups: { status: "Active" }, measures: { count: 1 }, row_count: 1 },
+          { groups: { status: "Churned" }, measures: { count: 5 }, row_count: 5 },
         ]
       : [{ groups: {}, measures: { count: 3 }, row_count: 3 }],
   }));
@@ -94,17 +99,51 @@ describe("ChartView passes its view to its data request", () => {
     expect(host.querySelector("svg")?.getAttribute("aria-label")).toBe("3");
   });
 
-  it("orders the groups the chart draws by the view's sort on the grouped field", async () => {
-    const bars = { ...settings, type: "bar" as const };
+  // What the chart draws, read from the DOM it produced (not from what ChartView hands over):
+  // a donut's slices are circles titled "<group>: <value>"; the real ChartBlock's bars are rectangles,
+  // read left to right, each as tall as its value (3 groups: values 1, 3, 5 give distinct heights).
+  const slices = () => [...host.querySelectorAll("svg circle title")].map((t) => t.textContent);
+  const bars = () => {
+    const rects = [...host.querySelectorAll("path.recharts-rectangle")].map((r) => ({ x: Number(r.getAttribute("x")), h: Number(r.getAttribute("height")) }));
+    const tallest = Math.max(...rects.map((r) => r.h));
+    return rects.sort((a, b) => a.x - b.x).map((r) => Math.round((r.h / tallest) * 5));
+  };
+  const draw = async (type: "bar" | "donut", sort: "asc" | "desc" | undefined, sorts: Array<{ field: string; direction: "asc" | "desc" }>) => {
     await act(async () => {
-      root.render(<ChartView tableId="t1" settings={bars} title="Status" filter={{}} sorts={[{ field: "status", direction: "asc" }]} />);
+      root.render(<ChartView tableId="t1" settings={{ ...settings, type, sort }} title="Status" filter={{}} sorts={sorts} />);
     });
     await flush();
-    expect([...host.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["Active", "Onboarding"]);
-    await act(async () => {
-      root.render(<ChartView tableId="t1" settings={bars} title="Status" filter={{}} sorts={[{ field: "status", direction: "desc" }]} />);
-    });
-    await flush();
-    expect([...host.querySelectorAll("li")].map((li) => li.textContent)).toEqual(["Onboarding", "Active"]);
+  };
+
+  it("orders bars by the view's sort on the grouped field (A to Z, then Z to A)", async () => {
+    await draw("bar", undefined, [{ field: "status", direction: "asc" }]);
+    expect(bars()).toEqual([1, 5, 3]); // Active, Churned, Onboarding
+    await draw("bar", undefined, [{ field: "status", direction: "desc" }]);
+    expect(bars()).toEqual([3, 5, 1]); // Onboarding, Churned, Active
+  });
+
+  it("orders bars by value when the chart's own sort says so", async () => {
+    await draw("bar", "asc", []);
+    expect(bars()).toEqual([1, 3, 5]);
+    await draw("bar", "desc", []);
+    expect(bars()).toEqual([5, 3, 1]);
+  });
+
+  it("draws bars in the store's order when nothing sorts", async () => {
+    await draw("bar", undefined, []);
+    expect(bars()).toEqual([3, 1, 5]);
+  });
+
+  it("orders the donut's slices by the view's sort and by value", async () => {
+    await draw("donut", undefined, [{ field: "status", direction: "asc" }]);
+    expect(slices()).toEqual(["Active: 1", "Churned: 5", "Onboarding: 3"]);
+    await draw("donut", undefined, [{ field: "status", direction: "desc" }]);
+    expect(slices()).toEqual(["Onboarding: 3", "Churned: 5", "Active: 1"]);
+    await draw("donut", "desc", []);
+    expect(slices()).toEqual(["Churned: 5", "Onboarding: 3", "Active: 1"]);
+    await draw("donut", "asc", []);
+    expect(slices()).toEqual(["Active: 1", "Onboarding: 3", "Churned: 5"]);
+    await draw("donut", undefined, []);
+    expect(slices()).toEqual(["Onboarding: 3", "Active: 1", "Churned: 5"]);
   });
 });

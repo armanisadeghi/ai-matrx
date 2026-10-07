@@ -1322,7 +1322,7 @@
 
 /* ── Data blocks: database (C24/C25, F1–F9) and chart view (C26, G1–G4) ── */
 .spaces-db-frame { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 10px; border: 1px solid var(--spaces-rule); border-radius: 10px; background: var(--spaces-page-bg); min-width: 0; margin: 4px 0; }
-.spaces-db-frame[data-layout="chart"] { min-height: 402px; padding: 18px 16px 16px 22px; border-radius: 12px; }
+.spaces-db-frame[data-layout="chart"] { min-height: 373px; padding: 18px 16px 16px 22px; border-radius: 12px; }
 .spaces-db-note { flex-direction: row; align-items: center; gap: 8px; font-size: 14px; color: var(--spaces-ink-soft); }
 .spaces-db-title { display: flex; align-items: center; gap: 4px; font-size: 20px; font-weight: 700; padding: 2px 2px 4px; }
 .spaces-db-linked { color: var(--spaces-ink-soft); }
@@ -1331,7 +1331,7 @@
 /* A chart tile's view name is Notion's grey pill (screenshot 1): the view's icon + the name as typed at
    14px / 600, cut with an ellipsis at the pill's edge, the view-settings icon right after it at rest. */
 .spaces-db-frame[data-layout="chart"] .spaces-db-tabs { gap: 6px; }
-.spaces-chart-title { display: inline-flex; align-items: center; gap: 6px; height: 32px; min-width: 0; flex: 0 1 auto; max-width: 100%; padding: 0 10px 0 8px; border-radius: 16px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.spaces-chart-title { display: inline-flex; align-items: center; justify-content: flex-start; gap: 6px; height: 32px; min-width: 0; flex: 0 1 auto; max-width: 100%; padding: 0 10px; border-radius: 16px; background: var(--spaces-hover-strong); color: var(--spaces-ink); font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; }
 .spaces-chart-title > svg { flex: none; }
 .spaces-chart-title > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { flex: none; }
@@ -1408,8 +1408,8 @@
 .spaces-db-pill { height: 26px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--spaces-rule); font-size: 13px; }
 .spaces-db-pill[data-active="true"] { border-color: var(--spaces-accent); color: var(--spaces-accent); }
 .spaces-chart { position: relative; display: flex; flex: 1 1 auto; flex-direction: column; align-items: stretch; gap: 10px; min-height: 0; }
-.spaces-chart-overflow { align-self: flex-start; max-width: 100%; padding: 4px 12px; border-radius: 999px; background: var(--spaces-hover-strong); color: var(--spaces-ink-soft); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.spaces-chart-donut { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 260px; padding-bottom: 24px; }
+.spaces-chart-overflow { align-self: flex-start; flex: none; display: flex; align-items: center; height: 34px; margin-bottom: 11px; max-width: 100%; padding: 0 14px; border-radius: 999px; background: var(--spaces-hover-strong); color: var(--spaces-ink-soft); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spaces-chart-donut { display: flex; flex: 1 1 auto; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 317px; padding-bottom: 24px; }
 .spaces-chart-donut svg { flex: none; max-width: 100%; height: auto; overflow: visible; }
 .spaces-chart-center { font-weight: 600; letter-spacing: -0.02em; fill: var(--spaces-ink); }
 .spaces-chart-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; font-size: 12px; color: var(--spaces-ink-soft); }
@@ -1657,17 +1657,18 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-db-body tbody tr { border-bottom-color: var(--spaces-hairline); }
 
 /* O14: a table row's title cell starts with the record's icon — the grey page circle (screenshot 1) while the
-   record has none of its own. A built-in table draws the same circle inside its title button. */
+   record has none of its own. ONE route for both table types: a ::before circle that sits beside the title on its
+   line (the custom grid's cell content and the built-in table's title button are both flex rows, 37px rows hold). */
+.spaces-db-body tbody tr > td:first-child [data-matrx-cell-content]:not(:has(.spaces-entity-open)) { display: flex; align-items: center; }
 .spaces-db-body tbody tr > td:first-child [data-matrx-cell-content]:not(:has(.spaces-entity-open))::before,
-.spaces-entity-open > .spaces-row-dot {
+.spaces-entity-open::before {
   content: "";
-  display: inline-block;
+  display: block;
   flex: none;
   width: 16px;
   height: 16px;
   margin-right: 8px;
   border-radius: 50%;
   background: var(--spaces-row-dot);
-  vertical-align: -3px;
 }
-.spaces-entity-open > .spaces-row-dot { margin-right: 2px; }
+.spaces-entity-open::before { margin-right: 2px; }

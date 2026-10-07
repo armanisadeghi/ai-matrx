@@ -185,7 +185,7 @@ function pretty(n: number | null): string {
 
 /** The donut (Notion's ring): a thin ring from 12 o'clock clockwise, a hairline gap between slices,
  *  the total in the middle in a semibold numeral. Sizes are the reference's (screenshot 1): an 80px ring,
- *  a 4px stroke, an ~20px numeral (smaller as the number grows). Past a couple dozen groups the ring
+ *  a 4px stroke, one 20px numeral for up to five characters (smaller only past that). Past a couple dozen groups the ring
  *  is Notion's dashed one: each slice a short radial tick with an equal gap after it. */
 export const RING = 80;
 function Donut({ data, settings }: { data: ChartData; settings: ChartSettings }) {
@@ -201,7 +201,7 @@ function Donut({ data, settings }: { data: ChartData; settings: ChartSettings })
   }, []);
   const center = settings.op === "count" || settings.op === "sum" ? data.total ?? sum : data.total;
   const shown = pretty(center);
-  const fontSize = shown.length <= 2 ? 20 : shown.length === 3 ? 18 : shown.length === 4 ? 16 : 13;
+  const fontSize = shown.length <= 5 ? 20 : shown.length <= 7 ? 16 : 13;
   return (
     <div className="spaces-chart-donut">
       <svg viewBox={`0 0 ${RING} ${RING}`} width={RING} height={RING} role="img" aria-label={shown}>

@@ -45,8 +45,17 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
-- 2026-10-07 — builder round 24: chart tiles on the reference (172px tile at 1699, 80px ring, 4px stroke, 20px centre number,
-  14px/600 name cut with an ellipsis, view-settings icon at rest; a column row inside a column takes a 62px gutter that narrows
+- 2026-10-07 — builder round 25: the real chart-tile rule (round 24 overstated it). Tile width follows the window (172px at 1699,
+  114px at 1280). Name pill: 14px/600 and a 10px/10px symmetric pad, start-aligned and cut with an ellipsis, down to a 130px-wide
+  tile; at or under 130px the name is 12px, 4px/5px pad, no icon. Centre number: ONE size, 20px, for any value of up to five
+  characters ("4", "8.6", "355", "12,345"); 16px for six or seven, 13px beyond, so it stays inside the 72px inner ring. Tile height:
+  373px minimum (reference ~375); a tile carrying the "Only showing 200 options" chip (34px + 21px of space) is 428px, the other
+  tiles stay 373 (they no longer stretch to match). The pill's dev-guard break ("pill ink is off-centre") came from an 8/10px
+  hand-shaved pad on a pill whose text is cut by an ellipsis. Table title dot: ONE `::before` route for both table types
+  (custom grid cell content and the built-in title button are flex rows, dot beside the title, 37px rows). Chart sort test now
+  reads what is drawn (donut slice titles, real ChartBlock bar heights) over a store order that is neither A-Z, Z-A nor by value.
+- 2026-10-07 — builder round 24: chart tiles on the reference (172px tile at 1699, 80px ring, 4px stroke, 20px centre number
+  [corrected in round 25: not a fixed size, see that entry], 14px/600 name cut with an ellipsis, view-settings icon at rest; a column row inside a column takes a 62px gutter that narrows
   with the window, five across keep 16px); a bar/line chart now follows the view's sort (rows reach ChartBlock in point order);
   table rows start with the grey record circle (O14, `.spaces-row-dot`; a record's own icon still needs records-ui, NEEDS row);
   image page icon 124px over the cover by 72px; toggle triangles in the text ink; the sort icon turns blue (the control's own
