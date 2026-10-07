@@ -37,6 +37,7 @@ import {
   listKindCatalogFromTables,
 } from "./schema-source-kind-tables";
 import { SYSTEM_KIND_DEFINITIONS } from "./system-kinds";
+import { expandKindAliases } from "./kind-aliases";
 import { getSurfaceForJsonRootKey } from "./surface-registry";
 import type { KindDefinition } from "@ai-matrx/content-ir";
 import { isTableKind, type TableKindFacts } from "@ai-matrx/records";
@@ -153,7 +154,7 @@ class KindRegistry {
   private tableStructureHeard = false;
 
   constructor(systemKinds: KindDefinition[]) {
-    for (const def of systemKinds) {
+    for (const def of expandKindAliases(systemKinds)) {
       this.defs.set(def.kind, def);
     }
   }
@@ -322,9 +323,11 @@ class KindRegistry {
    * registering component/artifact facets onto an existing kind.
    */
   upsertDefinition(def: KindDefinition): void {
-    const existing = this.defs.get(def.kind);
-    this.defs.set(def.kind, { ...existing, ...def });
-    this.bumpKind(def.kind);
+    for (const one of expandKindAliases([def])) {
+      const existing = this.defs.get(one.kind);
+      this.defs.set(one.kind, { ...existing, ...one });
+      this.bumpKind(one.kind);
+    }
     this.bumpVersion();
   }
 

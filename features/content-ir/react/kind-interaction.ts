@@ -102,6 +102,14 @@ export const KIND_INTERACTION_RULES: Readonly<Record<string, KindInteractionRule
       return `I made ${steps} choice${steps === 1 ? "" : "s"}${at}${finished ? `; finished ${finished} path${finished === 1 ? "" : "s"}` : ""}.`;
     },
   },
+  tasks: {
+    keys: ["checkboxState"],
+    summarize: (s, data) => {
+      const state = (s.checkboxState ?? {}) as Record<string, unknown>;
+      const done = Object.values(state).filter((v) => v === true).length;
+      return done ? `I ticked ${ofTotal(done, Object.keys(state).length)} tasks.` : "";
+    },
+  },
   troubleshooting: {
     keys: ["completedSteps"],
     summarize: (s) => {

@@ -44,6 +44,7 @@ import {
   joinBlocks,
 } from "./kind-markdown-utils";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { canonicalAliasFields } from "../registry/kind-aliases";
 
 // ---------------------------------------------------------------------------
 // Canonical schemas — the single authored source. The migration's
@@ -82,6 +83,14 @@ export const TASK_LIST_KIND_SCHEMA: KindSchema = {
 // accepts. Shared by the legacy bridge (pure grammar) and the toMarkdown
 // facet (grammar + extras + heading).
 // ---------------------------------------------------------------------------
+
+/** An item as emitted under either slug, read with the canonical field names (recursive). */
+function canonicalChecklistItem(item: Record<string, unknown>): Record<string, unknown> {
+  const out = canonicalAliasFields(item, "checklist_item");
+  return Array.isArray(out.children)
+    ? { ...out, children: out.children.filter(isRecordValue).map(canonicalChecklistItem) }
+    : out;
+}
 
 const ITEM_KNOWN_KEYS = ["title", "item_type", "checked", "bold", "children", KIND_KEY];
 const SET_KNOWN_KEYS = ["title", "items", KIND_KEY];
@@ -200,9 +209,10 @@ export function taskListToChecklistMarkdown(
   value: Record<string, unknown>,
   options?: { includeExtras?: boolean },
 ): string {
-  const items = Array.isArray(value.items)
+  const items = (Array.isArray(value.items)
     ? value.items.filter(isRecordValue)
-    : [];
+    : []
+  ).map(canonicalChecklistItem);
   const lines: string[] = [];
   pushItems(items, lines, options?.includeExtras === true);
   return lines.join("\n");
@@ -252,6 +262,8 @@ export function taskListMarkdownFromValue(
 export const TASK_LIST_KIND_DEFINITIONS: KindDefinition[] = [
   {
     kind: "task_list",
+    // A checklist IS a task list (owner ruling 2026-10-06): read under both slugs.
+    discriminatorAliases: ["checklist"],
     schemaSource: "system",
     tier: "eager",
     legacyBlockType: "tasks",
@@ -263,6 +275,7 @@ export const TASK_LIST_KIND_DEFINITIONS: KindDefinition[] = [
   },
   {
     kind: "task_item",
+    discriminatorAliases: ["checklist_item"],
     schemaSource: "system",
     tier: "eager",
     schema: TASK_ITEM_KIND_SCHEMA,

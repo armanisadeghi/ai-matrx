@@ -11,6 +11,11 @@ import { createRoot } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
+// The inline checklist keeps ticks through the one block-state door; this suite is about what is
+// DRAWN, so the door is an unhosted stand-in (nothing saved, always loaded).
+jest.mock("@/features/block-state/useBlockState", () => ({
+  useBlockState: () => ({ state: null, loaded: true, patch: jest.fn(), saveError: null, hosted: false }),
+}));
 jest.mock("@/features/tasks/components/ImportTasksModal", () => () => null);
 jest.mock("@/features/tasks/utils/importConverters", () => ({ convertTimelineToTasks: () => [] }));
 

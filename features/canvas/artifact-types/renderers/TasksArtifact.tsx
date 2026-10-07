@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ListPlus } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -9,12 +9,15 @@ import {
 } from "@/features/tasks/redux/taskAssociationsSlice";
 import { canvasArtifactService } from "@/features/canvas/services/canvasArtifactService";
 import { parseMarkdownChecklist } from "@/components/mardown-display/blocks/tasks/tasklist-parser";
-import TaskChecklist from "@/components/mardown-display/blocks/tasks/TaskChecklist";
+import TaskChecklist, {
+  type CheckboxStateType,
+} from "@/components/mardown-display/blocks/tasks/TaskChecklist";
+import { useBlockState } from "@/features/block-state/useBlockState";
+import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import TaskChipRow from "@/features/tasks/widgets/TaskChipRow";
 import TaskPreviewWindow from "@/features/tasks/components/TaskPreviewWindow";
 import { Button } from "@ai-matrx/design-system";
 import { toast } from "@/lib/toast";
-import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { isMaterializedArtifactId } from "../artifactId";
 import type { ArtifactRendererProps } from "../types";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
@@ -69,7 +72,7 @@ export default function TasksArtifact({
   // D49 — same class as the table fix).
   if (!materialized) {
     if (!content) return null;
-    return <TaskChecklist content={content} hideTitle hideActions />;
+    return <PersistedTaskChecklist content={content} />;
   }
 
   return (
@@ -77,6 +80,45 @@ export default function TasksArtifact({
       canvasItemId={artifactId as string}
       fallbackContent={content ?? ""}
       conversationId={conversationId}
+    />
+  );
+}
+
+/**
+ * The inline checklist with the person's ticks kept as block state — the ONE hook every
+ * interactive kind uses. Reads the saved ticks before drawing (so initialState seeds once) and
+ * writes only when a tick differs from what was saved or the list's own defaults (opening a
+ * list never creates a row).
+ */
+function PersistedTaskChecklist({ content }: { content: string }) {
+  const { state, loaded, patch } = useBlockState<{ checkboxState?: CheckboxStateType }>({ data: { content } });
+  const saved = state?.checkboxState;
+  const defaults = useMemo(() => {
+    const out: CheckboxStateType = {};
+    const walk = (items: ReturnType<typeof parseMarkdownChecklist>) => {
+      for (const item of items) {
+        if (item.id) out[item.id] = item.checked || false;
+        if (item.children) walk(item.children);
+      }
+    };
+    walk(parseMarkdownChecklist(content));
+    return out;
+  }, [content]);
+  const onStateChange = useCallback(
+    (next: CheckboxStateType) => {
+      const moved = Object.entries(next).some(([id, on]) => on !== (saved?.[id] ?? defaults[id] ?? false));
+      if (moved) patch({ checkboxState: next });
+    },
+    [patch, saved, defaults],
+  );
+  if (!loaded) return <MatrxMiniLoader />;
+  return (
+    <TaskChecklist
+      content={content}
+      hideTitle
+      hideActions
+      initialState={state?.checkboxState}
+      onStateChange={onStateChange}
     />
   );
 }
