@@ -97,7 +97,7 @@ describe("every 'Cancelled' rejection names its cause", () => {
   const path = require("node:path") as typeof import("node:path");
   const dir = path.join(
     process.cwd(),
-    "packages/chat/src/agents/redux/execution-system/thunks",
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks",
   );
   const sites = fs
     .readdirSync(dir)

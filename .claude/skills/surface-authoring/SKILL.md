@@ -60,7 +60,7 @@ Fill this receipt, rather than replacing it with a narrative. For a read-only as
 - **Existing surface that needs completion or repair:** read [`references/runtime-rollout.md`](./references/runtime-rollout.md), then close every applicable contract here.
 - **Context-menu wiring or repair:** invoke `context-menu-v3`; its skill owns wrapper choice, per-row delegation, `contentSource`, `entity`, and no-fake-menu proof. This skill owns making that canonical menu part of a complete surface.
 - **Full certification:** invoke `surface-check`; it drives the S1–S18 checklist and ledger.
-- **Binding-service internals** (`packages/chat/src/surfaces/services/bind-agent-to-surface.service.ts` itself) and **context-menu primitive internals** are not this skill — this skill consumes them.
+- **Binding-service internals** (`../aidream/apps/shared/chat/src/surfaces/services/bind-agent-to-surface.service.ts` itself) and **context-menu primitive internals** are not this skill — this skill consumes them.
 
 ## Branch references — read only when the run reaches that branch
 
@@ -102,7 +102,7 @@ own engineered context.
 **`SurfaceManifest.label` is REQUIRED.** It is the ONE canonical human display name for the surface — unique per client (case-insensitive; `pnpm check:surface-drift` fails on a missing or clashing label). Every value's `label` and every group's `label` is equally canonical.
 
 - **No chrome may hand-type, override, or re-derive a surface/value/group label.** The `surfaceLabel` runtime override prop was DELETED; ESLint bans it (`surfaceLabelOverrideBan` in `eslint.config.mjs`).
-- Chrome derives the surface name via **`getSurfaceDisplayLabel(surfaceName)`** from `packages/chat/src/surfaces/utils/surface-display.ts` (static + synchronous; safe in server and client components). `labelFromName` slug fallback is for manifest-less DB surfaces ONLY.
+- Chrome derives the surface name via **`getSurfaceDisplayLabel(surfaceName)`** from `../aidream/apps/shared/chat/src/surfaces/utils/surface-display.ts` (static + synchronous; safe in server and client components). `labelFromName` slug fallback is for manifest-less DB surfaces ONLY.
 - **On-page section titles and field labels for declared values render via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)`** (same file) — byte-identical to the manifest. A page that hand-writes "Page intent" next to values grouped under `page_intent` is a defect; render `G.page_intent`.
 - `label` is mirrored to `ui_surface.label` by manifest sync (ALWAYS written); DB drift shows in the drift report as `surfaceLabelDrifts`.
 - **Labels never enter agent feeds.** aidream's manifest feed carries machine names + `group_key` only — agents see `name`, humans see `label`.
@@ -154,7 +154,7 @@ If the user asks for a surface name that doesn't match `^[a-z][a-z0-9-]*\/[a-z0-
 
 These are short — read them when the task is non-trivial:
 
-- `packages/chat/src/surfaces/types.ts` — `SurfaceValue`, `SurfaceValueGroup`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
+- `../aidream/apps/shared/chat/src/surfaces/types.ts` — `SurfaceValue`, `SurfaceValueGroup`, `SurfaceManifest`, `ValueMapping`, `SurfaceScopePayload`
 - `features/surfaces/manifests/_baseline.manifest.ts` — `BASELINE_VALUES`, `pickBaseline`, `mergeBaselineValues`
 - `features/surfaces/manifests/registry.ts` — register your manifest in **`RAW_MANIFESTS`**; `ALL_MANIFESTS` is derived from it (inheritance resolved, baselines injected, provenance + groupKey stamped) and is what everything consumes
 - `features/surfaces/manifests/marketing-page.manifest.ts` — **THE reference implementation**: 40+ values, 7 curated groups, full contract, `inheritsFrom` chain (marketing-site → marketing-brand), scope builder in a separate runtime module (`features/marketing/lib/marketing-page-scope.ts`), emitter in `PageWorkspace.tsx`

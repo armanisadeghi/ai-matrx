@@ -247,7 +247,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
 - **Add a new preset**: add an entry to the right array in `features/image-studio/presets.ts`. That's it — the catalog, convert tool, and reference page all read from the same source.
 - **Add a new format**: extend `OutputFormat` in `presets.ts`, add a `case` in `encode()` in the process route, add a badge row in `ExportPanel.tsx`.
 - **Add a one-click bundle**: append to `RECOMMENDED_BUNDLES`.
-- **Add a new AI agent**: add the row in the DB, register in `packages/chat/src/agents/constants/system-shortcuts.ts` (key: `image-<name>-01`, feature: `image-studio`), then call `useShortcutTrigger` from the relevant mode toolbar — see `useImageStudio.ts:describeFile` for the canonical pattern. The full registry of planned agents is in `AI-AGENTS.md`.
+- **Add a new AI agent**: add the row in the DB, register in `../aidream/apps/shared/chat/src/agents/constants/system-shortcuts.ts` (key: `image-<name>-01`, feature: `image-studio`), then call `useShortcutTrigger` from the relevant mode toolbar — see `useImageStudio.ts:describeFile` for the canonical pattern. The full registry of planned agents is in `AI-AGENTS.md`.
 - **Add a new Python endpoint**: append a typed client to `features/image-studio/api/python.ts` following the existing pattern (typed body, `postJson`, response shape with `cloud_file_id`). The Python team's contract is documented at the top of that file.
 - **Add a new mode**: create `features/image-studio/modes/<name>/<Name>ModeShell.tsx` implementing `ModeShellProps`, then add the route `app/(a)/image-studio/<name>/page.tsx` mirroring an existing one.
 - **Mount a mode in a modal** (e.g. "edit this image" from Notes): import the mode shell directly and pass `presentation="modal"` plus your own `onSave`/`onCancel`. No new wiring needed — the shells are presentation-agnostic.
@@ -298,7 +298,7 @@ Same wire consumer in `ImageAssetUploader`'s Generate tab.
   → `executeInstance` — the autoRun anti-pattern TODO still stands until the
   launcher carries resources), but the wait/settle/result-resolution/retention
   now runs through `adoptHeadlessAgentJson`
-  (`packages/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts`),
+  (`../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/run-headless-agent-json.ts`),
   called with `keepInstance: true` because this hook's own `finally` owns
   conversation teardown for every path including pre-execute failures. Result
   unwrapping (`image_metadata` wrapper or bare object → `coerceImageMetadata`)

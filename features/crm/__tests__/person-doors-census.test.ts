@@ -34,7 +34,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 const REPO_ROOT = path.resolve(__dirname, "../../..");
-const SCANNED_DIRS = ["features", "packages/chat/src", "app", "components"];
+const SCANNED_DIRS = ["features", "../aidream/apps/shared/chat/src", "app", "components"];
 
 /**
  * Every way a party URL gets hand-built.

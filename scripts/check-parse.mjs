@@ -17,7 +17,7 @@
  *     } from "./types";
  *
  * That is a hard parse error. Seven files landed that way
- * (components/image/cloud/CloudImageList.tsx, packages/chat/src/agents/resources/utils.ts,
+ * (components/image/cloud/CloudImageList.tsx, ../aidream/apps/shared/chat/src/agents/resources/utils.ts,
  * features/transcripts/service/audioStorageService.ts,
  * utils/file-operations/utils.ts, lib/field-formats/registry.ts,
  * features/marketing/seo/run-console/RunHistoryPanel.tsx,

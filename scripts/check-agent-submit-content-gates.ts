@@ -11,7 +11,7 @@ import path from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
-const PRODUCTION_ROOTS = ["features/agents/", "packages/chat/src/agents/", "features/agent-comparison/"];
+const PRODUCTION_ROOTS = ["features/agents/", "../aidream/apps/shared/chat/src/agents/", "features/agent-comparison/"];
 const SHARED_BATTLE_MODES = [
   "model",
   "settings",

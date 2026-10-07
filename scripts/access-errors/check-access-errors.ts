@@ -26,7 +26,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 import { execSync } from "node:child_process";
 import { emitItem, endItems } from "../checks/items.mjs";
-import { aliasTarget, featureRootOf, featureRegExp } from "../lib/source-roots.cjs";
+import { aliasTarget, featureRootOf, featureRegExp, gitFiles } from "../lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const REPORT = join(ROOT, "scripts/access-errors/report.json");
@@ -158,11 +158,11 @@ const MATCHING =
 const PRAGMA = /(?:\/\/|\{\/\*)\s*access-errors:\s*ok\s*[—-]\s*\S/;
 
 function listFiles(): string[] {
-  const out = execSync(
-    "git ls-files 'app/**/*.ts' 'app/**/*.tsx' 'features/**/*.ts' 'packages/chat/src/**/*.ts' 'features/**/*.tsx' 'packages/chat/src/**/*.tsx' " +
-      "'components/**/*.ts' 'components/**/*.tsx' 'lib/**/*.ts' 'lib/**/*.tsx' 'hooks/**/*.ts'",
-    { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
-  );
+  const out = gitFiles(ROOT, [
+    "ls-files", "app/**/*.ts", "app/**/*.tsx", "features/**/*.ts", "../aidream/apps/shared/chat/src/**/*.ts",
+    "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx",
+    "components/**/*.ts", "components/**/*.tsx", "lib/**/*.ts", "lib/**/*.tsx", "hooks/**/*.ts",
+  ]);
   return out
     .split("\n")
     .filter(Boolean)

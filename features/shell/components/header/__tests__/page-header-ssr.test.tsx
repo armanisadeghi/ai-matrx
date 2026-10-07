@@ -32,7 +32,7 @@ import { createRoot, hydrateRoot, type Root } from "react-dom/client";
 import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
-import { aliasTarget } from "@/scripts/lib/source-roots.cjs";
+import { aliasTarget, gitFiles } from "@/scripts/lib/source-roots.cjs";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -478,9 +478,7 @@ function findClientOnlyHeaders(files: string[], read: (f: string) => string): st
 }
 
 describe("no route header is client-only", () => {
-  const files = execSync("git ls-files 'app/*.tsx' 'features/*.tsx' 'packages/chat/src/*.tsx' 'components/*.tsx' 'lib/*.tsx'", {
-    encoding: "utf8",
-  })
+  const files = gitFiles(process.cwd(), ["ls-files", "app/*.tsx", "features/*.tsx", "../aidream/apps/shared/chat/src/*.tsx", "components/*.tsx", "lib/*.tsx"])
     .split("\n")
     .filter((f) => f && existsSync(f) && !/\.test\.tsx$/.test(f));
   const read = (f: string) => readFileSync(f, "utf8");

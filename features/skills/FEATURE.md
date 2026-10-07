@@ -220,7 +220,7 @@ stripped the `/api` prefix — that is the bug this layout fixes.)
 - Reducer registration / typed hooks: `lib/redux/store.ts` + `lib/redux/hooks.ts`.
 - Toast: `sonner` (global mount).
 - Selector pattern: `createSelector` from `@reduxjs/toolkit`.
-- Stream pump: `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts`.
+- Stream pump: `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts`.
 
 **Primitives introduced**
 

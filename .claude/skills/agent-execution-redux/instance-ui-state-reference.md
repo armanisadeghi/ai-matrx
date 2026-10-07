@@ -1,6 +1,6 @@
 # Agent Execution Redux — Instance UI State Reference
 
-Current fields on `InstanceUIState` (source of truth: `packages/chat/src/agents/types/instance.types.ts`):
+Current fields on `InstanceUIState` (source of truth: `../aidream/apps/shared/chat/src/agents/types/instance.types.ts`):
 
 | Field | Type | Default | Purpose |
 |-------|------|---------|---------|
@@ -40,7 +40,7 @@ that needs the current value (a toggle, a merge into `modeState` or
 value too. `destroyInstance` / `removeInstanceUIState` clear the record so a
 staged write is never replayed onto a later instance with the same id.
 
-Guard: `packages/chat/src/agents/redux/execution-system/instance-ui-state/__tests__/no-write-is-dropped-before-the-instance-lands.test.ts`
+Guard: `../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/__tests__/no-write-is-dropped-before-the-instance-lands.test.ts`
 — behaviour plus a census that fails if any setter returns to the drop pattern.
 A surface must NOT gate its dispatch on the row's existence; that local
 workaround is what this replaced.

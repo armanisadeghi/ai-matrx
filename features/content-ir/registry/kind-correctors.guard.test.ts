@@ -13,12 +13,12 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..");
-const SCAN = ["app", "components", "features", "packages/chat/src", "lib", "hooks", "utils"];
+const SCAN = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib", "hooks", "utils"];
 const OWNER = "features/content-ir/registry/kind-correctors.ts";
 // The chat package's bare-host stand-in for the `sessionEnvelope` slot (a host with NO correctors
 // takes the session's own envelope, reported once). Every real host registers `sessionEnvelope`
 // from OWNER (providers/chatContentIrRegistration.ts), so no render path in this app uses it.
-const BARE_HOST_STAND_IN = "packages/chat/src/host/content-ir-slots.ts";
+const BARE_HOST_STAND_IN = "../aidream/apps/shared/chat/src/host/content-ir-slots.ts";
 
 function files(dir: string, out: string[] = []): string[] {
   let entries: string[];

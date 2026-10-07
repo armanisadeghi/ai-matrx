@@ -123,10 +123,10 @@
     "features/tool-call-visualization/admin/mcp-tools/ToolComponentPreview.tsx:521 multi-line SelectTrigger (`h-auto min-h-11 min-w-0 flex-1 py-2 text-left text-xs [&>span]:line-clamp-none [&>span]:whitespace-normal sm:h-8 sm:min-h-0 sm:max-w-md sm:py-1 sm:[&>span]:line-clamp-1 sm:[&>span]:whitespace-nowrap`) — whole file stays on select Legacy",
     "features/user-search/UserSearchField.tsx:58 dynamic Input type — stays on the package-root Input",
     "lib/entity-list/components/EntityScopeTabs.tsx — select: excluded area",
-    "packages/chat/src/agents/components/inputs/input-components/ScalarVariableInput.tsx:138 dynamic Input type — stays on the package-root Input",
-    "packages/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx:422 display-size input (`w-full text-center text-2xl font-semibold h-12`) — a heading editor, not a control — stays on the package-root Input",
-    "packages/chat/src/agents/ui-first-tools/ui/AskCard.tsx:730 dynamic Input type — stays on the package-root Input",
-    "packages/chat/src/public-chat/components/GuidedVariableInputs.tsx:387 display-size input (`w-full text-center text-2xl font-semibold h-12`) — a heading editor, not a control — stays on the package-root Input"
+    "../aidream/apps/shared/chat/src/agents/components/inputs/input-components/ScalarVariableInput.tsx:138 dynamic Input type — stays on the package-root Input",
+    "../aidream/apps/shared/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx:422 display-size input (`w-full text-center text-2xl font-semibold h-12`) — a heading editor, not a control — stays on the package-root Input",
+    "../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/AskCard.tsx:730 dynamic Input type — stays on the package-root Input",
+    "../aidream/apps/shared/chat/src/public-chat/components/GuidedVariableInputs.tsx:387 display-size input (`w-full text-center text-2xl font-semibold h-12`) — a heading editor, not a control — stays on the package-root Input"
   ],
   "review": [
     "components/matrx/AnimatedForm/AnimatedTextarea.tsx:49 {...spread} on <Textarea> — check it carries no size/visual className",

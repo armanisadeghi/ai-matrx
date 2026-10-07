@@ -248,7 +248,7 @@ Every one of these overlaps with what we're building. Under your rules, they all
 | Preferences thunks | `userPreferencesSlice.ts` — `savePreferencesToDatabase`, `loadPreferencesFromDatabase` | Active, redundant with middleware | **DELETE** after migration |
 | Notes auto-save | `features/notes/redux/autoSaveMiddleware.ts` | Active | Fold into sync engine |
 | Prompts auto-save | `features/prompts/hooks/usePromptAutoSave.ts` | Active | Fold into sync engine |
-| Agents auto-save | `packages/chat/src/agents/hooks/useAgentAutoSave.ts` | Active | Fold into sync engine |
+| Agents auto-save | `../aidream/apps/shared/chat/src/agents/hooks/useAgentAutoSave.ts` | Active | Fold into sync engine |
 | Panel persistence | `features/window-panels/hooks/usePanelPersistence.ts` | Active | Fold into sync engine |
 | Query history storage | `components/admin/query-history/query-storage.ts` | Active | Fold into sync engine |
 | Cache middleware | `utils/cache/cacheMiddleware.ts` | Active | Fold into sync engine |

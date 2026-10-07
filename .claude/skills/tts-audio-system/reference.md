@@ -67,7 +67,7 @@ Every file that imports from the TTS/audio system, organized by which hook/compo
 
 | File | Note |
 |------|------|
-| `packages/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx` | No Cartesia — uses native browser API |
+| `../aidream/apps/shared/chat/src/public-chat/components/PublicMessageOptionsMenu.tsx` | No Cartesia — uses native browser API |
 
 ---
 

@@ -9,10 +9,10 @@ todos:
     content: Create lib/agents/data.ts with import 'server-only' + cache()-wrapped getAgentListSeed (agx_get_list RPC paginated), getAgent (full row), getAgentSnapshot (agx_get_version_snapshot)
     status: pending
   - id: tools-slice
-    content: Create packages/chat/src/agents/redux/tools/ slice + fetchAvailableTools thunk (skips if succeeded) + selectors; register in store; wire AgentToolsModal to dispatch on open
+    content: Create ../aidream/apps/shared/chat/src/agents/redux/tools/ slice + fetchAvailableTools thunk (skips if succeeded) + selectors; register in store; wire AgentToolsModal to dispatch on open
     status: pending
   - id: route-components
-    content: "Create packages/chat/src/agents/route/: AgentHydrator.tsx (useRef guard, upsertAgent sync), AgentHeader.tsx (server, agent prop), AgentTabNav.tsx (usePathname active), AgentListHydrator.tsx (mergePartialAgent), VersionHydrator.tsx (upsertAgent snapshot)"
+    content: "Create ../aidream/apps/shared/chat/src/agents/route/: AgentHydrator.tsx (useRef guard, upsertAgent sync), AgentHeader.tsx (server, agent prop), AgentTabNav.tsx (usePathname active), AgentListHydrator.tsx (mergePartialAgent), VersionHydrator.tsx (upsertAgent snapshot)"
     status: pending
   - id: agents-list-page
     content: Create app/(a)/agents/layout.tsx (passthrough) + page.tsx (SSR agx_get_list limit:30 → AgentListHydrator + AgentsGrid static shell + Suspense) + loading.tsx (AgentListSkeleton) + error.tsx
@@ -114,14 +114,14 @@ app/(a)/agents/
         ├── loading.tsx         # three-panel skeleton matching comparison layout
         └── not-found.tsx       # triggered by notFound() in getAgentSnapshot() for invalid version numbers
 
-packages/chat/src/agents/route/          # NEW — server components and hydrators wired to app/ routes
+../aidream/apps/shared/chat/src/agents/route/          # NEW — server components and hydrators wired to app/ routes
 ├── AgentHydrator.tsx           # 'use client', useRef guard, dispatch upsertAgent sync, renders null
 ├── AgentHeader.tsx             # Server Component, receives agent: AgentDefinition prop
 ├── AgentTabNav.tsx             # 'use client', usePathname for active tab, Link for each tab
 ├── AgentListHydrator.tsx       # 'use client', useRef guard, mergePartialAgent for each seed row
 └── VersionHydrator.tsx         # 'use client', useRef guard, dispatch upsertAgent(snapshot)
 
-packages/chat/src/agents/redux/tools/    # NEW — tools Redux slice
+../aidream/apps/shared/chat/src/agents/redux/tools/    # NEW — tools Redux slice
 ├── tools.slice.ts
 ├── tools.thunks.ts             # fetchAvailableTools — skips if status === 'succeeded'
 └── tools.selectors.ts          # selectAllTools, selectToolsStatus, selectToolsReady
@@ -212,7 +212,7 @@ export const getAgentSnapshot = cache(async (id: string, versionNumber: number):
 
 Extract the inline mapping from `fetchAgentVersionSnapshot` in `thunks.ts` into `converters.ts`. The thunk then calls this function before `dispatch(upsertAgent(...))`. SSR `getAgentSnapshot` calls the same function. One source of truth — no duplication. **Everything fetched must reach Redux via upsertAgent.**
 
-## Tools Redux Slice — `packages/chat/src/agents/redux/tools/`
+## Tools Redux Slice — `../aidream/apps/shared/chat/src/agents/redux/tools/`
 
 **`tools.slice.ts`** — state: `{ tools: DatabaseTool[], status: 'idle'|'loading'|'succeeded'|'failed', error: string|null }`
 
@@ -232,7 +232,7 @@ if (getState().tools.status === 'succeeded') return
 
 ## Component-by-Component Detail
 
-### `packages/chat/src/agents/route/AgentHydrator.tsx`
+### `../aidream/apps/shared/chat/src/agents/route/AgentHydrator.tsx`
 ```tsx
 'use client'
 // useRef guard — dispatches during first render pass, not after paint
@@ -240,7 +240,7 @@ if (getState().tools.status === 'succeeded') return
 // Returns null — no UI
 ```
 
-### `packages/chat/src/agents/route/AgentListHydrator.tsx`
+### `../aidream/apps/shared/chat/src/agents/route/AgentListHydrator.tsx`
 ```tsx
 'use client'
 // Receives seeds: AgentListRow[] (30 items from SSR)

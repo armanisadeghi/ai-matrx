@@ -16,7 +16,7 @@ const read = (file: string) => readFileSync(path.join(root, file), "utf8");
 /** [file, the raw element's anchor text, how many marked elements the file must hold] */
 const MARKED: Array<[string, RegExp, number]> = [
   // R5 — the context compare is an inspector of the bytes an agent is fed.
-  ["packages/chat/src/agents/components/context-preview/ContextCompareView.tsx", /data-kind-source="explicit"/g, 5],
+  ["../aidream/apps/shared/chat/src/agents/components/context-preview/ContextCompareView.tsx", /data-kind-source="explicit"/g, 5],
   ["features/artifacts/components/CmsArtifactDetail.tsx", /<pre data-kind-source="explicit"[^>]*>\s*\{JSON\.stringify\(artifact\.metadata/g, 1],
   ["app/(core)/cms/[siteId]/collections/[collectionId]/page.tsx", /<pre data-kind-source="explicit"[^>]*>\s*\{JSON\.stringify\(openItem\.data/g, 1],
   // R6 — editors of a person's own stored text.

@@ -97,10 +97,10 @@ describe("composerKeyIntent — Enter sends, Shift+Enter is a new line", () => {
 const REPO = path.resolve(__dirname, "../../../..");
 
 const COMPOSERS = [
-  "packages/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx",
-  "packages/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
-  "packages/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
-  "packages/chat/src/cx-conversation/ConversationInput.tsx",
+  "../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/AgentTextarea.tsx",
+  "../aidream/apps/shared/chat/src/agents/components/agent-widgets/chat-assistant/CompactAssistantInput.tsx",
+  "../aidream/apps/shared/chat/src/cx-chat/components/user-input/ConversationInput.tsx",
+  "../aidream/apps/shared/chat/src/cx-conversation/ConversationInput.tsx",
   "features/whatsapp-clone/chat-view/MessageInputBar.tsx",
   "components/official/ProTextarea.tsx",
 ];
@@ -133,7 +133,7 @@ const SHARED_RULE = /enterSendsHere|composerKeyIntent/;
 /** Files whose Enter branch does NOT send a message — with the reason. */
 const NOT_A_SEND: Record<string, string> = {
   "components/matrx/ConfigBuilder/index.tsx": "Enter moves focus to the next field; textareas keep their newline",
-  "packages/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx": "Enter moves to the next variable, never sends",
+  "../aidream/apps/shared/chat/src/agents/components/inputs/variable-input-variations/AgentVariablesGuided.tsx": "Enter moves to the next variable, never sends",
   "features/podcasts/generator/components/CreateShowDialog.tsx": "the Enter branch is on a single-line <Input>",
   "features/tasks/widgets/AssociateTaskButton.tsx": "the Enter branch is on a single-line <Input>",
   "features/tasks/widgets/QuickCreateTaskButton.tsx": "the Enter branch is on a single-line <Input>",

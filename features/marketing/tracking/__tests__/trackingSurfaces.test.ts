@@ -336,7 +336,7 @@ const REPO_ROOT = path.resolve(__dirname, "../../../..");
  * future `siteConnectionStatuses` caller in `app/`, `components/` or any `*.test.ts` would have
  * passed the census unseen. The walk is the four source roots a page can be written in.
  */
-const SOURCE_ROOTS = ["app", "components", "features", "packages/chat/src", "lib"] as const;
+const SOURCE_ROOTS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib"] as const;
 
 function frontendSourceFiles(options?: { includeTests?: boolean }): string[] {
   const includeTests = options?.includeTests ?? true;

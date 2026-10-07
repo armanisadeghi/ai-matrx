@@ -34,7 +34,7 @@ import { aliasTarget } from "./lib/source-roots.cjs";
 
 const ROOT = process.cwd();
 const BASELINE = path.join(ROOT, "scripts", "bespoke-headers-baseline.json");
-const SCAN = ["app", "features", "packages/chat/src", "components"];
+const SCAN = ["app", "features", "../aidream/apps/shared/chat/src", "components"];
 const SKIP = [/[\\/]\(dev\)[\\/]/, /[\\/]demos[\\/]/, /\.test\.|\.spec\./, /[\\/]node_modules[\\/]/,
   // The shared header itself and the legacy portal's own definition.
   /features[\\/]shell[\\/]components[\\/]header[\\/]/, /components[\\/]layout[\\/]new-layout[\\/]PageSpecificHeader/];

@@ -90,7 +90,7 @@ All nested pages under `[id]` (view, build, run, versions) share this header and
 
 ### `AgentRunnerPage` (feature entry)
 
-**File:** `packages/chat/src/agents/components/run/AgentRunnerPage.tsx`
+**File:** `../aidream/apps/shared/chat/src/agents/components/run/AgentRunnerPage.tsx`
 
 - **Type:** Client Component (`"use client"`).
 - **Note:** File-level comment block still titles the page **“AgentRunPage”**; the exported symbol is **`AgentRunnerPage`** (harmless doc drift).
@@ -139,7 +139,7 @@ List page: `app/(a)/agents/page.tsx` uses `getAgentListSeed`, `AgentListHydrator
 
 ## Cross-cutting: header navigation
 
-**`AgentHeader`** (`packages/chat/src/agents/components/shared/AgentHeader.tsx`) is rendered only from `[id]/layout.tsx`. Center control **`AgentModeController`** resolves mode from `pathname`:
+**`AgentHeader`** (`../aidream/apps/shared/chat/src/agents/components/shared/AgentHeader.tsx`) is rendered only from `[id]/layout.tsx`. Center control **`AgentModeController`** resolves mode from `pathname`:
 
 - `…/run` → `run`
 - `…/build` → `edit` (labeled “Build” in the UI)
@@ -155,7 +155,7 @@ Target paths: `view` → `/agents/[id]`, `edit` → `/agents/[id]/build`, `run` 
 | Symbol | Defined in | Imported by |
 |--------|------------|-------------|
 | `AgentBuilderPage` | `features/agents/components/builder/AgentBuilderPage.tsx` | `[id]/build/page.tsx` |
-| `AgentRunnerPage` | `packages/chat/src/agents/components/run/AgentRunnerPage.tsx` | `[id]/run/page.tsx` |
+| `AgentRunnerPage` | `../aidream/apps/shared/chat/src/agents/components/run/AgentRunnerPage.tsx` | `[id]/run/page.tsx` |
 
 No barrel `features/agents/index.ts` re-exports these; routes import the feature paths directly.
 

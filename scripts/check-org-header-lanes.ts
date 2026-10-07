@@ -14,7 +14,7 @@ import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "utils", "scripts"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "utils", "scripts"];
 const INTERNAL_HOSTS = ["stream.aimatrx.com"];
 const BACKEND_IDENTIFIERS = new Set([
   "AIDREAM_PRODUCTION_URL", "BACKEND_URLS", "selectResolvedBaseUrl",

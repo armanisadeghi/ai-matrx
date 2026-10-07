@@ -102,4 +102,4 @@ Open `/marketing/370f9281-2c10-41bf-af9e-5784aaee5838/content/map/ff2010ec-f53d-
 `pnpm type-check` (0 errors in Lane G files), `pnpm check:parse`, `pnpm check:kind-marker-law`,
 `pnpm test:render-matrix`, `pnpm check:dead-ends`, `pnpm check:agent-disclosure`,
 `pnpm check:mandate-keys`, and the lane's tests:
-`npx jest features/marketing/seo/topical-map/proposals features/marketing/seo/topical-map/views/HistoryView.test.ts features/marketing/seo/topical-map/canvas packages/chat/src/tool-call-visualization/renderers/topical-map features/content-ir/__tests__/kind-map-topic-proposal.test.ts`.
+`npx jest features/marketing/seo/topical-map/proposals features/marketing/seo/topical-map/views/HistoryView.test.ts features/marketing/seo/topical-map/canvas ../aidream/apps/shared/chat/src/tool-call-visualization/renderers/topical-map features/content-ir/__tests__/kind-map-topic-proposal.test.ts`.

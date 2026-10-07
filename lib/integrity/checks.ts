@@ -489,7 +489,7 @@ export const INTEGRITY_CHECKS: IntegrityCheckDef[] = [
       "become real when the first turn commits, so any code that writes the edge " +
       "at mint time strands a permanent ghost — it shows up forever in the " +
       "container's chat list and looks like a duplicate. Creation paths now defer " +
-      "the edge until the conversation materializes (packages/chat/src/agents/hooks/" +
+      "the edge until the conversation materializes (../aidream/apps/shared/chat/src/agents/hooks/" +
       "useConversationMaterialized.ts), so a NON-ZERO count here means a writer " +
       "regressed or a new one skipped the gate. The 15-minute floor keeps a chat " +
       "whose first turn is mid-flight from being reported.",

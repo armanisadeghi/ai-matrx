@@ -34,7 +34,7 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
   `redux/{organizations,projects,tasks}Slice.ts` — legacy state, still mounted.
 - `service/contextService.ts`, `service/hierarchyService.ts` — legacy direct table access.
 - `components/**` — legacy pickers/hubs, superseded by `features/scopes/components/`.
-- `packages/chat/src/agents/utils/scope-mapping.ts` — the `ApplicationScope` surface→agent key mapper (a
+- `../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts` — the `ApplicationScope` surface→agent key mapper (a
   Shortcut's `scopeMappings` translates surface keys into variable / policy names).
 - `lib/redux/slices/appContextSlice.ts` — the global active-context slice (owned there, only
   read here).

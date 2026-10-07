@@ -59,22 +59,22 @@ const LIVE_CALL_SHAPES: ReadonlyArray<{
     reads: "This file's edit history was not saved",
   },
   {
-    where: "packages/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (register)",
+    where: "../aidream/apps/shared/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (register)",
     options: { subject: "This page", act: "linked to the conversation" },
     reads: "This page was not linked to the conversation",
   },
   {
-    where: "packages/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (update)",
+    where: "../aidream/apps/shared/chat/src/cx-conversation/components/HtmlPreviewBridge.tsx (update)",
     options: { subject: "This page's record", act: "updated" },
     reads: "This page's record was not updated",
   },
   {
-    where: "packages/chat/src/voice-agent/persistence/voiceTranscriptWriter.ts (conversation)",
+    where: "../aidream/apps/shared/chat/src/voice-agent/persistence/voiceTranscriptWriter.ts (conversation)",
     options: { subject: "This voice conversation", act: "saved" },
     reads: "This voice conversation was not saved",
   },
   {
-    where: "packages/chat/src/voice-agent/persistence/voiceTranscriptWriter.ts (turns)",
+    where: "../aidream/apps/shared/chat/src/voice-agent/persistence/voiceTranscriptWriter.ts (turns)",
     options: { subject: "This transcript", act: "saved" },
     reads: "This transcript was not saved",
   },
@@ -90,7 +90,7 @@ const LIVE_CALL_SHAPES: ReadonlyArray<{
     reads: "Nothing was archived",
   },
   {
-    where: "packages/chat/src/agents/redux/agent-shortcut-categories/thunks.ts and the other withOrganizationRefusalShown sites",
+    where: "../aidream/apps/shared/chat/src/agents/redux/agent-shortcut-categories/thunks.ts and the other withOrganizationRefusalShown sites",
     options: { act: "created" },
     reads: "Nothing was created",
   },

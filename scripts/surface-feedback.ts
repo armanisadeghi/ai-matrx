@@ -2,7 +2,7 @@
  * scripts/surface-feedback.ts
  *
  * Read back the feedback agents filed about a surface through the platform
- * `surface_feedback` write target (packages/chat/src/surfaces/runtime/surface-feedback.ts).
+ * `surface_feedback` write target (../aidream/apps/shared/chat/src/surfaces/runtime/surface-feedback.ts).
  * Rows live in `users.user_feedback` with metadata.source =
  * 'surface_agent_feedback'. Read them before updating a surface.
  *

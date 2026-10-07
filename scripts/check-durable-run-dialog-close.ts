@@ -30,7 +30,7 @@ import { tmpdir } from "node:os";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
-const DEFAULT_ROOTS = ["app", "features", "packages/chat/src", "components"];
+const DEFAULT_ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "components"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "build", ".git"]);
 
 /** A file only matters here if it actually drives a durable run. */

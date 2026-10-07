@@ -165,7 +165,7 @@ const WAR_ROOM_ADMIN_MAP: FeatureAdminMap = {
       name: "War Room agent tools (war-room-tools)",
       filePath: "features/agents/war-room-tools/tools/names.ts",
       description:
-        "Client-delegated tool family that lets the tile's Agent+ assistant EDIT the tile's entities (it already SEES them via context). Mirrors packages/chat/src/agents/ui-first-tools: 5 write tools (war_room_update_task / war_room_add_subtask / war_room_toggle_subtask / war_room_update_note / war_room_update_thread), each a Zod schema + a handler calling the REAL writers (tasks thunks, notesApi, war-room renameTile). Offered as INLINE tool specs (no server registry change). Armed + tile-bound per conversation by ThreadAgentPanel; routed via an isWarRoomToolName branch in surface-delegated-tool-call.thunk. Every write is HITL-gated by a confirm AskCard (reuses the ui-first pendingAsks surface).",
+        "Client-delegated tool family that lets the tile's Agent+ assistant EDIT the tile's entities (it already SEES them via context). Mirrors ../aidream/apps/shared/chat/src/agents/ui-first-tools: 5 write tools (war_room_update_task / war_room_add_subtask / war_room_toggle_subtask / war_room_update_note / war_room_update_thread), each a Zod schema + a handler calling the REAL writers (tasks thunks, notesApi, war-room renameTile). Offered as INLINE tool specs (no server registry change). Armed + tile-bound per conversation by ThreadAgentPanel; routed via an isWarRoomToolName branch in surface-delegated-tool-call.thunk. Every write is HITL-gated by a confirm AskCard (reuses the ui-first pendingAsks surface).",
       tier: "internal",
     },
     {

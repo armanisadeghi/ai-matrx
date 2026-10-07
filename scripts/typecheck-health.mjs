@@ -113,8 +113,8 @@ function runTypecheck() {
 
 function selfTest() {
   const sample = [
-    "packages/chat/src/agents/utils/scope-mapping.ts(42,7): error TS2322: Type 'string' is not assignable to type 'SurfaceScope'.",
-    "packages/chat/src/agents/utils/scope-mapping.ts(58,3): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'string'.",
+    "../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts(42,7): error TS2322: Type 'string' is not assignable to type 'SurfaceScope'.",
+    "../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts(58,3): error TS2345: Argument of type 'undefined' is not assignable to parameter of type 'string'.",
     "lib/api/typed-client.ts(101,12): error TS2551: Property 'foo' does not exist on type 'Client'. Did you mean 'fooBar'?",
     "app/(admin)/administration/agents/system-agents/agents/[id]/v/[version]/page.tsx(36,22): error TS18047: 'agent' is possibly 'null'.",
     "Found 4 errors in 3 files.",
@@ -136,7 +136,7 @@ function selfTest() {
     console.log("  PASS  preserved a diagnostic path containing parentheses");
   }
   const grouped = groupByFile(rows);
-  if (grouped[0]?.[0] !== "packages/chat/src/agents/utils/scope-mapping.ts" || grouped[0]?.[1]?.length !== 2) {
+  if (grouped[0]?.[0] !== "../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts" || grouped[0]?.[1]?.length !== 2) {
     failures += 1;
     console.log("  FAIL  expected scope-mapping.ts to lead with 2 errors");
   } else {

@@ -725,7 +725,7 @@ function selfTest(): number {
 
 // ─── census ─────────────────────────────────────────────────────────────────
 
-const ROOTS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "providers"];
+const ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "providers"];
 
 function main(): number {
   if (process.argv.includes("--self-test")) return selfTest();

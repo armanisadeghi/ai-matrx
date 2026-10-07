@@ -60,7 +60,7 @@ A core distinction the rest of the doc relies on.
 
 ### Scope mapping
 
-The `invocation.scope.applicationScope` object carries surface-level context (selection, content, broader context blob) that a resolver uses to fill variables and context policies. Shape lives at [`packages/chat/src/agents/utils/scope-mapping.ts`](packages/chat/src/agents/utils/scope-mapping.ts):
+The `invocation.scope.applicationScope` object carries surface-level context (selection, content, broader context blob) that a resolver uses to fill variables and context policies. Shape lives at [`../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts`](../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts):
 
 ```ts
 interface ApplicationScope {
@@ -93,7 +93,7 @@ Runner and Chat are **the same runtime** — Runner is just Chat with observabil
 
 Where users converse with any agent they have access to. Identical runtime to Runner, minus the debugging. (Sharing and visibility are handled by the existing AI Matrx sharing system — out of scope here.)
 
-> **Today:** the legacy chat at `/packages/chat/src/cx-conversation/` + `/features/cx-chat/` still services conversations. A deprecated route stub lives at [`app/(authenticated)/deprecated/chat/`](app/(authenticated)/deprecated/chat/). The new agent-first `/app/(authenticated)/chat/` route has not been built. See the roadmap doc for the rebuild plan.
+> **Today:** the legacy chat at `/apps/shared/chat/src/cx-conversation/` + `/features/cx-chat/` still services conversations. A deprecated route stub lives at [`app/(authenticated)/deprecated/chat/`](app/(authenticated)/deprecated/chat/). The new agent-first `/app/(authenticated)/chat/` route has not been built. See the roadmap doc for the rebuild plan.
 
 ### The request lifecycle (this is how Runner and Chat both work)
 
@@ -107,7 +107,7 @@ Client sends: the new `userInput`, plus any permitted `overrides`. Nothing else.
 - Turn 1 → `POST /ai/agents/{id}` with `is_new: false, store: false`, no `conversationId`.
 - Turn 2+ → `POST /ai/chat` (not `/conversations/{id}`, which would 404 because no DB row exists). Client sends the full accumulated message history from the Redux `messages/` slice each turn.
 
-The full endpoint routing contract is documented in the type file: [`packages/chat/src/agents/types/conversation-invocation.types.ts:314-331`](packages/chat/src/agents/types/conversation-invocation.types.ts).
+The full endpoint routing contract is documented in the type file: [`../aidream/apps/shared/chat/src/agents/types/conversation-invocation.types.ts:314-331`](../aidream/apps/shared/chat/src/agents/types/conversation-invocation.types.ts).
 
 ### The conceptual shift
 
@@ -115,13 +115,13 @@ Once the first request completes, **there is no longer an "agent" in play — th
 
 ### The unified launch entry point
 
-Every surface (Chat, Runner, Shortcut, App, Builder) constructs a `ConversationInvocation` and hands it to the single [`launchConversation`](packages/chat/src/agents/redux/execution-system/thunks/launch-conversation.thunk.ts) thunk. No per-surface launch functions. The thunk picks the endpoint from `routing.apiEndpointMode` × `origin.isEphemeral` × whether `identity.conversationId` is present, adapts the grouped invocation to `ManagedAgentOptions`, and delegates to [`launchAgentExecution`](packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts).
+Every surface (Chat, Runner, Shortcut, App, Builder) constructs a `ConversationInvocation` and hands it to the single [`launchConversation`](../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-conversation.thunk.ts) thunk. No per-surface launch functions. The thunk picks the endpoint from `routing.apiEndpointMode` × `origin.isEphemeral` × whether `identity.conversationId` is present, adapts the grouped invocation to `ManagedAgentOptions`, and delegates to [`launchAgentExecution`](../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts).
 
 ---
 
 ## 5. Agent Shortcuts — *invocation without conversation* 🛠️
 
-**Status:** Redux slice, types, and selectors exist at [`packages/chat/src/agents/redux/agent-shortcuts/`](packages/chat/src/agents/redux/agent-shortcuts/). The UI surfaces that invoke them — [`UnifiedContextMenu`](features/context-menu/UnifiedContextMenu.tsx) and friends — still use the legacy prompts/builtins path. Bridge layer is pending.
+**Status:** Redux slice, types, and selectors exist at [`../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/`](../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/). The UI surfaces that invoke them — [`UnifiedContextMenu`](features/context-menu/UnifiedContextMenu.tsx) and friends — still use the legacy prompts/builtins path. Bridge layer is pending.
 
 A Shortcut is a first-class stored entity that wraps a specific agent definition version and **auto-maps variables from the surrounding UI context**. Most Shortcuts eliminate user input entirely — the user clicks, variables get wired in from what's already on screen, and the agent runs.
 
@@ -131,7 +131,7 @@ A Shortcut is a first-class stored entity that wraps a specific agent definition
 
 ### The current `AgentShortcut` type (canonical)
 
-From [`packages/chat/src/agents/redux/agent-shortcuts/types.ts`](packages/chat/src/agents/redux/agent-shortcuts/types.ts):
+From [`../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/types.ts`](../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/types.ts):
 
 ```ts
 interface AgentShortcut {
@@ -335,7 +335,7 @@ Python server-side implementations live at `matrx_ai.tools.implementations.widge
 
 ## 8. Message CRUD — *structured edits on a live conversation* ✅
 
-Once an agent conversation exists, edits to it flow through dedicated thunks in [`packages/chat/src/agents/redux/execution-system/message-crud/`](packages/chat/src/agents/redux/execution-system/message-crud/):
+Once an agent conversation exists, edits to it flow through dedicated thunks in [`../aidream/apps/shared/chat/src/agents/redux/execution-system/message-crud/`](../aidream/apps/shared/chat/src/agents/redux/execution-system/message-crud/):
 
 - `editMessage` — DB-faithful content edit
 - `forkConversation` — fork at a given message position (server duplicates the source conversation + messages up to the fork point into a new conversation; `forkedFromId` / `forkedAtPosition` reference the origin)
@@ -351,13 +351,13 @@ The fork model is important: **forking doesn't create a shared-data branch.** Th
 
 | Store key | Module | Purpose |
 |---|---|---|
-| `agentDefinition` | [`packages/chat/src/agents/redux/agent-definition/`](packages/chat/src/agents/redux/agent-definition/) | Loaded agent definitions for builder/execution |
+| `agentDefinition` | [`../aidream/apps/shared/chat/src/agents/redux/agent-definition/`](../aidream/apps/shared/chat/src/agents/redux/agent-definition/) | Loaded agent definitions for builder/execution |
 | `agentConversations` | [`features/agents/redux/agent-conversations/`](features/agents/redux/agent-conversations/) | Agent-scoped conversation list caches (RPC) |
-| `agentShortcut` | [`packages/chat/src/agents/redux/agent-shortcuts/`](packages/chat/src/agents/redux/agent-shortcuts/) | Shortcut definitions + variable bindings |
+| `agentShortcut` | [`../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/`](../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/) | Shortcut definitions + variable bindings |
 | `agentConsumers` | [`features/agents/redux/agent-consumers/`](features/agents/redux/agent-consumers/) | Which agents appear in which surfaces |
 | `agentApps` | [`features/agents/redux/agent-apps/`](features/agents/redux/agent-apps/) | App scaffolds (DB table not yet wired) |
-| `tools` | [`packages/chat/src/agents/redux/tools/`](packages/chat/src/agents/redux/tools/) | Tool catalog |
-| `mcp` | [`packages/chat/src/agents/redux/mcp/`](packages/chat/src/agents/redux/mcp/) | MCP server state |
+| `tools` | [`../aidream/apps/shared/chat/src/agents/redux/tools/`](../aidream/apps/shared/chat/src/agents/redux/tools/) | Tool catalog |
+| `mcp` | [`../aidream/apps/shared/chat/src/agents/redux/mcp/`](../aidream/apps/shared/chat/src/agents/redux/mcp/) | MCP server state |
 | `executionInstances` | `execution-system/execution-instances/` | Instance lifecycle (create/destroy) |
 | `instanceVariableValues` | `execution-system/instance-variable-values/` | User-filled variables per instance |
 | `instanceModelOverrides` | `execution-system/instance-model-overrides/` | LLM param overrides per instance |

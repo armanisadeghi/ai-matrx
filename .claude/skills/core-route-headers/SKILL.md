@@ -20,8 +20,8 @@ The shell header is a **solid band** (the page's own background colour) over the
 
 | Route | What it proves | Key files |
 |---|---|---|
-| `/agents/all` | List page: `PageHeader` + injected list header, body scrolls behind glass | `app/(core)/agents/all/page.tsx`, `packages/chat/src/agents/components/shell/AgentsListHeader.tsx` |
-| `/agents/[id]/build` | The masterpiece: back tap-target + `[id]` dropdown selector + measurement-collapsing mode nav + save/options — **no title/description block** | `packages/chat/src/agents/components/shared/AgentHeader.tsx`, `AgentModeController.tsx` |
+| `/agents/all` | List page: `PageHeader` + injected list header, body scrolls behind glass | `app/(core)/agents/all/page.tsx`, `../aidream/apps/shared/chat/src/agents/components/shell/AgentsListHeader.tsx` |
+| `/agents/[id]/build` | The masterpiece: back tap-target + `[id]` dropdown selector + measurement-collapsing mode nav + save/options — **no title/description block** | `../aidream/apps/shared/chat/src/agents/components/shared/AgentHeader.tsx`, `AgentModeController.tsx` |
 | `/chat/[conversationId]` | Scroll-behind-glass body + left/right icons + **route-injected sidebar menu** (no double menu) | `app/(core)/chat/[conversationId]/page.tsx`, `features/shell/constants/route-menu-registry.ts` |
 | `/organizations/[orgId]/scopes/**` | Best breadcrumb nav: full-path breadcrumb, per-level sibling dropdowns, mobile drawer — mounted ONCE at the layout | `features/scope-system/components/ScopesRouteHeader.tsx`, mounted in `app/(core)/organizations/[orgId]/layout.tsx` |
 | `/tasks` | Resizable panels: per-panel `pt-[var(--shell-header-h)]` only where static top UI must clear the glass | `app/(core)/tasks/` |
@@ -48,7 +48,7 @@ someone fixes it.
    amputated by one missed class.
 3. **Title/description block in a dashboard page** — marketing copy inside app chrome. **Delete it**; the header center carries a `text-sm` title at most.
 4. **Missing top clearance for floating/static content** — content that must NOT slide behind the glass (grid of cards with action buttons, sticky toolbars) needs `pt-[var(--shell-header-h)]` (never a hardcoded `pt-12`); freely-scrolling content gets **no** top padding so it floats behind the glass. This is the `/agents/all` mobile bug: card buttons float up into the header.
-5. **Desktop actions vanish on mobile** — `hidden lg:flex` with no mobile counterpart. The rule: desktop actions collapse into one or two **bottom sheets** on mobile (`HeaderActions` in `features/shell/components/header/variants/shared/` renders `BottomSheet` below `lg`; or `BottomSheet` from `@ai-matrx/design-system` directly). `packages/chat/src/agents/components/shared/AgentHeaderMobile.tsx` exists but is commented out in `AgentHeader.tsx` — that class of gap.
+5. **Desktop actions vanish on mobile** — `hidden lg:flex` with no mobile counterpart. The rule: desktop actions collapse into one or two **bottom sheets** on mobile (`HeaderActions` in `features/shell/components/header/variants/shared/` renders `BottomSheet` below `lg`; or `BottomSheet` from `@ai-matrx/design-system` directly). `../aidream/apps/shared/chat/src/agents/components/shared/AgentHeaderMobile.tsx` exists but is commented out in `AgentHeader.tsx` — that class of gap.
 6. **Double menus** — a page-level nav next to the sidebar. Large routes register ONE menu in `features/shell/constants/route-menu-registry.ts` (desktop `RouteMenuSlot` + `MobileRouteMenuSlot` come free).
 7. **Avatar collision** — `ml-auto` / `justify-between` actions in the body drifting behind the fixed avatar (the old `pr-14` hack). Fixed automatically by moving actions into the bounded center zone.
 

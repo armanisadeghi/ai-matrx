@@ -746,13 +746,13 @@
       "reason": "How long the workspace-bootstrap RPC may hang before the UI offers a retry; a resilience timeout, not a business setting."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/chat/sandbox-insight/SandboxCanvasBody.tsx",
+      "file": "aidream/apps/shared/chat/src/agents/components/chat/sandbox-insight/SandboxCanvasBody.tsx",
       "name": "STATUS_POLL_MS",
       "kind": "ui-timing",
       "reason": "How often an open sandbox status strip re-reads its own row while a person is looking at the pane; a UI freshness cadence, not an org preference."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/components/messages-display/transcript-integrity-report.ts",
+      "file": "aidream/apps/shared/chat/src/agents/components/messages-display/transcript-integrity-report.ts",
       "name": "PENDING_STALE_MS",
       "kind": "algorithmic",
       "reason": "Internal diagnostic threshold for flagging a transcript row as stuck in an integrity report; a debugging heuristic, not customer-facing behavior."
@@ -764,37 +764,37 @@
       "reason": "How often a dialog polls for newly written rows after sending items to a library; a UI wait-loop cadence for one modal's own action."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/instance-user-input/composer-draft.middleware.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/instance-user-input/composer-draft.middleware.ts",
       "name": "WRITE_DEBOUNCE_MS",
       "kind": "ui-timing",
       "reason": "Debounce before persisting a draft composer's text locally; interaction-feel plumbing shared across several editors."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/messages/transcript-journal.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/messages/transcript-journal.ts",
       "name": "MAX_CONVERSATIONS",
       "kind": "defensive-cap",
       "reason": "Bounds how many conversations' debug journals are kept in memory at once with LRU-style eviction; a diagnostics memory cap."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/messages/transcript-journal.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/messages/transcript-journal.ts",
       "name": "MAX_EVENTS_PER_CONVERSATION",
       "kind": "defensive-cap",
       "reason": "Bounds an in-memory debug journal per conversation so it can't grow unbounded; a diagnostics buffer cap, never shown to a customer."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/follow-workflow-run-stream.ts",
       "name": "RECONCILE_POLL_MS",
       "kind": "operational-timeout",
       "reason": "Backstop poll that reconciles a workflow run's row when its event stream goes silent without a terminal event; a measured engineering resilience fix, not an org setting."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
       "name": "FAST_WINDOW_MS",
       "kind": "operational-timeout",
       "reason": "How long the fast poll cadence holds before decaying to its ceiling; paired engineering constant with the decay ceiling, not an org preference."
     },
     {
-      "file": "matrx-frontend/packages/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
+      "file": "aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/watch-desktop-delegation.thunk.ts",
       "name": "MAX_POLL_MS",
       "kind": "operational-timeout",
       "reason": "Ceiling the poll cadence decays to once a delegated call is unlikely to be claimed; a measured fix to cut needless request volume, not a business knob."

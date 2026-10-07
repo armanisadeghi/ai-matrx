@@ -24,7 +24,7 @@
       "high": 2
     },
     {
-      "key": "packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
+      "key": "../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
       "count": 2,
       "high": 2
     },
@@ -84,7 +84,7 @@
       "high": 1
     },
     {
-      "key": "packages/chat/src/agents/components/debug/StreamDebugPanel.tsx",
+      "key": "../aidream/apps/shared/chat/src/agents/components/debug/StreamDebugPanel.tsx",
       "count": 3,
       "high": 0
     },
@@ -149,7 +149,7 @@
       "high": 0
     },
     {
-      "key": "packages/chat/src/agents/components/context-preview/ContextCompareView.tsx",
+      "key": "../aidream/apps/shared/chat/src/agents/components/context-preview/ContextCompareView.tsx",
       "count": 1,
       "high": 0
     },
@@ -420,19 +420,19 @@
       "route": null
     },
     {
-      "file": "packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
       "line": 1,
       "column": 1,
       "rule": "no-doors-in-file",
       "severity": "high",
       "entity": "(file)",
       "entityHasRoute": false,
-      "expression": "packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
+      "expression": "../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
       "feature": "features/agents",
       "route": null
     },
     {
-      "file": "packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
       "line": 317,
       "column": 14,
       "rule": "unlinked-entity-name",
@@ -708,7 +708,7 @@
       "route": null
     },
     {
-      "file": "packages/chat/src/agents/components/context-preview/ContextCompareView.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/context-preview/ContextCompareView.tsx",
       "line": 170,
       "column": 12,
       "rule": "unlinked-count",
@@ -721,7 +721,7 @@
       "route": null
     },
     {
-      "file": "packages/chat/src/agents/components/debug/StreamDebugPanel.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/StreamDebugPanel.tsx",
       "line": 762,
       "column": 12,
       "rule": "bare-id-text",
@@ -733,7 +733,7 @@
       "route": null
     },
     {
-      "file": "packages/chat/src/agents/components/debug/StreamDebugPanel.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/StreamDebugPanel.tsx",
       "line": 835,
       "column": 32,
       "rule": "bare-id-text",
@@ -745,7 +745,7 @@
       "route": null
     },
     {
-      "file": "packages/chat/src/agents/components/debug/StreamDebugPanel.tsx",
+      "file": "../aidream/apps/shared/chat/src/agents/components/debug/StreamDebugPanel.tsx",
       "line": 1165,
       "column": 18,
       "rule": "bare-id-text",

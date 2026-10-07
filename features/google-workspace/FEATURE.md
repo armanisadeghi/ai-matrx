@@ -93,7 +93,7 @@ through the `google` tool bundle:
   other way: a dry-run preview read as a receipt, or a capped marketing window
   read as a total, is the defect those components exist to prevent.
 - **`google_email_send`** (client-only) — `handlers/google-email-send.handler.ts`
-  in `packages/chat/src/agents/ui-first-tools/` resolves the sending mailbox with
+  in `../aidream/apps/shared/chat/src/agents/ui-first-tools/` resolves the sending mailbox with
   `connection.ts`, then raises an `email_review` pending ask that
   `agent/GmailReviewCard.tsx` renders.
 
@@ -597,7 +597,7 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   now state-driven, because with no connected account the `noAccount` branch suppresses the
   empty-calendar sentence and the test could not see the lie it hunts). Census of the other seven
   `useOrganizationRequired` consumers found ONE sibling with the same gap —
-  `packages/chat/src/agents/components/run-controls/panels/ModelContextPanel.tsx` fell back to "No context
+  `../aidream/apps/shared/chat/src/agents/components/run-controls/panels/ModelContextPanel.tsx` fell back to "No context
   measurements yet. Fire a turn to populate." during boot, the very lie its own comment claims to
   have fixed — now "Reading this conversation's context…" while `resolving`. The rest are safe:
   `system-jobs`, `useWaitingRuns` and `McpServersAdminPage` start `loading` true, `EduNoteNew`

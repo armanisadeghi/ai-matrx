@@ -25,7 +25,7 @@ const PERMANENCE_PATTERNS: RegExp[] = [
   /orphaned/i,
 ];
 
-const SEARCH_DIRS = ["app", "components", "features", "packages/chat/src", "lib"];
+const SEARCH_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "__snapshots__"]);
 
 function walk(dir: string, out: string[]): string[] {

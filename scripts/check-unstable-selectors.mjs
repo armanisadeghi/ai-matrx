@@ -31,13 +31,14 @@
 //   pnpm check:unstable-selectors --self-test     # prove the check can still fail (planted sample)
 //   pnpm check:unstable-selectors <file> …        # just these files, every finding (no baseline)
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { join, resolve } from "node:path";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const BASELINE = join(ROOT, "scripts/unstable-selectors-baseline.json");
-const SCOPE = ["app", "features", "packages/chat/src", "components", "hooks", "lib", "providers"];
+const SCOPE = ["app", "features", "../aidream/apps/shared/chat/src", "components", "hooks", "lib", "providers"];
 const HOOKS = new Set(["useAppSelector", "useSelector"]);
 const FRESH_METHODS = new Set([
   "filter",
@@ -193,8 +194,7 @@ export function analyseSource(fileName, text) {
 
 function trackedFiles() {
   const globs = SCOPE.flatMap((d) => [`${d}/**/*.ts`, `${d}/**/*.tsx`]);
-  return execFileSync("git", ["ls-files", "-z", "--", ...globs], { cwd: ROOT, maxBuffer: 64 << 20 })
-    .toString()
+  return gitFiles(ROOT, ["ls-files", "-z", "--", ...globs])
     .split("\0")
     .filter(Boolean)
     .filter((f) => !/(^|\/)__tests__\/|\.test\.tsx?$|\.spec\.tsx?$|\.stories\.tsx$|\.d\.ts$/.test(f))

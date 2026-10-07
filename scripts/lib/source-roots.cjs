@@ -15,11 +15,16 @@
  * all import it. Types: `source-roots.d.cts`. Paths are repo-relative and POSIX.
  */
 "use strict";
+const { execFileSync } = require("node:child_process");
 const { existsSync } = require("node:fs");
-const { join } = require("node:path");
+const { join, resolve } = require("node:path");
 
-/** The chat workspace package's source directory (absent until the move lands). */
-const CHAT_PACKAGE_SRC = "packages/chat/src";
+/**
+ * @ai-matrx/chat's source directory, repo-relative. Since P27 the package lives in aidream
+ * (`apps/shared/chat`) and the app installs it from npm; guards read its source from the aidream
+ * checkout beside this repo. Absent (no checkout) → `existingRoots` skips it.
+ */
+const CHAT_PACKAGE_SRC = "../aidream/apps/shared/chat/src";
 
 /** Every directory that holds feature code. A scan of `features/` scans all of these. */
 const FEATURE_ROOTS = Object.freeze(["features", CHAT_PACKAGE_SRC]);
@@ -27,7 +32,7 @@ const FEATURE_ROOTS = Object.freeze(["features", CHAT_PACKAGE_SRC]);
 /** The app's top-level source directories, the feature roots included. */
 const SOURCE_ROOTS = Object.freeze([
   "app",
-  "features", "packages/chat/src",
+  "features",
   "components",
   "lib",
   "hooks",
@@ -142,6 +147,88 @@ function isUnderFeature(file, sub) {
   });
 }
 
+
+/**
+ * `git <args>` across this repo AND the checkouts beside it. Since P27 one source root
+ * (CHAT_PACKAGE_SRC) lives in the aidream checkout, and git refuses a pathspec outside the
+ * repository ("is outside repository"). Every pathspec starting with `../<checkout>/` runs in
+ * that checkout instead, and its output paths come back spelled from this repo
+ * (`../aidream/apps/shared/chat/src/x.ts`), so callers read them with the same relative path.
+ * A checkout that is not on disk is skipped; `git grep` finding nothing (exit 1) is empty.
+ * Returns stdout like execFileSync does (NUL-separated when `-z` is in `args`). Pass
+ * `{ prefixPaths: false }` for commands whose output is not a path list (`blame`, `log`).
+ *
+ *   gitFiles(ROOT, ["ls-files", "--", "features/**\/*.tsx", `${CHAT_PACKAGE_SRC}/**\/*.tsx`])
+ */
+/**
+ * Inside the chat package checkout, the app's guards read the module tree the app consumes; the
+ * frozen rewrite kept under `src/compat/` (workflow-studio's kernel until P28 deletes it) is not
+ * app code and never was in this repo's scans.
+ */
+const CHAT_PACKAGE_EXCLUDES = Object.freeze([":(exclude)apps/shared/chat/src/compat/**"]);
+
+function gitFiles(cwd, args, { maxBuffer = 512 * 1024 * 1024, prefixPaths = true } = {}) {
+  let base = cwd;
+  let argv = [...args];
+  if (argv[0] === "-C") {
+    base = resolve(cwd, argv[1]);
+    argv = argv.slice(2);
+  }
+  const dd = argv.indexOf("--");
+  let opts;
+  let specs;
+  if (dd === -1) {
+    opts = [argv[0], ...argv.slice(1).filter((a) => a.startsWith("-"))];
+    specs = argv.slice(1).filter((a) => !a.startsWith("-"));
+  } else {
+    opts = argv.slice(0, dd);
+    specs = argv.slice(dd + 1);
+  }
+  const sep = opts.includes("-z") ? "\0" : "\n";
+  const run = (dir, list) => {
+    try {
+      return execFileSync("git", [...opts, "--", ...list], {
+        cwd: dir,
+        encoding: "utf8",
+        maxBuffer,
+        stdio: ["ignore", "pipe", "pipe"],
+      });
+    } catch (err) {
+      if (opts[0] === "grep" && err && err.status === 1) return "";
+      throw err;
+    }
+  };
+  const inside = [];
+  const outside = new Map();
+  for (const spec of specs) {
+    const m = /^((?:\.\.\/)+[^/*]+)\/(.+)$/.exec(spec);
+    if (!m) inside.push(spec);
+    else outside.set(m[1], [...(outside.get(m[1]) || []), m[2]]);
+  }
+  const parts = [];
+  if (inside.length || specs.length === 0) parts.push(run(base, inside));
+  for (const [checkout, list] of outside) {
+    const dir = resolve(base, checkout);
+    if (!existsSync(dir)) continue;
+    const lists = opts[0] === "ls-files" || opts[0] === "grep";
+    const excludes = lists && list.some((spec) => spec.startsWith("apps/shared/chat/")) ? CHAT_PACKAGE_EXCLUDES : [];
+    const out = run(dir, [...list, ...excludes]);
+    if (!prefixPaths) {
+      parts.push(out);
+      continue;
+    }
+    parts.push(
+      out
+        .split(sep)
+        .filter(Boolean)
+        .map((line) => `${checkout}/${line}`)
+        .join(sep) + (out ? sep : ""),
+    );
+  }
+  return parts.filter(Boolean).map((p) => (p.endsWith(sep) ? p : p + sep)).join("");
+}
+
+exports.gitFiles = gitFiles;
 exports.CHAT_PACKAGE_SRC = CHAT_PACKAGE_SRC;
 exports.FEATURE_ROOTS = FEATURE_ROOTS;
 exports.SOURCE_ROOTS = SOURCE_ROOTS;

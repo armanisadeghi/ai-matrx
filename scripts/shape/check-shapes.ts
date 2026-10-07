@@ -79,7 +79,7 @@ const MARKDOWN_PATH = resolve(ROOT, "features/content-ir/docs/SHAPES_STATUS.md")
 
 const ACCUMULATOR_PATH = resolve(
   ROOT,
-  "packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
 );
 const SPLITTER_PATH = resolve(
   ROOT,

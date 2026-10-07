@@ -122,7 +122,7 @@ All transcription surfaces (window panels above, all 4 Transcript Studio columns
 ### TTS
 
 - Text → audio via provider adapters
-- Chat integration: TTS in the Conversation System uses **Cartesia** (see `packages/chat/src/conversation/FEATURE.md` shared features)
+- Chat integration: TTS in the Conversation System uses **Cartesia** (see `../aidream/apps/shared/chat/src/conversation/FEATURE.md` shared features)
 - Eleven Labs added per `TASK-Eleven-labs-addition.md`
 - Swappable providers via the service layer
 
@@ -201,8 +201,8 @@ Verify exact schemas in Supabase before extending.
 
 ## Related features
 
-- **Depends on:** `packages/chat/src/conversation/` (TTS integration point), `features/files` (universal file handler — single entry point for every file flow)
-- **Depended on by:** `features/transcripts/` (audio → transcripts), `packages/chat/src/conversation/` (TTS/voice), agent surfaces that consume audio
+- **Depends on:** `../aidream/apps/shared/chat/src/conversation/` (TTS integration point), `features/files` (universal file handler — single entry point for every file flow)
+- **Depended on by:** `features/transcripts/` (audio → transcripts), `../aidream/apps/shared/chat/src/conversation/` (TTS/voice), agent surfaces that consume audio
 - **Cross-links:** [`../scraper/FEATURE.md`](../scraper/FEATURE.md) (transcripts sibling), [`../conversation/FEATURE.md`](../conversation/FEATURE.md)
 
 ---

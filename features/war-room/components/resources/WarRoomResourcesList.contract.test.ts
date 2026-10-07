@@ -9,13 +9,13 @@ const resourcesSource = readFileSync(
 const conversationPickerSource = readFileSync(
   join(
     process.cwd(),
-    "packages/chat/src/agents/components/conversation-history/ConversationPickerWindow.tsx",
+    "../aidream/apps/shared/chat/src/agents/components/conversation-history/ConversationPickerWindow.tsx",
   ),
   "utf8",
 );
 // The dynamic() front door lives in the package's Next binding (P10).
 const windowPanelLazySource = readFileSync(
-  join(process.cwd(), "packages/chat/src/next/lazy/WindowPanel.tsx"),
+  join(process.cwd(), "../aidream/apps/shared/chat/src/next/lazy/WindowPanel.tsx"),
   "utf8",
 );
 

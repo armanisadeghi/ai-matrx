@@ -12,7 +12,7 @@
  *
  * It has now happened twice on the same module: four `features/content-ir`
  * suites on 2026-09-14 (DD-239, which produced `check:test-suites` as a runner
- * net over that one scope), and three `packages/chat/src/agents/redux/execution-system`
+ * net over that one scope), and three `../aidream/apps/shared/chat/src/agents/redux/execution-system`
  * suites afterwards, outside that scope. `check:test-suites` catches a death
  * after it happens, in two directories. This catches the SHAPE, everywhere,
  * before it can die.

@@ -69,7 +69,7 @@ Create `app/(a)/chat/a/[agentId]/page.tsx`:
 - **Option B** — Keep `(a)/chat` auth-only and leave `/p/chat` permanently as the public surface, but rewire its internals. Simpler but doesn't actually delete `/p/chat`.
 - **Option C** (recommended) — Create `app/(public)/chat/...` mirror that wraps the same `ChatRoomClient` with a guest-mode prop. Keeps the agent components agnostic; routing handles the auth split.
 
-Whichever option, the **components** under `packages/chat/src/agents/components/chat/` should be auth-agnostic. Pass `mode: "guest" | "user"` as a prop.
+Whichever option, the **components** under `../aidream/apps/shared/chat/src/agents/components/chat/` should be auth-agnostic. Pass `mode: "guest" | "user"` as a prop.
 
 #### 1.3 Port the missing features into agent-side components
 
@@ -77,7 +77,7 @@ Whichever option, the **components** under `packages/chat/src/agents/components/
 |---|---|
 | Sequential `GuidedVariableInputs` | `features/agents/components/agent-runner/` — add a `mode: "guided" \| "stacked"` toggle on the variable panel |
 | Voice input (`VoiceMicEngine` + `VoiceMicButton`) | `features/agents/components/agent-runner/` input area — extract to a shared `features/audio/` component if not already there |
-| `HtmlPreviewModal` | Promote to `packages/chat/src/agents/components/messages-display/` — reusable across all agent chats |
+| `HtmlPreviewModal` | Promote to `../aidream/apps/shared/chat/src/agents/components/messages-display/` — reusable across all agent chats |
 | `PdfOptimizePrompt` | `features/agents/components/agent-runner/` resource handler |
 | Mid-chat agent switch (`PromptPickerMenu` equivalent) | `ChatRoomClient` — add a small picker that dispatches `loadAgent(newAgentId)` and starts a fresh instance |
 | Public scraper content | RESOLVED 2026-08-09 — `usePublicScraperContent` deleted; every caller uses `useScraperApi()` (browser → Python directly, guests included) |
@@ -107,7 +107,7 @@ Once `(a)/chat` matches every checkbox above:
 1. Add a 302 redirect from `/p/chat`, `/p/chat/c/[id]`, `/p/chat/a/[id]`, `/p/chat/[requestId]` → corresponding `(a)/chat` (or `/chat`) URL.
 2. Soak the redirect in production for 1–2 weeks; watch logs for 404s and unexpected query strings.
 3. Delete `app/(public)/p/chat/**`.
-4. Delete `packages/chat/src/public-chat/**`.
+4. Delete `../aidream/apps/shared/chat/src/public-chat/**`.
 5. Delete `app/api/cx-chat/**` if Step 1.5 confirmed they're dead, or leave them as the canonical persistence API.
 6. Delete the deprecated layers: `DEPRECATED-useAgentChat.ts`, `DEPRECATED-ChatContext.tsx`, `useChatPersistence.ts` if subsumed.
 7. Now `features/prompts/types/{core,resources}` are no longer imported by chat — clears one of the last blockers for `features/prompts/` deletion.
@@ -173,7 +173,7 @@ Once `(a)/chat` matches every checkbox above:
 ### Phase 3 — Delete
 
 - [ ] Remove `app/(public)/p/chat/**`.
-- [ ] Remove `packages/chat/src/public-chat/**`.
+- [ ] Remove `../aidream/apps/shared/chat/src/public-chat/**`.
 - [ ] Remove `app/api/cx-chat/**` if subsumed.
 - [ ] Update `features/agents/migration/INVENTORY.md` change log.
 
@@ -196,15 +196,15 @@ Once `(a)/chat` matches every checkbox above:
 - `app/(a)/chat/layout.tsx` — extend metadata to cover new sub-routes
 - `app/(a)/chat/[conversationId]/page.tsx` — confirm warm-call parity
 - `app/(a)/chat/new/page.tsx` — extend agent picker with user/builtin filter tabs
-- `packages/chat/src/agents/components/chat/ChatRoomClient.tsx` — accept `mode: "guest" | "user"` prop
+- `../aidream/apps/shared/chat/src/agents/components/chat/ChatRoomClient.tsx` — accept `mode: "guest" | "user"` prop
 - `features/agents/components/chat/ChatAgentPicker.tsx` — add user/builtin tabs and the mid-chat switcher variant
-- `packages/chat/src/agents/hooks/useAgentLauncher.ts` — verify NDJSON cancel matches `DEPRECATED-useAgentChat` semantics
+- `../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts` — verify NDJSON cancel matches `DEPRECATED-useAgentChat` semantics
 - `/Users/armanisadeghi/code/common-docs/systems/architecture/execution-runtime/CLIENT-RUNTIME.md` — document the persistence-API decision
 
 ### Delete (Step 2)
 
 - `app/(public)/p/chat/**` (4 routes)
-- `packages/chat/src/public-chat/**` (~35 files)
+- `../aidream/apps/shared/chat/src/public-chat/**` (~35 files)
 - `app/api/cx-chat/**` (4 route files) — only if subsumed
 
 ---
@@ -213,4 +213,4 @@ Once `(a)/chat` matches every checkbox above:
 
 | Date | Who | Change |
 |---|---|---|
-| 2026-05-04 | claude (audit-legacy-systems) | Created — audit of `/p/chat` route surface, all `packages/chat/src/public-chat/` files, `/api/cx-chat/*` endpoints, `useChatPersistence` API, and gap analysis vs `(a)/chat`. |
+| 2026-05-04 | claude (audit-legacy-systems) | Created — audit of `/p/chat` route surface, all `../aidream/apps/shared/chat/src/public-chat/` files, `/api/cx-chat/*` endpoints, `useChatPersistence` API, and gap analysis vs `(a)/chat`. |

@@ -64,7 +64,7 @@ the live worklist; these counts are the snapshot it was seeded from.
 1. **`features/agents` — 19 findings, 14 high.** The feature the rant was about.
    `features/agents/components/agent-listings/AgentLineageTree.tsx` names an
    agent in a LINEAGE TREE with no door — the doctrine's headline case, verbatim.
-   `packages/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx` has no
+   `../aidream/apps/shared/chat/src/agents/components/inputs/smart-input/RunSkillPicker.tsx` has no
    door primitive.
 2. **`components/admin` — 15 findings, 7 high.** The state-analyzer slice
    viewers (`AgentDefinitionSliceViewer.tsx` + `…ViewerShadcn.tsx`) print agent
@@ -78,7 +78,7 @@ the live worklist; these counts are the snapshot it was seeded from.
 6. **Two worth doing first because they are one-liners with obvious payoff:**
    `features/projects/components/ProjectsWorkspace.tsx:22` renders a project row
    with `cursor-pointer` and **no handler at all** — it looks clickable and does
-   nothing; and `packages/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx:318`
+   nothing; and `../aidream/apps/shared/chat/src/agents/ui-first-tools/ui/lists/TaskPanel.tsx:318`
    makes a task title a button that opens an inline rename, so the user can
    edit the name but never reach the task.
 7. **Then the medium tail** — tokens with no route. See "Registry gaps" below.
@@ -121,7 +121,7 @@ real damage lives (doctrine §Corollaries):
 
 - **A resolvable relationship rendered but not linked** — parent / child /
   system twin / owner / source / version. For agents this is free:
-  `selectAgentLineageIndex` (`packages/chat/src/agents/redux/agent-definition/selectors.ts`).
+  `selectAgentLineageIndex` (`../aidream/apps/shared/chat/src/agents/redux/agent-definition/selectors.ts`).
 - **A detected problem shipped without its one-click fix** — a red badge naming
   a problem with no action beside it.
 - **A comparison that states a timestamp instead of a verdict** — say

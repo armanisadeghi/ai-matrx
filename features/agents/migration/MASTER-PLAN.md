@@ -24,7 +24,7 @@ Read [`README.md`](./README.md) before touching anything here. Read [`INVENTORY.
 - **State**: RTK only. Extend existing slices (`features/agents/redux/**`) — never create local/parallel state.
 - **Shortcuts are multi-scope from day 1**: admin / user / org. `agx_shortcut` + `shortcut_categories` + `content_blocks` all carry `user_id`, `organization_id`, `project_id`, `task_id`.
 - **CRUD components are shared**: built once in `features/agent-shortcuts/`, mounted by admin/user/org routes.
-- **Config is unified**: every surface that customizes an agent produces the same `AgentExecutionConfig` bundle (shortcuts, agent apps, tester, inline launches). See `packages/chat/src/agents/types/agent-execution-config.types.ts`.
+- **Config is unified**: every surface that customizes an agent produces the same `AgentExecutionConfig` bundle (shortcuts, agent apps, tester, inline launches). See `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`.
 - **Runtime is separated**: `AgentExecutionRuntime` carries per-invocation data (applicationScope, userInput, widgetHandleId, originalText) — never persisted.
 - **Chat is the crown jewel**: `(a)/chat` route exists and runs on the execution-system.
 

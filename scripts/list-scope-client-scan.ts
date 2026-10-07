@@ -206,7 +206,7 @@ export function walk(root: string, out: string[] = []): string[] {
 
 export function scanRepo(root: string, reg: Registry): Finding[] {
   const findings: Finding[] = [];
-  for (const dir of ["app", "features", "packages/chat/src", "lib", "actions", "hooks", "utils", "components"]) {
+  for (const dir of ["app", "features", "../aidream/apps/shared/chat/src", "lib", "actions", "hooks", "utils", "components"]) {
     let files: string[];
     try { files = walk(join(root, dir)); } catch { continue; }
     for (const f of files) {

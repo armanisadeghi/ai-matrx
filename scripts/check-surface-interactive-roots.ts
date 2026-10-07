@@ -11,12 +11,13 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { readFileSync } from "node:fs";
 import { basename, relative, resolve } from "node:path";
 import ts from "typescript";
 
 const ROOT = process.cwd();
-const SOURCE_ROOTS = ["app", "components", "features", "packages/chat/src"] as const;
+const SOURCE_ROOTS = ["app", "components", "features", "../aidream/apps/shared/chat/src"] as const;
 const TEST_FILE_RE =
   /(?:^|\/)(?:__tests__\/|[^/]+\.(?:test|spec|stories)\.tsx$)/;
 
@@ -244,11 +245,7 @@ export function analyzeInteractiveRootSource(
 }
 
 function trackedTsxFiles(): string[] {
-  const output = execFileSync(
-    "git",
-    ["ls-files", "-z", "--", ...SOURCE_ROOTS.map((root) => `${root}/**/*.tsx`)],
-    { cwd: ROOT, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }, // 1 MiB default → ENOBUFS
-  );
+  const output = gitFiles(ROOT, ["ls-files", "-z", "--", ...SOURCE_ROOTS.map((root) => `${root}/**/*.tsx`)]);
   return output
     .split("\0")
     .filter(Boolean)

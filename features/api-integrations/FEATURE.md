@@ -20,10 +20,10 @@ timestamp: 2026-08-17T00:00:00Z
 
 **MCP — Matrx CONSUMING external MCP servers** (the substantive surface):
 
-- `packages/chat/src/agents/services/mcp.service.ts` — imperative API (connect, list tools, invoke)
-- `packages/chat/src/agents/services/mcp-connections.service.ts` — connection records
-- `packages/chat/src/agents/services/mcp-client/tool-discovery.ts` — thin discovery stub (client-side MCP execution was deleted; tools execute via the durable delegated-tool path)
-- `packages/chat/src/agents/services/mcp-oauth/` — PKCE + discovery helpers; the actual OAuth start/callback machinery is `app/api/mcp/oauth/*` (DCR + CIMD)
+- `../aidream/apps/shared/chat/src/agents/services/mcp.service.ts` — imperative API (connect, list tools, invoke)
+- `../aidream/apps/shared/chat/src/agents/services/mcp-connections.service.ts` — connection records
+- `../aidream/apps/shared/chat/src/agents/services/mcp-client/tool-discovery.ts` — thin discovery stub (client-side MCP execution was deleted; tools execute via the durable delegated-tool path)
+- `../aidream/apps/shared/chat/src/agents/services/mcp-oauth/` — PKCE + discovery helpers; the actual OAuth start/callback machinery is `app/api/mcp/oauth/*` (DCR + CIMD)
 - `features/agents/redux/mcp.slice.ts` — connected servers / discovered tools / token state
 - User-facing connect UI: `features/settings/` (IntegrationsSettingsPage) and `features/agents/` (AgentToolsManager)
 

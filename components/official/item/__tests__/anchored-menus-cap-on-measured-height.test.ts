@@ -40,7 +40,7 @@ const VIEWPORT_FRACTION = /max-h-\[[^\]]*\d+\s*d?vh[^\]]*\]/;
 
 function sourceFiles(): string[] {
   const out = execSync(
-    `git ls-files -- 'app/*.tsx' 'components/*.tsx' 'features/*.tsx' 'packages/chat/src/*.tsx' 'lib/*.tsx'`,
+    `git ls-files -- 'app/*.tsx' 'components/*.tsx' 'features/*.tsx' '../aidream/apps/shared/chat/src/*.tsx' 'lib/*.tsx'`,
     { cwd: ROOT, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   );
   return out.split("\n").filter(Boolean);

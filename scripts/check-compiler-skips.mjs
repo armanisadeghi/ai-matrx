@@ -31,6 +31,7 @@
 // a small edit takes seconds. Lane RENDER-2, 2026-09-27.
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync, mkdtempSync } from "node:fs";
 import { createRequire } from "node:module";
 import { cpus, tmpdir } from "node:os";
@@ -40,7 +41,7 @@ import { Worker, isMainThread, parentPort, workerData } from "node:worker_thread
 const ROOT = resolve(new URL(".", import.meta.url).pathname, "..");
 const BASELINE = join(ROOT, "scripts/compiler-skips-baseline.json");
 const CACHE_DIR = join(ROOT, "node_modules/.cache/compiler-skips");
-const SCOPE = ["app/(core)", "features", "packages/chat/src", "components"];
+const SCOPE = ["app/(core)", "features", "../aidream/apps/shared/chat/src", "components"];
 
 /**
  * THE DATA SURFACES (lane RENDER-2): the /data route. They
@@ -58,7 +59,7 @@ const DATA_SURFACES = [
  */
 function ownerOf(file, line) {
   try {
-    const out = execFileSync("git", ["blame", "--porcelain", "-L", `${line},${line}`, "--", file], { cwd: ROOT, encoding: "utf8" });
+    const out = gitFiles(ROOT, ["blame", "--porcelain", "-L", `${line},${line}`, "--", file], { prefixPaths: false });
     const sha = out.slice(0, 10);
     if (/^0{10}/.test(sha)) return "not committed yet (a working-tree edit)";
     const summary = (out.match(/^summary (.*)$/m)?.[1] ?? "").slice(0, 110);
@@ -145,8 +146,7 @@ if (!isMainThread) {
 }
 
 function trackedFiles() {
-  const out = execFileSync("git", ["ls-files", "-z", "--", ...SCOPE.map((d) => `${d}/**/*.tsx`)], { cwd: ROOT, maxBuffer: 64 << 20 })
-    .toString()
+  const out = gitFiles(ROOT, ["ls-files", "-z", "--", ...SCOPE.map((d) => `${d}/**/*.tsx`)])
     .split("\0")
     .filter(Boolean)
     .filter((f) => !/(^|\/)__tests__\/|\.test\.tsx$|\.spec\.tsx$|\.stories\.tsx$/.test(f))

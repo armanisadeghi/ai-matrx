@@ -53,6 +53,9 @@ const SCAN_DIRS = [
   "hooks",
   "lib",
   "packages",
+  // @ai-matrx/chat's source, in the aidream checkout beside this repo (P27). Its frozen
+  // rewrite under `src/compat/` is not app code.
+  "../aidream/apps/shared/chat/src",
   "providers",
   "utils",
 ];
@@ -67,7 +70,7 @@ export const DOORS: ReadonlySet<string> = new Set([
   "lib/api/service-routing.ts",
   "lib/api/endpoints.ts",
   "lib/redux/slices/apiConfigSlice.ts",
-  "packages/chat/src/host/defaults/server-api.ts",
+  "../aidream/apps/shared/chat/src/host/defaults/server-api.ts",
 ]);
 
 export const ALLOWLIST_PATH = "scripts/server-pipeline-allowlist.json";
@@ -172,6 +175,7 @@ function walk(root: string, dir: string, out: string[]): void {
   for (const name of entries) {
     if (name === "node_modules" || name.startsWith(".")) continue;
     const rel = dir ? `${dir}/${name}` : name;
+    if (rel === "../aidream/apps/shared/chat/src/compat") continue;
     const full = join(root, rel);
     if (statSync(full).isDirectory()) walk(root, rel, out);
     else out.push(rel);

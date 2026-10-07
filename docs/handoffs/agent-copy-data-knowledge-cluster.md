@@ -93,7 +93,7 @@ keep the existing download affordances (never remove a working feature).
 | `features/settings/pages/IntegrationsSettingsPage.tsx` | connection list | **list/table** | none | row pair + view copy + `ExportMenu` — **sanitized** |
 | `features/settings/tabs/IntegrationsTab.tsx` | tab host | wrapper | none | delegate |
 | `features/agents/components/tools-management/AgentToolsManager.tsx` | discovered tools + connections | **list/table** | none | row pair + view copy + `ExportMenu` — **sanitized** |
-| `packages/chat/src/agents/components/diff/adapters/McpServersAdapter.tsx` | server diff | record | none | header pair — **sanitized** |
+| `../aidream/apps/shared/chat/src/agents/components/diff/adapters/McpServersAdapter.tsx` | server diff | record | none | header pair — **sanitized** |
 
 **Sanitization contract (non-negotiable).** Follow the allowlist-projection
 pattern already proven in `features/tool-registry/mcp-admin/format.ts`

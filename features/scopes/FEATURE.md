@@ -232,7 +232,7 @@ this directory.
   `COLUMN_SEARCH_THRESHOLD` (8) shows its own search (`filterColumnRows`, `useColumnQuery`,
   `parts.tsx#ColumnSearch`); `useDrillPathEngine` is the one-pick-per-column selection (a pick
   clears the columns after it; `drillPathForScope` back-fills a bare scope id) — used by the
-  context inspector (`packages/chat/src/agents/components/context-preview/inspector/`).
+  context inspector (`../aidream/apps/shared/chat/src/agents/components/context-preview/inspector/`).
 - `components/entity-context/` — Surface B (durable tagging only): `EntityScopeTagger`,
   `EntityTargetPicker`.
 - The container-centric association UI (cards / list / pickers / attached-items sheet /

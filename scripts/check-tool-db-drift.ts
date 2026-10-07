@@ -6,7 +6,7 @@
  * gate proves the ACTUAL CODE for this registered set matches it: it serializes
  * the REAL Zod `argsSchema` of every
  * UI-first tool — the exact schema the dispatcher validates against at
- * packages/chat/src/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk.ts
+ * ../aidream/apps/shared/chat/src/agents/ui-first-tools/dispatcher/dispatch-ui-first-tool.thunk.ts
  * (`entry.schema.safeParse`) — and diffs it against
  * `tool.definition.parameters`. There is NO intermediate file: the schema we
  * check is the schema that runs.
@@ -414,7 +414,7 @@ async function main(): Promise<void> {
     console.log("");
   }
   console.log(`${DIM}Fix path — the DATABASE (tool.definition) is the source of truth:${RESET}`);
-  console.log(`${DIM}  - Bring the Zod in packages/chat/src/agents/ui-first-tools/tools/schemas.ts to match tool.definition.${RESET}`);
+  console.log(`${DIM}  - Bring the Zod in ../aidream/apps/shared/chat/src/agents/ui-first-tools/tools/schemas.ts to match tool.definition.${RESET}`);
   console.log(`${DIM}  - If the DB itself is wrong, change it (admin API / migration), then match code.${RESET}`);
   exitAfterDrain(1);
 }

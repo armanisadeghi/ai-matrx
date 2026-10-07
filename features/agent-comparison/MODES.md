@@ -68,7 +68,7 @@ Why `cmp-` prefix: the agent-definition save thunks (`saveAgent`,
 never reach `supabase.from('agx_agent')` (and server-side, `agx_agent.id` is
 `uuid` only, so even if the gate slipped, PostgREST would reject the id
 format). Canonical helpers live in
-`packages/chat/src/agents/redux/agent-definition/synthetic-id.ts` —
+`../aidream/apps/shared/chat/src/agents/redux/agent-definition/synthetic-id.ts` —
 `isSyntheticAgentId(id)` and `SYNTHETIC_AGENT_ID_PREFIX`. `shared/forkAgentForVariant.ts`
 adds `forkAgentForVariant(dispatch, state, sourceId)`, which returns a fresh
 synthetic id.

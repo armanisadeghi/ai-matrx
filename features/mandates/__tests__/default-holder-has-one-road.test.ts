@@ -51,7 +51,7 @@ const HOLDER_COLUMNS = [
 ] as const;
 
 /** Trees a browser bundle is built from. Generated types are not code. */
-const SEARCHED_TREES = ["features", "packages/chat/src", "lib", "app", "components", "hooks", "utils"];
+const SEARCHED_TREES = ["features", "../aidream/apps/shared/chat/src", "lib", "app", "components", "hooks", "utils"];
 const SKIPPED_DIRS = new Set(["node_modules", ".next", "__tests__", "generated"]);
 const SKIPPED_FILES = new Set(["database.types.ts", "api-types.ts"]);
 

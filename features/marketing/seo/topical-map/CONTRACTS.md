@@ -277,7 +277,7 @@ Readers in `data.ts` + `hooks.ts`: `pageMappingStatus(siteId)` / `usePageMapping
 | D | `panel/**`, `windows/marketing/TopicalMapTopicPanel.tsx` (body only), `peek/kinds/SeoMapTopicPeek.tsx` |
 | E | `components/TopicalMapHome.tsx`, `components/TopicalMapHomeHeader.tsx`, `start/**`, `app/(core)/marketing/topical-maps/[mapId]/page.tsx`, the seven link-in screens, `features/research/components/outputs/outputDefinitions.ts`, the manifest's `agentRoles` (author) |
 | F | `views/PagesWorkspace.tsx`, `views/pages/**`, the manifest's `agentRoles` (mapper, proposer) |
-| G | `views/HistoryView.tsx`, `proposals/**`, `features/content-ir/kinds/map-topic-proposal.ts` + dispatch entry, `packages/chat/src/tool-call-visualization/renderers/topical-map/**` + registry entry, canvas pointer type files, `windows/marketing/TopicalMapWindow.tsx`, its catalogue/metadata/opener/controller block, tools-grid tile, hydrator |
+| G | `views/HistoryView.tsx`, `proposals/**`, `features/content-ir/kinds/map-topic-proposal.ts` + dispatch entry, `../aidream/apps/shared/chat/src/tool-call-visualization/renderers/topical-map/**` + registry entry, canvas pointer type files, `windows/marketing/TopicalMapWindow.tsx`, its catalogue/metadata/opener/controller block, tools-grid tile, hydrator |
 | coordinator | `CONTRACTS.md`, `FEATURE.md`, `knobs.ts`, `redux/**`, `ui/**`, `links.tsx`, `components/TopicalMapWorkspaceBody.tsx`, `components/TopicalMapRouteBody.tsx`, `components/TopicalMapHeader.tsx`, `data.ts`, `hooks.ts`, `types.ts`, the route files, `TopicTree`, `ReviewDeck` |
 
 A lane needing a change in a coordinator-owned file files it in the register and continues on a

@@ -61,7 +61,7 @@ tester.run("no-navigation-for-query-state", rule, {
     { filename: inLib, code: 'router.replace(url.pathname + "?" + url.searchParams);', errors: query },
     // push, with the census option
     { filename: inFeatures, code: "router.push(`${pathname}?${qs}`);", options: [{ push: true }], errors: query },
-    // packages/chat/src/cx-chat/components/core/ChatConversationClient.tsx
+    // ../aidream/apps/shared/chat/src/cx-chat/components/core/ChatConversationClient.tsx
     { filename: inFeatures, code: 'window.history.replaceState(window.history.state, "", newUrl);', errors: raw },
     // features/files/utils/url-state.ts
     { filename: inFeatures, code: 'window.history.pushState(window.history.state, "", url);', errors: raw },

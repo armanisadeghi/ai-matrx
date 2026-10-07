@@ -25,7 +25,7 @@ import path from "node:path";
 // the app registry must register every one of both.
 const MANIFEST_DIRS = [
   path.resolve(__dirname, ".."),
-  path.resolve(__dirname, "../../../../packages/chat/src/surfaces/manifests"),
+  path.resolve(__dirname, "../../../../../aidream/apps/shared/chat/src/surfaces/manifests"),
 ];
 
 type ManifestLike = { surfaceName: string; values: unknown[] };
@@ -67,7 +67,7 @@ describe("W-51: every manifest reaches the chat package", () => {
     const declared = declaredInFiles();
     expect(declared.length).toBeGreaterThan(200);
     // the package's own manifests are part of the census, not skipped
-    expect(declared.filter(({ file }) => file.startsWith("packages/chat/")).length).toBeGreaterThanOrEqual(10);
+    expect(declared.filter(({ file }) => file.startsWith("../aidream/apps/shared/chat/")).length).toBeGreaterThanOrEqual(10);
     const missing = declared
       .filter(({ surfaceName }) => !seam.getManifest(surfaceName))
       .map(({ file, surfaceName }) => `${file}: ${surfaceName}`);

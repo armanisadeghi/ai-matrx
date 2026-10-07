@@ -292,7 +292,7 @@ it("every wizard that restores a persisted draft renders the notice", () => {
       "-E",
       "useWizardDraft|selectWizardDraft",
       "--",
-      "features/**/*.tsx", "packages/chat/src/**/*.tsx",
+      "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx",
       "app/**/*.tsx",
       "components/**/*.tsx",
     ],

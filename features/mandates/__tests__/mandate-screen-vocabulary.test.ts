@@ -44,7 +44,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..");
  * one-binding workspace; those two trees are swept whole, so a component added
  * to either tomorrow is covered without being listed.
  */
-const SWEPT_TREES = ["features/mandates", "packages/chat/src/mandates", "features/bindings"] as const;
+const SWEPT_TREES = ["features/mandates", "../aidream/apps/shared/chat/src/mandates", "features/bindings"] as const;
 
 /**
  * Shared modules OUTSIDE those trees whose prose reaches a mandate screen.
@@ -55,7 +55,7 @@ const SWEPT_TREES = ["features/mandates", "packages/chat/src/mandates", "feature
 const SWEPT_FILES = [
   // `describeSuggestion` — the AI map's own prose, printed beside every
   // proposal in the one-binding workspace. The third source V2 named.
-  "packages/chat/src/surfaces/utils/binding-suggestions.ts",
+  "../aidream/apps/shared/chat/src/surfaces/utils/binding-suggestions.ts",
 ] as const;
 
 /**
@@ -209,7 +209,7 @@ function sweep(): Finding[] {
  */
 const AGENT_DOOR_TREES = [
   "features/agent-shortcuts",
-  "packages/chat/src/agents/components/run-controls",
+  "../aidream/apps/shared/chat/src/agents/components/run-controls",
 ] as const;
 
 /** "Holder" is the mandate system's word. On an agent door it is foreign. */

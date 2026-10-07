@@ -40,7 +40,7 @@ import { join, resolve, dirname } from "node:path";
 import { aliasTarget } from "../lib/source-roots.cjs";
 
 const ROOT = resolve(__dirname, "../..");
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "utils", "providers", "constants", "types"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "utils", "providers", "constants", "types"];
 const EXTS = [".ts", ".tsx"];
 const SKIP_DIR = /(^|\/)(__tests__|node_modules|\.next[^/]*|_.*_build_excluded)(\/|$)/;
 const ENTRY_RE = /\/(page|layout|template|route|loading|error|not-found)\.(dev\.)?tsx?$/;

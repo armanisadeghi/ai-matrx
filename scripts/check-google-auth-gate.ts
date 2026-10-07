@@ -38,7 +38,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SELF_TEST = process.argv.includes("--self-test");
-const SCAN_DIRS = ["features", "packages/chat/src", "components", "app", "lib", "hooks", "providers", "utils"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "components", "app", "lib", "hooks", "providers", "utils"];
 
 /** The raw primitives. Naming one outside the provider directory is the defect. */
 const RAW_PRIMITIVES = /\b(requestAuthorizationCode|startAuthorizationCodeRedirect)\b/g;

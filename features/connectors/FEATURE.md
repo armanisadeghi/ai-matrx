@@ -694,7 +694,7 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   - Boy-scout in the same pass: `attachable-resources.ts`'s
     `AttachableAvailability` extended the generated `McpAvailability` while
     narrowing `attachable`, which has been failing `tsc` with TS2430 (plus two
-    TS2322s in `packages/chat/src/agents/hooks/useMcpTools.ts`) since the property landed
+    TS2322s in `../aidream/apps/shared/chat/src/agents/hooks/useMcpTools.ts`) since the property landed
     in the generated contract. It is now that row with the one field narrowed.
 
 - `2026-09-17` — **the client `FieldAction` mirror adopts `conflict`**,

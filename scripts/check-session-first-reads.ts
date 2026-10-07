@@ -99,7 +99,7 @@ const SANCTIONED_CONSTRUCTORS = new Set([
   "utils/supabase/authCookie.ts",
 ]);
 
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "providers", "hooks", "lib", "utils"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "providers", "hooks", "lib", "utils"];
 
 /**
  * The ONE published package allowed to construct a browser Supabase client: it

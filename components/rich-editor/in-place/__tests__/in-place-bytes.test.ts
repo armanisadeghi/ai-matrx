@@ -14,7 +14,7 @@ jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 
 import { createInPlaceSession, type InPlaceSaveMode, type InPlaceSessionOptions, type InPlaceSession } from "@ai-matrx/rich-editor/in-place/in-place-session";
 import { spliceSaveBody, type VersionedBodyStore } from "@/features/rich-document/annotations/sourceSave";
-import { mergeEditedText } from "@/packages/chat/src/agents/redux/execution-system/message-crud/content-blocks.util";
+import { mergeEditedText } from "@ai-matrx/chat/agents/redux/execution-system/message-crud/content-blocks.util";
 
 const STORED = [
   "# Field notes",

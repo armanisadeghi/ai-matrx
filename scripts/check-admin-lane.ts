@@ -101,7 +101,7 @@ const IDENTITY_ALLOWED = new Set([
   "providers/LoopbackApiAccessSync.tsx",
 ]);
 
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib", "utils", "providers", "actions"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "utils", "providers", "actions"];
 const SKIP_DIR_NAMES = new Set(["node_modules", ".next", "__tests__", "__mocks__"]);
 
 const ADMIN_RPC =
@@ -324,7 +324,7 @@ function selfTest(): void {
       `const r = await withAdminFeature(\n  "ai.translation-approvals",\n  supabase.rpc("is_platform_admin"),\n);`,
     ),
     ...scanSource(
-      "packages/chat/src/agents/redux/agent-shortcuts/thunks.ts",
+      "../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/thunks.ts",
       `/** Admin feature "agent.global-shortcut" */\n  return request.setHeader("x-matrx-admin-lane", "1");`,
     ),
     ...scanAdminMaps(["/organizations/[orgId]/admin", "/agents/admin"], ADMIN_LANE_PATH_PREFIXES),

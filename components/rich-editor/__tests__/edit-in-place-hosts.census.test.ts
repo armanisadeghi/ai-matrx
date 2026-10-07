@@ -20,9 +20,9 @@ const ROOT = path.resolve(__dirname, "../../..");
 
 /** The hosts the brief names (and the first host), each required to be wired. */
 const REQUIRED = [
-  "packages/chat/src/agents/components/messages-display/assistant/AgentAssistantMessage.tsx",
-  "packages/chat/src/agents/components/messages-display/assistant/InPlaceAnswerEditor.tsx",
-  "packages/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx",
+  "../aidream/apps/shared/chat/src/agents/components/messages-display/assistant/AgentAssistantMessage.tsx",
+  "../aidream/apps/shared/chat/src/agents/components/messages-display/assistant/InPlaceAnswerEditor.tsx",
+  "../aidream/apps/shared/chat/src/agents/components/messages-display/user/AgentUserMessage.tsx",
   "features/notes/components/NoteEditorCore.tsx",
   "features/notes/components/mobile/MobileNoteEditor.tsx",
   "features/education/study-guides/components/StudyGuideReader.tsx",
@@ -31,7 +31,7 @@ const REQUIRED = [
   "features/transcription-cleanup/components/CleanupOutput.tsx",
 ];
 
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src"];
 
 /** Editable rendered hosts that are not wired, each with its reason. Shrink-only. */
 const EXEMPT: Record<string, string> = {
@@ -43,9 +43,9 @@ const EXEMPT: Record<string, string> = {
   "features/agents/components/builder/message-builders/MessageItem.tsx": "follow-up lane: prompt message click-to-edit",
   "features/agents/components/builder/message-builders/system-instructions/SystemMessage.tsx": "follow-up lane: system instructions click-to-edit",
   // No live route mounts these copies (census 2026-10-05); the live chat is
-  // packages/chat/src/agents (wired above).
-  "packages/chat/src/cx-conversation/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
-  "packages/chat/src/cx-chat/components/messages/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
+  // ../aidream/apps/shared/chat/src/agents (wired above).
+  "../aidream/apps/shared/chat/src/cx-conversation/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
+  "../aidream/apps/shared/chat/src/cx-chat/components/messages/AssistantMessage.tsx": "not mounted by a live route (census 2026-10-05)",
 };
 
 const RENDERS = /<(RichDocument|MarkdownStream|RichContent|EnhancedChatMarkdown)\b/;

@@ -21,9 +21,6 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
     "paths": {
-      "@ai-matrx/chat/*": [
-        "./packages/chat/src/*"
-      ],
       "@host/*": [
         "./*"
       ],
@@ -82,7 +79,6 @@
     "cartesia.d.ts",
     "components/**/*",
     "features/**/*",
-    "packages/chat/src/**/*",
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx",
@@ -121,9 +117,6 @@
       "moduleResolution": "node",
       "baseUrl": ".",
       "paths": {
-        "@ai-matrx/chat/*": [
-          "./packages/chat/src/*"
-        ],
         "@host/*": [
           "./*"
         ],

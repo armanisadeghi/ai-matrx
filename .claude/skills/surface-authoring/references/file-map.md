@@ -6,23 +6,23 @@ Read this when you need the location of a surface type, helper, service, API rou
 
 | What | Where |
 |---|---|
-| `SurfaceManifest` / `SurfaceValue` / `SurfaceValueGroup` / `ValueMapping` types | `packages/chat/src/surfaces/types.ts` |
-| Canonical label helpers (`getSurfaceDisplayLabel`, `surfaceValueLabels`, `surfaceGroupLabels`) | `packages/chat/src/surfaces/utils/surface-display.ts` |
-| Locate-on-page (`data-surface-value` flash) | `packages/chat/src/surfaces/utils/locate-on-page.ts` |
-| Hierarchy (registry-backed, synchronous) | `packages/chat/src/surfaces/runtime/fetchRelatedSurfaces.ts` + `registry.ts` `getSurfaceAncestry`/`getSurfaceChildren` |
+| `SurfaceManifest` / `SurfaceValue` / `SurfaceValueGroup` / `ValueMapping` types | `../aidream/apps/shared/chat/src/surfaces/types.ts` |
+| Canonical label helpers (`getSurfaceDisplayLabel`, `surfaceValueLabels`, `surfaceGroupLabels`) | `../aidream/apps/shared/chat/src/surfaces/utils/surface-display.ts` |
+| Locate-on-page (`data-surface-value` flash) | `../aidream/apps/shared/chat/src/surfaces/utils/locate-on-page.ts` |
+| Hierarchy (registry-backed, synchronous) | `../aidream/apps/shared/chat/src/surfaces/runtime/fetchRelatedSurfaces.ts` + `registry.ts` `getSurfaceAncestry`/`getSurfaceChildren` |
 | Baseline values + helpers | `features/surfaces/manifests/_baseline.manifest.ts` |
 | Central registry (`RAW_MANIFESTS` → derived `ALL_MANIFESTS`) | `features/surfaces/manifests/registry.ts` |
 | **Reference implementation (full contract)** | `features/surfaces/manifests/marketing-page.manifest.ts` + `features/marketing/lib/marketing-page-scope.ts` |
 | Simple-case reference | `features/surfaces/manifests/notes-editor.manifest.ts` |
-| Binding service (associations edges) | `packages/chat/src/surfaces/services/bind-agent-to-surface.service.ts` |
+| Binding service (associations edges) | `../aidream/apps/shared/chat/src/surfaces/services/bind-agent-to-surface.service.ts` |
 | Per-manifest README | `features/surfaces/manifests/README.md` |
 | Sync service (diff + upsert; mirrors label/value_groups/group_key) | `features/surfaces/services/manifest-sync.service.ts` |
 | Focused transactional sync + live check | `scripts/sync-surface-manifests-direct.ts` |
 | SQL builder used by the direct sync | `scripts/emit-surface-sync-sql.ts` |
 | Sync API (admin-gated) | `app/api/admin/surfaces/sync-manifests/route.ts` |
 | Drift API (admin-gated) | `app/api/admin/surfaces/drift-report/route.ts` |
-| Runtime resolver | `packages/chat/src/surfaces/utils/value-mapping-resolver.ts` |
-| Launch thunk integration | `packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` |
+| Runtime resolver | `../aidream/apps/shared/chat/src/surfaces/utils/value-mapping-resolver.ts` |
+| Launch thunk integration | `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` |
 | Admin UI | `app/(admin)/administration/ui/surfaces/` |
 | Agent-side binding UI | `app/(core)/agents/[id]/surfaces/page.tsx` + `features/surfaces/components/AgentSurfacesPanel.tsx` |
 | Drift check (manual — in `pnpm check:release-gates`, NOT commit/CI-run) | `scripts/check-surface-drift.ts` (`pnpm check:surface-drift`) |

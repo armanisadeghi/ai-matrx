@@ -948,7 +948,7 @@ live via the Supabase MCP and regenerate types — a `.sql` file alone changes
 nothing (CLAUDE.md § Database migrations).
 
 Also: `features/data-tables/pick-lists/` declares `ActionConfig<T>[]` and
-`packages/chat/src/tool-call-visualization/renderers/**` declares `EntityAction[]` —
+`../aidream/apps/shared/chat/src/tool-call-visualization/renderers/**` declares `EntityAction[]` —
 **parallel action schemas**, worse than a hand-rolled dropdown.
 
 ---

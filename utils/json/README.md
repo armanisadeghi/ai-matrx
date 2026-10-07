@@ -256,7 +256,7 @@ Files to migrate, grouped by priority. Check off each as completed.
 
 ### Priority 2 — Legacy wrapper shims (delete when no consumers remain)
 
-- [ ] `packages/chat/src/agents/utils/json-extraction.ts` — legacy `extractJsonFromText` / `extractJsonBlock` / `extractNonJsonContent` wrapper
+- [ ] `../aidream/apps/shared/chat/src/agents/utils/json-extraction.ts` — legacy `extractJsonFromText` / `extractJsonBlock` / `extractNonJsonContent` wrapper
 - [ ] `features/prompts/utils/json-extraction.ts` — re-exports from agents wrapper
 
 ### Priority 3 — Components using progressive-json-parser
@@ -285,6 +285,6 @@ Files to migrate, grouped by priority. Check off each as completed.
 
 ### Already migrated
 
-- [x] `packages/chat/src/agents/redux/execution-system/thunks/process-stream.ts` — uses `StreamingJsonTracker`
+- [x] `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts` — uses `StreamingJsonTracker`
 - [x] `lib/redux/prompt-execution/thunks/executeBuiltinWithJsonExtractionThunk.ts` — uses `extractFirstJson`
 - [x] `components/admin/MarkdownTester.tsx` — uses both `extractAllJson` and `StreamingJsonTracker`

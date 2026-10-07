@@ -18,4 +18,4 @@ Everything durable (vision in Arman's words, mechanics, the one open list) is in
 
 **Still open:** the numbered list under "Open" in FEATURE.md — first: with a tile live the agent still prefers knowledge_search over the Board's tools.
 
-Tests: `pnpm -s jest --forceExit features/board packages/chat/src/surfaces/runtime`. Browser: `docs/official/browser-testing.md`; `pnpm preview:start` then `pnpm dev-login /board`.
+Tests: `pnpm -s jest --forceExit features/board ../aidream/apps/shared/chat/src/surfaces/runtime`. Browser: `docs/official/browser-testing.md`; `pnpm preview:start` then `pnpm dev-login /board`.

@@ -18,7 +18,7 @@ const ROOTS = [
   "app",
   "components",
   "constants",
-  "features", "packages/chat/src",
+  "features", "../aidream/apps/shared/chat/src",
   "hooks",
   "lib",
   "utils",

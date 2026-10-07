@@ -59,7 +59,7 @@ export default async function EducationLayout({
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) return body;
 
-  // Signed in: THE chat-beside-a-canvas layout (packages/chat/src/canvas/workspace) —
+  // Signed in: THE chat-beside-a-canvas layout (../aidream/apps/shared/chat/src/canvas/workspace) —
   // the app's own sidebar (Chats one switch away), the shell chat beside it
   // (Education's own conversation, closed until opened — `shellChatHome`), and
   // education as the canvas. EducationHeader's module menu portals into the

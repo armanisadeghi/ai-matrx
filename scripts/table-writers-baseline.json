@@ -1,7 +1,7 @@
 {
   "about": "Shrink-only baseline for `pnpm check:table-writers`: files that build a markdown table row by hand instead of through components/rich-editor/core/table-source.ts. Prune with --prune-baseline; never add entries by hand.",
   "sites": {
-    "packages/chat/src/agents/resources/utils.ts": 3,
+    "../aidream/apps/shared/chat/src/agents/resources/utils.ts": 3,
     "features/content-ir/kinds/comparison-set.ts": 3,
     "features/data-tables/table-copy.ts": 2,
     "features/page-extraction/data-review/export.ts": 2,

@@ -36,7 +36,7 @@ export function dotDirRouteSlug(dir: FeatureDocDotDir): string {
 export const FEATURE_DOC_CODEBASE_GLOBS = [
   "./*.md",
   "app/**/*.md",
-  "features/**/*.md", "packages/chat/src/**/*.md",
+  "features/**/*.md", "../aidream/apps/shared/chat/src/**/*.md",
   "components/**/*.md",
   "lib/**/*.md",
   "hooks/**/*.md",

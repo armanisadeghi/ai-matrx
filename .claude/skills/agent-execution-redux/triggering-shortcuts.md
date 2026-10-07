@@ -72,10 +72,10 @@ All four dispatch `launchAgentExecution` under the hood and return `Promise<{ co
 
 ## REQUIRED — never paste raw shortcut UUIDs in app code
 
-If your component depends on a specific shortcut id, register it in `packages/chat/src/agents/constants/system-shortcuts.ts` and read it through `getSystemShortcut(key)`. A raw `"cfde5205-…"` literal in JSX or a hook call is forbidden.
+If your component depends on a specific shortcut id, register it in `../aidream/apps/shared/chat/src/agents/constants/system-shortcuts.ts` and read it through `getSystemShortcut(key)`. A raw `"cfde5205-…"` literal in JSX or a hook call is forbidden.
 
 ```ts
-// packages/chat/src/agents/constants/system-shortcuts.ts
+// ../aidream/apps/shared/chat/src/agents/constants/system-shortcuts.ts
 export const SYSTEM_SHORTCUTS = {
   "agent-generator-01": {
     label: "AI Agent Generator — v1",
@@ -291,8 +291,8 @@ Three things make the direct-mode pattern work:
 
 ## Where to read more
 
-- `packages/chat/src/agents/TRIGGER-SHORTCUTS.md` — quick reference, mostly aligned with this section
+- `../aidream/apps/shared/chat/src/agents/TRIGGER-SHORTCUTS.md` — quick reference, mostly aligned with this section
 - `features/agent-shortcuts/FEATURE.md` — data model, scope-mapping contract, display modes, configuration axes
 - `features/agents/agent-creators/interactive-builder/AgentGenerator.tsx` — direct-mode reference implementation (read this before building a new direct caller)
 - `features/context-menu-v3/` (`EditableContextMenu` / `NonEditableContextMenu`) — non-direct context-menu mount pattern
-- `packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` — the orchestrator all four trigger APIs dispatch through
+- `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` — the orchestrator all four trigger APIs dispatch through

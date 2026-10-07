@@ -24,8 +24,8 @@ const HOST_DIRS = [
   "components/markdown-studio",
   "components/official/content-editor",
   "components/mardown-display/chat-markdown",
-  "packages/chat/src/agents/components/messages-display",
-  "packages/chat/src/tool-call-visualization",
+  "../aidream/apps/shared/chat/src/agents/components/messages-display",
+  "../aidream/apps/shared/chat/src/tool-call-visualization",
   "features/chat-tool-renderers",
 ];
 
@@ -112,9 +112,9 @@ const ALCHEMY_TRIGGER = /<(CopyButtons|MatrxCopyMenu|ContentTransferMenu|Alchemy
 
 /** Hosts that copy one flavor on purpose — file → why there is no plain-text choice to make. */
 const ONE_FLAVOR: Record<string, string> = {
-  "packages/chat/src/agents/components/messages-display/assistant/InPlaceAnswerEditor.tsx":
+  "../aidream/apps/shared/chat/src/agents/components/messages-display/assistant/InPlaceAnswerEditor.tsx":
     "the stale-save toast's \"Copy my edit\" hands back the person's own markdown to paste into the editor",
-  "packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx":
+  "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx":
     "fetched web page text — it has no markup to strip",
   "components/markdown-studio/MarkdownStudio.tsx": "\"Copy source\" in a markdown studio: the source IS the point",
   "features/notes/components/NoteContentEditor.tsx": "Share → clipboard row; the note's split Copy sits in its bar",
@@ -127,7 +127,7 @@ const ONE_FLAVOR: Record<string, string> = {
 const MIXED_SOURCES: Record<string, string> = {
   "features/rich-document/actions/handlers/copy.ts": "\"Copy with thinking\" copies the stored record WITH its reasoning — a different document by design",
   "components/official/content-editor/CopyDropdownButton.tsx": "\"Copy with thinking\" keeps the reasoning blocks by design",
-  "packages/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx": "one read's copy vs Copy all: two different documents",
+  "../aidream/apps/shared/chat/src/tool-call-visualization/renderers/research/ResearchOverlay.tsx": "one read's copy vs Copy all: two different documents",
 };
 
 function hostFiles(root: string, dirs: readonly string[]): Array<{ rel: string; src: string }> {
@@ -266,7 +266,7 @@ const NOT_MARKDOWN_COPY: Record<string, string> = {
   "features/masterwork/record/ExpertRecordPage.tsx": RECORD_SUMMARY,
   "features/research/components/synthesis/SynthesisList.tsx": RECORD_SUMMARY,
   "features/workflow-runtime/components/readout-parts.tsx": RECORD_SUMMARY,
-  "packages/chat/src/agents/components/context-preview/ContextCompareView.tsx":
+  "../aidream/apps/shared/chat/src/agents/components/context-preview/ContextCompareView.tsx":
     "copies a context block exactly as shown (prompt text, not rendered markdown); uses the chat package's host slot",
 };
 

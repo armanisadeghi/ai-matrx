@@ -129,7 +129,7 @@ describe("a kind tool result renders through the value door", () => {
 });
 
 describe("census: no tool-call renderer hands a whole result to the value grid", () => {
-  const ROOT = path.resolve(__dirname, "../../../packages/chat/src/tool-call-visualization");
+  const ROOT = path.resolve(__dirname, "../../../../aidream/apps/shared/chat/src/tool-call-visualization");
   const files: string[] = [];
   const walk = (dir: string) => {
     for (const name of fs.readdirSync(dir, { withFileTypes: true })) {

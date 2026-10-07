@@ -16,7 +16,7 @@
     "cartesia.d.ts",
     "types/typecheck-env.d.ts",
     "components/**/*",
-    "features/**/*", "packages/chat/src/**/*",
+    "features/**/*",
     "app/**/*",
     "packages/**/*.ts",
     "packages/**/*.tsx"

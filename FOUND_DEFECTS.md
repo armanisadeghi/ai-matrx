@@ -516,7 +516,7 @@ file exists in no commit on any branch (`git log --all -- …barcode-preview.man
 is empty; the import is already committed, so it is not another lane's dirty
 tree). Every module that transitively reaches the manifest registry therefore
 fails to resolve — under Jest it is a hard suite failure, and it reaches far:
-`components/agent-copy/CopyButtons` and `packages/chat/src/surfaces/runtime/surface-writeback`
+`components/agent-copy/CopyButtons` and `../aidream/apps/shared/chat/src/surfaces/runtime/surface-writeback`
 both pull it, so the Gmail review card and `AssistCard` do, so
 `features/approvals/registry.ts` did, twice over. Found by lane F-6 while testing
 the approval kinds (worked around there with one virtual Jest mock, named in the
@@ -615,7 +615,7 @@ assistant turn is the run's structured output" turned out to be declared but nev
   text part's own `metadata` is `{}`.
 - Consequence: the client cannot ask the message whether it is structured output. The renderer
   therefore reads the RUN'S CONTRACT instead (the conversation-bound agent's `output_schema`,
-  via `packages/chat/src/mandates/output-contract.ts`) and matches the payload's keys against it — honest
+  via `../aidream/apps/shared/chat/src/mandates/output-contract.ts`) and matches the payload's keys against it — honest
   and durable, but it cannot tell two different agents apart inside one conversation, and it
   cannot see the kind slug (`kind` / `kind_checked` ride the ephemeral `structured_output`
   stream event only).
@@ -829,7 +829,7 @@ is NOT blocked on a migration or on a permission rule, and it is not a database 
   the `content_ir.set_kind_activation` RPC — `scripts/publish_kind_catalog.py` calls it on every
   publish. Writing the row and flipping the flag needs no DDL and no `pnpm db:apply`.
 - The reason the flag is false is that **no real component exists to point at**. `ShellInline` is
-  registered in `packages/chat/src/tool-call-visualization/registry/registry.tsx` keyed by TOOL NAME
+  registered in `../aidream/apps/shared/chat/src/tool-call-visualization/registry/registry.tsx` keyed by TOOL NAME
   (`shell_execute`, `shell_python`) — a different resolver that never consults `kind_component` or
   `is_active`. Grep confirms: `shell_execution` appears nowhere in the content-IR kind registry.
   The activation gate is doing exactly its job (the fallback-is-not-a-component law); a
@@ -1429,7 +1429,7 @@ one-resolution campaign, L2). The door answers the RUN decision in full — hold
 overrides, rung, contract, provision key, consumption map, `auto_run` — but not
 `mandate.definition.id`, `pins`, or `pinned_context`. `ResolvedMandate` needs all three
 (`mandateId` is what notes and observations hang off; `pins` are code-owned levers that win
-over binding overrides at run time), so `packages/chat/src/mandates/service.ts` follows every verdict
+over binding overrides at run time), so `../aidream/apps/shared/chat/src/mandates/service.ts` follows every verdict
 with a `mandate.definition` read by key. That read is NOT a resolution rung and is not the
 defect — the defect is that one question takes two round trips, and `useMandateSet` multiplies
 it by the number of keys on the page.
@@ -2167,9 +2167,9 @@ not import content-ir; left for their owners:
 
 - `components/mardown-display/chat-markdown/__tests__/xmlRenderingPaths.test.tsx` — 3 tests:
   `TypeError: useAppDispatch is not a function` from
-  `packages/chat/src/agents/redux/execution-system/active-requests/useRetainRequestForViewer.ts:46` — the
+  `../aidream/apps/shared/chat/src/agents/redux/execution-system/active-requests/useRetainRequestForViewer.ts:46` — the
   test's `@/lib/redux/hooks` mock predates 23f0b05ef4 (viewer retention) and lacks `useAppDispatch`.
-- `packages/chat/src/agents/redux/execution-system/selectors/__tests__/assembled-request-preview.test.ts` —
+- `../aidream/apps/shared/chat/src/agents/redux/execution-system/selectors/__tests__/assembled-request-preview.test.ts` —
   2 tests: "Select an organization before sending this message" thrown by the org resolver; the
   fixture state carries no organization since org gating landed.
 
@@ -3056,7 +3056,7 @@ not: running `openapi-typescript @ai-matrx/agents/generated/openapi.json` today
 produces a file that differs from the committed `api-types.ts` by ~6,280 lines,
 and type-checking against it yields **94 errors across 48 files** (fields that
 became REQUIRED server-side — `clear_notes` in `features/secrets/*`, `store` in
-`packages/chat/src/voice-agent/services/realtimeToolService.ts`, `country_code`/
+`../aidream/apps/shared/chat/src/voice-agent/services/realtimeToolService.ts`, `country_code`/
 `search_type` in the scraper pages, `max_chars`/`top_n`/`debug` in
 `features/transcripts/service/autoLabelTranscript.ts`, `passes_user_input` and
 `blocking` in `features/mandates/admin/*`, and more).
@@ -3124,7 +3124,7 @@ the wrong branch.** Evidence gathered since the filing:
   only to `-roger`/`-audrey`). `constants.ts` and its copy have never been
   touched since the day they landed. Every commit since is dependency churn or
   fleet sweeps. **~22 months with no human intent.**
-- **It was superseded, not abandoned mid-build.** `packages/chat/src/voice-agent/` is
+- **It was superseded, not abandoned mid-build.** `../aidream/apps/shared/chat/src/voice-agent/` is
   Tier 1, `active`, updated 2026-08-15, on xAI Realtime + Google Live API, with
   personas already in the DB via slots `voice.intro` /
   `transcript_studio.scribe_live`. The Deepgram path is the earlier attempt at
@@ -3273,7 +3273,7 @@ its siblings. That is a robustness improvement, not the fix.
 
 **Rule this leaves behind:** never put `transition-all` on a motion-driven element — transition named
 properties or none. One more instance is logged in `.matrx/PATROL_SIGHTINGS.md`
-(`packages/chat/src/agents/resources/ResourceChips.tsx:133`, `whileHover={{ scale }}` + `transition-all`).
+(`../aidream/apps/shared/chat/src/agents/resources/ResourceChips.tsx:133`, `whileHover={{ scale }}` + `transition-all`).
 
 Never hit before because **both components had zero runtime consumers** — their only mounter was
 `/legacy/demo/component-demo/draggables/transformable-cards-demo`, deleted with the `(legacy)` route group.
@@ -3295,7 +3295,7 @@ it (`is_link_shareable = false`) — short of the law's "any record can be share
 
 ### D244 (filed as D194, renumbered 2026-08-21) — two surface providers at the same depth silently pick a winner; no warning (2026-08-15)
 
-`packages/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx::getSurfaceRuntime()` resolves "deepest wins,
+`../aidream/apps/shared/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx::getSurfaceRuntime()` resolves "deepest wins,
 ties broken by higher registration id". Depth is correct and load-bearing for real nesting (an open
 window out-depthing the page). The unguarded case is SIBLINGS: two components at the same depth
 registering the same `surfaceName` — the registry quietly drops one and the agent gets the wrong
@@ -3586,7 +3586,7 @@ System-of-record: `common-docs/systems/platform/entity-content-role/FEATURE.md` 
 
 The floating-window posture only kills the spinner for markdown payloads. Watched blank for their whole run: podcast blog writer/show notes (`useEpisodeArticles` — structured JSON envelope) and the marketing image prompt generator (`generate-page-image.ts` step 1 — `<image_prompt>` wrapper). Fix belongs in the canonical pipeline, never the call site: content-IR renders un-kinded live JSON progressively, or these agents get a registered kind. Per `docs/handoffs/live-run-streaming-sweep.md`; note its §6 wrongly records podcast articles as plain markdown — the wire is JSON, markdown is assembled client-side (`articleMarkdown.ts`). Whether they get a kind is **Arman's call**.
 
-**The XML-WRAPPER half is FIXED (2026-08-18, `abad51c24`).** Found while diagnosing the flashcard live preview, which turned out to be the same defect: the stream accumulator opened content-ir regions for fences and bare JSON only, so an **attribute-XML** region (`<artifact …>`, `<image_prompt>`) swallowed its body whole — no region, no `metadata.__ir`, and every envelope reader answered null for the whole run and after it. An attr-XML body that opens as JSON now feeds the kind parser exactly like a bare JSON region, fragment path included, so a minified single-line payload parses live. Rendering is unchanged by design (`applyIrKindRoute` refuses to re-type an `artifact` block — the artifact system keeps its renderer and its Canvas door). Pinned with real production bytes: `packages/chat/src/agents/redux/execution-system/utils/__tests__/artifact-wrapped-payload-live-stream.test.ts`.
+**The XML-WRAPPER half is FIXED (2026-08-18, `abad51c24`).** Found while diagnosing the flashcard live preview, which turned out to be the same defect: the stream accumulator opened content-ir regions for fences and bare JSON only, so an **attribute-XML** region (`<artifact …>`, `<image_prompt>`) swallowed its body whole — no region, no `metadata.__ir`, and every envelope reader answered null for the whole run and after it. An attr-XML body that opens as JSON now feeds the kind parser exactly like a bare JSON region, fragment path included, so a minified single-line payload parses live. Rendering is unchanged by design (`applyIrKindRoute` refuses to re-type an `artifact` block — the artifact system keeps its renderer and its Canvas door). Pinned with real production bytes: `../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/__tests__/artifact-wrapped-payload-live-stream.test.ts`.
 
 **The JSON half is CLOSED too (2026-08-18) — Arman ruled, and the answer was to delete the JSON, not to build a kind.** The podcast blog/show-notes agents' envelope was flattened to markdown by `articleMarkdown.ts` the instant it landed, and markdown is what `pc_articles` stores, so nothing in the product ever consumed the structure. Per the Class E rule (a kind is earned only when the output is consumed STRUCTURALLY) the structure was not earning anything: both agents now WRITE markdown, the window renders it as it streams, and the assembler is deleted. The platform half is `runHeadlessAgentJson`'s new `expect: "json" | "text"` — a prose agent's product is its answer text, and asking the JSON primitive for it failed a run that answered perfectly. The marketing image-prompt step (`<image_prompt>`) is covered by the XML half above. See `features/podcasts/FEATURE.md` (2026-08-18). Note also that on the flashcard surfaces the envelope was only _part_ of the reason for the blank window.
 
@@ -3978,7 +3978,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 - **D311 — the associations boot probe INVOKED 26 RPCs (14 of them writes) on every page load; 25 answered 400.** `AssociationsProvider`'s default `probeSchema` runs the package's `assertDemandedSchema`, which asks whether each demanded function exists by CALLING it with sentinel args. Its "dev only" gate was `process.env.NODE_ENV`, which esbuild bakes to `true` under `platform:"browser"`, so it ran in production too. Switched off at the host, then closed at the class: **@ai-matrx/associations 0.9.0 deletes the probe and the `probeSchema` knob** — a write RPC is never invoked to ask whether it exists, and PGRST202 at real call sites already screams `demanded_schema_violation` with the same remedy. Guard `features/scopes/host/__tests__/noBootRpcProbe.test.tsx` plus the package's own pair; live 25→0 on `/administration/billing/spend`, 0 on `/administration`. 2026-09-12.
 
-- **D314 — THE MERGE-ONLY REMOVAL CLASS: a reset that could never reset.** `setContextEntries` upserts every incoming key and deletes none, so `setContextEntries({ conversationId, entries: [] })` — what `clearContext()` and `resetConversation()` in `features/agent-apps/hooks/useAgentApp.ts` both used — cleared nothing: resetting a conversation in an agent app left the previous turn's context values in place and they leaked into the next conversation. Census of every `*.slice.ts` in `packages/chat/src/agents/redux/execution-system/` found ONE sibling live: `setOverrides` is merge-only too, and `ColumnOverridesEditor.tsx`'s `clearKey` "removed" an override by re-sending the map without the key — the per-column Clear chip on `/agents/battle/settings` was a silent no-op. **FIXED 2026-09-12**: the two agent-app call sites dispatch `clearInstanceContext(conversationId)`; `clearKey` dispatches `resetOverride({ conversationId, key })`. Merge semantics are untouched (≈30 call sites depend on them) and both reducers now carry a MERGE-ONLY contract note naming the real removal actions. Guard: `packages/chat/src/agents/redux/execution-system/instance-context/__tests__/context-reset-is-real.test.ts` — real reducers in a real store pin the merge/clear semantics, plus a repo-wide scan that fails on any caller passing an empty payload to a merge-only action or deleting a key from a copied map and re-sending it. Proven failing-then-passing: 2 of 8 red against the pre-fix files, naming `useAgentApp.ts:600/686` and `ColumnOverridesEditor.tsx:77`; 8/8 green after. Live-verified on the running app as admin@admin.com at `/agents/battle/settings`: set Max output tokens 1234 (header chip `max=1234 (1)`), clicked Clear override, field reverted to the agent default and the chip returned to `Agent defaults`. 2026-09-12.
+- **D314 — THE MERGE-ONLY REMOVAL CLASS: a reset that could never reset.** `setContextEntries` upserts every incoming key and deletes none, so `setContextEntries({ conversationId, entries: [] })` — what `clearContext()` and `resetConversation()` in `features/agent-apps/hooks/useAgentApp.ts` both used — cleared nothing: resetting a conversation in an agent app left the previous turn's context values in place and they leaked into the next conversation. Census of every `*.slice.ts` in `../aidream/apps/shared/chat/src/agents/redux/execution-system/` found ONE sibling live: `setOverrides` is merge-only too, and `ColumnOverridesEditor.tsx`'s `clearKey` "removed" an override by re-sending the map without the key — the per-column Clear chip on `/agents/battle/settings` was a silent no-op. **FIXED 2026-09-12**: the two agent-app call sites dispatch `clearInstanceContext(conversationId)`; `clearKey` dispatches `resetOverride({ conversationId, key })`. Merge semantics are untouched (≈30 call sites depend on them) and both reducers now carry a MERGE-ONLY contract note naming the real removal actions. Guard: `../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-context/__tests__/context-reset-is-real.test.ts` — real reducers in a real store pin the merge/clear semantics, plus a repo-wide scan that fails on any caller passing an empty payload to a merge-only action or deleting a key from a copied map and re-sending it. Proven failing-then-passing: 2 of 8 red against the pre-fix files, naming `useAgentApp.ts:600/686` and `ColumnOverridesEditor.tsx:77`; 8/8 green after. Live-verified on the running app as admin@admin.com at `/agents/battle/settings`: set Max output tokens 1234 (header chip `max=1234 (1)`), clicked Clear override, field reverted to the agent default and the chip returned to `Agent defaults`. 2026-09-12.
 
 - **The two mandate-UI affordances the 2026-09-09 rotted-tests pass left behind.** That pass restored `ScopeHolderBar`'s `coverageLine` — the one a guard covered — and left the other three: the bar went on accepting `job.label`, `job.offeredCount` and `job.offerSourceLine` from `OneBindingWorkspace` and rendering none of them, and `features/mandates/workspace/RunThisJobSection.tsx` had been mounted by nothing since `816ea88701`. **FIXED 2026-09-09.** (1) The job is named on the bar again as ONE property row in the surface's own density — name + mono key, `Offers N` in the row's source slot (an unread offer says "Reading what it offers", never a premature 0), and the offer-source sentence as visible second-line text. The guard is the BOUNDARY, not the sentences: `features/bindings/__tests__/scope-holder-bar-renders-every-job-prop.test.tsx` requires every `job` field to be visible text or declared as forwarded to a named control, proven failing-then-passing (6 of 9 red against `56c1eaedc4`). `default-holder-is-stated.test.tsx`'s `not.toContain("zzz.walk_r6")` line — added by `96e45f3aa2` in the same commit that deleted the JOB cell, pinning a deletion rather than a rule — is OVERTURNED in place and now guards the real rule: the key never appears without its human label. (2) The removal of `RunThisJobSection` was DELIBERATE — `816ea88701` moved every admin concern into tabs and the run affordance is the super-admin **Test** tab (`MandateWorkspace` `adminContent` → `MandateDetailView section="test"` → `MandateTestBench` → `TryItNowPanel`), which already carried the same endpoint, served surface, failure card and folded server notes. The orphan and its suite are deleted; both its guards follow the affordance to the live form (`admin/__tests__/run-panel-honesty.test.tsx`; `invoke-supplied-values.test.ts` repointed), and the ONE thing the orphan had that the live form did not — the sentence saying an OPTIONAL `binding_prompt` input left blank makes the run use the holder's own default — was ported into `TryItNowPanel` first. `server-notes-folded.test.tsx` now asserts there is exactly ONE mandate run form. Verified on localhost:3001 as admin@admin.com: `/mandates/research_client.output_slides` Holder tab renders `Job: Research Output: Slides research_client.output_slides / The call site supplies these every launch — declared by the provision / Source: Offers 2`, and the admin Test tab still mounts the run form. 2026-09-09.
 
@@ -4029,7 +4029,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 - **D229** — `fileHandler`'s `blob`/`data_uri`/`anchor_download` targets 401'd on every OWNED file: `preferFetchableUrl` correctly resolves an owned file to Python's authenticated `/files/{id}/download`, but `toBlob` then fetched it with a bare `fetch` (no auth). Fixed 2026-08-21 — `toBlob` reads an owned file BY ID through the authenticated client (`features/files/handler/output/target.ts`). A file is addressed by id; nothing needs a URL.
 
 - **D213 — every AI flashcard generation persisted TWO identical sets (2026-08-18):** single-writer contract D-WP3-4 — surfaces (from-topic / from-source / convert deck) save via `fcService.createGeneratedSetForConversation` (adopt the adapter's set or create one stamped `cx_conversation`/`<cid>`); `FLASHCARDS_CANONICAL_ADAPTER` links to a surface-saved set instead of twinning. 20 live duplicate pairs soft-deleted, canvas links repointed; live-verified one generation → one set. Guard `features/flashcards/data/__tests__/generated-set-single-writer.test.ts`; contract in flashcards `FEATURE.md`.
-- **D209 — an adopted stream's output vanished when the run ended (2026-08-17):** `selectUnifiedSlots` hid every `sub_agent` block range unconditionally; a server-orchestrated run adopted via `adoptForeignStream` has no owning `agent_call`, so its only content block was hidden at operation completion — the hide is now gated on `toolCallId` (`packages/chat/src/agents/redux/execution-system/active-requests/active-requests.selectors.ts`, guard `__tests__/adopted-sub-agent-visibility.test.ts`). Fixing it surfaced a second class: a fieldless warm `kind_definition` row was erasing compiled schemas, rendering the finished kind card EMPTY (`features/content-ir/registry/kind-registry.ts`, guard `features/content-ir/__tests__/warm-fieldless-schema.test.ts`).
+- **D209 — an adopted stream's output vanished when the run ended (2026-08-17):** `selectUnifiedSlots` hid every `sub_agent` block range unconditionally; a server-orchestrated run adopted via `adoptForeignStream` has no owning `agent_call`, so its only content block was hidden at operation completion — the hide is now gated on `toolCallId` (`../aidream/apps/shared/chat/src/agents/redux/execution-system/active-requests/active-requests.selectors.ts`, guard `__tests__/adopted-sub-agent-visibility.test.ts`). Fixing it surfaced a second class: a fieldless warm `kind_definition` row was erasing compiled schemas, rendering the finished kind card EMPTY (`features/content-ir/registry/kind-registry.ts`, guard `features/content-ir/__tests__/warm-fieldless-schema.test.ts`).
 
 - **D202 — A conversation can be filed directly under a project (2026-08-16):** Arman ruled direct filing IS allowed; `conversation → project` registered in `platform.association_types` (`container_side=target`, `conveys_max=editor`, matching every other `* → project` pair) and `project` restored to `HOME_TOKENS` / `WorkHomeToken` — `migrations/conversation_project_association_pair.sql`, `features/ai-work/compose/components/HomeStep.tsx`.
 - **D74 — Automatic broken-link evidence and openable report (2026-08-15):** crawl-completion status pass + deterministic findings + canonical Broken Links report; production session `8168bcba-932d-4424-b1a7-5cab7eda53b4` populated 3,761 edges, recorded 85 real external 404 occurrences, opened 20 findings, and produced zero false broken homepage edges — see `features/marketing/FEATURE.md` and aidream `matrx_scraper/web_crawl/FEATURE.md`.
@@ -4226,7 +4226,7 @@ alone here because changing what a guard asserts is not a change to make inside 
 None of these files changed in the agency-model restructure commits; last touched by `d13ebb0a3b fix(org): bind GA4 stream to site tenant` (2026-08-24). Owner of the GA4 stream/tenant work should re-run the suite.
 
 ## 2026-08-30 — resource-family-policy test encodes an unimplemented knowledge→rag alias (Arman's wip)
-`packages/chat/src/agents/components/inputs/resources/resource-family-policy.test.ts` › "keeps promotions and
+`../aidream/apps/shared/chat/src/agents/components/inputs/resources/resource-family-policy.test.ts` › "keeps promotions and
 exclusions internally consistent" fails: got `["knowledge","rag","raw"]`, expected `["rag","raw"]`.
 Cause: `f4668b6d01` (`wip: consolidate knowledge and RAG surfaces`, Arman's tree, 2026-08-18) changed
 the test input from `"RAG"` to `"Knowledge"` — encoding an intent that `knowledge` normalizes into the
@@ -4447,8 +4447,8 @@ components/kind-kit/kind-kit.test.tsx
 components/ui/__tests__/dialog-mobile-sheet.test.tsx
 features/access-gate/components/GovernedActionDialog.responsive-contract.test.ts
 features/agent-apps/utils/compile-slot.test.ts
-packages/chat/src/agents/components/inputs/resources/resource-family-policy.test.ts
-packages/chat/src/agents/components/messages-display/message-options/__tests__/resolveAssistantEditTarget.test.ts
+../aidream/apps/shared/chat/src/agents/components/inputs/resources/resource-family-policy.test.ts
+../aidream/apps/shared/chat/src/agents/components/messages-display/message-options/__tests__/resolveAssistantEditTarget.test.ts
 features/agents/components/settings-management/validation/__tests__/constraint-eval-fixture.test.ts
 features/canvas/materialization/__tests__/planMaterialization.test.ts      (already logged 2026-08-31)
 features/canvas/services/__tests__/canvasArtifactService.test.ts
@@ -4711,7 +4711,7 @@ FAIL loudly, never return an empty list that reads as "nothing exists".
 
 Found while fixing the Masterwork interview's generic hero (jobs-bar-2026-09-16, lanes-a item 24).
 `setDisplayNameOverride`, `setDisplayDescriptionOverride` and `setDisplayIconNameOverride` in
-[`packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](./packages/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts)
+[`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts)
 are all `const entry = state.byConversationId[id]; if (entry) { … }`. A launcher hands a surface
 its `conversationId` BEFORE `createInstanceFull` writes that row, which is exactly when a
 mount-once effect fires — so the override is discarded, nothing is logged, and the surface keeps
@@ -4739,7 +4739,7 @@ merges read through `readField`, which sees the staged value. The local `instanc
 `ScoutInterviewPanel.tsx` and `ConductorPanel.tsx` are GONE — one path remains.
 
 Guard:
-`packages/chat/src/agents/redux/execution-system/instance-ui-state/__tests__/no-write-is-dropped-before-the-instance-lands.test.ts`
+`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-ui-state/__tests__/no-write-is-dropped-before-the-instance-lands.test.ts`
 — behaviour (write → create → still there; creation's own value wins; toggles and merges; no
 replay after destroy) plus a source census that fails if any setter returns to `if (entry)`.
 Proven failing against the pre-fix slice (4 of 6 failed), passing after.
@@ -4783,7 +4783,7 @@ in-progress work in the shared chat composer, and a message typed there and not 
 after a browser reload. Measured live on a brand-new Rulebook: 198 characters typed into the
 interview composer, reload, field empty, nothing said.
 
-`packages/chat/src/agents/redux/execution-system/instance-user-input/input-draft-protection.ts` is emphatic
+`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-user-input/input-draft-protection.ts` is emphatic
 that this draft is "the single most valuable, irreplaceable piece of data in the app" and protects
 it against every in-session clear — but the slice is in-memory only, so the protection ends at the
 tab. The same is true of `/chat` and every other composer surface; this is not a Masterwork defect
@@ -4797,7 +4797,7 @@ re-submit. `features/masterwork/sitting/lanePersistence.ts` declares the two roo
 which is true of the TURNS and is not a claim about the composer.
 
 **FIXED as the platform primitive it is, 2026-09-17.** The durable half of the composer draft is
-`packages/chat/src/agents/redux/execution-system/instance-user-input/composer-draft-store.ts` (storage,
+`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-user-input/composer-draft-store.ts` (storage,
 submit generations, tombstones) driven by `composer-draft.middleware.ts`, the ONE writer, in the
 store's middleware chain. It watches the actions every composer already dispatches — so the
 guarantee is a property of conversation state, not of one component, and `/chat`, the interview
@@ -4823,7 +4823,7 @@ Settings → AI → Assistants → Composing; a preferences blob written before 
 as ON.
 
 Guards (proven failing-then-passing):
-`packages/chat/src/agents/redux/execution-system/instance-user-input/__tests__/an-unsent-draft-survives-a-reload.test.ts`
+`../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-user-input/__tests__/an-unsent-draft-survives-a-reload.test.ts`
 — ten cases over the real middleware, slice, storage and thunk, with a reload modelled as
 "discard the store and every in-memory generation, keep sessionStorage". Removing the write from
 the middleware and the generation check from the thunk fails 4 of 8; removing the surface alias

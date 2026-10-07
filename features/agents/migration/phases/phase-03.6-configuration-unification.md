@@ -58,7 +58,7 @@ Direct injection of values regardless of UI context.
 1. **Analysis (parallel subagents)** — this phase
 2. **Proposal → user approval** — I produce a concrete diff proposal; user signs off on renames/new columns
 3. **DB migration** — rename `enabled_contexts → enabled_features`, add `context_mappings jsonb`
-4. **Types consolidation** — single canonical file in `packages/chat/src/agents/types/agent-execution-config.types.ts`, with sub-categories expressed as type aliases for documentation, but exposed as a flat config for ergonomics
+4. **Types consolidation** — single canonical file in `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`, with sub-categories expressed as type aliases for documentation, but exposed as a flat config for ergonomics
 5. **Wiring fixes** — every orphan traced in analysis gets a concrete fix (bypass timer, style switcher, hide flags, etc.)
 6. **Form UI** — re-organize ShortcutForm to mirror the three categories
 

@@ -19,7 +19,7 @@ const PERMANENCE_PATTERNS: Array<{ label: string; re: RegExp }> = [
   { label: '"permanently"', re: /permanently (?:removes?|deletes?)/i },
 ];
 
-const SEARCH_DIRS = ["app", "components", "features", "packages/chat/src", "lib", "hooks"];
+const SEARCH_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "lib", "hooks"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "__snapshots__"]);
 
 function walk(dir: string, out: string[]): string[] {

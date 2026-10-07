@@ -219,7 +219,7 @@ describe("toolStateEffects fires the repaint invalidations by NAME", () => {
 describe("THE FRAGMENTATION LAW source guard (D115)", () => {
   it("toolStateEffects has NO import edge — static or dynamic — into content-ir or the db-renderer cluster", () => {
     const source = readFileSync(
-      join(__dirname, "../../../packages/chat/src/tool-call-visualization/effects/toolStateEffects.ts"),
+      join(__dirname, "../../../../aidream/apps/shared/chat/src/tool-call-visualization/effects/toolStateEffects.ts"),
       "utf8",
     );
     // The exact detonator class: any import() or static import reaching the

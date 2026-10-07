@@ -77,7 +77,7 @@ Several control values are MediaRef-shaped: `{file_id?, url?, mime_type?}` (`fil
 - `MEDIA_REF_KEYS` set in `AgentSettingsCore.tsx` enumerates the single-ref keys.
 - `MEDIA_REF_ARRAY_KEYS` set enumerates the multi-ref keys.
 - `renderControlInput` checks both sets at the top and dispatches to `<AgentSettingMediaPicker multi={…} />` instead of the generic widgets.
-- The picker uses the existing `ResourcePickerMenu` (same UI as `SmartAgentResourcePickerButton` for chat attachments) and converts the picker payload via `refineBlockType` + `resourceDataToSource` from `packages/chat/src/agents/redux/execution-system/instance-resources/resource-source.ts` — the canonical cld_files-managed path. **No alternate ingress.**
+- The picker uses the existing `ResourcePickerMenu` (same UI as `SmartAgentResourcePickerButton` for chat attachments) and converts the picker payload via `refineBlockType` + `resourceDataToSource` from `../aidream/apps/shared/chat/src/agents/redux/execution-system/instance-resources/resource-source.ts` — the canonical cld_files-managed path. **No alternate ingress.**
 - The MediaRef value is written to the agent's settings dict via `handleSettingChange(key, mediaRef)`, exactly like every other setting.
 
 Adding a new MediaRef-shaped key to a model's `controls` JSONB requires only:

@@ -10,7 +10,7 @@ Overlay/window panels (file preview, quick tasks, markdown editor, …) get thei
 
 ## LAYERS AND THE SURFACE CHAIN (2026-09-26)
 
-A window, dialog, sheet or panel over a page is a LAYER. While it is open it is the primary surface, and the page under it is NOT lost: every other mounted registered surface rides in the run as a level of `surface_chain` (`packages/chat/src/surfaces/runtime/surface-chain.ts`). So a layer's manifest declares ONLY what the layer alone sees — never the page's values.
+A window, dialog, sheet or panel over a page is a LAYER. While it is open it is the primary surface, and the page under it is NOT lost: every other mounted registered surface rides in the run as a level of `surface_chain` (`../aidream/apps/shared/chat/src/surfaces/runtime/surface-chain.ts`). So a layer's manifest declares ONLY what the layer alone sees — never the page's values.
 
 - Overlay-controller layers are wrapped in `SurfaceLayerBoundary` automatically (`lazyOverlay`); a dialog rendered inside a page wraps its own content: `<SurfaceLayerBoundary><SurfaceRuntimeProvider …>` INSIDE the dialog content, so it registers only while open.
 - Mark the layer's root `data-surface-layer="<surface>"` so the unregistered-window reader (`window-forms.ts`) leaves it to your surface.

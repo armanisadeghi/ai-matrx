@@ -7,7 +7,7 @@ Last updated: 2026-06-21.
 
 This **realizes and extends decisions.md D3** ("all per-feature auto-save hooks/middleware are replaced by a single `autoSave` capability"). D3 shipped the engine in Phase 5 but never wired a consumer, and never covered baseline-diff dirty tracking, the manual/hybrid spectrum, versioning, or soft-delete. This doc closes that gap.
 
-Related: [`decisions.md`](./decisions.md) · [`phase-5-plan.md`](./phase-5-plan.md) · [`phase-5-status.md`](./phase-5-status.md). Engine: `lib/sync/`. Reference consumers studied: `features/notes/`, `packages/chat/src/agents/redux/agent-definition/`. DB versioning dispatcher + `features/versioning/`. Diff engine: `components/diff/`.
+Related: [`decisions.md`](./decisions.md) · [`phase-5-plan.md`](./phase-5-plan.md) · [`phase-5-status.md`](./phase-5-status.md). Engine: `lib/sync/`. Reference consumers studied: `features/notes/`, `../aidream/apps/shared/chat/src/agents/redux/agent-definition/`. DB versioning dispatcher + `features/versioning/`. Diff engine: `components/diff/`.
 
 ---
 
@@ -16,7 +16,7 @@ Related: [`decisions.md`](./decisions.md) · [`phase-5-plan.md`](./phase-5-plan.
 The two gold-standard systems are the **same engine with one knob**.
 
 - **Notes** (`features/notes/`) — never-lose autosave: local buffer → tiny debounce → Redux → long debounce → partial write, plus boundary flushes.
-- **Agent builder** (`packages/chat/src/agents/redux/agent-definition/`) — manual, dirty-gated save with baseline-diff tracking, undo/redo, and an unsaved-changes diff.
+- **Agent builder** (`../aidream/apps/shared/chat/src/agents/redux/agent-definition/`) — manual, dirty-gated save with baseline-diff tracking, undo/redo, and an unsaved-changes diff.
 
 They share an identical data model and differ in **exactly one dimension: when the write fires.** That dimension is the spectrum. This contract makes it a single config field on one shared primitive.
 
@@ -53,7 +53,7 @@ One field selects where a record sits between the extremes. Set per **feature / 
 
 ## 3. The canonical record model
 
-Every durable slice is `Record<id, T & RecordTracking>`. The tracking fields and the edit reducer are **lifted from the agent-builder model** (`packages/chat/src/agents/redux/agent-definition/slice.ts#applyFieldEdit`) — it is the better of the two implementations and the standard.
+Every durable slice is `Record<id, T & RecordTracking>`. The tracking fields and the edit reducer are **lifted from the agent-builder model** (`../aidream/apps/shared/chat/src/agents/redux/agent-definition/slice.ts#applyFieldEdit`) — it is the better of the two implementations and the standard.
 
 ### 3.1 Tracking fields (`RecordTracking`)
 

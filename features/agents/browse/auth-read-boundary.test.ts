@@ -4,7 +4,7 @@ import path from "node:path";
 describe("agent browse authenticated read boundary", () => {
   const agentsRoot = path.resolve(__dirname, "..");
   // The drift-alert hook and the shortcut thunks moved into the chat package (CPM move B).
-  const packageAgentsRoot = path.resolve(__dirname, "../../../packages/chat/src/agents");
+  const packageAgentsRoot = path.resolve(__dirname, "../../../../aidream/apps/shared/chat/src/agents");
 
   it("verifies a browser session before every browse RPC", () => {
     const source = fs.readFileSync(path.join(__dirname, "service.ts"), "utf8");

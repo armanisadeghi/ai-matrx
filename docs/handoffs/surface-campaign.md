@@ -84,7 +84,7 @@ names the page and lists its live values. His review inbox gets one row per fini
 
 5. **A docked panel with its own surface replaces the page's surface.**
    - **Problem:** runtimes resolve "deepest wins, most recent breaks ties"
-     (`packages/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx`). On `/artifacts`, opening a row in the
+     (`../aidream/apps/shared/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx`). On `/artifacts`, opening a row in the
      side canvas (`CanvasSurface`, same depth) wipes the list's values from the Agents chrome. The
      user sees both; an agent sees one.
    - **Fix:** decide the platform rule for co-visible surfaces (a page plus a docked panel), write it
@@ -123,7 +123,7 @@ names the page and lists its live values. His review inbox gets one row per fini
 10. **Attribution slug.** No `artifacts` product slug exists in
     `@ai-matrx/agents/generated/source-attribution` (generated from aidream), so the surface is
     attributed to `canvas`. If the Content Library should report as its own product, add the slug in
-    aidream, regenerate, and update `packages/chat/src/agents/utils/source-feature-from-surface.ts`.
+    aidream, regenerate, and update `../aidream/apps/shared/chat/src/agents/utils/source-feature-from-surface.ts`.
 
 11. **Generic scope tools must not build a feature's records half-way.**
     - **Where:** aidream, the `scope_system` agent tool (`expand_scope_type`, `apply` with

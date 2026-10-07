@@ -25,7 +25,7 @@
  * happens. Click a button wired to an agent and that agent runs. Full stop.
  *
  * WHY THIS COMBINATION IS THE BUG. A headless mode (`HEADLESS_DISPLAY_MODES`
- * in `packages/chat/src/agents/utils/run-ui-utils.ts` — today: `background`) paints no
+ * in `../aidream/apps/shared/chat/src/agents/utils/run-ui-utils.ts` — today: `background`) paints no
  * component, no composer, no button. `autoRun: false` there cannot mean "wait
  * for the user", because there is no user to wait for and nothing that would
  * ever send it afterwards. It means "never run", written as if it meant
@@ -39,7 +39,7 @@
  *
  * `direct` is NOT headless and is deliberately not flagged: it means "no
  * overlay — the CALLER renders the interface", and callers do. `/chat`
- * (`packages/chat/src/cx-chat/hooks/useInstanceBootstrap.ts`) uses `direct` +
+ * (`../aidream/apps/shared/chat/src/cx-chat/hooks/useInstanceBootstrap.ts`) uses `direct` +
  * `autoRun: false` precisely so you can type before anything is sent.
  *
  * THE ONE LAWFUL FORM: a caller that will dispatch `executeInstance` itself,

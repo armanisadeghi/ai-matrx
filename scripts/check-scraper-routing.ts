@@ -11,7 +11,7 @@ import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = join(import.meta.dirname, "..");
-const SCAN_DIRS = ["app", "components", "features", "packages/chat/src", "hooks", "lib"];
+const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib"];
 const CANONICAL_CLIENT = "features/scraper/hooks/useScraperApi.ts";
 const SCRAPER_ENDPOINT =
   /\/(?:api\/)?scraper\/(?:quick-scrape|search|search-and-scrape|search-and-scrape-limited|mic-check)/;

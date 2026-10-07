@@ -1,6 +1,6 @@
 import { parseDelimited } from "@ai-matrx/alchemy/operate/read";
 import { punchRegisterToCsv } from "../registerCsv";
-import { rowsToCsv } from "@/packages/chat/src/agent-copy/export";
+import { rowsToCsv } from "@ai-matrx/chat/agent-copy/export";
 import { listingToCsv } from "@/features/product-capture/components/pipeline/ListingPanel";
 
 const NASTY = 'He said "hi", then\nleft';

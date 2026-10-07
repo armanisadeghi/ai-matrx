@@ -81,11 +81,11 @@ const ALLOW: Record<Rule, string[]> = {
   ],
   formatlibs: ["components/rich-editor/core/gfm-lexer.ts"],
   doorbypass: [
-    "packages/chat/src/surfaces/runtime/",
+    "../aidream/apps/shared/chat/src/surfaces/runtime/",
     // THE ONE WRITE DOOR bound for the app (ALC-17): it IS the door - it wraps applySurfaceWrite /
     // loadSurfaceWriteDoor into the Alchemy host's `door` port. Only this file of agent-copy/ is exempt.
     "components/agent-copy/alchemy-door.ts",
-    "packages/chat/src/agents/redux/execution-system/thunks/dispatch-surface-write.thunk.ts",
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/dispatch-surface-write.thunk.ts",
   ],
   registries: [
     // Client directives are the server -> client stream INSTRUCTION vocabulary
@@ -93,7 +93,7 @@ const ALLOW: Record<Rule, string[]> = {
     "lib/client-directives/directiveRegistry.ts",
     // A naming map of surface-config namespaces: validate / merge / empty for
     // `ui.ui_surface_config` JSONB rows. No runnable entries, no actions, no menu items.
-    "packages/chat/src/surfaces/config/namespace-registry.ts",
+    "../aidream/apps/shared/chat/src/surfaces/config/namespace-registry.ts",
     // The DECLARATION store behind a provider that IS registered into Alchemy's one registry
     // (`richDocumentActionProvider`, T0, ensureRichDocumentProvider): handler modules add their
     // RichDocumentAction at load (hoisted store, import-cycle safe) and the provider converts each
@@ -121,11 +121,11 @@ const ALLOW: Record<Rule, string[]> = {
     // WindowPanel's own imperative openPopout handle by window id; not a menu action.
     "features/window-panels/popout/usePopoutControl.ts",
     // Providers of client-state payloads sent WITH an agent request (client.capabilities), not user-invoked actions.
-    "packages/chat/src/agents/redux/execution-system/client-capabilities/registry.ts",
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/client-capabilities/registry.ts",
     // Promise resolvers for a pending ask_user tool call (callId -> resolve); a rendezvous, not an action.
-    "packages/chat/src/agents/ui-first-tools/redux/ask-resolver-registry.ts",
+    "../aidream/apps/shared/chat/src/agents/ui-first-tools/redux/ask-resolver-registry.ts",
     // Mounted custom-fields section doors (the surface write door's targets for `custom_fields`); not menu actions.
-    "packages/chat/src/surfaces/runtime/custom-field-targets.ts",
+    "../aidream/apps/shared/chat/src/surfaces/runtime/custom-field-targets.ts",
   ],
   handcsv: [],
   // QuickHtmlShareModal opens the author's HTML in a new tab as a PREVIEW of the page (a blob URL they look

@@ -9,7 +9,7 @@
 ## 1. Current State Inventory
 
 ### AgentExecutionConfig
-**File:** `packages/chat/src/agents/types/agent-execution-config.types.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`  
 **Fields (16):** Organized by category already:
 - Presentation: `displayMode`, `showVariablePanel`, `variablesPanelStyle`, `autoRun`, `allowChat`
 - Transparency: `showDefinitionMessages`, `showDefinitionMessageContent`, `hideReasoning`, `hideToolResults`
@@ -28,7 +28,7 @@
 ---
 
 ### AgentExecutionRuntime
-**File:** `packages/chat/src/agents/types/agent-execution-config.types.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`  
 **Fields (4):** All optional
 - `applicationScope?` — UI-captured data (selection, content, context)
 - `userInput?` — live user text (from gate or chat input)
@@ -46,7 +46,7 @@
 ---
 
 ### ManagedAgentOptions
-**File:** `packages/chat/src/agents/types/instance.types.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/types/instance.types.ts`  
 **Fields (30+):** Three sections
 - **Identity:** `surfaceKey`, `agentId`, `shortcutId`, `sourceFeature`, `manual`
 - **Config bundle:** `config?: Partial<AgentExecutionConfig>` (canonical)
@@ -66,7 +66,7 @@
 ---
 
 ### NormalizedManagedOptions
-**File:** `packages/chat/src/agents/utils/normalize-managed-options.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/utils/normalize-managed-options.ts`  
 **Structure:**
 ```typescript
 {
@@ -86,7 +86,7 @@
 ---
 
 ### AgentShortcut
-**File:** `packages/chat/src/agents/redux/agent-shortcuts/types.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/types.ts`  
 **Fields (25):**
 - Identity: `id`, `categoryId`, `label`, `description`, `iconName`, `keyboardShortcut`, `sortOrder`
 - Agent reference: `agentId`, `agentVersionId`, `useLatest`
@@ -121,7 +121,7 @@
 ---
 
 ### ApplicationScope
-**File:** `packages/chat/src/agents/utils/scope-mapping.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts`  
 **Structure:**
 ```typescript
 {
@@ -141,7 +141,7 @@
 ---
 
 ### ShortcutContext (enum)
-**File:** `packages/chat/src/agents/utils/shortcut-context-utils.ts`  
+**File:** `../aidream/apps/shared/chat/src/agents/utils/shortcut-context-utils.ts`  
 **Values (12 strings):**
 - `general`, `chat`, `notes`, `tasks`, `projects`, `agent-builder`, `custom-apps`, `code-editor`, `documents`, `data-tables`, `canvas`, `dashboard`
 
@@ -170,7 +170,7 @@
 
 ## 3. Proposed Canonical Types File Structure
 
-**File:** `packages/chat/src/agents/types/agent-execution-config.types.ts`
+**File:** `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts`
 
 **Decision:** Keep flat interface (current). Export helper type aliases for documentation only. Rationale:
 - Flat is ergonomic for config merging and form binding
@@ -318,17 +318,17 @@ This creates cognitive load and code-review confusion.
 ### Files affected (grep results):
 
 **Type definitions:**
-- `packages/chat/src/agents/utils/shortcut-context-utils.ts` — remains `ShortcutContext` (the enum/union type); no change to the enum name itself
-- `packages/chat/src/agents/redux/agent-shortcuts/types.ts` — `AgentShortcut.enabledContexts` → `enabledFeatures`; RPC return types same
+- `../aidream/apps/shared/chat/src/agents/utils/shortcut-context-utils.ts` — remains `ShortcutContext` (the enum/union type); no change to the enum name itself
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/types.ts` — `AgentShortcut.enabledContexts` → `enabledFeatures`; RPC return types same
 - `features/agent-shortcuts/types.ts` — `CategoryFormData.enabledContexts` → `enabledFeatures`
 
 **DB & converters (26 files):**
 - `types/database.types.ts` — `enabled_contexts` → `enabled_features` (column rename)
-- `packages/chat/src/agents/redux/agent-shortcuts/converters.ts` — map `row.enabled_features` (5 places)
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/converters.ts` — map `row.enabled_features` (5 places)
 - All ~20 other files reading/writing shortcuts: auto-fixes when updating converters
 
 **Selectors:**
-- `packages/chat/src/agents/redux/agent-shortcuts/selectors.ts` — `record.enabledContexts` → `record.enabledFeatures`
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/selectors.ts` — `record.enabledContexts` → `record.enabledFeatures`
 
 **Components & forms:**
 - `features/agent-shortcuts/components/ShortcutForm.tsx` — form field label + binding
@@ -378,8 +378,8 @@ This creates cognitive load and code-review confusion.
 ### Files affected:
 
 **Type definitions:**
-- `packages/chat/src/agents/types/agent-execution-config.types.ts` — add `contextMappings` field
-- `packages/chat/src/agents/redux/agent-shortcuts/types.ts` — `AgentShortcut.contextMappings`
+- `../aidream/apps/shared/chat/src/agents/types/agent-execution-config.types.ts` — add `contextMappings` field
+- `../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/types.ts` — `AgentShortcut.contextMappings`
 - `features/agent-shortcuts/types.ts` — `ShortcutFormData` includes it (automatic)
 
 **DB migration:**
@@ -390,10 +390,10 @@ This creates cognitive load and code-review confusion.
 - `features/agent-shortcuts/components/ShortcutForm.tsx` — add second mapping editor widget (optional: Phase 3.7)
 
 **Wiring:**
-- `packages/chat/src/agents/utils/scope-mapping.ts` — `mapScopeToInstance()` checks `contextMappings` in precedence order
+- `../aidream/apps/shared/chat/src/agents/utils/scope-mapping.ts` — `mapScopeToInstance()` checks `contextMappings` in precedence order
   - Current: Unmapped scope keys → inferred as ad-hoc context
   - New: Check `contextMappings` first; if mapped, use slot; else ad-hoc
-- `packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` — pass `contextMappings` to `mapScopeToInstance()` call
+- `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts` — pass `contextMappings` to `mapScopeToInstance()` call
 - No runtime dispatch changes needed (just precedence order in mapper)
 
 **Precedence (proposed):**

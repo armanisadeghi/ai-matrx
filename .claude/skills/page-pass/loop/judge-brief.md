@@ -23,7 +23,7 @@ Shared links (/p/<slug>, forms someone was sent) and public promotional pages de
 ## How to look
 - Repo (read-only for you): /Users/armanisadeghi/code/matrx-frontend. Do NOT edit, commit, or start a dev server.
 - Screens: `TMPDIR=/tmp/judge-<you> pnpm page:look --route <route> --out /tmp/judge-<you>/look` — writes desktop and phone screenshots in light and dark plus measurements (`look.json`). Read every PNG with the Read tool. The measurements are hints; your eyes decide.
-- Agent side: `TMPDIR=/tmp/judge-<you>-p pnpm surface:probe --surface <name> --route <route> --out /tmp/judge-<you>/probe.json` when the page has a surface (the route→surface map is `packages/chat/src/surfaces/utils/route-to-surface.ts`); compare what the Surface Context supplies against what the page shows.
+- Agent side: `TMPDIR=/tmp/judge-<you>-p pnpm surface:probe --surface <name> --route <route> --out /tmp/judge-<you>/probe.json` when the page has a surface (the route→surface map is `../aidream/apps/shared/chat/src/surfaces/utils/route-to-surface.ts`); compare what the Surface Context supplies against what the page shows.
 - You may read the page's source code to confirm a suspicion (e.g. a hand-made button, a dead handler).
 
 ## Report (return exactly this)

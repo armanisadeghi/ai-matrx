@@ -75,7 +75,7 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 
 - **Database rows:** [`types/database.types.ts`](./types/database.types.ts) (Supabase-generated, regenerated via `pnpm db-types`). **Never** hand-redeclare a row shape.
 - **File pipeline:** [`features/files/handler/types.ts`](./features/files/handler/types.ts) — `FileSource`, `NormalizedFile`, `FileTarget`, `MediaBlock`, `UploadOpts`. Plus [`features/files/types.ts`](./features/files/types.ts) — `CloudFile`, `Asset`, `MediaRef`, `Visibility`, `PermissionLevel`.
-- **Agents / messages:** [`packages/chat/src/agents/types/`](./packages/chat/src/agents/types/) — `ImageBlock`, `AudioBlock`, `VideoBlock`, `DocumentBlock`, `MessagePart`, execution and definition types.
+- **Agents / messages:** [`../aidream/apps/shared/chat/src/agents/types/`](../aidream/apps/shared/chat/src/agents/types/) — `ImageBlock`, `AudioBlock`, `VideoBlock`, `DocumentBlock`, `MessagePart`, execution and definition types.
 - **Per-feature types:** every Tier-1/2 feature has a `types.ts` (`features/conversation/types.ts`, `features/notes/types.ts`, `features/sharing/types.ts`, `features/settings/types.ts`, etc. — see `CLAUDE.md` for the full list).
 - **Cross-feature utility types:** [`types/`](./types/) — `entities.ts`, `FlexibleId.ts`, `supabase-rpc.ts`, `MatrxServerTableTypes.ts`.
 
@@ -121,7 +121,7 @@ These are the failure modes agents repeat in this codebase. Every one is a viola
 
 - **Store:** [`lib/redux/store.ts`](./lib/redux/store.ts) + [`lib/redux/hooks.ts`](./lib/redux/hooks.ts). Always use `useAppDispatch` / `useAppSelector` / `useAppStore` — never untyped variants.
 - **Cross-cutting slices:** [`lib/redux/slices/`](./lib/redux/slices/) — `overlaySlice`, `windowManagerSlice`, `layoutSlice`, `userAuthSlice`, `userProfileSlice`, `userPreferencesSlice`, `agentCacheSlice`, `artifactsSlice`, `entitySystemSlice`, `apiConfigSlice`, etc. (33 slices total).
-- **Feature-scoped slices:** [`features/*/redux/`](./features/) — e.g. `packages/chat/src/agents/redux/agent-definition/`, `packages/chat/src/agents/redux/execution-system/`.
+- **Feature-scoped slices:** [`features/*/redux/`](./features/) — e.g. `../aidream/apps/shared/chat/src/agents/redux/agent-definition/`, `../aidream/apps/shared/chat/src/agents/redux/execution-system/`.
 - **Entity-store layer:** [`lib/redux/entity-store.ts`](./lib/redux/entity-store.ts) and `lib/redux/entity/` — the generic entity-manager pattern. If your data is "rows of a Supabase table," the entity layer is probably the right home.
 - **Selectors:** every slice exports memoized selectors via `createSelector`. **Every property has its own selector.** Don't `useSelector(state => state.foo.bar.baz)` — find or add a named selector.
 

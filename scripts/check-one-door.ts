@@ -47,7 +47,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const ROOT = join(__dirname, "..");
-const SCAN_DIRS = ["features", "packages/chat/src", "app"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "app"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "__tests__", "__snapshots__"]);
 
 const WRITABLE: Record<string, ReadonlySet<string>> = {

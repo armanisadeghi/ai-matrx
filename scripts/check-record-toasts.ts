@@ -55,6 +55,7 @@
  */
 
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import {
   readFileSync,
   writeFileSync,
@@ -69,7 +70,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 import { emitItem, endItems } from "./checks/items.mjs";
 
 const REPO_ROOT = resolve(__dirname, "..");
-const SCANNED_DIRS = ["features", "packages/chat/src", "lib", "app", "components", "hooks"] as const;
+const SCANNED_DIRS = ["features", "../aidream/apps/shared/chat/src", "lib", "app", "components", "hooks"] as const;
 const BASELINE_PATH = join(REPO_ROOT, "scripts/record-toasts.baseline.json");
 
 const TOAST_METHODS = new Set(["success", "error", "info", "warning"]);
@@ -152,11 +153,7 @@ function scanSource(relPath: string, source: string): Finding[] {
 }
 
 function listFiles(): string[] {
-  const out = execFileSync(
-    "git",
-    ["ls-files", "--", ...SCANNED_DIRS.map((d) => `${d}/**/*.ts`), ...SCANNED_DIRS.map((d) => `${d}/**/*.tsx`)],
-    { cwd: REPO_ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
-  );
+  const out = gitFiles(REPO_ROOT, ["ls-files", "--", ...SCANNED_DIRS.map((d) => `${d}/**/*.ts`), ...SCANNED_DIRS.map((d) => `${d}/**/*.tsx`)]);
   return out
     .split("\n")
     .filter(Boolean)

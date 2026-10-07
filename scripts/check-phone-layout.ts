@@ -41,7 +41,7 @@ import { join, relative } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
-const SCAN_DIRS = ["app", "features", "packages/chat/src", "components", "lib"];
+const SCAN_DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib"];
 const ALLOWLIST_PATH = join(ROOT, "scripts", "phone-layout-allowlist.json");
 
 type Rule = "T" | "V" | "G";

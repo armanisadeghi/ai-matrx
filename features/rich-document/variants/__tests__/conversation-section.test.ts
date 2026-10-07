@@ -116,10 +116,10 @@ describe("the Conversation section", () => {
     const root = join(__dirname, "..", "..", "..", "..");
     const section = readFileSync(join(root, "features/rich-document/actions/handlers/conversation-section.ts"), "utf8");
     const listMenu = readFileSync(
-      join(root, "packages/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx"),
+      join(root, "../aidream/apps/shared/chat/src/agents/components/conversation-actions/conversationActionRegistry.tsx"),
       "utf8",
     );
-    const header = readFileSync(join(root, "packages/chat/src/agents/components/chat/ConversationPageMenu.tsx"), "utf8");
+    const header = readFileSync(join(root, "../aidream/apps/shared/chat/src/agents/components/chat/ConversationPageMenu.tsx"), "utf8");
     for (const verb of ["shareConversation", "copyConversationLink", "duplicateConversationVerb", "openConversationRename"]) {
       expect(section).toContain(verb);
     }

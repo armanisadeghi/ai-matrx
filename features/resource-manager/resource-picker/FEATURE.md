@@ -6,7 +6,7 @@ The "+" attach family for AI surfaces: pick a thing, attach it to the run. `Reso
 
 ## What it attaches, and how (the load-bearing contract)
 
-`Resource` is the tagged union at `packages/chat/src/agents/resources/types.ts` (`{ type, data }`). `attach-resource.ts` routes each kind by its OWN semantics — this is the whole point of the family:
+`Resource` is the tagged union at `../aidream/apps/shared/chat/src/agents/resources/types.ts` (`{ type, data }`). `attach-resource.ts` routes each kind by its OWN semantics — this is the whole point of the family:
 
 - **Stored file** → a durable `platform.associations` `file → conversation` edge that persists across turns and reloads (the backend reads the edge at call time). NOT the ephemeral resources slice.
 - **Pre-conversation file** → a `processed_document` instance resource.

@@ -14,6 +14,7 @@
  * conversation and requires the server's answer to be shown.
  */
 import React, { act } from "react";
+import { gitGrepFiles } from "./chat-source";
 import { createRoot } from "react-dom/client";
 import { Provider } from "react-redux";
 
@@ -190,11 +191,12 @@ describe("every conversation-history search box asks the server", () => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const path = require("node:path") as typeof import("node:path");
     const root = path.resolve(__dirname, "../../..");
-    const out = execSync(
-      "git grep -l -e 'setScopeSearch(' -- '*.ts' '*.tsx' ':!**/__tests__/**' ':!packages/chat/src/agents/redux/conversation-history/slice.ts'",
-      { cwd: root, encoding: "utf8" },
+    // The app's files and @ai-matrx/chat's source (the aidream checkout beside this repo), one list.
+    const files = gitGrepFiles(
+      ["-e", "setScopeSearch("],
+      ["*.ts", "*.tsx", ":!**/__tests__/**"],
+      ["*.ts", "*.tsx", ":!**/__tests__/**", ":!agents/redux/conversation-history/slice.ts"],
     );
-    const files = out.split("\n").filter(Boolean);
     expect(files.length).toBeGreaterThan(0);
     const offenders = files.filter((f) => {
       const src = fs.readFileSync(path.join(root, f), "utf8");

@@ -225,7 +225,7 @@ export function seedChat(): void {
       connection_count: 0,
     },
   ]);
-  // packages/chat/src/agents/types/agent-definition.types.ts `AgentExecutionFull` —
+  // ../aidream/apps/shared/chat/src/agents/types/agent-definition.types.ts `AgentExecutionFull` —
   // the person's chat agent, readable by them (it answered the transcript).
   seedRpc("agx_get_execution_full", [
     {

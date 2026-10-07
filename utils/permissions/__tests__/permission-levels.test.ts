@@ -222,8 +222,8 @@ const CENSUS_SITES = [
   "utils/permissions/orgResources.ts",
   "features/notes/redux/notes.types.ts",
   "features/messaging/types.ts",
-  "packages/chat/src/cx-chat/types/cx-tables.ts",
-  "packages/chat/src/public-chat/types/cx-tables.ts",
+  "../aidream/apps/shared/chat/src/cx-chat/types/cx-tables.ts",
+  "../aidream/apps/shared/chat/src/public-chat/types/cx-tables.ts",
   "features/access-gate/service/accessRequests.ts",
   "features/access-gate/service/accessDeniedContext.ts",
 ] as const;

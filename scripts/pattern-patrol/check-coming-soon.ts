@@ -31,7 +31,7 @@ export interface ComingSoonRepositoryScan extends ComingSoonSourceScan {
   unknownAnnouncedIds: string[];
 }
 
-const RUNTIME_ROOTS = ["app", "components", "features", "packages/chat/src", "hooks", "lib"];
+const RUNTIME_ROOTS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib"];
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx"]);
 const PROMISE_LANGUAGE = /\bcoming[\s-]+soon\b/i;
 const SOON_BADGE = /^\s*soon\s*$/i;

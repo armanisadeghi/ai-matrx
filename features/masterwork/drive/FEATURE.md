@@ -36,7 +36,7 @@ Knobs migration: `migrations/masterwork_drive_lane_knobs.sql`.
    those are the owner's to write, and swapping the interviewer (including for
    one written specifically for voice) must stay a settings change.
 2. **It builds no second voice stack and no second way to save.** Voice is
-   `packages/chat/src/voice-agent/relay/` — the same Communicator relay the Scout panel
+   `../aidream/apps/shared/chat/src/voice-agent/relay/` — the same Communicator relay the Scout panel
    and the Conductor mount. The conversation is an ordinary execution-system
    conversation, landed on the Rulebook by
    `record/service.ts::associateInterviewWhenPersisted`, so a drive appears in
@@ -69,7 +69,7 @@ today — see `../../../../common-docs/policies/native-mobile-layout.md`.
 ## Guards
 
 `__tests__/driveSession.test.ts` and `__tests__/voiceCommands.test.ts`, plus
-the platform-level `packages/chat/src/voice-agent/relay/utteranceQueue.test.ts`. Each
+the platform-level `../aidream/apps/shared/chat/src/voice-agent/relay/utteranceQueue.test.ts`. Each
 carries an executable description of the behaviour it replaced, so the guard
 can be watched failing without a commit archaeology trip. The voice-command
 suite's most important half is the NEGATIVE one: a false positive cuts an

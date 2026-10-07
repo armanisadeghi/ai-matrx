@@ -50,7 +50,7 @@ import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import process from "node:process";
-import { featureRegExp } from "./lib/source-roots.cjs";
+import { featureRegExp, gitFiles } from "./lib/source-roots.cjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const ARGS = process.argv.slice(2);
@@ -170,11 +170,7 @@ function isOwnerExempt(relPath) {
 }
 
 function listTrackedTsxFiles() {
-  const out = execFileSync(
-    "git",
-    ["ls-files", "--", "app/*.tsx", "app/**/*.tsx", "features/*.tsx", "features/**/*.tsx", "packages/chat/src/**/*.tsx", "components/*.tsx", "components/**/*.tsx"],
-    { cwd: ROOT, encoding: "utf8", maxBuffer: 512 * 1024 * 1024 }, // 1 MiB default → ENOBUFS
-  );
+  const out = gitFiles(ROOT, ["ls-files", "--", "app/*.tsx", "app/**/*.tsx", "features/*.tsx", "features/**/*.tsx", "../aidream/apps/shared/chat/src/**/*.tsx", "components/*.tsx", "components/**/*.tsx"]);
   return out
     .split("\n")
     .map((l) => l.trim())

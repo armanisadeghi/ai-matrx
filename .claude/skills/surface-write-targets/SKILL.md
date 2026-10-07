@@ -10,7 +10,7 @@ other half: **declared write paths agents can drive**, gated by policy. The
 plumbing is ALL built and automatic — when a mounted surface has agent-writable
 targets, every agent run on it is offered ONE inline tool
 (`apply_surface_write`), and its calls route through `applySurfaceWrite`
-(`packages/chat/src/surfaces/runtime/surface-writeback.ts`) with `origin: "agent"`:
+(`../aidream/apps/shared/chat/src/surfaces/runtime/surface-writeback.ts`) with `origin: "agent"`:
 `ask` shows an in-place confirm, `auto` applies, `manual` refuses loudly, a
 decline returns a non-error result. **You add ZERO plumbing** — only manifest
 declarations + page handlers. Changing the writeback seam itself is not this
@@ -38,7 +38,7 @@ page's own save functions, each target `ask`:
 | `<record>_draft` | object | only when the page has a "New ___" dialog: opens it and fills EVERY field, nothing saved |
 
 - **One set per record type**, built with `collectionWriteHandlers`
-  (`packages/chat/src/surfaces/runtime/collection-write-targets.ts`). A page with five
+  (`../aidream/apps/shared/chat/src/surfaces/runtime/collection-write-targets.ts`). A page with five
   record types calls it five times. Never one catch-all target.
 - Archive/restore is a field on `update_<plural>` (`archived: true|false`) when
   the record can be archived.
@@ -79,7 +79,7 @@ value when archived records exist, so update and restore can name them.
 ## Step 2 — register handlers on the page
 
 A handler entry is `{ validate, apply }`
-(`SurfaceWriteHandlerEntry`, `packages/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx`):
+(`SurfaceWriteHandlerEntry`, `../aidream/apps/shared/chat/src/surfaces/runtime/SurfaceRuntimeContext.tsx`):
 - `validate(value)` runs BEFORE the person's approval card. Throw a sentence
   the agent can act on and no card is shown. Put the whole-list check here
   (a pure parser, unit-tested).
@@ -144,7 +144,7 @@ test rows you created so the person can remove them.
   needs either fails or spends MORE tokens looking the same data up. So:
   - **Send what the page's likely jobs need, up to a page budget.** The sum of
     a surface's `inlineUpTo` (inherited values included) may not exceed
-    `PAGE_CONTEXT_BUDGET` (10,000 chars, `packages/chat/src/surfaces/types.ts`); the
+    `PAGE_CONTEXT_BUDGET` (10,000 chars, `../aidream/apps/shared/chat/src/surfaces/types.ts`); the
     declaration check refuses more without Arman's `contextBudgetApproval` on
     the manifest. Within it, every number is your judgment. Everything not
     inlined stays at the 200-char default and is one lookup away.
@@ -163,7 +163,7 @@ test rows you created so the person can remove them.
       and nothing else inline; the guide tells the agent how to discover the rest.
     - Small drafts, recents and tabs: ~1,000-2,000 each.
   - **Bundle it.** Inlined content goes out as ONE well-prepared XML bundle
-    per job, built with `packages/chat/src/surfaces/runtime/context-bundle.ts`
+    per job, built with `../aidream/apps/shared/chat/src/surfaces/runtime/context-bundle.ts`
     (`xmlElement`, `xmlText` with `max`, `xmlList` with `maxRows`): attributes
     for scalars, empty parts omitted, clipped text marked
     `clipped="true" total_chars="N"`, dropped rows counted. Never raw JSON

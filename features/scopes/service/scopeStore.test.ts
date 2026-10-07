@@ -150,7 +150,7 @@ describe("nothing in the app writes scopes through the legacy service", () => {
 
   it("every scope write in features/, app/, components/, lib/ and hooks/ calls scopeStore", () => {
     const files: string[] = [];
-    for (const top of ["features", "packages/chat/src", "app", "components", "lib", "hooks", "utils", "providers"]) {
+    for (const top of ["features", "../aidream/apps/shared/chat/src", "app", "components", "lib", "hooks", "utils", "providers"]) {
       try {
         walk(join(root, top), files);
       } catch {

@@ -33,7 +33,7 @@ import { emitItem, endItems } from "./checks/items.mjs";
 const ROOT = join(import.meta.dirname, "..");
 const BASELINE = join(ROOT, "scripts", "api-contracts-baseline.json");
 const REASONS = join(ROOT, "scripts", "api-contracts-baseline.reasons.json");
-const SCAN_DIRS = ["features", "packages/chat/src", "app", "lib", "components", "hooks"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "app", "lib", "components", "hooks"];
 
 // Files/dirs allowed to import the raw client: the sanctioned client layer.
 const ALLOWED = [

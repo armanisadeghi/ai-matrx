@@ -24,9 +24,10 @@
  */
 import { exitAfterDrain } from "./lib/exit-after-drain";
 import { execFileSync } from "node:child_process";
+import { gitFiles } from "./lib/source-roots.cjs";
 import { readFileSync, writeFileSync } from "node:fs";
 
-const ROOTS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "providers"];
+const ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "providers"];
 
 /** `path:line-text-fragment` → why a hidden alert is acceptable there, naming its visible twin. */
 const ALLOW: Record<string, string> = {};
@@ -125,7 +126,7 @@ function selfTest(): number {
 
 function main(): number {
   if (process.argv.includes("--self-test")) return selfTest();
-  const files = execFileSync("git", ["ls-files", "--", ...ROOTS], { encoding: "utf8", maxBuffer: 1 << 28 })
+  const files = gitFiles(process.cwd(), ["ls-files", "--", ...ROOTS])
     .split("\n")
     .filter((f) => f.endsWith(".tsx") && !/\.test\.tsx$/.test(f));
   const findings: Finding[] = [];

@@ -81,7 +81,7 @@ const HEADER_CONTROL_FILES = [
   "features/knowledge/command-bar/OpenCommandBarButtons.tsx",
   "features/messaging/components/shell/MessagesHeaderButton.tsx",
   "features/notifications/components/InboxHeaderButton.tsx",
-  "packages/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx",
+  "../aidream/apps/shared/chat/src/surfaces/components/chrome/SurfaceAgentsHeaderButton.tsx",
 ];
 
 describe("the header band", () => {

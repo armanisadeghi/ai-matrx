@@ -120,7 +120,7 @@ it("a chip opens its value in the conversation's tab; another chip swaps it; the
 });
 
 it("every context chip opens the canvas tab — none mounts its own sheet", () => {
-  const dir = join(__dirname, "..", "..", "..", "packages", "chat", "src", "agents", "components", "context-policies-display");
+  const dir = join(__dirname, "..", "..", "..", "..", "aidream", "apps", "shared", "chat", "src", "agents", "components", "context-policies-display");
   for (const file of ["ContextPolicyChip.tsx", "ContextPolicyItemsPopover.tsx"]) {
     const source = readFileSync(join(dir, file), "utf8");
     expect(source).not.toContain("ContextPolicyDetailSheet");

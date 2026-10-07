@@ -200,7 +200,7 @@ const FROZEN_DETECTOR_FILES: Record<string, FrozenLiteral[]> = {
           /const ATTRIBUTE_XML_BLOCKS = \[([\s\S]*?)\]/.exec(c)?.[1] ?? null,
       },
     ],
-  "packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts": [
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts": [
     {
       name: "SIMPLE_XML_TAGS",
       extract: setLiteralExtractor("SIMPLE_XML_TAGS"),

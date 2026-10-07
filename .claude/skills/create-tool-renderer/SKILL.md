@@ -10,9 +10,9 @@ Make a tool call render as a first-class, beautiful surface instead of the gener
 | Path | When | Where the code lives |
 |---|---|---|
 | **A — DB renderer (default, ~90%)** | Any tool. Author once, renders everywhere, no repo deploy. | `tool_ui` table (runtime-compiled) |
-| **B — Hardcoded renderer (escape hatch, ~10%)** | A genuinely interactive/heavy widget that needs full repo imports. | `packages/chat/src/tool-call-visualization/renderers/` + registry |
+| **B — Hardcoded renderer (escape hatch, ~10%)** | A genuinely interactive/heavy widget that needs full repo imports. | `../aidream/apps/shared/chat/src/tool-call-visualization/renderers/` + registry |
 
-**Resolution order: in-code registry → DB renderer → generic.** A DB renderer only renders for a tool with NO in-code registry entry. Architecture: [`packages/chat/src/tool-call-visualization/FEATURE.md`](../../../packages/chat/src/tool-call-visualization/FEATURE.md).
+**Resolution order: in-code registry → DB renderer → generic.** A DB renderer only renders for a tool with NO in-code registry entry. Architecture: [`../aidream/apps/shared/chat/src/tool-call-visualization/FEATURE.md`](../../../../aidream/apps/shared/chat/src/tool-call-visualization/FEATURE.md).
 
 ## Cardinal rule: HIDE NOTHING
 
@@ -156,13 +156,13 @@ A DB renderer is **fully self-describing**: `display_name` → label, `header_su
 Only when the tool needs full repo imports or heavy interactivity. Full power, but ships in the bundle and needs a deploy.
 
 ```
-packages/chat/src/tool-call-visualization/renderers/<kebab-tool-name>/
+../aidream/apps/shared/chat/src/tool-call-visualization/renderers/<kebab-tool-name>/
 ├── <Tool>Inline.tsx    # required — "use client"; ToolRendererProps
 ├── <Tool>Overlay.tsx   # optional — defaults to Inline
 └── index.ts            # barrel
 ```
 
-Here you CAN import the shared helpers from `@ai-matrx/chat/tool-call-visualization/renderers/_shared` (`resultAsObject`, `collectMessages`, `filterStepEvents`, `getArg`, `isTerminal`, `isSuccess`) and anything else in the repo. Register in `packages/chat/src/tool-call-visualization/registry/registry.tsx`:
+Here you CAN import the shared helpers from `@ai-matrx/chat/tool-call-visualization/renderers/_shared` (`resultAsObject`, `collectMessages`, `filterStepEvents`, `getArg`, `isTerminal`, `isSuccess`) and anything else in the repo. Register in `../aidream/apps/shared/chat/src/tool-call-visualization/registry/registry.tsx`:
 
 ```tsx
 import { ToolInline, ToolOverlay } from "../renderers/<tool-name>";

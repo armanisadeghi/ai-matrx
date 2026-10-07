@@ -62,7 +62,7 @@ import {
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/structured-output-flattening";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SCAN_DIRS = ["features", "packages/chat/src", "components", "lib", "app"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "components", "lib", "app"];
 const SKIP_DIR =
   /(^|\/)(node_modules|\.next[^/]*|dist|build|coverage|__tests__|\.git)(\/|$)/;
 const SKIP_FILE = /\.(test|spec)\.tsx?$/;

@@ -65,11 +65,11 @@ const ARTIFACT_REGISTRY_PATH = resolve(
 );
 const ACCUMULATOR_PATH = resolve(
   ROOT,
-  "packages/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
 );
 const PREFILTER_PATH = resolve(
   ROOT,
-  "packages/chat/src/agents/redux/execution-system/utils/content-prefilter.ts",
+  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/content-prefilter.ts",
 );
 const SPLITTER_PATH = resolve(
   ROOT,

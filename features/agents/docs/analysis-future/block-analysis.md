@@ -337,7 +337,7 @@ interface BlockWithServerData extends ContentBlock {
 
 This normalizes raw DB-persisted blocks back into `ContentBlockPayload` shape so the streaming pipeline sees a consistent type:
 
-```154:158:packages/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts
+```154:158:../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/normalize-content-blocks.ts
 export function normalizeContentBlocks(
   rawBlocks: Array<Record<string, unknown>>,
 ): ContentBlockPayload[] {

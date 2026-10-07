@@ -61,11 +61,11 @@ await run({
 
 | Use case | Primitive | Location |
 |---|---|---|
-| One-shot run, stream text into local UI | `useRunAgent` | `packages/chat/src/agents/run/useRunAgent.ts` |
+| One-shot run, stream text into local UI | `useRunAgent` | `../aidream/apps/shared/chat/src/agents/run/useRunAgent.ts` |
 | Thin feature wrapper with cancel + streaming state | Feature hook wrapping `useRunAgent` | e.g. `useScraperAgentAnalysis` |
-| Managed instance, overlays, chat follow-up | `launchAgentExecution` + Redux selectors | `packages/chat/src/agents/redux/execution-system/` |
+| Managed instance, overlays, chat follow-up | `launchAgentExecution` + Redux selectors | `../aidream/apps/shared/chat/src/agents/redux/execution-system/` |
 | System builtin, extract JSON/code from response | `executeBuiltinWithJsonExtraction` / `executeBuiltinWithCodeExtraction` | `execute-builtin-with-extraction.thunks.ts` |
-| Full test modal / widget surface | `useAgentLauncher` | `packages/chat/src/agents/hooks/useAgentLauncher.ts` |
+| Full test modal / widget surface | `useAgentLauncher` | `../aidream/apps/shared/chat/src/agents/hooks/useAgentLauncher.ts` |
 
 **Default for inline tabs / fire-and-forget analysis:** `useRunAgent`.
 

@@ -45,7 +45,7 @@ const REPO_ROOT = join(__dirname, "..", "..", "..", "..");
  */
 function columnsTheClientCanSend(): string[] {
   const src = readFileSync(
-    join(REPO_ROOT, "packages/chat/src/agents/redux/agent-shortcuts/thunks.ts"),
+    join(REPO_ROOT, "../aidream/apps/shared/chat/src/agents/redux/agent-shortcuts/thunks.ts"),
     "utf8",
   );
   const start = src.indexOf("function shortcutToApiBody(");

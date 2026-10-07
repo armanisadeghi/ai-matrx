@@ -53,7 +53,7 @@ function grokLines(): string[] {
   return readFileSync(
     join(
       __dirname,
-      "../../../packages/chat/src/agents/redux/execution-system/thunks/__tests__/fixtures/decision-stream-grok.ndjson",
+      "../../../../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/__tests__/fixtures/decision-stream-grok.ndjson",
     ),
     "utf8",
   )

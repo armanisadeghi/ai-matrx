@@ -27,7 +27,7 @@ const SOURCE_ROOTS = [
   "features",
   "hooks",
   "lib",
-  "packages/chat/src",
+  "../aidream/apps/shared/chat/src",
   "utils",
 ];
 const EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]);

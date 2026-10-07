@@ -38,7 +38,7 @@ describe("per-turn context", () => {
 
   it("the send path consumes per-turn context after the snapshot, never on retry", () => {
     const src = fs.readFileSync(
-      path.join(__dirname, "../../../packages/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts"),
+      path.join(__dirname, "../../../../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/execute-instance.thunk.ts"),
       "utf8",
     );
     const snap = src.indexOf("selectInstanceContextEntries(conversationId)(stateAtSubmit)");

@@ -69,7 +69,7 @@
       "rules": ["url-fetch"],
       "reason": "Not the Python server: calls Next /api/sandbox and /api/compute-targets routes."
     },
-    "packages/chat/src/agents/services/mcp-oauth/discovery.ts": {
+    "../aidream/apps/shared/chat/src/agents/services/mcp-oauth/discovery.ts": {
       "rules": ["url-fetch"],
       "reason": "Not the Python server: OAuth discovery against a third-party MCP server."
     }

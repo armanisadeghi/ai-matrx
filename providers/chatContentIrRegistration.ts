@@ -2,7 +2,7 @@
 //
 // The app's kind / component registries, region-envelope memo, kind correctors, block-classifier
 // primitives, kind validator, record lists and shape catalog, registered into `@ai-matrx/chat`
-// (packages/chat/src/host/content-ir-slots.ts, chat-package-move P14). The package's stream
+// (../aidream/apps/shared/chat/src/host/content-ir-slots.ts, chat-package-move P14). The package's stream
 // accumulator and selectors reach them through these slots and never import them. Imported for
 // its side effect by ChatHostAdapter.
 

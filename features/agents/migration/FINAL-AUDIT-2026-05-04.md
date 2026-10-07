@@ -45,20 +45,20 @@ These are direct imports from legacy directories by features that should be agen
 
 The two `ContextAware*` files are not in the Phase 6 plan. **Add to Phase 6.**
 
-### 2.3 `packages/chat/src/cx-conversation/` imports `packages/chat/src/public-chat/` (4 files, 9 imports)
+### 2.3 `../aidream/apps/shared/chat/src/cx-conversation/` imports `../aidream/apps/shared/chat/src/public-chat/` (4 files, 9 imports)
 
 - `ConversationInput.tsx` — 5 imports
 - `useConversationSession.ts` — 2 imports (type + hook)
 - `UnifiedChatWrapper.tsx` — 1 import
 - `UserMessage.tsx` — 1 import
 
-This is a chat-layer-on-chat-layer dependency. Document in `INVENTORY.md §8` and target before deleting `packages/chat/src/public-chat/`.
+This is a chat-layer-on-chat-layer dependency. Document in `INVENTORY.md §8` and target before deleting `../aidream/apps/shared/chat/src/public-chat/`.
 
-### 2.4 `packages/chat/src/conversation/` imports prompt types (3 files)
+### 2.4 `../aidream/apps/shared/chat/src/conversation/` imports prompt types (3 files)
 
 - `useAuthenticatedChatProps.ts`, `usePublicChatProps.ts`, `resource-parsing.ts` — all import `Resource` type from `features/prompts/types/resources`.
 
-`packages/chat/src/conversation/` is documented as a Tier 1 feature in `CLAUDE.md`. Move the `Resource` type into a shared `lib/types/` location (or `packages/chat/src/agents/types/`) before deleting `features/prompts/`.
+`../aidream/apps/shared/chat/src/conversation/` is documented as a Tier 1 feature in `CLAUDE.md`. Move the `Resource` type into a shared `lib/types/` location (or `../aidream/apps/shared/chat/src/agents/types/`) before deleting `features/prompts/`.
 
 ### 2.5 `features/ai-models/` and `features/ai-runs/` import prompt types (4 files)
 
@@ -73,10 +73,10 @@ Type-only imports (`PromptVariable`, `Resource`, etc.). Same fix: relocate types
 
 Owner unclear — check whether content-templates should live alongside `features/agent-shortcuts/content-blocks` or stay independent.
 
-### 2.7 `features/cx-chat/` and `packages/chat/src/public-chat/` (already known, severity confirmed)
+### 2.7 `features/cx-chat/` and `../aidream/apps/shared/chat/src/public-chat/` (already known, severity confirmed)
 
 - **`features/cx-chat/`**: 10 prompt imports, used by **all `(ssr)/demos/chat/*` routes**. Per `cx-chat/MIGRATION-TRACKER.md` Phase 6 (2026-03-28) the SSR runtime is on the agent execution system internally — the imports are presentation-layer types/components only. Remap → delete in 18.
-- **`packages/chat/src/public-chat/`**: 14 prompt imports (4 × `useAgentConsumer` from prompts/hooks, 4 type imports, 6 component imports). Used by `/p/chat/*` and `/api/cx-chat/*`. **`useAgentConsumer` must be ported** into `packages/chat/src/agents/hooks/` (the new system has no equivalent yet) before this can be unwired. `DEPRECATED-useAgentChat.ts` is still wired into `ChatContainer`.
+- **`../aidream/apps/shared/chat/src/public-chat/`**: 14 prompt imports (4 × `useAgentConsumer` from prompts/hooks, 4 type imports, 6 component imports). Used by `/p/chat/*` and `/api/cx-chat/*`. **`useAgentConsumer` must be ported** into `../aidream/apps/shared/chat/src/agents/hooks/` (the new system has no equivalent yet) before this can be unwired. `DEPRECATED-useAgentChat.ts` is still wired into `ChatContainer`.
 
 ---
 
@@ -126,7 +126,7 @@ Routes whose page.tsx currently imports a legacy feature and **has no agent-syst
 
 | Route | Backed by | Agent equivalent? |
 |---|---|---|
-| `/p/chat`, `/p/chat/a/[id]`, `/p/chat/c/[id]` | `packages/chat/src/public-chat/` | ❌ — `/p/[slug]` is single-app, not a chat picker |
+| `/p/chat`, `/p/chat/a/[id]`, `/p/chat/c/[id]` | `../aidream/apps/shared/chat/src/public-chat/` | ❌ — `/p/[slug]` is single-app, not a chat picker |
 | `/applets`, `/applets/[category]/[subcategory]` | `features/applet/` + DB tables | ❌ — Phase 10 blocked |
 | `/apps/custom/[slug]`, `/apps/custom/[slug]/[appletSlug]` | `features/applet/` | ❌ — Phase 10 blocked |
 | `/prompt-apps`, `/prompt-apps/[id]`, `/prompt-apps/new`, `/prompt-apps/templates`, `/prompt-apps/templates/[mode]` | `features/prompt-apps/` | Partial — `/agent-apps` admin exists but the public `/p/[slug]` resolves agent-apps first; `/prompt-apps/[id]` editor still uses `AICodeEditor` (Phase 6 blocker) |
@@ -162,8 +162,8 @@ Ordered by dependency:
 2. **Decide Phase 6** (which `agx_agent` IDs back the V2/V3/Compact code editors). Block on a 10-minute decision; without it, both `/prompt-apps/[id]` editing and Multi-File HTML editing block Phase 18.
 3. **Decide Phase 10** (applets — 5 design questions). Without this, `/applets` and `/apps/custom/*` cannot redirect/sunset.
 4. **Decide `/p/chat`'s fate** (this audit's new question). Either build a multi-agent agent-apps chat picker, or sunset `/p/chat` with a 302 to `/p/[slug]/...`. Today there is no migration target.
-5. **Port shared types out of `features/prompts/types/`** to `packages/chat/src/agents/types/` (or `lib/types/`): `PromptVariable`, `Resource`, `PromptSettings`. Six features import from there (§2.4-2.6, plus chat features).
-6. **Port `useAgentConsumer`** from `features/prompts/hooks/` into `packages/chat/src/agents/hooks/`. Used by both `cx-chat` and `public-chat`.
+5. **Port shared types out of `features/prompts/types/`** to `../aidream/apps/shared/chat/src/agents/types/` (or `lib/types/`): `PromptVariable`, `Resource`, `PromptSettings`. Six features import from there (§2.4-2.6, plus chat features).
+6. **Port `useAgentConsumer`** from `features/prompts/hooks/` into `../aidream/apps/shared/chat/src/agents/hooks/`. Used by both `cx-chat` and `public-chat`.
 7. **Port `mapScopeToVariables`** from `features/prompt-builtins/utils/execution.ts` to `features/agent-shortcuts/utils/` (already noted in `INVENTORY.md §3`). SSR notes parallel menu still imports it.
 8. **Patch the 7 unmigrated `prompt_apps` rows** (variable-name mismatches) and re-run the migrate script.
 9. **Mark `lib/redux/socket-io/` and `promptConsumersSlice` as shared infrastructure** in `INVENTORY.md` so Phase 18 doesn't accidentally delete them.
@@ -174,7 +174,7 @@ Ordered by dependency:
 ## 8. Items already correctly handled (no action required)
 
 - `/ai/recipes*` — recipes feature is standalone, decoupled, no prompt imports. Recipes table can stay or go independently.
-- `packages/chat/src/conversation/` (the stub) — 1-line re-export, safe to delete now.
+- `../aidream/apps/shared/chat/src/conversation/` (the stub) — 1-line re-export, safe to delete now.
 - `features/chat/` — only used by `app/(legacy)/legacy/chat/`. Light coupling. Delete with Phase 18.
 - `components/file-system/context-menu.tsx` — distinct `UnifiedContextMenu` for file ops, zero prompt coupling. Leave alone.
 - Phase 8 `/p/[slug]` agent-app resolver — primary path; legacy fallback only for the 7 unmigrated rows.

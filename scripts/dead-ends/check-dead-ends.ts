@@ -70,7 +70,7 @@ function repoRoot(): string {
     return process.cwd();
   }
 }
-const SCAN_ROOTS = ["features", "packages/chat/src", "components", "app", "lib"];
+const SCAN_ROOTS = ["features", "../aidream/apps/shared/chat/src", "components", "app", "lib"];
 const REPORT_PATH = join(ROOT, "scripts/dead-ends/report.json");
 const HISTORY_PATH = join(ROOT, "scripts/dead-ends/history.json");
 /** Keep the trend readable and the file small — one point per refresh. */

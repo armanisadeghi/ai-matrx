@@ -36,7 +36,7 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 // pnpm runs every script from the repo root; a scripts-relative path would break
 // the moment this is invoked through a different runner.
 const ROOT = process.cwd();
-const SCANNED = ["features", "packages/chat/src", "lib", "components", "app", "hooks"];
+const SCANNED = ["features", "../aidream/apps/shared/chat/src", "lib", "components", "app", "hooks"];
 const SKIP = new Set(["node_modules", ".next", "__tests__", "__fixtures__"]);
 
 /**

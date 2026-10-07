@@ -138,7 +138,7 @@ it("a chip opens its item in the host's tab; Next pages in place; the item in fr
 });
 
 it("every chip host opens the canvas tab — none mounts its own drawer", () => {
-  const src = join(__dirname, "..", "..", "..", "packages", "chat", "src", "agents", "components");
+  const src = join(__dirname, "..", "..", "..", "..", "aidream", "apps", "shared", "chat", "src", "agents", "components");
   for (const file of [
     "messages-display/MessageAttachmentStrip.tsx",
     "inputs/resources/SmartAgentResourceChips.tsx",

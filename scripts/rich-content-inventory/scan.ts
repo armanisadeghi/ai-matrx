@@ -11,14 +11,13 @@
 import ts from "typescript";
 import fs from "node:fs";
 import path from "node:path";
-import { execFileSync } from "node:child_process";
 import {
   CONTENT_FIELD_NAMES,
   LEGACY_PIECES,
   type HeuristicRule,
   type LegacyPiece,
 } from "./registry";
-import { featureRegExp } from "../lib/source-roots.cjs";
+import { featureRegExp, gitFiles } from "../lib/source-roots.cjs";
 
 // ─── Host ─────────────────────────────────────────────────────────────────────
 
@@ -32,7 +31,7 @@ export interface SourceHost {
 const SCAN_DIRS = [
   "app",
   "components",
-  "features", "packages/chat/src",
+  "features", "../aidream/apps/shared/chat/src",
   "lib",
   "utils",
   "hooks",
@@ -56,8 +55,8 @@ export function repoHost(root: string, includeUntracked: boolean): SourceHost {
   const args = ["ls-files", "-z", "--cached"];
   if (includeUntracked) args.push("--others", "--exclude-standard");
   args.push("--", ...SCAN_DIRS);
-  const listed = execFileSync("git", args, { cwd: root, maxBuffer: 1 << 28 })
-    .toString()
+  // gitFiles: the chat package's source root lives in the aidream checkout beside this repo.
+  const listed = String(gitFiles(root, args, { maxBuffer: 1 << 28 }))
     .split("\0")
     .filter(Boolean);
   const files = [...new Set(listed)]

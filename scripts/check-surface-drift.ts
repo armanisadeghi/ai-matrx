@@ -10,7 +10,7 @@
  *   pnpm check:surface-drift
  *
  * ALC-14: the checks below are @ai-matrx/alchemy/declare's validateDeclarations
- * (run through packages/chat/src/surfaces/declare/surface-declare.ts, which adds the
+ * (run through ../aidream/apps/shared/chat/src/surfaces/declare/surface-declare.ts, which adds the
  * agent-owned extension validators). This script supplies the app registries.
  *
  * Validates:
@@ -118,10 +118,10 @@ async function main() {
     resolve(__dirname, "..", "features/surfaces/manifests/registry")
   );
   const declare = await import(
-    resolve(__dirname, "..", "packages/chat/src/surfaces/declare/surface-declare")
+    resolve(__dirname, "..", "../aidream/apps/shared/chat/src/surfaces/declare/surface-declare")
   );
   const nsMod = await import(
-    resolve(__dirname, "..", "packages/chat/src/surfaces/config/namespace-registry")
+    resolve(__dirname, "..", "../aidream/apps/shared/chat/src/surfaces/config/namespace-registry")
   );
   const listUncontracted =
     process.argv.includes("--list-uncontracted") ||

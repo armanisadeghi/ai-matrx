@@ -115,7 +115,7 @@ if (!globals.TextDecoder) globals.TextDecoder = NodeTextDecoder;
 
 const FIXTURE = join(
   __dirname,
-  "../../../packages/chat/src/agents/redux/execution-system/thunks/__tests__/fixtures/decision-stream-grok.ndjson",
+  "../../../../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/__tests__/fixtures/decision-stream-grok.ndjson",
 );
 
 function loadGrokLines(): string[] {

@@ -116,7 +116,7 @@ but never launched. **Whoever picks this up: these are ready to assign — do no
 
 ### How the board was scanned (use this method, not a manifest-shaped one)
 
-The productive vein is **routes mapped in `packages/chat/src/surfaces/utils/route-to-surface.ts` to a surface
+The productive vein is **routes mapped in `../aidream/apps/shared/chat/src/surfaces/utils/route-to-surface.ts` to a surface
 with NO manifest and NO `SurfaceRuntimeProvider` mount.** A prefix mapping is not a surface; it is only
 a name lookup, and a manifest-shaped scan sees "mapped route, has a surface" and moves on. Scan the
 mapped names against **any occurrence of the full surface-name string** under

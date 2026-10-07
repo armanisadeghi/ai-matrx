@@ -834,7 +834,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   the caret, so Enter went to the chip. `ComposerChip` (in `features/agents`)
   refuses the focus and puts it back; verified live — chip click leaves the
   caret in the composer and Enter sends. Guard:
-  `packages/chat/src/agents/__tests__/a-chip-that-fills-the-box-leaves-you-able-to-send.test.tsx`.
+  `../aidream/apps/shared/chat/src/agents/__tests__/a-chip-that-fills-the-box-leaves-you-able-to-send.test.tsx`.
   *And a scope badge reading `0` over a populated list:* `EntityScopeTabs` could
   not tell "not counted yet" from "counted, and zero" — an unmeasured count now
   renders nothing at all. Guard:

@@ -843,7 +843,7 @@ export const ANON_COLUMN_SURFACE: ReadonlyArray<AnonColumnSurface> = [
       "max_agents", "allow_custom", "auto_run", "sort_order", "mandate_key",
     ],
     why:
-      "packages/chat/src/surfaces/services/surface-config.service.ts#fetchSurfaceConfigBundle, whose ROLE "
+      "../aidream/apps/shared/chat/src/surfaces/services/surface-config.service.ts#fetchSurfaceConfigBundle, whose ROLE "
       + "read is unbranched — a signed-out visitor gets it on the same select list as everyone "
       + "else — and it is the one part of that bundle a guest can actually be served: 278 rows are "
       + "`visibility = 'public'` behind a live `pub_read` lane, written by manifest-sync from code. "

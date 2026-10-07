@@ -127,7 +127,7 @@ Selection state is shared with the rest of the app via `SelectedImagesProvider` 
 ### 2.10 Artifacts / canvas / agent tool image renderers
 
 - **`features/canvas/**`** — canvas system supports cover images via `ShareCoverImagePicker` (covers stored as public URLs). Canvas types: `code`, `html`, `markdown`, etc. — most are non-image artifacts.
-- **No image-specific tool renderer** in `packages/chat/src/tool-call-visualization/renderers/**` (renderers exist for web search, deep research, news, SEO meta — none for image generation).
+- **No image-specific tool renderer** in `../aidream/apps/shared/chat/src/tool-call-visualization/renderers/**` (renderers exist for web search, deep research, news, SEO meta — none for image generation).
 - **`ImageOutputBlock`** → `components/mardown-display/blocks/images/ImageOutputBlock.tsx` — renders an image URL output block (download, copy URL, expand) inside markdown content from agents.
 - **`ImageBlock`** → `components/mardown-display/blocks/images/ImageBlock.tsx` — markdown-image renderer with feedback/copy/share/zoom.
 - **Integration:** When AI generation is implemented, ABSORB output preview into the AI Generate tab; reuse `ImageOutputBlock` for streamed image outputs.

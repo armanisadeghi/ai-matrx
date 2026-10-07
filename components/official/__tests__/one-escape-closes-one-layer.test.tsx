@@ -39,7 +39,7 @@ describe("FloatingSheet", () => {
 
 describe("census — shared layers skip an Escape a nested layer took", () => {
   const ROOT = join(__dirname, "..", "..", "..");
-  const DIRS = ["components/official", "features/overlays", "features/window-panels", "packages/chat/src/window-panels", "packages/chat/src/agents/components/agent-widgets"];
+  const DIRS = ["components/official", "features/overlays", "features/window-panels", "../aidream/apps/shared/chat/src/window-panels", "../aidream/apps/shared/chat/src/agents/components/agent-widgets"];
   const files: string[] = [];
   const walk = (dir: string) => {
     for (const name of readdirSync(dir)) {

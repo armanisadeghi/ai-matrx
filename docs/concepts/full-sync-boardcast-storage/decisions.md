@@ -117,7 +117,7 @@ Every overlapping system and ad-hoc cache, with the phase that deletes it. No it
 | 7 | `userSlice` mixed fields | `lib/redux/slices/userSlice.ts` | 4 | Split: `userProfile` + `userAuth` |
 | 8 | Notes auto-save | `features/notes/redux/autoSaveMiddleware.ts` | 5 | `autoSave` capability |
 | 9 | Prompts auto-save | `features/prompts/hooks/usePromptAutoSave.ts` | 5 | `autoSave` capability |
-| 10 | Agents auto-save | `packages/chat/src/agents/hooks/useAgentAutoSave.ts` | 5 | `autoSave` capability |
+| 10 | Agents auto-save | `../aidream/apps/shared/chat/src/agents/hooks/useAgentAutoSave.ts` | 5 | `autoSave` capability |
 | 11 | Panel persistence | `features/window-panels/hooks/usePanelPersistence.ts` | 5 | `autoSave` capability |
 | 12 | Query history storage | `components/admin/query-history/query-storage.ts` | 5 | Sync engine slice + policy |
 | 13 | Form state cache | `utils/cache/formState.ts` | 5 | Sync engine slice + policy |

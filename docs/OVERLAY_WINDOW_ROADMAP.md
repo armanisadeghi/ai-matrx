@@ -22,7 +22,7 @@
 
 `AgentOptionsMenu.tsx` is migrated as a canary (27 sites → typed openers). The remaining sites still use raw dispatches. They work — both paths funnel through the same slice — but lose type safety on the dispatched data shape.
 
-**Fix path**: incremental. Each site is mechanical: import the opener, replace `dispatch(openOverlay({ overlayId, data }))` with `useOpenX()(opts)`. A sub-agent can sweep a feature area in one shot (see how [AgentOptionsMenu was migrated](../packages/chat/src/agents/components/shared/AgentOptionsMenu.tsx) for the pattern). Suggest doing 5–10 high-traffic features as a batch, then leaving the rest to migrate as files are touched.
+**Fix path**: incremental. Each site is mechanical: import the opener, replace `dispatch(openOverlay({ overlayId, data }))` with `useOpenX()(opts)`. A sub-agent can sweep a feature area in one shot (see how [AgentOptionsMenu was migrated](../../aidream/apps/shared/chat/src/agents/components/shared/AgentOptionsMenu.tsx) for the pattern). Suggest doing 5–10 high-traffic features as a batch, then leaving the rest to migrate as files are touched.
 
 ### 1.3 Callback contract files still under `features/window-panels/windows/*/callbacks.ts`
 

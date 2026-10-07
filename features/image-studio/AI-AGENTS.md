@@ -366,7 +366,7 @@ Every agent above is single-purpose and short-prompted on purpose — modern vis
 
 ## Registry entries to add
 
-Add these to `packages/chat/src/agents/constants/system-shortcuts.ts` once the DB rows exist (one per shortcut). Keys follow the existing naming convention.
+Add these to `../aidream/apps/shared/chat/src/agents/constants/system-shortcuts.ts` once the DB rows exist (one per shortcut). Keys follow the existing naming convention.
 
 ```ts
 "image-suggest-edits-01";

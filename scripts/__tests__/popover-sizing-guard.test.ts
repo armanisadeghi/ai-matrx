@@ -48,7 +48,7 @@ import { execFileSync } from "node:child_process";
 import { join } from "node:path";
 
 const REPO = join(__dirname, "..", "..");
-const ROOTS = ["app", "features", "packages/chat/src", "components", "lib"];
+const ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib"];
 
 // One <PopoverContent ...> opening tag. JSX attribute values never contain a
 // raw `>` in this codebase's callers (no `>` inside a string, template

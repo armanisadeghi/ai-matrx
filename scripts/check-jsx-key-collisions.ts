@@ -42,7 +42,7 @@ import ts from "typescript";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
-const DEFAULT_ROOTS = ["app", "features", "packages/chat/src", "components", "lib"];
+const DEFAULT_ROOTS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "build", ".git"]);
 
 type Finding = { file: string; line: number; key: string; tags: string[] };

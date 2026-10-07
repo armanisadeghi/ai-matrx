@@ -51,7 +51,7 @@ describe("durableRecordId", () => {
 // ── Census ────────────────────────────────────────────────────────────────
 
 const REPO = join(__dirname, "..", "..");
-const ROOTS = ["features", "packages/chat/src", "lib", "components", "app", "hooks", "providers", "utils"];
+const ROOTS = ["features", "../aidream/apps/shared/chat/src", "lib", "components", "app", "hooks", "providers", "utils"];
 const SKIP_DIRS = new Set(["node_modules", ".next", "__tests__", "test-utils"]);
 const THIS_SEAM = join("lib", "ids", "durable-record-id.ts");
 
@@ -109,7 +109,7 @@ const RULE_C_BASELINE: Record<string, string> = {
   "features/agents/decision-review/service.ts": DB_ORIGIN,
   "features/masterwork/oracle/service.ts":
     "Rulebook capture: capture.ts passes durableRecordId(messageId)",
-  "packages/chat/src/agents/components/messages-display/assistant/AssistantMessageFooter.tsx":
+  "../aidream/apps/shared/chat/src/agents/components/messages-display/assistant/AssistantMessageFooter.tsx":
     NOT_A_DB_KEY,
   "features/context-menu-v3/utils/resolveMarkdownContext.ts": NOT_A_DB_KEY,
   "features/rich-document/actions/handlers/ask.ts": NOT_A_DB_KEY,

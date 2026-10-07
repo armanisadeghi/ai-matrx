@@ -13,7 +13,7 @@ export const SURFACES_CLIENT_PLACES: FeaturePlaces = {
   feature: "surfaces_client",
   label: "Agent bindings",
   aliases: { BINDING_MAPPER_MANDATE_KEY: K.surfaces_client__binding_mapper },
-  roots: ["features/surfaces/components", "packages/chat/src/surfaces/components", "features/bindings"],
+  roots: ["features/surfaces/components", "../aidream/apps/shared/chat/src/surfaces/components", "features/bindings"],
   places: [
     {
       id: "bind-agent",
@@ -22,7 +22,7 @@ export const SURFACES_CLIENT_PLACES: FeaturePlaces = {
       mandateKeys: [K.surfaces_client__binding_mapper],
       sources: [
         "features/surfaces/components/bind/BindingSuggestionsTab.tsx",
-        "packages/chat/src/surfaces/utils/binding-suggestions.ts",
+        "../aidream/apps/shared/chat/src/surfaces/utils/binding-suggestions.ts",
       ],
     },
     {

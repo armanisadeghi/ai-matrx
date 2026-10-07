@@ -293,7 +293,7 @@ const TRANSCRIPTS_ADMIN_MAP: FeatureAdminMap = {
       method: "POST",
       description:
         "aidream token broker, audience `xai_realtime` — mints the short-lived xAI Realtime credential for the live voice agent. Replaced the retired Next.js route `/api/voice-agent/token` on 2026-08-23.",
-      filePath: "packages/chat/src/voice-agent/transport/tokenManager.ts",
+      filePath: "../aidream/apps/shared/chat/src/voice-agent/transport/tokenManager.ts",
     },
   ],
 

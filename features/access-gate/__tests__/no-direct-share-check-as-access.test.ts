@@ -13,7 +13,7 @@ import path from "node:path";
 import ts from "typescript";
 
 const ROOT = path.resolve(__dirname, "../../..");
-const DIRS = ["app", "features", "packages/chat/src", "components", "lib", "hooks", "providers", "utils"];
+const DIRS = ["app", "features", "../aidream/apps/shared/chat/src", "components", "lib", "hooks", "providers", "utils"];
 const BANNED = new Set(["has_permission", "has_permission_for"]);
 
 function* walk(dir: string): Generator<string> {

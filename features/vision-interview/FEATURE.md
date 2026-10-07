@@ -257,7 +257,7 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
   the opening-statement send waits for it too rather than reading a stale `false`
   as "nobody has spoken here".
   *The leak:* any server error carrying no `user_message` reached the thread
-  verbatim. `friendlyStreamError` (in `packages/chat/src/agents/components/run/`) shows a
+  verbatim. `friendlyStreamError` (in `../aidream/apps/shared/chat/src/agents/components/run/`) shows a
   declared sentence with its remedy and keeps every original byte under Details;
   aidream's 409 now also carries a `user_message` of its own.
   *The dead run:* the reload-resume rule armed a follower for any session row
@@ -326,7 +326,7 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
   exported and pure). A failed row read is never a new failure surface: it just
   keeps reconnecting. The room's own sentence now names the remedy
   (`RUN_ENDED_MESSAGE`). Forcing guard:
-  `packages/chat/src/agents/redux/execution-system/thunks/__tests__/follow-workflow-run-row-reconcile.test.ts`
+  `../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/__tests__/follow-workflow-run-row-reconcile.test.ts`
   drives the real thunk over a real SSE replay that omits the terminal event
   with the row already `errored` — red against the old follower, green now.
   🚨 **Boundaries alone were not enough, and only the live surface showed it:**

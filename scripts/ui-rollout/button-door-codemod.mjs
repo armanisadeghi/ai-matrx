@@ -244,7 +244,7 @@ function computeBuilderClosure() {
   const IMP = /(?:import|export)\s[^'"]*?from\s*['"]([^'"]+)['"]|import\s+['"]([^'"]+)['"]/g;
   const resolve = (base, spec) => {
     let p;
-    if (spec.startsWith("@ai-matrx/chat/")) p = path.join(ROOT, "packages/chat/src", spec.slice(15));
+    if (spec.startsWith("@ai-matrx/chat/")) p = path.join(ROOT, "../aidream/apps/shared/chat/src", spec.slice(15));
     else if (spec.startsWith("@/")) p = path.join(ROOT, spec.slice(2));
     else if (spec.startsWith("@components/")) p = path.join(ROOT, "components", spec.slice(12));
     else if (spec.startsWith(".")) p = path.normalize(path.join(path.dirname(base), spec));

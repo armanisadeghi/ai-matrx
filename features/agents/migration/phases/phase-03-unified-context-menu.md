@@ -20,7 +20,7 @@ The legacy component's imports — read `features/context-menu/UnifiedContextMen
 | `useUnifiedContextMenu` from `features/prompt-builtins/hooks` | `useUnifiedAgentContextMenu` from `features/agent-shortcuts/hooks` |
 | `PLACEMENT_TYPES`, `PLACEMENT_TYPE_META` from `features/prompt-builtins/constants` | from `features/agent-shortcuts/constants` (built in Phase 1.7) |
 | `mapScopeToVariables` from `features/prompt-builtins/utils/execution` | `mapScopeToAgentVariables` from `features/agent-shortcuts/utils/scope-mapping` (Phase 1.8) |
-| `usePromptRunner` from `features/prompts/hooks` | `useAgentLauncher` from `packages/chat/src/agents/hooks` |
+| `usePromptRunner` from `features/prompts/hooks` | `useAgentLauncher` from `../aidream/apps/shared/chat/src/agents/hooks` |
 | `MenuItem`, `ContentBlockItem`, `ShortcutItem` from `features/prompt-builtins/types/menu` | equivalents exported from `features/agent-shortcuts/types` |
 | `useQuickActions` from `features/quick-actions` | **unchanged in Phase 3** — Phase 4 migrates to DB-backed shortcuts |
 | `selectIsDebugMode`, `selectIsAdmin`, `selectIsOverlayOpen` | unchanged |

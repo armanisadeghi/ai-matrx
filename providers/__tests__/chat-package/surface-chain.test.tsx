@@ -214,8 +214,8 @@ describe("the surface chain carries every other open screen (ARE-010)", () => {
 
   it("both chokepoints that build a run's scope add the chain", () => {
     for (const file of [
-      "packages/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
-      "packages/chat/src/agents/redux/execution-system/thunks/refresh-surface-scope.thunk.ts",
+      "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/launch-agent-execution.thunk.ts",
+      "../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/refresh-surface-scope.thunk.ts",
     ]) {
       const source = readFileSync(join(process.cwd(), file), "utf8");
       expect({ file, calls: /await withLiveSurfaceContext\(/.test(source) }).toEqual({ file, calls: true });

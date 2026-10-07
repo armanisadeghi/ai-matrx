@@ -100,7 +100,7 @@ const EXPECTED_CHECKS = [
  * included: running as service_role never made destroying a person's record
  * right (2026-09-27).
  */
-const SCAN_DIRS = ["features", "packages/chat/src", "components", "hooks", "lib", "utils", "app"];
+const SCAN_DIRS = ["features", "../aidream/apps/shared/chat/src", "components", "hooks", "lib", "utils", "app"];
 
 /**
  * Words that promise a person their record is destroyed. Matched inside string

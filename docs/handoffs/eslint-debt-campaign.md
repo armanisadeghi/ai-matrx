@@ -137,7 +137,7 @@ held HTTP shims, and `api/<module>` are now the owning modules. The group now
 bans only the bare `@/features/files/api` directory path (no barrel, invariant
 17 intact); the 24 consumers are green. `createSlice` allowlist widened to
 `features/**/redux/**` (any depth) and the two chat slices moved into
-`packages/chat/src/agents/redux/chat/`. `no-restricted-syntax` is at 0. Items 1–2 above
+`../aidream/apps/shared/chat/src/agents/redux/chat/`. `no-restricted-syntax` is at 0. Items 1–2 above
 (user-visible refs bugs, static-components) are in flight; item 3 (~586 refs,
 benign today) is the standing backlog.
 

@@ -1,7 +1,7 @@
 // providers/chatRichDocumentRegistration.ts
 //
 // The app's rich-document action registry, dialogs host and record annotations, registered into
-// `@ai-matrx/chat` (packages/chat/src/host/rich-document-slots.ts, chat-package-move P14). The
+// `@ai-matrx/chat` (../aidream/apps/shared/chat/src/host/rich-document-slots.ts, chat-package-move P14). The
 // package draws every action under a chat message through these slots and never imports the
 // registry. Imported for its side effect by ChatHostAdapter.
 

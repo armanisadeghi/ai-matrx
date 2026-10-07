@@ -29,7 +29,7 @@ import {
   REFRESH_AFTER_CALL_MS,
 } from "../usage-gate/usageGate";
 import type { UsageSnapshot } from "../usage-gate/usageState";
-import { runAiStream } from "@/packages/chat/src/agents/redux/execution-system/thunks/run-ai-stream";
+import { runAiStream } from "@ai-matrx/chat/agents/redux/execution-system/thunks/run-ai-stream";
 import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 
 const readMock = readUsageSnapshot as jest.MockedFunction<

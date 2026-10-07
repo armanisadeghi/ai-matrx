@@ -84,7 +84,7 @@ const KEY_IS_THE_SUBJECT: ReadonlyArray<readonly [string, string]> = [
     "agent admin — same lane as the binding console",
   ],
   [
-    "packages/chat/src/agents/redux/execution-system/",
+    "../aidream/apps/shared/chat/src/agents/redux/execution-system/",
     "telemetry and log fields, not screen text",
   ],
   [
@@ -139,7 +139,7 @@ const LINE_OPT_OUT = /\/(?:\/|\*)\s*key-is-the-subject:\s*\S/;
 function sourceFiles(): string[] {
   const out = execFileSync(
     "git",
-    ["ls-files", "features", "packages/chat/src", "app", "components", "lib"],
+    ["ls-files", "features", "../aidream/apps/shared/chat/src", "app", "components", "lib"],
     { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
   );
   return out

@@ -416,7 +416,7 @@ export function scanSource(file, source) {
 function trackedTsx() {
   // .ts files too — UI copy kept in data files (round-2 confirm: mandates admin `tables.ts` blurbs);
   // in a .ts file only the data-array rule runs (no JSX there).
-  const out = execFileSync("git", ["ls-files", "*.tsx", "features/**/*.ts", "packages/chat/src/**/*.ts", "components/**/*.ts", "app/**/*.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
+  const out = execFileSync("git", ["ls-files", "*.tsx", "features/**/*.ts", "../aidream/apps/shared/chat/src/**/*.ts", "components/**/*.ts", "app/**/*.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
   return out.split("\n").filter(Boolean);
 }
 

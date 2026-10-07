@@ -23,7 +23,7 @@
 @source "../config";
 @source "../constants";
 @source "../features";
-@source "../packages/chat/src";
+@source "../node_modules/@ai-matrx/chat/dist";
 @source "../hooks";
 @source "../lib";
 @source "../providers";

@@ -1,7 +1,7 @@
 # Action requests — the `/q/<token>` page
 
 **Status:** live · **Route:** `app/(link)/q/[token]/` · **Doors:**
-[`service.ts`](./service.ts) · **Logic owner:** `aidream` · **The ask UI** (form, in-chat answer, parked-call card, render types, signed-in doors) lives in the chat package: `packages/chat/src/action-requests/`
+[`service.ts`](./service.ts) · **Logic owner:** `aidream` · **The ask UI** (form, in-chat answer, parked-call card, render types, signed-in doors) lives in the chat package: `../aidream/apps/shared/chat/src/action-requests/`
 
 An agent parks its turn and asks the person it works for for ONE thing. They get
 a text with a one-tap link, answer on `/q/<token>`, and the parked turn resumes
@@ -25,14 +25,14 @@ line, never the form, whatever any knob says.
 
 The same ask, answered where the person already is. When the chat renders an
 `ask_person` tool call, `AskPersonInline`
-(`packages/chat/src/tool-call-visualization/renderers/ask-person/`) finds the ask in
+(`../aidream/apps/shared/chat/src/tool-call-visualization/renderers/ask-person/`) finds the ask in
 aidream's authenticated `GET /action-requests/pending` (by the parked output's
 `action_request_id`, else this conversation + the kind) and draws the SAME form.
 The answer goes to `POST /action-requests/{id}/complete` with the person's own
-session — no token anywhere ([`self-service.ts`](../../packages/chat/src/action-requests/self-service.ts)). Not in the
+session — no token anywhere ([`self-service.ts`](../../../aidream/apps/shared/chat/src/action-requests/self-service.ts)). Not in the
 list = not open: one quiet line, never a dead form.
 
-- **One form, two doors:** [`@ai-matrx/chat/action-requests/components/ActionRequestAnswerForm.tsx`](../../packages/chat/src/action-requests/components/ActionRequestAnswerForm.tsx)
+- **One form, two doors:** [`@ai-matrx/chat/action-requests/components/ActionRequestAnswerForm.tsx`](../../../aidream/apps/shared/chat/src/action-requests/components/ActionRequestAnswerForm.tsx)
   owns every `render.form` (incl. `vault_item`, kind `vault_capture`: a field
   list with no origin line and no origin echo) and the shared outcome reader
   `useActionRequestAnswer`. The `/q` page and the chat card only supply the
