@@ -64,7 +64,7 @@ function seedConversation(store: ReturnType<typeof makeStore>) {
       agentId: AGENT_ID,
       agentType: "user",
       origin: "manual",
-      sourceFeature: "applet",
+      sourceFeature: "agent-app",
     }),
   );
   store.dispatch(
