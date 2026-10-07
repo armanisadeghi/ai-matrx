@@ -886,9 +886,16 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
             }}
             slash={{
               createSubpage: async () => {
+                // Notion: the new sub-page opens at once with the caret in its title, so it is named
+                // there; back / the breadcrumb return here. This page's pending edits are sent first (a
+                // title typed a moment ago would otherwise read "Untitled" in the new page's breadcrumb,
+                // the tree re-read on create carrying the stored title), then its block lands where "/"
+                // was typed (the caller inserts it when this answers) and that save is sent before
+                // leaving. Each wait is capped; the leave path covers a save slower than that.
+                const settle = () => Promise.race([flush(), new Promise((r) => window.setTimeout(r, 400))]);
+                await settle();
                 const sub = await spaces.createSpace(doc.id, { open: false });
-                // The sub-page goes in where "/" was typed and the person stays here (its block opens it).
-                toast("Page added", { action: { label: "Open", onClick: () => spaces.open(sub.id) } });
+                window.setTimeout(() => void settle().finally(() => spaces.openToName(sub.id)), 0);
                 return sub.id;
               },
               pickPage: (options) =>
