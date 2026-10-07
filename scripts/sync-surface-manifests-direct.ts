@@ -149,6 +149,9 @@ async function applyMirrorLifecycle(
   return lines;
 }
 
+/** The four tables `applyMirrorLifecycle` archives with per-row reporting; the emitter archives every other keyed table. */
+const LIFECYCLE_TABLES = CHILD_TABLES.map(([table]) => `ui.${table}`);
+
 async function main() {
   const { check, registrationOnly, selfTest, names } = parseArgs();
   if (selfTest) return runSelfTest();
@@ -192,7 +195,7 @@ async function main() {
     if (!check) {
       await client.query("BEGIN");
       await client.query(
-        emitSurfaceSyncSql({ surfaceNames: names, organizationId }),
+        emitSurfaceSyncSql({ surfaceNames: names, organizationId, skipArchiveTables: LIFECYCLE_TABLES }),
       );
     } else await client.query("BEGIN READ ONLY");
 
@@ -387,6 +390,7 @@ async function runSelfTest() {
     const fullSql = emitSurfaceSyncSql({
       surfaceNames: [source],
       organizationId,
+      skipArchiveTables: LIFECYCLE_TABLES,
     })
       .split(source)
       .join(fixture);
