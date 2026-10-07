@@ -1335,10 +1335,17 @@
 .spaces-chart-title > svg { flex: none; }
 .spaces-chart-title > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { flex: none; }
-@container (max-width: 130px) {
-  .spaces-db-frame[data-layout="chart"] { padding: 8px 5px; }
-  .spaces-db-frame[data-layout="chart"] .spaces-chart-title { padding: 4px 5px; font-size: 12px; }
+/* A tile in a narrow column (four in a row): the name gets the width — at least its first word shows
+   ("ACTIVE CL…", Notion). The pill's icon goes, the padding tightens, and the view-settings icon lays
+   over the pill's end while the pointer is on the tile (or a menu / focus is in it) instead of taking
+   its 28px at rest. */
+@container (max-width: 180px) {
+  .spaces-db-host .spaces-db-frame[data-layout="chart"] { padding: 10px 4px 8px; }
+  .spaces-db-frame[data-layout="chart"] .spaces-db-tabs { position: relative; gap: 2px; }
+  .spaces-db-frame[data-layout="chart"] .spaces-chart-title { height: 26px; padding: 0 6px; gap: 4px; font-size: 12px; }
   .spaces-db-frame[data-layout="chart"] .spaces-chart-title > svg { display: none; }
+  .spaces-db-frame[data-layout="chart"] .spaces-db-tabs > .spaces-db-icon { position: absolute; right: 0; top: 50%; transform: translateY(-50%); background: var(--spaces-page-bg); }
+  .spaces-db-frame[data-layout="chart"]:not(:hover):not(:focus-within) .spaces-db-tabs > .spaces-db-icon:not([data-state="open"]) { display: none; }
 }
 /* The tile's Filter / Sort show while the pointer is over the tile, a menu is open, or focus is inside
    (touch: always); the view-settings icon is always there. */
