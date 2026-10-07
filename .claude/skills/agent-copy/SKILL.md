@@ -34,6 +34,20 @@ two skills and the two `AiCopyMenu`s in step.
 
 ---
 
+## 🚨 THE DOORS — every copy, download, export, format read/write and write-to-page (ALC-20)
+
+There is ONE door per verb; app code never opens its own. A hand-built one is refused by `pnpm check:alchemy-doors` (`:self-test` proves it can fail; baseline `scripts/alchemy-doors-baseline.json` only shrinks).
+
+- **Copy an id or plain string:** `@ai-matrx/kit/clipboard` — `useClipboard` in a component, `copyText` elsewhere. Never `navigator.clipboard`, `execCommand`, `ClipboardItem`. Copy of content: `<CopyButtons>` (the Alchemy copy menu).
+- **Download a file:** `@ai-matrx/kit/download` — `downloadFile` / `downloadUrl`. Never a blob + anchor `download`, never `saveAs`. Content exports: the Alchemy menu's download action.
+- **Read or write a format (xlsx, csv, pdf, html, markdown):** the Alchemy `/operate` engines (`@ai-matrx/alchemy/operate`, `/operate/formats/*`, wired in `components/agent-copy`). Never import `xlsx` `exceljs` `jspdf` `html2canvas` `marked` `dompurify` `papaparse` directly.
+- **Write to the page:** the surface write door — a declared write target plus its handler (`packages/chat/src/surfaces/runtime/`). Never call `applySurfaceWrite` yourself.
+- **Offer an action or menu item:** the ONE Alchemy action registry (`createActionRegistry`, `@ai-matrx/alchemy/actions`). No private action/handler map. Not actions, and so exempt: client directives (the server-to-client stream vocabulary) and surface-config namespaces.
+
+A need the door lacks becomes a new option IN the package, never a call-site workaround.
+
+---
+
 ## 🚨 THE MISSION — a Copy-for-AI is an AI context source, not a copy button
 
 The user clicks it because they are **getting AI help with what they are doing

@@ -11,7 +11,7 @@
  *  clipboard   raw navigator.clipboard / execCommand('copy'|'cut') / new ClipboardItem
  *              -> an id or plain string: @ai-matrx/kit/clipboard (useClipboard in a component); content: the Alchemy copy menu (CopyButtons).
  *  downloads   hand-built URL.createObjectURL + anchor download / a.click() / saveAs(
- *              -> the Alchemy menu's download action.
+ *              -> @ai-matrx/kit/download (downloadFile / downloadUrl); content exports: the Alchemy menu's download action.
  *  formatlibs  direct import of xlsx exceljs jspdf html2canvas marked dompurify papaparse
  *              -> the matching Alchemy format engine (components/agent-copy). The editor's
  *              gfm-lexer `marked` is ruled to stay.
@@ -38,7 +38,7 @@ const RULES: Rule[] = ["clipboard", "downloads", "formatlibs", "doorbypass", "re
 
 const ADVICE: Record<Rule, string> = {
   clipboard: "copy an id or plain string through @ai-matrx/kit/clipboard (useClipboard), and content through the Alchemy copy menu (CopyButtons)",
-  downloads: "download through the Alchemy menu's download action, not a hand-built blob + anchor",
+  downloads: "save a file with downloadFile / downloadUrl from @ai-matrx/kit/download (the one download door), never a hand-built blob + anchor",
   formatlibs: "convert through the Alchemy format engine in components/agent-copy, not a direct library import",
   doorbypass: "write through the surface write door (declared write target + handler), never applySurfaceWrite directly",
   registries: "register the action with Alchemy's registry; no private action/handler map",
@@ -54,7 +54,16 @@ const ALLOW: Record<Rule, string[]> = {
     "components/agent-copy/",
     "packages/chat/src/agents/redux/execution-system/thunks/dispatch-surface-write.thunk.ts",
   ],
-  registries: ["packages/chat/src/agent-copy/", "components/agent-copy/"],
+  registries: [
+    "packages/chat/src/agent-copy/",
+    "components/agent-copy/",
+    // Client directives are the server -> client stream INSTRUCTION vocabulary
+    // (what the stream tells the page to do), not Actions or menu items (coordinator ruling).
+    "lib/client-directives/directiveRegistry.ts",
+    // A naming map of surface-config namespaces: validate / merge / empty for
+    // `ui.ui_surface_config` JSONB rows. No runnable entries, no actions, no menu items.
+    "packages/chat/src/surfaces/config/namespace-registry.ts",
+  ],
 };
 
 const LIBS = "xlsx|exceljs|jspdf|jspdf-autotable|html2canvas|marked|dompurify|isomorphic-dompurify|papaparse";
