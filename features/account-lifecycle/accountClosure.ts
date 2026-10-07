@@ -210,19 +210,18 @@ export async function closeAccount(input: { userId: string; email: string; metad
     journal.checkpoints.access_disable_started = new Date().toISOString();
     await writeJournal(input.userId, claimed.token, journal);
     const admin = createAdminClient();
-    // GoTrue's administrative signOut endpoint revokes the refresh-token family
-    // represented by this freshly authenticated user's access JWT, never a user id.
-    const revoked = await admin.auth.admin.signOut(input.accessToken, "global");
-    if (revoked.error) throw revoked.error;
-    const banned = await admin.auth.admin.updateUserById(input.userId, { ban_duration: "876000h" });
-    if (banned.error) throw banned.error;
+    // The one closing door (iam.close_account): sign-in off, every session and refresh
+    // token removed, API keys revoked, schedules and connections paused, and the closure
+    // recorded in iam.account_closure. Every record stays and stays attributed.
+    const closed = await admin.schema("iam").rpc("close_account", { p_user: input.userId, p_reason: `self-serve closure ${journal.requestId}` });
+    if (closed.error) throw closed.error;
     journal.state = "closed";
     journal.checkpoints.access_disabled = new Date().toISOString();
     try {
       await writeJournal(input.userId, claimed.token, journal);
     } catch (writeError) {
       // A ban without its durable recovery state would strand the account.
-      const compensation = await admin.auth.admin.updateUserById(input.userId, { ban_duration: "none" });
+      const compensation = await admin.schema("iam").rpc("reopen_account", { p_user: input.userId, p_reason: "closure journal write failed" });
       if (!compensation.error) delete journal.checkpoints.access_disabled;
       throw writeError;
     }
@@ -253,7 +252,9 @@ export async function restoreAccount(input: { userId: string; requestId: string;
     const working = claimed.journal;
     if (!recoveryTokenMatches(input.token, working.recoveryTokenHash)) throw new AccountClosureError("Recovery link is invalid or has already been used.", 400);
     if (!working.checkpoints.recovery_unbanned) {
-      const unbanned = await admin.auth.admin.updateUserById(input.userId, { ban_duration: "none" });
+      // iam.reopen_account: sign-in back on, paused schedules and connections restored
+      // (revoked API keys stay revoked). An erased account cannot be reopened.
+      const unbanned = await admin.schema("iam").rpc("reopen_account", { p_user: input.userId, p_reason: `recovery link ${input.requestId}` });
       if (unbanned.error) throw unbanned.error;
       working.checkpoints.recovery_unbanned = new Date().toISOString();
       await writeJournal(input.userId, claimed.token, working);

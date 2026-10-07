@@ -4413,6 +4413,13 @@ export type ChatDatabase = {
             referencedRelation: "canvas_items"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "canvas_items_version_chain_same_owner"
+            columns: ["user_id", "parent_canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["user_id", "id"]
+          },
         ]
       }
       canvas_likes: {
@@ -7987,6 +7994,7 @@ export type ChatDatabase = {
           has_nested_objects: boolean
           id: string
           is_current: boolean
+          metadata: Json
           organization_id: string
           scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
@@ -8014,6 +8022,7 @@ export type ChatDatabase = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          metadata?: Json
           organization_id: string
           scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
@@ -8041,6 +8050,7 @@ export type ChatDatabase = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          metadata?: Json
           organization_id?: string
           scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
@@ -12108,6 +12118,107 @@ export type ChatDatabase = {
           },
         ]
       }
+      account_closure: {
+        Row: {
+          closed_at: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          erased_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reason: string | null
+          reopened_at: string | null
+          request_ref: string | null
+          revoked: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          closed_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          erased_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string | null
+          reopened_at?: string | null
+          request_ref?: string | null
+          revoked?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          closed_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          erased_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string | null
+          reopened_at?: string | null
+          request_ref?: string | null
+          revoked?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_closure_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_closure_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_closure_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_closure_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -12762,14 +12873,14 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "memberships_created_by_fkey_p"
+            foreignKeyName: "memberships_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_invited_by_fkey_p"
+            foreignKeyName: "memberships_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -12783,14 +12894,14 @@ export type ChatDatabase = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_updated_by_fkey_p"
+            foreignKeyName: "memberships_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_user_id_fkey_p"
+            foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -13107,14 +13218,14 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "organizations_created_by_fkey_p"
+            foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "organizations_updated_by_fkey_p"
+            foreignKeyName: "organizations_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -13183,22 +13294,119 @@ export type ChatDatabase = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permissions_created_by_fkey_p"
+            foreignKeyName: "permissions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permissions_granted_to_user_id_fkey_p"
+            foreignKeyName: "permissions_granted_to_user_id_fkey"
             columns: ["granted_to_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permissions_reviewed_by_fkey_p"
+            foreignKeyName: "permissions_reviewed_by_fkey"
             columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_data_column: {
+        Row: {
+          column_name: string
+          created_at: string
+          created_by: string | null
+          handling: string
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reason: string
+          replacement: string | null
+          schema_name: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          subject_column: string | null
+          subject_filter: string | null
+          subject_match: string
+          table_name: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          created_by?: string | null
+          handling: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason: string
+          replacement?: string | null
+          schema_name: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          subject_column?: string | null
+          subject_filter?: string | null
+          subject_match?: string
+          table_name: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          created_by?: string | null
+          handling?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string
+          replacement?: string | null
+          schema_name?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          subject_column?: string | null
+          subject_filter?: string | null
+          subject_match?: string
+          table_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_data_column_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_data_column_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_data_column_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -13625,7 +13833,7 @@ export type ChatDatabase = {
         }
         Relationships: [
           {
-            foreignKeyName: "memberships_invited_by_fkey_p"
+            foreignKeyName: "memberships_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -13639,7 +13847,7 @@ export type ChatDatabase = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_user_id_fkey_p"
+            foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -14033,6 +14241,7 @@ export type ChatDatabase = {
         Returns: undefined
       }
       archived_org_ids: { Args: never; Returns: string[] }
+      arm_fixture_delete: { Args: { p_ids: string[] }; Returns: number }
       asks_about_caller: {
         Args: { p_function?: string; p_user: string }
         Returns: boolean
@@ -14155,6 +14364,10 @@ export type ChatDatabase = {
       client_role_can_read: {
         Args: { p_rel: unknown; p_role?: string }
         Returns: boolean
+      }
+      close_account: {
+        Args: { p_reason?: string; p_user?: string }
+        Returns: Json
       }
       component_original_lane: {
         Args: { p_schema: string; p_table: string; p_token: string }
@@ -14310,6 +14523,10 @@ export type ChatDatabase = {
         Returns: {
           user_id: string
         }[]
+      }
+      erase_account: {
+        Args: { p_request_ref: string; p_user: string }
+        Returns: Json
       }
       external_principal_card: { Args: { p_user_id?: string }; Returns: Json }
       external_principal_reach: {
@@ -14736,6 +14953,14 @@ export type ChatDatabase = {
           why: string
         }[]
       }
+      personal_data_unregistered: {
+        Args: never
+        Returns: {
+          column_name: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
       personal_opens_row: {
         Args: {
           p_id: string
@@ -14904,6 +15129,10 @@ export type ChatDatabase = {
           p_by_person?: boolean
           p_permission_id: string
         }
+        Returns: Json
+      }
+      reopen_account: {
+        Args: { p_reason?: string; p_user: string }
         Returns: Json
       }
       reserved_namespace: {
@@ -15676,6 +15905,7 @@ export type ChatDatabase = {
           required_output_keys: string[]
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_mandate_id: string | null
+          typed_input_complete: boolean
           updated_at: string
           updated_by: string | null
           version: number
@@ -15721,6 +15951,7 @@ export type ChatDatabase = {
           required_output_keys?: string[]
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_mandate_id?: string | null
+          typed_input_complete?: boolean
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -15766,6 +15997,7 @@ export type ChatDatabase = {
           required_output_keys?: string[]
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_mandate_id?: string | null
+          typed_input_complete?: boolean
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -22900,6 +23132,84 @@ export type ChatDatabase = {
         }
         Relationships: []
       }
+      public_compat_wrapper: {
+        Row: {
+          created_at: string
+          expires_at: string
+          forwarder_oid: unknown
+          identity: string
+          owner_schema: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          forwarder_oid?: unknown
+          identity: string
+          owner_schema: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          forwarder_oid?: unknown
+          identity?: string
+          owner_schema?: string
+        }
+        Relationships: []
+      }
+      public_placement_baseline: {
+        Row: {
+          identity: string
+          object_type: string
+          taken_at: string
+        }
+        Insert: {
+          identity: string
+          object_type: string
+          taken_at?: string
+        }
+        Update: {
+          identity?: string
+          object_type?: string
+          taken_at?: string
+        }
+        Relationships: []
+      }
+      public_placement_domain: {
+        Row: {
+          prefix: string
+          schema_name: string
+        }
+        Insert: {
+          prefix: string
+          schema_name: string
+        }
+        Update: {
+          prefix?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
+      public_restore_permit: {
+        Row: {
+          approved_by: string
+          expires_at: string
+          identity: string
+          reason: string
+        }
+        Insert: {
+          approved_by: string
+          expires_at: string
+          identity: string
+          reason: string
+        }
+        Update: {
+          approved_by?: string
+          expires_at?: string
+          identity?: string
+          reason?: string
+        }
+        Relationships: []
+      }
       purpose: {
         Row: {
           created_at: string
@@ -29857,10 +30167,6 @@ export type ChatDatabase = {
           slug: string
         }[]
       }
-      _d31_impl_add_data_row_to_user_table: {
-        Args: { p_data: Json; p_table_id: string }
-        Returns: Json
-      }
       _d31_impl_add_feedback_comment: {
         Args: {
           p_author_name: string
@@ -29923,14 +30229,6 @@ export type ChatDatabase = {
           isSetofReturn: true
         }
       }
-      _d31_impl_get_user_table_complete: {
-        Args: {
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
       _d31_impl_reply_to_user_review: {
         Args: {
           p_feedback_id: string
@@ -29946,36 +30244,6 @@ export type ChatDatabase = {
           p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
-        }
-        Returns: Json
-      }
-      _d31_impl_update_user_list: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description?: string
-          p_is_public?: boolean
-          p_items?: Json
-          p_list_id: string
-          p_list_name?: string
-          p_public_read?: boolean
-        }
-        Returns: Json
-      }
-      _d31_impl_update_user_table_config: {
-        Args: {
-          p_field_updates?: Json
-          p_table_id: string
-          p_table_updates?: Json
-        }
-        Returns: Json
-      }
-      _d31_impl_update_user_table_metadata: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description?: string
-          p_is_public?: boolean
-          p_table_id: string
-          p_table_name?: string
         }
         Returns: Json
       }
@@ -32191,6 +32459,8 @@ export type ChatDatabase = {
         Args: { p_ip?: unknown; p_organization_id: string }
         Returns: Json
       }
+      applet_public_intro: { Args: { p_slug: string }; Returns: Json }
+      applets_public: { Args: { p_templates_only?: boolean }; Returns: Json }
       apply_template_definition: {
         Args: { p_definition: Json; p_org_id: string }
         Returns: Json
@@ -32530,19 +32800,6 @@ export type ChatDatabase = {
       check_org_slug_available: {
         Args: { slug_to_check: string }
         Returns: boolean
-      }
-      check_prompt_app_drift: {
-        Args: { p_user_id?: string }
-        Returns: {
-          app_id: string
-          app_name: string
-          current_version: number
-          pinned_version: number
-          prompt_id: string
-          prompt_name: string
-          prompt_source_type: string
-          versions_behind: number
-        }[]
       }
       check_rate_limit: {
         Args: {
@@ -34474,8 +34731,6 @@ export type ChatDatabase = {
       get_aga_public_data: {
         Args: { p_app_id?: string; p_slug?: string }
         Returns: {
-          agent_id: string
-          agent_version_id: string
           allowed_imports: Json
           category: string
           component_code: string
@@ -34484,39 +34739,15 @@ export type ChatDatabase = {
           favicon_url: string
           id: string
           layout_config: Json
-          mandate_agent_id: string
-          mandate_agent_version_id: string
-          mandate_id: string
-          mandate_key: string
           name: string
           preview_image_url: string
           publisher_name: string
-          shell_config: Json
-          shell_kind: string
-          slot_code: Json
-          slot_overrides: Json
           slug: string
           styling_config: Json
           success_rate: number
           tagline: string
           tags: string[]
           total_executions: number
-          use_latest: boolean
-          variable_schema: Json
-        }[]
-      }
-      get_aga_public_execution: {
-        Args: { p_app_id: string }
-        Returns: {
-          auto_context_disabled: boolean
-          context_policies: Json
-          custom_tools: Json
-          id: string
-          model_id: string
-          settings: Json
-          tools: string[]
-          ui_gates: Json
-          variable_definitions: Json
         }[]
       }
       get_agent_conversations: {
@@ -35022,61 +35253,7 @@ export type ChatDatabase = {
           table_name: string
         }[]
       }
-      get_prompt_app_execution_payload: {
-        Args: { p_app_id: string }
-        Returns: Json
-      }
-      get_prompt_app_public_data: {
-        Args: { p_app_id?: string; p_slug?: string }
-        Returns: {
-          allowed_imports: Json
-          category: string
-          component_code: string
-          component_language: string
-          description: string
-          favicon_url: string
-          id: string
-          layout_config: Json
-          name: string
-          preview_image_url: string
-          slug: string
-          styling_config: Json
-          success_rate: number
-          tagline: string
-          tags: string[]
-          total_executions: number
-          variable_schema: Json
-        }[]
-      }
       get_public_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
-      get_published_app_with_prompt: {
-        Args: { p_app_id?: string; p_slug?: string }
-        Returns: {
-          allowed_imports: Json
-          category: string
-          component_code: string
-          component_language: string
-          description: string
-          favicon_url: string
-          id: string
-          layout_config: Json
-          name: string
-          preview_image_url: string
-          prompt_id: string
-          prompt_messages: Json
-          prompt_settings: Json
-          prompt_variable_defaults: Json
-          slug: string
-          status: string
-          styling_config: Json
-          success_rate: number
-          tagline: string
-          tags: string[]
-          total_executions: number
-          user_id: string
-          variable_schema: Json
-        }[]
-      }
       get_resource_access: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
@@ -37622,10 +37799,6 @@ export type ChatDatabase = {
           role: string
           user_id: string
         }[]
-      }
-      pin_prompt_app_to_version: {
-        Args: { p_app_id: string; p_version_id: string }
-        Returns: Json
       }
       plpgsql_check_function:
         | {
@@ -43200,6 +43373,7 @@ export type ChatDatabase = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           metadata: Json
           mutation_id: string
@@ -43223,6 +43397,7 @@ export type ChatDatabase = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           mutation_id: string
@@ -43246,6 +43421,7 @@ export type ChatDatabase = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           mutation_id?: string

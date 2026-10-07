@@ -25,11 +25,14 @@ import {
   MoreHorizontal,
   ShieldCheck,
   SlidersHorizontal,
+  UserCheck,
   UserCog,
   UserRound,
+  UserX,
   WalletCards,
   X,
 } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
 import { formatCount } from "@ai-matrx/kit/format";
 import { Cost } from "@/components/cost/Cost";
 import { useCostDisplay } from "@/components/cost/useCostDisplay";
@@ -301,6 +304,39 @@ export function AccountsTableClient() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed");
     }
+  }, []);
+
+  // Closing an account is the only way to "delete" one: the person row is permanent.
+  // iam.close_account / iam.reopen_account check the platform-admin seat themselves.
+  const setAccountClosed = useCallback(async (row: AdminUserRow, close: boolean) => {
+    const who = row.email ?? row.display_name ?? row.id;
+    const ok = await confirm(
+      close
+        ? {
+            title: "Close account?",
+            description: `${who} is signed out everywhere and cannot sign in. API keys are revoked; schedules and connections pause. Records stay, still theirs. Billing is not changed. Reopen any time.`,
+            confirmLabel: "Close account",
+            variant: "destructive",
+          }
+        : {
+            title: "Reopen account?",
+            description: `${who} can sign in again; paused schedules and connections resume. Revoked API keys stay revoked.`,
+            confirmLabel: "Reopen",
+          },
+    );
+    if (!ok) return;
+    const { error } = await createClient()
+      .schema("iam")
+      .rpc(close ? "close_account" : "reopen_account", {
+        p_user: row.id,
+        p_reason: close ? "closed by a platform admin" : "reopened by a platform admin",
+      });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, banned: close } : r)));
+    toast.success(close ? `Closed ${who}` : `Reopened ${who}`);
   }, []);
 
   const toggleMcpFullAccess = useCallback(async (row: AdminUserRow) => {
@@ -1089,6 +1125,15 @@ export function AccountsTableClient() {
                   {row.onboarding_completed
                     ? "Mark as new"
                     : "Mark as onboarded"}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => void setAccountClosed(row, !row.banned)}>
+                  {row.banned ? (
+                    <UserCheck className="mr-2 h-4 w-4" />
+                  ) : (
+                    <UserX className="mr-2 h-4 w-4" />
+                  )}
+                  {row.banned ? "Reopen account" : "Close account…"}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

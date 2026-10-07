@@ -4214,6 +4214,8 @@ export type Database = {
           rate_limit_authenticated: number | null
           rate_limit_per_ip: number | null
           rate_limit_window_hours: number | null
+          scope: Json
+          screenshots: Json
           search_engine_indexed: boolean | null
           search_tsv: unknown
           shared_context_policies: Json | null
@@ -4226,6 +4228,7 @@ export type Database = {
           tagline: string | null
           tags: string[] | null
           task_id: string | null
+          template: Json | null
           total_cost: number | null
           total_executions: number | null
           total_tokens_used: number | null
@@ -4240,7 +4243,7 @@ export type Database = {
           app_kind?: string
           avg_execution_time_ms?: number | null
           category?: string | null
-          component_code: string
+          component_code?: string
           component_language?: string
           created_at?: string
           created_by?: string | null
@@ -4271,6 +4274,8 @@ export type Database = {
           rate_limit_authenticated?: number | null
           rate_limit_per_ip?: number | null
           rate_limit_window_hours?: number | null
+          scope?: Json
+          screenshots?: Json
           search_engine_indexed?: boolean | null
           search_tsv?: unknown
           shared_context_policies?: Json | null
@@ -4283,6 +4288,7 @@ export type Database = {
           tagline?: string | null
           tags?: string[] | null
           task_id?: string | null
+          template?: Json | null
           total_cost?: number | null
           total_executions?: number | null
           total_tokens_used?: number | null
@@ -4328,6 +4334,8 @@ export type Database = {
           rate_limit_authenticated?: number | null
           rate_limit_per_ip?: number | null
           rate_limit_window_hours?: number | null
+          scope?: Json
+          screenshots?: Json
           search_engine_indexed?: boolean | null
           search_tsv?: unknown
           shared_context_policies?: Json | null
@@ -4340,6 +4348,7 @@ export type Database = {
           tagline?: string | null
           tags?: string[] | null
           task_id?: string | null
+          template?: Json | null
           total_cost?: number | null
           total_executions?: number | null
           total_tokens_used?: number | null
@@ -4384,6 +4393,7 @@ export type Database = {
           pages: Json | null
           parent_applet_id: string | null
           pinned_version: number | null
+          scope: Json | null
           sources: Json | null
           status: string | null
           styling_config: Json | null
@@ -4418,6 +4428,7 @@ export type Database = {
           pages?: Json | null
           parent_applet_id?: string | null
           pinned_version?: number | null
+          scope?: Json | null
           sources?: Json | null
           status?: string | null
           styling_config?: Json | null
@@ -4452,6 +4463,7 @@ export type Database = {
           pages?: Json | null
           parent_applet_id?: string | null
           pinned_version?: number | null
+          scope?: Json | null
           sources?: Json | null
           status?: string | null
           styling_config?: Json | null
@@ -4742,7 +4754,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      applet_kind: {
+        Args: { p_applet_id: string; p_kind: string; p_platform?: string }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never
@@ -5272,6 +5287,7 @@ export type Database = {
       }
     }
     Functions: {
+      _refuse_pooled_connection: { Args: never; Returns: undefined }
       broken_functions_snapshot_age: { Args: never; Returns: string }
       classify_broken_function: {
         Args: {
@@ -9511,6 +9527,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "canvas_items"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "canvas_items_version_chain_same_owner"
+            columns: ["user_id", "parent_canvas_id"]
+            isOneToOne: false
+            referencedRelation: "canvas_items"
+            referencedColumns: ["user_id", "id"]
           },
         ]
       }
@@ -22233,6 +22256,14 @@ export type Database = {
         Args: { p_event_key: string; p_organization_id: string; p_user: string }
         Returns: boolean
       }
+      notification_submission_status: {
+        Args: {
+          p_organization_id: string
+          p_submission_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       notification_user_channels: {
         Args: {
           p_base: Json
@@ -22446,6 +22477,10 @@ export type Database = {
           duplicate: boolean
           schedule_id: string
         }[]
+      }
+      self_notification_readiness: {
+        Args: { p_organization_id: string; p_user_id: string }
+        Returns: Json
       }
       set_my_sms_assistant_enabled: {
         Args: { p_enabled: boolean; p_program_key: string }
@@ -24692,6 +24727,7 @@ export type Database = {
           has_nested_objects: boolean
           id: string
           is_current: boolean
+          metadata: Json
           organization_id: string
           scope_id: string
           source_type: Database["public"]["Enums"]["context_source_type"]
@@ -24719,6 +24755,7 @@ export type Database = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          metadata?: Json
           organization_id: string
           scope_id: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
@@ -24746,6 +24783,7 @@ export type Database = {
           has_nested_objects?: boolean
           id?: string
           is_current?: boolean
+          metadata?: Json
           organization_id?: string
           scope_id?: string
           source_type?: Database["public"]["Enums"]["context_source_type"]
@@ -26912,6 +26950,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_fields: Json
+          deleted_at: string | null
           id: string
           lane: string
           metadata: Json
@@ -26929,6 +26968,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           lane: string
           metadata?: Json
@@ -26946,6 +26986,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_fields?: Json
+          deleted_at?: string | null
           id?: string
           lane?: string
           metadata?: Json
@@ -71829,6 +71870,107 @@ export type Database = {
           },
         ]
       }
+      account_closure: {
+        Row: {
+          closed_at: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          erased_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reason: string | null
+          reopened_at: string | null
+          request_ref: string | null
+          revoked: Json
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at: string
+          updated_by: string | null
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          closed_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          erased_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string | null
+          reopened_at?: string | null
+          request_ref?: string | null
+          revoked?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          closed_at?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          erased_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string | null
+          reopened_at?: string | null
+          request_ref?: string | null
+          revoked?: Json
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          updated_at?: string
+          updated_by?: string | null
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_closure_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_closure_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_closure_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_closure_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       api_keys: {
         Row: {
           created_at: string
@@ -72483,14 +72625,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "memberships_created_by_fkey_p"
+            foreignKeyName: "memberships_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_invited_by_fkey_p"
+            foreignKeyName: "memberships_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -72504,14 +72646,14 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_updated_by_fkey_p"
+            foreignKeyName: "memberships_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_user_id_fkey_p"
+            foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -72828,14 +72970,14 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "organizations_created_by_fkey_p"
+            foreignKeyName: "organizations_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "organizations_updated_by_fkey_p"
+            foreignKeyName: "organizations_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -72904,22 +73046,119 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permissions_created_by_fkey_p"
+            foreignKeyName: "permissions_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permissions_granted_to_user_id_fkey_p"
+            foreignKeyName: "permissions_granted_to_user_id_fkey"
             columns: ["granted_to_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "permissions_reviewed_by_fkey_p"
+            foreignKeyName: "permissions_reviewed_by_fkey"
             columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      personal_data_column: {
+        Row: {
+          column_name: string
+          created_at: string
+          created_by: string | null
+          handling: string
+          id: string
+          metadata: Json
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          reason: string
+          replacement: string | null
+          schema_name: string
+          shown_to: Database["platform"]["Enums"]["shown_to"] | null
+          subject_column: string | null
+          subject_filter: string | null
+          subject_match: string
+          table_name: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          column_name: string
+          created_at?: string
+          created_by?: string | null
+          handling: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason: string
+          replacement?: string | null
+          schema_name: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          subject_column?: string | null
+          subject_filter?: string | null
+          subject_match?: string
+          table_name: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          column_name?: string
+          created_at?: string
+          created_by?: string | null
+          handling?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          reason?: string
+          replacement?: string | null
+          schema_name?: string
+          shown_to?: Database["platform"]["Enums"]["shown_to"] | null
+          subject_column?: string | null
+          subject_filter?: string | null
+          subject_match?: string
+          table_name?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "personal_data_column_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_data_column_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personal_data_column_updated_by_fkey"
+            columns: ["updated_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -73346,7 +73585,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "memberships_invited_by_fkey_p"
+            foreignKeyName: "memberships_invited_by_fkey"
             columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "users"
@@ -73360,7 +73599,7 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "memberships_user_id_fkey_p"
+            foreignKeyName: "memberships_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -73754,6 +73993,7 @@ export type Database = {
         Returns: undefined
       }
       archived_org_ids: { Args: never; Returns: string[] }
+      arm_fixture_delete: { Args: { p_ids: string[] }; Returns: number }
       asks_about_caller: {
         Args: { p_function?: string; p_user: string }
         Returns: boolean
@@ -73876,6 +74116,10 @@ export type Database = {
       client_role_can_read: {
         Args: { p_rel: unknown; p_role?: string }
         Returns: boolean
+      }
+      close_account: {
+        Args: { p_reason?: string; p_user?: string }
+        Returns: Json
       }
       component_original_lane: {
         Args: { p_schema: string; p_table: string; p_token: string }
@@ -74031,6 +74275,10 @@ export type Database = {
         Returns: {
           user_id: string
         }[]
+      }
+      erase_account: {
+        Args: { p_request_ref: string; p_user: string }
+        Returns: Json
       }
       external_principal_card: { Args: { p_user_id?: string }; Returns: Json }
       external_principal_reach: {
@@ -74457,6 +74705,14 @@ export type Database = {
           why: string
         }[]
       }
+      personal_data_unregistered: {
+        Args: never
+        Returns: {
+          column_name: string
+          schema_name: string
+          table_name: string
+        }[]
+      }
       personal_opens_row: {
         Args: {
           p_id: string
@@ -74625,6 +74881,10 @@ export type Database = {
           p_by_person?: boolean
           p_permission_id: string
         }
+        Returns: Json
+      }
+      reopen_account: {
+        Args: { p_reason?: string; p_user: string }
         Returns: Json
       }
       reserved_namespace: {
@@ -76919,6 +77179,7 @@ export type Database = {
           required_output_keys: string[]
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
           source_mandate_id: string | null
+          typed_input_complete: boolean
           updated_at: string
           updated_by: string | null
           version: number
@@ -76964,6 +77225,7 @@ export type Database = {
           required_output_keys?: string[]
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_mandate_id?: string | null
+          typed_input_complete?: boolean
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -77009,6 +77271,7 @@ export type Database = {
           required_output_keys?: string[]
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
           source_mandate_id?: string | null
+          typed_input_complete?: boolean
           updated_at?: string
           updated_by?: string | null
           version?: number
@@ -79536,6 +79799,60 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_lock_watchdog_log: {
+        Row: {
+          action: string
+          action_ok: boolean | null
+          at: string
+          holder_app: string | null
+          holder_pid: number
+          holder_query: string | null
+          holder_state: string | null
+          holder_user: string | null
+          holder_xact_age: string | null
+          id: number
+          lock_mode: string
+          longest_wait: string
+          note: string | null
+          relation: string
+          waiter_count: number
+        }
+        Insert: {
+          action: string
+          action_ok?: boolean | null
+          at?: string
+          holder_app?: string | null
+          holder_pid: number
+          holder_query?: string | null
+          holder_state?: string | null
+          holder_user?: string | null
+          holder_xact_age?: string | null
+          id?: never
+          lock_mode: string
+          longest_wait: string
+          note?: string | null
+          relation: string
+          waiter_count: number
+        }
+        Update: {
+          action?: string
+          action_ok?: boolean | null
+          at?: string
+          holder_app?: string | null
+          holder_pid?: number
+          holder_query?: string | null
+          holder_state?: string | null
+          holder_user?: string | null
+          holder_xact_age?: string | null
+          id?: never
+          lock_mode?: string
+          longest_wait?: string
+          note?: string | null
+          relation?: string
+          waiter_count?: number
+        }
+        Relationships: []
+      }
       check_item: {
         Row: {
           accept_basis: string | null
@@ -79875,6 +80192,7 @@ export type Database = {
           alert_window_minutes: number | null
           category: string
           created_at: string
+          deleted_at: string | null
           description: string | null
           disposition: string
           id: string
@@ -79892,6 +80210,7 @@ export type Database = {
           alert_window_minutes?: number | null
           category: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           disposition?: string
           id?: string
@@ -79909,6 +80228,7 @@ export type Database = {
           alert_window_minutes?: number | null
           category?: string
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           disposition?: string
           id?: string
@@ -80586,6 +80906,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auth_lock_watchdog: { Args: { p_min_wait?: string }; Returns: number }
       check_catalog_rename: {
         Args: { p_new_id: string; p_old_id: string; p_repo: string }
         Returns: string
@@ -87366,6 +87687,84 @@ export type Database = {
           live_source?: string
           name?: string
           source_kind?: string
+        }
+        Relationships: []
+      }
+      public_compat_wrapper: {
+        Row: {
+          created_at: string
+          expires_at: string
+          forwarder_oid: unknown
+          identity: string
+          owner_schema: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          forwarder_oid?: unknown
+          identity: string
+          owner_schema: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          forwarder_oid?: unknown
+          identity?: string
+          owner_schema?: string
+        }
+        Relationships: []
+      }
+      public_placement_baseline: {
+        Row: {
+          identity: string
+          object_type: string
+          taken_at: string
+        }
+        Insert: {
+          identity: string
+          object_type: string
+          taken_at?: string
+        }
+        Update: {
+          identity?: string
+          object_type?: string
+          taken_at?: string
+        }
+        Relationships: []
+      }
+      public_placement_domain: {
+        Row: {
+          prefix: string
+          schema_name: string
+        }
+        Insert: {
+          prefix: string
+          schema_name: string
+        }
+        Update: {
+          prefix?: string
+          schema_name?: string
+        }
+        Relationships: []
+      }
+      public_restore_permit: {
+        Row: {
+          approved_by: string
+          expires_at: string
+          identity: string
+          reason: string
+        }
+        Insert: {
+          approved_by: string
+          expires_at: string
+          identity: string
+          reason: string
+        }
+        Update: {
+          approved_by?: string
+          expires_at?: string
+          identity?: string
+          reason?: string
         }
         Relationships: []
       }
@@ -95683,10 +96082,6 @@ export type Database = {
           slug: string
         }[]
       }
-      _d31_impl_add_data_row_to_user_table: {
-        Args: { p_data: Json; p_table_id: string }
-        Returns: Json
-      }
       _d31_impl_add_feedback_comment: {
         Args: {
           p_author_name: string
@@ -95749,14 +96144,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      _d31_impl_get_user_table_complete: {
-        Args: {
-          p_sort_direction?: string
-          p_sort_field?: string
-          p_table_id: string
-        }
-        Returns: Json
-      }
       _d31_impl_reply_to_user_review: {
         Args: {
           p_feedback_id: string
@@ -95772,36 +96159,6 @@ export type Database = {
           p_image_file_ids?: string[]
           p_message: string
           p_sender_name?: string
-        }
-        Returns: Json
-      }
-      _d31_impl_update_user_list: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description?: string
-          p_is_public?: boolean
-          p_items?: Json
-          p_list_id: string
-          p_list_name?: string
-          p_public_read?: boolean
-        }
-        Returns: Json
-      }
-      _d31_impl_update_user_table_config: {
-        Args: {
-          p_field_updates?: Json
-          p_table_id: string
-          p_table_updates?: Json
-        }
-        Returns: Json
-      }
-      _d31_impl_update_user_table_metadata: {
-        Args: {
-          p_authenticated_read?: boolean
-          p_description?: string
-          p_is_public?: boolean
-          p_table_id: string
-          p_table_name?: string
         }
         Returns: Json
       }
@@ -98017,6 +98374,8 @@ export type Database = {
         Args: { p_ip?: unknown; p_organization_id: string }
         Returns: Json
       }
+      applet_public_intro: { Args: { p_slug: string }; Returns: Json }
+      applets_public: { Args: { p_templates_only?: boolean }; Returns: Json }
       apply_template_definition: {
         Args: { p_definition: Json; p_org_id: string }
         Returns: Json
@@ -127147,6 +127506,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           id: string
           metadata: Json
           mutation_id: string
@@ -127170,6 +127530,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           mutation_id: string
@@ -127193,6 +127554,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           id?: string
           metadata?: Json
           mutation_id?: string
