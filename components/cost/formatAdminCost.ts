@@ -1,4 +1,4 @@
-import { formatCost, usdToPoints } from "@ai-matrx/kit/format";
+import { formatCost, formatUsd, usdToPoints } from "@ai-matrx/kit/format";
 
 // THE RATE IS ALWAYS THE CALLER'S (lane DRILL-CLOSE, VERIFY-DRILL-FINAL L-b). These used to fall back
 // to `currentPointsRate()` when no rate was passed. That read is a one-shot peek: on a miss it answers
@@ -23,12 +23,20 @@ export function adminCostPoints(usd: number | null | undefined, rate: number | n
 /** Admin ledger values show the charged USD amount beside its points equivalent. */
 export function formatAdminCost(
   usd: number | null | undefined,
-  options: { rate: number | null; short?: boolean; unknown?: string },
+  options: {
+    rate: number | null;
+    short?: boolean;
+    unknown?: string;
+    /** `"trim"` for a figure that is not a per-call cost (an allowance estimate): `$0.50`, not `$0.5000`. */
+    usdDigits?: "adaptive" | "trim";
+  },
 ): string {
   if (usd === null || usd === undefined || !Number.isFinite(usd)) {
     return options.unknown ?? "—";
   }
-  return `${formatAdminUsd(usd)} · ${formatCost(usd, { unit: "points", short: options.short, rate: options.rate })}`;
+  const usdText =
+    options.usdDigits === "trim" ? formatUsd(usd, { digits: "trim" }) : formatAdminUsd(usd);
+  return `${usdText} · ${formatCost(usd, { unit: "points", short: options.short, rate: options.rate })}`;
 }
 
 /** Compact chart ticks use USD; the surrounding totals show both units. */

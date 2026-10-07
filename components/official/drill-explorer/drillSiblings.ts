@@ -81,6 +81,8 @@ export function drillSiblingDimensions(
     // what it groups by, as the header's tooltip (lane DRILL-FLIP-FIXES L2)
     if (d.description) dim.description = d.description;
     if (d.grains) dim.grains = d.grains as NonNullable<MatrxDrillDimension["grains"]>;
+    // WHAT A LEVEL OF IT LOOKS LIKE (lane DRILL-LEVELS): its breakouts, Measures, attributes, records
+    if (d.level) dim.level = d.level;
     // KEYS NEVER REACH A PERSON (VERIFIER-32 F5): an id reads as the door's label or the resolver's
     // name, a code as the definition's choice label — never the id or the code itself.
     const labelFor = drillDimensionLabelFor(d, { names: names[d.key], resolver: resolvers?.[d.key], hostWords: hostWords?.[d.key] });

@@ -187,6 +187,8 @@ export interface ScopeTypeNode {
   /** Kebab URL segment, unique per organization (the admin console's routes use it). */
   slug: string | null;
   description: string;
+  /** Who made the type: they shape it (fields, rename, archive) as org admins do. */
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   scopes: ScopeNode[];
@@ -205,6 +207,8 @@ export interface ArchivedScopeTypeRow {
   icon: string;
   color: string;
   deleted_at: string;
+  /** Who made the type: they may restore it, as org admins may. */
+  created_by?: string | null;
   /** Scopes that went with this removal and come back with a restore. */
   archived_scope_count: number;
 }

@@ -1693,7 +1693,7 @@
       "shapeWhy": "A byte count becoming a unit string is this capability whatever it is called. The 2026-09-07 census predicted this gap ('the census method needs a shape pass') and the 2026-09-11 re-verification proved it: formatBytes, fmtBytes, humanSize, bytesHuman, formatSize, and ~60 bare inline JSX expressions that are not definitions at all and can never be caught by a name. A second review the same day proved the rule was blind to the DECIMAL (SI) family \u2014 1000 / 1e6 / 1_000_000 \u2014 and to a GB-input body that MULTIPLIES; five live twins were returning zero findings. Both are covered now. Pattern and its proof: scripts/byte-size-shape.mjs. A capacity constant can never match: the division arms require a DIVISION or THRESHOLD COMPARISON against a byte base, and the multiply arm requires BOTH a non-literal operand (so 80 * 1024 * 1024 is out) AND the unit label on the same line outside any comment (so `limitMb * 1024 * 1024; // 25 MB` is out). This repo has ~60 legitimate byte ceilings that must stay untouched.",
       "allow": [
         {
-          "file": "features/agent-comparison/components/RunsComparisonTable.tsx",
+          "file": "features/agent-comparison/components/runsComparisonData.ts",
           "reason": "NOT A SECOND NAME FOR THE EXPORT: `format` is the comparison table's per-row formatter SLOT (every row spec has one; twenty other rows put fmtTokens, fmtCost, fmtMs, etc. there), so `format: (v) => formatFileSize(v)` hides no call site from the input lane. The only values reaching it are `clientAccumulatedBytes` / `clientTotalPayloadBytes`, which ../aidream/apps/shared/chat/src/agents/redux/execution-system/thunks/process-stream.ts measures as `new TextEncoder().encode(text).length` \u2014 true UTF-8 bytes, never a character count. The arrow exists because the slot's type is `(v, unit: CostUnit) => string`, which formatFileSize's options parameter cannot satisfy directly."
         }
       ],
@@ -1779,7 +1779,13 @@
       "name": "SelectTrigger",
       "package": "@ai-matrx/design-system",
       "why": "The Radix Select primitive family. matrx-frontend's 218-line fork (components/ui/select.tsx, ~398 import sites) was the ORIGIN of the package body \u2014 a verbatim port with the portal seam inverted \u2014 and was collapsed to a re-export door on 2026-09-07. Every behavior lives in the package: selectTriggerVariants (sm/default/lg), the trigger's hideArrow, SelectItem's `description` second line, the scroll buttons, popper positioning, and the unconditional root (no hydration mount gate).",
-      "allow": []
+      "allow": [],
+      "census": [
+        {
+          "file": "components/ui/select.tsx",
+          "reason": "UI-UNIFICATION TRANSITION DOOR, not a fork: a frozen second name for the package-root (legacy) control, kept only for the importers listed in scripts/ui-rollout/doors-census.json (agent builder, other lanes' files, sites the rollout could not convert safely). No logic is duplicated, but it IS a second name for the export, so it is debt: it dies when that rollout census empties (one-ui-system Wave 2). Census 2026-10-07."
+        }
+      ]
     },
     {
       "name": "SelectContent",
@@ -2818,7 +2824,13 @@
       "name": "TabsList",
       "package": "@ai-matrx/design-system",
       "why": "Design-system primitive. matrx-local carried its own fork of this family in desktop/src/components/ui/ until 2026-09-07, when the client-package catch-up drain found that this repo had NEVER been adopted onto @ai-matrx/design-system \u2014 the census row said 'all four repos' and five consumers exist. All seventeen forks were swapped and deleted that session (design-system 0.10.0). Census row 19.",
-      "allow": []
+      "allow": [],
+      "census": [
+        {
+          "file": "components/ui/tabs.tsx",
+          "reason": "UI-UNIFICATION TRANSITION DOOR, not a fork: a frozen second name for the package-root (legacy) control, kept only for the importers listed in scripts/ui-rollout/doors-census.json (agent builder, other lanes' files, sites the rollout could not convert safely). No logic is duplicated, but it IS a second name for the export, so it is debt: it dies when that rollout census empties (one-ui-system Wave 2). Census 2026-10-07."
+        }
+      ]
     },
     {
       "name": "TabsTrigger",
@@ -2841,7 +2853,17 @@
       "name": "Textarea",
       "package": "@ai-matrx/design-system",
       "why": "Design-system primitive. matrx-local carried its own fork of this family in desktop/src/components/ui/ until 2026-09-07, when the client-package catch-up drain found that this repo had NEVER been adopted onto @ai-matrx/design-system \u2014 the census row said 'all four repos' and five consumers exist. All seventeen forks were swapped and deleted that session (design-system 0.10.0). Census row 19.",
-      "allow": []
+      "allow": [],
+      "census": [
+        {
+          "file": "components/ui/textarea.tsx",
+          "reason": "UI-UNIFICATION TRANSITION DOOR, not a fork: a frozen second name for the package-root (legacy) control, kept only for the importers listed in scripts/ui-rollout/doors-census.json (agent builder, other lanes' files, sites the rollout could not convert safely). No logic is duplicated, but it IS a second name for the export, so it is debt: it dies when that rollout census empties (one-ui-system Wave 2). Census 2026-10-07."
+        },
+        {
+          "file": "features/content-ir/sandbox/runtime/FrameTextarea.tsx",
+          "reason": "UI-UNIFICATION TRANSITION DOOR, not a fork: a frozen second name for the package-root (legacy) control, kept only for the importers listed in scripts/ui-rollout/doors-census.json (agent builder, other lanes' files, sites the rollout could not convert safely). No logic is duplicated, but it IS a second name for the export, so it is debt: it dies when that rollout census empties (one-ui-system Wave 2). Census 2026-10-07."
+        }
+      ]
     },
     {
       "name": "createBrowserClient",

@@ -616,14 +616,6 @@ export interface ReversiblePreferences {
 
 export interface OrganizationPreferences {
   /**
-   * RETIRED (2026-10-01): the picker's old single star. Nothing selects an
-   * organization from it (the resolver stopped reading it 2026-09-19); it is
-   * read once by features/organizations/hooks/useOrganizationFavorites to carry
-   * that star into the canonical favorites store, then never again.
-   */
-  defaultOrganizationId: string | null;
-
-  /**
    * "Switch organization when a link asks" — DEFAULT ON.
    *
    * Every deep link the platform emits carries `?org=<uuid>` naming the
@@ -1360,8 +1352,6 @@ export const initializeUserPreferencesState = (
       preferredFacingMode: "",
     },
     organization: {
-      // null = no default chosen → header reminder nudges the user.
-      defaultOrganizationId: null,
       // Default ON: a link that names an organization is obeyed.
       switchWhenALinkAsks: true,
     },

@@ -113,6 +113,33 @@ describe("an Update form nobody has touched", () => {
     }
   });
 
+  it("every date kind is the package DateField — never a browser box or the borrowed task picker (G16)", async () => {
+    const kinds: Record<string, string> = { "Due Date": "date", Starts: "datetime", "Remind On": "time" };
+    for (const mode of ["update", "create"] as const) {
+      const { rows, done } = await renderRows(mode);
+      for (const [label, kind] of Object.entries(kinds)) {
+        const row = rows.find((r) => r.label === label)?.row;
+        const capsules = row ? [...row.querySelectorAll('[data-matrx-control="date-field"]')] : [];
+        const native = row?.querySelectorAll('input[type="date"], input[type="time"], input[type="datetime-local"]').length ?? -1;
+        // The borrowed TaskDueDatePicker trigger: a bare popover button outside any date-field capsule.
+        const borrowed = row
+          ? [...row.querySelectorAll('button[aria-haspopup="dialog"]')].filter((b) => !b.closest('[data-matrx-control="date-field"]')).length
+          : -1;
+        const placeholder = capsules[0]?.querySelector("input")?.getAttribute("placeholder") ?? null;
+        expect({ label, mode, capsules: capsules.length, kind: capsules[0]?.getAttribute("data-mode") ?? null, native, borrowed, placeholder }).toEqual({
+          label,
+          mode,
+          capsules: 1,
+          kind,
+          native: 0,
+          borrowed: 0,
+          placeholder: mode === "update" ? "Unchanged" : kind === "time" ? "Pick a time" : "Pick a date",
+        });
+      }
+      done();
+    }
+  });
+
   it("a Create form keeps its own empty words", async () => {
     const { rows, done } = await renderRows("create");
     const reads = (label: string) => rows.find((r) => r.label === label)!.reads;

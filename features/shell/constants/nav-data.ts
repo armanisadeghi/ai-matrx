@@ -1264,6 +1264,7 @@ export const primaryNavItems: ShellNavItem[] = [
         group: "Write",
       },
       { label: "E-Signatures", href: "/esign", iconName: "FileSignature", guestHidden: true, group: "Write" },
+      { label: "E-Sign Templates", href: "/esign/templates", iconName: "FileSignature", guestHidden: true, group: "Write" },
       {
         label: "Markdown Studio",
         href: "/markdown-studio",

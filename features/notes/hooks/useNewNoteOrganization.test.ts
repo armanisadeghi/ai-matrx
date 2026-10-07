@@ -77,7 +77,7 @@ function stateWith(overrides: {
   organization_id?: string | null;
   orgBootstrapResolved?: boolean;
   memberships?: string[];
-  defaultOrganizationId?: string | null;
+  startupOrganizationId?: string | null;
 }) {
   const memberships = overrides.memberships ?? [];
   return {
@@ -91,7 +91,7 @@ function stateWith(overrides: {
       organizations: Object.fromEntries(memberships.map((id) => [id, { id, name: id }])),
     },
     userPreferences: {
-      organization: { defaultOrganizationId: overrides.defaultOrganizationId ?? null },
+      organization: { startupOrganizationId: overrides.startupOrganizationId ?? null },
     },
   };
 }
@@ -107,7 +107,7 @@ function theMultiOrgNoSelectionStore() {
     stateWith({
       orgBootstrapResolved: true,
       memberships: [FIRST_CREATED, ORG],
-      defaultOrganizationId: ORG,
+      startupOrganizationId: ORG,
     }),
   );
   const dispatched: unknown[] = [];

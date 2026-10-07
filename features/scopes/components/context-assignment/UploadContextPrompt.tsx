@@ -41,7 +41,7 @@ export interface UploadContextPromptProps {
   /** Resolves with the uploaded cloud-file ids when the upload completes.
    *  May already be resolved (fast upload) — Save awaits it either way. */
   awaitFileIds: () => Promise<string[]>;
-  defaultOrganizationId?: string | null;
+  initialOrganizationId?: string | null;
   /** Called after assignments were written successfully. */
   onAssigned?: (fileIds: string[], selection: ContextSelection) => void;
 }
@@ -51,7 +51,7 @@ export function UploadContextPrompt({
   onOpenChange,
   fileNames,
   awaitFileIds,
-  defaultOrganizationId,
+  initialOrganizationId,
   onAssigned,
 }: UploadContextPromptProps) {
   const dispatch = useAppDispatch();
@@ -135,7 +135,7 @@ export function UploadContextPrompt({
             writeMode="live"
             fill
             subject={subject}
-            defaultOrganizationId={defaultOrganizationId}
+            initialOrganizationId={initialOrganizationId}
             onSubmitSelection={submit}
             onSaved={(r) => {
               if (r.ok) onOpenChange(false);
@@ -156,7 +156,7 @@ export function UploadContextPrompt({
             mode="assignment"
             writeMode="live"
             subject={subject}
-            defaultOrganizationId={defaultOrganizationId}
+            initialOrganizationId={initialOrganizationId}
             onSubmitSelection={submit}
             onSaved={(r) => {
               if (r.ok) onOpenChange(false);

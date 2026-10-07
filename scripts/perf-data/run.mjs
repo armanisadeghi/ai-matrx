@@ -51,7 +51,7 @@ try {
     console.log(`\nPage load against ${base} (${/localhost|127\.0\.0\.1/.test(base) ? "dev server: numbers include on-demand compiles" : "production build"})`);
     report.pages = await measurePages({ base, fixtures: fx });
     console.log("");
-    table(report.pages.map((r) => ({ page: r.page, pass: r.pass ?? "", ttfb_ms: r.ttfb_ms ?? "", lcp_ms: r.lcp_ms ?? "", rows_visible_ms: r.rows_visible_ms ?? r.note ?? "", store_calls: r.store_calls ?? "", budget_rows: r.budget?.rows_visible_ms ?? "", verdict: r.pass === "warm" ? verdict(Number(r.rows_visible_ms), r.budget?.rows_visible_ms) : "" })), ["page", "pass", "ttfb_ms", "lcp_ms", "rows_visible_ms", "store_calls", "budget_rows", "verdict"]);
+    table(report.pages.map((r) => ({ page: r.page, pass: r.pass ?? "", ttfb_ms: r.ttfb_ms ?? "", lcp_ms: r.lcp_ms ?? "", hydration_start_ms: r.hydration_start_ms ?? "", calls_before_rows: r.calls_before_rows ?? "", rows_visible_ms: r.rows_visible_ms ?? r.note ?? "", all_store_calls: r.all_store_calls ?? "", store_calls: r.store_calls ?? "", budget_rows: r.budget?.rows_visible_ms ?? "", verdict: r.pass === "warm" ? verdict(Number(r.rows_visible_ms), r.budget?.rows_visible_ms) : "" })), ["page", "pass", "ttfb_ms", "lcp_ms", "hydration_start_ms", "calls_before_rows", "rows_visible_ms", "all_store_calls", "store_calls", "budget_rows", "verdict"]);
   }
   const warns = [...report.doors.filter((r) => verdict(r.p95, r.budget) === "WARN"), ...report.pages.filter((r) => r.pass === "warm" && verdict(Number(r.rows_visible_ms), r.budget?.rows_visible_ms) === "WARN")];
   console.log(`\n${warns.length} over budget (warning only).`);

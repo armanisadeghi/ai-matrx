@@ -63,6 +63,20 @@ export function readFieldMap(document: Record<string, unknown> | null | undefine
   return out.sort((a, b) => a.page - b.page || a.y - b.y || a.x - b.x);
 }
 
+/**
+ * True when this page cannot draw a document's fields faithfully: a v2 map (`schema_version: 2`,
+ * esign-parity CONTRACT §1.3) or any field whose kind this v1 reader does not know. The surface
+ * then refuses openly ("This document needs the new signing page") instead of drawing the
+ * document with fields missing — a signer must never sign past a field they were never shown.
+ */
+export function needsNewSigningPage(document: Record<string, unknown> | null | undefined): boolean {
+  const map = document?.field_map;
+  if (!isRecord(map)) return false;
+  if (map.schema_version !== undefined && map.schema_version !== 1) return true;
+  if (!Array.isArray(map.fields)) return false;
+  return map.fields.some((raw) => !isRecord(raw) || !KINDS.some((k) => k === raw.kind));
+}
+
 /** "Mary Ann van Dyke" → "MAVD"; at most four letters, from the full name the signer adopted. */
 export function initialsOf(fullName: string): string {
   return fullName

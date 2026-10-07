@@ -17,6 +17,7 @@ import { AVATAR_RESERVE } from "../styles/tokens";
 import { AgentPicker } from "./AgentPicker";
 import { ContextChip } from "../agent-context/ContextChip";
 import { useSyncEditorContext } from "../agent-context/useSyncEditorContext";
+import { useSyncActiveFileToVariable } from "../agent-context/useSyncActiveFileToVariable";
 import { useBindAgentToSandbox } from "../agent-context/useBindAgentToSandbox";
 import {
   selectActiveSandboxId,
@@ -51,6 +52,9 @@ interface ChatPanelSlotProps {
   /** Show the "Show History" toggle. Off where the host renders no history
    *  column (a focused editor whose chat is about one record). */
   historyToggle?: boolean;
+  /** Name of an agent variable (e.g. `current_code`) filled from the open file
+   *  when the focused agent declares it. Named variable, never `user_input`. */
+  activeFileVariable?: string;
 }
 
 const CODE_WORKSPACE_SETTINGS_TAB = "editor.codeWorkspace";
@@ -70,6 +74,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   defaultAgentId,
   mandateAgentId,
   historyToggle = true,
+  activeFileVariable,
 }) => {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
@@ -124,6 +129,7 @@ export const ChatPanelSlot: React.FC<ChatPanelSlotProps> = ({
   // tab set and a chat instance are live. The hook is a no-op when
   // `conversationId` is null, so it's safe to call unconditionally.
   useSyncEditorContext(conversationId);
+  useSyncActiveFileToVariable(conversationId, activeFileVariable);
 
   // Sandbox-mode binding: when the editor is attached to a sandbox AND the
   // orchestrator surfaced a per-sandbox proxy URL, redirect THIS conversation's

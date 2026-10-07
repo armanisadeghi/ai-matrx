@@ -162,7 +162,7 @@ describe("same-named records in the record search", () => {
       NOW,
     );
     for (const row of out) expect(row.secondary!.length).toBeLessThanOrEqual(60);
-    expect(out[1]!.secondary).toBe("Northwind · In progress · Edited 1 h ago");
+    expect(out[1]!.secondary).toBe("Northwind · In progress · Edited 1 hour ago");
   });
 
   it("a note's first words never repeat its title or print a fence", () => {

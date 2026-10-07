@@ -14,17 +14,12 @@
  * One module-level cache so every picker on screen (the account rail, the
  * phone drawer, any notice) agrees the moment a star changes.
  *
- * CARRY-OVER: the picker's old single star lived in the preferences blob
- * (`organization.defaultOrganizationId`). The first read here makes that
- * organization a favorite, so nobody loses the star they had.
- *
- * It picks no organization for anyone: which organization a person works in
- * is this device's remembered choice (`resolveActiveOrgContext`).
+ * It picks no organization for anyone: which organization the shell opens to
+ * is the load ladder's answer (`resolveActiveOrgContext`).
  */
 
 import { useEffect, useSyncExternalStore } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPreferenceSelectors";
 import { selectIsAuthenticated } from "@/lib/redux/selectors/userSelectors";
 import { createClient } from "@/utils/supabase/client";
 import { toast } from "@/lib/toast";
@@ -36,7 +31,6 @@ type UesRow = { entity_type: string; entity_id: string; is_favorite: boolean };
 let favorites: readonly string[] = [];
 let loaded = false;
 let loading: Promise<void> | null = null;
-let carriedOver = false;
 const listeners = new Set<() => void>();
 
 function emit(next: readonly string[]) {
@@ -82,19 +76,12 @@ function load(): Promise<void> {
 
 export function useOrganizationFavorites() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
-  const legacyStar = useAppSelector(selectDefaultOrganizationId);
   const favoriteIds = useSyncExternalStore(subscribe, () => favorites, () => favorites);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    void load().then(() => {
-      // Carry the old single star over once, if it is not a favorite already.
-      if (!loaded || carriedOver || !legacyStar || favorites.includes(legacyStar)) return;
-      carriedOver = true;
-      emit([...favorites, legacyStar]);
-      void writeFavorite(legacyStar, true);
-    });
-  }, [isAuthenticated, legacyStar]);
+    void load();
+  }, [isAuthenticated]);
 
   const toggleFavorite = (id: string, favorite: boolean) => {
     const previous = favorites;

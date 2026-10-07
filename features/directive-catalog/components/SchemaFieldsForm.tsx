@@ -40,6 +40,7 @@ import { RecordReferencePicker } from "@/features/matrx-envelope/components/Refe
 import { PERSON_TOKEN } from "@/features/directive-catalog/identityPicker";
 import TaskAssigneePicker from "@/features/tasks/components/TaskAssigneePicker";
 import { TaskRecurrencePicker } from "@/features/tasks/components/TaskRecurrencePicker";
+import { DateField } from "@ai-matrx/design-system/controls";
 import {
   emptyFieldLabel,
   splitWarnings,
@@ -437,9 +438,11 @@ function RecordControl({
 }
 
 /**
- * A date, time or date-and-time input. Untouched with an empty word to say
- * ("Unchanged" on an Update), it shows that word, never the browser's
- * "mm/dd/yyyy" mask; focusing it hands over the native picker.
+ * A date, time or date-and-time field: THE package date control
+ * (`DateField`, `@ai-matrx/design-system/controls`, G16 2026-10-07) — typed
+ * entry, a calendar (sheet on a phone), Clear, ISO in and out (`yyyy-mm-dd`,
+ * `yyyy-mm-ddTHH:mm`, `HH:mm`). Untouched, it says the form's empty word
+ * ("Unchanged" on an Update), never a browser mask.
  */
 function DateTimeControl({
   id,
@@ -454,32 +457,13 @@ function DateTimeControl({
   emptyLabel: string;
   onChange: (next: string) => void;
 }) {
-  const [focused, setFocused] = useState(false);
-  const showWord = !value && !focused && emptyLabel !== "";
   return (
-    <div className="relative">
-      <Input
-        id={id}
-        type={kind === "date" ? "date" : kind === "time" ? "time" : "datetime-local"}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
-        aria-label={showWord ? emptyLabel : undefined}
-        className={cn(
-          "h-9 text-base lg:text-sm",
-          // The mask stays laid out (the picker opens where it always does) but unseen.
-          showWord && "text-transparent [&::-webkit-datetime-edit]:text-transparent",
-        )}
-      />
-      {showWord && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-base text-muted-foreground lg:text-sm"
-        >
-          {emptyLabel}
-        </span>
-      )}
-    </div>
+    <DateField
+      id={id}
+      mode={kind}
+      value={value || null}
+      emptyLabel={emptyLabel || (kind === "time" ? "Pick a time" : "Pick a date")}
+      onValueChange={(next) => onChange(next ?? "")}
+    />
   );
 }

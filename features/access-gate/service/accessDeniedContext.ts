@@ -232,7 +232,15 @@ export async function fetchAccessDeniedContext(
     // is), so asking only failed and the page read "We couldn't work out what happened". The honest
     // answer is the one a stranger gets — sign in first (found verifying access ladder T-40 on
     // /p/e/record/<id>; every public-lane type shared it).
-    const { data: claims } = await getClaimsUser(supabase);
+    const { data: claims, error: claimsError } = await getClaimsUser(supabase);
+    // COULD NOT VERIFY is not SIGNED OUT (`getClaimsUser` keeps the two apart): an
+    // unreachable auth server or a refresh that failed is a retry-able fault. Reading it
+    // as `anonymous` told signed-in people "We can't tell you anything about it until we
+    // know who you are" about their own conversations (2026-10-07).
+    if (claimsError) {
+      console.error(`[accessDeniedContext] ${token}:${id}: identity could not be verified`, claimsError);
+      return unknownContext(token);
+    }
     if (!claims.user) {
       return { ...unknownContext(token), status: "anonymous", disclosure: "anonymous" };
     }

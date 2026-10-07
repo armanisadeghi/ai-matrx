@@ -14,12 +14,8 @@
 //   Below the fold: the agent-builder model and the default DECISION model
 //   (agents.model_prefs.decision_default_model, decision-contract picker only).
 //
-// There is no "Default organization" row (removed 2026-10-01): since
-// 2026-09-19 nothing reads a default organization (no-default-organization
-// law), so "Where you land at sign-in" was a false sentence. The organization
-// picker's favorites (platform.user_entity_state) replace the starred default;
-// the stored `userPreferences.organization.defaultOrganizationId` value is kept
-// because the favorites hook carries it over once.
+// The organization the app opens to is the "Start-up organization" row in the
+// Organization tab (users.user_preferences.startup_organization_id).
 //
 // The two ladder rows are the ONE editor (KnobOverrideRow) at the user rung,
 // so this screen is the proof the whole system works end to end: value, origin

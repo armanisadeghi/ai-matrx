@@ -38,13 +38,13 @@
 
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import * as dotenv from "dotenv";
 import { CONTROL_TAGS } from "../../features/content-ir/registry/shape-doctor";
-import { extractDetectorTokensFromTexts } from "../../features/content-ir/registry/shape-doctor-extract";
+import { SHAPE_SOURCE_FILES, extractDetectorTokensFromTexts } from "../../features/content-ir/registry/shape-doctor-extract";
 import { readAllRows } from "@ai-matrx/data/db";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -63,18 +63,12 @@ const ARTIFACT_REGISTRY_PATH = resolve(
   ROOT,
   "features/canvas/artifact-types/artifact-type-registry.ts",
 );
-const ACCUMULATOR_PATH = resolve(
-  ROOT,
-  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
-);
+const ACCUMULATOR_PATH = resolve(ROOT, SHAPE_SOURCE_FILES.accumulator.path);
 const PREFILTER_PATH = resolve(
   ROOT,
   "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/content-prefilter.ts",
 );
-const SPLITTER_PATH = resolve(
-  AIDREAM_ROOT,
-  "apps/shared/rich-content/src/display/markdown-classification/processors/utils/content-splitter-core.ts",
-);
+const SPLITTER_PATH = resolve(ROOT, SHAPE_SOURCE_FILES.splitter.path);
 
 // ─── Crosswalk row shape ────────────────────────────────────────────────────
 
@@ -454,7 +448,7 @@ async function build(): Promise<BuildResult> {
   const pythonBlockTypes = readPythonBlockTypes();
   const typedRenderBlockTypes = readTypedRenderBlockTypes();
   if (pythonBlockTypes) {
-    inputs["aidream:block_type"] = `${pythonBlockTypes.length} values (${BLOCKTYPE_PY})`;
+    inputs["aidream:block_type"] = `${pythonBlockTypes.length} values (${relative(ROOT, BLOCKTYPE_PY)})`;
     for (const name of pythonBlockTypes) items.push({ name, source: "aidream:block_type" });
     // Twin sanity: the generated TS union must mirror the Python enum exactly.
     const py = new Set(pythonBlockTypes);

@@ -64,6 +64,7 @@ import {
   sendMatrxRequest as sendMatrxRequestRaw,
 } from "@ai-matrx/agents/matrx";
 import { formatDurationMs } from "@ai-matrx/kit/format";
+import { noticeNotAMemberRefusal } from "@/lib/organizations/organizationRefusal";
 
 // ---------------------------------------------------------------------------
 // Request ID helper
@@ -920,8 +921,28 @@ function noticeUsageRefusalInBody(body: unknown): void {
 const sendMatrxRequest: typeof sendMatrxRequestRaw = async (...args) => {
   const response = await sendMatrxRequestRaw(...args);
   await noticeUsageRefusalIn(response);
+  await noticeNotAMemberRefusalIn(response);
   return response;
 };
+
+/**
+ * A 403 not-a-member refusal means the active organization was taken away
+ * while it was active: re-run the load ladder, which replaces it and says so
+ * (`lib/organizations/organizationRefusal.ts`). The request's own error is
+ * unchanged.
+ */
+async function noticeNotAMemberRefusalIn(response: Response): Promise<void> {
+  if (response.status !== 403) return;
+  const body = await response.clone().json().catch(() => null);
+  const store = getStore();
+  if (!store) return;
+  noticeNotAMemberRefusal(body, () => {
+    void import("@/lib/redux/thunks/activeOrgBootstrap").then(
+      ({ recheckActiveOrganizationAfterRefusal }) =>
+        store.dispatch(recheckActiveOrganizationAfterRefusal() as never),
+    );
+  });
+}
 
 /**
  * Turn a non-2xx XHR into a BackendApiError using the SAME parser `fetch`

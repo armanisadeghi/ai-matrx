@@ -102,6 +102,17 @@ export async function resolveObjectOrganization(
       why: thrown instanceof Error ? thrown.message : "The record store did not answer.",
     };
   }
+  return readObjectOrganizationAnswer(answered, id);
+}
+
+/**
+ * Read one `custom.where_id_opens` answer — asked from here, or asked by the server render as the
+ * same person and streamed in (lane PAGE-BUNDLE-2, `features/unified-data/page-seed`).
+ */
+export function readObjectOrganizationAnswer(
+  answered: { data: unknown; error: { code?: string | null; message?: string | null } | null },
+  id: string,
+): ObjectOrganizationAnswer {
   if (answered.error) {
     if (doorIsAbsent(answered.error)) {
       console.warn(`[objectOrganization] ${DOOR_ABSENT_WHY}`);
@@ -147,6 +158,23 @@ export type ObjectOrganizationView = { state: "resolving" } | ObjectOrganization
 const objectOrganizations = createKeptAnswers<ObjectOrganizationAnswer>({
   keep: (answer) => answer.state !== "unavailable",
 });
+
+/**
+ * HAND THE PAGE AN ANSWER ALREADY BEING ASKED ELSEWHERE (lane PAGE-BUNDLE-2): the server render
+ * asked `custom.where_id_opens` as the same person. Kept as this id's in-flight question, so the
+ * page's `useObjectOrganization` waits on it and asks nothing. A fresh kept answer wins.
+ */
+export function primeObjectOrganization(id: string, answer: Promise<ObjectOrganizationAnswer>): void {
+  void objectOrganizations.ensure(id, () => answer);
+}
+
+/** The kept answer for `id`, asked only when none is fresh or in flight — what `useObjectOrganization` waits on. */
+export function ensureObjectOrganization(
+  dataSource: Pick<RecordsDataSource, "rpc">,
+  id: string,
+): Promise<ObjectOrganizationAnswer | null> {
+  return objectOrganizations.ensure(id, () => resolveObjectOrganization(dataSource, id));
+}
 
 /** Tests only: forget every kept answer. */
 export function forgetObjectOrganizations(): void {

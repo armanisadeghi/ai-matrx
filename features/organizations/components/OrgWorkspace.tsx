@@ -613,6 +613,7 @@ export function OrgWorkspace() {
                   scopeType={scopeType}
                   orgId={organization.id}
                   orgSlugOrId={slug}
+                  role={userRole}
                 />
               ))}
             </div>

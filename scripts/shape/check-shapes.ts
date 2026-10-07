@@ -59,8 +59,12 @@ import {
   compiledKindSlugsFromText,
   compiledLoadingSlugsFromTexts,
   extractDetectorTokensFromTexts,
-  extractDispatchKeysFromText,
+  extractDispatchKeysFromTexts,
+  DISPATCH_SOURCE_KEYS,
   extractHostSurfaceTokensFromTexts,
+  SHAPE_SOURCE_FILES,
+  missingShapeSourceMessage,
+  type ShapeSourceKey,
   type DetectorExtractFailure,
   type DispatchKeyExtraction,
   type HostSurfaceExtraction,
@@ -77,21 +81,17 @@ const SYSTEM_KINDS_PATH = resolve(
 const SNAPSHOT_PATH = resolve(ROOT, "scripts/shape/shapes-status.json");
 const MARKDOWN_PATH = resolve(ROOT, "features/content-ir/docs/SHAPES_STATUS.md");
 
-const ACCUMULATOR_PATH = resolve(
-  ROOT,
-  "../aidream/apps/shared/chat/src/agents/redux/execution-system/utils/stream-block-accumulator.ts",
-);
-const SPLITTER_PATH = resolve(
-  ROOT,
-  "components/mardown-display/markdown-classification/processors/utils/content-splitter-v2.ts",
-);
+const ACCUMULATOR_PATH = resolve(ROOT, SHAPE_SOURCE_FILES.accumulator.path);
+const SPLITTER_PATH = resolve(ROOT, SHAPE_SOURCE_FILES.splitter.path);
+
+/** Read a detector source or fail BY NAME (never a bare ENOENT). */
+function readShapeSource(key: ShapeSourceKey, absPath: string): string {
+  if (!existsSync(absPath)) throw new Error(missingShapeSourceMessage(key, absPath));
+  return readFileSync(absPath, "utf8");
+}
 const ARTIFACT_REGISTRY_PATH = resolve(
   ROOT,
   "features/canvas/artifact-types/artifact-type-registry.ts",
-);
-const BLOCK_DISPATCH_PATH = resolve(
-  ROOT,
-  "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
 );
 
 const C = {
@@ -124,15 +124,15 @@ function extractDetectorTokens(): {
   failures: DetectorExtractFailure[];
 } {
   return extractDetectorTokensFromTexts({
-    accumulatorText: readFileSync(ACCUMULATOR_PATH, "utf8"),
-    splitterText: readFileSync(SPLITTER_PATH, "utf8"),
+    accumulatorText: readShapeSource("accumulator", ACCUMULATOR_PATH),
+    splitterText: readShapeSource("splitter", SPLITTER_PATH),
   });
 }
 
 function extractHostSurfaceTokens(): HostSurfaceExtraction {
   return extractHostSurfaceTokensFromTexts({
-    accumulatorText: readFileSync(ACCUMULATOR_PATH, "utf8"),
-    splitterText: readFileSync(SPLITTER_PATH, "utf8"),
+    accumulatorText: readShapeSource("accumulator", ACCUMULATOR_PATH),
+    splitterText: readShapeSource("splitter", SPLITTER_PATH),
   });
 }
 
@@ -192,7 +192,11 @@ function artifactRegistryKindSlugs(): string[] {
  * silently shrinking the key set.
  */
 function dispatchKeys(): DispatchKeyExtraction {
-  return extractDispatchKeysFromText(readFileSync(BLOCK_DISPATCH_PATH, "utf8"), {
+  const sources = DISPATCH_SOURCE_KEYS.map((key) => {
+    const file = SHAPE_SOURCE_FILES[key].path;
+    return { file, text: readShapeSource(key, resolve(ROOT, file)) };
+  });
+  return extractDispatchKeysFromTexts(sources, {
     DB_KIND_COMPONENT_KEY,
     GENERIC_STRUCTURED_COMPONENT_KEY,
   });

@@ -1600,7 +1600,9 @@ body[style*="pointer-events: none"] {
    workspace controls. Hide the fallback whenever that page header is present;
    portal effect order is not a reliable proxy for route depth. */
 .shell-header-center:has(> [data-page-header-portal="page"])
-  > [data-page-header-portal="fallback"] {
+  > [data-page-header-portal="fallback"],
+.shell-header-center:has(> [data-page-header-ghost-portal="page"])
+  > [data-page-header-ghost-portal="fallback"] {
   display: none;
 }
 

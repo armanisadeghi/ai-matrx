@@ -33,7 +33,11 @@ import {
   MASTERWORK_RESULT_KIND_DEFINITIONS,
 } from "@/features/content-ir/kinds/masterwork-result";
 import { SYSTEM_KIND_DEFINITIONS } from "@/features/content-ir/registry/system-kinds";
-import { extractDispatchKeysFromText } from "@/features/content-ir/registry/shape-doctor-extract";
+import {
+  DISPATCH_SOURCE_KEYS,
+  SHAPE_SOURCE_FILES,
+  extractDispatchKeysFromTexts,
+} from "@/features/content-ir/registry/shape-doctor-extract";
 import { MasterworkResultBlock } from "@/components/mardown-display/blocks/masterwork/MasterworkResultBlock";
 import { MasterworkRulesProvider } from "../rules-context/MasterworkRulesContext";
 
@@ -268,14 +272,11 @@ describe("the masterwork_result kind", () => {
     // nothing at runtime while the registry keeps claiming coverage. Read off
     // the LIVE file by text (the dispatch table drags the whole lazy component
     // tree behind an import), exactly as the shape doctor's own gate does.
-    const { keys, failures } = extractDispatchKeysFromText(
-      readFileSync(
-        resolve(
-          process.cwd(),
-          "components/mardown-display/chat-markdown/block-registry/block-dispatch.tsx",
-        ),
-        "utf8",
-      ),
+    const { keys, failures } = extractDispatchKeysFromTexts(
+      DISPATCH_SOURCE_KEYS.map((key) => {
+        const file = SHAPE_SOURCE_FILES[key].path;
+        return { file, text: readFileSync(resolve(process.cwd(), file), "utf8") };
+      }),
       {},
     );
     expect(failures.map((f) => f.literal)).not.toContain(

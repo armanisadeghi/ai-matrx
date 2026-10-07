@@ -11,7 +11,7 @@
 // scope it had before. Same no-refetch policy as ensureScopeTree: each call dedups and caches.
 
 import type { ThunkAction, UnknownAction } from "@reduxjs/toolkit";
-import { scopesService } from "@/features/scopes/service/scopesService";
+import { forgetSharedScopeBootRead, scopesService } from "@/features/scopes/service/scopesService";
 import { scopesActions } from "@/features/scopes/redux/scopesSlice";
 import {
   TYPE_SCOPES_PAGE,
@@ -34,6 +34,8 @@ export function ensureScopeSkeleton(opts: { refresh?: boolean } = {}): AppThunk<
     const s = getState().scopesTree;
     if (!opts.refresh && (s.skeletonStatus === "ready" || s.treeStatus === "ready")) return;
     if (skeletonInFlight) return skeletonInFlight;
+    // A refresh asks for her organizations and projects again (lane PAGE-BUNDLE-2).
+    if (opts.refresh) forgetSharedScopeBootRead();
     dispatch(scopesActions.skeletonFetchPending());
     const promise = (async () => {
       try {
