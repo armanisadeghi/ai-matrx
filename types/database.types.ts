@@ -12982,6 +12982,7 @@ export type Database = {
           template_version: number
         }[]
       }
+      coding_projects_of: { Args: { p_user: string }; Returns: Json }
       conversation_lane: {
         Args: {
           conversation_type: string
@@ -13006,6 +13007,10 @@ export type Database = {
       }
       message_search_text: { Args: { p_content: Json }; Returns: string }
       message_search_tsv: { Args: { p_content: Json }; Returns: unknown }
+      move_coding_conversations_to_organization: {
+        Args: { p_conversation_ids: Json; p_target: string; p_user: string }
+        Returns: Json
+      }
       recompute_user_request_totals: {
         Args: { p_id?: string; p_limit?: number }
         Returns: {
@@ -23270,6 +23275,15 @@ export type Database = {
           id: string
           title: string
         }[]
+      }
+      space_button_notify: {
+        Args: {
+          p_block_id: string
+          p_document_id: string
+          p_recipients: string[]
+          p_text: string
+        }
+        Returns: Json
       }
       space_children: {
         Args: { p_parent_id: string }
@@ -35047,6 +35061,13 @@ export type Database = {
         }
         Returns: Database["public"]["Enums"]["permission_level"]
       }
+      effective_level_many: {
+        Args: { p_ids: string[]; p_type?: string; p_user_id: string }
+        Returns: {
+          id: string
+          level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
       enrich_cells: {
         Args: {
           p_field_keys?: string[]
@@ -37334,6 +37355,18 @@ export type Database = {
         }
         Returns: boolean
       }
+      reaches_directly_many: {
+        Args: {
+          p_required?: Database["public"]["Enums"]["permission_level"]
+          p_targets: string[]
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: {
+          reaches: boolean
+          target: string
+        }[]
+      }
       read_door_carried_ids: {
         Args: {
           p_organization_id: string
@@ -38900,6 +38933,14 @@ export type Database = {
           p_expected_version?: number
           p_table_id: string
           p_to_organization_id: string
+        }
+        Returns: Json
+      }
+      table_page_bundle: {
+        Args: {
+          p_organization_id: string
+          p_table_id: string
+          p_view_id?: string
         }
         Returns: Json
       }
@@ -98170,29 +98211,12 @@ export type Database = {
         Args: { p_agent_id: string; p_kind?: string; p_version_number: number }
         Returns: undefined
       }
-      agx_duplicate_agent: {
-        Args: {
-          p_agent_id: string
-          p_as_system?: boolean
-          p_follows_source?: boolean
-          p_organization_id?: string
-        }
-        Returns: string
-      }
       agx_duplicate_shortcut: {
         Args: { p_organization_id?: string; p_shortcut_id: string }
         Returns: string
       }
       agx_duplicate_shortcut_m: {
         Args: { p_organization_id?: string; p_shortcut_id: string }
-        Returns: string
-      }
-      agx_duplicate_version: {
-        Args: {
-          p_as_system?: boolean
-          p_organization_id?: string
-          p_version_id: string
-        }
         Returns: string
       }
       agx_escape_regex: { Args: { p: string }; Returns: string }
