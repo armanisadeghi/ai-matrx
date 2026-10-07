@@ -1,15 +1,9 @@
+import { copyToClipboard as copyWithToast } from "@/lib/clipboard/copy";
+
 /**
- * Safely copies text to clipboard
- * @param {string} text - Text to copy
- * @returns {boolean} Success status
+ * Copies text to the clipboard; a refused copy announces itself. Resolves to whether it landed.
  */
-export const copyToClipboard = (text: string) => {
-    if (!text) return false;
-    try {
-      navigator.clipboard.writeText(text);
-      return true;
-    } catch (e) {
-      console.error("Copy to clipboard failed:", e);
-      return false;
-    }
-  };
+export const copyToClipboard = async (text: string): Promise<boolean> => {
+  if (!text) return false;
+  return copyWithToast(text);
+};

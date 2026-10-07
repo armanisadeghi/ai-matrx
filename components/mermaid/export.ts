@@ -1,3 +1,5 @@
+import { copyText } from "@ai-matrx/kit/clipboard";
+
 "use client";
 
 /**
@@ -35,12 +37,12 @@ function safeFileName(title: string | null | undefined, extension: string): stri
 }
 
 export async function copyMermaidSource(source: string): Promise<void> {
-  await navigator.clipboard.writeText(source);
+  if (!(await copyText(source))) throw new Error("Could not copy the diagram source");
 }
 
 /** Copies the SVG markup as text — the universally pasteable form. */
 export async function copyMermaidSvg(svg: string): Promise<void> {
-  await navigator.clipboard.writeText(svg);
+  if (!(await copyText(svg))) throw new Error("Could not copy the diagram SVG");
 }
 
 export function downloadMermaidSvg(svg: string, title?: string | null): void {

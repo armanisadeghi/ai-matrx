@@ -62,11 +62,11 @@ import {
   buildTranscriptSegmentReferenceFence,
   transcriptSegmentIndexFromId,
 } from "@/features/matrx-envelope/compoundReference";
-import { toast } from "@/lib/toast";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // Define TypeScript types
 export type TranscriptSegment = Omit<
@@ -255,16 +255,11 @@ const TranscriptSegmentItem = React.memo(
         icon: Bookmark,
         onSelect: () => {
           const segmentIndex = transcriptSegmentIndexFromId(segment.id) ?? index;
-          void navigator.clipboard
-            .writeText(
-              buildTranscriptSegmentReferenceFence({
+          void copyToClipboard(buildTranscriptSegmentReferenceFence({
                 transcriptId,
                 segmentIndex,
                 label: segment.text.slice(0, 80),
-              }),
-            )
-            .then(() => toast.success("Segment reference copied"))
-            .catch(() => toast.error("Failed to copy segment reference"));
+              }), "Segment reference copied");
         },
       });
     }
@@ -276,7 +271,7 @@ const TranscriptSegmentItem = React.memo(
         icon: Link,
         onSelect: () => {
           const timeText = `${window.location.href.split("#")[0]}#t=${segment.seconds}`;
-          navigator.clipboard.writeText(timeText);
+          void copyToClipboard(timeText, "Timestamp link copied");
         },
       },
       { kind: "separator", id: "segment-sep-delete" },
@@ -412,7 +407,7 @@ const TranscriptSegmentItem = React.memo(
                           className="h-7 w-7"
                           onClick={() => {
                             const timeText = `${window.location.href.split("#")[0]}#t=${segment.seconds}`;
-                            navigator.clipboard.writeText(timeText);
+                            void copyToClipboard(timeText, "Timestamp link copied");
                           }}
                         >
                           <Link className="h-4 w-4" />
@@ -624,7 +619,8 @@ const AdvancedTranscriptViewer = ({
   // Copy segment text
   const handleCopySegment = (text: string, id: string) => {
     onCopySegment(text);
-    navigator.clipboard.writeText(text).then(() => {
+    void copyToClipboard(text).then((ok) => {
+      if (!ok) return;
       setCopiedSegmentId(id);
       setTimeout(() => setCopiedSegmentId(null), 2000);
     });
@@ -668,7 +664,8 @@ const AdvancedTranscriptViewer = ({
 
   const handleCopyAll = () => {
     const textToCopy = formatTranscriptForCopy(copyFormat);
-    navigator.clipboard.writeText(textToCopy).then(() => {
+    void copyToClipboard(textToCopy).then((ok) => {
+      if (!ok) return;
       setCopyAllSuccess(true);
       setTimeout(() => {
         setCopyAllSuccess(false);

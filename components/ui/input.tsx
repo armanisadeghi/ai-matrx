@@ -18,6 +18,7 @@ import { Input, type InputProps } from "@ai-matrx/design-system/controls";
 // THE ONE CONTROL (2026-10-05, wave 1B): these compose the controls' Input (the field capsule on
 // the <input>); the overlaid buttons sit in the room `adornment` reserves — never a padding class.
 import { Check, Copy, Trash2 } from "lucide-react";
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => {
@@ -25,9 +26,8 @@ const CopyInput = React.forwardRef<HTMLInputElement, InputProps>(
 
     const handleCopy = async () => {
       if (props.value || props.defaultValue) {
-        await navigator.clipboard.writeText(
-          String(props.value || props.defaultValue),
-        );
+        const copied = await copyText(String(props.value || props.defaultValue));
+        if (!copied) return;
         setHasCopied(true);
 
         setTimeout(() => {
@@ -76,9 +76,8 @@ const FancyInput = React.forwardRef<HTMLInputElement, FancyInputProps>(
 
     const handleCopy = async () => {
       if (props.value || props.defaultValue) {
-        await navigator.clipboard.writeText(
-          String(props.value || props.defaultValue),
-        );
+        const copied = await copyText(String(props.value || props.defaultValue));
+        if (!copied) return;
         setHasCopied(true);
 
         setTimeout(() => {

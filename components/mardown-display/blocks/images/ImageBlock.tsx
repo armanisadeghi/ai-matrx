@@ -24,6 +24,9 @@ import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import { RemoteImageGate, remoteImageHost } from "@/components/rich-content/prose/remote-image-policy";
 import { Button } from "@ai-matrx/design-system/controls";
 import { TapTargetButton } from "@ai-matrx/design-system/tap-target";
+import { copyToClipboard } from "@/lib/clipboard/copy";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 
 const MAX_IMAGE_HEIGHT = 700;
 
@@ -78,6 +81,10 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
   // (open the real image editor); external/unknown URLs simply don't show it.
   const editableFileId = ourFile?.fileId ?? null;
   const [feedback, setFeedback] = useState<"none" | "like" | "dislike">("none");
+  const { copyImage: copyImageToClipboard } = useClipboard({
+    notify: (message, kind) =>
+      kind === "error" ? toast.error(message) : toast.success(message),
+  });
   const [showCopySuccess, setShowCopySuccess] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showExpandedView, setShowExpandedView] = useState(false);
@@ -110,38 +117,17 @@ const ImageBlockImpl: React.FC<ImageBlockProps> = ({ src: srcProp, alt = "Image"
 
   const handleCopyUrl = (e?: React.MouseEvent) => {
     e?.preventDefault();
-    navigator.clipboard
-      .writeText(src)
-      .then(() => {
-        setShowCopySuccess(true);
-        setTimeout(() => setShowCopySuccess(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy URL:", err);
-      });
+    void copyToClipboard(src).then((ok) => {
+      if (!ok) return;
+      setShowCopySuccess(true);
+      setTimeout(() => setShowCopySuccess(false), 2000);
+    });
   };
 
   const handleCopyImage = async (e?: React.MouseEvent) => {
     e?.preventDefault();
-    try {
-      const response = await fetch(src);
-      const blob = await response.blob();
-
-      // Copy the image to clipboard
-      if (navigator.clipboard && navigator.clipboard.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({
-            [blob.type]: blob,
-          }),
-        ]);
-        setShowCopySuccess(true);
-        setTimeout(() => setShowCopySuccess(false), 2000);
-      } else {
-        console.error("Clipboard API not supported");
-      }
-    } catch (err) {
-      console.error("Failed to copy image to clipboard:", err);
-    }
+    // The kit reports success or a refusal through the toast; it never throws.
+    await copyImageToClipboard(src, "Image copied to clipboard");
   };
 
   const handleShare = async (e?: React.MouseEvent) => {

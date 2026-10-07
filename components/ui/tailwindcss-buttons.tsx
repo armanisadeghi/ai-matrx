@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import reactElementToJSXString from "react-element-to-jsx-string";
-import { toast } from "@/lib/toast";
 import { ButtonsCard } from "../ui/buttons-card";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface TailwindButtonEntry {
     name: string;
@@ -15,29 +15,17 @@ interface TailwindButtonEntry {
 export function TailwindcssButtons() {
     const copy = (button: TailwindButtonEntry) => {
         if (button.code) {
-            copyToClipboard(button.code);
+            void copyToClipboard(button.code, "Copied to clipboard");
             return;
         }
         let buttonString = reactElementToJSXString(button.component);
 
         if (buttonString) {
             const textToCopy = buttonString;
-            copyToClipboard(textToCopy);
+            void copyToClipboard(textToCopy, "Copied to clipboard");
         }
     };
 
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard
-            .writeText(text)
-            .then(() => {
-                console.log("Text copied to clipboard:", text);
-                toast.success("Copied to clipboard");
-            })
-            .catch((err) => {
-                console.error("Error copying text to clipboard:", err);
-                toast.error("Error copying to clipboard");
-            });
-    };
     return (
         <div className="pb-40 px-4 w-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 w-full  max-w-7xl mx-auto gap-10">

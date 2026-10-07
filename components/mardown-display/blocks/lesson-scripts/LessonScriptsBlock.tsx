@@ -31,7 +31,6 @@ import {
   GraduationCap,
   Loader2,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 
 import type {
   LessonScriptSection,
@@ -43,6 +42,7 @@ import { cn } from "@/lib/utils";
 // 2026-09-07). THE UNIT LAW: the unit is in the name.
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { Button, DisclosureHeader } from "@ai-matrx/design-system/controls";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 const formatDuration = (seconds: number): string =>
   formatDurationSeconds(seconds, { style: "compact" });
@@ -98,12 +98,7 @@ export function readLessonScriptsData(serverData: unknown): LessonScriptsData {
 // ---------------------------------------------------------------------------
 
 async function copyText(text: string, what: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${what} copied`);
-  } catch {
-    toast.error("Couldn't copy");
-  }
+  await copyToClipboard(text, `${what} copied`);
 }
 
 /** The wire-spelling value object — what JSON copy hands to another tool. */

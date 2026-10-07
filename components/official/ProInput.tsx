@@ -111,6 +111,7 @@ import type { SessionContextItem } from "@/features/transcript-studio/types";
 import { useProTextareaAgentAction } from "./useProTextareaAgentAction";
 import { ProTextAgentActionPopoverBody } from "./ProTextAgentActionPopoverBody";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
+import { copyText } from "@ai-matrx/kit/clipboard";
 /** Real HTMLInputElement with optional expando methods set by ProInput. */
 export interface ProInputElement extends HTMLInputElement {
   requestClose?: () => void;
@@ -384,7 +385,7 @@ export const ProInput = React.forwardRef<HTMLInputElement, ProInputProps>(
     const handleCopy = async () => {
       const inputValue = inputRef?.current?.value || String(value || "");
       if (inputValue) {
-        await navigator.clipboard.writeText(inputValue);
+        if (!(await copyText(inputValue))) return;
         setHasCopied(true);
         setTimeout(() => setHasCopied(false), 450);
       }

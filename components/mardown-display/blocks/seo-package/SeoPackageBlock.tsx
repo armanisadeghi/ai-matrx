@@ -37,7 +37,6 @@ import {
   Search,
   Tag,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type {
   SeoFaqItemData,
   SeoPackageData,
@@ -48,6 +47,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { cn } from "@/lib/utils";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export interface SeoPackageBlockProps {
   serverData?: unknown;
@@ -114,12 +114,7 @@ export function readSeoPackageData(serverData: unknown): SeoPackageData | null {
 }
 
 async function copyText(text: string, what: string) {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success(`${what} copied`);
-  } catch {
-    toast.error("Couldn't copy");
-  }
+  await copyToClipboard(text, `${what} copied`);
 }
 
 // ---------------------------------------------------------------------------

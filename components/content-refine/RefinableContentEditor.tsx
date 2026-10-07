@@ -97,9 +97,7 @@ export function RefinableContentEditor({
   } = refine;
 
   const handleCopy = () => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      copyText(workingContent);
-    }
+    void copyText(workingContent);
   };
 
   const trimMax = Math.max(0, maxTrim);

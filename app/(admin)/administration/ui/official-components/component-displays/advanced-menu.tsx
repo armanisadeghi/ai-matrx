@@ -27,6 +27,7 @@ export default function AdvancedMenuDisplay({ component }: ComponentDisplayProps
 import { useAdvancedMenu } from '@/hooks/use-advanced-menu';
 import { Button } from '@/components/ui/button';
 import { Copy, Save, Trash } from 'lucide-react';
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 const menu = useAdvancedMenu({
   onOpen: () => console.log('Menu opened'),
@@ -45,7 +46,7 @@ const menuItems: MenuItem[] = [
     description: 'Copy to clipboard',
     category: 'Edit',
     action: async () => {
-      await navigator.clipboard.writeText('Sample text');
+      if (!(await copyText('Sample text'))) throw new Error('Failed to copy');
     },
     successMessage: 'Copied to clipboard',
     errorMessage: 'Failed to copy'
@@ -107,7 +108,7 @@ const menuItems: MenuItem[] = [
       category: 'Edit',
       action: async () => {
         await new Promise(resolve => setTimeout(resolve, 800));
-        await navigator.clipboard.writeText('Sample demo text from AdvancedMenu');
+        if (!(await copyText('Sample demo text from AdvancedMenu'))) throw new Error('Failed to copy');
       },
       successMessage: 'Copied to clipboard!',
       errorMessage: 'Failed to copy'
