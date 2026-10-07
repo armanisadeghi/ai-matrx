@@ -7,7 +7,6 @@ import {
   MatrxDataTable,
   type MatrxColumnDef,
 } from "@ai-matrx/design-system/data-table";
-import { toast } from "@/lib/toast";
 
 import { CanonicalizationToolbar } from "./CanonicalizationToolbar";
 import { readOf } from "@/components/read-state/ReadGate";
@@ -24,6 +23,7 @@ import {
 } from "../types";
 import { SCHEMA_SUMMARY_TABLE_COPY } from "../utils/aiExport";
 import { exportRowsAsCsv } from "../utils/exportCsv";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /**
  * Rolls the per-table `audit.summary` rows up to one row per schema, and adds
@@ -126,10 +126,7 @@ const COLUMNS: MatrxColumnDef<AuditSchemaSummaryRow>[] = [
           className="shrink-0 text-muted-foreground hover:text-foreground"
           onClick={(event) => {
             event.stopPropagation();
-            void navigator.clipboard
-              .writeText(row.schema_name)
-              .then(() => toast.success("Copied to clipboard"))
-              .catch(() => toast.error("Could not copy schema name"));
+            void copyToClipboard(row.schema_name, "Copied to clipboard");
           }}
         >
           <Copy className="h-3 w-3" />

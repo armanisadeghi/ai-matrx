@@ -198,9 +198,7 @@ export function useFileShortcuts({
               target.kind === "file"
                 ? pythonShareUrl(token)
                 : `${window.location.origin}/s/${token}`;
-            if (navigator.clipboard) {
-              await copyText(url);
-            }
+            await copyText(url);
           } catch {
             /* swallow — user can fall back to the action menu */
           }

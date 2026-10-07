@@ -181,14 +181,7 @@ export function downloadText(
   mime = "text/plain",
 ): void {
   const blob = new Blob([content], { type: `${mime};charset=utf-8` });
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }
 
 /**
@@ -226,3 +219,5 @@ export function defaultJsonFilename(): string {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   return `json-${stamp}`;
 }
+
+import { downloadFile } from "@/components/agent-copy/export";

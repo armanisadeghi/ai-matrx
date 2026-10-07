@@ -22,6 +22,7 @@ import { useNow } from "../useNow";
 import type { DeviceRow } from "../types";
 import type { ConsoleStatus } from "./connection";
 import { removeDevice } from "./remove-device";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 function Row({ label, value, mono, copy }: { label: string; value: string; mono?: boolean; copy?: string }) {
   const [copied, setCopied] = useState(false);
@@ -41,7 +42,8 @@ function Row({ label, value, mono, copy }: { label: string; value: string; mono?
           aria-label={`Copy ${label.toLowerCase()}`}
           className="-my-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
           onClick={() => {
-            void navigator.clipboard?.writeText(copy).then(() => {
+            void copyToClipboard(copy).then((ok) => {
+              if (!ok) return;
               setCopied(true);
               setTimeout(() => setCopied(false), 1500);
             });

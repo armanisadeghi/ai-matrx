@@ -74,6 +74,7 @@ import { computeMatches } from "../utils/findMatches";
 import { usePreviewFindHighlight } from "../hooks/usePreviewFindHighlight";
 import { getDiffRange, type DiffRange } from "../utils/diffRange";
 import { noteFolderReference, type FolderReference } from "../types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 // Floating outline panel — imports WindowPanel, so it MUST stay behind this
 // lazy boundary (window-panels bundle invariant). Mounted only while open.
@@ -446,12 +447,7 @@ export function NoteContentEditor({
 
   const handleExport = useCallback(() => {
     const blob = new Blob([localContent], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${noteLabel}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${noteLabel}.md`, blob, blob.type);
   }, [localContent, noteLabel]);
 
   const handleShareLink = useCallback(() => {

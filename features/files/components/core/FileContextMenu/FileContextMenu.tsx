@@ -87,6 +87,7 @@ import { useFileActions } from "@/features/files/components/core/FileActions/use
 import { FileInfoDialog } from "@/features/files/components/core/FileInfo/FileInfoDialog";
 import { RenameDialog } from "@/features/files/components/core/RenameDialog/RenameDialog";
 import { setClipboard } from "@/features/files/utils/clipboard";
+import { downloadUrl, downloadFile } from "@/components/agent-copy/export";
 
 export interface FileContextMenuProps {
   fileId: string;
@@ -221,13 +222,7 @@ export function FileContextMenu({
         const url = (res as { payload?: { url?: string } } | undefined)?.payload
           ?.url;
         if (!url) return;
-        const a = document.createElement("a");
-        a.href = url;
-        a.rel = "noopener noreferrer";
-        a.download = filesById[id]?.fileName ?? "";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        downloadUrl(url, filesById[id]?.fileName ?? "");
       });
     } finally {
       setBusy(null);

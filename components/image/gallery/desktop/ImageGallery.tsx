@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, Grid, Grid3X3 } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { mimeToExtension } from "@/utils/file-operations/utils";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface SimplePhoto {
   id: string;
@@ -105,15 +106,8 @@ export function ImageGallery({ imageUrls = [] }: { imageUrls?: string[] }) {
     try {
       const response = await fetch(photo.url);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const ext = mimeToExtension(blob.type || "image/jpeg");
-      a.download = `image-${photo.id}${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadFile(`image-${photo.id}${ext}`, blob, blob.type);
 
       toast({
         title: "Download started",

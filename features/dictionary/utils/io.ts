@@ -7,6 +7,7 @@
 
 import Papa from "papaparse";
 import type { DictEntry, DictEntryDraft } from "@/features/dictionary/types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 /** Canonical column order for CSV import/export + the template. */
 export const DICT_CSV_COLUMNS = [
@@ -173,12 +174,5 @@ export function dictCsvTemplate(): string {
 /** Trigger a client-side download of text content as a named file. */
 export function downloadTextFile(filename: string, content: string, mime: string): void {
   const blob = new Blob([content], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }

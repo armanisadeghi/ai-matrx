@@ -148,7 +148,7 @@ const FORBIDDEN_CALLS: ReadonlyArray<readonly [RegExp, string]> = [
   // is the content the reader is already looking at. READING the clipboard
   // is the exfiltration shape (whatever the user last copied, anywhere),
   // and nothing in the frame has any business doing it.
-  [/clipboard\s*\.\s*read/, "a navigator.clipboard READ"],
+  [/clipboard\s*\.\s*read/, "a clipboard READ"],
   [/(^|[^.\w$"'`])import\s*\(/, "a dynamic import()"],
 ];
 

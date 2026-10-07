@@ -29,6 +29,7 @@
  * `AbortError`. That's not a failure mode and never surfaces as a toast.
  */
 
+import { downloadFile } from "@/components/agent-copy/export";
 export interface SaveImageFileArgs {
   /** The image URL to fetch. Signed S3 / CDN / blob: all work. */
   url: string;
@@ -138,18 +139,5 @@ function isUserAbort(err: unknown): boolean {
 }
 
 function downloadBlobAsFile(blob: Blob, filename: string): void {
-  const objectUrl = URL.createObjectURL(blob);
-  try {
-    const a = document.createElement("a");
-    a.href = objectUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  } finally {
-    // Defer the revoke — Safari sometimes races with the download
-    // trigger and cancels the save if the object URL is yanked
-    // synchronously after `click()`.
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
-  }
+  downloadFile(filename, blob, blob.type);
 }

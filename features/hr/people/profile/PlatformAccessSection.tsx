@@ -35,6 +35,7 @@ import { cn } from "@/lib/utils";
 import { inviteHrEmployeeLogin } from "../../service";
 import type { HrEmployeeInviteAck, HrEmployeeProfile } from "../../types";
 import { formatFullDate } from "../shared/HrStatusChip";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export function PlatformAccessSection({
   profile,
@@ -149,10 +150,7 @@ export function PlatformAccessSection({
               variant="outline"
               className="shrink-0"
               onClick={() => {
-                void navigator.clipboard
-                  .writeText(link)
-                  .then(() => toast.success("Invitation link copied"))
-                  .catch(() => toast.error("Could not copy the link"));
+                void copyToClipboard(link, "Invitation link copied");
               }}
             >
               Copy

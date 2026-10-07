@@ -40,9 +40,10 @@ import { ADMIN_MANDATE_COLUMNS, SUPPORT_MANDATE_COLUMNS } from "./columns";
 import type { MandateAdminLane } from "./rpc";
 import { MandatePeek } from "./MandatePeek";
 import type { MandateAdminRow } from "./types";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 function copy(text: string, what: string) {
-  void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
+  void copyToClipboard(text, `Copied ${what}`);
 }
 
 /**

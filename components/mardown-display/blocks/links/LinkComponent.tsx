@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { Copy, Check, Bookmark, ExternalLink, FileText } from "lucide-react";
 import { addUtmSource } from "@/utils/url-utm";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // Error Boundary for Link Component
 interface LinkErrorBoundaryProps {
@@ -258,20 +259,11 @@ const ValidLinkComponentCore = ({
   }, [clearOpenTimer]);
 
   const handleCopyLink = useCallback(() => {
-    if (!navigator.clipboard) {
-      console.error("Clipboard API not available");
-      return;
-    }
-
-    navigator.clipboard
-      .writeText(finalHref)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch((err) => {
-        console.error("Failed to copy link:", err);
-      });
+    void copyToClipboard(finalHref).then((ok) => {
+      if (!ok) return;
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
   }, [finalHref]);
 
   const handleOpenInNewTab = useCallback(

@@ -17,6 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import type { SandboxAccessResponse } from "@/types/sandbox";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { extractErrorMessage } from "@/utils/errors";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface SshAccessPanelProps {
   /** Supabase row UUID — used for API calls only. */
@@ -89,15 +90,8 @@ export function SshAccessPanel({
     const blob = new Blob([access.private_key], {
       type: "application/x-pem-file",
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
     // Use the orchestrator sandbox ID so the filename matches the SSH command.
-    a.download = `sandbox-${access.sandbox_id}.pem`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`sandbox-${access.sandbox_id}.pem`, blob, blob.type);
   }, [access]);
 
   if (!access) {

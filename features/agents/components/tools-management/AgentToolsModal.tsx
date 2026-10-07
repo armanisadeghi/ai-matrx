@@ -37,6 +37,7 @@ import { selectAllTools } from "@ai-matrx/chat/agents/redux/tools/tools.selector
 import { resetAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
 import { fetchAvailableTools } from "@ai-matrx/chat/agents/redux/tools/tools.thunks";
 import { hasField } from "@ai-matrx/agents/field-flags";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface AgentToolsModalProps {
   agentId: string;
@@ -90,11 +91,10 @@ export function AgentToolsModal({
 
       const text = mode === "basic" ? lines.join("\n") : lines.join("\n\n");
 
-      navigator.clipboard.writeText(text).then(() => {
-        toast.success(
-          `Copied ${selectedTools.length} tool${selectedTools.length === 1 ? "" : "s"} (${mode === "basic" ? "basic" : "detailed"})`,
-        );
-      });
+      void copyToClipboard(
+        text,
+        `Copied ${selectedTools.length} tool${selectedTools.length === 1 ? "" : "s"} (${mode === "basic" ? "basic" : "detailed"})`,
+      );
     },
     [selectedTools, allTools],
   );

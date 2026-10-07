@@ -9,6 +9,7 @@ import { SearchBar } from "@/components/image/shared/SearchBar";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
 import { mimeToExtension } from "@/utils/file-operations/utils";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface SimplePhoto {
   id: string;
@@ -112,15 +113,8 @@ export function MobileImageGallery({
     try {
       const response = await fetch(photo.url);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const ext = mimeToExtension(blob.type || "image/jpeg");
-      a.download = `image-${photo.id}${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      downloadFile(`image-${photo.id}${ext}`, blob, blob.type);
 
       toast({
         title: "Download started",

@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useScreenCapture } from "@/hooks/useScreenCapture";
 import { toast } from "@/lib/toast";
 import type { ImageSource } from "@/features/image-studio/modes/shared/types";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 
 interface ModeImagePickerProps {
   title: string;
@@ -38,6 +39,7 @@ export function ModeImagePicker({
   captureHideSelectors,
   showLibraryLink = true,
 }: ModeImagePickerProps) {
+  const { pasteImage } = useClipboard();
   const [urlInput, setUrlInput] = useState("");
   const { captureTab, captureScreen, isCapturing } = useScreenCapture({
     hideSelectors: captureHideSelectors,
@@ -52,28 +54,13 @@ export function ModeImagePicker({
   };
 
   const handleClipboard = async () => {
-    try {
-      if (!navigator.clipboard?.read) {
-        toast.info("Paste an image with Ctrl+V or Command+V");
-        return;
-      }
-      const items = await navigator.clipboard.read();
-      for (const item of items) {
-        const imageType = item.types.find((type) => type.startsWith("image/"));
-        if (!imageType) continue;
-        const blob = await item.getType(imageType);
-        const extension = imageType.split("/")[1]?.split("+")[0] ?? "png";
-        handleFile(
-          new File([blob], `pasted-${Date.now()}.${extension}`, {
-            type: imageType,
-          }),
-        );
-        return;
-      }
-      toast.info("No image found in the clipboard");
-    } catch {
-      toast.info("Copy an image first, then click Paste image");
+    const image = await pasteImage();
+    if (!image) {
+      toast.info("No image found in the clipboard — copy an image first, or press Ctrl+V or Command+V");
+      return;
     }
+    const extension = image.type.split("/")[1]?.split("+")[0] ?? "png";
+    handleFile(new File([image], `pasted-${Date.now()}.${extension}`, { type: image.type }));
   };
 
   const handleCapture = async (method: "tab" | "screen") => {

@@ -20,6 +20,7 @@ import {
   EXPORT_MIME,
   type DeckExportFormat,
 } from "@/features/education/onboard/export/deckFormats";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export type { DeckExportFormat };
 
@@ -91,12 +92,5 @@ export function downloadTextFile(
   const blob = new Blob([content], {
     type: mime.includes("charset") ? mime : `${mime};charset=utf-8;`,
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }

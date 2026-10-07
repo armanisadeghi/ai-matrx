@@ -1,3 +1,5 @@
+import { copyText } from "@ai-matrx/kit/clipboard";
+
 "use client";
 
 /**
@@ -11,18 +13,14 @@
 
 import { fileHandler } from "@/features/files/handler/handler";
 import type { NormalizedFile } from "@/features/files/handler/types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 function svgBlob(svg: string): Blob {
   return new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
 }
 
 function triggerDownload(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(fileName, blob, blob.type);
 }
 
 function safeFileName(title: string | null | undefined, extension: string): string {
@@ -35,12 +33,12 @@ function safeFileName(title: string | null | undefined, extension: string): stri
 }
 
 export async function copyMermaidSource(source: string): Promise<void> {
-  await navigator.clipboard.writeText(source);
+  if (!(await copyText(source))) throw new Error("Could not copy the diagram source");
 }
 
 /** Copies the SVG markup as text — the universally pasteable form. */
 export async function copyMermaidSvg(svg: string): Promise<void> {
-  await navigator.clipboard.writeText(svg);
+  if (!(await copyText(svg))) throw new Error("Could not copy the diagram SVG");
 }
 
 export function downloadMermaidSvg(svg: string, title?: string | null): void {

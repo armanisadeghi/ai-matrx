@@ -51,6 +51,7 @@ import { getFolderIconAndColor } from '../utils/folderUtils';
 import { cn } from '@/lib/utils';
 import { RenameFolderDialog } from './RenameFolderDialog';
 import { MoveNoteDialog } from './MoveNoteDialog';
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface NotesSidebarProps {
     notes: Note[];
@@ -346,12 +347,7 @@ export function NotesSidebar({
                     return;
                 }
                 const blob = new Blob([full?.content ?? note.content ?? ''], { type: 'text/markdown' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `${note.label}.md`;
-                a.click();
-                URL.revokeObjectURL(url);
+                downloadFile(`${note.label}.md`, blob, blob.type);
             },
             category: 'Actions',
         },

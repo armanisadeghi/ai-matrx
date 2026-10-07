@@ -11,6 +11,7 @@
  */
 
 import { toast } from "../../../host/notify";
+import { copyToHostClipboard } from "../../../host/clipboard";
 import { toastDoor } from "@ai-matrx/chat/host/ui-slots";
 import type { ChatDispatch, ChatRootState } from "../../../store/root-state";
 import { openOverlay, CHAT_WINDOWS } from "../../../host/windows";
@@ -51,12 +52,7 @@ function resolveAbsoluteHref(href: string): string {
 
 /** Copy link — the absolute form of `href`, with an honest toast either way. */
 export async function copyConversationLink(href: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(resolveAbsoluteHref(href));
-    toast.success("Link copied");
-  } catch {
-    toast.error("Couldn't copy — your browser blocked clipboard access");
-  }
+  await copyToHostClipboard(resolveAbsoluteHref(href), "Link copied");
 }
 
 /** Share… — the canonical ShareModal for resourceType "conversation". */

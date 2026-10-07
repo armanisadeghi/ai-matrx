@@ -5,6 +5,7 @@ import { toast } from "@/lib/toast";
 import React, { useState, useCallback, useMemo } from 'react';
 import { X, Copy, Check, Download, ExternalLink } from 'lucide-react';
 import { markdownToHtml } from '@ai-matrx/print/markdown';
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface QuickHtmlShareModalProps {
     isOpen: boolean;
@@ -101,14 +102,7 @@ export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title =
 
     const handleDownload = useCallback(() => {
         const blob = new Blob([standaloneHtml], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${title.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'response'}.html`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadFile(`${title.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'response'}.html`, blob, blob.type);
     }, [standaloneHtml, title]);
 
     const handleOpenInTab = useCallback(() => {
@@ -116,7 +110,6 @@ export default function QuickHtmlShareModal({ isOpen, onClose, markdown, title =
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank', 'noopener');
         // Don't revoke immediately — the tab needs it
-        setTimeout(() => URL.revokeObjectURL(url), 60_000);
     }, [standaloneHtml]);
 
     if (!isOpen) return null;

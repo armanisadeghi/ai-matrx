@@ -168,13 +168,7 @@ export function useFolderActions(folderId: string): FolderActionHandlers {
     const origin =
       typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}/s/${token}`;
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      try {
-        await copyText(url);
-      } catch {
-        /* ignore clipboard failures (non-secure contexts) */
-      }
-    }
+    await copyText(url);
     return url;
   }, [dispatch, folderId, isVirtual, store]);
 

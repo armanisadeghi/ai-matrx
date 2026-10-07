@@ -44,6 +44,7 @@ import {
 } from "./utils/render-image-variant";
 import { saveImageFile } from "./utils/save-image-file";
 import type { UnifiedImageBlock } from "./types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface ImageActionsApi {
   // ── Local actions (no network) ─────────────────────────────────────
@@ -92,7 +93,7 @@ export function useImageActions({
   currentSrc,
   fileId,
 }: UseImageActionsArgs): ImageActionsApi {
-  const { copyText } = useClipboard({
+  const { copyText, copyImage: copyImageToClipboard } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
@@ -150,20 +151,7 @@ export function useImageActions({
         throw new Error(`Download failed: HTTP ${response.status}`);
       }
       const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      try {
-        const a = document.createElement("a");
-        a.href = objectUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } finally {
-        // Defer the revoke one tick — Safari sometimes races with the
-        // download trigger and cancels the save if the URL is yanked
-        // synchronously.
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
-      }
+      downloadFile(filename, blob, blob.type);
     },
     [],
   );
@@ -206,17 +194,9 @@ export function useImageActions({
 
   const copyImage = useCallback(async () => {
     if (!currentSrc) return;
-    try {
-      const response = await fetch(currentSrc);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob }),
-      ]);
-      toast.success("Image copied to clipboard");
-    } catch {
-      toast.error("Could not copy image — try downloading instead");
-    }
-  }, [currentSrc]);
+    // The kit reports a refusal through the toast above; it never throws.
+    await copyImageToClipboard(currentSrc, "Image copied to clipboard");
+  }, [currentSrc, copyImageToClipboard]);
 
   // downloadUrl only exists on matrx-origin blocks (where the server
   // mints a Content-Disposition: attachment signed URL). External blocks

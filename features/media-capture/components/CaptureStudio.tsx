@@ -102,6 +102,7 @@ import {
   type DeviceFallbackPhoto,
 } from "@/features/media-capture/components/DeviceFallbackInput";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 type StudioPhase = "starting" | "preview" | "review" | "error";
 
@@ -859,10 +860,7 @@ export function CaptureStudio({
   const handleDownload = useCallback(() => {
     const draft = capturedRef.current;
     if (!draft || !draft.previewUrl) return;
-    const a = document.createElement("a");
-    a.href = draft.previewUrl;
-    a.download = draft.file.name;
-    a.click();
+    downloadUrl(draft.previewUrl, draft.file.name);
   }, []);
 
   const handleSave = useCallback(async () => {

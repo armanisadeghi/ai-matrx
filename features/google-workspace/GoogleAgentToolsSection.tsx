@@ -46,6 +46,7 @@ import {
   selectToolsStatus,
 } from "@ai-matrx/chat/agents/redux/tools/tools.selectors";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /** The authenticated AI Dream MCP resource server, not the outbound MCP catalog. */
 const AI_DREAM_MCP_URL = "https://server.app.matrxserver.com/api/mcp";
@@ -183,10 +184,7 @@ function GoogleAgentToolsSectionContent() {
   }
 
   function copyMcpUrl() {
-    void navigator.clipboard
-      .writeText(AI_DREAM_MCP_URL)
-      .then(() => toast.success("AI Dream MCP server URL copied."))
-      .catch(() => toast.error("Could not copy the server URL."));
+    void copyToClipboard(AI_DREAM_MCP_URL, "AI Dream MCP server URL copied.");
   }
 
   return (

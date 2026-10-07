@@ -11,6 +11,7 @@ import { Check, Copy } from "lucide-react";
 
 import { toast } from "@/lib/toast";
 import { cn } from "@/utils/cn";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export function CopyableValue({
   value,
@@ -37,14 +38,11 @@ export function CopyableValue({
         type="button"
         aria-label={`Copy ${label.toLowerCase()}`}
         onClick={() => {
-          void navigator.clipboard
-            .writeText(value)
-            .then(() => {
-              setCopied(true);
-              toast.success(`${label} copied`);
-              window.setTimeout(() => setCopied(false), 1600);
-            })
-            .catch(() => toast.error("Could not copy — select it and copy manually."));
+          void copyToClipboard(value, `${label} copied`).then((ok) => {
+            if (!ok) return;
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1600);
+          });
         }}
         className="flex min-h-8 shrink-0 items-center gap-1 rounded-md border border-border px-2 text-xs text-foreground"
       >

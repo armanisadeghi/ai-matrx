@@ -461,6 +461,10 @@ describe("VaultLoginExportDialog", () => {
       expect.any(AbortSignal),
     );
     expect(createObjectUrl).toHaveBeenCalledTimes(1);
+    // The shared download door revokes after a beat (Safari cancels a save revoked in the click's tick).
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+    });
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:login-export");
   });
 

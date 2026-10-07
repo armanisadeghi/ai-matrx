@@ -47,6 +47,7 @@ import {
 } from "./signingService";
 
 import { Spinner } from "@/components/ui/loaders/Spinner";
+import { downloadUrl } from "@/components/agent-copy/export";
 // THE platform PDF viewer (pdf.js): it draws pages on a canvas, so a document never runs script on
 // our origin, and it renders on Android, whose Chrome shows nothing for a PDF in an iframe.
 const PdfDocumentRenderer = lazy(() => import("@/features/pdf/components/viewer/PdfDocumentRenderer"));
@@ -875,11 +876,15 @@ function DocumentFrame({
   return (
     <div className="m-auto flex flex-col items-center gap-3 px-6 text-center">
       <FileText className="h-8 w-8 text-muted-foreground" />
-      <Button variant="outline" asChild>
-        <a href={doc.url} download={doc.name} onClick={onShown}>
-          <Download className="mr-2 h-4 w-4" />
-          Download {doc.name}
-        </a>
+      <Button
+        icon={<Download />}
+        variant="outline"
+        onClick={() => {
+          if (doc.url) downloadUrl(doc.url, doc.name);
+          onShown();
+        }}
+      >
+        Download {doc.name}
       </Button>
     </div>
   );

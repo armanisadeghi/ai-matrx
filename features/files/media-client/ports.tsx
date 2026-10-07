@@ -36,6 +36,7 @@ import { MediaSharePopoverSlot } from "./share-slot";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { toast } from "@/lib/toast";
 import { downloadMediaSource, mediaRefToDownloadSource } from "./download";
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 const playbackSession: PlaybackSessionPort = {
   useMediaElementSink(forward) {
@@ -60,15 +61,6 @@ const playbackSession: PlaybackSessionPort = {
 function ctxFileId(ctx: MediaActionContext): string | null {
   if (typeof ctx.ref === "string") return null;
   return ctx.ref.file_id ?? null;
-}
-
-async function copyText(text: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 const actions: MediaHostPorts["actions"] = {

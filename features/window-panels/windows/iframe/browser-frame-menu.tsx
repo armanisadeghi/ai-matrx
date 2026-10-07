@@ -10,8 +10,8 @@
 // features/context-menu-v3/SECTIONS.md.
 
 import { Copy, ExternalLink, RotateCw } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type { ContextMenuExtraSection } from "@/features/context-menu-v3/types";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export interface BrowserFrameMenuContext {
   url: string;
@@ -40,10 +40,7 @@ export function buildBrowserFrameMenuSection(
         label: "Copy URL",
         icon: Copy,
         onSelect: () => {
-          navigator.clipboard
-            .writeText(ctx.url)
-            .then(() => toast.success("URL copied"))
-            .catch(() => toast.error("Copy failed"));
+          void copyToClipboard(ctx.url, "URL copied");
         },
       },
       {

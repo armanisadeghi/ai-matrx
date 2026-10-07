@@ -80,7 +80,9 @@ import { noteTabRecordMenuKey } from "./noteRecordMenu";
 import { MoveNoteDialog } from "./MoveNoteDialog";
 import { noteFolderReference, type FolderReference } from "../types";
 import { noteIdentityContentSource } from "../richDocumentSource";
-import { copyRichContent } from "@/components/matrx/buttons/markdown-copy-utils";
+import { downloadFile } from "@/components/agent-copy/export";
+import { copyRichContent } from "@/components/agent-copy/copy-commands";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface NoteTabItemProps {
   noteId: string;
@@ -259,12 +261,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
 
   const handleExport = useCallback(() => {
     const blob = new Blob([content], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label || "note"}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${label || "note"}.md`, blob, blob.type);
     toast.success("Markdown download started");
   }, [content, label]);
 
@@ -341,10 +338,7 @@ export function NoteTabItem({ noteId, instanceId, standalone = false }: NoteTabI
   // Copy a live record reference (the "bookmark") to the clipboard — same fence
   // ReferenceCopyButton produces, now reachable from the "…" menu.
   const copyReference = useCallback(() => {
-    navigator.clipboard
-      .writeText(buildRecordReferenceFence({ type: "note", id: noteId, label }))
-      .then(() => toast.success("Reference copied", { description: label }))
-      .catch(() => toast.error("Failed to copy reference"));
+    void copyToClipboard(buildRecordReferenceFence({ type: "note", id: noteId, label }), "Reference copied", { description: label });
   }, [noteId, label]);
 
   const handleMoveToFolder = useCallback(

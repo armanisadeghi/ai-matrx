@@ -31,6 +31,7 @@ import {
     type ChangeTypeDef,
 } from "../catalogue";
 import { getChangePolicyDivergence, type OrgDivergenceRow } from "../service";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 function divergenceRowHref(row: OrgDivergenceRow): string {
     return `/organizations/${row.organization_slug ?? row.organization_id}/settings/change-policy`;
@@ -245,10 +246,7 @@ export function AdminChangePolicyView() {
                                     disabled: !clickedCatalogueRow,
                                     onSelect: () => {
                                         if (!clickedCatalogueRow) return;
-                                        void navigator.clipboard
-                                            .writeText(clickedCatalogueRow.key)
-                                            .then(() => toast.success("Key copied"))
-                                            .catch(() => toast.error("Could not copy to the clipboard"));
+                                        void copyToClipboard(clickedCatalogueRow.key, "Key copied");
                                     },
                                 },
                             ] satisfies ContextMenuExtraItem[],

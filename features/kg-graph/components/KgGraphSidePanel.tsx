@@ -16,7 +16,6 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Copy, ExternalLink } from "lucide-react";
-import { toast } from "@/lib/toast";
 
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@ai-matrx/design-system";
@@ -33,6 +32,7 @@ import type { GraphNode, MentionRow } from "../types";
 import { colorForKind } from "../constants";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface KgGraphSidePanelProps {
   node: GraphNode;
@@ -277,14 +277,7 @@ export function KgGraphSidePanel({ node }: KgGraphSidePanelProps) {
   );
 
   const copyPassage = (text: string) => {
-    if (!navigator.clipboard?.writeText) {
-      toast.error("Clipboard unavailable here");
-      return;
-    }
-    navigator.clipboard
-      .writeText(text)
-      .then(() => toast.success("Passage copied"))
-      .catch(() => toast.error("Couldn't copy passage"));
+    void copyToClipboard(text, "Passage copied");
   };
 
   // The pane header (the page's canvas tab) carries the node's name and the close.

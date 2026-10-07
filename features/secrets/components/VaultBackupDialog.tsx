@@ -53,6 +53,7 @@ import {
 import { ErrorNotice } from "@/components/errors/ErrorNotice";
 import { asClause } from "@ai-matrx/kit/text";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const BACKUP_FILENAME = "matrx-vault-backup.matrxvault";
 
@@ -354,15 +355,7 @@ export function VaultBackupDialog({
         !sameActor(actual, actor)
       )
         throw new VaultBackupTransportError("context_changed");
-      const url = URL.createObjectURL(blob);
-      try {
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = BACKUP_FILENAME;
-        link.click();
-      } finally {
-        URL.revokeObjectURL(url);
-      }
+      downloadFile(BACKUP_FILENAME, blob, blob.type);
       close();
     } catch (cause) {
       if (isCurrent(operation)) handleError(cause);

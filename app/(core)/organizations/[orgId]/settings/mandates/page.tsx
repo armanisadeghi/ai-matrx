@@ -8,7 +8,6 @@
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ExternalLink, Link2 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { RecordPageHeader } from "@/features/shell/components/header/templates/RecordPageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import {
@@ -33,6 +32,7 @@ import {
   MandateCoverageNotice,
   useCoverageList,
 } from "@/features/mandates/browse/useCoverageList";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 function orgMandateRoute(
   orgId: string,
@@ -98,11 +98,7 @@ export default function OrgMandatesPage() {
                 label: "Copy link",
                 icon: Link2,
                 onSelect: () => {
-                  void navigator.clipboard
-                    .writeText(
-                      `${window.location.origin}${orgMandateRoute(orgId, row)}`,
-                    )
-                    .then(() => toast.success("Link copied."));
+                  void copyToClipboard(`${window.location.origin}${orgMandateRoute(orgId, row)}`, "Link copied.");
                 },
               },
             ],

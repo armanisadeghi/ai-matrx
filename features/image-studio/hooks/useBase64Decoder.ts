@@ -30,6 +30,7 @@ import {
 import { slugifyFilename } from "../utils/slugify-filename";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { useClipboard } from "@ai-matrx/kit/clipboard";
 
 const DEFAULT_FILENAME_BASE = "decoded";
 const DEFAULT_FOLDER_SEGMENT = "from-base64";
@@ -95,6 +96,7 @@ export function useBase64Decoder(
   options: UseBase64DecoderOptions = {},
 ): UseBase64DecoderResult {
   const { upload } = useFileUpload();
+  const { pasteText } = useClipboard();
 
   const [input, setInputState] = useState("");
   const [decoded, setDecoded] = useState<DecodedImageState | null>(null);
@@ -214,21 +216,13 @@ export function useBase64Decoder(
   }, []);
 
   const pasteFromClipboard = useCallback(async () => {
-    if (typeof navigator === "undefined" || !navigator.clipboard?.readText) {
-      setDecodeError(
-        "Clipboard read isn't available in this browser — paste with ⌘/Ctrl-V instead.",
-      );
+    const text = await pasteText();
+    if (!text) {
+      setDecodeError("Nothing to paste — the clipboard is empty or blocked; paste with ⌘/Ctrl-V instead.");
       return;
     }
-    try {
-      const text = await navigator.clipboard.readText();
-      if (text) setInputState(text);
-    } catch (err) {
-      // access-errors: ok — browser clipboard permission, verified by the browser API, not a record access state
-      const detail = err instanceof Error ? err.message : "permission denied";
-      setDecodeError(`Could not read from clipboard: ${detail}`);
-    }
-  }, []);
+    setInputState(text);
+  }, [pasteText]);
 
   const save = useCallback(async (): Promise<SaveResult | null> => {
     if (!decoded) {

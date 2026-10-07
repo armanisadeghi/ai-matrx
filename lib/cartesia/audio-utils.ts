@@ -66,10 +66,7 @@ export function downloadWavForBuffer<T extends Float32Array | Int16Array>(
 ) {
 	const buffer = bufferToWav(sampleRate, channelBuffers);
 	const blob = new Blob([buffer], { type: "audio/wav" });
-	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
-	a.href = url;
-	a.download = `cartesia_audio.wav`;
-	a.click();
-	URL.revokeObjectURL(url);
+	downloadFile(`cartesia_audio.wav`, blob, blob.type);
 }
+
+import { downloadFile } from "@/components/agent-copy/export";

@@ -19,9 +19,9 @@
 import { whatYouMayDo } from "@ai-matrx/records-ui";
 import { tableActions, tableLink, type ObjectAction } from "@ai-matrx/records-ui/object-actions";
 
-import { toast } from "@/lib/toast";
 import type { ContextMenuEntityRef, ContextMenuExtraSection } from "@/features/context-menu-v3/types";
 import { toExtraSections } from "@/features/unified-data/actions/tableActionAdapters";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /** The one thing every dataset-table surface can say about the selected table. */
 export interface DatasetTableMenuRow {
@@ -60,12 +60,7 @@ export function tableActionSectionsAwayFromPage(
   if (!row) return [];
   const origin = typeof window !== "undefined" ? window.location.origin : undefined;
   const copy = async (text: string, done: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast.success(done);
-    } catch {
-      toast.error("Couldn’t copy");
-    }
+    await copyToClipboard(text, done);
   };
   const actions: ObjectAction[] = tableActions({
     table: { id: row.id, name: row.name ?? "Table" },

@@ -26,7 +26,6 @@ import { EntitySourceFailures } from "@/lib/entity-list/components/EntitySourceF
 import { plainFailureReason } from "@/lib/entity-list/failure";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import type { AppDispatch } from "@/lib/redux/store";
-import { toast } from "@/lib/toast";
 import { ADMIN_MANDATES_HEALTH } from "@/features/mandates/admin-routes";
 import {
   KIND_LABEL,
@@ -39,6 +38,7 @@ import {
   type HealthLoad,
 } from "./health";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Spec = EntityColumnSpec<HealthFinding>;
 
@@ -48,7 +48,7 @@ function noMandateWord(row: HealthFinding): string {
 }
 
 function copy(text: string, what: string) {
-  void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
+  void copyToClipboard(text, `Copied ${what}`);
 }
 
 const SEVERITY_CLASS: Record<HealthFinding["severity"], string> = {

@@ -5,6 +5,7 @@
 // a JSZip bundle, mirroring features/image-studio/utils/download-bundle.ts.
 
 import JSZip from "jszip";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface ExportableNote {
   id: string;
@@ -21,12 +22,7 @@ function sanitizeFilename(name: string): string {
 /** Downloads a single note as a `.md` file. */
 export function downloadNoteAsMarkdown(note: ExportableNote): void {
   const blob = new Blob([note.content ?? ""], { type: "text/markdown" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${sanitizeFilename(note.label)}.md`;
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadFile(`${sanitizeFilename(note.label)}.md`, blob, blob.type);
 }
 
 /**
@@ -58,12 +54,5 @@ export async function downloadNotesAsMarkdownZip(
   }
 
   const blob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = zipFilename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  downloadFile(zipFilename, blob, blob.type);
 }

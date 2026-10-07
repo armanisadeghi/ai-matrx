@@ -15,6 +15,7 @@ import {
   parseHttpError,
   sendMatrxRequest,
 } from "@ai-matrx/agents/matrx";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export const MAX_VAULT_ATTACHMENT_BYTES = 25 * 1024 * 1024;
 
@@ -104,13 +105,5 @@ export async function downloadVaultAttachment(
     { method: "GET", cache: "no-store" },
   );
   const blob = await response.blob();
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = objectUrl;
-  anchor.download = fallbackFileName;
-  anchor.rel = "noopener";
-  document.body.append(anchor);
-  anchor.click();
-  anchor.remove();
-  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
+  downloadFile(fallbackFileName, blob, blob.type);
 }

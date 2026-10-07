@@ -13,6 +13,7 @@
 // optional secondary delimiter between CARDS (default: newline).
 
 import type { FcSetRow, NewCardInput, CardWithDetails } from "../data/types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export type FieldDelimiter = "tab" | "comma" | "semicolon";
 export type RowDelimiter = "newline";
@@ -201,13 +202,6 @@ export function buildSetCsv(cards: Pick<CardWithDetails, "front" | "back">[]): s
 export function downloadSetCsv(set: FcSetRow, cards: Pick<CardWithDetails, "front" | "back">[]): void {
   const csv = buildSetCsv(cards);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
   const safeName = set.name.trim().replace(/[^\w\- ]+/g, "").replace(/\s+/g, "_") || "flashcard_set";
-  a.href = url;
-  a.download = `${safeName}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(`${safeName}.csv`, blob, blob.type);
 }

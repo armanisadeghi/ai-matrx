@@ -16,6 +16,7 @@
 // `hr.people.directory-export` in the coming-soon registry.
 
 import type { HrOrgChart } from "../../types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 function csvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
@@ -130,14 +131,7 @@ export function downloadOrgChartCsv(chart: HrOrgChart): void {
   const blob = new Blob([buildOrgChartCsv(chart)], {
     type: "text/csv;charset=utf-8",
   });
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = orgChartExportName(chart.as_of, "csv");
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  downloadFile(orgChartExportName(chart.as_of, "csv"), blob, blob.type);
 }
 
 /*
@@ -172,14 +166,7 @@ async function rasterise(node: HTMLElement): Promise<HTMLCanvasElement> {
 
 /** Push bytes at the browser through the one anchor-download path. */
 function saveBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }
 
 export async function downloadOrgChartPng(

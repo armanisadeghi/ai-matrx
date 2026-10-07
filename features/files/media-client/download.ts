@@ -13,6 +13,7 @@ import { fileHandler } from "@/features/files/handler/handler";
 import type { FileSource } from "@/features/files/handler/types";
 import { recognizeOurFileUrl } from "@/lib/media/our-file-sources";
 import type { MediaRefLike } from "@ai-matrx/media";
+import { downloadFile } from "@/components/agent-copy/export";
 
 /**
  * Recover owned identity before downloading bytes.
@@ -45,17 +46,5 @@ export async function downloadMediaSource(
     suggestedName,
   });
   const blob = await handle.as({ kind: "blob" });
-  const objectUrl = URL.createObjectURL(blob);
-  const anchor = document.createElement("a");
-
-  try {
-    anchor.href = objectUrl;
-    anchor.download = descriptor.filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-  } finally {
-    anchor.remove();
-    // Safari can cancel a save if the object URL is revoked in the same tick.
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 1_000);
-  }
+  downloadFile(descriptor.filename, blob, blob.type);
 }

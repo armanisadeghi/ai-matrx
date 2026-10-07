@@ -21,18 +21,18 @@ import type {
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { createMemoryListService } from "@/lib/entity-list/memoryService";
 import { plainFailureReason } from "@/lib/entity-list/failure";
-import { toast } from "@/lib/toast";
 import { ADMIN_MANDATES_HEALTH, ADMIN_MANDATES_UNCONVERTED } from "@/features/mandates/admin-routes";
 import {
   UNCONVERTED_STATUS_LABEL,
   fetchUnconvertedCalls,
   type UnconvertedCall,
 } from "./data";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type Spec = EntityColumnSpec<UnconvertedCall>;
 
 function copy(text: string, what: string) {
-  void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
+  void copyToClipboard(text, `Copied ${what}`);
 }
 
 function CodeLink({ row }: { row: UnconvertedCall }) {

@@ -26,6 +26,7 @@ import { liveSelectionShapeText } from "@/components/selection-toolbar/selection
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { parseFirstMarkdownTable, tableToDelimited } from "../markdownTable";
 import type { RichDocumentActionContext } from "../../types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 async function copyText(text: string, done: string): Promise<void> {
   await copyToClipboard(text, {
@@ -35,14 +36,7 @@ async function copyText(text: string, done: string): Promise<void> {
 }
 
 function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }
 
 function fileBase(ctx: RichDocumentActionContext): string {

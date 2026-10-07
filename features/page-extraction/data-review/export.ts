@@ -11,6 +11,7 @@ import * as XLSX from "xlsx";
 import { kindValueToMarkdown } from "@/features/canvas/export/exportArtifactMarkdown";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface ExportColumn {
   key: string;
@@ -144,13 +145,6 @@ export function downloadBlob(
     typeof payload === "string"
       ? new Blob([payload], { type: mime ?? "text/plain;charset=utf-8" })
       : payload;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  downloadFile(filename, blob, blob.type);
   // Revoke on the next tick so the click has dispatched.
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { Check, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export function DriveLinkButton({ rulebookId }: { rulebookId: string }) {
   const [copied, setCopied] = useState(false);
@@ -28,18 +28,11 @@ export function DriveLinkButton({ rulebookId }: { rulebookId: string }) {
       variant="outline"
       onClick={() => {
         const url = `${window.location.origin}/drive?r=${rulebookId}`;
-        void navigator.clipboard
-          .writeText(url)
-          .then(() => {
-            setCopied(true);
-            toast.success("Link copied — text it to yourself.");
-            setTimeout(() => setCopied(false), 2500);
-          })
-          .catch(() => {
-            // Never a silent failure: if the clipboard is unavailable the
-            // person still gets the address they came for.
-            toast.error(`Copy this and text it to yourself: ${url}`);
-          });
+        void copyToClipboard(url, "Link copied — text it to yourself.").then((ok) => {
+          if (!ok) return;
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2500);
+        });
       }}
     >
       Text myself the link

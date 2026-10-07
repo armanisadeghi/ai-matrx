@@ -12,6 +12,7 @@
 
 import React from "react";
 import { Check, Copy } from "lucide-react";
+import { copyText } from "@ai-matrx/kit/clipboard";
 import { cn } from "@ai-matrx/design-system";
 import { Button } from "@ai-matrx/design-system/controls";
 
@@ -20,32 +21,6 @@ export interface ShortIdProps {
   /** compact = first 8 chars + ellipsis; full = entire value (for id/uuid fields). */
   variant?: "compact" | "full";
   className?: string;
-}
-
-/** Copy `text` to the clipboard, falling back to a hidden-textarea exec. */
-async function copyText(text: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return true;
-    }
-  } catch {
-    // Fall through to the legacy path below.
-  }
-  try {
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    ta.style.pointerEvents = "none";
-    document.body.appendChild(ta);
-    ta.select();
-    const ok = document.execCommand("copy");
-    document.body.removeChild(ta);
-    return ok;
-  } catch {
-    return false;
-  }
 }
 
 export const ShortId: React.FC<ShortIdProps> = ({

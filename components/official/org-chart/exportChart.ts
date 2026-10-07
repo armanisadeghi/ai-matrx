@@ -15,14 +15,7 @@ function fileName(title: string, ext: string): string {
 }
 
 function save(blob: Blob, name: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadFile(name, blob, blob.type);
 }
 
 export async function exportChart(
@@ -74,3 +67,5 @@ export async function exportChart(
   doc.addImage(out.toDataURL("image/jpeg", 0.92), "JPEG", 24, 24, out.width * scale, out.height * scale, undefined, "FAST");
   save(doc.output("blob"), fileName(opts.title, "pdf"));
 }
+
+import { downloadFile } from "@/components/agent-copy/export";

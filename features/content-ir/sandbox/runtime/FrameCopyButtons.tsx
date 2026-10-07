@@ -1,8 +1,10 @@
 /** Frame-safe CopyButtons seam: local copy and download only, no host runtime. */
 import { useState, type MouseEvent } from "react";
+import { copyText } from "@ai-matrx/kit/clipboard";
 import { cn } from "@/lib/utils";
 import { serializeFrameAgentPayload } from "./FrameAgentPayload";
 import type { MatrxCopyMenuProps } from "@ai-matrx/alchemy/react/workspace";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export type CopyButtonsProps = MatrxCopyMenuProps;
 
@@ -17,12 +19,7 @@ function download(item: ExportItem): void | Promise<void> {
   if (!built) return;
   return Promise.resolve(built).then(
     ({ content, extension, mime, filename }) => {
-      const href = URL.createObjectURL(new Blob([content], { type: mime }));
-      const anchor = document.createElement("a");
-      anchor.href = href;
-      anchor.download = filename ?? `export.${extension}`;
-      anchor.click();
-      URL.revokeObjectURL(href);
+      downloadFile(filename ?? `export.${extension}`, new Blob([content], { type: mime }), "application/octet-stream");
     },
   );
 }
@@ -46,7 +43,7 @@ export function CopyButtons({
   const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
   const action = async (getText: () => Promise<string>) => {
     try {
-      await navigator.clipboard.writeText(await getText());
+      if (!(await copyText(await getText()))) throw new Error("Could not copy");
       setStatus("copied");
       setOpen(false);
     } catch {

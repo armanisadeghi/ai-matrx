@@ -155,9 +155,7 @@ export function SetContextValueCore({
   }, [save, onSaved, target.scopeId]);
 
   const handleCopy = useCallback(() => {
-    if (typeof navigator !== "undefined" && navigator.clipboard) {
-      copyText(workingContent);
-    }
+    void copyText(workingContent);
   }, [workingContent]);
 
   const handlePostSaveAction = useCallback(

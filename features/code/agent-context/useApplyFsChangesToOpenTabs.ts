@@ -334,12 +334,7 @@ export function useApplyFsChangesToOpenTabs(
             content: next,
           }),
         );
-        if (
-          tab.dirty &&
-          previous &&
-          typeof navigator !== "undefined" &&
-          navigator.clipboard
-        ) {
+        if (tab.dirty && previous) {
           // Best-effort — clipboard write may be denied silently. The
           // user still has the new content on screen; this just rescues
           // their work-in-progress.

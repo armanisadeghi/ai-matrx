@@ -79,6 +79,7 @@ import { selectViewedJobForFile } from "@/features/page-extraction/redux/selecto
 import { isAllJobsView } from "@/features/page-extraction/redux/pageExtractionSlice";
 import { useExtractionResults } from "@/features/page-extraction/hooks/useExtractionResults";
 import { useExtractionResultsForFile } from "@/features/page-extraction/hooks/useExtractionResultsForFile";
+import { downloadFile } from "@/components/agent-copy/export";
 
 // Shared renderer used by PdfCldFileViewer below.
 // react-pdf + pdfjs-dist is ~400KB; defer until the viewer mounts.
@@ -794,14 +795,7 @@ function CropOverlay({
             icon={<Download />}
             variant="outline"
             onClick={() => {
-              const url = URL.createObjectURL(result.blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = result.filename;
-              document.body.appendChild(a);
-              a.click();
-              document.body.removeChild(a);
-              URL.revokeObjectURL(url);
+              downloadFile(result.filename, result.blob, "application/octet-stream");
             }}
           >
             Download
@@ -969,14 +963,7 @@ function PageReorderView({
               icon={<Download />}
               variant="outline"
               onClick={() => {
-                const url = URL.createObjectURL(result.blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = result.filename;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                downloadFile(result.filename, result.blob, "application/octet-stream");
               }}
             >
               Download

@@ -32,6 +32,7 @@ import { useShare } from "@/features/sharing/hooks/useShare";
 import type { PcDisplayMode } from "@/features/podcasts/types";
 import { episodeHref } from "../constants";
 import { SegmentedControl } from "@ai-matrx/design-system/controls";
+import { downloadUrl } from "@/components/agent-copy/export";
 
 interface ResultActionsProps {
   episodeId: string;
@@ -142,11 +143,12 @@ export function ResultActions({
           {published ? "Published" : "Publish"}
         </Button>
         {audioUrl && (
-          <Button asChild variant="outline">
-            <a href={audioUrl} download={`${title || "episode"}.wav`}>
-              <Download className="h-4 w-4" />
-              Audio
-            </a>
+          <Button
+            icon={<Download />}
+            variant="outline"
+            onClick={() => downloadUrl(audioUrl, `${title || "episode"}.wav`)}
+          >
+            Audio
           </Button>
         )}
         <Button icon={<Link2 />} variant="outline" onClick={copyLink}>

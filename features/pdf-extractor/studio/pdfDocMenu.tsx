@@ -25,6 +25,7 @@ import {
 } from "@/features/files/components/FileContextSection";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import type { StudioDocSummary } from "./hooks/usePdfStudioDocs";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 function resolveAbsoluteHref(href: string): string {
   if (typeof window === "undefined") return href;
@@ -84,16 +85,10 @@ export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
             label: "Copy extractor link",
             icon: LinkIcon,
             onSelect: async () => {
-              try {
-                await navigator.clipboard.writeText(
-                  resolveAbsoluteHref(studioHref),
-                );
-                toast.success("Extractor link copied");
-              } catch {
-                toast.error(
-                  "Couldn't copy — your browser blocked clipboard access",
-                );
-              }
+              await copyToClipboard(
+                resolveAbsoluteHref(studioHref),
+                "Extractor link copied",
+              );
             },
           },
           {
@@ -103,16 +98,10 @@ export function buildPdfDocMenu(ctx: PdfDocMenuContext): ItemMenuConfig {
             hidden: !sourceHref,
             onSelect: async () => {
               if (!sourceHref) return;
-              try {
-                await navigator.clipboard.writeText(
-                  resolveAbsoluteHref(sourceHref),
-                );
-                toast.success("File link copied");
-              } catch {
-                toast.error(
-                  "Couldn't copy — your browser blocked clipboard access",
-                );
-              }
+              await copyToClipboard(
+                resolveAbsoluteHref(sourceHref),
+                "File link copied",
+              );
             },
           },
           {

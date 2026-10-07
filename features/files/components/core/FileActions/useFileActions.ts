@@ -36,6 +36,7 @@ import * as Files from "@/features/files/api/files";
 import { pythonShareUrl } from "@/features/files/handler/utils/python-base";
 import { apiFileRecordToCloudFile } from "@/features/files/redux/converters";
 import type { Visibility } from "@/features/files/types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface FileActionHandlers {
   rename: (newName: string) => Promise<void>;
@@ -170,16 +171,9 @@ export function useFileActions(fileId: string): FileActionHandlers {
     // A blob: URL is always same-origin, so `a.download` is honoured and
     // the browser saves with the correct filename and extension.
     const { blob, filename } = await Files.downloadFile(fileId);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
     // Prefer the filename from Content-Disposition (set by the Python backend).
     // Fall back to the name stored in Redux, then a generic fallback.
-    a.download = filename ?? file?.fileName ?? "download";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadFile(filename ?? file?.fileName ?? "download", blob, blob.type);
   }, [file?.fileName, fileId, isVirtual]);
 
   const copyShareUrl = useCallback(
@@ -191,13 +185,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       // on the file's share state.
       if (opts?.expiresIn !== undefined) {
         const result = await dispatch(getFileUrl({ fileId })).unwrap();
-        if (typeof navigator !== "undefined" && navigator.clipboard) {
-          try {
-            await copyText(result.url);
-          } catch {
-            /* ignore clipboard failures (non-secure contexts) */
-          }
-        }
+        await copyText(result.url);
         return result.url;
       }
 
@@ -217,13 +205,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
           }
         }
         if (cdnUrl) {
-          if (typeof navigator !== "undefined" && navigator.clipboard) {
-            try {
-              await copyText(cdnUrl);
-            } catch {
-              /* ignore clipboard failures (non-secure contexts) */
-            }
-          }
+          await copyText(cdnUrl);
           return cdnUrl;
         }
         // publicUrl unavailable even after REST fetch (CDN not configured
@@ -280,13 +262,7 @@ export function useFileActions(fileId: string): FileActionHandlers {
       if (!token) return null;
 
       const url = pythonShareUrl(token);
-      if (typeof navigator !== "undefined" && navigator.clipboard) {
-        try {
-          await copyText(url);
-        } catch {
-          /* ignore clipboard failures */
-        }
-      }
+      await copyText(url);
       return url;
     },
     [dispatch, fileId, isVirtual, store],

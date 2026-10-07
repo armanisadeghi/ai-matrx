@@ -51,7 +51,6 @@ import {
   codeFileEntityRef,
   type CodeFileMenuRow,
 } from "@/features/code-files/file-menu";
-import { toast } from "@/lib/toast";
 import {
   Dialog,
   DialogContent,
@@ -75,6 +74,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { UntrustedCount } from "@/components/official/stale-data/UntrustedCount";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -181,10 +181,7 @@ export function CodeFileManagerWindow({
       onDelete: (row) =>
         setConfirmDelete({ kind: "file", id: row.id, label: row.name }),
       onCopyPath: (row) => {
-        void navigator.clipboard
-          .writeText(row.path || row.name)
-          .then(() => toast.success("Path copied"))
-          .catch(() => toast.error("Couldn't copy path"));
+        void copyToClipboard(row.path || row.name, "Path copied");
       },
     },
   });

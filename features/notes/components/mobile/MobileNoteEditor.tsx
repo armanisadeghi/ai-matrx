@@ -44,6 +44,7 @@ import { NoteWorkingCopyAlert } from "../NoteWorkingCopyAlert";
 import { authoredBy } from "@/components/rich-content/prose/remote-image-policy";
 import { cn } from "@/lib/utils";
 import { insertAtRichCaret } from "@/components/rich-editor/caretInsert";
+import { downloadFile } from "@/components/agent-copy/export";
 
 /**
  * The phone's modes: Plain (its default) and Write (the one editor). "preview"
@@ -305,14 +306,7 @@ export default function MobileNoteEditor({
   const handleExport = () => {
     const content = readMountedContent();
     const blob = new Blob([content], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${noteLabel || "note"}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`${noteLabel || "note"}.md`, blob, blob.type);
     toast.success("Exported");
   };
 

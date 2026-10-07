@@ -15,6 +15,7 @@
 import * as XLSX from "xlsx";
 import { CellValueType } from "@univerjs/core";
 import type { ICellData, IWorkbookData, IWorksheetData } from "@univerjs/core";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export type ExportXlsxOptions = {
   /** File name without extension. Defaults to "workbook". */
@@ -64,15 +65,8 @@ export function downloadUniverAsXlsx(
   const blob = new Blob([buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  downloadFile(filename, blob, blob.type);
   // Defer revoke so the click handler finishes processing the URL.
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 // ─── internals ────────────────────────────────────────────────────────────

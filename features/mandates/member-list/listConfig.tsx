@@ -31,6 +31,7 @@ import { mandateStatusLabel } from "@/features/mandates/status/mandate-status";
 import { MandateMemberPeek } from "./MandateMemberPeek";
 import { memberMandateListHref, memberMandateRecordHref } from "./routes";
 import type { MandateListLevel, MandateMemberRow } from "./types";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // Heavy, conditional, and only ever needed after a user action (the workflows list does the same).
 const ShareModal = dynamic(
@@ -42,7 +43,7 @@ const ShareModal = dynamic(
 );
 
 function copy(text: string, what: string) {
-  void navigator.clipboard.writeText(text).then(() => toast.success(`Copied ${what}`));
+  void copyToClipboard(text, `Copied ${what}`);
 }
 
 export interface MemberListConfigOptions {

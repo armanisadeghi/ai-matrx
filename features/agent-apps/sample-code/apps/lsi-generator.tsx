@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { AgentAppComponentProps } from "../../types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export default function LSIMarkdownGenerator({
   onExecute,
@@ -148,14 +149,7 @@ export default function LSIMarkdownGenerator({
     });
 
     const blob = new Blob([markdown], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${parsedData.keyword.replace(/\s+/g, "-").toLowerCase()}-lsi-keywords.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`${parsedData.keyword.replace(/\s+/g, "-").toLowerCase()}-lsi-keywords.md`, blob, blob.type);
   };
 
   const downloadAsCSV = () => {
@@ -169,14 +163,7 @@ export default function LSIMarkdownGenerator({
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${parsedData.keyword.replace(/\s+/g, "-").toLowerCase()}-lsi-keywords.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`${parsedData.keyword.replace(/\s+/g, "-").toLowerCase()}-lsi-keywords.csv`, blob, blob.type);
   };
 
   const downloadAsTXT = () => {
@@ -188,14 +175,7 @@ export default function LSIMarkdownGenerator({
     });
 
     const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${parsedData.keyword.replace(/\s+/g, "-").toLowerCase()}-lsi-keywords.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadFile(`${parsedData.keyword.replace(/\s+/g, "-").toLowerCase()}-lsi-keywords.txt`, blob, blob.type);
   };
 
   const addKeyword = (category: string) => {

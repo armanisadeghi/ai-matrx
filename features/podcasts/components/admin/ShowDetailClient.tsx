@@ -43,6 +43,7 @@ import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { pushAppHref, replaceAppHref } from "@/lib/deployment/navigate";
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 /** An episode length reads at a glance: "45 min" / "1h 30m". */
 function formatDuration(seconds: number): string {
@@ -55,12 +56,11 @@ function CopyLinkButton({ slug }: { slug: string }) {
     <button
       onClick={(e) => {
         e.stopPropagation();
-        navigator.clipboard
-          .writeText(`${window.location.origin}/podcast/${slug}`)
-          .then(() => {
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-          });
+        void copyToClipboard(`${window.location.origin}/podcast/${slug}`).then((ok) => {
+          if (!ok) return;
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
       }}
       className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
       title={copied ? "Copied!" : "Copy the link to its page on the web"}

@@ -30,7 +30,6 @@ import {
 import { SearchInput } from "@/components/official/SearchInput";
 import { Button } from "@/components/ui/button";
 import { CopyTapButton, FilterTapButton } from "@ai-matrx/tap-target/buttons";
-import { toast } from "@/lib/toast";
 import SuspenseLoader from "@/components/loaders/SuspenseLoader";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
@@ -45,6 +44,7 @@ import {
   useSurfaceScopeContribution,
   useSurfaceWriteHandlers,
 } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type ShowFilter = "all" | "shown" | "hidden";
 type ModelType = "text" | "speech_to_text" | "voice" | "image";
@@ -296,10 +296,7 @@ const AiModelsPreferences = () => {
                         variant="transparent"
                         ariaLabel={`Copy the id of ${model.common_name || model.name}`}
                         onClick={() =>
-                          void navigator.clipboard
-                            .writeText(model.name)
-                            .then(() => toast.success("Model id copied"))
-                            .catch(() => toast.error("Could not copy the model id"))
+                          void copyToClipboard(model.name, "Model id copied")
                         }
                       />
                     </span>

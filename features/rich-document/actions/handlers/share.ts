@@ -16,6 +16,7 @@ import {
   requireAuth,
   contentForDestination,
 } from "../utils";
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 registerAction({
   id: "share-webpage",
@@ -49,13 +50,8 @@ registerAction({
         messageId: durableRecordId(messageId),
         conversationId,
       });
-      let copied = false;
-      try {
-        await navigator.clipboard.writeText(url);
-        copied = true;
-      } catch {
-        /* clipboard can be blocked; the toast still links the page */
-      }
+      // A refused copy is reported by the toast below, which still links the page.
+      const copied = await copyText(url);
       toast.success(
         copied ? "Published to the web — link copied" : "Published to the web",
         {

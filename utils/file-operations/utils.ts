@@ -7,6 +7,7 @@ import {
   FolderContentsWithNodes,
   NodeStructure,
 } from "@/utils/file-operations/types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const DEFAULT_HIDDEN_FILES = [
   "Thumbs.db",
@@ -206,14 +207,7 @@ export function codeLanguageToExtension(language: string): string {
 
 export const downloadBlob = (blob: Blob, filename: string): boolean => {
   try {
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
+    downloadFile(filename, blob, blob.type);
     return true;
   } catch (error) {
     console.error("Error triggering download:", error);

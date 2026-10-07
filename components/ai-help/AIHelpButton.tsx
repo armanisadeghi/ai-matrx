@@ -10,6 +10,7 @@ import {AIHelpDialog} from './AIHelpDialog';
 
 import {AIHelpResponse} from '@/types/audioHelp';
 import { ImageQuality } from '@/types/screenshot';
+import { downloadFile, downloadUrl } from "@/components/agent-copy/export";
 
 interface AIHelpButtonProps {
     helpDocs?: Record<string, string>;
@@ -74,10 +75,7 @@ export function AIHelpButton(
             const imageData = quality === 'full'
                 ? lastContext.screenshot.fullSize
                 : lastContext.screenshot[quality];
-            const link = document.createElement('a');
-            link.href = imageData;
-            link.download = `page-screenshot-${quality}-${new Date().toISOString()}.png`;
-            link.click();
+            downloadUrl(imageData, `page-screenshot-${quality}-${new Date().toISOString()}.png`);
         }
     };
 
@@ -85,12 +83,7 @@ export function AIHelpButton(
         if (lastContext) {
             const {screenshot, ...contextWithoutScreenshot} = lastContext;
             const blob = new Blob([JSON.stringify(contextWithoutScreenshot, null, 2)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `page-context-${new Date().toISOString()}.json`;
-            link.click();
-            URL.revokeObjectURL(url);
+            downloadFile(`page-context-${new Date().toISOString()}.json`, blob, blob.type);
         }
     };
 

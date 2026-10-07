@@ -44,13 +44,11 @@ import {
   disableTaskAdmin,
   markRunFailedAdmin,
 } from "@/lib/services/scheduling-admin-service";
+import { copyToClipboard as copyAndAnnounce } from "@/lib/clipboard/copy";
 import { adminScheduleHref } from "@/features/scheduling/constants/routes";
 
 function copyToClipboard(text: string, done: string) {
-  void navigator.clipboard.writeText(text).then(
-    () => toast.success(done),
-    () => toast.error("Could not copy to clipboard"),
-  );
+  void copyAndAnnounce(text, done);
 }
 
 function rowFromDataId<T extends { id: string }>(

@@ -395,7 +395,7 @@ function useFeedbackForm({
   onClose: () => void;
   subject?: FeedbackSubject;
 }) {
-  const { copyText } = useClipboard({
+  const { copyText, pasteImage } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
@@ -684,25 +684,15 @@ function useFeedbackForm({
   );
 
   const handlePasteButton = useCallback(async () => {
-    try {
-      if (!navigator.clipboard?.read) {
-        toast.info(`Use ${modifierKeyLabel()}+V to paste an image`);
-        return;
-      }
-      for (const item of await navigator.clipboard.read()) {
-        const imageType = item.types.find((t) => t.startsWith("image/"));
-        if (!imageType) continue;
-        const blob = await item.getType(imageType);
-        addFiles([namePasted(new File([blob], "pasted", { type: imageType }))]);
-        return;
-      }
-      toast.info("No image found in the clipboard");
-    } catch {
-      toast.warning(
-        `Couldn't read the clipboard — copy an image first, then click Paste or press ${modifierKeyLabel()}+V`,
+    const image = await pasteImage();
+    if (!image) {
+      toast.info(
+        `No image found in the clipboard — copy an image first, or press ${modifierKeyLabel()}+V`,
       );
+      return;
     }
-  }, [addFiles]);
+    addFiles([namePasted(image)]);
+  }, [addFiles, pasteImage]);
 
   /**
    * Upload every local attachment under `organizationId` (the report's own),

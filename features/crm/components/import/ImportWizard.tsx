@@ -63,6 +63,7 @@ import { IMPORT_FIELD_LABELS } from "../../import/types";
 import { persistConnectorCursor } from "../../import/connectors/service";
 import { ConnectorSources } from "./ConnectorSources";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadFile } from "@/components/agent-copy/export";
 
 type Step = "source" | "map" | "preview" | "done";
 
@@ -178,13 +179,7 @@ export function ImportWizard() {
 
   const downloadTemplate = () => {
     const blob = new Blob([buildTemplateCsv(kind)], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download =
-      kind === "person" ? "contacts-template.csv" : "companies-template.csv";
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(kind === "person" ? "contacts-template.csv" : "companies-template.csv", blob, blob.type);
   };
 
   const runDryRun = async () => {

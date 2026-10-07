@@ -38,6 +38,7 @@ import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-s
 import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import { buildTaskSeedFromMessage } from "@ai-matrx/chat/agents/components/messages-display/message-options/buildTaskSeedFromMessage";
 import type { ContentSource } from "../../types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 /**
  * Map a ContentSource to the `entity_type` used by save-to-task. Centralized
@@ -281,14 +282,7 @@ registerAction({
       const blob = new Blob([contentForDestination(ctx)], {
         type: "text/markdown;charset=utf-8",
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${name}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadFile(`${name}.md`, blob, blob.type);
       toast.success("Downloaded as Markdown");
     } catch (error) {
       toast.error(getErrorMessage(error, "Failed to download file"));

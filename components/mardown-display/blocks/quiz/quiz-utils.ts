@@ -14,6 +14,7 @@ import type {
   QuizResultsExport,
   QuizAnswer
 } from './quiz-types';
+import { downloadFile } from "@/components/agent-copy/export";
 
 const EXPORT_VERSION = '1.0.0';
 
@@ -325,15 +326,7 @@ export function importQuizState(jsonString: string): QuizState {
 export function downloadQuizState(state: QuizState, filename?: string): void {
   const jsonString = exportQuizState(state);
   const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename || `quiz_state_${state.quizId}_${Date.now()}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadFile(filename || `quiz_state_${state.quizId}_${Date.now()}.json`, blob, blob.type);
 }
 
 /**
@@ -342,15 +335,7 @@ export function downloadQuizState(state: QuizState, filename?: string): void {
 export function downloadQuizResults(state: QuizState, filename?: string): void {
   const jsonString = exportQuizResults(state);
   const blob = new Blob([jsonString], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename || `quiz_results_${state.quizId}_${Date.now()}.json`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  downloadFile(filename || `quiz_results_${state.quizId}_${Date.now()}.json`, blob, blob.type);
 }
 
 /**

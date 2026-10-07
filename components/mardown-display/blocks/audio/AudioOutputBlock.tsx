@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export interface AudioOutputBlockProps {
   /** URL to the audio file */
@@ -246,15 +247,8 @@ function useFileActions(url: string, mimeType?: string) {
     try {
       const res = await fetch(url);
       const blob = await res.blob();
-      const obj = URL.createObjectURL(blob);
       const ext = mimeType?.split("/")[1] ?? "wav";
-      const a = document.createElement("a");
-      a.href = obj;
-      a.download = `audio-response.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(obj);
+      downloadFile(`audio-response.${ext}`, blob, blob.type);
     } catch {
       /* silent */
     } finally {

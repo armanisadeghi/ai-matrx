@@ -19,6 +19,7 @@ import type { ViewMode } from "./components/ViewModeSelector";
 import { aggregateByZip3 } from "./utils/dataAggregation";
 import { toast } from "@/lib/toast";
 import type { ZipCodeData } from "./types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 
 export default function ZipCodeHeatmapPage() {
@@ -98,26 +99,12 @@ export default function ZipCodeHeatmapPage() {
 
         if (format === "csv") {
             const blob = new Blob([sampleData], { type: "text/csv" });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "sample-zip-codes.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            downloadFile("sample-zip-codes.csv", blob, blob.type);
         } else {
             // For Excel, we'll just download the CSV and let user know they can save as Excel
             // Or we could use xlsx library here as well
             const blob = new Blob([sampleData], { type: "text/csv" });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "sample-zip-codes.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            downloadFile("sample-zip-codes.csv", blob, blob.type);
         }
     };
 

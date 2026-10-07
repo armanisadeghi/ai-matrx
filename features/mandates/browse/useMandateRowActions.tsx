@@ -15,7 +15,6 @@ import {
   Link2,
   UserRound,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import type {
   ItemMenuConfig,
   ItemMenuEntry,
@@ -29,6 +28,7 @@ import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow"
 import { useCopyMandateAgent } from "@/features/mandates/useCopyMandateAgent";
 import { mandateRoute, type MandateListRow } from "./types";
 import { storedMandateKey } from "@ai-matrx/agents/mandates";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export function useMandateRowActions(
   _list: EntityListController<MandateListRow>,
@@ -106,9 +106,7 @@ export function useMandateRowActions(
               label: "Copy link",
               icon: Link2,
               onSelect: () => {
-                void navigator.clipboard
-                  .writeText(`${window.location.origin}${href}`)
-                  .then(() => toast.success("Link copied."));
+                void copyToClipboard(`${window.location.origin}${href}`, "Link copied.");
               },
             },
             {
@@ -116,15 +114,11 @@ export function useMandateRowActions(
               label: "Copy for AI",
               icon: ClipboardCopy,
               onSelect: () => {
-                void navigator.clipboard
-                  .writeText(
-                    buildRecordReferenceFence({
+                void copyToClipboard(buildRecordReferenceFence({
                       type: "mandate",
                       id: row.mandate_key,
                       label: row.label,
-                    }),
-                  )
-                  .then(() => toast.success("Reference copied for AI."));
+                    }), "Reference copied for AI.");
               },
             },
           ],

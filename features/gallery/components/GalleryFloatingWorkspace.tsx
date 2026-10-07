@@ -42,6 +42,7 @@ import { openImageViewer } from "@/features/overlays/openers/imageViewer";
 import { toast } from "@/lib/toast";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadFile } from "@/components/agent-copy/export";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -226,13 +227,8 @@ export function GalleryFloatingWorkspace() {
       try {
         const response = await fetch(url);
         const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = blobUrl;
         const ext = mimeToExtension(blob.type || "image/jpeg");
-        a.download = `unsplash-${photo.id}${ext}`;
-        a.click();
-        URL.revokeObjectURL(blobUrl);
+        downloadFile(`unsplash-${photo.id}${ext}`, blob, blob.type);
         toast.success("Download started");
       } catch {
         toast.error("Download failed");

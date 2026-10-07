@@ -47,6 +47,7 @@ import {
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Cost } from "@/components/cost/Cost";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { downloadFile } from "@/components/agent-copy/export";
 
 export default function DocumentViewer() {
   const { topicId, topic, progress, refresh } = useTopicContext();
@@ -138,23 +139,15 @@ export default function DocumentViewer() {
             2,
           );
           const blob = new Blob([content], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
           const a = window.document.createElement("a");
-          a.href = url;
-          a.download = `research-${topicId}.${format}`;
-          a.click();
-          URL.revokeObjectURL(url);
+          downloadFile(`research-${topicId}.${format}`, blob, blob.type);
         } else {
           // For other formats, download as text for now
           const blob = new Blob([document.content ?? ""], {
             type: "text/plain",
           });
-          const url = URL.createObjectURL(blob);
           const a = window.document.createElement("a");
-          a.href = url;
-          a.download = `research-${topicId}.txt`;
-          a.click();
-          URL.revokeObjectURL(url);
+          downloadFile(`research-${topicId}.txt`, blob, blob.type);
         }
       } catch {
         // fallback — download as text

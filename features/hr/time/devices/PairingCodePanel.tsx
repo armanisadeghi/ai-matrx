@@ -39,7 +39,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/lib/toast";
 
 import type {
   KioskDeviceAdminSource,
@@ -47,6 +46,7 @@ import type {
   KioskPairingCode,
 } from "./deviceAdminSource";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export function PairingCodeDialogBody({
   source,
@@ -135,10 +135,7 @@ export function PairingCodeDialogBody({
             type="button"
             variant="outline"
             onClick={() => {
-              void navigator.clipboard
-                .writeText(issued.code)
-                .then(() => toast.success("Pairing code copied"))
-                .catch(() => toast.error("This browser would not let us copy the code"));
+              void copyToClipboard(issued.code, "Pairing code copied");
             }}
           >
             Copy

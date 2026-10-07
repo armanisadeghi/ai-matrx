@@ -48,6 +48,7 @@ import { ToolCallVisualization } from "@ai-matrx/chat/tool-call-visualization/co
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { buildToolComponentGenerationOffer } from "@/features/tool-call-visualization/admin/toolComponentGenerationOffer";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -439,18 +440,7 @@ export function ToolComponentPreview({
                     icon={<Copy />}
                     variant="outline"
                     onClick={() => {
-                      navigator.clipboard
-                        .writeText(agent.accumulatedText)
-                        .then(() => {
-                          toast({ title: "Copied to clipboard" });
-                        })
-                        .catch(() => {
-                          toast({
-                            title: "Copy failed",
-                            description: "Select the text below manually.",
-                            variant: "destructive",
-                          });
-                        });
+                      void copyToClipboard(agent.accumulatedText, "Copied to clipboard");
                     }}
                   >
                     Copy All

@@ -26,6 +26,7 @@ import {
   tagInputToAiText,
   tagInputExportFilename,
 } from "../../utils/tagInputExport";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface CrossCuttingTagsExportButtonProps {
   topicId: string;
@@ -93,14 +94,7 @@ export function CrossCuttingTagsExportButton({
       const blob = new Blob([tagInputToText(topicName, data)], {
         type: "text/plain",
       });
-      const href = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = href;
-      a.download = tagInputExportFilename(topicId, topicName);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(href);
+      downloadFile(tagInputExportFilename(topicId, topicName), blob, blob.type);
       toast.success("Downloaded tag input");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Export failed");

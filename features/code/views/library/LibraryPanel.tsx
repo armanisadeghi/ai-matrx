@@ -34,6 +34,7 @@ import type {
 import { archiveConfirmSentence } from "@/features/trash/archiveCopy";
 import { publishedToWebLabel, shownToLabel, SHOWN_TO_LABEL } from "@/lib/row-access";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 interface LibraryPanelProps {
   className?: string;
@@ -226,10 +227,7 @@ export const LibraryPanel: React.FC<LibraryPanelProps> = ({ className }) => {
   };
 
   const copyPath = (path: string) => {
-    void navigator.clipboard
-      .writeText(path)
-      .then(() => toast.success("Path copied"))
-      .catch(() => toast.error("Clipboard blocked"));
+    void copyToClipboard(path, "Path copied");
   };
 
   const treeActions: LibraryTreeActions = {

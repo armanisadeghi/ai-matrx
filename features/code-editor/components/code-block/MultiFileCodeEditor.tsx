@@ -23,6 +23,7 @@ import {
   mapLanguageForMonaco,
   getMonacoFileExtension,
 } from "@/features/code-editor/config/languages";
+import { downloadFile } from "@/components/agent-copy/export";
 
 type AIModalConfig = {
   /** The editing job (mandate key) — the DB decides which agent runs it. */
@@ -211,12 +212,7 @@ export default function MultiFileCodeEditor({
   const handleDownload = (e: React.MouseEvent) => {
     e.stopPropagation();
     const blob = new Blob([code], { type: "text/plain" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = currentFile.name;
-    a.click();
-    window.URL.revokeObjectURL(url);
+    downloadFile(currentFile.name, blob, blob.type);
   };
 
   const toggleLineNumbers = (e: React.MouseEvent) => {

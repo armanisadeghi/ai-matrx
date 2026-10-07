@@ -154,6 +154,7 @@ export default function ProTextareaDisplay({
   const code = `import { ProTextarea } from '@/components/official/ProTextarea';
 import { ProJsonTextarea } from '@/components/official/ProJsonTextarea';
 import { Field } from '@/components/official/Field';
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 // Every supported prop, with defaults inline.
 <ProTextarea
@@ -730,10 +731,10 @@ function handleClose() {
             <Button
               variant="outline"
               onClick={() => {
-                navigator.clipboard.writeText(
+                void copyToClipboard(
                   `import { ProTextarea } from "@/components/official/ProTextarea";`,
+                  "Import copied",
                 );
-                toast.success("Import copied");
               }}
             >
               Copy import

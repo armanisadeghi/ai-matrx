@@ -48,6 +48,7 @@ import {
 } from "lucide-react";
 import { EnhancedJsonViewer } from "@/components/ui/JsonComponents";
 import { EnhancedEditableJsonViewer } from "@/components/ui/JsonComponents/JsonEditor";
+import { downloadFile } from "@/components/agent-copy/export";
 
 // -------------------------------------------------------------------------
 // Inlined from the deleted `hooks/common/useLocalStorageManager.ts`.
@@ -954,14 +955,7 @@ const RawStorageView = ({ storage }: { storage: UseLocalStorageManager }) => {
       const blob = new Blob([JSON.stringify(rawData, null, 2)], {
         type: "application/json",
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `localStorage-export-${new Date().toISOString()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadFile(`localStorage-export-${new Date().toISOString()}.json`, blob, blob.type);
       setFeedback({
         success: true,
         message: "Downloaded successfully",
@@ -1325,14 +1319,7 @@ const ImportExport = ({ storage }: { storage: UseLocalStorageManager }) => {
     try {
       const data = await storage.exportStorageData();
       const blob = new Blob([data], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `localStorage-backup-${new Date().toISOString()}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadFile(`localStorage-backup-${new Date().toISOString()}.json`, blob, blob.type);
       setFeedback({
         success: true,
         message: "Data exported successfully",

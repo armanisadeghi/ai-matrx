@@ -15,6 +15,7 @@ import { Loader2, Menu } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { Button } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface TranscriptsLayoutProps {
   className?: string;
@@ -140,12 +141,7 @@ export function TranscriptsLayout({ className }: TranscriptsLayoutProps) {
       )
       .join("\n\n");
     const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${activeTranscript.title}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadFile(`${activeTranscript.title}.txt`, blob, blob.type);
     toast.success("Transcript exported");
   };
 

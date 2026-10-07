@@ -26,6 +26,7 @@ import {
   TITLE_LIMITS,
 } from "@/features/marketing/seo/serp/metrics";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { downloadFile } from "@/components/agent-copy/export";
 
 const LIMIT_PRESETS = [
   { label: "Custom", value: "custom", limit: null },
@@ -76,7 +77,7 @@ export function CharacterCounter({
   className,
   compact = false,
 }: CharacterCounterProps) {
-  const { copyText: copyTextKit } = useClipboard({
+  const { copyText: copyTextKit, pasteText: pasteClipboardText } = useClipboard({
     notify: (message, kind) =>
       kind === "error" ? toast.error(message) : toast.success(message),
   });
@@ -104,23 +105,17 @@ export function CharacterCounter({
   };
 
   const pasteText = async () => {
-    try {
-      setText(await navigator.clipboard.readText());
-      toast.success("Text pasted from clipboard");
-    } catch {
+    const pasted = await pasteClipboardText();
+    if (!pasted) {
       toast.error("Allow clipboard access, then paste into the editor");
+      return;
     }
+    setText(pasted);
+    toast.success("Text pasted from clipboard");
   };
 
   const downloadText = () => {
-    const url = URL.createObjectURL(
-      new Blob([text], { type: "text/plain;charset=utf-8" }),
-    );
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "character-counter-text.txt";
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadFile("character-counter-text.txt", text, "text/plain;charset=utf-8");
   };
 
   return (

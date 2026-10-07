@@ -26,13 +26,36 @@ export function downloadFile(
 ): void {
   const blob = new Blob([content], { type: mime });
   const url = URL.createObjectURL(blob);
+  clickDownloadAnchor(url, filename);
+  // Safari can cancel the save when the object URL is revoked in the click's tick.
+  setTimeout(() => URL.revokeObjectURL(url), 1_000);
+}
+
+/**
+ * Save a file that already has a URL (a data: or blob: URL, or a remote URL the browser may
+ * download). Same-origin and data/blob URLs are saved under `filename`; a cross-origin remote
+ * URL is handed to the browser, which may ignore the name. `newTab` opens it in a new tab
+ * (noopener) as the cross-origin fallback.
+ */
+export function downloadUrl(
+  url: string,
+  filename: string,
+  options: { newTab?: boolean } = {},
+): void {
+  clickDownloadAnchor(url, filename, options.newTab);
+}
+
+function clickDownloadAnchor(href: string, filename: string, newTab = false): void {
   const anchor = document.createElement("a");
-  anchor.href = url;
+  anchor.href = href;
   anchor.download = filename;
+  if (newTab) {
+    anchor.target = "_blank";
+    anchor.rel = "noopener noreferrer";
+  }
   document.body.appendChild(anchor);
   anchor.click();
   document.body.removeChild(anchor);
-  URL.revokeObjectURL(url);
 }
 
 /** Sanitized `base-2026-07-27.ext` filename. */

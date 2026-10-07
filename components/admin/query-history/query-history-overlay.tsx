@@ -48,6 +48,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import FullScreenOverlay, { TabDefinition } from '@/components/official/FullScreenOverlay';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { downloadFile } from "@/components/agent-copy/export";
 
 interface QueryHistoryOverlayProps {
   isOpen: boolean;
@@ -191,14 +192,7 @@ export const QueryHistoryOverlay: React.FC<QueryHistoryOverlayProps> = ({
   // Export selected query as JSON
   const exportQuery = (query: StoredQuery) => {
     const dataStr = JSON.stringify(query, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `query-${query.id}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
+    downloadFile(`query-${query.id}.json`, dataStr, "application/json;charset=utf-8");
   };
 
   // Toggle tag selection for filtering

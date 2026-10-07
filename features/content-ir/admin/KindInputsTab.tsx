@@ -37,7 +37,6 @@ import {
   RotateCcw,
   X,
 } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { VariableInputComponent } from "@ai-matrx/chat/agents/components/inputs/input-components/VariableInputComponent";
 import {
   kindFieldsToVariableDefinitions,
@@ -58,6 +57,7 @@ import {
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 type SchemaState =
   | { status: "loading" }
@@ -121,14 +121,7 @@ const DRIFT_COLUMNS: MatrxColumnDef<DriftRow>[] = [
 ];
 
 async function copyJson(label: string, text: string): Promise<void> {
-  try {
-    await navigator.clipboard.writeText(text);
-    toast.success(`Copied ${label}`);
-  } catch (error) {
-    toast.error(
-      `Clipboard copy failed: ${error instanceof Error ? error.message : String(error)}`,
-    );
-  }
+  await copyToClipboard(text, `Copied ${label}`);
 }
 
 export default function KindInputsTab({

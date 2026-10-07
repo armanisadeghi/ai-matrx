@@ -35,6 +35,7 @@ import { openOverlay, CHAT_WINDOWS } from "../../host/windows";
 import { kindTextToMarkdown } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-to-markdown";
 import { removeCodeSpans, replaceFences } from "@ai-matrx/content-ir/source";
 import { selectOrganizationId, ensureOrganizationContext, isOrganizationSelectionCancelled } from "../../host/org";
+import { downloadFile } from "../../agent-copy/export";
 
 // Key used to store pending actions across the auth redirect
 /** The rows the host menu draws — its own MenuItem is richer; these are the fields this file sets. */
@@ -339,14 +340,7 @@ const PublicMessageOptionsMenu: React.FC<PublicMessageOptionsMenuProps> = ({
       .replace(/[:.]/g, "-")
       .slice(0, 19);
     const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `ai-response-${timestamp}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadFile(`ai-response-${timestamp}.md`, blob, blob.type);
     onClose();
   };
 

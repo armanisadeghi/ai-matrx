@@ -34,6 +34,7 @@ import type { AudioSessionControls, AudioSessionSource, PlaybackSessionHandle } 
 import type { ItemRowProps } from "../ui/item-types";
 import type { ResourcePickerViewId } from "../agents/resources/picker-view-id";
 import type { CxContentBlock } from "../public-chat/types/cx-tables";
+import { copyText } from "@ai-matrx/kit/clipboard";
 
 /** The fields of a canvas item row chat reads (the host's canvas store owns the row). */
 interface CanvasItemRow {
@@ -287,7 +288,6 @@ export interface ChatUiSlots {
   WorkspaceGate: AnyComponent;
   OrganizationContextNotice: AnyComponent;
   JsonInspector: AnyComponent;
-  InlineCopyButton: AnyComponent;
   ConfirmDialog: SlotComponent<OpenChangeProps>;
   ModelListDropdown: SlotComponent<ModelListDropdownProps>;
   TextWithDoors: AnyComponent;
@@ -499,14 +499,7 @@ const failingThunk = (name: string) => () => () => {
 const STAND_INS: Partial<Record<keyof ChatUiSlots, AnyFn>> = {
   confirm: async () => false,
   copyRichContent: async () => false,
-  copyToClipboard: async (text: unknown) => {
-    try {
-      await navigator.clipboard.writeText(String(text));
-      return true;
-    } catch {
-      return false;
-    }
-  },
+  copyToClipboard: (text: unknown) => copyText(String(text)),
   useTablesEverywhere: () => NONE,
   useCenterControlFit: () => true,
   connectorDefinitionFromMcp: () => null,
@@ -805,8 +798,6 @@ export const WorkspaceGate = slotComponent("WorkspaceGate", unregisteredWidget("
 export const OrganizationContextNotice = slotComponent("OrganizationContextNotice", unregisteredWidget("OrganizationContextNotice"));
 
 export const JsonInspector = slotComponent("JsonInspector", unregisteredWidget("JsonInspector"));
-
-export const InlineCopyButton = slotComponent("InlineCopyButton", unregisteredWidget("InlineCopyButton"));
 
 export const ConfirmDialog = slotComponent("ConfirmDialog", unregisteredWidget("ConfirmDialog"));
 

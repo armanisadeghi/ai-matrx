@@ -1,6 +1,7 @@
 // CX Dashboard Export Utilities
 
 import type { CopyExportConfig } from "@ai-matrx/design-system/data-table/copy-types";
+import { downloadFile } from "@/components/agent-copy/export";
 
 type CxExportData = Record<string, unknown>[];
 
@@ -131,12 +132,5 @@ export function exportToJSON(
 }
 
 function downloadBlob(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadFile(filename, blob, blob.type);
 }

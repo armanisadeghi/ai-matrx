@@ -48,8 +48,8 @@ import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { type BrandAsset } from "@/features/marketing/types";
 import { readVideoMetadata } from "@/features/marketing/lib/video-metadata";
 import type { Json } from "@/types/database.types";
-import { toast } from "@/lib/toast";
 import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 
 export interface AssetPageRef {
   pageId: string;
@@ -290,16 +290,10 @@ export function BrandAssetDetail({
                     icon={<Copy />}
                     variant="quiet"
                     onClick={() => {
-                      void navigator.clipboard
-                        .writeText(
-                          `<script type="application/ld+json">\n${JSON.stringify(metadata.schemaOrg, null, 2)}\n</script>`,
-                        )
-                        .then(() =>
-                          toast.success("JSON-LD script tag copied"),
-                        )
-                        .catch(() =>
-                          toast.error("Could not copy the JSON-LD"),
-                        );
+                      void copyToClipboard(
+                        `<script type="application/ld+json">\n${JSON.stringify(metadata.schemaOrg, null, 2)}\n</script>`,
+                        "JSON-LD script tag copied",
+                      );
                     }}
                   >
                     Copy as JSON-LD
