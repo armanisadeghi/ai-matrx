@@ -8,10 +8,9 @@
 --    guard (iam._guard_governance_columns) already is. Runs first (name sorts before _a0_...) so it sees
 --    what the person sent, not what other triggers derived. Owners, editors, admins and platform admins
 --    pass untouched; the server lane (not the `authenticated` role) is not tiered.
--- 2. content.document: one ADDITIVE permissive update policy for edit_content (policies are OR'd, so the
---    existing editor rule is unchanged) and the guard with the page's structure columns. NOTE: a later
---    full `iam.apply_rls` regeneration of content.document drops this extra policy; re-run this file's
---    last statement after one.
+-- 2. content.document: the guard with the page's structure columns. The additive update policy that lets
+--    edit_content reach it is the next file (share_edit_content_documents_policy.sql), on its own because a
+--    policy statement waits on every long reader of auth.users.
 -- 3. custom.entity_seat_level answers `edit_content` for a holder of it. custom.entity_value_write stays
 --    SECURITY INVOKER (its registered contract): the table's own update policy decides, so it writes
 --    custom values on every table whose update rule admits edit_content (content.document today) and
@@ -69,9 +68,3 @@ create trigger _a00_guard_edit_content_structure
   for each row execute function iam._guard_edit_content_structure(
     'document',
     'document_type_id,data_class,slug,format,folder_id,archived_at,sealed_at,deleted_at,organization_id,created_by,visibility,shown_to,published_content_version,published_at,published_to_web,published_to_web_at,published_to_web_by,search_engine_indexed,web_include_sub_pages,web_allow_duplicate,file_path,source_uri,source_hash');
-
--- LAST: a policy statement holds locks on sign-in tables to COMMIT, so nothing follows it.
-create policy edit_content_update on content.document
-  for update
-  using (iam.has_access('document'::text, id, 'edit_content'::public.permission_level))
-  with check (iam.has_access('document'::text, id, 'edit_content'::public.permission_level));
