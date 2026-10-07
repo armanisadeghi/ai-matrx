@@ -1,5 +1,5 @@
 /** Local-only CSV normalization for Vault's first password-manager import. */
-import Papa from "papaparse";
+import { parseDelimited } from "@ai-matrx/alchemy/operate/read";
 
 import { isLoopbackApiUrl } from "@/lib/api/service-routing";
 import type { VaultExpectedActor } from "./vault-service";
@@ -60,7 +60,7 @@ function utf8ByteLength(value: string): number {
 }
 
 function csvParserInput(text: string): string {
-  // Papa emits an extra empty record for the final record terminator. Remove
+  // The parser emits an extra empty record for the final record terminator. Remove
   // exactly that terminator; interior/explicit blank rows retain their numbers.
   return text.replace(/^\uFEFF/, "").replace(/(?:\r\n|\r|\n)$/, "");
 }
@@ -71,7 +71,7 @@ export function parseCsvText(
 ): CsvImportPreview {
   if (utf8ByteLength(text) > limits.maxFileBytes)
     throw new Error("The file exceeds this organization’s import size limit.");
-  const parsed = Papa.parse<string[]>(csvParserInput(text), {
+  const parsed = parseDelimited(csvParserInput(text), {
     delimiter: ",",
     skipEmptyLines: false,
   });
@@ -152,37 +152,8 @@ export function parseCsvFile(
     } catch {
       throw new Error("The CSV must be valid UTF-8.");
     }
-    return new Promise<CsvImportPreview>((resolve, reject) =>
-      Papa.parse<string[]>(csvParserInput(text), {
-        worker: true,
-        delimiter: ",",
-        skipEmptyLines: false,
-        complete: (result) => {
-          if (
-            result.errors.some(
-              (error) =>
-                error.code !== "TooFewFields" && error.code !== "TooManyFields",
-            )
-          ) {
-            reject(
-              new Error(
-                "The CSV could not be read. Fix the file and try again.",
-              ),
-            );
-            return;
-          }
-          try {
-            resolve(validateParsedCsv(result.data, limits));
-          } catch (error) {
-            reject(error);
-          }
-        },
-        error: () =>
-          reject(
-            new Error("The CSV could not be read. Fix the file and try again."),
-          ),
-      }),
-    );
+    // One parser for paste and file (Alchemy's delimited parser); the size limit was checked above.
+    return parseCsvText(text, limits);
   });
 }
 

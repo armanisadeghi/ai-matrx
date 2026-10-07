@@ -94,9 +94,8 @@ export function CatalogRowActions({
         "text/csv;charset=utf-8",
       );
     } else if (kind === "xlsx") {
-      downloadBlob(
-        toXLSXBlob(view.columns, view.rows, view.name),
-        `${slug}.xlsx`,
+      void toXLSXBlob(view.columns, view.rows, view.name).then((blob) =>
+        downloadBlob(blob, `${slug}.xlsx`),
       );
     } else {
       downloadBlob(

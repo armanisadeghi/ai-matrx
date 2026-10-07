@@ -13,7 +13,8 @@
  *  downloads   hand-built URL.createObjectURL + anchor download / a.click() / saveAs(
  *              -> @ai-matrx/kit/download (downloadFile / downloadUrl); content exports: the Alchemy menu's download action.
  *  formatlibs  direct import of xlsx exceljs jspdf html2canvas marked dompurify papaparse
- *              -> the matching Alchemy format engine (components/agent-copy). The editor's
+ *              -> buildFile (/operate), readFile/readWorkbook/parseDelimited (/operate/read),
+ *              captureElement/pagesToPdf (/operate/capture). The editor's
  *              gfm-lexer `marked` is ruled to stay.
  *  doorbypass  applySurfaceWrite / loadSurfaceWriteDoor / surfaceWriteDeclarations referenced as
  *              code outside surfaces/runtime, components/agent-copy and the agent write thunk
@@ -39,7 +40,7 @@ const RULES: Rule[] = ["clipboard", "downloads", "formatlibs", "doorbypass", "re
 const ADVICE: Record<Rule, string> = {
   clipboard: "copy an id or plain string through @ai-matrx/kit/clipboard (useClipboard), and content through the Alchemy copy menu (CopyButtons)",
   downloads: "save a file with downloadFile / downloadUrl from @ai-matrx/kit/download (the one download door), never a hand-built blob + anchor",
-  formatlibs: "convert through the Alchemy format engine in components/agent-copy, not a direct library import",
+  formatlibs: "export with buildFile (@ai-matrx/alchemy/operate), read with readFile/readWorkbook/parseDelimited (@ai-matrx/alchemy/operate/read), capture with @ai-matrx/alchemy/operate/capture — never a direct library import",
   doorbypass: "write through the surface write door (declared write target + handler), never applySurfaceWrite directly",
   registries: "register the action with Alchemy's registry; no private action/handler map",
 };

@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input, } from '@ai-matrx/design-system';
 import { Label } from '@/components/ui/label';
 import { Printer, FileDown, Crosshair, Trash2 } from 'lucide-react';
-import Papa from 'papaparse';
+import { parseDelimited } from '@ai-matrx/alchemy/operate/read';
 import { toast } from '@/lib/toast';
 import {
   LABEL_TEMPLATES,
@@ -48,8 +48,8 @@ const QRLabelsPage = () => {
   const handleCSVUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    Papa.parse<string[]>(file, {
-      complete: (results) => {
+    void file.text().then((text) => {
+        const results = parseDelimited(text, { skipEmptyLines: true });
         const parsed: QrLabel[] = results.data
           .filter((row) => row[0]?.trim())
           .map((row) => ({
@@ -59,9 +59,6 @@ const QRLabelsPage = () => {
           }));
         setLabels((prev) => [...prev, ...parsed]);
         toast.success(`Added ${parsed.length} labels from CSV`);
-      },
-      header: false,
-      skipEmptyLines: true,
     });
     event.target.value = '';
   };

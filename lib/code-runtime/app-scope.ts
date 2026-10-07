@@ -18,7 +18,8 @@ export function provideAppScopeModules(): void {
     "motion/react": () => import("motion/react"),
     "react-katex": () => import("react-katex"),
     "react-pdf": () => import("react-pdf"),
-    xlsx: () => import("xlsx"),
+    // A person's code imports `xlsx`: it gets the SheetJS module Alchemy's workbook engine bundles (one copy in the app).
+    xlsx: async () => (await import("@ai-matrx/alchemy/operate/formats/xlsx")).loadSheetJs(),
     "@react-three/fiber": () => import("@react-three/fiber"),
     three: () => import("three"),
     "date-fns": () => import("date-fns"),

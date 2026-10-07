@@ -3,16 +3,18 @@
  * file and trigger a download in the browser.
  *
  * Symmetric counterpart to `xlsx-to-univer.ts`. V1 scope is the same:
- * values + types + formula source per sheet, ISO-style date strings, no
- * styles / merges / advanced number formats. The "lossless" original lives
+ * values + types + formula source + merged ranges per sheet, ISO-style date
+ * strings, no styles / advanced number formats. The "lossless" original lives
  * on `udt_workbooks.original_file_id` (file-handler linkage pending).
  *
  * Why we don't use Univer's own export plugin: it's gated behind the
- * advanced presets bundle, which adds ~hundreds of kB. SheetJS is already
- * installed for the import path, so this round-trips through the same lib.
+ * advanced presets bundle, which adds ~hundreds of kB. Alchemy's `xlsx-workbook`
+ * format is the one workbook writer, and its reader is the import path's, so this
+ * round-trips through the same engine.
  */
 
-import * as XLSX from "xlsx";
+import { buildFile } from "@ai-matrx/alchemy/operate";
+import type { WorkbookCellJson, WorkbookJson } from "@ai-matrx/alchemy/operate/read";
 import { CellValueType } from "@univerjs/core";
 import type { ICellData, IWorkbookData, IWorksheetData } from "@univerjs/core";
 import { downloadFile } from "@ai-matrx/kit/download";
@@ -22,61 +24,52 @@ export type ExportXlsxOptions = {
   filename?: string;
 };
 
-/**
- * Build an XLSX ArrayBuffer from a Univer snapshot. Does NOT trigger a
- * download — the caller decides what to do with the bytes (download,
- * upload, attach to an email, etc.).
- */
-export function univerSnapshotToXlsxBuffer(
-  snapshot: Partial<IWorkbookData>,
-): ArrayBuffer {
-  const wb = XLSX.utils.book_new();
-
+/** A Univer snapshot as the `xlsx-workbook` format's value (sheets of typed cells + merges). */
+export function univerSnapshotToWorkbookJson(snapshot: Partial<IWorkbookData>): WorkbookJson {
   const sheetOrder = snapshot.sheetOrder ?? Object.keys(snapshot.sheets ?? {});
+  const sheets: WorkbookJson["sheets"] = [];
   for (const sheetId of sheetOrder) {
     const sheet = snapshot.sheets?.[sheetId];
     if (!sheet) continue;
-    const ws = sheetToWorksheet(sheet);
-    const name = (sheet.name ?? sheetId).slice(0, 31) || "Sheet1";
-    XLSX.utils.book_append_sheet(wb, ws, dedupedSheetName(wb, name));
+    sheets.push(sheetToJson(sheet, (sheet.name ?? sheetId).slice(0, 31) || "Sheet1"));
   }
+  return { sheets };
+}
 
-  // If the snapshot had zero sheets, give the user a single empty one so
-  // Excel can open the file.
-  if (wb.SheetNames.length === 0) {
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[""]]), "Sheet1");
-  }
-
-  return XLSX.write(wb, { type: "array", bookType: "xlsx" });
+/**
+ * Build XLSX bytes from a Univer snapshot. Does NOT trigger a download — the
+ * caller decides what to do with the bytes (download, upload, attach, etc.).
+ */
+export async function univerSnapshotToXlsxBytes(snapshot: Partial<IWorkbookData>): Promise<Uint8Array> {
+  const value = univerSnapshotToWorkbookJson(snapshot);
+  const built = await buildFile({ kind: "registered", format: "workbook", value }, "xlsx-workbook");
+  return built.bytes;
 }
 
 /**
  * Convenience: convert + trigger a browser download. No-op when called
  * server-side (no document / Blob).
  */
-export function downloadUniverAsXlsx(
+export async function downloadUniverAsXlsx(
   snapshot: Partial<IWorkbookData>,
   options: ExportXlsxOptions = {},
-): void {
+): Promise<void> {
   if (typeof document === "undefined") return;
-
-  const buffer = univerSnapshotToXlsxBuffer(snapshot);
   const filename = `${(options.filename ?? "workbook").replace(/\.xlsx$/i, "")}.xlsx`;
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  downloadFile(filename, blob, blob.type);
-  // Defer revoke so the click handler finishes processing the URL.
+  const built = await buildFile(
+    { kind: "registered", format: "workbook", value: univerSnapshotToWorkbookJson(snapshot) },
+    "xlsx-workbook",
+    { filename },
+  );
+  const blob = built.blob();
+  downloadFile(built.filename, blob, blob.type);
 }
 
 // ─── internals ────────────────────────────────────────────────────────────
 
-function sheetToWorksheet(sheet: Partial<IWorksheetData>): XLSX.WorkSheet {
+function sheetToJson(sheet: Partial<IWorksheetData>, name: string): WorkbookJson["sheets"][number] {
   const cellData = sheet.cellData ?? {};
-  const out: XLSX.WorkSheet = {};
-  let maxR = -1;
-  let maxC = -1;
-
+  const rows: (WorkbookCellJson | null)[][] = [];
   for (const rKey of Object.keys(cellData)) {
     const r = Number(rKey);
     if (!Number.isFinite(r)) continue;
@@ -87,71 +80,50 @@ function sheetToWorksheet(sheet: Partial<IWorksheetData>): XLSX.WorkSheet {
       if (!Number.isFinite(c)) continue;
       const cell = row[c];
       if (!cell) continue;
-      const sheetCell = toSheetJsCell(cell);
-      if (sheetCell) {
-        const addr = XLSX.utils.encode_cell({ r, c });
-        out[addr] = sheetCell;
-        if (r > maxR) maxR = r;
-        if (c > maxC) maxC = c;
-      }
+      const out = toWorkbookCell(cell);
+      if (!out) continue;
+      while (rows.length <= r) rows.push([]);
+      const line = rows[r]!;
+      while (line.length < c) line.push(null);
+      line[c] = out;
     }
   }
-
-  if (maxR < 0 || maxC < 0) {
-    // Empty sheet — give SheetJS a stub range so it serializes a valid
-    // worksheet rather than tripping the "no !ref" path.
-    out["!ref"] = "A1:A1";
-    return out;
-  }
-  out["!ref"] = XLSX.utils.encode_range({
-    s: { r: 0, c: 0 },
-    e: { r: maxR, c: maxC },
-  });
-  return out;
+  const merges = (sheet.mergeData ?? []).map((m) => ({
+    s: { r: m.startRow, c: m.startColumn },
+    e: { r: m.endRow, c: m.endColumn },
+  }));
+  return { name, rows, ...(merges.length ? { merges } : {}) };
 }
 
-function toSheetJsCell(cell: ICellData): XLSX.CellObject | null {
-  // `f` (formula) takes precedence on display in SheetJS but we keep `v` as
-  // the cached value so spreadsheets that don't recompute still show data.
+function toWorkbookCell(cell: ICellData): WorkbookCellJson | null {
+  // `f` (formula) takes precedence on display but we keep `v` as the cached
+  // value so spreadsheets that don't recompute still show data.
   const formula = typeof cell.f === "string" ? cell.f.replace(/^=/, "") : undefined;
 
-  // Univer's CellValueType numeric → SheetJS string `t` code.
-  let t: XLSX.CellObject["t"] = "s";
-  let v: XLSX.CellObject["v"];
-
+  let out: WorkbookCellJson;
   switch (cell.t) {
     case CellValueType.NUMBER:
-      t = "n";
-      v = typeof cell.v === "number" ? cell.v : Number(cell.v ?? 0);
+      out = { t: "n", v: typeof cell.v === "number" ? cell.v : Number(cell.v ?? 0) };
       break;
     case CellValueType.BOOLEAN:
-      t = "b";
-      v = Boolean(cell.v);
+      out = { t: "b", v: Boolean(cell.v) };
       break;
     case CellValueType.FORCE_STRING:
     case CellValueType.STRING:
     default:
-      t = "s";
-      v =
-        cell.v === null || cell.v === undefined
-          ? ""
-          : typeof cell.v === "object"
-            ? JSON.stringify(cell.v)
-            : String(cell.v);
+      out = {
+        t: "s",
+        v:
+          cell.v === null || cell.v === undefined
+            ? ""
+            : typeof cell.v === "object"
+              ? JSON.stringify(cell.v)
+              : String(cell.v),
+      };
       break;
   }
 
   // Skip cells with no value AND no formula — there's nothing to write.
-  if ((v === "" || v === null || v === undefined) && !formula) return null;
-
-  const sheetCell: XLSX.CellObject = { t, v };
-  if (formula) sheetCell.f = formula;
-  return sheetCell;
-}
-
-function dedupedSheetName(wb: XLSX.WorkBook, name: string): string {
-  if (!wb.SheetNames.includes(name)) return name;
-  let i = 2;
-  while (wb.SheetNames.includes(`${name} (${i})`)) i++;
-  return `${name} (${i})`;
+  if ((out.v === "" || out.v === null || out.v === undefined) && !formula) return null;
+  return formula ? { ...out, f: formula } : out;
 }

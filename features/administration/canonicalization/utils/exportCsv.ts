@@ -1,6 +1,10 @@
 // features/administration/canonicalization/utils/exportCsv.ts
 
+<<<<<<< Updated upstream
 import Papa from "papaparse";
+=======
+import { toDelimitedText } from "@ai-matrx/alchemy/operate/read";
+>>>>>>> Stashed changes
 import { downloadFile } from "@ai-matrx/kit/download";
 
 /** Exports the currently visible (filtered + sorted) rows as a downloadable CSV. */
@@ -20,7 +24,7 @@ export function exportRowsAsCsv<T>(
     }),
   );
 
-  const csv = Papa.unparse({ fields, data });
+  const csv = toDelimitedText(fields, data);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   downloadFile(filename, blob, blob.type);
 }

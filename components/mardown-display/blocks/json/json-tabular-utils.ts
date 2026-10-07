@@ -8,6 +8,9 @@
  * obviously-tabular data is the worse failure mode.
  */
 
+import { buildFile } from "@ai-matrx/alchemy/operate";
+import { downloadFile } from "@ai-matrx/kit/download";
+
 export type TabularSource =
   | "array-of-objects"
   | "matrix"
@@ -185,33 +188,34 @@ export function downloadText(
 }
 
 /**
- * XLSX export uses the same `xlsx` package as `ImportTableModal`.
- * Dynamically imported to keep it out of the initial chat bundle.
- *
- * Cell values are pre-stringified for objects/arrays so spreadsheets
- * receive plain text instead of "[object Object]".
+ * XLSX export through Alchemy's workbook format (the one spreadsheet engine).
+ * Header row = `columns`; object/array cells are pre-stringified so
+ * spreadsheets receive plain text instead of "[object Object]".
  */
 export async function rowsToXlsx(
   rows: Record<string, unknown>[],
   columns: string[],
   filename: string,
 ): Promise<void> {
-  const XLSX = await import("xlsx");
-  const flatRows = rows.map((row) => {
-    const out: Record<string, unknown> = {};
-    for (const c of columns) {
-      const v = row[c];
-      out[c] =
-        v !== null && typeof v === "object"
-          ? JSON.stringify(v)
-          : (v as unknown);
-    }
-    return out;
-  });
-  const ws = XLSX.utils.json_to_sheet(flatRows, { header: columns });
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Data");
-  XLSX.writeFile(wb, filename);
+  const cell = (v: unknown): string | number | boolean | null =>
+    v === null || v === undefined
+      ? null
+      : typeof v === "object"
+        ? JSON.stringify(v)
+        : typeof v === "string" || typeof v === "number" || typeof v === "boolean"
+          ? v
+          : String(v);
+  const built = await buildFile(
+    {
+      kind: "registered",
+      format: "workbook",
+      value: { sheets: [{ name: "Data", rows: [columns, ...rows.map((row) => columns.map((c) => cell(row[c])))] }] },
+    },
+    "xlsx-workbook",
+    { filename },
+  );
+  const blob = built.blob();
+  downloadFile(built.filename, blob, blob.type);
 }
 
 /** Default filename helper (no extension). */
@@ -219,5 +223,8 @@ export function defaultJsonFilename(): string {
   const stamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
   return `json-${stamp}`;
 }
+<<<<<<< Updated upstream
 
 import { downloadFile } from "@ai-matrx/kit/download";
+=======
+>>>>>>> Stashed changes

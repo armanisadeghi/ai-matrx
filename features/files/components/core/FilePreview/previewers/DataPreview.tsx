@@ -8,8 +8,8 @@
  * the legacy hard-coded gray scales.
  *
  * Behaviour matrix:
- *   csv / tsv  → PapaParse → tabular view (search + sort + paginate)
- *   xlsx / xls → SheetJS dynamic-import → multi-sheet selector + tabular view
+ *   csv / tsv  → Alchemy's delimited parser → tabular view (search + sort + paginate)
+ *   xlsx / xls → Alchemy's workbook engine (lazy) → multi-sheet selector + tabular view
  *   json       → array-of-objects → tabular view; otherwise pretty-printed JSON
  *
  * The fetch pipeline mirrors PdfPreview's posture: any HTTP/network failure
@@ -35,7 +35,7 @@ import {
   Loader2,
   Search,
 } from "lucide-react";
-import Papa from "papaparse";
+import { parseDelimited, readWorkbook } from "@ai-matrx/alchemy/operate/read";
 import { cn } from "@/lib/utils";
 import { extname } from "@/features/files/utils/path";
 import { useFileBlob } from "@/features/files/hooks/useFileBlob";
@@ -127,7 +127,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
 
   const loadDelimited = useCallback(async (b: Blob, delimiter: string) => {
     const text = await b.text();
-    const parsed = Papa.parse<Row>(text, {
+    const parsed = parseDelimited(text, {
       header: true,
       dynamicTyping: true,
       skipEmptyLines: true,
@@ -143,11 +143,9 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
   const loadXlsx = useCallback(async (b: Blob, sheetName?: string) => {
     // SheetJS is heavy (~600KB) — only pull it in when an Excel file is
     // actually opened. The dynamic import is a separate chunk.
-    const XLSX = await import("xlsx");
-    const buf = await b.arrayBuffer();
-    const wb = XLSX.read(buf, { type: "array" });
+    const wb = await readWorkbook(b);
 
-    const names = wb.SheetNames ?? [];
+    const names = wb.sheetNames;
     if (names.length === 0) {
       setSheetNames([]);
       setActiveSheet("");
@@ -158,8 +156,7 @@ export function DataPreview({ fileId, fileName, className }: DataPreviewProps) {
     const sheet = sheetName && names.includes(sheetName) ? sheetName : names[0];
     setActiveSheet(sheet);
 
-    const ws = wb.Sheets[sheet];
-    const aoa = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1 });
+    const aoa = wb.sheet(sheet)?.grid() ?? [];
     if (aoa.length === 0) {
       setData([]);
       return;
