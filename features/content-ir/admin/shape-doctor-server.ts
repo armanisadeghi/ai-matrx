@@ -51,7 +51,7 @@ import type {
   KindStatusBoardModel,
 } from "@/features/content-ir/admin/kind-detail-types";
 import { FINDING_CATALOG } from "@/features/content-ir/admin/shape-finding-catalog";
-import { KIND_LOADING_SLUGS } from "@/features/content-ir/react/loading/kind-loading-slugs";
+import { KIND_LOADING_SLUGS } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-slugs";
 /**
  * The DERIVED loading slug — the same module BlockRenderer selects loaders
  * with, so the board reports the loader the user actually sees, never a
@@ -59,7 +59,7 @@ import { KIND_LOADING_SLUGS } from "@/features/content-ir/react/loading/kind-loa
  * module-eval side effects), so it is safe on this server-only path and has no
  * "unavailable in this runtime" degrade path: it is bundled, not fs-read.
  */
-import { inferLoadingSlugFromJsonSchema } from "@/features/content-ir/react/loading/infer-loading-slug";
+import { inferLoadingSlugFromJsonSchema } from "@ai-matrx/rich-content/kinds/react/loading/infer-loading-slug";
 import { GENERIC_STRUCTURED_COMPONENT_KEY } from "@/features/content-ir/registry/schema-source-kind-components";
 import {
   artifactKindSlugsFromText,

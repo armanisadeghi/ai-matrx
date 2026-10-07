@@ -10,7 +10,7 @@ import {
   isValidStringArray,
   isValidString
 } from './viewer-utilities';
-import { rowCells, unescapeCellPipes } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { rowCells, unescapeCellPipes } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 import { Button, Tile } from "@ai-matrx/design-system/controls";
 
 export interface SectionData {

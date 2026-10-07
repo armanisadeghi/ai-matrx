@@ -14,15 +14,15 @@
 import type { AnswerEditRemarkMeta } from "@ai-matrx/chat/agents/redux/execution-system/instance-resources/remarks";
 import React, { useState, useEffect, useLayoutEffect, useMemo, useCallback, useRef } from "react";
 import { cn } from "@/styles/themes/utils";
-import { splitContentIntoBlocksV2 } from "../markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { renderSettledFromRecord, settledOneShotBlocks } from "./settle-stream-blocks";
-import { expandTextBlocksInList } from "../markdown-classification/processors/utils/expand-text-blocks";
+import { expandTextBlocksInList } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/expand-text-blocks";
 import { RenderBlock } from "./block-registry/BlockRenderer";
 import { reuseUnchangedBlocks } from "./stable-blocks";
 import { useProgressiveMount } from "./progressive-mount";
 import { renderBlockToContentBlock } from "./render-block-to-content-block";
-import { DocumentFootnotes, DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
-import { OptionalMarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+import { DocumentFootnotes, DocumentNumberingProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentNumbering";
+import { OptionalMarkdownSourceEditProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/MarkdownSourceEdit";
 
 /** Task checkboxes toggle only when the message has a save path; otherwise they stay read-only marks. */
 function MaybeSourceEdit({ source, save, children }: { source: string; save?: (next: string) => void; children: React.ReactNode }) {
@@ -90,7 +90,7 @@ import { ToolCard, ToolBatch } from "./internal-handlers/ToolHandlers";
 import { InlineAssistantError } from "./internal-handlers/InlineAssistantError";
 import { PlainTextFallback } from "./internal-handlers/PlainTextFallback";
 import { SafeBlockRenderer } from "./internal-handlers/SafeBlockRenderer";
-import { MarkdownStreamingProvider } from "@/components/markdown-core/streaming-context";
+import { MarkdownStreamingProvider } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import { useBoundAgentOutputSchema } from "@/components/mardown-display/blocks/json/useBoundAgentOutputSchema";
 import { MarkdownErrorBoundary } from "./internal-handlers/MarkdownErrorBoundary";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";

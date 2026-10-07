@@ -26,7 +26,7 @@ import { assessmentService } from "../../data/assessmentService";
 import { fetchEditableAssessmentsFor } from "../../data/assessmentListService";
 import type { AssessmentPatch } from "../../data/types";
 import { KIND_CONFIG, type KindConfig } from "../kindConfig";
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import { fcService } from "@/features/flashcards/data/fcService";
 import type { EntitlementCheckResult } from "@/features/entitlements/types";

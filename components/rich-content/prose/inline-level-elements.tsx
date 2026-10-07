@@ -9,12 +9,12 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import type React from "react";
-import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
+import type { MarkdownComponents as Components } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
 import { cn } from "@/lib/utils";
-import { isHeadingAnchorProps } from "@/components/markdown-core/heading-anchors-props";
+import { isHeadingAnchorProps } from "@ai-matrx/rich-content/markdown-core/heading-anchors-props";
 import { THICK_HR_SENTINEL } from "./prose-prepare";
 import { PROSE_INLINE_ELEMENTS } from "./prose-inline-elements";
-import { INLINE_SYNTAX_ELEMENTS } from "@/components/markdown-core/syntax/elements/core-syntax-elements";
+import { INLINE_SYNTAX_ELEMENTS } from "@ai-matrx/rich-content/markdown-core/syntax/elements/core-syntax-elements";
 
 /** Paragraph-level spans; a second one in a row starts on its own line. */
 export const INLINE_P_CLASS = "rc-inline-p";

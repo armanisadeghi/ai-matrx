@@ -19,7 +19,7 @@ import {
   NO_SPLITTER_ENVELOPES,
   splitContentIntoBlocksWith,
   type SplitterBlock,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-core";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-core";
 import { RichContentDepthProvider } from "../depth";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
@@ -31,8 +31,8 @@ import {
   computeDocumentNumbering,
   documentFootnoteSource,
   type DocumentNumbering,
-} from "@/components/markdown-core/syntax/document-numbering";
-import { DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+} from "@ai-matrx/rich-content/markdown-core/syntax/document-numbering";
+import { DocumentNumberingProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentNumbering";
 import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 
 /** The injected prose leaf. `numbering` is the WHOLE document's (one pass at the root). */

@@ -10,7 +10,7 @@
  * each one must route to its real component with renderable serverData.
  */
 
-import { applyIrKindRoute } from "../react/kind-route";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { normalizeJsonRegion, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 

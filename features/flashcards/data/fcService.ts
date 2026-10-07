@@ -14,7 +14,7 @@
 import {
   displayTitle,
   withDisplayTitle,
-} from "@/components/markdown-core/plain-title";
+} from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { supabase } from "@/utils/supabase/client";
 import type { Json } from "@/types/database.types";
 import { guardedUpdate, mergeJsonColumn, type JsonObject } from "@ai-matrx/data/db";

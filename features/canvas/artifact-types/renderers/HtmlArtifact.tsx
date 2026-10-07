@@ -6,6 +6,30 @@ import SandboxedHtml from "@/components/mardown-display/blocks/common/SandboxedH
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import type { ArtifactRendererProps } from "../types";
 import HtmlInlinePreview from "@/features/html-pages/components/HtmlInlinePreview";
+import KindValueFrontDoor from "@/components/official/structured-value/KindValueFrontDoor";
+import { KIND_KEY } from "@ai-matrx/content-ir";
+
+/**
+ * An artifact whose subtype nobody registered (an agent's own `checklist`) falls
+ * to this renderer, and its body is a `{"__kind": …}` JSON value, never a page.
+ * Returns that value so it goes to the ONE kind front door (the honest "no custom
+ * view yet" floor for an unregistered kind) instead of being drawn as HTML text.
+ */
+const KIND_BODY_PREFIX = /^\s*\{\s*"__kind"\s*:/;
+
+export function kindValueOfHtmlBody(body: string): Record<string, unknown> | null {
+  const text = body.trim();
+  if (!text.startsWith("{") || !text.includes(KIND_KEY)) return null;
+  try {
+    const value: unknown = JSON.parse(text);
+    if (value && typeof value === "object" && !Array.isArray(value) && typeof (value as Record<string, unknown>)[KIND_KEY] === "string") {
+      return value as Record<string, unknown>;
+    }
+  } catch {
+    // Still arriving, or simply not JSON: it is HTML.
+  }
+  return null;
+}
 
 /**
  * Unified renderer for `html` artifacts (chat / canvas / artifact-card / public).
@@ -36,6 +60,17 @@ export default function HtmlArtifact({
     typeof data === "string"
       ? data
       : ((data as { html?: string })?.html ?? raw ?? "");
+
+  const kindValue = kindValueOfHtmlBody(html);
+  // A `{"__kind": …` body that has not finished arriving is never shown as text.
+  if (!kindValue && isStreamActive && KIND_BODY_PREFIX.test(html)) return <MatrxMiniLoader />;
+  if (kindValue) {
+    return (
+      <div className={fill ? "h-full overflow-auto p-3" : "p-3"} data-unregistered-kind={String(kindValue[KIND_KEY])}>
+        <KindValueFrontDoor value={kindValue} />
+      </div>
+    );
+  }
 
   if (isPublic) {
     const title = (metadata?.title as string) || "Content";

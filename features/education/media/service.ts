@@ -8,7 +8,7 @@
 
 "use client";
 
-import { withDisplayTitle } from "@/components/markdown-core/plain-title";
+import { withDisplayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import {
   currentUserIdOrNull,
   rowAccessColumns,

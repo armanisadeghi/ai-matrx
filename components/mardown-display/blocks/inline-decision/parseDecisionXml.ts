@@ -1,6 +1,6 @@
 import type { InlineDecision, InlineDecisionOption } from './types';
 import { parseDecisionOptionsFromBody } from './decision-options';
-import { parseXmlAttributes } from '@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2';
+import { parseXmlAttributes } from '@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2';
 
 /**
  * Parses the inner content of a <decision> block into an InlineDecision.

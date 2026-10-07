@@ -20,7 +20,7 @@
 import {
   splitContentIntoBlocksV2,
   type SplitterBlock,
-} from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 /** Cheap pre-check before splitting: no reasoning closer, no possible rescue. */
 const REASONING_CLOSER = /<\/(?:thinking|think|reasoning)\s*>/i;

@@ -16,7 +16,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import { useIsMobile } from "@ai-matrx/kit/media-query";

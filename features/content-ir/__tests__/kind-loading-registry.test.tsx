@@ -11,9 +11,9 @@ import {
   DEFAULT_KIND_LOADING_SLUG,
   KIND_LOADING_COMPONENTS,
   resolveKindLoadingComponent,
-} from "../react/loading/kind-loading-registry";
-import { GenericLoading } from "../react/loading/kind-loading-components";
-import { earlyKeysFromValue } from "../react/loading/kind-loading.types";
+} from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
+import { GenericLoading } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-components";
+import { earlyKeysFromValue } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading.types";
 
 describe("resolveKindLoadingComponent", () => {
   it("resolves every declared slug and defaults unknown/missing to generic", () => {

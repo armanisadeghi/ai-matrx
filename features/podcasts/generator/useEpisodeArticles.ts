@@ -20,7 +20,7 @@
 // conversation — sharing one would make the second run steal the first's
 // window and destroy its instance mid-stream.
 
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useLiveAgentRun } from "@ai-matrx/chat/agents/hooks/useLiveAgentRun";

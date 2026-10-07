@@ -1,7 +1,7 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast as copyToast } from "@/lib/toast";
-import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
+import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
 import React, {
   useState,
   useEffect,
@@ -13,7 +13,7 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { cn } from "@/lib/utils";
 import { RegionSkeleton } from "@ai-matrx/design-system/controls";
 import { RichContent } from "@/components/rich-content/RichContent";
-import { useMarkdownStreaming } from "@/components/markdown-core/streaming-context";
+import { useMarkdownStreaming } from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import { Button } from "@ai-matrx/design-system";
 import {
   Download,
@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useOpenTableViewerWindow } from "@/features/overlays/openers/tableViewerWindow";
 import { useToastManager } from "@/hooks/useToastManager";
-import { THEMES, type DisplayTheme } from "../../themes";
+import { THEMES, type DisplayTheme } from "@ai-matrx/rich-content/display/themes";
 import { TableSaveToMenu } from "../../tables/TableSaveToMenu";
 import {
   phoneStackCellProps,
@@ -78,7 +78,7 @@ import {
   parseMarkdownTable,
   cleanTableHeaderKey,
   type ParsedTable,
-} from "./parseMarkdownTable";
+} from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 
 // ============================================================================
 // TYPES

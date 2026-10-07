@@ -16,7 +16,7 @@
  * surface for free.
  */
 
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {

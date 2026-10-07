@@ -14,8 +14,8 @@ import {
   seedEnvelope,
   seedPersistedEnvelopeCache,
   withIrEnvelope,
-} from "@/features/content-ir/registry/region-envelope-memo";
-import { sessionEnvelope } from "@/features/content-ir/registry/kind-correctors";
+} from "@ai-matrx/rich-content/kinds/registry/region-envelope-memo";
+import { sessionEnvelope } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 import {
   envelopeForCompletedFenceRegion,
   envelopeForCompletedXmlRegion,
@@ -25,7 +25,7 @@ import { progressDataRenderBlock } from "@/features/content-ir/redux/progress-da
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { AnchorRecordsList, useAnchorRecords } from "@/features/content-ir/records/AnchorRecordsList";
 import { fetchShapeByKind, fetchShapePage } from "@/features/content-ir/browse/service";
-import * as splitter from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import * as splitter from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 const contentSplitterPrimitives = {
   SPECIAL_CODE_LANGUAGES: splitter.SPECIAL_CODE_LANGUAGES,

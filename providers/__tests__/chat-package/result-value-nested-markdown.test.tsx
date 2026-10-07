@@ -8,7 +8,7 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 // Next's client chunk boundary, as in XmlBlock's DOM regression suite.
 jest.mock("next/dynamic", () => ({
   __esModule: true,
-  default: () => jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+  default: () => jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl").default,
 }));
 
 import { ResultValue } from "@ai-matrx/chat/tool-call-visualization/result-fields/ResultValue";

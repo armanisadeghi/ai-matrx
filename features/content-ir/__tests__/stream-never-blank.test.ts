@@ -19,8 +19,8 @@
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { applyIrKindRoute } from "../react/kind-route";
-import { readEnvelope } from "../redux/render-block-envelope";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { buildWireText, chunkWireText } from "../studio/stream-simulator";
 
 const QUIZ = {

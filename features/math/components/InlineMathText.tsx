@@ -1,7 +1,7 @@
 "use client";
 
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
-import type { MarkdownComponents } from "@/components/markdown-core/markdown-core-types";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
+import type { MarkdownComponents } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
 
 interface InlineMathTextProps {
   text: string | null | undefined;

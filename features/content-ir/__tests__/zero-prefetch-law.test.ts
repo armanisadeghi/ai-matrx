@@ -146,7 +146,7 @@ async function loadPipeline() {
     "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator"
   );
   const { memoizedRegionEnvelope } = await import(
-    "../registry/region-envelope-memo"
+    "@ai-matrx/rich-content/kinds/registry/region-envelope-memo"
   );
   const { kindRegistry } = await import("../registry/kind-registry");
   const { componentRegistry } = await import(

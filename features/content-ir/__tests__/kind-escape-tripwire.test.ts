@@ -1,5 +1,5 @@
 import type { CanonicalBlockIR } from "@ai-matrx/content-ir";
-import { findEscapedKindMarkers } from "../react/kind-problems";
+import { findEscapedKindMarkers } from "@ai-matrx/rich-content/kinds/react/kind-problems";
 
 function envelopeFor(
   kind: string,

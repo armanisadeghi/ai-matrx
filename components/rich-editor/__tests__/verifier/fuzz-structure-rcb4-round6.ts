@@ -1,6 +1,6 @@
 import { marked } from "marked";
-import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
-import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 const alpha = ["a", " ", "\\", "|", "`", "``", "*", "-", ">", "#", "1.", "<!--", "```", "~~~", "\t", " ", "&#124;", "\n", "<div>", "===", "---", ":", "[^1]", "$"];
 const tables = [
   "| A | B | C |\n|---|---|---|\n| 1 | 2 | 3 |\n| 4 | 5 | 6 |",

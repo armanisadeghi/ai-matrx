@@ -14,7 +14,7 @@
  * kind — one pipeline, whichever way the directive arrived.
  */
 
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 const REFERENCE = {
   __kind: "directive_v1_reference_note",

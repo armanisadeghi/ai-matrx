@@ -304,13 +304,33 @@ export function hasPendingRemarkWrites(conversationId: string): boolean {
   return durability?.hasPending(conversationId) ?? false;
 }
 
+/**
+ * True once the app has registered how unsent chips are kept. Without it every
+ * chip is browser-only and lost on reload, so a missing port is announced, never
+ * silently stood in for (the door a person touches must say when it is not wired).
+ */
+export function isRemarkDurabilityRegistered(): boolean {
+  return durability !== null;
+}
+
+const announcedMissing = new Set<string>();
+function announceMissingDurability(op: string): void {
+  if (announcedMissing.has(op)) return;
+  announcedMissing.add(op);
+  console.error(
+    `[remarks] ${op} ran with no durability port registered: unsent chips are NOT kept server-side. The app must call registerRemarkDurability (providers/ChatSurfaceRegistrations).`,
+  );
+}
+
 /** Save every pending chip write and wait for its row/ref (called before a send). */
 export async function flushRemarkWrites(conversationId: string): Promise<void> {
+  if (!durability) announceMissingDurability("flush");
   await durability?.flush(conversationId);
 }
 
 /** Put a conversation's unsent chips back (any device) — the composer calls this once on mount. */
 export function restoreComposerRemarks(conversationId: string): void {
+  if (!durability) announceMissingDurability("restore");
   durability?.restore(conversationId);
 }
 
@@ -346,6 +366,7 @@ export function stageRemark(conversationId: string, item: RemarkItem, options: S
         dispatch(setResourceSource({ conversationId, resourceId: live.resourceId, source }));
         dispatch(setResourcePreview({ conversationId, resourceId: live.resourceId, preview: source.label }));
         if (!options.fromServer && !item.blockStateRef) {
+          if (!durability) announceMissingDurability("save");
           durability?.save(conversationId, live.resourceId, coalesceKey, item);
         }
         return live.resourceId;
@@ -360,6 +381,7 @@ export function stageRemark(conversationId: string, item: RemarkItem, options: S
     // Local and complete — no resolution step; setResourcePreview marks it ready.
     dispatch(setResourcePreview({ conversationId, resourceId, preview: source.label }));
     if (!options.fromServer && !item.blockStateRef) {
+      if (!durability) announceMissingDurability("save");
       durability?.save(conversationId, resourceId, coalesceKey, item);
     }
     return resourceId;

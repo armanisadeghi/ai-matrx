@@ -28,24 +28,24 @@
 
 import { Suspense, lazy, useState } from "react";
 import { reuseUnchangedBlocks } from "@/components/mardown-display/chat-markdown/stable-blocks";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
-import type { SplitterBlock } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
+import type { SplitterBlock } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { InlineCodeSnippet } from "@/components/mardown-display/chat-markdown/InlineCodeSnippet";
 import XmlBlock from "@/components/mardown-display/blocks/xml/XmlBlock";
 import MarkdownPreviewBlock from "@/components/mardown-display/blocks/markdown-preview/MarkdownPreviewBlock";
 import { FENCE_META_KEY } from "@ai-matrx/content-ir/source";
 // Static (not lazy): a CSV table must be in the server HTML of a share page too.
-import CsvBlock from "@/components/mardown-display/blocks/csv/CsvBlock";
+import CsvBlock from "@ai-matrx/rich-content/display/blocks/csv/CsvBlock";
 import { fenceNestsInnerFences } from "@ai-matrx/content-ir/source";
 import { NestedRichContent } from "./NestedRichContent";
-import { DocumentFootnotes, DocumentNumberingProvider } from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+import { DocumentFootnotes, DocumentNumberingProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentNumbering";
 import { healStreamingTail } from "./stream-holdback";
 import { stripThinking, stripThinkingStreaming } from "@ai-matrx/kit/text";
 import {
   MarkdownStreamingProvider,
   useMarkdownStreaming,
-} from "@/components/markdown-core/streaming-context";
+} from "@ai-matrx/rich-content/markdown-core/streaming-context";
 import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 import { useKindSourceView } from "@/components/mardown-display/chat-markdown/KindTextGate";
 import { isQuotedSourceXmlBlock } from "@/features/content-ir/surfaces/json-kind-signal";

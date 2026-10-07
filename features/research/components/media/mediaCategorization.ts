@@ -14,7 +14,7 @@ import * as core from "@/lib/media/categorization";
 import { toCategorizableMedia } from "./mediaDimensions";
 // YouTube-link detection — embeddable video URLs must reach the video bucket;
 // channel/profile URLs go to `youtubeChannels` instead.
-import { isYouTubeChannelUrl, youtubeId } from "@/lib/media/youtube";
+import { isYouTubeChannelUrl, youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 
 // The size-tier / photo-grade / aspect heuristics live in the shared core
 // (`@/lib/media/categorization`) — consumed identically by research and

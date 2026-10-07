@@ -33,7 +33,7 @@ jest.mock("next/dynamic", () => ({
   default: (loader: () => Promise<unknown>) => {
     const source = String(loader);
     if (source.includes("MarkdownCoreImpl")) {
-      return jest.requireActual("@/components/markdown-core/MarkdownCoreImpl")
+      return jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl")
         .default;
     }
     if (source.includes("RichContentStandardImpl")) {
@@ -56,7 +56,7 @@ jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   ),
 }));
 
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { RichContent } from "@/components/rich-content/RichContent";

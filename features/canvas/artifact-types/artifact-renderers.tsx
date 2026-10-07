@@ -51,7 +51,7 @@ import IframeArtifact from "./renderers/IframeArtifact";
 
 import ImageArtifact from "./renderers/ImageArtifact";
 import KindValueArtifact from "./renderers/KindValueArtifact";
-import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
+import { kindServerDataFromStoredValue } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { storedKindValue } from "./storedKindValue";
 import type { ArtifactRendererProps } from "./types";
 

@@ -33,7 +33,7 @@ import {
   markdownCarriesKind,
 } from "@/features/content-ir/surfaces/json-kind-signal";
 import { tokenizeXml } from "@/components/mardown-display/blocks/xml/xml-tokenize";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { standardKindRegionState } from "@/components/rich-content/standard/standard-kind-region";
 
 const XML_CARD_LANGUAGES = new Set(["xml", "svg"]);

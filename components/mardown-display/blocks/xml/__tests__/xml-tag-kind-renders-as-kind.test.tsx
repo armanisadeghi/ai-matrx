@@ -26,7 +26,7 @@ if (typeof globalThis.ResizeObserver === "undefined") {
 
 jest.mock("next/dynamic", () => ({
   __esModule: true,
-  default: () => jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+  default: () => jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl").default,
 }));
 jest.mock("@/components/rich-content/standard/StandardKindRegion", () => ({
   __esModule: true,

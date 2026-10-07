@@ -24,9 +24,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   } as unknown as typeof ResizeObserver;
 }
 
-jest.mock("@/components/markdown-core/MarkdownCore", () => {
-  const actual = jest.requireActual("@/components/markdown-core/MarkdownCoreImpl") as typeof import("@/components/markdown-core/MarkdownCoreImpl");
-  const heal = jest.requireActual("@/components/markdown-core/stream-heal") as typeof import("@/components/markdown-core/stream-heal");
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
+  const actual = jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl") as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
+  const heal = jest.requireActual("@ai-matrx/rich-content/markdown-core/stream-heal") as typeof import("@ai-matrx/rich-content/markdown-core/stream-heal");
   const Impl = actual.default;
   return {
     __esModule: true,
@@ -40,7 +40,7 @@ jest.mock("@/features/code-editor/components/code-block/CodeBlock", () => ({
   __esModule: true,
   default: ({ code, meta }: { code: string; meta?: string }) => <pre data-meta={meta}>{code}</pre>,
 }));
-jest.mock("@/components/mardown-display/blocks/csv/CsvBlock", () => ({
+jest.mock("@ai-matrx/rich-content/display/blocks/csv/CsvBlock", () => ({
   __esModule: true,
   default: ({ content, delimiter }: { content: string; delimiter: string }) => {
     const rows = content.trim().split("\n").map((r) => r.split(delimiter));
@@ -61,7 +61,7 @@ jest.mock("@/components/mardown-display/blocks/csv/CsvBlock", () => ({
 }));
 // The platform search is the resolver's job; here it answers like the real
 // one would for a studio that has a "Kiln schedule" note and no "Glaze notes".
-jest.mock("@/components/markdown-core/syntax/elements/wikilink-resolver", () => ({
+jest.mock("@/features/rich-content-host/wikilink-resolver", () => ({
   splitHeading: (t: string) => ({ page: t.split("#")[0], heading: t.split("#")[1] ?? null }),
   resolveWikiTarget: (target: string) =>
     Promise.resolve(
@@ -92,11 +92,11 @@ jest.mock("@/features/organizations/peek/ResourcePeekHost", () => ({
 import BasicMarkdownContent from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { RichContentInline } from "@/components/rich-content/RichContentInline";
 import { StandardBlocks } from "@/components/rich-content/standard/StandardBlocks";
-import MarkdownCoreImpl from "@/components/markdown-core/MarkdownCoreImpl";
-import { healStreamingMarkdown } from "@/components/markdown-core/stream-heal";
-import { extractFrontmatter } from "@/components/markdown-core/syntax/frontmatter";
-import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import MarkdownCoreImpl from "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl";
+import { healStreamingMarkdown } from "@ai-matrx/rich-content/markdown-core/stream-heal";
+import { extractFrontmatter } from "@ai-matrx/rich-content/markdown-core/syntax/frontmatter";
+import { MarkdownSourceEditProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/MarkdownSourceEdit";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { ImagePolicyProvider } from "@/components/rich-content/prose/remote-image-policy";
 
 let container: HTMLDivElement;

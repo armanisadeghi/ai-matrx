@@ -9,8 +9,8 @@
  * edited cells' bytes changed — and parseMarkdownTable (the ONE table parser)
  * reading `\|` as part of a cell.
  */
-import { freshCell, rewriteTableSource } from "../core/table-source";
-import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { freshCell, rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 
 const DOCK = [
   "| Dock | Rule                          | Door |",
@@ -79,7 +79,7 @@ describe("rewriteTableSource: only the edited cell's bytes change", () => {
 
 // ── verify-RC-B4 round 4: GFM escape rules, judged by an INDEPENDENT oracle ──
 import { oracleTableGrid } from "@/scripts/lib/gfm-table-oracle";
-import { rowCells, TableWriteRefused } from "../core/table-source";
+import { rowCells, TableWriteRefused } from "@ai-matrx/rich-content/utils/table-source";
 
 /** The oracle's grid, short rows padded to the header width (GFM does the same on display). */
 function oracle(markdown: string): string[][] {
@@ -156,7 +156,7 @@ describe("round 4: a written row always reads back as the intended grid", () => 
 });
 
 // ── verify-RC-B4 round 5: block syntax in a first cell, and a WHOLE-table read-back ──
-import { assertTableReadsBack } from "../core/table-source";
+import { assertTableReadsBack } from "@ai-matrx/rich-content/utils/table-source";
 
 describe("round 5: the read-back judges the whole table, not one row", () => {
   it("REFUSES the R5-1 shape: a pipe-less row whose first cell starts a list ends the table", () => {

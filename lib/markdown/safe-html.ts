@@ -11,7 +11,7 @@
 
 import { toHtml } from "hast-util-to-html";
 import { sanitizeHtmlFragment } from "@ai-matrx/print/safe-html";
-import { markdownToHast } from "@/components/markdown-core/markdown-core-html";
+import { markdownToHast } from "@ai-matrx/rich-content/markdown-core/markdown-core-html";
 
 export { sanitizeHtmlFragment };
 

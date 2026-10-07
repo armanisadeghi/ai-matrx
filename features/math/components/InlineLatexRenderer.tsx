@@ -1,6 +1,6 @@
 "use client";
 import React, { memo, useMemo, useState, useEffect } from 'react';
-import MarkdownCore from '@/components/markdown-core/MarkdownCore';
+import MarkdownCore from '@ai-matrx/rich-content/markdown-core/MarkdownCore';
 import { normalizeLaTeX } from '../utils/latex-normalizer';
 
 interface InlineLatexRendererProps {

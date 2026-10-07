@@ -53,7 +53,7 @@ jest.mock("@/features/scopes/registry/entityRegistry", () => ({
 }));
 jest.mock("@/features/scopes/service/entityRows", () => ({ createEntityRow: jest.fn() }));
 
-import { resolveWikiTarget, wikiResolverStats } from "@/components/markdown-core/syntax/elements/wikilink-resolver";
+import { resolveWikiTarget, wikiResolverStats } from "@/features/rich-content-host/wikilink-resolver";
 
 const SCHEDULE = "11111111-1111-4111-8111-111111111111";
 const GHOST = "00000000-0000-4000-8000-000000000000";

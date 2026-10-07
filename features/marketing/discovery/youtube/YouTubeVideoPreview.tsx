@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VideoPublishDate } from "@/features/files/blocks/video/VideoPublishDate";
-import { youTubeEmbedUrl, youTubeWatchUrl } from "@/lib/media/youtube";
+import { youTubeEmbedUrl, youTubeWatchUrl } from "@ai-matrx/rich-content/utils/youtube";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { formatYouTubeCount, formatYouTubeDuration } from "./formatters";
 import type { YouTubeVideoCandidate } from "./types";

@@ -1,7 +1,7 @@
 "use client";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast as copyToast } from "@/lib/toast";
-import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
+import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
 import React, {
   useState,
   useEffect,
@@ -34,7 +34,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useToastManager } from "@/hooks/useToastManager";
-import { THEMES, type DisplayTheme } from "../themes";
+import { THEMES, type DisplayTheme } from "@ai-matrx/rich-content/display/themes";
 import { TableEditToolbar } from "./editing/TableEditToolbar";
 import { RowActionsMenu } from "./editing/RowActionsMenu";
 import { ColumnActionsMenu } from "./editing/ColumnActionsMenu";

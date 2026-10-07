@@ -39,7 +39,7 @@ import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { StructuredValueView } from "@/components/official/structured-value/StructuredValueView";
 import DbKindComponent from "@/features/content-ir/react/db-component/DbKindComponent";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
+import { useEnsureKindRenderable } from "@ai-matrx/rich-content/kinds/react/ensure-kind-renderable";
 import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 

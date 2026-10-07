@@ -6,7 +6,7 @@
  */
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { kindTextLabel } from "../surfaces/kind-text-label";
 import { conversationTitleText } from "@ai-matrx/chat/utils/content-ir/surfaces/kind-text-label";
 import { mapRpcRowToConversationListItem } from "@ai-matrx/chat/agents/redux/conversation-list/conversation-list.thunks";

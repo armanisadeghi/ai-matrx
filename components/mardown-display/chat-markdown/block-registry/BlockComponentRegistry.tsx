@@ -184,7 +184,7 @@ import EditorCodeSnippetBlock from "../../blocks/editor-resources/EditorCodeSnip
 import AudioCitationBlock from "../../blocks/audio/AudioCitationBlock";
 import YamlBlock from "../../blocks/yaml/YamlBlock";
 import XmlBlock from "../../blocks/xml/XmlBlock";
-import CsvBlock from "../../blocks/csv/CsvBlock";
+import CsvBlock from "@ai-matrx/rich-content/display/blocks/csv/CsvBlock";
 import { JsonBlock as JsonBlock } from "../../blocks/json/JsonBlock";
 import TomlBlock from "../../blocks/toml/TomlBlock";
 import TreeBlock from "../../blocks/tree/TreeBlock";

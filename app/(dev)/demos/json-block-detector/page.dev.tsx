@@ -25,7 +25,7 @@ import {
   getParseSession,
   openParseSession,
 } from "@ai-matrx/content-ir";
-import { useIrNodePaths } from "@/features/content-ir/react/useIrNode";
+import { useIrNodePaths } from "@ai-matrx/rich-content/kinds/react/useIrNode";
 import { mockJsonStream } from "./dev-test-harness";
 import {
   buildFakeKindRegistry,

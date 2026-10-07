@@ -20,7 +20,7 @@ import { configureStore } from "@reduxjs/toolkit";
 import userAuthReducer from "@/lib/redux/slices/userAuthSlice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { envelopeFromCompleteValue, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
-import { applyIrKindRoute } from "../react/kind-route";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { RELATION_KINDS, pickListChoiceRefusal } from "../kinds/record-primitives";
 import {
   CANT_OPEN_RECORD,

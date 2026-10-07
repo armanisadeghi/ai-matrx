@@ -11,7 +11,7 @@ import {
   parseLineRanges,
   splitFenceInfo,
 } from "@ai-matrx/content-ir/source";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 

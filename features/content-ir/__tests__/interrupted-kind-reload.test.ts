@@ -1,5 +1,5 @@
 import { normalizeJsonRegion } from "@ai-matrx/content-ir";
-import { memoizedRegionEnvelope } from "../registry/region-envelope-memo";
+import { memoizedRegionEnvelope } from "@ai-matrx/rich-content/kinds/registry/region-envelope-memo";
 import { kindRegistry } from "../registry/kind-registry";
 
 const source =

@@ -33,7 +33,7 @@ import { planMaterialization } from "@/features/canvas/materialization/planMater
 import {
   applyIrKindRoute,
   kindServerDataFromStoredValue,
-} from "../react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { normalizeJsonRegion, isCanonicalBlockIR } from "@ai-matrx/content-ir";
 import { kindRegistry } from "../registry/kind-registry";
 import { IR_ENVELOPE_KEY, type CanonicalBlockIR } from "@ai-matrx/content-ir";

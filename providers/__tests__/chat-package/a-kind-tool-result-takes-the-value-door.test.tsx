@@ -27,7 +27,7 @@ import type { ToolLifecycleEntry } from "@ai-matrx/chat/agents/types/request.typ
 jest.mock("next/dynamic", () => ({
   __esModule: true,
   default: () =>
-    jest.requireActual("@/components/markdown-core/MarkdownCoreImpl").default,
+    jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl").default,
 }));
 jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   __esModule: true,

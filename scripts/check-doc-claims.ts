@@ -28,7 +28,7 @@ import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
-import { isPipeLedRow, rowCells } from "../components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { isPipeLedRow, rowCells } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");

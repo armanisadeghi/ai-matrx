@@ -1,6 +1,6 @@
 "use client";
 
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { useEffect, useRef } from 'react';
 
 interface UseAutoLabelOptions {

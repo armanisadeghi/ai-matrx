@@ -21,22 +21,22 @@
 
 import React from "react";
 import type { Element } from "hast";
-import type { MarkdownComponents as Components } from "@/components/markdown-core/markdown-core-types";
+import type { MarkdownComponents as Components } from "@ai-matrx/rich-content/markdown-core/markdown-core-types";
 
 /** The extra prop the core passes every element renderer (react-markdown's `ExtraProps`). */
 type ExtraProps = { node?: Element };
 import { cn } from "@/styles/themes/utils";
 import { LinkComponent } from "@/components/mardown-display/blocks/links/LinkComponent";
-import { useHeadingAnchors } from "@/components/markdown-core/heading-anchors-context";
-import { isHeadingAnchorProps } from "@/components/markdown-core/heading-anchors-props";
+import { useHeadingAnchors } from "@ai-matrx/rich-content/markdown-core/heading-anchors-context";
+import { isHeadingAnchorProps } from "@ai-matrx/rich-content/markdown-core/heading-anchors-props";
 import { MatrxVariableInline } from "@/components/mardown-display/chat-markdown/matrx-variables/MatrxVariableInline";
 import { CitationMarkerInline } from "@/components/mardown-display/chat-markdown/citations/CitationMarkerInline";
-import { InDocAnchor } from "@/components/markdown-core/syntax/elements/InDocAnchor";
+import { InDocAnchor } from "@ai-matrx/rich-content/markdown-core/syntax/elements/InDocAnchor";
 import { RemoteImageGate } from "@/components/rich-content/prose/remote-image-policy";
 import {
   isInDocHref,
   renderMarkdownInput,
-} from "@/components/markdown-core/syntax/elements/core-syntax-elements";
+} from "@ai-matrx/rich-content/markdown-core/syntax/elements/core-syntax-elements";
 import {
   detectTextDirection,
   getDirectionClasses,

@@ -39,7 +39,7 @@ import type {
 import {
   cleanTableHeaderKey,
   parseMarkdownTable,
-} from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+} from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 import { copyToClipboard } from "@/components/matrx/buttons/markdown-copy-utils";
 import { toast } from "@/lib/toast";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";

@@ -25,7 +25,7 @@ import {
   applyIrKindRoute,
   IR_ROUTE_KEY,
   type IrRouteMarker,
-} from "../react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { componentRegistry } from "../registry/component-registry";
 import {
   envelopeFromCompleteValue,

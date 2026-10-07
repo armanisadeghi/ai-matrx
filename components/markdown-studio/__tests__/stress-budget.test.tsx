@@ -67,7 +67,7 @@ import { EnhancedChatMarkdownInternal } from "@/components/mardown-display/chat-
 import {
   DocumentNumberingProvider,
   useDocumentNumbering,
-} from "@/components/markdown-core/syntax/elements/DocumentNumbering";
+} from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentNumbering";
 import { PROGRESSIVE_AUTO_LIMIT, PROGRESSIVE_FIRST_SLICE } from "@/components/mardown-display/chat-markdown/progressive-mount";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

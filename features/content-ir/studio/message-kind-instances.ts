@@ -19,7 +19,7 @@
  * only (`./message-kind-gate.ts` holds the cheap hot-path menu gate).
  */
 
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { normalizeKindSpellings } from "@/features/content-ir/surfaces/json-kind-signal";
 import { readEnvelope } from "@ai-matrx/content-ir";
 import { reconstructRegionValue } from "@ai-matrx/content-ir";

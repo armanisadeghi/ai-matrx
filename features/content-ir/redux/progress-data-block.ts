@@ -2,8 +2,8 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { isJsonObject } from "@/types/json";
 
 import { IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
-import { envelopeFromCompleteValue } from "@/features/content-ir/registry/kind-correctors";
-import { applyIrKindRoute } from "../react/kind-route";
+import { envelopeFromCompleteValue } from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 
 /**
  * Promote a server progress event's canonical `content_ir` value into the

@@ -1,4 +1,4 @@
-import { plainTitleFromMarkdown } from "@/components/markdown-core/plain-title";
+import { plainTitleFromMarkdown } from "@ai-matrx/rich-content/markdown-core/plain-title";
 
 /**
  * The title of pasted notes — the name the note, and every flashcard set,

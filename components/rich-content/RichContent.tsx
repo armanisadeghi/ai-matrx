@@ -18,7 +18,7 @@
 import dynamic from "next/dynamic";
 import MarkdownStream from "@/components/MarkdownStream";
 import { RichContentDepthProvider } from "./depth";
-import { HeadingAnchorsProvider } from "@/components/markdown-core/heading-anchors-context";
+import { HeadingAnchorsProvider } from "@ai-matrx/rich-content/markdown-core/heading-anchors-context";
 import { RichContentInline } from "./RichContentInline";
 import { RichContentVariantRoot } from "./prose/variant-root";
 import type { RichContentProps } from "./rich-content-types";

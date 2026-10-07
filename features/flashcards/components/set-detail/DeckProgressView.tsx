@@ -57,7 +57,7 @@ import type {
 } from "@/features/education/study/types";
 import { useOpenFlashcardItemWindow } from "@/features/overlays/openers/flashcardItemWindow";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { fcService } from "../../data/fcService";
 import { rankDeckPractice } from "../../data/deckPractice";
 import { studyFaces } from "../../utils/cardVariants";

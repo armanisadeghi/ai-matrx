@@ -8,7 +8,7 @@
 
 "use client";
 
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 import { createClient } from "@/utils/supabase/client";
 import { operationFailed } from "@/utils/errors";
 import type { CreatorProfileMine, FeaturedItem, CreatorLink } from "./types";

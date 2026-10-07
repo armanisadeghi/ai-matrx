@@ -25,15 +25,15 @@ jest.mock(
   }),
 );
 
-jest.mock("@/features/content-ir/react/use-registry-repaint", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/use-registry-repaint", () => ({
   useContentIrKindVersion: () => 0,
 }));
 
-jest.mock("@/features/content-ir/react/ensure-kind-renderable", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/ensure-kind-renderable", () => ({
   useEnsureKindRenderable: () => {},
 }));
 
-jest.mock("@/features/content-ir/react/partial-kind-route", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/partial-kind-route", () => ({
   resolveAnnouncedKindLoading: () => null,
   resolveProvisionalKindRender: () => null,
   resolveSupersededKindRender: () => null,
@@ -91,7 +91,7 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 import { BlockRenderer } from "../BlockRenderer";
 import { componentRegistry } from "@/features/content-ir/registry/component-registry";
 import type { KindComponentProjection } from "@/features/content-ir/registry/schema-source-kind-components";
-import { memoizedRegionEnvelope } from "@/features/content-ir/registry/region-envelope-memo";
+import { memoizedRegionEnvelope } from "@ai-matrx/rich-content/kinds/registry/region-envelope-memo";
 
 const TRUNCATED = `{
   "__kind": "video_transcript_research",

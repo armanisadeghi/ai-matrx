@@ -20,10 +20,10 @@ import { createRoot, type Root } from "react-dom/client";
   disconnect() {}
 };
 
-jest.mock("@/components/markdown-core/MarkdownCore", () => {
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   const actual = jest.requireActual(
-    "@/components/markdown-core/MarkdownCoreImpl",
-  ) as typeof import("@/components/markdown-core/MarkdownCoreImpl");
+    "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl",
+  ) as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
   return { __esModule: true, default: actual.default };
 });
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({

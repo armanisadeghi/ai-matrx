@@ -11,7 +11,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 jest.mock("server-only", () => ({}));
-jest.mock("@/components/markdown-core/MarkdownCore", () => ({ __esModule: true, default: () => null }));
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({ __esModule: true, default: () => null }));
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({ InlineCopyButton: () => null }));
 import { RichContentStaticStandard } from "@/components/rich-content/RichContentStaticProse";
 import { preprocessProse } from "@/components/rich-content/prose/prose-prepare";

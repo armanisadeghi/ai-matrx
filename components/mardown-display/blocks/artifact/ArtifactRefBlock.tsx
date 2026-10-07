@@ -4,7 +4,7 @@ import React, { Suspense, lazy } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useCanvasItem } from "@/features/canvas/hooks/useCanvasItem";
 import { getArtifactDef } from "@/features/canvas/artifact-types/artifact-type-registry";
-import { kindServerDataFromStoredValue } from "@/features/content-ir/react/kind-route";
+import { kindServerDataFromStoredValue } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { storedKindValue } from "@/features/canvas/artifact-types/storedKindValue";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import ArtifactBlock from "./ArtifactBlock";

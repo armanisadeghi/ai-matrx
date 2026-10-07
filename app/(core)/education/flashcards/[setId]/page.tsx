@@ -9,7 +9,7 @@ import { SetDetailView } from "@/features/flashcards/components/set-detail/SetDe
 import { loginHref } from "@/utils/auth/auth-destination";
 import { getSessionVerdict } from "@/utils/supabase/sessionVerdict";
 import { createClient } from "@/utils/supabase/server";
-import { displayTitle } from "@/components/markdown-core/plain-title";
+import { displayTitle } from "@ai-matrx/rich-content/markdown-core/plain-title";
 
 /** A server read never waits without a limit: past this the header shows a
  *  placeholder and the client fills the name in. */

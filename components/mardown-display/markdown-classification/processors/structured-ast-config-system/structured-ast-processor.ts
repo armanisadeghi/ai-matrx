@@ -1,5 +1,5 @@
 import combinedProcessor, { OutputNode } from "../custom/combined-processor";
-import { AstNode } from "../types";
+import { AstNode } from "@ai-matrx/rich-content/display/markdown-classification/processors/types";
 
 // Configuration type for structured output
 export interface StructuredConfig {

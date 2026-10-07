@@ -56,7 +56,7 @@ import {
   useSourceImportance,
   useYouTubeVideoIndex,
 } from "../../hooks/useResearchState";
-import { parseYouTubeUrl, youTubeEmbedUrl } from "@/lib/media/youtube";
+import { parseYouTubeUrl, youTubeEmbedUrl } from "@ai-matrx/rich-content/utils/youtube";
 import {
   VideoSourceMeta,
   VideoProcessingChip,

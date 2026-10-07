@@ -12,7 +12,7 @@ jest.mock("@ai-matrx/media/core", () => ({
   useMediaLoadRecovery,
 }));
 
-jest.mock("@/components/markdown-core/MarkdownCore", () => ({
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
   default: () => null,
 }));
 

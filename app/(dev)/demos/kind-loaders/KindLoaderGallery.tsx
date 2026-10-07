@@ -20,9 +20,9 @@ import { CircleDot, Play, TriangleAlert } from "lucide-react";
 import {
   KIND_LOADING_COMPONENTS,
   KIND_LOADING_SLUGS,
-} from "@/features/content-ir/react/loading/kind-loading-registry";
-import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
-import type { KindLoadingProps } from "@/features/content-ir/react/loading/kind-loading.types";
+} from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
+import { KindSlot } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
+import type { KindLoadingProps } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading.types";
 import type { RealKindRow } from "./real-kinds";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

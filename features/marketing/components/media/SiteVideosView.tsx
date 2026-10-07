@@ -51,7 +51,7 @@ import {
   useSiteVideos,
   useUpdateBrandAsset,
 } from "@/features/marketing/data/hooks";
-import { youTubeThumbnail, youtubeId } from "@/lib/media/youtube";
+import { youTubeThumbnail, youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import { generateVideoMetadata } from "@/features/marketing/lib/generate-video-metadata";
 import type { VideoMetadataFacts } from "@/features/marketing/lib/video-metadata-offer-values";
 import { MARKETING_SITE_SURFACE_NAME } from "@/features/marketing/lib/scopes/site-surface-base";

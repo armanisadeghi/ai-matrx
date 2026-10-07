@@ -25,7 +25,7 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
 import { drawsKindAsRawJson, drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
-import { applyIrKindRoute } from "../react/kind-route";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { componentRegistry } from "../registry/component-registry";
@@ -42,7 +42,7 @@ import {
   processStream,
 } from "@ai-matrx/chat/agents/redux/execution-system/thunks/process-stream";
 import type { RootState } from "@/lib/redux/store";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { configureServerForTest } from "@ai-matrx/chat/testing/server-test-host";
 import { appChatServerApi } from "@/lib/api/chat-server-api";
 

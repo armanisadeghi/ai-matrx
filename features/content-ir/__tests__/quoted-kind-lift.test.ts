@@ -8,9 +8,9 @@
 
 import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-events";
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { drawsRawJsonCard } from "../render-paths/draws-raw-kind-json";
-import { readEnvelope } from "../redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { hasKindKey } from "../surfaces/json-kind-signal";
 import { QuotedKindLift, liftQuotedKindRegions } from "../surfaces/quoted-kind-lift";
 import { chunkText } from "./seeded-random";

@@ -4,7 +4,7 @@ import {
   rowCells,
   tableStartsAt,
   unescapeCellPipes,
-} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 // features/rich-document/actions/markdownTable.ts
 //
 // The first GitHub-flavoured markdown table in a piece of content, as plain

@@ -22,7 +22,7 @@
 // this serializer reproduces its stored bytes exactly, so contract 2 is
 // measured, not hoped for.
 
-import { assertTableReadsBack, freshRow, respliceRow, splitRowSegments } from "./table-source";
+import { assertTableReadsBack, freshRow, respliceRow, splitRowSegments } from "@ai-matrx/rich-content/utils/table-source";
 import type { Mark, Node as PMNode } from "@tiptap/pm/model";
 
 export interface Adjacency {

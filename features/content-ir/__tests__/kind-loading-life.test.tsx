@@ -14,7 +14,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import {
   KIND_LOADING_COMPONENTS,
   KIND_LOADING_SLUGS,
-} from "../react/loading/kind-loading-registry";
+} from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-registry";
 
 /** Any Tailwind color-family utility (excludes the neutral/semantic tokens). */
 const COLOR_UTILITY =

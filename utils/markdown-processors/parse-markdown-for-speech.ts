@@ -5,7 +5,7 @@ import {
   rowCells,
   tableStartsAt,
   unescapeCellPipes,
-} from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+} from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 /**
  * Every table — with or without edge pipes (THE GFM rule, gfm-table-lines) —

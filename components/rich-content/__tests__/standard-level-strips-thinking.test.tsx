@@ -25,9 +25,9 @@ if (typeof globalThis.ResizeObserver === "undefined") {
   } as unknown as typeof ResizeObserver;
 }
 
-jest.mock("@/components/markdown-core/MarkdownCore", () => ({
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => ({
   __esModule: true,
-  default: jest.requireActual("@/components/markdown-core/MarkdownCoreImpl")
+  default: jest.requireActual("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl")
     .default,
 }));
 jest.mock("@/components/matrx/buttons/MarkdownCopyButton", () => ({

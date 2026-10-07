@@ -11,8 +11,8 @@ import type { KindSchema } from "@ai-matrx/content-ir";
 import {
   inferLoadingSlug,
   inferLoadingSlugFromJsonSchema,
-} from "../react/loading/infer-loading-slug";
-import { KIND_LOADING_SLUGS } from "../react/loading/kind-loading-slugs";
+} from "@ai-matrx/rich-content/kinds/react/loading/infer-loading-slug";
+import { KIND_LOADING_SLUGS } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-slugs";
 import { kindRegistry } from "../registry/kind-registry";
 
 const schema = (fields: KindSchema["fields"]): KindSchema => ({

@@ -33,7 +33,7 @@ import { KIND_CREATOR_MANDATE_KEY } from "../../studio/constants";
 import { resolveMandate } from "@ai-matrx/chat/mandates/service";
 import { composeKindComponentFixIntent } from "../../studio/kind-agent-intents";
 import { buildKindAuthoringOffer } from "@/features/content-ir/studio/kind-authoring-offer";
-import { readEnvelope } from "../../redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { resolveComponent } from "../../registry/component-registry";
 
 function readKindSlug(

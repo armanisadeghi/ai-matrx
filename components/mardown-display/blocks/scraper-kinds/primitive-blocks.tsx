@@ -21,7 +21,7 @@ import {
   Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { ExternalImage, Pill, SiteFavicon } from "./scraper-kind-shared";
 import {
   compactNumber,

@@ -35,7 +35,7 @@ export const RECORD_STORE_TOKEN: Record<RecordStoreKind, string> = {
 };
 
 /** The badge a pick list's row carries inside Tables (vocabulary: a Pick list is a Table). */
-export const PICK_LIST_BADGE = RECORD_STORE_NOUNS.structured_list.label;
+export const PICK_LIST_BADGE = RECORD_STORE_NOUNS.pick_list.label;
 
 /** A Tables row; `badge` set on a pick list. */
 export interface TablesItem extends KindItem {

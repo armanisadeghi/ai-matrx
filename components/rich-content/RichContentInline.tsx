@@ -17,7 +17,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useEffect } from "react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import {
   guardMarkdownDelimiters,
   reportDelimiterViolations,
@@ -25,7 +25,7 @@ import {
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import { cn } from "@/lib/utils";
 import { preprocessCellProse, preprocessProse } from "./prose/prose-prepare";
-import { unescapeCellPipes } from "@/components/markdown-core/syntax/gfm-cell-pipes";
+import { unescapeCellPipes } from "@ai-matrx/rich-content/markdown-core/syntax/gfm-cell-pipes";
 import {
   INLINE_LEVEL_ELEMENTS,
   INLINE_LEVEL_WRAPPER_CLASS,

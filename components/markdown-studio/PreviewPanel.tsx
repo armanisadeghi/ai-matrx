@@ -67,8 +67,8 @@ import {
 import { JsonExtractionPanel } from "./lab/JsonExtractionPanel";
 import { LevelCompareView } from "./lab/LevelCompareView";
 import { PrintPreviewView } from "./lab/PrintPreviewView";
-import { DocumentPropertiesPanel } from "@/components/markdown-core/syntax/elements/DocumentPropertiesPanel";
-import { MarkdownSourceEditProvider } from "@/components/markdown-core/syntax/elements/MarkdownSourceEdit";
+import { DocumentPropertiesPanel } from "@ai-matrx/rich-content/markdown-core/syntax/elements/DocumentPropertiesPanel";
+import { MarkdownSourceEditProvider } from "@ai-matrx/rich-content/markdown-core/syntax/elements/MarkdownSourceEdit";
 import { useProgressiveMount } from "@/components/mardown-display/chat-markdown/progressive-mount";
 
 /** Task checkboxes toggle in the preview only when the buffer can be saved to. */

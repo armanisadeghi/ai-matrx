@@ -12,7 +12,7 @@ import type { RenderBlockPayload } from "@ai-matrx/agents/generated/stream-event
 import { drawsKindAsRawJson, drawsRawJsonCard } from "../draws-raw-kind-json";
 import { decideBlockRender } from "@/components/mardown-display/chat-markdown/block-registry/BlockRenderer";
 import { renderBlockToContentBlock } from "@/components/mardown-display/chat-markdown/render-block-to-content-block";
-import { readEnvelope } from "../../redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 
 const KIND = '{"__kind":"flashcard_set","title":"Cells","cards":[{"__kind":"flashcard","front":"Q","back":"A"}]}';
 

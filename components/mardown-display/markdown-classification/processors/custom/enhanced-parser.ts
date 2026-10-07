@@ -1,8 +1,8 @@
 // parser.ts
 
-import { findTableEnd, opensTable } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
-import { parseMarkdownTable } from "../bock-processors/parse-markdown-table";
-import { ParsedContent, Section } from "@/components/mardown-display/types";
+import { findTableEnd, opensTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
+import { ParsedContent, Section } from "@ai-matrx/rich-content/display/types";
 
 export function enhancedMarkdownParser(markdown: string): ParsedContent {
   // Split into lines (preserve full lines for table parsing)

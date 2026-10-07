@@ -114,7 +114,7 @@ import type { RulebookRule } from "./types";
 import { ruleAnchorId } from "./components/detail/RuleRelations";
 import { codeSpanText, findCodeRanges } from "@ai-matrx/content-ir/source";
 import { replaceFences, unwrapCodeSpans } from "@/lib/markdown/code-ranges";
-import { isGfmDelimiterRow, isPipeLedRow, rowCells, unescapeCellPipes } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { isGfmDelimiterRow, isPipeLedRow, rowCells, unescapeCellPipes } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 
 /** The length `kebabRuleId` cuts a minted id to. Named once, never retyped. */
 export const RULE_ID_MINT_LENGTH = 48;

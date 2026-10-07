@@ -59,7 +59,7 @@ import {
   GENERIC_STRUCTURED_COMPONENT_KEY,
   IR_ROUTE_KEY,
   type IrRouteMarker,
-} from "../react/kind-route";
+} from "@ai-matrx/rich-content/kinds/react/kind-route";
 import {
   componentRegistry,
   resolveComponent,

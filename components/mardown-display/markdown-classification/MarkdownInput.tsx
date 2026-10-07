@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import CodeComponent from "./parts/CodeComponent";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";

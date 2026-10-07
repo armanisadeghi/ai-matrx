@@ -17,7 +17,7 @@
 
 import { extractFlatText } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
 import type { MessageRecord } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.slice";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 
 const FENCE =
   '```matrx\n{"__kind":"directive_v1_reference_context_value","items":[{"scope_id":"3df7a3a6-4d1c-4e17-9fc2-27eb9855dcd0","context_item_id":"94d8e596-e15c-4b4e-bc5d-22bb57ef5f2b","label":"Port of Oakland lane · Gate code"}]}\n```';

@@ -1,5 +1,5 @@
 import { readEnvelope } from "@ai-matrx/content-ir";
-import { applyIrKindRoute } from "../react/kind-route";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
 import { progressDataRenderBlock } from "../redux/progress-data-block";
 
 describe("progressDataRenderBlock", () => {

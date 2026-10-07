@@ -18,10 +18,10 @@ import { createRoot, type Root } from "react-dom/client";
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
   true;
 
-jest.mock("@/components/markdown-core/MarkdownCore", () => {
+jest.mock("@ai-matrx/rich-content/markdown-core/MarkdownCore", () => {
   const actual = jest.requireActual(
-    "@/components/markdown-core/MarkdownCoreImpl",
-  ) as typeof import("@/components/markdown-core/MarkdownCoreImpl");
+    "@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl",
+  ) as typeof import("@ai-matrx/rich-content/markdown-core/MarkdownCoreImpl");
   return { __esModule: true, default: actual.default };
 });
 

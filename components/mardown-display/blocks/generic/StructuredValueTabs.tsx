@@ -36,8 +36,8 @@ import { toast } from "@/lib/toast";
 import React, { useState } from "react";
 import { Braces, Check, Copy, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { KindProblem } from "@/features/content-ir/react/kind-problems";
-import { hasKindErrors } from "@/features/content-ir/react/kind-problems";
+import type { KindProblem } from "@ai-matrx/rich-content/kinds/react/kind-problems";
+import { hasKindErrors } from "@ai-matrx/rich-content/kinds/react/kind-problems";
 import { IntoTileActions, useHasTileActionsSlot } from "./tile-actions-slot";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 

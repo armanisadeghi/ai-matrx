@@ -40,7 +40,7 @@ import { Youtube } from "@/components/icons/brand-icons";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { youTubeWatchUrl } from "@/lib/media/youtube";
+import { youTubeWatchUrl } from "@ai-matrx/rich-content/utils/youtube";
 import {
   OrganizationRequiredNotice,
 } from "@/features/organizations/components/OrganizationRequiredNotice";

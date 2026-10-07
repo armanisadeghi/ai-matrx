@@ -1,10 +1,10 @@
 import type { ResearchMedia } from "../../types";
 // YouTube/Vimeo id extraction lives in the shared primitives — never re-implement.
-import { youtubeId } from "@/lib/media/youtube";
+import { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 import { vimeoId } from "@/lib/media/vimeo";
 import { fileNameFromUrl } from "@ai-matrx/data/files";
 
-export { youtubeId } from "@/lib/media/youtube";
+export { youtubeId } from "@ai-matrx/rich-content/utils/youtube";
 export { vimeoId } from "@/lib/media/vimeo";
 
 export interface EmbedInfo {

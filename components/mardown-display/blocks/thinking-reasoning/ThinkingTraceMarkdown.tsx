@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { cn } from "@/lib/utils";
 import { NestedRichContent } from "@/components/rich-content/standard/NestedRichContent";
 

@@ -42,7 +42,7 @@ jest.mock("@/features/content-ir/studio/components/KindInstanceRender", () => ({
   default: ({ kind }: { kind: string }) =>
     React.createElement("div", { "data-kind-route": kind }),
 }));
-jest.mock("@/features/content-ir/react/KindEscapedNotice", () => ({
+jest.mock("@ai-matrx/rich-content/kinds/react/KindEscapedNotice", () => ({
   __esModule: true,
   default: ({ rendered }: { rendered?: boolean }) =>
     React.createElement("div", {

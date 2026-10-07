@@ -52,8 +52,8 @@ import {
   DB_KIND_COMPONENT_KEY,
   GENERIC_STRUCTURED_COMPONENT_KEY,
 } from "@ai-matrx/content-ir-react";
-import { KIND_LOADING_SLUGS } from "../../features/content-ir/react/loading/kind-loading-slugs";
-import { inferLoadingSlugFromJsonSchema } from "../../features/content-ir/react/loading/infer-loading-slug";
+import { KIND_LOADING_SLUGS } from "@ai-matrx/rich-content/kinds/react/loading/kind-loading-slugs";
+import { inferLoadingSlugFromJsonSchema } from "@ai-matrx/rich-content/kinds/react/loading/infer-loading-slug";
 import {
   artifactKindSlugsFromText,
   compiledKindSlugsFromText,

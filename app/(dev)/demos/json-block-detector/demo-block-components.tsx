@@ -11,7 +11,7 @@ import {
 import type { KindStreamEvent } from "@ai-matrx/content-ir";
 import type { IrResidue } from "@ai-matrx/content-ir";
 import type { IrTreeNode } from "@ai-matrx/content-ir";
-import { useIrNode } from "@/features/content-ir/react/useIrNode";
+import { useIrNode } from "@ai-matrx/rich-content/kinds/react/useIrNode";
 import { getParseSession } from "@ai-matrx/content-ir";
 import { GenericBlockRenderer } from "./generic-block-renderer";
 import { eventPathKey } from "./validation-report";

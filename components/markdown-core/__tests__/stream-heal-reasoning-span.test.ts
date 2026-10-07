@@ -5,7 +5,7 @@
  * round 3 B1 (/chat 313204e4… showed the raw tag for ~80 ms).
  */
 import { preprocessProse } from "@/components/rich-content/prose/prose-prepare";
-import { healStreamingMarkdown } from "@/components/markdown-core/stream-heal";
+import { healStreamingMarkdown } from "@ai-matrx/rich-content/markdown-core/stream-heal";
 
 /** The live render pipeline for a text block: prose prep, then the streaming heal. */
 const live = (text: string) => healStreamingMarkdown(preprocessProse(text));

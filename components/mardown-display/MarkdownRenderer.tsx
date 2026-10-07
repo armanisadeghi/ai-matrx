@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
 import { cn } from "@/styles/themes/utils";
 import CodeBlock from "@/features/code-editor/components/code-block/CodeBlock";
-import { parseMarkdownTable } from "@/components/mardown-display/markdown-classification/processors/bock-processors/parse-markdown-table";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/markdown-classification/processors/bock-processors/parse-markdown-table";
 import MarkdownTable from "./tables/TableWithSeparatedControls";
 import { InlineCopyButton } from "@/components/matrx/buttons/MarkdownCopyButton";
 import { KindTextGate } from "@/components/mardown-display/chat-markdown/KindTextGate";

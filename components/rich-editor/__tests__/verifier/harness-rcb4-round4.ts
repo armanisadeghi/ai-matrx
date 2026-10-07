@@ -3,8 +3,8 @@ import { Editor, getSchema } from "@tiptap/core";
 import { marked } from "marked";
 import { createRichEditorExtensions } from "@/components/rich-editor/core/extensions";
 import { buildVisualDocument, captureBaseline, serializeVisualDocument } from "@/components/rich-editor/core/visual-document";
-import { rewriteTableSource } from "@/components/rich-editor/core/table-source";
-import { parseMarkdownTable } from "@/components/mardown-display/blocks/table/parseMarkdownTable";
+import { rewriteTableSource } from "@ai-matrx/rich-content/utils/table-source";
+import { parseMarkdownTable } from "@ai-matrx/rich-content/display/blocks/table/parseMarkdownTable";
 
 const extensions = createRichEditorExtensions();
 const schema = getSchema(extensions);

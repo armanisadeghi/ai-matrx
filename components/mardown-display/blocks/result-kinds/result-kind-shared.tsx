@@ -34,7 +34,7 @@ import React from "react";
 import { Braces, Check, Copy } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { KIND_KEY, reconstructRegionValue } from "@ai-matrx/content-ir";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";

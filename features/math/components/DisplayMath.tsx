@@ -1,7 +1,7 @@
 "use client";
 
-import MarkdownCore from "@/components/markdown-core/MarkdownCore";
-import { displayMathSource } from "@/components/markdown-core/math-normalizer";
+import MarkdownCore from "@ai-matrx/rich-content/markdown-core/MarkdownCore";
+import { displayMathSource } from "@ai-matrx/rich-content/markdown-core/math-normalizer";
 
 interface DisplayMathProps {
   /** A pure TeX expression — no delimiters. */

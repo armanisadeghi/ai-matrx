@@ -1,4 +1,4 @@
-import { continuesTable, isGfmDelimiterRow, rowCells, tableContainerIndent, tableStartsAt } from "@/components/mardown-display/markdown-classification/processors/utils/gfm-table-lines";
+import { continuesTable, isGfmDelimiterRow, rowCells, tableContainerIndent, tableStartsAt } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/gfm-table-lines";
 interface TableData {
     headers: string[];
     rows: string[][];

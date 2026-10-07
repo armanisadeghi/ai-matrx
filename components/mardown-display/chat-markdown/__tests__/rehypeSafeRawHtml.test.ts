@@ -1,5 +1,5 @@
 import type { Root, Element, RootContent } from "hast";
-import rehypeSafeRawHtml from "@/components/mardown-display/chat-markdown/rehypeSafeRawHtml";
+import rehypeSafeRawHtml from "@ai-matrx/rich-content/display/chat-markdown/rehypeSafeRawHtml";
 
 /** Build a hast Root containing a single raw-HTML node, like react-markdown
  *  leaves in the tree when it runs with allowDangerousHtml. */

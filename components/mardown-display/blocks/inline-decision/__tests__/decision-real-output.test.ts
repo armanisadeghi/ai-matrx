@@ -6,7 +6,7 @@
  * indentation left the block as raw text.
  */
 import { StreamBlockAccumulator } from "@ai-matrx/chat/agents/redux/execution-system/utils/stream-block-accumulator";
-import { splitContentIntoBlocksV2 } from "@/components/mardown-display/markdown-classification/processors/utils/content-splitter-v2";
+import { splitContentIntoBlocksV2 } from "@ai-matrx/rich-content/display/markdown-classification/processors/utils/content-splitter-v2";
 import { parseDecisionXml } from "../parseDecisionXml";
 import { parseDecisionOptionsFromBody } from "../decision-options";
 import {

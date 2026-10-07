@@ -95,8 +95,8 @@ jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
 
 import { kindRegistry } from "../registry/kind-registry";
 import { componentRegistry } from "../registry/component-registry";
-import { applyIrKindRoute } from "../react/kind-route";
-import { KindEscapedNotice } from "../react/KindEscapedNotice";
+import { applyIrKindRoute } from "@ai-matrx/rich-content/kinds/react/kind-route";
+import { KindEscapedNotice } from "@ai-matrx/rich-content/kinds/react/KindEscapedNotice";
 import { resolveKindRecordDisposition } from "../records/kind-record-registry";
 import { kindHasRecordChrome } from "../records/KindRecordChrome";
 import { resolveArtifactDefByKind } from "@/features/canvas/artifact-types/artifact-type-registry";

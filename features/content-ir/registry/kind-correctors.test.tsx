@@ -12,7 +12,7 @@
 
 import { renderToStaticMarkup } from "react-dom/server";
 import { IR_ENVELOPE_KEY, ParseSession, isCanonicalBlockIR, type CanonicalBlockIR } from "@ai-matrx/content-ir";
-import { memoizedRegionEnvelope, withIrEnvelope } from "./region-envelope-memo";
+import { memoizedRegionEnvelope, withIrEnvelope } from "@ai-matrx/rich-content/kinds/registry/region-envelope-memo";
 import {
   KIND_CORRECTED_NOTICE,
   correctKindEnvelope,
@@ -20,7 +20,7 @@ import {
   envelopeFromCompleteValue,
   kindCorrectionsOf,
   sessionEnvelope,
-} from "./kind-correctors";
+} from "@ai-matrx/rich-content/kinds/registry/kind-correctors";
 import { runRenderPath } from "../render-paths/run-path";
 import { RENDER_PATHS } from "../render-paths/paths";
 import { blockKindCorrections } from "../react/db-component/DbKindComponentImpl";

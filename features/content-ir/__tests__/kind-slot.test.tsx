@@ -13,11 +13,11 @@
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { KindSlot, kindSlotPhase } from "../react/slot/KindSlot";
+import { KindSlot, kindSlotPhase } from "@ai-matrx/rich-content/kinds/react/slot/KindSlot";
 import {
   resolveLoadingSlugForKind,
   resetInvalidLoadingDeclarationReports,
-} from "../react/loading/resolve-loading-slug";
+} from "@ai-matrx/rich-content/kinds/react/loading/resolve-loading-slug";
 import { kindRegistry } from "../registry/kind-registry";
 
 /** A list-shaped kind: a title plus a list of structured items. */

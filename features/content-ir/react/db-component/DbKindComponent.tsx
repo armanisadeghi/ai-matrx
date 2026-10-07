@@ -20,7 +20,7 @@ import React from "react";
 import type { DbKindComponentImplProps } from "./DbKindComponentImpl";
 import { useKindActionRunner } from "../actions/useKindActionRunner";
 import type { KindItemStateHandle } from "../actions/kind-action-context";
-import { readEnvelope } from "../../redux/render-block-envelope";
+import { readEnvelope } from "@ai-matrx/rich-content/kinds/redux/render-block-envelope";
 import { BlockStateHost } from "@/features/block-state/BlockStateContext";
 import { useBlockState } from "@/features/block-state/useBlockState";
 import { useItemStateImages } from "./item-state-media";
