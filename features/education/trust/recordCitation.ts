@@ -163,12 +163,12 @@ export function recordCitationHref(
     }
     case "saved_result":
       return part ? `/shapes/instances/${id}?field=${encodeURIComponent(part)}` : `/shapes/instances/${id}`;
-    // Two different documents, two different doors: `/documents/[id]` loads
-    // the CLOUD table (workbench.udt_documents); a markdown document
-    // (content.document) opens in the Markdown Studio. The entity registry
-    // carries the same two routes (guarded in record-citation.test.ts).
+    // One door for both kinds: `/documents/[id]` opens a cloud (Univer)
+    // document itself and sends a content-store document to its own editor by
+    // its format (`contentDocumentDoor` -> `documentHref`: markdown to the
+    // Markdown Studio, a Space to /spaces). The entity registry carries the same
+    // door (guarded in record-citation.test.ts).
     case "document":
-      return `/markdown-studio?source=document&id=${id}`;
     case "udt_document":
       return `/documents/${id}`;
   }

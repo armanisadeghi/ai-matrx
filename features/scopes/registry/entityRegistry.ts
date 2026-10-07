@@ -407,12 +407,16 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     labelPlural: "Boards",
     hrefFor: (id) => `/board/${id}`,
   },
-  // content.document — opens in the Markdown Studio. NOT `/documents/[id]`,
-  // which loads the cloud table (`udt_document` below).
+  // content.document — a document's FORMAT decides its editor (`documentHref`:
+  // a Space is `/spaces/<id>`, markdown opens in the Markdown Studio), and a bare
+  // id does not carry the format. So the generic door is `/documents/<id>`, the
+  // ONE resolver: that page reads the row's format (`contentDocumentDoor`) and
+  // replaces itself with `documentHref`; a Univer id (`udt_document` below) stays
+  // on it. The share registry's `document` template is the same `/documents/{id}`.
   document: {
     Icon: FileText,
     labelPlural: "Markdown documents",
-    hrefFor: (id) => `/markdown-studio?source=document&id=${encodeURIComponent(id)}`,
+    hrefFor: (id) => `/documents/${encodeURIComponent(id)}`,
   },
   udt_document: {
     Icon: FileText,
@@ -853,10 +857,11 @@ export function tryGetEntityInfoByTable(
 }
 
 /**
- * Where a `content.document` row opens. A document's TYPE decides its door: a
- * Space (`format = 'spaces'`) is its own page, every other document opens in
- * the Markdown Studio (the `document` entry's `hrefFor`). Callers that hold the
- * row's `format` use this; `hrefFor(id)` alone cannot know it.
+ * Where a `content.document` row opens — THE rule. A document's FORMAT decides
+ * its door: a Space (`format = 'spaces'`) is its own page, every other document
+ * opens in the Markdown Studio. Callers that hold the row's `format` use this
+ * directly; a bare id goes through `/documents/<id>` (the `document` entry's
+ * `hrefFor`), which reads the format and applies this same rule.
  */
 export const SPACE_DOCUMENT_FORMAT = "spaces";
 export function documentHref(id: string, format: string | null | undefined): string {
