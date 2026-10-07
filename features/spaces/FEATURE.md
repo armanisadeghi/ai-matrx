@@ -45,6 +45,17 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-07 — builder round 28: the late load shift was never the room — a room trace (`collab/space-collab.ts`,
+  `window.__spacesCollabTrace`; walk `__tests__/walk/room-trace.walk.mjs`) showed one seed and no block added or removed after
+  joining. Causes: BlockNote draws React blocks (database, callout) through portals a frame after the text, and a table grows
+  in steps as its rows land. The body now shows once every React node view has drawn (`SpaceEditor` + spaces.css, 3 s cap); a
+  kept database holds its exact size (clipped) until its content is still, re-reading the kept height when the column layout
+  changes its width; a first visit holds the body hidden while an in-view database settles (`editor/database-host.tsx`).
+  Joining a room is one source of truth (`collab/join-room.ts`): presence not reported yet means "not known", and a present
+  member's body is waited for — a slow room no longer gets a second seed beside it (test `collab/__tests__/join-room.test.ts`
+  fails on the old decision with two block groups). D3: tiles in a nested column row keep 110px and wrap (two by two in a
+  50/50 half); column flex-grow is the width ×1000 so wrapped lines fill. The column resize grab area is the whole gutter
+  (walk `column-resize.walk.mjs`).
 - 2026-10-07 — builder round 27: D1 a kept device copy is decided once the page is ready in any order (`page/useRestoreKept.ts`;
   edit access used to answer after the one check, which marked the page done); until decided the page neither overwrites nor
   saves over it; a copy equal to what is stored is never kept, and one equal to what is shown is cleared without a redraw;
