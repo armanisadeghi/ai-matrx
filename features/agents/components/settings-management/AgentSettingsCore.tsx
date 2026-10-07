@@ -1199,21 +1199,47 @@ export function AgentSettingsCore({
     newModelName: string;
     oldModelName: string;
     plan: ModelChangePlan;
-    /** The class picked with the model; re-applied on commit. */
+    /** The class picked with the model; written only on commit, so the old
+     *  model is never paired with the new model's class while this waits. */
     offeringPin?: { offeringId: string | undefined };
-    /** The class held BEFORE this click — restored if the switch is cancelled,
-     *  so the old model never keeps the new model's class. */
-    previousOfferingId?: string;
   } | null>(null);
 
   // The picker reports the class (offering pin) and the model in the SAME
-  // click, in either order, so the second handler still sees the render-time
-  // settings. The pin is parked here for that one click and read by the model
-  // handler; a microtask drops it once the click's handlers have run.
-  const clickOfferingPinRef = useRef<{
-    offeringId: string | undefined;
-    previousOfferingId?: string;
+  // click, in either order. Both are parked for that click and applied once
+  // its handlers have run: a model change carries the class into its commit
+  // (immediate or after the reconciliation dialog); a class-only change is
+  // written directly. The class is never written ahead of its model — that
+  // interim pair (old model + new model's class) is refused by
+  // ai.resolve_model_config / ai.model_message_flag_profile with P0002.
+  const clickRef = useRef<{
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
   } | null>(null);
+
+  const parkForClick = (update: {
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  }) => {
+    if (!clickRef.current) {
+      clickRef.current = {};
+      queueMicrotask(() => {
+        const click = clickRef.current;
+        clickRef.current = null;
+        if (!click) return;
+        if (click.modelId) {
+          commitModelChange(click.modelId, click.pin);
+        } else if (click.pin) {
+          dispatch(
+            setAgentSettings({
+              id: agentId,
+              settings: withOfferingPin(currentSettings, click.pin.offeringId),
+            }),
+          );
+        }
+      });
+    }
+    Object.assign(clickRef.current, update);
+  };
 
   const handleOfferingPinChange = (offeringId: string | undefined) => {
     // settings === null → the agent record hasn't hydrated; writing over it
@@ -1224,30 +1250,32 @@ export function AgentSettingsCore({
       );
       return;
     }
-    const previous = currentSettings.offering_id;
-    const pin = {
-      offeringId,
-      previousOfferingId: typeof previous === "string" ? previous : undefined,
-    };
-    clickOfferingPinRef.current = pin;
-    queueMicrotask(() => {
-      if (clickOfferingPinRef.current === pin) clickOfferingPinRef.current = null;
-    });
-    // Model reported first and a reconciliation is pending → carry the class
-    // into that commit too.
-    setPendingModelChange((p) => (p ? { ...p, offeringPin: pin } : p));
-    dispatch(
-      setAgentSettings({
-        id: agentId,
-        settings: withOfferingPin(currentSettings, offeringId),
-      }),
-    );
+    parkForClick({ pin: { offeringId } });
   };
 
   const handleModelChange = (newModelId: string) => {
     if (!newModelId || newModelId === modelId) return;
-    // Class picked in this same click (pin reported before the model).
-    const clickPin = clickOfferingPinRef.current;
+    parkForClick({ modelId: newModelId });
+  };
+
+  // A class belongs to exactly one model: the new model runs on the class
+  // picked with it, or on none (its preferred class) — never the old model's.
+  const commitClassWithModel = (
+    clickPin: { offeringId: string | undefined } | undefined,
+  ) => {
+    if (!clickPin && currentSettings.offering_id == null) return;
+    dispatch(
+      setAgentSettings({
+        id: agentId,
+        settings: withOfferingPin(currentSettings, clickPin?.offeringId),
+      }),
+    );
+  };
+
+  const commitModelChange = (
+    newModelId: string,
+    clickPin: { offeringId: string | undefined } | undefined,
+  ) => {
     const planSettings: FeLlmParams = clickPin
       ? withOfferingPin(currentSettings, clickPin.offeringId)
       : currentSettings;
@@ -1257,6 +1285,7 @@ export function AgentSettingsCore({
       dispatch(
         setAgentField({ id: agentId, field: "modelId", value: newModelId }),
       );
+      commitClassWithModel(clickPin);
       return;
     }
 
@@ -1288,10 +1317,11 @@ export function AgentSettingsCore({
 
     if (planNeedsNoDecision(plan)) {
       // Nothing to decide: every set value is kept, and any the new model
-      // lacks is translated by the server — commit immediately.
+      // lacks is translated by the server — commit model and class together.
       dispatch(
         setAgentField({ id: agentId, field: "modelId", value: newModelId }),
       );
+      commitClassWithModel(clickPin);
       return;
     }
 
@@ -1301,12 +1331,7 @@ export function AgentSettingsCore({
       newModelName: newModel.common_name ?? newModel.name ?? newModelId,
       oldModelName: oldModel?.common_name ?? oldModel?.name ?? "current model",
       plan,
-      ...(clickPin
-        ? {
-            offeringPin: clickPin,
-            previousOfferingId: clickPin.previousOfferingId,
-          }
-        : {}),
+      ...(clickPin ? { offeringPin: clickPin } : {}),
     });
   };
 
@@ -1320,33 +1345,20 @@ export function AgentSettingsCore({
       }),
     );
     // The class chosen with the model survives every resolution (incl. reset
-    // to the new model's defaults).
+    // to the new model's defaults); with none chosen the old model's class is
+    // dropped — it can never be a class of the new model.
     const { offeringPin } = pendingModelChange;
     dispatch(
       setAgentSettings({
         id: agentId,
-        settings: offeringPin
-          ? withOfferingPin(nextSettings, offeringPin.offeringId)
-          : nextSettings,
+        settings: withOfferingPin(nextSettings, offeringPin?.offeringId),
       }),
     );
     setPendingModelChange(null);
   };
 
   const handleReconciliationCancel = () => {
-    // The class was written with the click; the model switch was not. Put the
-    // old model's class back so the agent never pairs it with a foreign pin.
-    if (pendingModelChange?.offeringPin) {
-      dispatch(
-        setAgentSettings({
-          id: agentId,
-          settings: withOfferingPin(
-            currentSettings,
-            pendingModelChange.previousOfferingId,
-          ),
-        }),
-      );
-    }
+    // Nothing was written yet — the model and its class commit together.
     setPendingModelChange(null);
   };
 

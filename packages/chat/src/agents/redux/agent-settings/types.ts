@@ -100,6 +100,13 @@ export interface PendingModelSwitch {
   mode: ResolutionMode;
   /** Per-conflict override when mode === 'custom' */
   customActions: Partial<Record<keyof AgentSettings, ConflictAction>>;
+  /**
+   * The CLASS (offering) picked with the new model, applied on confirm.
+   * Absent = no class picked → the old model's pin is dropped on confirm (a
+   * class belongs to exactly one model). Never written before confirm, so the
+   * entry never pairs the old model with the new model's class.
+   */
+  offeringId?: string;
 }
 
 // ── Variables ──────────────────────────────────────────────────────────────────

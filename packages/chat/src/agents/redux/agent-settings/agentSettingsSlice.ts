@@ -307,7 +307,16 @@ export const loadAgentSettingsDirect = createAsyncThunk(
 export const requestModelSwitch = createAsyncThunk(
   "agentSettings/requestModelSwitch",
   async (
-    { agentId, newModelId }: { agentId: string; newModelId: string },
+    {
+      agentId,
+      newModelId,
+      offeringId,
+    }: {
+      agentId: string;
+      newModelId: string;
+      /** The new model's class picked in the same gesture (applied on confirm). */
+      offeringId?: string;
+    },
     { getState, rejectWithValue },
   ) => {
     const state = getState() as {
@@ -375,6 +384,7 @@ export const requestModelSwitch = createAsyncThunk(
         // or remove is the person's explicit choice in the dialog.
         mode: "keep_all" as ResolutionMode,
         customActions: {},
+        ...(offeringId ? { offeringId } : {}),
       },
       newDefaults,
     };
@@ -745,11 +755,19 @@ const agentSettingsSlice = createSlice({
       // Apply conflict resolution to get the final settings
       const resolved = resolveConflicts(currentEffective, pending);
 
-      // Always apply the generated model identifier field.
+      // Always apply the generated model identifier field. The class pin is
+      // the one picked with the new model, or none — the old model's class is
+      // never carried onto a different model (ai.resolve_model_config refuses
+      // that pair with P0002).
       const finalSettings: Partial<AgentSettings> = {
         ...resolved,
         model: pending.newModelId,
       };
+      if (pending.offeringId) {
+        (finalSettings as Record<string, unknown>).offering_id = pending.offeringId;
+      } else {
+        delete (finalSettings as Record<string, unknown>).offering_id;
+      }
 
       if (entry.context === "builder") {
         entry.defaults = finalSettings;

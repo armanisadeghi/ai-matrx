@@ -11,11 +11,15 @@ import { useIsMobile } from "@ai-matrx/kit/media-query";
 import { Backlinks } from "./Backlinks";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { toast } from "@/lib/toast";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectUserEmail, selectUserFullName } from "@/lib/redux/selectors/userSelectors";
+import { selectUserEmail, selectUserFullName, selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useAccess } from "@/utils/permissions/access";
 
 import { useSourcePicker } from "../data/SourcePicker";
+import { createPageDatabase } from "../data/new-database";
+import { newViewId } from "../data/sources";
 import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
 import { LoadAccessState } from "../workspace/LoadAccessState";
@@ -183,6 +187,9 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
   // member (the host) writes it to the store.
   const fullName = useAppSelector(selectUserFullName);
   const email = useAppSelector(selectUserEmail);
+  const userId = useAppSelector(selectUserId);
+  // org-filter: write-target a new database on a page not saved yet goes to the active organization
+  const activeOrg = useAppSelector(selectActiveOrganizationId);
   const applyMeta = (meta: Partial<SpaceMeta>) => {
     if (!docRef.current) return;
     const patch = meta as Partial<Editable>;
@@ -834,6 +841,23 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
                   }),
                 ),
               pickSource,
+              newDatabase: async (fullPage) => {
+                try {
+                  const table = await createPageDatabase(doc.id, activeOrg, userId);
+                  if (!fullPage) return { table };
+                  const view = { id: newViewId(), name: "Table", layout: "grid" as const };
+                  const sub = await spaces.createSpace(doc.id, {
+                    open: false,
+                    title: table.name,
+                    blocks: [{ id: crypto.randomUUID(), type: "database", props: { source: { kind: "table", tableId: table.tableId }, inline: false, title: table.name, linked: false, views: [view], activeViewId: view.id } }],
+                  });
+                  window.setTimeout(() => spaces.open(sub.id), 60);
+                  return { table, pageId: sub.id };
+                } catch (err) {
+                  if (!isOrganizationSelectionCancelled(err)) toast.error(err instanceof Error ? err.message : "The database could not be made.");
+                  return null;
+                }
+              },
             }}
             menu={{ moveBlocksTo, turnIntoPageIn, askAi: openAskAi }}
             onComment={startComment}

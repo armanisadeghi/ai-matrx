@@ -19,7 +19,7 @@ import { useSpaces } from "../state/SpacesProvider";
 import type { SpaceHistoryEntry } from "../store-db/supabase-store";
 
 const NONE = async () => null;
-const READ_ONLY_SLASH = { createSubpage: NONE, pickPage: NONE, pickSource: NONE };
+const READ_ONLY_SLASH = { createSubpage: NONE, pickPage: NONE, pickSource: NONE, newDatabase: NONE };
 const READ_ONLY_MENU = { moveBlocksTo: () => undefined, turnIntoPageIn: () => undefined, askAi: () => undefined };
 const IGNORE = () => undefined;
 

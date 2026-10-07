@@ -47,6 +47,11 @@ export interface SlashContext {
   pickPage: (options?: { createFirst?: boolean }) => Promise<{ spaceId: string; created: boolean } | null>;
   /** "Linked view of database" / "Chart": the records the block shows (data/SourcePicker). */
   pickSource: () => Promise<PickedSource | null>;
+  /**
+   * "Database - Inline" / "Database - Full page" (Notion): a NEW table made in the page's organization.
+   * Inline answers the table (a block shows it here); full page answers the sub-page that shows it.
+   */
+  newDatabase: (fullPage: boolean) => Promise<{ table: PickedSource; pageId?: string } | null>;
 }
 
 function stored(type: string, props: Record<string, unknown>): SpacesPartialBlock {
@@ -145,6 +150,32 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
     { title: "Table", subtext: "Add a simple table to this page.", aliases: ["table", "simple table"], group: basic, icon: <Table2 size={ICON} />, onItemClick: set({ type: "table", content: { type: "tableContent", rows: [{ cells: ["", "", ""] }, { cells: ["", "", ""] }, { cells: ["", "", ""] }] } } as unknown as SpacesPartialBlock) },
     { title: "Table view", subtext: "Show records from a table as a table.", aliases: ["database", "inline", "table view"], group: database, icon: <Table2 size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "Table", layout: "grid" }, false)) },
     { title: "Board view", subtext: "Show records as a board.", aliases: ["board", "kanban"], group: database, icon: <Kanban size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "Board", layout: "kanban" }, false)) },
+    {
+      title: "Database - Inline",
+      subtext: "Add a new database to this page.",
+      aliases: ["database", "inline", "new table", "table"],
+      group: database,
+      icon: <Database size={ICON} />,
+      onItemClick: () => {
+        const at = slashTarget(editor);
+        void ctx.newDatabase(false).then((made) => {
+          if (made) insertAtSlash(editor, at, databaseBlock(made.table, { id: newViewId(), name: "Table", layout: "grid" }, false));
+        });
+      },
+    },
+    {
+      title: "Database - Full page",
+      subtext: "Add a new database as a sub-page.",
+      aliases: ["database", "full page", "new table"],
+      group: database,
+      icon: <Database size={ICON} />,
+      onItemClick: () => {
+        const at = slashTarget(editor);
+        void ctx.newDatabase(true).then((made) => {
+          if (made?.pageId) insertAtSlash(editor, at, { type: "page", props: { spaceId: made.pageId } });
+        });
+      },
+    },
     { title: "Linked view of database", subtext: "Show a view of an existing database.", aliases: ["linked", "database", "view"], group: database, icon: <Database size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: "All", layout: "grid" }, true)) },
     { title: "Chart", subtext: "Chart the records of a database.", aliases: ["chart", "donut", "graph"], group: database, icon: <PieChart size={ICON} />, onItemClick: withSource((s) => databaseBlock(s, { id: newViewId(), name: s.name, layout: "chart", chart: { type: "donut", groupBy: null, op: "count", centerValue: true } }, true)) },
     { title: "Code", subtext: "Capture a code snippet.", aliases: ["code", "```", "snippet"], group: media, icon: <Code size={ICON} />, onItemClick: set({ type: "codeBlock" }) },

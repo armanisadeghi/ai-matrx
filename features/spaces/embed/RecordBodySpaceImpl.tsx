@@ -137,6 +137,10 @@ function BodyEditor({ spaceId, readOnly, fallback }: { spaceId: string; readOnly
             return null;
           },
           pickSource,
+          newDatabase: async () => {
+            toast.info("Open this page in Spaces to add a new database.");
+            return null;
+          },
         }}
         menu={{
           moveBlocksTo: () => toast.info("Open this page in Spaces to move blocks to another page."),

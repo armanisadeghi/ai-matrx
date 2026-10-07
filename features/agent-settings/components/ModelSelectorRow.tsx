@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 import { Settings2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -65,61 +65,56 @@ export function ModelSelectorRow({
     selectHasPendingSwitch(state, agentId),
   );
 
-  // The picker reports the class BEFORE the model. The class is written at
-  // once; if the model switch it came with is then cancelled, the old model
-  // gets its own class back (never the new model's).
-  const pinBeforeSwitch = useRef<{ prev: string | undefined } | null>(null);
-  const switchFromModel = useRef<string | null>(null);
-  const wasPending = useRef(false);
-  useEffect(() => {
-    if (wasPending.current && !hasPendingSwitch) {
-      const cancelled = switchFromModel.current === effectiveModelId;
-      if (cancelled && pinBeforeSwitch.current) {
-        dispatch(
-          applySettingsFromDialog({
-            agentId,
-            newSettings: withOfferingPin(
-              effectiveSettings,
-              pinBeforeSwitch.current.prev,
-            ),
-          }),
-        );
-      }
-      pinBeforeSwitch.current = null;
-      switchFromModel.current = null;
-    }
-    wasPending.current = hasPendingSwitch;
-  }, [hasPendingSwitch, effectiveModelId, effectiveSettings, agentId, dispatch]);
+  // The picker reports the class (offering pin) and the model in the SAME
+  // click, in either order. Both are parked for that click and applied once
+  // its handlers have run: a model change carries the class into the switch
+  // (applied on confirm), a class-only change is written directly. The class
+  // is never written ahead of its model, so the entry never pairs the old
+  // model with the new model's class while the switch dialog is open.
+  const clickRef = useRef<{
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  } | null>(null);
 
-  // The switch committed (model moved) → nothing left to restore.
-  useEffect(() => {
-    if (switchFromModel.current && switchFromModel.current !== effectiveModelId) {
-      pinBeforeSwitch.current = null;
-      switchFromModel.current = null;
+  const parkForClick = (update: {
+    modelId?: string;
+    pin?: { offeringId: string | undefined };
+  }) => {
+    if (!clickRef.current) {
+      clickRef.current = {};
+      queueMicrotask(() => {
+        const click = clickRef.current;
+        clickRef.current = null;
+        if (!click) return;
+        if (click.modelId) {
+          dispatch(
+            requestModelSwitch({
+              agentId,
+              newModelId: click.modelId,
+              offeringId: click.pin?.offeringId,
+            }),
+          );
+        } else if (click.pin) {
+          dispatch(
+            applySettingsFromDialog({
+              agentId,
+              newSettings: withOfferingPin(effectiveSettings, click.pin.offeringId),
+            }),
+          );
+        }
+      });
     }
-  }, [effectiveModelId]);
+    Object.assign(clickRef.current, update);
+  };
 
   const handleModelChange = (newModelId: string) => {
     if (newModelId === effectiveModelId) return;
-    switchFromModel.current = effectiveModelId ?? null;
-    dispatch(requestModelSwitch({ agentId, newModelId }));
+    parkForClick({ modelId: newModelId });
   };
 
-  // The class (offering) pin rides with the model in the same settings entry;
   // `undefined` removes the key so the server routes to the preferred class.
   const handleOfferingPinChange = (offeringId: string | undefined) => {
-    const prev = effectiveSettings.offering_id;
-    pinBeforeSwitch.current = { prev: typeof prev === "string" ? prev : undefined };
-    queueMicrotask(() => {
-      // No model switch followed in this gesture → a class-only change.
-      if (switchFromModel.current === null) pinBeforeSwitch.current = null;
-    });
-    dispatch(
-      applySettingsFromDialog({
-        agentId,
-        newSettings: withOfferingPin(effectiveSettings, offeringId),
-      }),
-    );
+    parkForClick({ pin: { offeringId } });
   };
 
   const activeBadges = showSettingsBadges

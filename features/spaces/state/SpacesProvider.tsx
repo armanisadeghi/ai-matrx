@@ -15,7 +15,7 @@ import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-c
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
 
-import type { SpaceDoc, SpaceId, SpaceSummary } from "../contract";
+import type { SpaceBlock, SpaceDoc, SpaceId, SpaceSummary } from "../contract";
 import { between, byPosition } from "../store/position";
 import { installAgencySample, pageOrganizationId } from "../data/agency-install";
 import { addTravelingSmmSample, findSamplePage, pointCopyAtItsTables } from "../store/sample";
@@ -86,7 +86,7 @@ interface SpacesContextValue {
   toggleFavorite: (id: SpaceId) => void;
   recent: SpaceId[];
   markVisited: (id: SpaceId) => void;
-  createSpace: (parentId: SpaceId | null, options?: { open?: boolean; afterId?: SpaceId; title?: string }) => Promise<SpaceDoc>;
+  createSpace: (parentId: SpaceId | null, options?: { open?: boolean; afterId?: SpaceId; title?: string; blocks?: SpaceBlock[] }) => Promise<SpaceDoc>;
   archiveSpace: (id: SpaceId) => Promise<void>;
   restoreSpace: (id: SpaceId) => Promise<void>;
   duplicateSpace: (id: SpaceId) => Promise<SpaceDoc>;
@@ -256,7 +256,7 @@ export function SpacesProvider({ children }: { children: ReactNode }) {
 
   const createSpace: SpacesContextValue["createSpace"] = async (parentId, options) => {
     try {
-      const doc = await store.create({ parentId, afterId: options?.afterId, title: options?.title });
+      const doc = await store.create({ parentId, afterId: options?.afterId, title: options?.title, blocks: options?.blocks });
       fresh.current.set(doc.id, doc);
       if (options?.open !== false) {
         focusTitle.current = doc.id;

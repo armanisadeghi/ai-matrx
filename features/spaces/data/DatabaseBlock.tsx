@@ -11,7 +11,7 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { DashboardCanvas, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { DashboardCanvas, FieldEditor, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type SavedViewSpec } from "@ai-matrx/records-ui";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
   ArrowDownUp,
@@ -30,6 +30,7 @@ import {
   ListFilter,
   Maximize2,
   PanelRight,
+  Pencil,
   Zap,
   PieChart,
   Plus,
@@ -218,7 +219,7 @@ function DatabaseFrame({
             );
           })}
           {isChart ? (
-            <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} compact />
+            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} compact />
           ) : null}
           {editable && !isChart ? (
             <Button variant="quiet" icon={<Plus size={14} />} aria-label="Add view" onClick={() => {
@@ -248,7 +249,7 @@ function DatabaseFrame({
             />
             <AutomationsButton tableId={tableId} sample={sample} />
             <Button variant="quiet" icon={<Maximize2 size={15} strokeWidth={1.8} />} aria-label="Open as full page" title="Open as full page" onClick={() => setExpanded(true)} />
-            <ViewSettings view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
+            <ViewSettings tableId={tableId} sample={sample} view={active} fields={fields} props={props} onView={saveView} onBlock={save} editable={editable} />
             <NewButton onNew={addRow} />
           </div>
         ) : null}
@@ -506,6 +507,8 @@ const OPS: Array<{ id: ChartSettings["op"]; label: string }> = [
 ];
 
 function ViewSettings({
+  tableId,
+  sample,
   view,
   fields,
   props,
@@ -514,6 +517,8 @@ function ViewSettings({
   editable,
   compact,
 }: {
+  tableId: string;
+  sample: boolean;
   view: SpaceDbView;
   fields: Field[];
   props: DatabaseBlockProps;
@@ -522,11 +527,30 @@ function ViewSettings({
   editable: boolean;
   compact?: boolean;
 }) {
+  // N5 — Notion's property editor: the table's own column panel (records-ui FieldEditor: name, type,
+  // choices and their colours, relation, number format, default, look) for one property or a new one.
+  const [editing, setEditing] = useState<Field | "new" | null>(null);
+  const canShape = editable && !sample;
   const [page, setPage] = useState<"main" | "layout" | "group" | "x" | "yfield" | "props">("main");
   const chart = { ...DEFAULT_CHART, ...view.chart };
   const setChart = (p: Partial<ChartSettings>) => onView({ chart: { ...chart, ...p } });
   const label = (key?: string | null) => (key ? (fields.find((f) => f.key === key)?.label ?? key) : "None");
   return (
+    <>
+    <Dialog open={editing !== null} onOpenChange={(o) => (o ? null : setEditing(null))}>
+      <DialogContent size="lg" className="overflow-auto">
+        <DialogTitle>{editing === "new" ? "New property" : editing ? `Edit ${editing.label}` : "Property"}</DialogTitle>
+        {editing !== null ? (
+          <FieldEditor
+            tableId={tableId}
+            field={editing === "new" ? undefined : editing}
+            onSaved={() => setEditing(null)}
+            onCancel={() => setEditing(null)}
+            onRemoved={() => setEditing(null)}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
     <Popover onOpenChange={(o) => (o ? setPage("main") : null)}>
       <PopoverTrigger asChild>
         <button type="button" className={compact ? "spaces-db-icon spaces-db-icon-sm" : "spaces-db-icon"} aria-label="View settings" title="View settings">
@@ -537,8 +561,14 @@ function ViewSettings({
         {page === "main" ? (
           <>
             <div className="px-2 py-1 type-secondary text-muted-foreground">View options</div>
+            {editable ? (
+              // Notion's view name (a chart tile's title is its view's name).
+              <div className="px-2 pb-1">
+                <Input key={view.id} defaultValue={view.name} aria-label="View name" onBlur={(e) => e.target.value.trim() && e.target.value.trim() !== view.name && onView({ name: e.target.value.trim() })} onKeyDown={(e) => e.key === "Enter" && (e.currentTarget as HTMLInputElement).blur()} />
+              </div>
+            ) : null}
             <MenuRow icon={<Table2 size={15} />} label="Layout" end={<span className="type-secondary text-muted-foreground">{LAYOUTS.find((l) => l.id === view.layout)?.label}</span>} onClick={() => editable && setPage("layout")} />
-            {view.layout !== "chart" ? <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - (view.hiddenFields ?? []).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} /> : null}
+            <MenuRow icon={<List size={15} />} label="Properties" end={<span className="text-xs text-muted-foreground">{fields.length - (view.hiddenFields ?? []).filter((k) => fields.some((f) => f.key === k)).length} shown</span>} onClick={() => setPage("props")} />
             {view.layout === "kanban" ? <MenuRow icon={<Kanban size={15} />} label="Group" end={<span className="type-secondary text-muted-foreground">{label(view.groupField)}</span>} onClick={() => editable && setPage("group")} /> : null}
             {view.layout === "chart" ? (
               <>
@@ -595,19 +625,24 @@ function ViewSettings({
               />
             ))
           : null}
-        {page === "props"
-          ? fields.map((f) => {
+        {page === "props" ? (
+          <>
+            {fields.map((f) => {
               const hidden = (view.hiddenFields ?? []).includes(f.key);
               return (
-                <MenuRow
-                  key={f.key}
-                  label={f.label}
-                  end={<Switch checked={!hidden} tabIndex={-1} aria-hidden />}
-                  onClick={() => editable && onView({ hiddenFields: hidden ? (view.hiddenFields ?? []).filter((k) => k !== f.key) : [...(view.hiddenFields ?? []), f.key] })}
-                />
+                <div key={f.key} className="flex items-center">
+                  <MenuRow
+                    label={f.label}
+                    end={<Switch checked={!hidden} tabIndex={-1} aria-hidden />}
+                    onClick={() => editable && onView({ hiddenFields: hidden ? (view.hiddenFields ?? []).filter((k) => k !== f.key) : [...(view.hiddenFields ?? []), f.key] })}
+                  />
+                  {canShape ? <Button variant="quiet" icon={<Pencil size={14} />} aria-label={`Edit property ${f.label}`} title="Edit property" onClick={() => setEditing(f)} /> : null}
+                </div>
               );
-            })
-          : null}
+            })}
+            {canShape ? <MenuRow icon={<Plus size={15} />} label="New property" onClick={() => setEditing("new")} /> : null}
+          </>
+        ) : null}
         {page === "group" ? <FieldList fields={fields} value={view.groupField} onPick={(k) => (onView({ groupField: k }), setPage("main"))} /> : null}
         {page === "x" ? <FieldList fields={fields} value={chart.groupBy} onPick={(k) => (setChart({ groupBy: k }), setPage("main"))} /> : null}
         {page === "yfield" ? (
@@ -615,6 +650,7 @@ function ViewSettings({
         ) : null}
       </PopoverContent>
     </Popover>
+    </>
   );
 }
 
