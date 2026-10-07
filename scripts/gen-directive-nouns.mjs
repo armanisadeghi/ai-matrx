@@ -153,7 +153,9 @@ const enumFields = {};
 for (const n of catalog.nouns) {
   const fields = new Set();
   for (const cls of ["create", "update"]) {
-    const props = n.schemas?.[cls]?.properties ?? {};
+    // Per-noun schemas live under the manifest's `noun_schemas` map (the
+    // served summary carries none since lane G12, 2026-10-07).
+    const props = catalog.noun_schemas?.[n.noun]?.[cls]?.properties ?? {};
     for (const [key, node] of Object.entries(props)) {
       if (enumOf(node)) fields.add(key);
     }

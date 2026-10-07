@@ -19,6 +19,7 @@
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { formatUsd } from "@ai-matrx/kit/format";
 
 import type { GalleryThumb } from "./catalogue";
 import { TemplateLivePreview } from "./TemplateLivePreview";
@@ -176,10 +177,6 @@ function dayOf(value: unknown): string | null {
   return m ? m[1] : null;
 }
 
-function moneyText(n: number): string {
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: Number.isInteger(n) ? 0 : 2 });
-}
-
 function Chip({ color, children }: { color?: string; children: ReactNode }) {
   return <span className={cn("inline-flex max-w-full truncate rounded px-1.5 py-0.5 type-meta font-medium", CHIP[color ?? "gray"] ?? CHIP.gray)}>{children}</span>;
 }
@@ -204,7 +201,7 @@ export function ValueText({ field, value, names }: { field: ShowField | undefine
     return <span>{keys.map((k) => names.get(String(k)) ?? String(k)).join(", ")}</span>;
   }
   if (type === "checkbox") return <span>{value ? "Yes" : "No"}</span>;
-  if (type === "currency" && typeof value === "number") return <span className="tabular-nums">{moneyText(value)}</span>;
+  if (type === "currency" && typeof value === "number") return <span className="tabular-nums">{formatUsd(value, { digits: "whole" })}</span>;
   if (type === "percent" && typeof value === "number") return <span className="tabular-nums">{value}%</span>;
   if ((type === "number" || type === "integer" || type === "decimal") && typeof value === "number") {
     return <span className="tabular-nums">{value.toLocaleString("en-US")}</span>;

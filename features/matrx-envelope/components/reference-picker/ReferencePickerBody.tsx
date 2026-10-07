@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectResolvedBaseUrl } from "@/lib/redux/slices/apiConfigSlice";
+import { useNounSchemas } from "@/features/directive-catalog/hooks/useNounSchemas";
 import { ENTITY_TYPE_METADATA, isEntityTypeToken } from "@ai-matrx/associations";
 import type { EntityTypeToken } from "@ai-matrx/associations";
 import {
@@ -561,10 +562,15 @@ function WriteStep({
 }) {
   const { type, delivery, directiveClass } = header;
   const formMode = directiveClass === "update" ? "update" : "create";
-  const { noun, loading, error } = useDirectiveNoun(type.token);
+  const nounState = useDirectiveNoun(type.token);
+  const { noun } = nounState;
+  // The summary carries no schemas: this form loads its ONE noun's (G12).
+  const nounSchemas = useNounSchemas(noun?.noun ?? null);
+  const loading = nounState.loading || nounSchemas.loading;
+  const error = nounState.error ?? nounSchemas.error;
   const [values, setValues] = useState<Record<string, SchemaFieldValue>>({});
 
-  const schema = noun?.schemas?.[directiveClass];
+  const schema = nounSchemas.schemas?.[directiveClass];
   const fields = useMemo(
     () =>
       noun && isJsonSchema(schema)

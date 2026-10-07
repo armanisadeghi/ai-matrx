@@ -320,7 +320,9 @@ function DirectiveStateCell({
   const writeVerb = verb === "create" || verb === "update" || verb === "delete";
   const canToggle = writeVerb && state !== "no";
   const enabled = noun.create === "yes" || noun.update === "yes";
-  const schema = noun.schemas?.[verb];
+  // The summary carries no schemas (G12): a write cell that is not `no` has a
+  // published or prospective shape, loaded when it is inspected.
+  const inspectable = writeVerb && state !== "no";
 
   return (
     <StateCell
@@ -333,7 +335,7 @@ function DirectiveStateCell({
           : undefined
       }
       onInspect={
-        schema ? () => onInspect({ kind: "directive", noun, verb }) : undefined
+        inspectable ? () => onInspect({ kind: "directive", noun, verb }) : undefined
       }
       inspectLabel={`Inspect ${verb}:${noun.noun} shape`}
     />

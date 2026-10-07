@@ -11,6 +11,8 @@
 // every surface (checkout, ledger, docs) reads it from here. Pure + importable —
 // no I/O, no Stripe SDK — so it's usable from client display code AND the route.
 
+import { formatMoney } from "@ai-matrx/kit/format";
+
 /** Platform commission in basis points (1/100th of a percent). 2000 = 20%. */
 export const PLATFORM_FEE_BPS = 2000;
 
@@ -42,12 +44,5 @@ export const MIN_CLASS_PRICE_CENTS = 100;
 
 /** Format cents as a USD price string for display, e.g. 2999 → "$29.99", 3000 → "$30". */
 export function formatPriceCents(cents: number, currency = "usd"): string {
-  const dollars = cents / 100;
-  const whole = Number.isInteger(dollars);
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: whole ? 0 : 2,
-    maximumFractionDigits: 2,
-  }).format(dollars);
+  return formatMoney(cents, { currency, unit: "minor", digits: "whole" });
 }

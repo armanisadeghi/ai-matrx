@@ -14,4 +14,6 @@ export const uiDecisionPicks = defineAppTable({
     winner: f.text({ label: "Winner" }),
     note: f.longText({ label: "Note" }),
   },
+  // Graduated 2026-10-07: the rows live in ui.decision_pick (entity:ui_decision_pick); the store copies are archived.
+  graduatedTo: { token: "ui.decision_pick", map: { decision_id: "decision_id", winner: "winner", note: "note" } },
 });

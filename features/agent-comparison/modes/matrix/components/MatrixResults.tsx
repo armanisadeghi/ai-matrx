@@ -58,7 +58,7 @@ function TokenLine({ m, className }: { m: Metrics; className?: string }) {
 function pct(a: number, b: number): string {
   if (!b) return "—";
   const d = ((a - b) / b) * 100;
-  return `${d > 0 ? "+" : ""}${formatPercent(d, { digits: 1 })}`;
+  return `${d > 0 ? "+" : ""}${formatPercent(d, { maxDigits: 1 })}`;
 }
 
 export function MatrixResults({

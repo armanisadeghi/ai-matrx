@@ -511,10 +511,11 @@ cell live from `platform.entity_types` (`agent_writable`, `reference_pickable`,
 `is_component`, category, label, `title_column`) + the shape registry + the generated ORM
 models (soft-delete columns), and:
 
-1. **serves** it at **`GET /directives/catalog`** (unauthed) — the live payload every
-   client reads: nouns × classes, per-noun identity fields + write schemas, the Kind
-   Actions section, the alias map;
-2. **snapshots** it to **`docs/protocol/kind_directives_catalog.generated.json`**
+1. **serves** it at **`GET /directives/catalog`** (unauthed, cached, ETag) — the small
+   summary every client reads: nouns × classes, per-noun identity fields, the Kind
+   Actions section, the alias map — and ONE noun's write schemas at
+   **`GET /directives/catalog/{noun}`**, fetched when a person opens a form;
+2. **snapshots** it (summary + a `noun_schemas` map) to **`docs/protocol/kind_directives_catalog.generated.json`**
    (`scripts/generate_directive_catalog_manifest.py`, run in `release.sh`), mirrored
    byte-identical to matrx-frontend for offline/build-time consumers.
 

@@ -27,12 +27,17 @@ interface CatalogNoun {
   schemas?: Record<string, unknown>;
 }
 
-const catalog = JSON.parse(
+const manifest = JSON.parse(
   readFileSync(
     join(process.cwd(), "docs/protocol/kind_directives_catalog.generated.json"),
     "utf8",
   ),
-) as { nouns: CatalogNoun[] };
+) as { nouns: CatalogNoun[]; noun_schemas: Record<string, Record<string, unknown>> };
+// Each noun with its schemas from the manifest's `noun_schemas` map — the
+// same body `GET /directives/catalog/{noun}` serves (G12 split).
+const catalog = {
+  nouns: manifest.nouns.map((n) => ({ ...n, schemas: manifest.noun_schemas[n.noun] })),
+};
 
 function noun(name: string): CatalogNoun {
   const n = catalog.nouns.find((x) => x.noun === name);
