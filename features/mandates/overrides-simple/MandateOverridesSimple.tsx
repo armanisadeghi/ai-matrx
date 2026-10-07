@@ -28,6 +28,7 @@ import { isJsonObject, type JsonObject } from "@/types/json";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { useMandateSystemSeat } from "@/features/mandates/admin/useMandateSystemSeat";
 import { displayResolutionOrgId, usePageOrgFilter } from "@/features/mandates/display-org";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { fetchAgentVersionSnapshot, resolveAgentVersionId } from "@/features/agents/redux/builder-versions.thunks";
@@ -203,7 +204,9 @@ function OverridesBody({
   const dispatch = useAppDispatch();
   const store = useAppStore();
   const pageOrgFilter = usePageOrgFilter();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // Admin feature "mandate.system-seat": the system answer of a SYSTEM mandate.
+  const holdsSystemSeat = useMandateSystemSeat(data.mandate);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin) || holdsSystemSeat;
   const builtinAgents = useAppSelector(selectBuiltinAgents);
   const { organizations } = useUserOrganizations();
 

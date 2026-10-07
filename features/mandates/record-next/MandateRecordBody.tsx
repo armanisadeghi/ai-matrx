@@ -113,6 +113,7 @@ import {
 } from "@/features/mandates/overrides-simple/MandateOverridesSimple";
 import type { MandateWorkspaceTab } from "@/features/mandates/workspace/MandateWorkspace";
 import { RecordAdminPanels } from "./RecordAdminPanels";
+import { useMandateSystemSeat } from "@/features/mandates/admin/useMandateSystemSeat";
 import { MandateTryPanel } from "./MandateTryPanel";
 import { MandateRunHistory } from "@/features/mandates/run-history/MandateRunHistory";
 import { MandateCandidatesPanel } from "./MandateCandidatesPanel";
@@ -239,7 +240,11 @@ function OneMandateRecordBody({
   const authoring = host === "admin-route";
   // Admin tab bodies: the admin route, or a super admin in the window (this
   // replaces the old window's separate "Admin" pane — no toggle).
-  const showAdmin = showAdminPanels ?? (authoring || isSuperAdmin);
+  // Admin feature "mandate.system-seat": on a SYSTEM mandate the seat holder
+  // also gets the admin tab bodies from a user page.
+  const systemSeat = useMandateSystemSeat(data?.mandate);
+  const showAdmin =
+    showAdminPanels ?? (authoring || isSuperAdmin || systemSeat);
 
   const personalKey =
     perspective === "person" && data
@@ -579,6 +584,7 @@ function OneMandateRecordBody({
         <RecordAdminPanels
           mandateKey={storedMandateKey(data.mandate.mandate_key)}
           activeTab={activeTab}
+          enabled={isSuperAdmin || systemSeat}
         />
       ) : null}
       {/* The simple Overrides redesign, BESIDE the protected Overrides tab

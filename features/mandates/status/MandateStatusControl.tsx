@@ -48,6 +48,8 @@ export interface MandateStatusControlProps {
   onSetHolder?: () => void;
   /** After a successful change (the cache bus also fires). */
   onChanged?: (next: MandateStatus) => void;
+  /** Admin feature "mandate.system-seat": this is a SYSTEM mandate and the viewer holds the seat. */
+  systemSeat?: boolean;
   size?: StatusBadgeSize;
   className?: string;
 }

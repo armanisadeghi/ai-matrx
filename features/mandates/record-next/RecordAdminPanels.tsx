@@ -82,12 +82,15 @@ function readCodeTruthOnce(
 export function RecordAdminPanels({
   mandateKey,
   activeTab,
+  enabled = false,
 }: {
   mandateKey: AnyMandateKey;
   activeTab: RecordTabId;
+  /** Super admin, or the "mandate.system-seat" holder on a system mandate. */
+  enabled?: boolean;
 }) {
   const dispatch = useAppDispatch();
-  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin) || enabled;
   const lineageIndex = useAppSelector(selectAgentLineageIndex);
   const [data, setData] = useState<MandateConsoleData | null>(null);
   const [codeTruthByKey, setCodeTruthByKey] = useState<

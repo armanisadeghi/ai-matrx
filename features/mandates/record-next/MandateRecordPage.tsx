@@ -24,6 +24,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
+import { useMandateSystemSeat } from "@/features/mandates/admin/useMandateSystemSeat";
 import { PromoteToSystemMandateButton } from "@/features/mandates/admin/mandate-actions";
 import { useStartMandateWorkflow } from "@ai-matrx/chat/mandates/useStartMandateWorkflow";
 import {
@@ -246,6 +247,7 @@ function RecordHeader({
   const { starting, startWorkflow } = useStartMandateWorkflow();
   const userId = useAppSelector(selectUserId);
   const canRemove = recordCanRemove(data.mandate, { level, userId, orgId, canManageOrg });
+  const systemSeat = useMandateSystemSeat(data.mandate);
   // Sharing is the creator's call, on their own soft mandate — from the person seat or an
   // organization seat alike (the list kebab uses the same rule: canShareMemberRow).
   const canShare =
@@ -270,6 +272,7 @@ function RecordHeader({
             name={name}
             status={mandateStatusOfRow(data.mandate, data.bindings)}
             canManage={canRemove}
+            systemSeat={systemSeat}
             onSetHolder={readOnly ? undefined : () => onTabChange("holder")}
             onChanged={(next) =>
               next === "archived" ? pushAppHref(router, listHref) : refresh()
