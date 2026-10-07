@@ -211,7 +211,7 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 jest.mock("@ai-matrx/chat/store/hooks", () => jest.requireMock("@/lib/redux/hooks"));
-jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1" }));
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "user-1", selectAdminFeature: () => false }));
 jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn(), info: jest.fn() } }));
 jest.mock("@/components/navigation/AppLink", () => ({
   __esModule: true,
