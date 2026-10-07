@@ -177,7 +177,10 @@ export function buildDeckExport(
       // Anki's default import: tab-separated, one note per line, front<TAB>back.
       return cards.map((c) => `${oneLine(c.front)}\t${oneLine(c.back)}`).join("\n");
     case "csv": {
-      return toDelimitedText(["front", "back"], cards.map((c) => [c.front, c.back]));
+      // This CSV has a matching app importer; preserve card text on re-import.
+      return toDelimitedText(["front", "back"], cards.map((c) => [c.front, c.back]), {
+        spreadsheetSafe: false,
+      });
     }
   }
 }
