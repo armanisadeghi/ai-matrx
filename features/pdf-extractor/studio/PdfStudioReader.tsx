@@ -26,6 +26,8 @@
  * collapse a pane via keyboard.
  */
 
+import { CopySplitButton } from "@ai-matrx/rich-content/copy/CopySplitButton";
+import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { preferAggregateClean } from "../service/cleanOutcome";
 import { useRouter } from "next/navigation";
@@ -1977,8 +1979,9 @@ export function PaneHeader({
   subtitle: string;
   icon: React.ReactNode;
   onTogglePane?: () => void;
-  /** Returns the text to copy for the entire pane. When provided, renders a
-   *  copy-to-clipboard button next to the EyeOff show/hide toggle. */
+  /** Returns the pane's text (markdown). When provided, renders THE split Copy next to the
+   *  EyeOff toggle: one click copies the person's default flavor, the chevron offers markdown or
+   *  plain text (guard: features/source-studio/__tests__/source-text-copies-split.test.ts). */
   onCopyAll?: () => string;
   copyAllLabel?: string;
 }) {
@@ -2002,9 +2005,10 @@ export function PaneHeader({
         {hasActions && (
           <div className="ml-auto flex items-center gap-0.5">
             {onCopyAll && (
-              <CopyIconButton
-                getText={onCopyAll}
+              <CopySplitButton
+                size="xs"
                 label={copyAllLabel ?? "Copy all pages"}
+                copy={(flavor) => copyRichContent(onCopyAll(), flavor)}
               />
             )}
             {onTogglePane && (
