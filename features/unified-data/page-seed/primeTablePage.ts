@@ -33,11 +33,15 @@ export function primeTablePage(
 ): void {
   if (typeof window === "undefined" || primedSeeds.has(seed)) return;
   primedSeeds.add(seed);
+  // `seed` is React's streamed thenable, not a Promise: adopt it, so `.then` chains as a Promise's.
   primeObjectOrganization(
     tableId,
-    seed.then(
+    Promise.resolve(seed).then(
       (s) => {
-        if (!s || s.tableId !== tableId) return resolveObjectOrganization(dataSource, tableId);
+        if (!s || s.tableId !== tableId) {
+          console.warn(`[page-seed] the server did not seed table ${tableId}; the browser asks for itself.`);
+          return resolveObjectOrganization(dataSource, tableId);
+        }
         if (s.organizationId && s.bundle) {
           primeTablePageBundle({ organizationId: s.organizationId, tableId, answer: s.bundle });
         }
