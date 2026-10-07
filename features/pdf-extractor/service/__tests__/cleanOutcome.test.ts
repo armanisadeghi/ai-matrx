@@ -12,6 +12,11 @@ describe("classifyRecordUpdateStatus", () => {
     expect(classifyRecordUpdateStatus("completed")).toBe("done");
     expect(classifyRecordUpdateStatus(undefined)).toBe("done");
     expect(classifyRecordUpdateStatus("active")).toBe("active");
+    // The server's wire shape for a batch-parked clean (aidream pdf_pipeline).
+    expect(
+      classifyRecordUpdateStatus("active", { run_status: "awaiting_batch" }),
+    ).toBe("queued");
+    expect(classifyRecordUpdateStatus("completed", {})).toBe("done");
   });
 });
 

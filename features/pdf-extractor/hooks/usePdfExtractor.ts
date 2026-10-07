@@ -670,7 +670,10 @@ export function usePdfExtractor(options: UsePdfExtractorOptions = {}) {
             event.data.table === "processed_documents"
           ) {
             const recordId = event.data.record_id;
-            const outcome = classifyRecordUpdateStatus(event.data.status);
+            const outcome = classifyRecordUpdateStatus(
+              event.data.status,
+              event.data.metadata,
+            );
             recordUpdated.add(recordId);
             invalidateProcessedDocumentCache(recordId);
             const fresh = await fetchDocument(recordId);

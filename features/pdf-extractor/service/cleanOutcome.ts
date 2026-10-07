@@ -12,14 +12,27 @@ export type RecordOutcome = "done" | "failed" | "queued" | "active";
 
 /**
  * Read `record_update.data.status`. `completed` (or a server that sends no
- * status at all) is done; `failed` is an error; `awaiting_batch` is a clean
- * waiting on the batch queue; `active` is mid-run.
+ * status at all) is done; `failed` is an error; `active` is mid-run. The
+ * record_update contract only carries active/completed/failed, so the server
+ * marks a clean parked on the batch queue as `status: "active"` with
+ * `metadata.run_status: "awaiting_batch"` — that reads as queued.
  */
-export function classifyRecordUpdateStatus(status: unknown): RecordOutcome {
+export function classifyRecordUpdateStatus(
+  status: unknown,
+  metadata?: unknown,
+): RecordOutcome {
   if (status === "failed") return "failed";
-  if (status === "awaiting_batch") return "queued";
+  if (status === "awaiting_batch" || recordRunStatus(metadata) === "awaiting_batch")
+    return "queued";
   if (status === "active") return "active";
   return "done";
+}
+
+/** `metadata.run_status` of a record_update, when the server sent one. */
+export function recordRunStatus(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const v = (metadata as Record<string, unknown>).run_status;
+  return typeof v === "string" ? v : null;
 }
 
 export const CLEAN_QUEUED_LABEL = "Cleaning queued";

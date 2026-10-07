@@ -67,6 +67,7 @@ import type {
 } from "@ai-matrx/agents/generated/stream-events";
 import { ENDPOINTS } from "@/lib/api/endpoints";
 import { requestRaw } from "@/lib/python-client";
+import { recordRunStatus } from "./cleanOutcome";
 
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
@@ -221,7 +222,14 @@ export async function streamPdfClean(opts: {
       onRecordUpdate: (data: RecordUpdatePayload) => {
         if (data.table === "processed_documents" && data.record_id === docId) {
           serverConfirmedUpdate = true;
-          recordStatus = typeof data.status === "string" ? data.status : null;
+          // A batch-parked clean arrives as status "active" with
+          // metadata.run_status "awaiting_batch"; surface it as one status.
+          recordStatus =
+            recordRunStatus(data.metadata) === "awaiting_batch"
+              ? "awaiting_batch"
+              : typeof data.status === "string"
+                ? data.status
+                : null;
           callbacks.onRecordUpdate?.(data.record_id, recordStatus);
         }
       },
