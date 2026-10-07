@@ -15,7 +15,7 @@ type Row = { id: string; name: string; topic: string | null; level: string; upda
 const spec = (id: keyof Row & string, label: string, phone?: EntityColumnSpec<Row>["phone"]): EntityColumnSpec<Row> =>
   ({ id, label, phone, column: { id, accessorKey: id, header: label } }) as unknown as EntityColumnSpec<Row>;
 
-it("omits a field the row has no value for, keeps the ones it has, meta at text-xs", async () => {
+it("omits a field the row has no value for, keeps the ones it has, meta on the type-secondary scale", async () => {
   const layout = resolvePhoneCardLayout([
     spec("name", "Name", "title"),
     spec("topic", "Topic", "primary"),
@@ -42,7 +42,8 @@ it("omits a field the row has no value for, keeps the ones it has, meta at text-
   expect(host.textContent).not.toContain("—");
   expect(host.textContent).toContain("15h ago");
   const meta = [...host.querySelectorAll("div")].find((d) => d.textContent?.includes("15h ago") && d.className.includes("gap-x-3"));
-  expect(meta?.className).toContain("text-xs");
+  // The meta line reads on the package type scale (w-s1), not a raw text size.
+  expect(meta?.className).toContain("type-secondary");
   act(() => root.unmount());
   host.remove();
 });

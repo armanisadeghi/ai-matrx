@@ -384,7 +384,7 @@ describe("a surface that declares bulk actions", () => {
       // makes this finger-sized.
       expect(label!.className).toContain("matrx-tap-area");
       expect(label!.tagName).toBe("LABEL");
-      expect(label!.querySelector("input[type='checkbox']")).not.toBeNull();
+      expect(label!.querySelector("[role='checkbox']")).not.toBeNull();
     } finally {
       window.innerWidth = desktopWidth;
     }
@@ -412,9 +412,10 @@ describe("the card list's select-all (the phone, where there is no header row)",
   function cardsSelectAll(): HTMLElement | null {
     return document.querySelector("[data-entity-cards-select-all]");
   }
-  function cardsBox(): HTMLInputElement | null {
+  // The design-system Checkbox is a Radix <button role="checkbox">, not an <input>.
+  function cardsBox(): HTMLElement | null {
     return document.querySelector(
-      "[data-entity-cards-select-all] input[type='checkbox']",
+      "[data-entity-cards-select-all] [role='checkbox']",
     );
   }
 
@@ -454,8 +455,7 @@ describe("the card list's select-all (the phone, where there is no header row)",
   it("shows a half-ticked page as half-ticked, never as empty", async () => {
     await render(bulkConfig());
     await click(rowCheckboxes()[0]);
-    expect(cardsBox()!.indeterminate).toBe(true);
-    expect(cardsBox()!.checked).toBe(false);
+    expect(cardsBox()!.getAttribute("aria-checked")).toBe("mixed");
     expect(cardsSelectAll()!.textContent).toContain("1 of 3 on this page");
   });
 

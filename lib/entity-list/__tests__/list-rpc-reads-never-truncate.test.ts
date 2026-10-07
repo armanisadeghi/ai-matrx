@@ -129,10 +129,11 @@ const LIST_RPC_NAME = /^[a-z0-9_]*(?:_facets|_list_counts|_scope_counts)$/;
 const ONE_VALUE_RPCS: Record<string, string> = {
   udt_column_facets: "returns one jsonb document; its p_limit bounds the values inside",
   cms_collection_column_facets: "returns one jsonb document; its p_limit bounds the values inside",
+  admin_explore_conversation_facets: "returns one jsonb document (an object of facet lists), read as one value in cx-dashboard/explorer/service.ts",
   map_topic_facets: "returns one jsonb document for one topic",
 };
 
-const SCAN_DIRS = ["app", "components", "features", "../aidream/apps/shared/chat/src", "hooks", "lib", "providers", "utils"];
+const SCAN_DIRS = ["app", "components", "features", "hooks", "lib", "providers", "utils"];
 const ROOT = process.env.LIST_RPC_GUARD_ROOT ?? path.resolve(__dirname, "../../..");
 
 function sourceFiles(): string[] {
