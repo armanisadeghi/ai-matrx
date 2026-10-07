@@ -58,7 +58,8 @@ import { MenuPresenceProvider, RegistryMenuSourceProvider, contentSourceKey } fr
 
 import { useOptionalWidgetHandle } from "@ai-matrx/chat/agents/hooks/useWidgetHandle";
 import { buildEditableWidgetHandle } from "./utils/widget-handle";
-import { resolveTableRowMenuDescriptor } from "./table-row-item";
+import { resolveTableRowItem } from "./table-row-item";
+import type { ResolvedItem } from "@ai-matrx/alchemy/declare";
 import { recordMenusRevision, resolveRecordMenu, subscribeRecordMenus } from "./record-menu-registry";
 import { joinExtraSections } from "./utils/join-extra-sections";
 import { CONTEXT_REGION_TRIGGER_ATTRS } from "./region-trigger-attrs";
@@ -348,6 +349,8 @@ export function ContextMenuV3({
   );
   const [resolvedContext, setResolvedContext] =
     useState<ResolvedContextMenuContext | null>(null);
+  /** The declared item this open is on (a table row), handed to the click target. */
+  const [resolvedItem, setResolvedItem] = useState<ResolvedItem | null>(null);
   const [resolvedExtraSections, setResolvedExtraSections] =
     useState<typeof extraSections>(undefined);
   /** This open is on a table row whose surface draws its own row sections (see resolvePerTargetContext). */
@@ -499,7 +502,9 @@ export function ContextMenuV3({
   // right-click path (mousedown then contextmenu) is deliberate — re-resolving
   // is idempotent and keeps lazy configs fresh.
   const resolvePerTargetContext = (target: HTMLElement | null) => {
-    const rowMenu = resolveTableRowMenuDescriptor(target);
+    const rowHit = resolveTableRowItem(target);
+    const rowMenu = rowHit?.menu ?? null;
+    setResolvedItem(rowHit?.item ?? null);
     // A table row has two owners: the table's descriptor names the row's values, the surface
     // names which RECORD the row is (and builds its own row doors from that same call). Both
     // are asked, always — `rowMenu?.context ?? surface` skipped the surface on every table row.
@@ -793,6 +798,7 @@ export function ContextMenuV3({
     heading:
       readContextMenuHeading(resolvedContext) ??
       recordHeadingAt(openTarget, recordRevision),
+    item: resolvedItem,
     contentSource,
     entity: effectiveEntity,
     excludedRichActions,

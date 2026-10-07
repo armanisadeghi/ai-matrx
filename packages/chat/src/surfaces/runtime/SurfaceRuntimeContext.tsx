@@ -24,6 +24,8 @@
  */
 
 import { announceUndeclaredLoadedValues } from "./loaded-value-check";
+import { liveValueOf, liveValues, type LiveValuesStore } from "@ai-matrx/alchemy/surface";
+import { getManifest } from "./registry";
 import {
   createContext,
   useCallback,
@@ -279,6 +281,39 @@ export interface SurfaceRegistry {
 
 let nextId = 0;
 
+/**
+ * THE PAGE'S LIVE VALUES REACH THE AGENT (ALC-18). A value the surface DECLARES that its runtime
+ * and contributions left unset is answered from the page's live capture (`@ai-matrx/alchemy/surface`
+ * `liveValues`: identity, selection, sections), only while the publishing page IS this surface —
+ * the same rule as `createSurfacePort({ live })`'s `getValue`. A supplied value always wins, and an
+ * undeclared live name (the request log, a section nobody declared) never rides along. Every reader
+ * of `getScope()` — the send path's context entries, the context window, write-back — gets it.
+ */
+export function withLiveValues(
+  surfaceName: string,
+  loaded: SurfaceScopePayload,
+  live: LiveValuesStore = liveValues,
+): SurfaceScopePayload {
+  const declared = getManifest(surfaceName)?.values ?? [];
+  const missing = declared.filter((v) => !(v.name in loaded));
+  if (missing.length === 0) return loaded;
+  let capture: ReturnType<LiveValuesStore["readFor"]>;
+  try {
+    capture = live.readFor(surfaceName);
+  } catch (err) {
+    console.error(`[surfaces] the live values of "${surfaceName}" could not be read`, err);
+    return loaded;
+  }
+  if (!capture) return loaded;
+  const filled: SurfaceScopePayload = { ...loaded };
+  for (const v of missing) {
+    const value = liveValueOf(capture, v.name);
+    if (value !== undefined) filled[v.name] = value;
+  }
+  return filled;
+}
+
+
 function createRegistry(
   kind: SurfaceRegistry["kind"],
   onRegister?: (value: SurfaceRuntimeValue) => void,
@@ -359,7 +394,7 @@ function createRegistry(
       }
       const loaded = { ...own, ...contributed };
       announceUndeclaredLoadedValues(surfaceName, loaded);
-      return loaded;
+      return withLiveValues(surfaceName, loaded);
     };
     return () => {
       const own = getScope();
