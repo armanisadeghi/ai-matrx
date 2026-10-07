@@ -15,6 +15,10 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D358 — Shared validation blockers observed during surface declaration pass (2026-10-07)
+
+Managed preview `/dashboard` returns 500 with `ReferenceError: Cannot access 'matrxDirectiveHost' before initialization` from the shared rich-content host loader. Owner: content host integration; reproduce with managed preview and repair the initialization cycle. `check:surface-routes` separately reports the published `/p -> matrx-public/p` mapping without a manifest; owner: public route/resolver integration, reconcile the retired route and installed mapping. Direct surface sync uses an unavailable legacy `SUPABASE_MATRIX_*` database host; correct production direct-host credentials also fail authentication, while the connected production Supabase MCP works. Owner: local environment configuration; repair noninteractive database credentials without printing secrets or touching CLI Keychain authentication. Exact surface verification receipt: `docs/verification/surfaces/2026-10-07-five-pages.json`.
+
 ### D357 — Making a booking page pauses every write to custom.record (lane HANDOVER, 2026-09-29)
 
 `custom.booking_declare` declares the page's `slot` column through `custom.field_declare`, which builds a plain `CREATE INDEX` on `custom.record` under a table-wide ShareLock: every insert/update to the record store, platform-wide, waits while an owner saves a booking page (seen on the clone: the guard's declare waited on other lanes' writers until lock timeout). Fix: build the slot index `CONCURRENTLY` outside the declare transaction (or a partial index created once per table by a queued job), and never on a re-declare of an existing page. Owner: whoever owns the booking door (DOOR-17); HANDOVER moved the Status check ahead of it so a refused page costs nothing (`migrations/campaign/handover_a_field_is_found_on_its_own_table.sql`).
