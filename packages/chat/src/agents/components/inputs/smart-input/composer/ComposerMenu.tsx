@@ -382,6 +382,19 @@ export function ComposerMenuLevel({ children }: { children: ReactNode }) {
   );
 }
 
+/** Phone width: a side cascade has no room beside the menu there. */
+function useNarrowViewport(): boolean {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 639px)");
+    const sync = () => setNarrow(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  return narrow;
+}
+
 /**
  * A row that opens a cascading panel beside the menu. The panel is a nested
  * Popover anchored to the row, so Radix treats it as a child layer: clicking
@@ -424,6 +437,7 @@ export function ComposerSubmenu({
   const closeAll = useContext(ComposerMenuCloseAllContext);
   const presentation = useContext(ComposerMenuPresentationContext);
   const sheetNav = useContext(ComposerSheetNavContext);
+  const narrow = useNarrowViewport();
   if (sheetNav) {
     // The phone sheet: the cascade's panel becomes a pushed page.
     return (
@@ -464,9 +478,12 @@ export function ComposerSubmenu({
       </PopoverAnchor>
       <PopoverContent
         /* sizing: fixed — a cascade panel sized by its own host (pickers need a definite height for their scroll chains) */
-        side="right"
+        // Phone: no room beside the menu — the panel opens under/over the row
+        // at the screen's full width, never positioned off-screen.
+        side={narrow ? "bottom" : "right"}
         align="start"
         sideOffset={6}
+        collisionPadding={8}
         onEscapeKeyDown={() => {
           close();
           closeAll?.();
@@ -490,6 +507,7 @@ export function ComposerSubmenu({
           "flex max-h-[var(--radix-popover-content-available-height)] flex-col overflow-hidden p-1",
           COMPOSER_MENU_NO_ENTRANCE,
           panelClassName ?? "w-72",
+          "max-sm:!w-[calc(100vw-1rem)]",
         )}
       >
         <ComposerMenuLevel>
