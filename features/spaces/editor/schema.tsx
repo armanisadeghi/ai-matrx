@@ -20,6 +20,8 @@ import { equationInline, mentionInline } from "./inline";
 import { storedBlockSpecs } from "./stored-blocks";
 import { CalloutBlock } from "./callout-block";
 import { TabBlock, TabsBlock } from "./tabs-block";
+import { SyncedBlock } from "./synced-block";
+import { ButtonBlock } from "./button-block";
 
 /** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
 const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
@@ -224,6 +226,8 @@ export const spacesSchema = BlockNoteSchema.create({
     slot: SlotBlock(),
     tabs: TabsBlock(),
     tab: TabBlock(),
+    synced: SyncedBlock(),
+    button: ButtonBlock(),
     table: defaultBlockSpecs.table,
     image: storedBlockSpecs.image(),
     video: storedBlockSpecs.video(),
