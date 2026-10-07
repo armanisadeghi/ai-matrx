@@ -176,7 +176,8 @@ export function startRunEventSource(config: RunEventSourceConfig): {
     // frame proves the wire (claim-on-first-frame in onFrame below).
     armStallTimer();
     try {
-      await streamSse(`${baseUrl}/runs/${runId}/events/stream`, handleSseEvent, {
+      await streamSse(`/runs/${runId}/events/stream`, handleSseEvent, {
+        baseUrl,
         headers: getHeaders(),
         lastEventId: cursor !== null ? String(cursor) : null,
         signal: controller.signal,
