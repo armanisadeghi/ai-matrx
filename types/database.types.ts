@@ -126965,6 +126965,69 @@ export type Database = {
   }
   ui: {
     Tables: {
+      decision_pick: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          custom_fields: Json
+          decision_id: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          note: string | null
+          organization_id: string
+          published_to_web: boolean
+          published_to_web_at: string | null
+          published_to_web_by: string | null
+          shown_to: Database["platform"]["Enums"]["shown_to"]
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+          winner: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          decision_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          winner?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          custom_fields?: Json
+          decision_id?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          note?: string | null
+          organization_id?: string
+          published_to_web?: boolean
+          published_to_web_at?: string | null
+          published_to_web_by?: string | null
+          shown_to?: Database["platform"]["Enums"]["shown_to"]
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+          winner?: string | null
+        }
+        Relationships: []
+      }
       ui_client: {
         Row: {
           created_at: string
