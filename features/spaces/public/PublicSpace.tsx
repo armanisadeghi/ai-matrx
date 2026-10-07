@@ -77,6 +77,7 @@ function useStaticValue(
     retryLoad: noop,
     patchSummary: noop,
     takeFocusTitle: () => false,
+    openToName: () => undefined,
     takeFresh: () => null,
     pageEpoch: () => 0,
     reopenPage: noop,
