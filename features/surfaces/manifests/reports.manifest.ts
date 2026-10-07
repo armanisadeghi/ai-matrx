@@ -106,7 +106,7 @@ export const reportsManifest: SurfaceManifest = {
     "Read-only analyses over platform data.",
   readiness: "partial",
   readinessNote:
-    "The /reports landing emits the complete report catalog and live availability. Per-report drill-in values, outside-helper attribution/binding proof and independent certification remain.",
+    "The /reports landing emits the complete report catalog and live availability. Per-report drill-in values, the canonical menu after truthful source attribution is registered, outside-helper binding proof and independent certification remain.",
   label: "Reports",
   urlPattern: "/reports",
   intro: `<surface_intro>
