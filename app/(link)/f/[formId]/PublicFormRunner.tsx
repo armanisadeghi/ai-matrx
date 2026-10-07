@@ -30,9 +30,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   FormRunner,
   RecordsUiProvider,
-  endingsFromDocument,
-  themeFromDocument,
-  welcomeFromDocument,
   type FormSubmitOutcome,
   type RecordsUiHost,
 } from "@ai-matrx/records-ui";
@@ -40,6 +37,7 @@ import { RichContentStaticInline } from "@ai-matrx/rich-content/levels/RichConte
 import type { Field, RuleExpression } from "@ai-matrx/records";
 
 import type { PublicForm } from "@/features/forms/service";
+import { endingsFromDocument, themeFromDocument, welcomeFromDocument } from "@/features/forms/presentation-fallback";
 import { replaceAddressWithoutNavigating } from "@/lib/url-state/addressWithoutNavigating";
 import { ErrorAlchemyMenu } from "@/components/errors/ErrorAlchemyMenu";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
