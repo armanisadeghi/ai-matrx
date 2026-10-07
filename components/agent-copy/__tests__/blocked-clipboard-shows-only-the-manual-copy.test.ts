@@ -17,7 +17,7 @@ jest.mock("@/lib/toast", () => ({
   toast: { error: jest.fn(), info: jest.fn(), success: jest.fn() },
 }));
 
-import { copyToClipboard } from "../copy-commands";
+import { copyContent } from "../copy-commands";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 
@@ -45,7 +45,7 @@ beforeEach(() => {
 describe("a blocked clipboard", () => {
   it("opens the manual copy with the answer and raises no error toast", async () => {
     const onError = jest.fn();
-    expect(await copyToClipboard(ANSWER, { onError })).toBe(false);
+    expect(await copyContent(ANSWER, { onError })).toBe(false);
     expect(jest.mocked(showManualCopy).mock.calls).toEqual([[{ text: ANSWER }]]);
     expect(toast.error).not.toHaveBeenCalled();
     expect(onError).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe("a blocked clipboard", () => {
     // A record that cannot be serialized never produces text to hand over.
     const crate: Record<string, unknown> = { code: "PX-3318" };
     crate.self = crate;
-    expect(await copyToClipboard(crate, { onError })).toBe(false);
+    expect(await copyContent(crate, { onError })).toBe(false);
     expect(showManualCopy).not.toHaveBeenCalled();
     expect(onError).toHaveBeenCalledTimes(1);
   });

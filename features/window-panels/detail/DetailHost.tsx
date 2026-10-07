@@ -67,7 +67,7 @@ import {
   resolveEntityDoors,
   tokenFromColumnName,
 } from "@/components/official/entity-ref/doors";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
@@ -379,7 +379,7 @@ export function DetailHost({ children }: { children: ReactNode }) {
       error: (message) => toast.error(message),
       success: (message) => toast.success(message),
     },
-    copyText: (text) => copyToClipboard(text, { formatJson: false }),
+    copyText: (text) => copyContent(text, { formatJson: false }),
     // 🚨 PLAN §5.3 — THE SAME RECONNECT THE CONNECTOR ROWS SHOW, from the
     // record's own health strip. The Google connect window IS that surface (it
     // runs incremental consent for only the missing scopes), so a refusal on a

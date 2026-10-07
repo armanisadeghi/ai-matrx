@@ -18,6 +18,7 @@
 // (per-version "Compare" buttons), not a separate menu item.
 
 import { Clipboard, Pin, GitCompareArrows } from "lucide-react";
+import { readText } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
@@ -55,10 +56,8 @@ registerAction({
   renderSlot: "overflow",
   order: 10,
   run: async (ctx) => {
-    let clipboardText = "";
-    try {
-      clipboardText = await navigator.clipboard.readText();
-    } catch {
+    const clipboardText = await readText();
+    if (clipboardText === null) {
       toast.error("Couldn't read the clipboard");
       return;
     }

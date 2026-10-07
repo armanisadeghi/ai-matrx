@@ -13,7 +13,7 @@
  * the text in front of the user, selected, and the copy is theirs.
  *
  * See `ClipboardFallbackHost.tsx` for the slim shell that mounts the
- * host, and `copy-commands.ts` → `copyToClipboard` for the ONE
+ * host, and `copy-commands.ts` → `copyContent` for the ONE
  * copy primitive that routes its terminal failure here.
  */
 

@@ -36,7 +36,7 @@ import { Skeleton } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { useDetailHost } from "@ai-matrx/detail/react";
 import { useOpenDetail } from "@ai-matrx/detail/react";
 import { detailInstanceKey } from "@ai-matrx/detail";
@@ -152,7 +152,7 @@ export function DetailShowcase() {
   };
 
   const copy = async (text: string) => {
-    const ok = await copyToClipboard(text, { formatJson: false });
+    const ok = await copyContent(text, { formatJson: false });
     if (ok) toast.success("Link copied");
     else toast.error("Could not copy the link");
   };

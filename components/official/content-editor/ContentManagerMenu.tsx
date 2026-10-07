@@ -14,7 +14,7 @@ import {
   FileCode,
   Code2,
 } from "lucide-react";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { extractErrorMessage } from "@/utils/errors";
 import { getMarkdownStylesheet } from "@ai-matrx/print/markdown";
 import AdvancedMenu, { MenuItem } from "@/components/official/AdvancedMenu";
@@ -87,7 +87,7 @@ export function ContentManagerMenu({
 
   // Copy handlers
   const handleCopyPlain = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       onSuccess: () => {},
       onError: (error) => {
         throw new Error(extractErrorMessage(error) || "Failed to copy text");
@@ -96,7 +96,7 @@ export function ContentManagerMenu({
   };
 
   const handleCopyGoogleDocs = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       formatForGoogleDocs: true,
       onSuccess: () => {},
@@ -107,7 +107,7 @@ export function ContentManagerMenu({
   };
 
   const handleCopyWithThinking = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       includeThinking: true,
       onSuccess: () => {},
@@ -122,7 +122,7 @@ export function ContentManagerMenu({
       throw new Error("HTML preview handler not configured");
     }
 
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       formatForWordPress: true,
       showHtmlPreview: true,
@@ -142,7 +142,7 @@ export function ContentManagerMenu({
   };
 
   const handleCopyCompleteHTML = async () => {
-    await copyToClipboard(content, {
+    await copyContent(content, {
       isMarkdown: true,
       formatForWordPress: true,
       showHtmlPreview: true,
@@ -164,7 +164,7 @@ ${cssContent}
 </body>
 </html>`;
 
-          await copyToClipboard(completeHTML, {
+          await copyContent(completeHTML, {
             onSuccess: () => {},
             onError: (error) => {
               throw new Error(extractErrorMessage(error) || "Failed to copy HTML");

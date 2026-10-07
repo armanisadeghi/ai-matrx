@@ -7,6 +7,7 @@ import {
   serialize,
   type Payload,
 } from "@ai-matrx/alchemy/operate";
+import { copyRich, copyText } from "@ai-matrx/kit/clipboard";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { toast } from "@/lib/toast";
 import { getSessionKnob } from "@/lib/scoped-config/sessionKnob";
@@ -27,8 +28,11 @@ interface CopyOptions {
     html: string,
   ) => boolean | void | Promise<boolean | void>;
 }
-/** Compatibility port for command-based callers; Alchemy owns serialization and clipboard delivery. */
-export async function copyToClipboard(
+/**
+ * Copy CONTENT (markdown, text, or any JSON-able value) through Alchemy's serialization and browser transport.
+ * Not the plain-string copy — that is `copyToClipboard` in `@/lib/clipboard/copy`.
+ */
+export async function copyContent(
   content: unknown,
   options: CopyOptions = {},
 ): Promise<boolean> {
@@ -168,37 +172,20 @@ export function richCopyPlainText(markdown: string, flavor: CopyFlavor, defaultF
 }
 
 /**
- * Write a clipboard item. `html` may be a promise: the item is created inside
- * the click (Safari requires it), the browser waits for the bytes.
+ * Write the plain flavor, or html + plain in one clipboard item (kit's `copyRich`; `html` may be a
+ * promise so the item is created inside the click). A refused rich write degrades to plain text and
+ * says so; when nothing lands the person is handed the text to copy by hand.
  */
 export async function writeClipboardFlavors(plain: string, html?: Promise<string> | string): Promise<boolean> {
-  if (typeof navigator === "undefined" || !navigator.clipboard) {
-    showManualCopy({ text: plain });
-    return false;
-  }
-  try {
-    if (html !== undefined && typeof ClipboardItem !== "undefined" && navigator.clipboard.write) {
-      const htmlBlob = Promise.resolve(html).then((h) => new Blob([h], { type: "text/html" }));
-      await navigator.clipboard.write([
-        new ClipboardItem({ "text/html": htmlBlob, "text/plain": new Blob([plain], { type: "text/plain" }) }),
-      ]);
-      return true;
-    }
-    await navigator.clipboard.writeText(plain);
-    return true;
-  } catch (error) {
-    // A rich write can be refused (focus moved, an old engine): try the plain
-    // flavor before handing the person the text to copy themselves.
-    try {
-      await navigator.clipboard.writeText(plain);
-      if (html !== undefined) toast.info("Copied without formatting: this browser refused the formatted copy.");
-      return true;
-    } catch {
-      console.warn("[copy] the clipboard refused the write; showing the text to copy by hand:", error);
-      showManualCopy({ text: plain });
-      return false;
-    }
-  }
+  const landed =
+    html === undefined
+      ? await copyText(plain)
+      : await copyRich(
+          { text: plain, html },
+          { onDegraded: (reason) => toast.info(`Copied without formatting: ${reason}.`) },
+        );
+  if (!landed) showManualCopy({ text: plain });
+  return landed;
 }
 
 /** THE copy of rich content. Returns true when the clipboard holds it. */

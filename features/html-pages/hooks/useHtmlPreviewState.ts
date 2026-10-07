@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import {
     getMarkdownStylesheet,
     markdownToHtml,
@@ -178,7 +178,7 @@ export function useHtmlPreviewState({
     // =================================================================
 
     const handleCopyHtml = useCallback(async () => {
-        await copyToClipboard(contentHtml, {
+        await copyContent(contentHtml, {
             onSuccess: () => {
                 setCopied(true);
                 setTimeout(() => setCopied(false), 2000);
@@ -189,7 +189,7 @@ export function useHtmlPreviewState({
 
     const handleCopyHtmlNoBullets = useCallback(async () => {
         const noBulletsHtml = stripBulletStyles(contentHtml);
-        await copyToClipboard(noBulletsHtml, {
+        await copyContent(noBulletsHtml, {
             onSuccess: () => {
                 setCopiedNoBullets(true);
                 setTimeout(() => setCopiedNoBullets(false), 2000);
@@ -199,7 +199,7 @@ export function useHtmlPreviewState({
     }, [contentHtml]);
 
     const handleCopyCSS = useCallback(async () => {
-        await copyToClipboard(wordPressCSS, {
+        await copyContent(wordPressCSS, {
             onSuccess: () => {
                 setCopiedCSS(true);
                 setTimeout(() => setCopiedCSS(false), 2000);
@@ -210,7 +210,7 @@ export function useHtmlPreviewState({
 
     const handleCopyComplete = useCallback(async () => {
         const completeHTML = generateCompleteHtmlFromSourcesCallback();
-        await copyToClipboard(completeHTML, {
+        await copyContent(completeHTML, {
             onSuccess: () => {
                 setCopiedComplete(true);
                 setTimeout(() => setCopiedComplete(false), 2000);
@@ -224,7 +224,7 @@ export function useHtmlPreviewState({
             includeBulletStyles,
             includeDecorativeLineBreaks,
         });
-        await copyToClipboard(customHTML, {
+        await copyContent(customHTML, {
             onSuccess: () => {
                 setCopiedCustom(true);
                 setTimeout(() => setCopiedCustom(false), 2000);
@@ -234,7 +234,7 @@ export function useHtmlPreviewState({
     }, [contentHtml, includeBulletStyles, includeDecorativeLineBreaks]);
 
     const handleCopyUrl = useCallback(async (url: string) => {
-        await copyToClipboard(url, {
+        await copyContent(url, {
             onSuccess: () => {
                 setCopiedUrl(true);
                 setTimeout(() => setCopiedUrl(false), 1500);

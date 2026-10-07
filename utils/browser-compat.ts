@@ -11,7 +11,7 @@
  *
  * Current known gaps (as of 2026):
  *  - requestIdleCallback / cancelIdleCallback: Missing in Safari < 16.4
- *  - navigator.clipboard.read(): Requires HTTPS + user permission; limited Safari support
+ *  - navigator.clipboard.read(): reach it through @ai-matrx/kit/clipboard (`readImage` / `readText`), never directly
  *  - showOpenFilePicker / showSaveFilePicker: Chrome-only, not in Safari
  */
 
@@ -44,33 +44,6 @@ export function safeCancelIdleCallback(handle: IdleCallbackHandle): void {
         cancelIdleCallback(handle);
     } else {
         clearTimeout(handle as unknown as ReturnType<typeof setTimeout>);
-    }
-}
-
-// ─── navigator.clipboard.read() ────────────────────────────────────────────
-// clipboard.read() requires the clipboard-read permission and HTTPS.
-// In Safari it throws on plain paste — always wrap in try/catch.
-// Use this helper to read clipboard image data safely across browsers.
-
-export async function readClipboardImage(): Promise<File | null> {
-    try {
-        if (!navigator.clipboard?.read) {
-            // Safari < 16.4 fallback: return null (rely on paste event instead)
-            return null;
-        }
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-            const imageType = item.types.find(t => t.startsWith('image/'));
-            if (imageType) {
-                const blob = await item.getType(imageType);
-                const ext = imageType.split('/')[1] || 'png';
-                return new File([blob], `pasted-image-${Date.now()}.${ext}`, { type: imageType });
-            }
-        }
-        return null;
-    } catch {
-        // Permission denied, no image, or unsupported — treat as empty
-        return null;
     }
 }
 

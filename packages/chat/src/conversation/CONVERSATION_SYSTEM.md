@@ -234,7 +234,7 @@ These are all non-generic dependencies the unified system relies on. They live o
 | `extractMessageWithoutResources` | `features/prompts/utils/resource-parsing.ts` | `UserMessage` | Strips resource XML from message string, returns clean text |
 | `messageContainsResources` | `features/prompts/utils/resource-parsing.ts` | `UserMessage` | Returns `true` if message string contains resource XML |
 | `parseMarkdownToText` | `utils/markdown-processors/parse-markdown-for-speech.ts` | `AssistantMessage` | Strips markdown syntax to plain text for TTS |
-| `copyToClipboard` | `components/agent-copy/copy-commands.ts` | `MessageOptionsMenu` | Rich copy with Google Docs / WordPress / thinking variants |
+| `copyContent` | `components/agent-copy/copy-commands.ts` | `MessageOptionsMenu` | Rich copy with Google Docs / WordPress / thinking variants |
 | `printMarkdownContent` | `features/chat/utils/markdown-print-utils.ts` | `MessageOptionsMenu` | Opens browser print dialog with styled markdown |
 | `getMarkdownStylesheet` | `@ai-matrx/print/markdown` | `MessageOptionsMenu` | The package's default print stylesheet, for copying a complete standalone HTML page |
 

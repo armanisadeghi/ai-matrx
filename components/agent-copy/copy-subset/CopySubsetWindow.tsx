@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 
 import { CopyForAiIcon } from "@/components/agent-copy/CopyForAiIcon";
-import { writeClipboard } from "@/components/agent-copy/clipboard";
+import { copyToClipboard } from "@/lib/clipboard/copy";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import {
   getCellValue,
@@ -282,7 +282,8 @@ function CopySubsetWindowBody<T>({
     setBusy(true);
     try {
       const { text, computation: fresh } = copySubsetText(session, state);
-      await writeClipboard(text);
+      // The plain door says why when the clipboard refuses; "copied" is shown only when it landed.
+      if (!(await copyToClipboard(text))) return;
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
       const formatLabel =

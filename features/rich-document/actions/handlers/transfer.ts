@@ -18,7 +18,7 @@ import {
   Type,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
-import { copyRichContent, copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyRichContent, copyContent } from "@/components/agent-copy/copy-commands";
 import { registerAction } from "../provider";
 import { contentFileName, deriveContentTitle, getErrorMessage, contentForDestination } from "../utils";
 import { hasTableShape } from "@ai-matrx/records-ui/table-shape";
@@ -29,7 +29,7 @@ import type { RichDocumentActionContext } from "../../types";
 import { downloadFile } from "@ai-matrx/kit/download";
 
 async function copyText(text: string, done: string): Promise<void> {
-  await copyToClipboard(text, {
+  await copyContent(text, {
     onSuccess: () => toast.success(done),
     onError: (error) => toast.error(getErrorMessage(error, "Failed to copy")),
   });

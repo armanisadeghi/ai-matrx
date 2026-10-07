@@ -29,7 +29,7 @@ import {
   ITEM_DETAIL_SURFACE_NAME,
 } from "@/features/surfaces/manifests/item-detail.manifest";
 import { SurfaceRuntimeProvider } from "@ai-matrx/chat/surfaces/runtime/SurfaceRuntimeContext";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { toast } from "@/lib/toast";
 
 export function ItemDetailFrame({
@@ -78,7 +78,7 @@ export function ItemDetailFrame({
         label: "Copy record ID",
         icon: Copy,
         onSelect: () => {
-          void copyToClipboard(ref.id, {
+          void copyContent(ref.id, {
             formatJson: false,
             onSuccess: () => toast.success("Record ID copied"),
             onError: () => toast.error("Could not copy record ID"),
@@ -92,7 +92,7 @@ export function ItemDetailFrame({
         icon: Braces,
         disabled: fields.length === 0,
         onSelect: () => {
-          void copyToClipboard(JSON.stringify(recordFields, null, 2), {
+          void copyContent(JSON.stringify(recordFields, null, 2), {
             formatJson: false,
             onSuccess: () => toast.success("Fields copied"),
             onError: () => toast.error("Could not copy fields"),

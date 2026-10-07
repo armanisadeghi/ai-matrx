@@ -27,7 +27,7 @@ import {
 import { Button } from "@ai-matrx/design-system/controls";
 
 import { BrandGlyph } from "@/components/icons/brand-glyphs";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { GoogleSheetsMark, NotionMark } from "@/features/connectors/marks";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +129,7 @@ function CopyAction({
       variant={variant}
       icon={copied ? <Check /> : <Copy />}
       onClick={() =>
-        void copyToClipboard(text, {
+        void copyContent(text, {
           formatJson: false,
           onSuccess: () => {
             setCopied(true);

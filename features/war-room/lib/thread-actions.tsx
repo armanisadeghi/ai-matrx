@@ -38,7 +38,7 @@ import {
 } from "lucide-react";
 
 import { toast } from "@/lib/toast";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { showManualCopy } from "@/components/dialogs/clipboard-fallback/manualCopyOpener";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
@@ -154,7 +154,7 @@ export function useWarRoomThreadMenuSection(
   const copyLink = async () => {
     if (!row || !href) return;
     const url = `${window.location.origin}${href}`;
-    await copyToClipboard(url, {
+    await copyContent(url, {
       formatJson: false,
       onSuccess: () => toast.success("Thread link copied"),
       // A blocked clipboard is not a failed copy — the ONE fallback puts the

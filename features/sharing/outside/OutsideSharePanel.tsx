@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 
 import {
   absoluteInviteUrl,
@@ -145,7 +145,7 @@ export function OutsideSharePanel({
       // It routes its own terminal failure to the manual-copy dialog, which puts
       // the text in front of the person — so a `false` here means the copy has
       // NOT happened and saying "Copied" would be a lie.
-      const ok = await copyToClipboard(url);
+      const ok = await copyContent(url);
       if (!ok) return;
       setCopied(invitationId);
       toast({ title: `Link copied. Send it to ${who} however you like.` });

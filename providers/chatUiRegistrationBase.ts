@@ -44,7 +44,7 @@ import { useCenterControlFit } from "@/features/shell/components/header/useCente
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   copyRichContent,
-  copyToClipboard,
+  copyContent,
 } from "@/components/agent-copy/copy-commands";
 import {
   selectAllSkills,
@@ -260,7 +260,7 @@ registerChatUi({
   EditInPlace,
   confirm,
   copyRichContent,
-  copyToClipboard,
+  copyToClipboard: copyContent,
   useTablesEverywhere,
   useTextareaFormatting,
   useClipboardPaste,

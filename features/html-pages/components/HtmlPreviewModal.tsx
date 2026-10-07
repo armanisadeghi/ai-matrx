@@ -30,7 +30,7 @@ import {
   useSaveAndOpenInCodeEditor,
   CHAT_CAPTURES_FOLDER_NAME,
 } from "@/features/code/actions/saveAndOpenInCodeEditor";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import {
   getMarkdownStylesheet,
   removeThinkingContent,
@@ -333,7 +333,7 @@ ${wordPressCSS}
   const handleCopyHtml = async () => {
     const currentCompleteHtml = getCurrentHtmlContent();
     const bodyContent = extractBodyContent(currentCompleteHtml);
-    await copyToClipboard(bodyContent, {
+    await copyContent(bodyContent, {
       onSuccess: () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
@@ -346,7 +346,7 @@ ${wordPressCSS}
     const currentCompleteHtml = getCurrentHtmlContent();
     const bodyContent = extractBodyContent(currentCompleteHtml);
     const noBulletsHtml = stripBulletStyles(bodyContent);
-    await copyToClipboard(noBulletsHtml, {
+    await copyContent(noBulletsHtml, {
       onSuccess: () => {
         setCopiedNoBullets(true);
         setTimeout(() => setCopiedNoBullets(false), 2000);
@@ -357,7 +357,7 @@ ${wordPressCSS}
   };
 
   const handleCopyCSS = async () => {
-    await copyToClipboard(wordPressCSS, {
+    await copyContent(wordPressCSS, {
       onSuccess: () => {
         setCopiedCSS(true);
         setTimeout(() => setCopiedCSS(false), 2000);
@@ -368,7 +368,7 @@ ${wordPressCSS}
 
   const handleCopyComplete = async () => {
     const completeHTML = getCurrentHtmlContent();
-    await copyToClipboard(completeHTML, {
+    await copyContent(completeHTML, {
       onSuccess: () => {
         setCopiedComplete(true);
         setTimeout(() => setCopiedComplete(false), 2000);
@@ -381,7 +381,7 @@ ${wordPressCSS}
     const currentCompleteHtml = getCurrentHtmlContent();
     const bodyContent = extractBodyContent(currentCompleteHtml);
     const customHTML = applyCustomOptions(bodyContent);
-    await copyToClipboard(customHTML, {
+    await copyContent(customHTML, {
       onSuccess: () => {
         setCopiedCustom(true);
         setTimeout(() => setCopiedCustom(false), 2000);
@@ -391,7 +391,7 @@ ${wordPressCSS}
   };
 
   const handleCopyUrl = async (url: string) => {
-    await copyToClipboard(url, {
+    await copyContent(url, {
       onSuccess: () => {
         setCopiedUrl(true);
         setTimeout(() => setCopiedUrl(false), 1500);

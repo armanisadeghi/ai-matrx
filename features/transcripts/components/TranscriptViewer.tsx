@@ -28,7 +28,7 @@ import {
   Copy,
   CheckCheck,
 } from "lucide-react";
-import { copyToClipboard } from "@/components/agent-copy/copy-commands";
+import { copyContent } from "@/components/agent-copy/copy-commands";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -365,7 +365,7 @@ export function TranscriptViewer() {
   const handleCopyAllText = async () => {
     if (!plainTranscriptText.trim()) return;
     try {
-      await copyToClipboard(plainTranscriptText, {
+      await copyContent(plainTranscriptText, {
         onSuccess: () => {
           setCopiedAll(true);
           toast.success("Transcript copied");
