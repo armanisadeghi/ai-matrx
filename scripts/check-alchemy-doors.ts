@@ -165,7 +165,12 @@ const ALLOW: Record<Rule, string[]> = {
     // applet-function kind to hold it.
     "utils/ts-function-registry/function-registry.ts",
   ],
-  handcsv: [],
+  handcsv: [
+    // Anki's text import is `front<TAB>back`, ONE note per line (fields collapsed to a single line, no
+    // quoting), and the app's own tab importer (parseImportText) is line-based too — a quoted multi-line
+    // cell would not re-import and a quote character would land in the card text.
+    "features/education/onboard/export/deckFormats.ts",
+  ],
   // QuickHtmlShareModal opens the author's HTML in a new tab as a PREVIEW of the page (a blob URL they look
   // at, with the real download one button over) - there is nothing to save, so it is not a download.
   windowopen: ["features/agent-apps/components/QuickHtmlShareModal.tsx"],
@@ -200,6 +205,8 @@ const FIELD_SPLIT = /\.split\(\s*(?:["'`](?:,|\\t)["'`]|\/,\/|\/\\t\/|delim\w*\s
 const TAB_SPLIT = /\.split\(\s*(?:["'`]\\t["'`]|\/\\t\/)\s*\)/;
 /** Row writers: a cell join on a tab or a comma, and the line join that stacks the rows. */
 const TAB_JOIN = /\.join\(\s*["'`]\\t["'`]\s*\)/;
+/** A template literal that builds a tab row by hand: `${a}\t${b}`. */
+const TAB_TEMPLATE = /\$\{[^}]*\}\\t\$\{/;
 const COMMA_JOIN = /\.join\(\s*["'`],["'`]\s*\)/;
 const COMMA_ROW_END = /\.join\(\s*["'`],["'`]\s*\)(?:\s*\))*\s*(?:[;,]?\s*$|\.join\()/;
 /** The NAME/type a closure Map is declared under (not its constructor arguments) says whether it can run. */
@@ -305,7 +312,9 @@ export function scanSource(file: string, src: string): Hit[] {
   const isRowWriter = (i: number) => {
     const l = lines[i];
     const mapped = near(i, 8, 0, (x) => /\.map\(|\.forEach\(|\.push\(/.test(x));
-    if (TAB_JOIN.test(l)) return mapped || near(i, 0, 4, (x) => LINE_JOIN.test(x));
+    // ANY tab join is a TSV row (an array-literal row `[a, b, c].join("\t")` has no map nearby), and so is a
+    // template literal with a tab between two placeholders.
+    if (TAB_JOIN.test(l) || TAB_TEMPLATE.test(l)) return true;
     // A comma join counts only where it ENDS a row (end of the line, or straight into the line join) —
     // `${list.join(",")}` inside a template is a label, not a row.
     return COMMA_ROW_END.test(l) && mapped && near(i, 0, 4, (x) => LINE_JOIN.test(x));
@@ -385,10 +394,33 @@ function sorted(c: Counts): Counts {
   return o;
 }
 
-/** ALLOW entries whose path no longer exists — a dead exemption silently covers whatever lands there next. */
-export function staleAllows(allow: Record<Rule, string[]> = ALLOW, exists = (p: string) => existsSync(join(REPO_ROOT, p))): string[] {
+/** The sibling repo the `../aidream/...` ALLOW entries point into. CI has no such checkout. */
+const SIBLING_PREFIX = "../aidream/";
+export const siblingPresent = (): boolean => existsSync(join(REPO_ROOT, "..", "aidream"));
+
+/**
+ * ALLOW entries whose path no longer exists — a dead exemption silently covers whatever lands there next.
+ * When the sibling root is absent the `../aidream/` entries cannot be checked: they are skipped HERE and
+ * named by `unmeasuredAllows` (never silent); local paths are always checked.
+ */
+export function staleAllows(
+  allow: Record<Rule, string[]> = ALLOW,
+  exists = (p: string) => existsSync(join(REPO_ROOT, p)),
+  sibling: boolean = siblingPresent(),
+): string[] {
   const out: string[] = [];
-  for (const r of RULES) for (const a of allow[r]) if (!exists(a.replace(/\/$/, ""))) out.push(`${r}: ${a}`);
+  for (const r of RULES) for (const a of allow[r]) {
+    if (!sibling && a.startsWith(SIBLING_PREFIX)) continue;
+    if (!exists(a.replace(/\/$/, ""))) out.push(`${r}: ${a}`);
+  }
+  return out;
+}
+
+/** `../aidream/` ALLOW entries that could not be stale-checked because the sibling root is absent. */
+export function unmeasuredAllows(allow: Record<Rule, string[]> = ALLOW, sibling: boolean = siblingPresent()): string[] {
+  if (sibling) return [];
+  const out: string[] = [];
+  for (const r of RULES) for (const a of allow[r]) if (a.startsWith(SIBLING_PREFIX)) out.push(`${r}: ${a}`);
   return out;
 }
 
@@ -475,6 +507,9 @@ function selfTest(): number {
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const t = [\n  `orgs=${r.orgs.map((o) => o.name).join(\",\") || \"none\"}`,\n  `id=${r.id}`,\n].join(\"\\n\");\n", red: false, what: "a comma list inside a template, lines joined by newline (a label)" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "const t = lines.map((l) => l.trim()).join(\"\\n\");\n", red: false, what: "lines trimmed and joined by newline" },
     { rule: "handcsv", file: "features/x/Foo.ts", src: "return toDelimited([header, ...rows], { format: \"tsv\" });\n", red: false, what: "the one writer" },
+    { rule: "handcsv", file: "features/legal/X.tsx", src: "const row = [a.label, a.value, a.note].join(\"\\t\");\nnavigator.x(row);\n", red: true, what: "an array-literal tab row (no map, no line join)" },
+    { rule: "handcsv", file: "features/legal/X.tsx", src: "const row = `${a.label}\\t${a.value}`;\n", red: true, what: "a template-literal tab row" },
+    { rule: "handcsv", file: "features/legal/X.tsx", src: "const row = toDelimited([[a.label, a.value]], { format: \"tsv\" });\n", red: false, what: "the kit writer for a one-row array" },
     { rule: "formatlibs", file: "components/mardown-display/blocks/x/Block.tsx", src: "const { captureBlockElement } = await import(\"@ai-matrx/print/pdf\");\n", red: true, what: "a markdown block loading print/pdf directly" },
     { rule: "formatlibs", file: "features/x/Review.tsx", src: "import { captureElementsToPDF } from \"@ai-matrx/print/pdf\";\n", red: true, what: "a static print/pdf import in app code" },
     { rule: "formatlibs", file: "features/x/Review.tsx", src: "import type { PdfPage } from \"@ai-matrx/print/pdf\";\n", red: false, what: "a type-only print/pdf import" },
@@ -488,6 +523,11 @@ function selfTest(): number {
     const dead = staleAllows({ ...ALLOW, registries: [...ALLOW.registries, "features/gone/nope.ts"] });
     const live = staleAllows();
     const ok = dead.length === 1 && live.length === 0;
+    const noSib = staleAllows({ ...ALLOW, registries: [...ALLOW.registries, "features/gone/nope.ts"] }, undefined, false);
+    const unm = unmeasuredAllows(ALLOW, false);
+    const sibOk = noSib.length === 1 && noSib[0].endsWith("features/gone/nope.ts") && unm.length > 0 && unm.every((u) => u.includes("../aidream/")) && unmeasuredAllows(ALLOW, true).length === 0;
+    console.log(`[self-test] absent sibling: a dead LOCAL path still RED (${noSib.length}), ../aidream entries UNMEASURED (${unm.length}), not red ${sibOk ? "ok" : "FAIL"}`);
+    if (!sibOk) bad++;
     console.log(`[self-test] stale ALLOW: a dead path -> ${dead.length === 1 ? "RED" : "not red"}, the live list -> ${live.length === 0 ? "GREEN" : live.join("; ")} ${ok ? "ok" : "FAIL"}`);
     if (!ok) bad++;
   }
@@ -503,6 +543,10 @@ function selfTest(): number {
 function main(): number {
   const args = process.argv.slice(2);
   if (args.includes("--self-test")) return selfTest();
+  const unmeasured = unmeasuredAllows();
+  if (unmeasured.length) {
+    console.log(`alchemy-doors: UNMEASURED ${unmeasured.length} ../aidream/ ALLOW entr${unmeasured.length === 1 ? "y" : "ies"} (no sibling ../aidream checkout, stale check skipped): ${unmeasured.map((u) => u.split(": ")[1]).join(", ")}`);
+  }
   const stale = staleAllows();
   if (stale.length) {
     for (const e of stale) console.error(`stale ALLOW entry (path does not exist — delete it): ${e}`);
