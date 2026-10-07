@@ -5,6 +5,7 @@ import type { RichSpan, SpaceBlock, SpaceDoc, SpaceId, SpacesStore } from "../co
 import { agencyTokenByName, viewOnInstalledKeys, type AgencyTables } from "../data/agency-install";
 import type { SpaceDbView } from "../data/sources";
 import { AGENCY_SAMPLE_ID } from "../data/agency-spec";
+import { isBlankBody } from "../page/content-key";
 import { b, RING_NAMES, SAMPLE_CLIENT_HIDDEN, SAMPLE_GAP_RULES, SAMPLE_CLIENT_SORTS, SAMPLE_COLUMNS, SAMPLE_COVER, SAMPLE_ICON, SAMPLE_LINK_LINES, SEED_ROOT_ID, sampleLinkLine, sampleClientsDatabase, sampleRings, seedSpaces } from "./seed";
 
 export const SAMPLE_TITLE = "The Traveling SMM™ OS";
@@ -189,6 +190,73 @@ export async function findSamplePage(store: SpacesStore): Promise<{ id: string }
   return docs[0] ?? named[0];
 }
 
+/**
+ * Writes `build(current)` over the page's CURRENT stored version (read fresh), retrying when someone
+ * saved in between — never the version the page had when it was made. A sample page is visible (and
+ * openable) while its sub-pages are made; a write made meanwhile must not leave it empty.
+ */
+async function saveOnCurrent(store: SpacesStore, id: SpaceId, build: (current: SpaceDoc) => SpaceDoc): Promise<SpaceDoc> {
+  let last: unknown = null;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const current = await store.get(id);
+    if (!current) throw new Error("The sample page could not be read back.");
+    try {
+      return await store.save(build(current), current.version);
+    } catch (err) {
+      last = err;
+    }
+  }
+  throw last instanceof Error ? last : new Error("The sample page could not be saved.");
+}
+
+/** The seed's content over a page: a blank page takes it whole; a page someone already wrote in keeps
+ *  what they wrote after it. */
+function withSeed(current: SpaceDoc, from: SpaceDoc, ids: Map<string, SpaceId>): SpaceDoc {
+  const theirs = isBlankBody(current.blocks) ? [] : current.blocks;
+  return { ...current, icon: current.icon ?? from.icon, cover: current.cover ?? from.cover, settings: from.settings, blocks: [...remap(from.blocks, ids), ...theirs] };
+}
+
+/**
+ * An earlier add that stopped before its content went in (closed tab, a refused save) left the sample
+ * page blank. It is completed in place: its sub-pages are matched by title, the missing ones made, blank
+ * ones filled, and the page's content written with the links pointing at them.
+ */
+async function completeBlankSample(store: SpacesStore, root: SpaceDoc, tables: AgencyTables): Promise<SpaceDoc> {
+  const docs = seedSpaces(tables);
+  const rootSeed = docs.find((d) => d.id === SEED_ROOT_ID)!;
+  const kids = docs.filter((d) => d.parentId === SEED_ROOT_ID);
+  const have = (await store.list()).filter((s) => s.parentId === root.id && !s.isArchived);
+  const ids = new Map<string, SpaceId>([[rootSeed.id, root.id]]);
+  let after: SpaceId | undefined = [...have].sort((a, b) => a.position.localeCompare(b.position)).at(-1)?.id;
+  const toFill: Array<{ id: SpaceId; from: SpaceDoc }> = [];
+  for (const kid of kids) {
+    const found = have.find((h) => h.title === kid.title && ![...ids.values()].includes(h.id));
+    if (found) {
+      ids.set(kid.id, found.id);
+      const doc = await store.get(found.id);
+      if (doc && isBlankBody(doc.blocks)) toFill.push({ id: found.id, from: kid });
+      continue;
+    }
+    const made = await store.create({ parentId: root.id, title: kid.title, afterId: after });
+    ids.set(kid.id, made.id);
+    toFill.push({ id: made.id, from: kid });
+    after = made.id;
+  }
+  for (let i = 0; i < toFill.length; i += 6) {
+    await Promise.all(toFill.slice(i, i + 6).map(({ id, from }) => saveOnCurrent(store, id, (cur) => withSeed(cur, from, ids))));
+  }
+  return saveOnCurrent(store, root.id, (cur) => withSeed(cur, rootSeed, ids));
+}
+
+/**
+ * "Use template" copied the sample into another organization: the copy's data blocks are pointed at
+ * the agency tables installed in THAT organization (installed there when missing), so the copy shows
+ * its own organization's rows — never tables its members may not be able to open.
+ */
+export async function pointCopyAtItsTables(store: SpacesStore, copyId: SpaceId, tables: AgencyTables): Promise<void> {
+  await saveOnCurrent(store, copyId, (cur) => ({ ...cur, blocks: upgradeSlots(cur.blocks, tables).blocks }));
+}
+
 export async function addTravelingSmmSample(
   store: SpacesStore,
   targets: SampleTargets,
@@ -199,6 +267,7 @@ export async function addTravelingSmmSample(
     const doc = await store.get(existing.id);
     if (doc) {
       const tables = await targets.install(await targets.orgOf(doc.id));
+      if (isBlankBody(doc.blocks)) return completeBlankSample(store, doc, tables);
       const slots = upgradeSlots(doc.blocks, tables);
       const up = upgradeLinkLines(slots.blocks);
       const media = upgradeMedia(doc);
@@ -213,8 +282,12 @@ export async function addTravelingSmmSample(
   const total = docs.length;
   const ids = new Map<string, SpaceId>();
 
-  const root = await targets.createRoot(organizationId, rootSeed.title);
-  ids.set(rootSeed.id, root.id);
+  // The page shows in the sidebar the moment it is made, so its content (rings, client table, plan) goes
+  // in at once — opening it while the sub-pages are made shows the sample, never a blank page. Its page
+  // links are pointed at the sub-pages once they exist.
+  const made0 = await targets.createRoot(organizationId, rootSeed.title);
+  ids.set(rootSeed.id, made0.id);
+  const root = await saveOnCurrent(store, made0.id, (cur) => withSeed(cur, rootSeed, ids));
   onProgress?.(1, total);
 
   // Sub-pages are placed in order (each after the previous), so they are created one at a time.
@@ -228,11 +301,11 @@ export async function addTravelingSmmSample(
     onProgress?.(made.length + 1, total);
   }
 
-  // Content goes in once every id is known (the root and the Map page link to other pages).
-  const fill = (fresh: SpaceDoc, from: SpaceDoc) =>
-    store.save({ ...fresh, icon: from.icon, cover: from.cover, settings: from.settings, blocks: remap(from.blocks, ids) }, fresh.version);
+  // Content goes in once every id is known (the root and the Map page link to other pages); each write
+  // lands on the page's current version, so a page opened meanwhile is never left blank.
   for (let i = 0; i < made.length; i += 6) {
-    await Promise.all(made.slice(i, i + 6).map((doc, j) => fill(doc, kids[i + j])));
+    await Promise.all(made.slice(i, i + 6).map((doc, j) => saveOnCurrent(store, doc.id, (cur) => withSeed(cur, kids[i + j], ids))));
   }
-  return fill(root, rootSeed);
+  // A page someone emptied meanwhile (an editor that wrote its starting line) gets the content again.
+  return saveOnCurrent(store, root.id, (cur) => (isBlankBody(cur.blocks) ? withSeed(cur, rootSeed, ids) : { ...cur, blocks: remap(cur.blocks, ids) }));
 }
