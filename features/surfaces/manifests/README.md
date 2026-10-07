@@ -8,7 +8,7 @@ This directory **owns the declarations**. The DB is a synced reflection. Admin U
 
 ## The two laws
 
-- **THE NAMING LAW — `label` is REQUIRED.** Each surface has ONE display name (unique per client), and every value/group `label` comes from the same manifest. No chrome hand-types or overrides labels — surface names render via `getSurfaceDisplayLabel`, on-page value/group text via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)` (`../utils/surface-display.ts`). The `surfaceLabel` override prop is deleted and ESLint-banned.
+- **THE NAMING LAW — `label` is REQUIRED.** Each surface has ONE display name (unique per client), and every value/group `label` comes from the same manifest. No chrome hand-types or overrides labels — surface names render via `getSurfaceDisplayLabel`, on-page value/group text via `surfaceValueLabels(manifest)` / `surfaceGroupLabels(manifest)` (`@ai-matrx/chat/surfaces/utils/surface-display`). ESLint bans `surfaceLabel` overrides.
 - **THE COMPLETENESS LAW — declare everything the page loads.** Individual fields AND natural composite values are mandatory. Undeclared runtime keys show as "Undeclared (runtime only)" in the Surface Context window — defects.
 
 ## Adding a new manifest
@@ -45,6 +45,8 @@ This directory **owns the declarations**. The DB is a synced reflection. Admin U
 
    export const myThingManifest: SurfaceManifest = {
      surfaceName: "matrx-user/my-thing",
+     readiness: "partial",
+     readinessNote: "Runtime, mirror, and helper-context proof remain to be completed.",
      label: "My Thing",                       // REQUIRED — THE NAMING LAW
      urlPattern: "/things/[thingId]",
      groups,
@@ -69,7 +71,7 @@ This directory **owns the declarations**. The DB is a synced reflection. Admin U
 
 3. **Register it.** Edit `registry.ts`, import the manifest, and add it to `RAW_MANIFESTS`. `ALL_MANIFESTS` is derived (inheritance resolved, baselines auto-injected, provenance + groupKey stamped, values sorted curated → inherited → baseline; opt out of baselines with `skipBaselineValues`) — never edit it directly.
 
-4. **Check + sync.** Run `pnpm check:surface-drift` (label presence/uniqueness, group rules, value invariants), then `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>` and repeat it with `--check`. The transaction creates or updates that surface and its declared mirror rows only; it never creates a client, and a mirror row of that surface the code no longer declares is archived (soft), never deleted. The check verifies live metadata plus every declared value, role, write target, and client tool. Drift report: `GET /api/admin/surfaces/drift-report` (incl. `surfaceLabelDrifts` / `valueGroupsDrifts`).
+4. **Check + sync.** Run `pnpm check:surface-drift` (label presence/uniqueness, group rules, value invariants) and `pnpm check:surface-routes` (actual route coverage), then `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>` and repeat it with `--check`. The transaction creates or updates that surface and its declared mirror rows only; it never creates a client, and a mirror row of that surface the code no longer declares is archived (soft), never deleted. The check verifies live metadata plus every declared value, role, write target, and client tool. Drift report: `GET /api/admin/surfaces/drift-report` (incl. `surfaceLabelDrifts` / `valueGroupsDrifts`).
 
 ## Conventions
 
@@ -82,7 +84,7 @@ This directory **owns the declarations**. The DB is a synced reflection. Admin U
 
 ## Reference implementations
 
-- **`marketing-page.manifest.ts`** — THE exemplar: 40+ values, 7 curated groups, inherits marketing-site → marketing-brand, scope builder in `features/marketing/lib/marketing-page-scope.ts`, emitter `PageWorkspace.tsx`.
+- **`marketing-page.manifest.ts`** — THE exemplar: inherits marketing-site → marketing-brand, scope builder in `features/marketing/lib/marketing-page-scope.ts`, emitter `PageWorkspace.tsx`.
 - **`notes-editor.manifest.ts`** — the simple case (in-file scope helper).
 
 ## Removing a manifest
@@ -91,8 +93,9 @@ Delete the file and remove the import from `registry.ts`. The DB rows are NOT au
 
 ## See also
 
-- `../aidream/apps/shared/chat/src/surfaces/types.ts` — type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
-- `../aidream/apps/shared/chat/src/surfaces/utils/surface-display.ts` — shared label seam.
+- `@ai-matrx/chat/surfaces/types` — installed type definitions (`SurfaceManifest`, `SurfaceValue`, `SurfaceValueGroup`).
+- `@ai-matrx/chat/surfaces/utils/surface-display` — shared label seam.
 - `features/surfaces/services/manifest-sync.service.ts` — diff + sync logic.
-- `../aidream/apps/shared/chat/src/surfaces/utils/value-mapping-resolver.ts` — runtime resolver.
+- `@ai-matrx/chat/surfaces/utils/value-mapping-resolver` — runtime resolver.
+- `../aidream/apps/shared/chat/src/surfaces/` — canonical package source; edit shared primitives there, consume the installed package here.
 - `features/scopes/FEATURE.md` — multi-scope binding contract.
