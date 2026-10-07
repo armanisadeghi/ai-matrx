@@ -180,7 +180,8 @@ export const agentListConfig: EntityListConfig<AgentBrowseRow> = {
   columns: BROWSE_COLUMNS,
   // Bump whenever BROWSE_COLUMNS gains or loses a column, so existing users
   // get the new default column set instead of keeping every new column ON.
-  prefsVersion: 4,
+  // 5: the shared usage columns (Runs, Last used, Success rate, Failures, Cost).
+  prefsVersion: 5,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
   // THE DOOR LAW: the Name cell is a real anchor to the agent's own page. Row

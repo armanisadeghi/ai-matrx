@@ -20,7 +20,7 @@ import type {
 } from "@/lib/entity-list/config";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
 import { TextInputDialog } from "@/components/dialogs/text-input/TextInputDialog";
-import { WORKFLOW_BROWSE_COLUMNS } from "./columns";
+import { WORKFLOW_BROWSE_COLUMNS, workflowTypeLabel } from "./columns";
 import {
   fetchWorkflowBrowsePage,
   fetchWorkflowFacets,
@@ -132,7 +132,8 @@ export const workflowListConfig: EntityListConfig<WorkflowBrowseRow> = {
   columns: WORKFLOW_BROWSE_COLUMNS,
   // Bump whenever WORKFLOW_BROWSE_COLUMNS gains or loses a column, so existing
   // users get the new default column set instead of keeping every new one ON.
-  prefsVersion: 1,
+  // 2: the shared usage columns (Success rate, Failures, Cost) and Type.
+  prefsVersion: 2,
   getRowId: (row) => row.id,
   getRowName: (row) => row.name,
   // THE DOOR LAW: the Name cell is a real anchor to /workflows/[id], resolved
@@ -157,6 +158,15 @@ export const workflowListConfig: EntityListConfig<WorkflowBrowseRow> = {
       noneLabel: "Never run",
       formatValue: formatStatusFacet,
       searchPlaceholder: "Find status…",
+    },
+    {
+      facet: "workflow_type",
+      filterId: "workflow_type",
+      label: "Type",
+      noneLabel: "None",
+      formatValue: workflowTypeLabel,
+      minOptions: 2,
+      searchPlaceholder: "Find type…",
     },
     {
       facet: "category",

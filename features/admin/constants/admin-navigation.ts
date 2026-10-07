@@ -572,7 +572,10 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
       {
         name: "Workflows",
         iconName: "Workflow",
-        destinations: [destination("/administration/automation/workflow-runs")],
+        destinations: [
+          destination("/administration/automation/workflows"),
+          destination("/administration/automation/workflow-runs"),
+        ],
       },
     ],
   },
