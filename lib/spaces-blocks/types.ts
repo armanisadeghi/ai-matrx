@@ -23,10 +23,15 @@ export const SPACE_COLORS: readonly SpaceColor[] = [
   "red",
 ] as const;
 
+/** Notion's reminder choices on a date: at the time, or this long before it. */
+export type SpaceRemindOffset = "at" | "5m" | "1h" | "1d" | "2d" | "1w";
+
 export type SpaceMention =
   | { kind: "space"; spaceId: string }
   | { kind: "person"; userId: string }
-  | { kind: "date"; iso: string }
+  /** `iso` is a day ("YYYY-MM-DD") or a local day and time ("YYYY-MM-DDTHH:mm"). `remind` = Notion's "Remind":
+   *  when (relative to the date; a day without a time counts from 9:00) and who is told. */
+  | { kind: "date"; iso: string; remind?: { offset: SpaceRemindOffset; userId: string } }
   /** A web link shown as a mention chip; `title` / `icon` (Lucide name or image URL) as last fetched. */
   | { kind: "link"; url: string; title?: string; icon?: string };
 
