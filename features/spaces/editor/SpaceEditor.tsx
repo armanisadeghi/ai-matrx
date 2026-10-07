@@ -336,6 +336,16 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
           if (from !== to) editor.setTextCursorPosition(editor.getTextCursorPosition().block, "end");
         }
       }}
+      onMouseUp={(e) => {
+        // A click on an empty line (an empty column's first line above all) puts the caret on that line
+        // (Notion). ProseMirror left it where it was when the press landed beside the line's text.
+        if (!editable || e.button !== 0 || !(e.target instanceof Element) || insideDatabaseBlock(e.nativeEvent)) return;
+        const content = e.target.closest(".bn-block-content");
+        const id = content?.closest(".bn-block-outer[data-id]")?.getAttribute("data-id");
+        if (!content || !id || !content.querySelector(".bn-inline-content") || !window.getSelection()?.isCollapsed) return;
+        if (currentBlockId(editor) === id) return;
+        editor.setTextCursorPosition(id, "end");
+      }}
       onKeyDown={(e) => {
         // Tab / Shift+Tab the editor could not apply (top level, first child): stay in the editor, as
         // Notion does — never hand focus to the title or the next control.
