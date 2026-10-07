@@ -35,7 +35,8 @@
  *   node <this file> --root=../matrx-local       scan another repo (aidream, matrx-local, matrx-extend, matrx-ship)
  */
 
-import { readFileSync, writeFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, statSync, mkdtempSync, mkdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve, relative } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -413,11 +414,35 @@ export function scanSource(file, source) {
 // File discovery + report
 // ---------------------------------------------------------------------------
 
+/**
+ * Tracked files across repos. `git` answers only for its own repository: a pathspec into a sibling repo
+ * (`../aidream/...`) is "outside repository" and killed every caller of --changed (2026-10-07). So each
+ * repo is asked in its own directory, and its paths come back relative to ROOT. A sibling that is not
+ * checked out is skipped. `sources`: [{ dir (relative to root), patterns, optional }].
+ */
+export function listTracked(root, sources, args = ["ls-files"]) {
+  const out = [];
+  for (const src of sources) {
+    const dir = resolve(root, src.dir);
+    if (src.optional && !existsSync(resolve(dir, ".git"))) continue;
+    const listed = execFileSync("git", [...args, ...(src.patterns ?? [])], { cwd: dir, encoding: "utf8", maxBuffer: 512 << 20 });
+    for (const f of listed.split("\n")) if (f) out.push(src.dir === "." ? f : relative(root, resolve(dir, f)));
+  }
+  return out;
+}
+
+/** What this checker scans: this repo's UI files, plus the chat package's source when ROOT is matrx-frontend. */
+const SOURCES = ROOT_ARG
+  ? [{ dir: ".", patterns: ["*.tsx", "features/**/*.ts", "components/**/*.ts", "app/**/*.ts"] }]
+  : [
+      { dir: ".", patterns: ["*.tsx", "features/**/*.ts", "components/**/*.ts", "app/**/*.ts"] },
+      { dir: "../aidream", patterns: ["apps/shared/chat/src/**/*.ts"], optional: true },
+    ];
+
 function trackedTsx() {
   // .ts files too — UI copy kept in data files (round-2 confirm: mandates admin `tables.ts` blurbs);
   // in a .ts file only the data-array rule runs (no JSX there).
-  const out = execFileSync("git", ["ls-files", "*.tsx", "features/**/*.ts", "../aidream/apps/shared/chat/src/**/*.ts", "components/**/*.ts", "app/**/*.ts"], { cwd: ROOT, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 });
-  return out.split("\n").filter(Boolean);
+  return listTracked(ROOT, SOURCES);
 }
 
 function resolveTargets() {
@@ -432,8 +457,10 @@ function resolveTargets() {
     for (const w of wanted) if (existsSync(resolve(ROOT, w)) && statSync(resolve(ROOT, w)).isFile() && !files.includes(w)) files.push(w);
   }
   if (FLAGS.has("--changed")) {
-    const changed = execFileSync("git", ["diff", "--name-only", "HEAD"], { cwd: ROOT, encoding: "utf8" }).split("\n")
-      .concat(execFileSync("git", ["ls-files", "--others", "--exclude-standard"], { cwd: ROOT, encoding: "utf8", maxBuffer: 512 << 20 }).split("\n"))
+    // Each repo's own changes, asked in its own directory (listTracked).
+    const repos = SOURCES.map((src) => ({ dir: src.dir, optional: src.optional }));
+    const changed = listTracked(ROOT, repos, ["diff", "--name-only", "HEAD"])
+      .concat(listTracked(ROOT, repos, ["ls-files", "--others", "--exclude-standard"]))
       .filter((f) => f.endsWith(".tsx"));
     files = files.filter((f) => changed.includes(f)).concat(changed.filter((f) => !files.includes(f) && existsSync(resolve(ROOT, f))));
   }
@@ -537,6 +564,41 @@ function selfTest() {
     process.exit(3);
   }
   console.log(`self-test passed — all ${want.length} rules fire on the 2026-09-30 kg-cost shape; the fixed shape is clean.`);
+  selfTestDiscovery();
+}
+
+/** Two sibling repos (as matrx-frontend and aidream sit): listing both, and their changes, must work. */
+function selfTestDiscovery() {
+  const base = mkdtempSync(resolve(tmpdir(), "interface-text-"));
+  try {
+    const repo = (name, file) => {
+      const dir = resolve(base, name);
+      mkdirSync(resolve(dir, dirname(file)), { recursive: true });
+      execFileSync("git", ["init", "-q"], { cwd: dir });
+      writeFileSync(resolve(dir, file), "export const A = 1;\n");
+      execFileSync("git", ["add", "."], { cwd: dir });
+      execFileSync("git", ["-c", "user.email=t@t", "-c", "user.name=t", "commit", "-qm", "x"], { cwd: dir });
+      writeFileSync(resolve(dir, file), "export const A = 2;\n");
+      return dir;
+    };
+    const front = repo("front", "features/a/b.ts");
+    repo("aidream", "apps/shared/chat/src/agents/c.ts");
+    const sources = [{ dir: ".", patterns: ["features/**/*.ts"] }, { dir: "../aidream", patterns: ["apps/shared/chat/src/**/*.ts"], optional: true }];
+    const tracked = listTracked(front, sources);
+    const changed = listTracked(front, sources, ["diff", "--name-only", "HEAD"]);
+    const want = ["features/a/b.ts", "../aidream/apps/shared/chat/src/agents/c.ts"];
+    const ok = (got) => want.every((f) => got.includes(f)) && got.length === want.length;
+    if (!ok(tracked) || !ok(changed)) {
+      console.error(`self-test FAILED — sibling-repo discovery: tracked=${JSON.stringify(tracked)} changed=${JSON.stringify(changed)}`);
+      process.exit(3);
+    }
+    console.log("self-test passed — files and changes are listed from this repo and its sibling, each asked in its own directory.");
+  } catch (e) {
+    console.error(`self-test FAILED — sibling-repo discovery threw: ${String(e?.stderr ?? e?.message ?? e).trim()}`);
+    process.exit(3);
+  } finally {
+    rmSync(base, { recursive: true, force: true });
+  }
 }
 
 // Run only when executed, so other scripts can import scanSource without a full scan.
