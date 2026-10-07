@@ -11,7 +11,10 @@
 
 import { Popover, PopoverContent, PopoverTrigger } from "@ai-matrx/design-system";
 import { Button, Input, Switch } from "@ai-matrx/design-system/controls";
-import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type ConditionField, type SavedViewSpec } from "@ai-matrx/records-ui";
+import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, FormLookFrame, NotifyRuleEditor, Peek, RecordForm, ViewSwitcher, type ConditionField, type SavedViewSpec } from "@ai-matrx/records-ui";
+import type { PublicForm } from "@/features/forms/service";
+import { PublicFormRunner } from "@/app/(link)/f/[formId]/PublicFormRunner";
+import { spacesFormForAnswering } from "./form-actions";
 import type { RuleExpression } from "@ai-matrx/records";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
@@ -40,7 +43,7 @@ import {
   Table2,
   X,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -525,7 +528,7 @@ function AutomationsButton({ tableId, sample }: { tableId: string; sample: boole
  * An answer is a row of this table. The view keeps its form; the first open makes one.
  */
 function FormViewBody({ tableId, view, editable, onFormId }: { tableId: string; view: SpaceDbView; editable: boolean; onFormId: (formId: string) => void }) {
-  if (!editable) return <div className="spaces-db-note">Only editors can change this form.</div>;
+  if (!editable) return <FormToAnswer formId={view.formId ?? null} />;
   return (
     <div className="spaces-db-body spaces-db-form">
       <FormBuilder
@@ -536,6 +539,35 @@ function FormViewBody({ tableId, view, editable, onFormId }: { tableId: string; 
           if (form.id && form.id !== view.formId) onFormId(String(form.id));
         }}
       />
+    </div>
+  );
+}
+
+/**
+ * N8 — Notion: anyone who can open the page fills in the form. The form is the forms system's public
+ * form (same door and same rule as its `/f/<id>` link); an answer is a row of this table.
+ */
+function FormToAnswer({ formId }: { formId: string | null }) {
+  const [form, setForm] = useState<PublicForm | null | undefined>(formId ? undefined : null);
+  useEffect(() => {
+    if (!formId) return;
+    let live = true;
+    void spacesFormForAnswering(formId).then(
+      (got) => live && setForm(got),
+      () => live && setForm(null),
+    );
+    return () => {
+      live = false;
+    };
+  }, [formId]);
+  if (form === undefined) return <div className="spaces-db-body spaces-db-form" aria-busy="true" />;
+  if (!form) return <div className="spaces-db-note">This form is not open for answers.</div>;
+  if (form.state !== "open") return <div className="spaces-db-note">{form.message || "This form is closed."}</div>;
+  return (
+    <div className="spaces-db-body spaces-db-form" data-testid="spaces-form-answer">
+      <FormLookFrame look={null} title={form.title}>
+        <PublicFormRunner form={form} />
+      </FormLookFrame>
     </div>
   );
 }
