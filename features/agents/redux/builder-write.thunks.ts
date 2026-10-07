@@ -2,7 +2,7 @@
  * BUILDER TIER (chat-package P25) — the agent WRITE thunks: save, save one field, create,
  * delete (soft), duplicate, favorite. They left @ai-matrx/chat with the builder; the
  * package's agent headers reach them through the "builder" door
- * (`@ai-matrx/chat/host/builder-door`, registered in providers/chatUiRegistration.ts).
+ * (imported directly by the builder's controls in features/agents).
  * Action types and behavior are unchanged.
  */
 
@@ -15,7 +15,18 @@ import { selectUserId } from "@ai-matrx/chat/host/identity";
 import { selectOrganizationId, ensureOrgId } from "@ai-matrx/chat/host/org";
 import { writeFavorite } from "@ai-matrx/chat/context/sources/scopes";
 import type { ChatDispatch, ChatRootState } from "@ai-matrx/chat/store/root-state";
-import type { DuplicateAgentOptions } from "@ai-matrx/chat/host/builder-door";
+interface DuplicateAgentCommon {
+  asSystem?: boolean;
+  organizationId?: string;
+  followsSource?: boolean;
+}
+/**
+ * What to copy into a new agent: the agent as it is now (`agentId`), or one
+ * exact saved version (`versionId`, an agent.definition_version id — its
+ * snapshot is copied, never the possibly-newer master).
+ */
+type DuplicateAgentOptions = DuplicateAgentCommon &
+  ({ agentId: string; versionId?: string } | { agentId?: string; versionId: string });
 import type { AgentDefinition } from "@ai-matrx/chat/agents/types/agent-definition.types";
 import { isSyntheticAgentId } from "@ai-matrx/chat/agents/redux/agent-definition/synthetic-id";
 import { agentNameTakenError } from "@ai-matrx/chat/agents/redux/agent-definition/agentNameTaken";

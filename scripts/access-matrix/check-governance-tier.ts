@@ -30,9 +30,12 @@ import { C, loadEnv, mintUserJwt, rlsPatch, type Env, type WriteProbe } from "./
 
 const STRICT = process.argv.includes("--strict");
 
+// The probe subject: an ordinary governed entity table. It was the working-documents table until
+// those moved into the content store (cleanup C5c, 2026-10-07); notes carry the same columns.
 const SCHEMA = "workbench";
-const TABLE = "working_documents";
-const TOKEN = "working_document";
+const TABLE = "notes";
+const TOKEN = "note";
+const NAME_COLUMN = "label";
 const OWNER_EMAIL = "admin@admin.com";
 const SHAREE_EMAIL = "test@test.com";
 
@@ -122,7 +125,7 @@ async function main(): Promise<void> {
     schema: SCHEMA,
     method: "POST",
     body: JSON.stringify({
-      title: "governance-tier probe",
+      [NAME_COLUMN]: "governance-tier probe",
       created_by: ownerId,
       organization_id: ownerOrg,
       visibility: "personal",
@@ -161,7 +164,7 @@ async function main(): Promise<void> {
     record("edit: move to own org", "refused", await asSharee({ organization_id: shareeOrg }));
 
     console.log(`\n${C.bold}EDIT — may still do all real work${C.reset}`);
-    record("edit: rename", "allowed", await asSharee({ title: "renamed by editor" }));
+    record("edit: rename", "allowed", await asSharee({ [NAME_COLUMN]: "renamed by editor" }));
     record("edit: change content", "allowed", await asSharee({ content: "edited by editor" }));
     record("edit: change metadata", "allowed", await asSharee({ metadata: { probe: true } }));
     record("edit: PUBLISH (an edit-level action)", "allowed", await asSharee({ visibility: "public" }));

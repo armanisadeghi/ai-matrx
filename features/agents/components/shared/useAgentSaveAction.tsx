@@ -12,7 +12,7 @@ import {
   selectAgentIsReadOnly,
   selectAgentAccessResolved,
 } from "@ai-matrx/chat/agents/redux/agent-definition/selectors";
-import { getBuilderDoor, requireBuilderDoor } from "@ai-matrx/chat/host/builder-door";
+import { createAgent, saveAgent } from "@/features/agents/redux/builder-write.thunks";
 import { toast } from "@ai-matrx/chat/host/notify";
 import { agentNameTaken } from "@ai-matrx/chat/agents/redux/agent-definition/agentNameTaken";
 import { setAgentField } from "@ai-matrx/chat/agents/redux/agent-definition/slice";
@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@ai-matrx/design-system";
 import { useAgentDuplicateFlow } from "../../hooks/useAgentDuplicateFlow";
-import { useAgentChangeReach } from "@ai-matrx/chat/host/ui-slots";
+import { useAgentChangeReach } from "@/features/mandates/admin/useAgentChangeReach";
 
 /**
  * Shared save behaviour for an agent record.
@@ -103,7 +103,7 @@ export function useAgentSaveAction(
       if (isNewRoute) {
         if (!agentRecord) return;
         const newId = await dispatch(
-          requireBuilderDoor().createAgent({
+          createAgent({
             name: agentRecord.name,
             description: agentRecord.description,
             agentType: agentRecord.agentType,
@@ -128,7 +128,7 @@ export function useAgentSaveAction(
         return;
       }
 
-      await dispatch(requireBuilderDoor().saveAgent(agentId)).unwrap();
+      await dispatch(saveAgent(agentId)).unwrap();
       toast.success("Agent saved!");
       void announceReach(agentRecord?.name ?? null);
       if (modelMissing) {
@@ -208,6 +208,6 @@ export function useAgentSaveAction(
     /** The same badge as one 44pt tap target, for the mobile header. */
     reachTapBadge,
     /** False in a host that registered no builder door: save controls are left out (reported once). */
-    available: getBuilderDoor() !== null,
+    available: true,
   } as const;
 }

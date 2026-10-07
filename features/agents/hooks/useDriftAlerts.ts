@@ -7,8 +7,8 @@
 
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@ai-matrx/chat/store/hooks";
-import { dismissDriftAlert, fetchDriftAlerts, markDriftAlertViewed } from "@ai-matrx/chat/host/ui-slots";
-import { selectActiveBannerAlerts, selectDriftAlertsStatus } from "@ai-matrx/chat/host/ui-slots";
+import { dismissDriftAlert, fetchDriftAlerts, markDriftAlertViewed } from "@/features/agents/redux/usages/usages.thunks";
+import { selectActiveBannerAlerts, selectDriftAlertsStatus } from "@/features/agents/redux/usages/usages.selectors";
 import type { DriftAlertRow } from "@ai-matrx/chat/ui/usages/usages.types";
 import { selectAccessToken, selectAuthReady, selectUserId } from "@ai-matrx/chat/host/identity";
 

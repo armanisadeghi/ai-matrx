@@ -37,7 +37,7 @@ import { selectUseStructuredSystemInstruction } from "@ai-matrx/chat/agents/redu
 import { RunSettingsEditor } from "@ai-matrx/chat/agents/components/run-controls/RunSettingsEditor";
 import { ContextPoliciesTab } from "@ai-matrx/chat/agents/components/run-controls/ContextPoliciesTab";
 import { PayloadTab } from "./PayloadTab";
-import { SystemInstructionEditor } from "@ai-matrx/chat/host/ui-slots";
+import { SystemInstructionEditor } from "@/features/agents/components/builder/message-builders/system-instructions/SystemInstructionEditor";
 import { WindowPanel } from "@ai-matrx/chat/host/ui-slots";
 import { StreamDebugPanel } from "@ai-matrx/chat/agents/components/debug/StreamDebugPanel";
 import { AgentWidgetInvokerTester } from "./AgentWidgetInvokerTester";
