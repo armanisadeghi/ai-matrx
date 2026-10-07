@@ -15,6 +15,7 @@ import { ConditionGroup, DashboardCanvas, FieldEditor, FormBuilder, FormLookFram
 import type { PublicForm } from "@/features/forms/service";
 import { PublicFormRunner } from "@/app/(link)/f/[formId]/PublicFormRunner";
 import { spacesFormForAnswering } from "./form-actions";
+import { AutomationsPanel } from "./Automations";
 import type { RuleExpression } from "@ai-matrx/records";
 import { useFields, useRecordsClient, useTable, type Field } from "@ai-matrx/records/react";
 import {
@@ -308,7 +309,7 @@ function DatabaseFrame({
               onSave={(sorts) => saveView({ sorts })}
               icon={<ArrowDownUp size={15} strokeWidth={1.8} />}
             />
-            {published ? null : <AutomationsButton tableId={tableId} sample={sample} />}
+            {published ? null : <AutomationsButton tableId={tableId} sample={sample} fields={fields} organizationId={(table.data as { organization_id?: string } | null)?.organization_id ?? null} />}
             {/* Notion's magnifier sits in this icon row and opens in place (records-ui's own box is hidden by spaces.css). */}
             {searchOpen[active.id] || search.value ? (
               <div className="spaces-db-search">
@@ -501,7 +502,7 @@ function DatabaseBody({
  * over this table, and the table's own page for the rest. The in-memory sample has no store to keep a
  * rule in, and says so.
  */
-function AutomationsButton({ tableId, sample }: { tableId: string; sample: boolean }) {
+function AutomationsButton({ tableId, sample, fields, organizationId }: { tableId: string; sample: boolean; fields: Field[]; organizationId: string | null }) {
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -512,6 +513,7 @@ function AutomationsButton({ tableId, sample }: { tableId: string; sample: boole
           <p className="type-secondary text-muted-foreground">This preview keeps no automations.</p>
         ) : (
           <div className="flex flex-col gap-2">
+            <AutomationsPanel tableId={tableId} organizationId={organizationId} fields={fields} />
             <NotifyRuleEditor tableId={tableId} />
             <a className="type-secondary text-muted-foreground underline-offset-2 hover:underline" href={`/data/${tableId}?rail=notifications`}>
               Open the table’s automations
