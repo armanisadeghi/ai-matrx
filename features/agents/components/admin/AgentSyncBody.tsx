@@ -363,7 +363,8 @@ export function AgentSyncBody({
     message: string;
   } | null>(null);
   const [comparisonRetry, setComparisonRetry] = useState(0);
-  const [confirmPushOpen, setConfirmPushOpen] = useState(false);
+  // Both directions overwrite an agent, so both confirm first and name the agent replaced.
+  const [confirmDirection, setConfirmDirection] = useState<"pull" | "push" | null>(null);
   const [rebindBusy, setRebindBusy] = useState(false);
 
   const counterpart =
@@ -1256,7 +1257,7 @@ export function AgentSyncBody({
                 <ArrowDownToLine />
               )}
               variant="outline"
-              onClick={runPull}
+              onClick={() => setConfirmDirection("pull")}
               disabled={
                 !canPull ||
                 busy !== null ||
@@ -1284,7 +1285,7 @@ export function AgentSyncBody({
                 <ArrowUpFromLine />
               )}
               variant="primary"
-              onClick={() => setConfirmPushOpen(true)}
+              onClick={() => setConfirmDirection("push")}
               disabled={
                 !canPush ||
                 busy !== null ||
@@ -1309,28 +1310,45 @@ export function AgentSyncBody({
         </div>
       </div>
 
-      <AlertDialog open={confirmPushOpen} onOpenChange={setConfirmPushOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {`Replace "${baseSide.name}"?`}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {baseIsSystem
-                ? `Its configuration and profile become "${copySide.name}"'s. Everyone and every mandate using this system agent gets the change.`
-                : `Its configuration and profile become "${copySide.name}"'s.`}
-              {comparison && !comparison.comparedConfigurationMatches
-                ? ` The current comparison contains ${comparison.changedFields.length} changed ${comparison.changedFields.length === 1 ? "section" : "sections"}.`
-                : ""}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => void runPush()}>
-              {pushLabel}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
+      <AlertDialog
+        open={confirmDirection !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDirection(null);
+        }}
+      >
+        {(() => {
+          const pushing = confirmDirection === "push";
+          const target = pushing ? baseSide : copySide;
+          const source = pushing ? copySide : baseSide;
+          const targetIsSystem = target.agentType === "builtin";
+          return (
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{`Replace "${target.name}"?`}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {targetIsSystem
+                    ? `Its configuration and profile become "${source.name}"'s. Everyone and every mandate using this system agent gets the change.`
+                    : `Its configuration and profile become "${source.name}"'s.`}
+                  {comparison && !comparison.comparedConfigurationMatches
+                    ? ` ${comparison.changedFields.length} ${comparison.changedFields.length === 1 ? "section differs" : "sections differ"}.`
+                    : ""}
+                  {" The previous version stays in its history."}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setConfirmDirection(null);
+                    void (pushing ? runPush() : runPull());
+                  }}
+                >
+                  {pushing ? pushLabel : pullLabel}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          );
+        })()}
       </AlertDialog>
     </div>
   );
