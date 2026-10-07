@@ -438,6 +438,10 @@ const nextConfig = {
           ? "./providers/chatUiRegistrationBase.ts"
           : "./providers/chatUiRegistration.ts",
       ...sidemenuStubAliases(),
+      // Parity with webpack's resolve.fallback below: bundled packages may reach Node built-ins
+      // behind an isNode check; in the browser graph they resolve to an empty module.
+      fs: { browser: "./lib/turbopack/empty-node-builtin.js" },
+      https: { browser: "./lib/turbopack/empty-node-builtin.js" },
     },
   },
   serverExternalPackages: [
