@@ -37,7 +37,8 @@ function AgentVariableInputCard({
 }: AgentVariableInputCardProps) {
   const dispatch = useAppDispatch();
   const userValues = useAppSelector(selectUserVariableValues(conversationId));
-  const currentValue = userValues[variable.name];
+  // The agent's default shows until the person types — as every other layout does.
+  const currentValue = userValues[variable.name] ?? variable.defaultValue;
   const comp = variable.customComponent;
   const type = comp?.type ?? "textarea";
 
