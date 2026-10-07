@@ -104,7 +104,7 @@ via `refineDetail` (`detail.tsx`). Bodies: `components/CandidateRunBody.tsx`,
   (no organization selected, read failed, a verdict naming no rung) it stays EMPTY and Start is
   unavailable until the person picks a level — never the seat's rung as a guess
   (`appliesToDefault`; guard `__tests__/fx-d1-applies-to-never-guesses-the-level.test.tsx`).
-- **Walk windows from a pair are titled `<role> · Pair N · <agent>`** (FX-D2) so two Live walks
+- **Walk windows from a pair are titled `<role> · Pair N · HH:MM · <agent>`** (FX-D2, `words.pairWalkLabel`) so two Live walks
   from different pairs differ; the labels ride the `?panels=` token so a reload keeps them
   (`features/review-walk/FEATURE.md` § Address).
 - **The list cell compares the list's answer by VALUE** — hosts hand a fresh row object every

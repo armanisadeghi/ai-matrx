@@ -17,6 +17,7 @@ import { parseParams, serializeParams } from "@/features/window-panels/url-sync/
 import type { AppDispatch } from "@/lib/redux/store";
 import * as address from "@/features/review-walk/address";
 import { walkTitle } from "@/features/review-walk/walkTitle";
+import { pairWalkLabel } from "@/features/mandates/candidates/words";
 
 const UNIT_A = "11111111-1111-4111-8111-111111111111";
 const UNIT_B = "22222222-2222-4222-8222-222222222222";
@@ -58,6 +59,18 @@ describe("FX-D2 — walk titles tell pairs apart and survive a reload", () => {
     expect(one).not.toBe(two);
     expect(one).toMatch(/^Live · Pair 1 · Page Summary/);
     for (const t of [one, two]) expect(t.length).toBeLessThanOrEqual(40);
+  });
+
+  it("Pair 1 of two different candidates still differ (the time), and stay inside the budget", () => {
+    const a = pairWalkLabel({ number: 1, created_at: "2026-10-03T22:22:29Z" });
+    const b = pairWalkLabel({ number: 1, created_at: "2026-10-03T22:23:49Z" });
+    expect(a).not.toBe(b);
+    const titles = [a, b].map((detailLabel) =>
+      walkTitle({ unitKind: "agent_request", agentName: AGENT, roleLabel: "Candidate", detailLabel }),
+    );
+    expect(titles[0]).not.toBe(titles[1]);
+    for (const t of titles) expect(t.length).toBeLessThanOrEqual(40);
+    expect(titles[0]).toMatch(/^Candidate · Pair 1 · \d\d:\d\d · P/);
   });
 
   it("a reloaded address restores both titles", () => {

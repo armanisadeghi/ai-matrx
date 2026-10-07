@@ -213,3 +213,16 @@ export function discardConfirmation(subject: Pick<DecisionSubject, "baselineName
     confirmLabel: "Discard",
   };
 }
+
+/**
+ * FX-D2 — what tells one pair's walk windows from another's: the pair number
+ * AND the time the pair ran. The number alone collides across candidates of
+ * one mandate (each has a "Pair 1"); the time alone collides inside one batch.
+ * Local 24-hour clock, ≤ 16 chars ("Pair 12 · 22:23").
+ */
+export function pairWalkLabel(run: Pick<LiveCandidateRun, "number" | "created_at">): string {
+  const at = new Date(run.created_at);
+  if (Number.isNaN(at.getTime())) return `Pair ${run.number}`;
+  const clock = at.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+  return `Pair ${run.number} · ${clock}`;
+}

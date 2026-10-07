@@ -1,7 +1,6 @@
 -- inverse of share_edit_content_documents_and_entity_seat.sql
 -- chair-step: rollback of edit_content on Spaces pages; the owner of lane SHARE-EDIT-CONTENT decides.
 -- WHAT IT DOES NOT UNDO: the enum value; the entity_seat_level branch is removed below.
-drop policy if exists edit_content_update on content.document;
 drop trigger if exists _a00_guard_edit_content_structure on content.document;
 drop function if exists iam._guard_edit_content_structure();
 do $patch$
