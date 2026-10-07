@@ -12,6 +12,7 @@
 import type { RichSpan, SpaceBlock, SpaceColor } from "../contract";
 
 import { columnsAreWellFormed, normalizeColumns } from "./columns";
+import { normalizeTabs, tabsAreWellFormed } from "./tabs";
 
 /** Stored type <-> engine type. Custom blocks (callout, page, columns…) use the same name on both sides. */
 const TO_ENGINE: Record<string, string> = {
@@ -39,6 +40,8 @@ const ENGINE_TYPES = new Set([
   "columnList",
   "column",
   "slot",
+  "tabs",
+  "tab",
   "table",
   "unsupportedText",
   "unknownBlock",
@@ -46,7 +49,7 @@ const ENGINE_TYPES = new Set([
 ]);
 
 /** Engine blocks whose content is "none" — they carry no inline text. */
-const NO_CONTENT = new Set(["divider", "page", "linkToPage", "columnList", "column", "slot", "table", "unknownBlock", ...DATA_BLOCKS]);
+const NO_CONTENT = new Set(["divider", "page", "linkToPage", "columnList", "column", "slot", "tabs", "tab", "table", "unknownBlock", ...DATA_BLOCKS]);
 
 const parse = (raw: unknown): Record<string, unknown> => {
   if (typeof raw !== "string" || !raw) return {};
@@ -208,12 +211,20 @@ function tableFromEngine(block: EngineBlock): SpaceBlock {
 
 /** Stored → engine. Column lists come out well formed (columns.ts). */
 export function toEngine(blocks: SpaceBlock[]): EngineBlock[] {
-  return toEngineTree(columnsAreWellFormed(blocks) ? blocks : normalizeColumns(blocks));
+  return toEngineTree(wellFormed(blocks));
+}
+
+/** Column lists and tabs well formed (columns.ts, tabs.ts); valid trees come back as they are. */
+function wellFormed(blocks: SpaceBlock[]): SpaceBlock[] {
+  const tabbed = tabsAreWellFormed(blocks) ? blocks : normalizeTabs(blocks);
+  return columnsAreWellFormed(tabbed) ? tabbed : normalizeColumns(tabbed);
 }
 
 function toEngineTree(blocks: SpaceBlock[]): EngineBlock[] {
   return blocks.map((block) => {
     if (block.type === "table") return tableToEngine(block);
+    // N1: a tab's name is its stored text; the engine keeps it in a prop (the strip edits it).
+    if (block.type === "tab") return { id: block.id, type: "tab", props: { name: (block.text ?? []).map((s) => s.text).join("") }, children: toEngineTree(block.children ?? []) };
     if (DATA_BLOCKS.has(block.type)) {
       const data = JSON.stringify({ props: block.props ?? {}, color: block.color, background: block.background });
       return { id: block.id, type: block.type, props: { data }, children: [] };
@@ -248,14 +259,26 @@ function toEngineTree(blocks: SpaceBlock[]): EngineBlock[] {
 
 /** Engine → stored. Column lists go out well formed (columns.ts), so a save is never refused for its columns. */
 export function fromEngine(blocks: EngineBlock[]): SpaceBlock[] {
-  const out = fromEngineTree(blocks);
-  return columnsAreWellFormed(out) ? out : normalizeColumns(out);
+  return wellFormed(fromEngineTree(blocks));
 }
 
 function fromEngineTree(blocks: EngineBlock[]): SpaceBlock[] {
   return blocks.map((block) => {
     if (block.type === "table") return tableFromEngine(block);
     if (block.type === "unknownBlock") return parse(block.props?.data) as unknown as SpaceBlock;
+    if (block.type === "tab") {
+      const name = typeof block.props?.name === "string" ? block.props.name : "";
+      const tab: SpaceBlock = { id: block.id, type: "tab", text: name ? [{ text: name }] : [] };
+      if (block.children?.length) tab.children = fromEngineTree(block.children);
+      return tab;
+    }
+    if (block.type === "tabs") {
+      const tabs: SpaceBlock = { id: block.id, type: "tabs" };
+      const active = block.props?.activeTab;
+      if (typeof active === "string" && active) tabs.props = { activeTab: active };
+      if (block.children?.length) tabs.children = fromEngineTree(block.children);
+      return tabs;
+    }
     if (DATA_BLOCKS.has(block.type)) {
       const d = parse(block.props?.data) as { props?: Record<string, unknown>; color?: SpaceColor; background?: SpaceColor };
       const out: SpaceBlock = { id: block.id, type: block.type };

@@ -95,7 +95,10 @@ function blockLines(b: SpaceBlock, ctx: MarkdownContext, number: number): string
     }
     case "columnList":
     case "column":
+    case "tabs":
       return blocksToMarkdownLines(b.children ?? [], ctx);
+    case "tab":
+      return [`**${text || "Tab"}**`, ...(b.children?.length ? ["", ...blocksToMarkdownLines(b.children, ctx)] : [])];
     case "table":
       return tableToMarkdown(p, ctx);
     case "image": {

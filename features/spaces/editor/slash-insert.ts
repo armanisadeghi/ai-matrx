@@ -62,7 +62,7 @@ function placeCaretAfter(editor: SpacesEditor, placedId: string): void {
   try {
     if (Array.isArray(placed.content)) {
       editor.setTextCursorPosition(placedId, "start");
-    } else if ((placed as { type?: string }).type === "columnList") {
+    } else if ((placed as { type?: string }).type === "columnList" || (placed as { type?: string }).type === "tabs") {
       const firstColumn = (placed.children as AnyBlock[] | undefined)?.[0];
       const firstLine = (firstColumn?.children as AnyBlock[] | undefined)?.[0];
       if (firstLine) editor.setTextCursorPosition(firstLine.id, "start");

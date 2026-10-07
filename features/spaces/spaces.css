@@ -1742,3 +1742,81 @@ tr:hover .spaces-entity-openpill, .spaces-entity-open:focus-visible .spaces-enti
 .spaces-find-count { min-width: 40px; text-align: right; font-size: 12px; color: var(--spaces-ink-soft); font-variant-numeric: tabular-nums; }
 ::highlight(spaces-find) { background-color: rgba(255, 212, 0, 0.35); }
 ::highlight(spaces-find-current) { background-color: rgba(255, 170, 0, 0.75); }
+
+/* ---------- tabs (N1, Notion's Tabs block) ---------- */
+
+.spaces-editor .bn-block:has(> .react-renderer.node-tabs) > .bn-block-group,
+.spaces-editor .bn-block:has(> .react-renderer.node-tab) > .bn-block-group {
+  margin-left: 0;
+}
+.spaces-editor .bn-block:has(> .react-renderer.node-tabs) > .bn-block-group > .bn-block-outer::before,
+.spaces-editor .bn-block:has(> .react-renderer.node-tab) > .bn-block-group > .bn-block-outer::before {
+  display: none;
+}
+.spaces-editor .bn-block:has(> .react-renderer.node-tab) > .react-renderer {
+  display: none;
+}
+.spaces-editor [data-content-type="tabs"] > ::after,
+.spaces-editor [data-content-type="tab"] > ::after {
+  content: none !important;
+}
+.spaces-tabs {
+  width: 100%;
+}
+.spaces-tabs-strip {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--spaces-rule);
+  margin-bottom: 6px;
+}
+.spaces-tabs-tab,
+.spaces-tabs-rename {
+  flex: none;
+  max-width: 220px;
+  padding: 6px 10px;
+  margin-bottom: -1px;
+  border-bottom: 2px solid transparent;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--spaces-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: transparent;
+}
+.spaces-tabs-tab:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--foreground) / 0.04);
+  border-radius: 6px 6px 0 0;
+}
+.spaces-tabs-tab[data-active="true"] {
+  color: hsl(var(--foreground));
+  font-weight: 500;
+  border-bottom-color: hsl(var(--foreground));
+}
+.spaces-tabs-rename {
+  width: 140px;
+  outline: none;
+  color: hsl(var(--foreground));
+  border-bottom-color: hsl(var(--primary));
+}
+.spaces-tabs-add {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: var(--spaces-ink-soft);
+}
+.spaces-tabs-add:hover {
+  background: hsl(var(--foreground) / 0.06);
+}
+.spaces-tabs-empty {
+  padding: 4px 2px;
+  font-size: 14px;
+  color: var(--spaces-ink-soft);
+}

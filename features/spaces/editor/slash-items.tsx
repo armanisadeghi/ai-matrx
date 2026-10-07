@@ -30,6 +30,7 @@ import {
   Database,
   PieChart,
   Sigma,
+  PanelTop,
 } from "lucide-react";
 
 import type { PickedSource } from "../data/SourcePicker";
@@ -71,6 +72,14 @@ function databaseBlock(src: PickedSource, view: SpaceDbView | SpaceDbView[], lin
     views,
     activeViewId: views[0]?.id,
   });
+}
+
+/** N1: Notion's Tabs block — two named tabs, each with an empty line to type in. */
+function tabsBlock(): SpacesPartialBlock {
+  return {
+    type: "tabs",
+    children: [1, 2].map((n) => ({ type: "tab", props: { name: `Tab ${n}` }, children: [{ type: "paragraph" }] })),
+  } as unknown as SpacesPartialBlock;
 }
 
 function columns(count: number): SpacesPartialBlock {
@@ -205,6 +214,7 @@ export function slashItems(editor: SpacesEditor, ctx: SlashContext): DefaultReac
     { title: "Toggle heading 1", subtext: "Hide content inside a large heading.", aliases: ["toggleh1", "th1"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 1, isToggleable: true } }) },
     { title: "Toggle heading 2", subtext: "Hide content inside a medium heading.", aliases: ["toggleh2", "th2"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 2, isToggleable: true } }) },
     { title: "Toggle heading 3", subtext: "Hide content inside a small heading.", aliases: ["toggleh3", "th3"], group: advanced, icon: <ChevronRight size={ICON} />, onItemClick: set({ type: "heading", props: { level: 3, isToggleable: true } }) },
+    { title: "Tabs", subtext: "Show content in named tabs.", aliases: ["tabs", "tab"], group: advanced, icon: <PanelTop size={ICON} />, onItemClick: set(tabsBlock()) },
     { title: "2 columns", subtext: "Create 2 columns of blocks.", aliases: ["columns", "col2"], group: advanced, icon: <Columns2 size={ICON} />, onItemClick: set(columns(2)) },
     { title: "3 columns", subtext: "Create 3 columns of blocks.", aliases: ["columns", "col3"], group: advanced, icon: <Columns3 size={ICON} />, onItemClick: set(columns(3)) },
     { title: "4 columns", subtext: "Create 4 columns of blocks.", aliases: ["columns", "col4"], group: advanced, icon: <Columns4 size={ICON} />, onItemClick: set(columns(4)) },
