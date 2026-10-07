@@ -62,4 +62,15 @@ describe("a table page the server asked", () => {
     expect(s.asked).toEqual(["where_id_opens"]);
     expect(takePrimedTablePageBundle(PATEL, VISITS, null)).toBeNull();
   });
+
+  it("takes React's streamed thenable (whose then returns nothing) the same as a promise", async () => {
+    const s = source();
+    const value = seed();
+    // React's deserialized RSC promise: `then` registers callbacks and returns undefined.
+    const streamed = { then(onFulfilled: (v: TablePageSeed) => void) { setTimeout(() => onFulfilled(value), 0); } };
+    primeTablePage(VISITS, streamed as unknown as Promise<TablePageSeed | null>, s);
+    const answer = await ensureObjectOrganization(s, VISITS);
+    expect(answer).toMatchObject({ state: "found", organizationId: PATEL });
+    expect(s.asked).toEqual([]);
+  });
 });
