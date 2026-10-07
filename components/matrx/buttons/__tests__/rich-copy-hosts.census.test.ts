@@ -32,23 +32,10 @@ const HOST_DIRS = [
 /** Raw writes that are NOT rich text — file → why. */
 const RAW_ALLOWED: Record<string, string> = {
   "components/selection-toolbar/selection-copy.ts": "the module's own ⌘C markdown upgrade (formatted + markdown item)",
-  "components/rich-editor/panels/OutlinePanel.tsx": "a heading's link (URL)",
-  "components/rich-editor/visual/nodes/IslandBlockView.tsx": "a code/island block's raw bytes (code keeps its raw copy)",
-  "components/mardown-display/chat-markdown/InlineCodeSnippet.tsx": "inline code (raw)",
-  "components/mardown-display/chat-markdown/FullScreenMarkdownEditor.tsx": "the diagnostics report buttons (useCopyButton), not the document",
-  "components/mardown-display/chat-markdown/analyzer/analyzer-options/IntelligentViewer.tsx": "admin analyzer: bookmark paths",
-  "components/mardown-display/chat-markdown/analyzer/analyzer-options/FlatSectionViewer.tsx": "admin analyzer: bookmark paths",
-  "components/mardown-display/chat-markdown/analyzer/analyzer-options/sections-viewer.tsx": "admin analyzer: section JSON",
-  "components/mardown-display/chat-markdown/analyzer/analyzer-options/lines-viewer.tsx": "admin analyzer: parsed line dump",
-  "components/mardown-display/chat-markdown/analyzer/analyzer-options/viewer-utilities.tsx": "admin analyzer: structure dump",
-  "components/markdown-studio/AnalysisView.tsx": "studio analysis: metrics and finding lists",
-  "components/markdown-studio/lab/ServerEventInspector.tsx": "lab: raw server events",
   "features/rich-document/actions/handlers/share.ts": "a share link (URL)",
   "features/notes/components/NoteInfoPanel.tsx": "a note's id / metadata value",
   "features/notes/components/NoteTabItem.tsx": "a note's record-reference fence (an id), not its text",
-  "packages/chat/src/tool-call-visualization/components/ToolTabBodies.tsx": "a tool's raw arguments / result JSON",
   "packages/chat/src/tool-call-visualization/result-fields/ShortId.tsx": "an id",
-  "features/chat-tool-renderers/renderers/note/NoteToolParts.tsx": "a note id",
 };
 
 const RAW_WRITE = /navigator\.clipboard\s*\??\.\s*(?:write|writeText)\s*\(/;
