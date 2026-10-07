@@ -54,6 +54,7 @@ import { composerPillClass } from "./composer-chip";
 import type { ComposerAgentControl, ComposerMode, ComposerSize } from "./composer-types";
 import { useComposerAgent, useEffectiveModelId, type ComposerAgentInfo } from "./useComposerAgent";
 import { useComposerAgentFilter } from "./useComposerAgentFilter";
+import { ComposerAgentPeek } from "./ComposerAgentPeek";
 import { presentOrganizationRefusal } from "../../../../../host/org";
 import { ensureOrgId, isOrganizationSelectionCancelled } from "../../../../../host/org";
 
@@ -202,6 +203,20 @@ export function ComposerAgentPill({ conversationId, mode, size, agentControl, me
   );
 }
 
+// ── The agent itself: the agent menu's peek card, one hover or press away ──
+
+function ThisAgentRow({ info, close }: { info: ComposerAgentInfo; close: () => void }) {
+  if (!info.agentId) return null;
+  return (
+    <ComposerSubmenu
+      row={{ icon: Webhook, label: info.agentName ?? "Agent", description: "View, open or duplicate" }}
+      panelClassName="w-[340px] h-[420px] p-0"
+    >
+      <ComposerAgentPeek agentId={info.agentId} onDone={close} />
+    </ComposerSubmenu>
+  );
+}
+
 // ── Chat mode: chat agents · All agents · Model for this chat ─────────────
 
 function ChatPresetsPanel({
@@ -233,7 +248,7 @@ function ChatPresetsPanel({
     return (
       <>
         <ComposerMenuLabel>Agent</ComposerMenuLabel>
-        <ComposerMenuRow label={info.agentName ?? "Agent"} checked />
+        <ThisAgentRow info={info} close={close} />
         <ComposerMenuHelp>This page always answers with this agent.</ComposerMenuHelp>
         <ComposerMenuDivider />
         <ComposerMenuLabel>Model for this chat</ComposerMenuLabel>
@@ -316,6 +331,9 @@ function ChatPresetsPanel({
 
   return (
     <>
+      <ComposerMenuLabel>This chat's agent</ComposerMenuLabel>
+      <ThisAgentRow info={info} close={close} />
+      <ComposerMenuDivider />
       <ComposerMenuLabel>Chat agents</ComposerMenuLabel>
       {info.presets.map((preset) => (
         <ComposerMenuRow

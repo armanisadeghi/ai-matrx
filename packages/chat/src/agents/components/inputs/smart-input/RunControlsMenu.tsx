@@ -167,9 +167,12 @@ export function RunControlsMenu({
   const triggerButton = (
     <Button
       variant="quiet"
-      // Something added or customized shows on the control itself: the count
-      // as its label, or the primary tint when only settings changed.
-      tone={rc.addedCount > 0 || rc.isCustomized ? "primary" : undefined}
+      // Something ADDED shows on the control itself: the count as its label,
+      // tinted. Changed settings never tint it — a new chat on Custom (its own
+      // model) with an organization chosen already counts as "customized", so
+      // the + sat blue on every fresh chat (Arman, 2026-10-07). The window's
+      // tabs carry their own dots for changed settings.
+      tone={rc.addedCount > 0 ? "primary" : undefined}
       icon={<TriggerIcon />}
       tabIndex={variant === "plus" ? -1 : undefined}
       title="Chat Options"

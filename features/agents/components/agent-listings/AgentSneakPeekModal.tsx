@@ -64,7 +64,7 @@ import { ReadFailure } from "@/components/read-state/ReadFailure";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast-service";
 import { setPeekedAgentId } from "./agent-peek-tracker";
-import { AgentPeekDuplicateButton } from "./AgentPeekDuplicateButton";
+import { AgentPeekDuplicateButton } from "@ai-matrx/chat/agents/components/shared/AgentPeekDuplicateButton";
 import { AiModelRef } from "@/components/official/entity-ref/AiIdentityRef";
 import {
   PEEK_CONTENT_PROPS,

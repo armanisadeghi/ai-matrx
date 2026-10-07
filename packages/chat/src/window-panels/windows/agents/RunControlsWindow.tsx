@@ -39,7 +39,7 @@ import { selectInstanceAgentId } from "../../../agents/redux/execution-system/in
 import { selectAgentName } from "../../../agents/redux/agent-definition/selectors";
 import { NonEditableContextMenu } from "../../../host/ui-slots";
 import { buildAgentMenuSection, agentEntityRef } from "../../../agents/menu/agent-actions";
-import { Button } from "@ai-matrx/design-system/controls";
+import { Tile } from "@ai-matrx/design-system/controls";
 
 const OVERLAY_ID = CHAT_WINDOWS.runControlsWindow;
 
@@ -149,10 +149,18 @@ function RunControlsWindowInner({
             const Icon = t.icon;
             const on = activeTab === t.id;
             return (
-              <Button variant="quiet" pressed={on} icon={<Icon />} key={t.id} role="tab" aria-selected={on} onClick={() => setTab(t.id)}>
-                <span className="min-w-0 flex-1 truncate">{t.label}</span>
-                {rc.tabTrailing(t.id)}
-              </Button>
+              // A list of sections is rows, start-aligned — never centred buttons.
+              <Tile
+                variant="quiet"
+                selected={on}
+                icon={<Icon />}
+                title={t.label}
+                end={rc.tabTrailing(t.id)}
+                key={t.id}
+                role="tab"
+                aria-selected={on}
+                onClick={() => setTab(t.id)}
+              />
             );
           })}
         </nav>
