@@ -6,7 +6,7 @@
 // (a marked place where a phase-2 block will sit). Callout bodies and columns hold their content as
 // ordinary block children; spaces.css draws the callout box around them and lays columns side by side.
 
-import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps } from "@blocknote/core";
+import { BlockNoteSchema, createCodeBlockSpec, defaultBlockSpecs, defaultInlineContentSpecs, defaultProps, defaultStyleSpecs } from "@blocknote/core";
 import { createReactBlockSpec } from "@blocknote/react";
 import { ArrowUpRight, FileText } from "lucide-react";
 import Link from "next/link";
@@ -22,6 +22,7 @@ import { CalloutBlock } from "./callout-block";
 import { TabBlock, TabsBlock } from "./tabs-block";
 import { SyncedBlock } from "./synced-block";
 import { ButtonBlock } from "./button-block";
+import { SuggestionStyle } from "./suggest";
 
 /** C10: Notion's code-block language picker (the stored `language` prop rides through convert.ts as is). */
 const CODE_BLOCK = notionCodeBlock(createCodeBlockSpec({
@@ -243,6 +244,8 @@ export const spacesSchema = BlockNoteSchema.create({
     unknownBlock: storedBlockSpecs.unknownBlock(),
     unsupportedText: storedBlockSpecs.unsupportedText(),
   },
+  // N3: a suggested edit is a string style (the stored span's `suggestion`, as JSON).
+  styleSpecs: { ...defaultStyleSpecs, suggestion: SuggestionStyle },
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,
     inlineMention: mentionInline,

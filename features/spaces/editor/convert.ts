@@ -93,6 +93,7 @@ function spanToEngineStyles(s: RichSpan): Styles {
   if (s.code) styles.code = true;
   if (isColor(s.color)) styles.textColor = s.color;
   if (isColor(s.background)) styles.backgroundColor = s.background;
+  if (s.suggestion) styles.suggestion = JSON.stringify(s.suggestion);
   return styles;
 }
 
@@ -127,6 +128,13 @@ function engineTextToSpan(t: EngineText, link?: string): RichSpan {
   if (isColor(st.textColor)) s.color = st.textColor;
   if (isColor(st.backgroundColor)) s.background = st.backgroundColor;
   if (link) s.link = link;
+  if (typeof st.suggestion === "string" && st.suggestion) {
+    try {
+      s.suggestion = JSON.parse(st.suggestion) as RichSpan["suggestion"];
+    } catch {
+      // a broken mark is dropped, never stored
+    }
+  }
   return s;
 }
 

@@ -45,6 +45,7 @@ import { currentBlockId, duplicateBlocks, selectedOrCurrent } from "./block-acti
 import { fromEngine, toEngine, type EngineBlock } from "./convert";
 import { PasteUrlMenu, pastedUrl, type PastedUrl } from "./PasteUrlMenu";
 import { SYNCED_CLIP } from "./synced-block";
+import { SuggestionCard, suggestMode } from "./suggest";
 import { useRubberBand } from "./rubber-band";
 import { CalloutIconHost } from "./callout-block";
 import { dateChoices } from "./date-mention";
@@ -217,7 +218,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       disableExtensions: room ? ["history"] : undefined,
       // Notion names the no-colour choice "Default" (a callout on Default draws a bordered box).
       dictionary: { ...en, placeholders: PLACEHOLDERS, color_picker: { ...en.color_picker, colors: { ...en.color_picker.colors, default: "Default" } } },
-      extensions: room ? [notionKeys(), room] : [notionKeys()],
+      extensions: room ? [notionKeys(), suggestMode(), room] : [notionKeys(), suggestMode()],
       tabBehavior: "prefer-indent",
       dropCursor: { color: "rgba(35, 131, 226, 0.43)", width: 4, hooks: columnDrop.hooks },
       // Notion keeps no empty line after the last block; the page end (SpacePage) adds one on click.
@@ -493,6 +494,7 @@ export function SpaceEditor({ spaceId, initialBlocks, editable, onChange, slash,
       ) : null}
     </BlockNoteView>
     {pasted ? <PasteUrlMenu editor={editor} pasted={pasted} onClose={() => setPasted(null)} /> : null}
+    <SuggestionCard getView={() => editor.prosemirrorView ?? null} canResolve={editable} />
     </div>
   );
 }
