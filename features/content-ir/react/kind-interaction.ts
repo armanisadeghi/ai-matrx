@@ -63,7 +63,7 @@ function progressStepText(data: unknown, id: unknown): string | null {
   for (const phase of list(phases)) {
     for (const step of list((phase as { steps?: unknown } | null)?.steps)) {
       const s = step as { id?: unknown; text?: unknown } | null;
-      if (s?.id === id && typeof s.text === "string" && s.text.trim()) return s.text.trim();
+      if (s && s.id === id && typeof s.text === "string" && s.text.trim()) return s.text.trim();
     }
   }
   return null;

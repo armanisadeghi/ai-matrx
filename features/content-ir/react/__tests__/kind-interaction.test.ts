@@ -104,6 +104,13 @@ test("a progress step is named by its words, not its id", async () => {
   expect(chips(s)[0].remark.summary).toBe("I marked done: Book the venue.");
 });
 
+test("a null progress step cannot crash lookup of a missing answer id", async () => {
+  const s = makeStore();
+  const data = { phases: [{ steps: [null, { id: "item-1", text: "Book the venue" }] }] };
+  await emit(s, { kind: "progress", data, state: { completed: [undefined, "item-1"] }, previous: null });
+  expect(chips(s)[0].remark.summary).toBe("I marked done: undefined, Book the venue.");
+});
+
 test("answer state back to nothing removes the chip", async () => {
   const s = makeStore();
   await emit(s, { kind: "progress", state: { completed: ["Book venue"] }, previous: null });

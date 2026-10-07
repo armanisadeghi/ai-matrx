@@ -225,7 +225,7 @@ describe("persisted envelope cache (stream → parts → reload)", () => {
         metadata: {
           [IR_ENVELOPE_KEY]: envelopeCacheFromEnvelopes([persistedEnvelope]),
         },
-      } as CxTextContent,
+      },
     ];
 
     normalizeContentBlocks(parts);
