@@ -14,6 +14,7 @@ import { Badge, DisclosureHeader } from "@ai-matrx/design-system/controls";
 import { AppWindow, Code2, Database, FileText, Table2, Workflow } from "lucide-react";
 
 import type { AppletBuildResultData } from "@/features/content-ir/kinds/applet-build-result";
+import { useSourceTableNames } from "@/features/applets/hooks/useSourceTableNames";
 
 function languageOf(fileName: string): string {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
@@ -27,8 +28,11 @@ function languageOf(fileName: string): string {
 
 export default function AppletBuildResultBlock({ serverData }: { serverData?: unknown }) {
   const [showCode, setShowCode] = useState(false);
-  if (typeof serverData !== "object" || serverData === null) return null;
-  const data = serverData as AppletBuildResultData;
+  const read = typeof serverData === "object" && serverData !== null ? (serverData as AppletBuildResultData) : null;
+  // Her tables by their real name and organization — the alias is the code's name, never hers.
+  const tableNames = useSourceTableNames(read?.sources.flatMap((s) => (s.tableId ? [s.tableId] : [])) ?? []);
+  if (!read) return null;
+  const data = read;
   const building = !data.isComplete;
 
   return (
@@ -69,7 +73,12 @@ export default function AppletBuildResultBlock({ serverData }: { serverData?: un
                 </Badge>
               ) : (
                 <Badge key={`s:${source.alias}`} tone="neutral">
-                  <Database className="h-3 w-3" /> {source.alias}
+                  <Database className="h-3 w-3" />{" "}
+                  {source.tableId && tableNames[source.tableId]
+                    ? [tableNames[source.tableId].name, tableNames[source.tableId].organizationName].filter(Boolean).join(" · ")
+                    : source.type === "entity"
+                      ? source.alias
+                      : "One of your tables"}
                 </Badge>
               ),
             )}
