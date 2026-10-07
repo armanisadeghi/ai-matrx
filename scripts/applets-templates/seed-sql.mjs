@@ -21,10 +21,10 @@ const row = {
 const b64 = Buffer.from(JSON.stringify(row), "utf8").toString("base64");
 console.log(`select set_config('app.actor_system', 'applets.template-seed', true);
 with r as (select convert_from(decode('${b64}','base64'),'UTF8')::jsonb j)
-insert into app.definition (organization_id, created_by, slug, name, tagline, description, category, tags, files, entry, component_code, pages, mandates, sources, shell_kind, status, published_to_web, template)
+insert into app.definition (organization_id, created_by, slug, name, tagline, description, category, tags, files, entry, component_code, pages, mandates, sources, status, published_to_web, template)
 select '${SYSTEM_ORG}', '${process.env.AI_ADMIN_USER_ID}', '${t.slug}', j->>'name', j->>'tagline', j->>'description', j->>'category',
   array(select jsonb_array_elements_text(j->'tags')), j->'files', 'App.tsx', j->'files'->>'App.tsx', j->'pages', '[]'::jsonb, '[]'::jsonb,
-  'fully_custom', 'published', true, j->'template' from r
+  'published', true, j->'template' from r
 on conflict (slug) where deleted_at is null do update set name = excluded.name, tagline = excluded.tagline, description = excluded.description,
   category = excluded.category, tags = excluded.tags, files = excluded.files, component_code = excluded.component_code, pages = excluded.pages,
   status = excluded.status, published_to_web = excluded.published_to_web, template = excluded.template

@@ -16,16 +16,17 @@
  *   - credentials — a `CredentialsPort` over Redux (`selectAccessToken` /
  *     `selectFingerprintId`), read fresh on EVERY call so a token refresh
  *     mid-run is picked up, exactly like `callApi`;
- *   - the active org (the global transport REQUIRES one, matching `callApi`'s
- *     preflight refusal; the conversation transport sends org in the body
- *     only and configures none);
+ *   - the org: the call's OWN `X-Organization-Id` (a run's org) wins, then the
+ *     admin seat, then the active org; with none, a pressed write holds on the
+ *     org picker exactly like `callApi` (`ensureOrganizationContextForCall`);
+ *     the conversation transport sends org in the body only and configures none;
  *   - the app's AI API version flag (`selectAiApiVersion` — the admin
  *     sidebar toggle);
  *   - diagnostics sinks: `logApiTarget`, `captureApiError`, and the
  *     `ai_v2_downgrade` telemetry record.
  */
 
-import { adminLaneHeadersFor, adminLaneOrganizationId } from "@/lib/api/admin-lane";
+import { adminLaneHeadersFor } from "@/lib/api/admin-lane";
 import type { Action } from "redux";
 import type { ThunkAction } from "redux-thunk";
 import type { RootState } from "@/lib/redux/store";
@@ -40,6 +41,7 @@ import {
   type MatrxTransportDiagnostics,
 } from "@ai-matrx/agents/matrx";
 import {
+  ensureOrganizationContextForCall,
   resolveBaseUrl,
   waitForAuthReady,
   type ApiCallError,
@@ -172,22 +174,29 @@ export function createMatrxTransport(
     // 241750bf6): a guest sends no X-Organization-Id unless the caller
     // explicitly resolved one, while a Bearer request stays fail-closed on
     // the selected organization — never a first/personal fallback.
-    resolveTarget: () => {
+    //
+    // THE CALL'S OWN ORG WINS (2026-10-07): a run bound to its organization
+    // (`withRunOrganization` — an Applet job) carries X-Organization-Id on the
+    // request itself. It is the request's organization: never dropped for want
+    // of an active org, never replaced by a different active org. With no org
+    // anywhere, a write the person just pressed HOLDS on the canonical
+    // organization picker (callApi's one line) — never the raw refusal text.
+    resolveTarget: async (request) => {
       const state = getState();
       const isAuthenticated = !!selectAccessToken(state);
       const hasAppContext = !!(state as Partial<RootState>)?.appContext;
+      const callOrganizationId =
+        readCallOrganizationId(request.headers) ?? options.organizationId;
       let organizationId: string | null = null;
       if (isAuthenticated) {
-        organizationId = requireOrganizationContext(
-          adminLaneOrganizationId() ??
-            (hasAppContext ? selectOrganizationId(state) : undefined),
-          options.organizationId,
+        organizationId = await ensureOrganizationContextForCall(
+          hasAppContext ? selectOrganizationId(state) : undefined,
+          callOrganizationId,
+          request.method,
+          undefined,
         );
-      } else if (options.organizationId) {
-        organizationId = requireOrganizationContext(
-          null,
-          options.organizationId,
-        );
+      } else if (callOrganizationId) {
+        organizationId = requireOrganizationContext(null, callOrganizationId);
       }
       return {
         baseUrl: resolveBaseUrl(state),
@@ -210,6 +219,16 @@ export function createMatrxTransport(
       : {}),
     ...(options.source ? { source: options.source } : {}),
   });
+}
+
+/** The request's own `X-Organization-Id` (any casing), when it carries one. */
+function readCallOrganizationId(
+  headers: Record<string, string> | undefined,
+): string | undefined {
+  for (const [name, value] of Object.entries(headers ?? {})) {
+    if (name.toLowerCase() === "x-organization-id" && value.trim()) return value;
+  }
+  return undefined;
 }
 
 // The bridge that stood here is gone (2026-09-12): it delegated to the

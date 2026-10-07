@@ -4179,8 +4179,6 @@ export type Database = {
     Tables: {
       definition: {
         Row: {
-          agent_id: string | null
-          agent_version_id: string | null
           allowed_imports: Json | null
           app_kind: string
           avg_execution_time_ms: number | null
@@ -4200,7 +4198,6 @@ export type Database = {
           is_verified: boolean | null
           last_execution_at: string | null
           layout_config: Json | null
-          mandate_id: string | null
           mandates: Json
           metadata: Json
           name: string
@@ -4220,11 +4217,7 @@ export type Database = {
           search_engine_indexed: boolean | null
           search_tsv: unknown
           shared_context_policies: Json | null
-          shell_config: Json
-          shell_kind: string
           shown_to: Database["platform"]["Enums"]["shown_to"] | null
-          slot_code: Json
-          slot_overrides: Json
           slug: string
           sources: Json
           status: string
@@ -4239,14 +4232,10 @@ export type Database = {
           unique_users_count: number | null
           updated_at: string
           updated_by: string | null
-          use_latest: boolean
-          variable_schema: Json | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
-          agent_id?: string | null
-          agent_version_id?: string | null
           allowed_imports?: Json | null
           app_kind?: string
           avg_execution_time_ms?: number | null
@@ -4266,7 +4255,6 @@ export type Database = {
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
-          mandate_id?: string | null
           mandates?: Json
           metadata?: Json
           name: string
@@ -4286,11 +4274,7 @@ export type Database = {
           search_engine_indexed?: boolean | null
           search_tsv?: unknown
           shared_context_policies?: Json | null
-          shell_config?: Json
-          shell_kind?: string
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slot_code?: Json
-          slot_overrides?: Json
           slug: string
           sources?: Json
           status?: string
@@ -4305,14 +4289,10 @@ export type Database = {
           unique_users_count?: number | null
           updated_at?: string
           updated_by?: string | null
-          use_latest?: boolean
-          variable_schema?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
-          agent_id?: string | null
-          agent_version_id?: string | null
           allowed_imports?: Json | null
           app_kind?: string
           avg_execution_time_ms?: number | null
@@ -4332,7 +4312,6 @@ export type Database = {
           is_verified?: boolean | null
           last_execution_at?: string | null
           layout_config?: Json | null
-          mandate_id?: string | null
           mandates?: Json
           metadata?: Json
           name?: string
@@ -4352,11 +4331,7 @@ export type Database = {
           search_engine_indexed?: boolean | null
           search_tsv?: unknown
           shared_context_policies?: Json | null
-          shell_config?: Json
-          shell_kind?: string
           shown_to?: Database["platform"]["Enums"]["shown_to"] | null
-          slot_code?: Json
-          slot_overrides?: Json
           slug?: string
           sources?: Json
           status?: string
@@ -4371,8 +4346,6 @@ export type Database = {
           unique_users_count?: number | null
           updated_at?: string
           updated_by?: string | null
-          use_latest?: boolean
-          variable_schema?: Json | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
@@ -4388,8 +4361,6 @@ export type Database = {
       }
       definition_version: {
         Row: {
-          agent_id: string | null
-          agent_version_id: string | null
           allowed_imports: Json | null
           app_id: string
           category: string | null
@@ -4406,7 +4377,6 @@ export type Database = {
           files: Json | null
           id: string
           layout_config: Json | null
-          mandate_id: string | null
           mandates: Json | null
           metadata: Json
           name: string | null
@@ -4414,10 +4384,6 @@ export type Database = {
           pages: Json | null
           parent_applet_id: string | null
           pinned_version: number | null
-          shell_config: Json | null
-          shell_kind: string | null
-          slot_code: Json | null
-          slot_overrides: Json | null
           sources: Json | null
           status: string | null
           styling_config: Json | null
@@ -4425,13 +4391,10 @@ export type Database = {
           tags: string[] | null
           updated_at: string
           updated_by: string | null
-          variable_schema: Json | null
           version: number
           version_number: number
         }
         Insert: {
-          agent_id?: string | null
-          agent_version_id?: string | null
           allowed_imports?: Json | null
           app_id: string
           category?: string | null
@@ -4448,7 +4411,6 @@ export type Database = {
           files?: Json | null
           id?: string
           layout_config?: Json | null
-          mandate_id?: string | null
           mandates?: Json | null
           metadata?: Json
           name?: string | null
@@ -4456,10 +4418,6 @@ export type Database = {
           pages?: Json | null
           parent_applet_id?: string | null
           pinned_version?: number | null
-          shell_config?: Json | null
-          shell_kind?: string | null
-          slot_code?: Json | null
-          slot_overrides?: Json | null
           sources?: Json | null
           status?: string | null
           styling_config?: Json | null
@@ -4467,13 +4425,10 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
-          variable_schema?: Json | null
           version?: number
           version_number: number
         }
         Update: {
-          agent_id?: string | null
-          agent_version_id?: string | null
           allowed_imports?: Json | null
           app_id?: string
           category?: string | null
@@ -4490,7 +4445,6 @@ export type Database = {
           files?: Json | null
           id?: string
           layout_config?: Json | null
-          mandate_id?: string | null
           mandates?: Json | null
           metadata?: Json
           name?: string | null
@@ -4498,10 +4452,6 @@ export type Database = {
           pages?: Json | null
           parent_applet_id?: string | null
           pinned_version?: number | null
-          shell_config?: Json | null
-          shell_kind?: string | null
-          slot_code?: Json | null
-          slot_overrides?: Json | null
           sources?: Json | null
           status?: string | null
           styling_config?: Json | null
@@ -4509,7 +4459,6 @@ export type Database = {
           tags?: string[] | null
           updated_at?: string
           updated_by?: string | null
-          variable_schema?: Json | null
           version?: number
           version_number?: number
         }
@@ -98408,19 +98357,6 @@ export type Database = {
         Args: { slug_to_check: string }
         Returns: boolean
       }
-      check_prompt_app_drift: {
-        Args: { p_user_id?: string }
-        Returns: {
-          app_id: string
-          app_name: string
-          current_version: number
-          pinned_version: number
-          prompt_id: string
-          prompt_name: string
-          prompt_source_type: string
-          versions_behind: number
-        }[]
-      }
       check_rate_limit: {
         Args: {
           p_app_id: string
@@ -100351,8 +100287,6 @@ export type Database = {
       get_aga_public_data: {
         Args: { p_app_id?: string; p_slug?: string }
         Returns: {
-          agent_id: string
-          agent_version_id: string
           allowed_imports: Json
           category: string
           component_code: string
@@ -100361,39 +100295,15 @@ export type Database = {
           favicon_url: string
           id: string
           layout_config: Json
-          mandate_agent_id: string
-          mandate_agent_version_id: string
-          mandate_id: string
-          mandate_key: string
           name: string
           preview_image_url: string
           publisher_name: string
-          shell_config: Json
-          shell_kind: string
-          slot_code: Json
-          slot_overrides: Json
           slug: string
           styling_config: Json
           success_rate: number
           tagline: string
           tags: string[]
           total_executions: number
-          use_latest: boolean
-          variable_schema: Json
-        }[]
-      }
-      get_aga_public_execution: {
-        Args: { p_app_id: string }
-        Returns: {
-          auto_context_disabled: boolean
-          context_policies: Json
-          custom_tools: Json
-          id: string
-          model_id: string
-          settings: Json
-          tools: string[]
-          ui_gates: Json
-          variable_definitions: Json
         }[]
       }
       get_agent_conversations: {
@@ -100899,61 +100809,7 @@ export type Database = {
           table_name: string
         }[]
       }
-      get_prompt_app_execution_payload: {
-        Args: { p_app_id: string }
-        Returns: Json
-      }
-      get_prompt_app_public_data: {
-        Args: { p_app_id?: string; p_slug?: string }
-        Returns: {
-          allowed_imports: Json
-          category: string
-          component_code: string
-          component_language: string
-          description: string
-          favicon_url: string
-          id: string
-          layout_config: Json
-          name: string
-          preview_image_url: string
-          slug: string
-          styling_config: Json
-          success_rate: number
-          tagline: string
-          tags: string[]
-          total_executions: number
-          variable_schema: Json
-        }[]
-      }
       get_public_flashcard_set: { Args: { p_set_id: string }; Returns: Json }
-      get_published_app_with_prompt: {
-        Args: { p_app_id?: string; p_slug?: string }
-        Returns: {
-          allowed_imports: Json
-          category: string
-          component_code: string
-          component_language: string
-          description: string
-          favicon_url: string
-          id: string
-          layout_config: Json
-          name: string
-          preview_image_url: string
-          prompt_id: string
-          prompt_messages: Json
-          prompt_settings: Json
-          prompt_variable_defaults: Json
-          slug: string
-          status: string
-          styling_config: Json
-          success_rate: number
-          tagline: string
-          tags: string[]
-          total_executions: number
-          user_id: string
-          variable_schema: Json
-        }[]
-      }
       get_resource_access: {
         Args: { p_resource_id: string; p_resource_type: string }
         Returns: Json
@@ -103499,10 +103355,6 @@ export type Database = {
           role: string
           user_id: string
         }[]
-      }
-      pin_prompt_app_to_version: {
-        Args: { p_app_id: string; p_version_id: string }
-        Returns: Json
       }
       plpgsql_check_function:
         | {
