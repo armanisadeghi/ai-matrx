@@ -68,3 +68,32 @@ export function effectiveConsumption({
   }
   return { map: implicit, byName, implicit };
 }
+
+/**
+ * THE MAP A REBIND CARRIES (2026-10-06). "Create system twin + rebind" swaps
+ * the default Holder for a duplicate with the same inputs. The map travels
+ * with it: the stored one when there is one, else the by-name pass written
+ * out — so a twin is never left on an empty, implicit map.
+ */
+export function rebindConsumptionMap({
+  storedMap,
+  targetNames,
+  contextKeys,
+  offered,
+  mappingOnly,
+}: {
+  storedMap: ConsumptionMap;
+  targetNames: readonly string[];
+  contextKeys: ReadonlySet<string>;
+  offered: readonly OfferedValue[];
+  mappingOnly?: ReadonlySet<string>;
+}): ConsumptionMap {
+  return effectiveConsumption({
+    map: storedMap,
+    targetNames,
+    contextKeys,
+    offered,
+    mappingOnly,
+    holderKind: "agent",
+  }).map;
+}

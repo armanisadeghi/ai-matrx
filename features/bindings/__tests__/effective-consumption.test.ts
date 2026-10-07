@@ -7,7 +7,7 @@
  * words the summary prints for each.
  */
 
-import { effectiveConsumption } from "../effective-consumption";
+import { effectiveConsumption, rebindConsumptionMap } from "../effective-consumption";
 import { coverageLine, isFed } from "../words";
 import { sourcesFor } from "../consumption-writer";
 import type { ConsumptionMap, OfferedValue } from "@/features/mandates/provisions";
@@ -138,5 +138,32 @@ describe("effectiveConsumption", () => {
       holderKind: "workflow",
     });
     expect([...wf.byName].sort()).toEqual(["content", "instructions"]);
+  });
+});
+
+describe("rebindConsumptionMap — the twin rebind carries the map", () => {
+  it("carries the stored map unchanged", () => {
+    const storedMap: ConsumptionMap = {
+      tone: [{ mapType: "offered_value", target: "page_title", deliver: "variable" }],
+    };
+    expect(
+      rebindConsumptionMap({
+        storedMap,
+        targetNames: TARGETS,
+        contextKeys: NO_CONTEXT,
+        offered: OFFERED,
+      }),
+    ).toEqual(storedMap);
+  });
+
+  it("with no stored map, writes the by-name entries out — never an empty map", () => {
+    const map = rebindConsumptionMap({
+      storedMap: {},
+      targetNames: TARGETS,
+      contextKeys: NO_CONTEXT,
+      offered: OFFERED,
+    });
+    expect(Object.keys(map).sort()).toEqual(["content", "instructions"]);
+    expect(map.instructions?.[0]).toMatchObject({ when_absent: "skip" });
   });
 });
