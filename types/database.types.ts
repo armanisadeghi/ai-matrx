@@ -32537,6 +32537,7 @@ export type Database = {
           said: string
         }[]
       }
+      _formula_literal_normalised: { Args: { p_expr: Json }; Returns: Json }
       _fx_autonumber: {
         Args: {
           p_key: string
