@@ -45,6 +45,13 @@ Block document: a tree of `SpaceBlock` (`id`, `type`, `text: RichSpan[]`, `color
 
 ## Change log
 
+- 2026-10-06 — Build with AI (Space Builder, mandate `spaces.build`): `ai/SpaceBuilder.tsx` hosts one request box and
+  one floating run (`useFloatingAgentRun` → LiveRunWindow) above every page (`SpacesWorkspace`), so a 1–8 min build
+  survives page switches. Doors: sidebar New page options → Build with AI, a blank page's starter, page ••• → Ask AI
+  to change this page. userInput = the typed words; `space_id`/`page_title`/`page_markdown` only on the change door;
+  active organization; result opens `/spaces/<root_space_id>` (a change re-opens the page, `reopenPage`). Disclosed in
+  the Agents menu. Test `ai/__tests__/space-builder.test.ts`; walk `__tests__/walk/space-builder.walk.mjs`.
+
 - 2026-10-06 — round 22: co-editing convergence proved — `collab/__tests__/convergence.test.ts` (two members over the
   real provider + realtime manager, jittered out-of-order delivery, 300 keys each, 5 seeds: identical, no pending) and
   `__tests__/walk/convergence.walk.mjs` (two browsers, 30 s / 60 s, same line + own blocks: editors, Yjs state vectors

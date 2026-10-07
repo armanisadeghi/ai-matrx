@@ -24,6 +24,8 @@ import { AskAiMenu, type AskAiTarget } from "../ai/AskAiMenu";
 import { AskPageButton } from "../ai/AskPageButton";
 import { LoadAccessState } from "../workspace/LoadAccessState";
 import { useSpacesAiDisclosure } from "../ai/spaces-ai";
+import { useSpaceBuilder } from "../ai/SpaceBuilder";
+import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
 import { blocksToMarkdownLines, spaceToMarkdown, type MarkdownContext } from "../io/markdown";
 import { ExportDialog } from "./ExportDialog";
@@ -117,6 +119,14 @@ function pageCounts(doc: SpaceDoc): { words: number; characters: number } {
 
 /** One screen per page and content epoch: a page rewritten outside its screen (the sample filled while it
  *  was open) opens again on what is stored. */
+/** Nothing written yet: no blocks, or one empty line (Notion's blank page). */
+function isBlankPage(blocks: readonly SpaceBlock[]): boolean {
+  if (blocks.length === 0) return true;
+  if (blocks.length > 1) return false;
+  const [only] = blocks;
+  return only.type === "paragraph" && !(only.text ?? []).some((t) => (t as { text?: string }).text) && !only.children?.length;
+}
+
 export function SpacePage({ spaceId }: { spaceId: string }) {
   const { pageEpoch } = useSpaces();
   return <SpacePageScreen key={`${spaceId}:${pageEpoch(spaceId)}`} spaceId={spaceId} />;
@@ -621,6 +631,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
     titleOf: (id) => spaces.byId.get(id)?.title ?? "Untitled",
     hrefOf: (id) => `${window.location.origin}/spaces/${id}`,
   };
+  const builder = useSpaceBuilder();
   const pageForAi = () => {
     const d = docRef.current ?? doc;
     return { title: d.title, markdown: spaceToMarkdown(d.title, d.blocks, mdContext) };
@@ -737,6 +748,7 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           onUndo={() => editorRef.current?.undo()}
           onHistory={() => setHistoryOpen(true)}
           onExport={() => setExportOpen(true)}
+          onAskAiChange={builder.wired && editable ? () => builder.ask({ spaceId: doc.id, ...pageForAi() }) : undefined}
           isTemplate={spaces.templates.ids ? spaces.templates.ids.includes(doc.id) : null}
           onTemplate={(on) =>
             void spaces.templates
@@ -883,6 +895,14 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
               toast.success("Version restored");
             }}
           />
+          {editable && builder.wired && isBlankPage(doc.blocks) ? (
+            // Notion's blank page offers its starters under the first line; ours is the Space Builder.
+            <div className="spaces-starters">
+              <Button variant="quiet" icon={<AGENT_ICON size={15} />} onClick={() => builder.ask(null)}>
+                Build with AI
+              </Button>
+            </div>
+          ) : null}
           {editable ? (
             // Notion's page end: the room under the last block is a click target that puts the caret
             // in an empty line at the end (making one when the last block is not an empty line).

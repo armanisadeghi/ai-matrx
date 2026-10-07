@@ -621,6 +621,8 @@
 }
 
 /* ---------- page end (Notion: the room under the last block adds a line) ---------- */
+/* A blank page's starters (Notion: the row under the first line). */
+.spaces-starters { display: flex; gap: 4px; padding: 4px 0 0; color: var(--spaces-ink-soft); }
 .spaces-page-end {
   display: block;
   width: 100%;
