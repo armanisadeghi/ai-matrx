@@ -16,6 +16,7 @@ import {
   publicDescription,
   readPublicView,
 } from "@/features/spaces/public/public-view";
+import "@blocknote/shadcn/style.css";
 import "@/features/spaces/spaces.css";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { NOT_INDEXED_ROBOTS, robotsFor } from "@/lib/seo/search-engine-indexed";

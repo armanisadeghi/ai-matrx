@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1342,
+  "routeCount": 1344,
   "routes": [
     {
       "pattern": "/",
@@ -6272,6 +6272,11 @@
       "source": "app/(link)/sign/e/[envelopeId]/page.tsx"
     },
     {
+      "pattern": "/site/[slug]",
+      "status": "live",
+      "source": "app/(link)/site/[slug]/page.tsx"
+    },
+    {
       "pattern": "/sms",
       "status": "live",
       "source": "app/(public)/sms/page.tsx"
@@ -6290,6 +6295,11 @@
       "pattern": "/spaces/[spaceId]",
       "status": "live",
       "source": "app/(core)/spaces/[spaceId]/page.tsx"
+    },
+    {
+      "pattern": "/spaces/duplicate",
+      "status": "live",
+      "source": "app/(core)/spaces/duplicate/page.tsx"
     },
     {
       "pattern": "/staff",

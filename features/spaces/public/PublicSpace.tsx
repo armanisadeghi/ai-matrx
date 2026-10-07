@@ -4,7 +4,7 @@
 //
 // Notion's public page: the same blocks through the same editor, read-only — no block handles, no "/" menu,
 // no New row, no comments. Top bar: the breadcrumb of parents that are on the web too, and Duplicate when
-// the owner allows it (signed out → sign in, back here). Page links open only pages that are on the web;
+// the owner allows it (it runs inside the app, /spaces/duplicate: signed out signs in first). Page links open only pages that are on the web;
 // any other reads "Not published". Rows of a database block come from the reader's own access (the table's
 // own "Published to the web"), never from this page's.
 
@@ -12,14 +12,8 @@ import { Button } from "@ai-matrx/design-system/controls";
 import { Copy, FileText } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 
 import { MadeWithAiMatrx } from "@/components/matrx/MadeWithAiMatrx";
-import { ensureOrgId } from "@/lib/organizations/ensureOrgId";
-import { isOrganizationSelectionCancelled } from "@/lib/organization/selection-cancelled";
-import { toast } from "@/lib/toast";
-import { loginHref } from "@/utils/auth/auth-destination";
-import { supabase } from "@/utils/supabase/client";
 
 import type {
   SpaceBlock,
@@ -35,7 +29,6 @@ import {
   StaticSpacesProvider,
   type SpacesContextValue,
 } from "../state/SpacesProvider";
-import { duplicatePublished } from "../publish/publish-doors";
 import {
   parsePublicIcon,
   type PublicPageRef,
@@ -129,40 +122,12 @@ function useStaticValue(
 }
 
 function DuplicateButton({ view }: { view: PublicSpaceView }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-  const duplicate = async () => {
-    setBusy(true);
-    try {
-      const { data } = await supabase.auth.getSession();
-      if (!data.session) {
-        router.push(loginHref(`/site/${view.slug ?? view.id}`));
-        return;
-      }
-      const copyId = await duplicatePublished(
-        view.slug ?? view.id,
-        await ensureOrgId(null),
-      );
-      toast.success("Duplicated to your workspace");
-      router.push(`/spaces/${copyId}`);
-    } catch (e) {
-      if (!isOrganizationSelectionCancelled(e))
-        toast.error(
-          e instanceof Error ? e.message : "We couldn't duplicate this page.",
-        );
-    } finally {
-      setBusy(false);
-    }
-  };
+  // Duplicate happens inside the app (/spaces/duplicate): a signed-out visitor signs in and comes back,
+  // and the copy is filed in the organization the person works in.
+  const target = `/spaces/duplicate?from=${encodeURIComponent(view.slug ?? view.id)}`;
   return (
-    <Button
-      variant="outline"
-      icon={<Copy size={15} />}
-      onClick={() => void duplicate()}
-      disabled={busy}
-      data-testid="public-duplicate"
-    >
-      {busy ? "Duplicating…" : "Duplicate"}
+    <Button variant="outline" icon={<Copy size={15} />} onClick={() => window.location.assign(target)} data-testid="public-duplicate">
+      Duplicate
     </Button>
   );
 }
