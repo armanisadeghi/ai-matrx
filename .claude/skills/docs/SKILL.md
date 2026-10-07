@@ -126,7 +126,7 @@ Run in order; the commit message carries the scorecard (no log file).
   open (a settled one is deleted) and phrased so he can answer it in seconds.
 - [ ] **DDL guard log:** every row in `platform.ddl_guard_unacked` is acknowledged with live
   evidence through `platform.ddl_guard_ack(...)` or filed as a defect (run
-  `select audit.refresh();` before reading certification).
+  `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) before reading certification).
 - [ ] **Pointers:** repo guards from §7 run; pointer lines into this bundle resolve.
 - [ ] **Expired facts:** grep `re-check after (\d{4}-\d{2}-\d{2})`; each past date becomes one
   `feedback` item ([declared vs observed state](/policies/declared-vs-observed-state.md)).

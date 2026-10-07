@@ -174,7 +174,7 @@ React: `supabase.rpc('assoc_link', { p_source_type:'fc_card', p_source_id, p_tar
 - `iam.canonical_certify(schema, table, token)` → blocking rows = conformance FAIL/WARN **plus any currently-broken dependent function**. Empty = perfect.
 - `iam.canonical_certify_ok(...)` → boolean. **This is the "done" gate.**
 
-**The audit store — `SELECT audit.refresh();` rebuilds every snapshot** (drives the gate over all registered live tables + runs `plpgsql_check` over every plpgsql function). Exclusions read from `meta.excluded_schema`.
+**The audit store — `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) rebuilds every snapshot** (drives the gate over all registered live tables + runs `plpgsql_check` over every plpgsql function). Exclusions read from `meta.excluded_schema`.
 
 | object                              | what it gives                                                                                                                                                  |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -210,7 +210,7 @@ in `features/administration/canonicalization/components/AdminAuditTable.tsx`.
 1. `SELECT * FROM iam.verify_canonical(s,t,tok);` → the full fix list.
 2. `SELECT * FROM audit.table_impact(s,t);` → every dependent function + the exact columns each touches → the blast radius, _before_ editing.
 3. **One migration:** canonicalize the table (columns/FKs/triggers; RLS via `iam.apply_rls`) **and repoint every function from step 2** in the same migration.
-4. `SELECT audit.refresh();`
+4. `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543)
 5. `SELECT iam.canonical_certify_ok(s,t,tok);` must be `true`. If not, `SELECT * FROM iam.canonical_certify(s,t,tok);` and fix.
 6. _Only then_ touch application/client code. Log the change in `platform.deprecated_relations`.
 

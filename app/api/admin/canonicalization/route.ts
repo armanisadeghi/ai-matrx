@@ -3,7 +3,8 @@
 // Super-admin API for the Canonicalization Toolkit (docs/canonicalization_worklog.md §5b).
 //   GET  ?dataset=overview|summary|findings|broken-functions|function-deps|
 //                 m2m-candidates|unregistered-candidates|stale-registry|refresh-log
-//   POST { action: "refresh" } — runs `select audit.refresh();` (rebuilds every
+//   POST { action: "refresh" } — runs `select audit.refresh();` through PostgREST (not a Supavisor
+//         connection, so the 2026-10-07 pooled-connection guard does not apply; never move it to 6543) (rebuilds every
 //         audit.* snapshot: the full gate over all registered tables +
 //         plpgsql_check over every function). Read/refresh only — this route
 //         never applies migrations or writes canonical tables.

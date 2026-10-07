@@ -275,7 +275,7 @@ python run.py                  # must boot clean: no ERROR/CRITICAL
 
 **9. Verify live, then ship both repos.**
 ```sql
-SELECT audit.refresh();
+-- run from a shell (session mode, never 6543): cd aidream && uv run python scripts/audit_refresh.py
 SELECT count(*) FROM graveyard.flashcard_data;   -- 5
 SELECT count(*) FROM graveyard.flashcard_sets;   -- 2
 SELECT to_regclass('education.flashcard_data');  -- NULL

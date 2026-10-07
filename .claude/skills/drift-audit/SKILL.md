@@ -44,7 +44,7 @@ apples to apples:
 
 | # | Sentinel | Query sketch |
 |---|---|---|
-| 1 | Certification | `count(*) filter (where certified)` / total from `audit.summary` (run `select audit.refresh()` first if stale) |
+| 1 | Certification | `count(*) filter (where certified)` / total from `audit.summary` (run `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) first if stale) |
 | 2 | Component `created_by` policies | policies on `rls_variant='component'` active tokens whose qual/with_check mention `created_by` — **must be 0** |
 | 3 | Nullable org (registered) | active `entity_types` rows whose table's `organization_id` is nullable (~34 known; diff the SET, not the count) |
 | 4 | Event triggers | `count(*) from pg_event_trigger` (expect 5 platform + Supabase built-ins; **any restore silently drops them**) |

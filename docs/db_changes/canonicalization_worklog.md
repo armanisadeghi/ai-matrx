@@ -131,7 +131,7 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 - `iam.canonical_certify(schema,table,token)` → blocking rows = conformance FAIL/WARN **+ currently-broken dependent fns**. Empty = perfect.
 - `iam.canonical_certify_ok(...)` → bool. **The loop's "done" gate.**
 
-**Audit store — `SELECT audit.refresh();` rebuilds every snapshot** (drives the complete gate over all registered live tables + `plpgsql_check` over every plpgsql fn; exclusions from `meta.excluded_schema`):
+**Audit store — `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) rebuilds every snapshot** (drives the complete gate over all registered live tables + `plpgsql_check` over every plpgsql fn; exclusions from `meta.excluded_schema`):
 - `audit.summary` (view) — per table `fails`/`warns`/`certified`. `WHERE NOT certified ORDER BY fails DESC` = hit list.
 - `audit.canonical_findings` — every FAIL/WARN (`check_name`,`detail`).
 - `audit.broken_functions` — `plpgsql_check` findings. plpgsql only; SQL-lang not covered. 🚨 **ACT ON `severity`, NEVER ON `level`.** `level='error'` also covers checker artifacts. `severity` (assigned by `audit.classify_broken_function()`, THE single definition — never re-derive it in a query or in the UI): `real` = genuine runtime breakage · `advisory` = invoker-rights fn walking the catalog with no privilege filter (the `get_project_references` shape) · `style` = plpgsql_check warnings · `suppressed` = a checker limitation, with `suppression_reason` on the row (self-created temp table · runtime-built relation name · shared trigger branch · cascade from an unanalyzable `FOR` loop) · `unchecked` = trigger fn attached to no table. Each fn is checked under **its own effective search path** (`audit.effective_search_path(proconfig)`); checking under `pg_catalog` is what produced 101 rows for 3 real functions before 2026-08-13.
@@ -151,7 +151,7 @@ Then: add `executor_id` uuid to `binding`, backfill from `name`, drop `executor_
 1. `SELECT * FROM iam.verify_canonical(s,t,tok);` → full fix list.
 2. `SELECT * FROM audit.table_impact(s,t);` → every dependent fn + exact columns → blast radius BEFORE editing.
 3. ONE migration: canonicalize the table (cols/FKs/triggers, RLS via `iam.apply_rls`) **+ repoint every fn from step 2**.
-4. `SELECT audit.refresh();`
+4. `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543)
 5. `SELECT iam.canonical_certify_ok(s,t,tok);` must be `true`. If not → `iam.canonical_certify(s,t,tok)` and fix.
 6. Only then touch app/client code. Log to `platform.deprecated_relations` + §6.
 

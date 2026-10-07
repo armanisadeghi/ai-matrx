@@ -23,7 +23,7 @@ Companion to [`SKILL.md`](./SKILL.md) — read it first: the load-bearing bounda
 
 Take the old shape DOWN and bring the new one UP in ONE migration — no FE-soak, no passthrough view (that's what downtime is for). The FE repoint (Recipe A) ships in the same change.
 
-**The audit toolkit tells you exactly what to touch** — all re-runnable; `SELECT audit.refresh()` rebuilds every snapshot:
+**The audit toolkit tells you exactly what to touch** — all re-runnable; `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) rebuilds every snapshot:
 - `iam.verify_canonical(schema,table,token)` → every failing conformance check; `iam.canonical_certify_ok(schema,table,token)` → the boolean "done" gate (zero FAIL/WARN + no broken dependents).
 - `audit.m2m_candidates` → **genuine junctions ONLY** (gated on `audit.is_m2m_shape`: a table is a junction iff a unique/PK key IS its entity-FK pair ± ordering; an entity that merely has 2 FKs never appears). A shape-true-but-semantically-not-a-link table (config entity / grant / KG edge) → `SELECT meta.exempt('m2m_candidate', schema, table, reason)`. **Every check consults `meta.audit_exemption` — one `meta.exempt(check,schema,table,reason)` call kills a false positive forever; never hard-code an exception into a function.**
 - `audit.table_impact(schema,table)` → every dependent **Postgres fn** + the exact columns each touches + `currently_broken`. Run BEFORE editing. **It does NOT see the frontend** — `grep -rn '"<table>"' features/ lib/ app/` for `.from()`/embeds separately (that is step 2/3 of Recipe A, and it is what actually breaks the app).
@@ -35,7 +35,7 @@ Take the old shape DOWN and bring the new one UP in ONE migration — no FE-soak
 4. **Repoint every fn from `table_impact`** in the SAME migration: `CREATE OR REPLACE` each, swapping `FROM <junction>` for `JOIN platform.associations a ON a.source_id=… AND a.source_type='<src>' AND a.target_type='<tgt>' AND a.role='<role>'` (position → `a.position`, edge props → `a.metadata->>'…'`). While in a fn, fix any pre-existing break it carries (e.g. an unqualified type that needs `SET search_path TO 'public'`).
 5. De-register (only if the junction itself was registered): `DELETE FROM platform.entity_relationships WHERE child_type='<token>'`; `DELETE FROM platform.entity_types WHERE token='<token>'`.
 6. Retire, never DROP: `ALTER TABLE <schema>.<junction> SET SCHEMA deprecated`; `INSERT INTO platform.deprecated_relations(old_ref,new_ref,reason,archived_as)`.
-7. `SELECT audit.refresh()` → confirm the junction left `m2m_candidates` and no fn landed in `audit.broken_functions`; `iam.canonical_certify_ok(...)` where applicable.
+7. `cd aidream && uv run python scripts/audit_refresh.py` (session mode, never port 6543) → confirm the junction left `m2m_candidates` and no fn landed in `audit.broken_functions`; `iam.canonical_certify_ok(...)` where applicable.
 8. Apply with `pnpm db:apply migrations/<name>.sql` — the ONE path; it ledgers the file itself with the SHA-256 of the bytes it executed, so you never write that row. Then `pnpm db-types` + aidream `python db/generate.py`.
 
 **Then the FE (Recipe A) in the same change.** Before calling it done, run an **adversarial sweep** (see the campaign workflow in [`SKILL.md`](./SKILL.md)) — a fresh agent greps BOTH repos for any surviving old-shape usage (`.from("<junction>")`, the old RPC, the old column, the PostgREST embed). Old stuff must ERROR, never pass through.
