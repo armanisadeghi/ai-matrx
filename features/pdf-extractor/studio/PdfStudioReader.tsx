@@ -1994,16 +1994,17 @@ export function PaneHeader({
     <div className="shrink-0 px-3 pt-2 pb-1.5">
       <div className="h-7 flex items-center gap-1.5">
         {icon}
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
+        <span className="shrink-0 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wider text-foreground/80">
           {title}
         </span>
         {subtitle && (
-          <span className="text-[10px] text-muted-foreground">
+          // One line: a long label truncates and the full words ride in the tooltip.
+          <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground" title={subtitle}>
             · {subtitle}
           </span>
         )}
         {hasActions && (
-          <div className="ml-auto flex items-center gap-0.5">
+          <div className="ml-auto flex shrink-0 items-center gap-0.5">
             {onCopyAll && (
               <CopySplitButton
                 size="xs"

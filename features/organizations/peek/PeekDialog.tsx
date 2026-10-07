@@ -51,6 +51,8 @@ export interface PeekDialogProps {
   /** The record's id — required alongside `token`. */
   id?: string | null;
   loading?: boolean;
+  /** Controls that sit at the end of the title bar (the split Copy), inside the bar that is already there. */
+  headerActions?: React.ReactNode;
   /**
    * THE RECORD THIS PEEK SHOWS (lane 7 W5, M3): the organization's own custom fields render under
    * the peek's fields, the same section every record view shows. A token whose table takes no custom
@@ -61,6 +63,7 @@ export interface PeekDialogProps {
 }
 
 export function PeekDialog({
+  headerActions,
   open,
   onClose,
   title,
@@ -93,6 +96,7 @@ export function PeekDialog({
           <DialogTitle className="flex items-center gap-2 text-base">
             {icon}
             <span className="truncate">{title}</span>
+            {headerActions ? <span className="ml-auto mr-6 shrink-0 font-normal">{headerActions}</span> : null}
           </DialogTitle>
         </DialogHeader>
 

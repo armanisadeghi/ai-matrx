@@ -32,6 +32,7 @@ import { useSpaceBuilder } from "../ai/SpaceBuilder";
 import { AGENT_ICON } from "@/components/icons/domain-icons";
 import { currentBlockId, selectedOrCurrent } from "../editor/block-actions";
 import { blocksToMarkdownLines, spaceToMarkdown, type MarkdownContext } from "../io/markdown";
+import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
 import { ExportDialog } from "./ExportDialog";
 import { PageHistory } from "./PageHistory";
 
@@ -814,6 +815,8 @@ function SpacePageScreen({ spaceId }: { spaceId: string }) {
           {collab.isHost && saveState === "saving" ? "Saving…" : collab.isHost && saveState === "failed" ? "Not saved — retrying" : collab.isHost && saveState === "refused" ? "Not saved" : editedAgo(doc.updatedAt, now)}
           {collab.isHost && (saveState === "failed" || saveState === "refused") ? <ErrorAlchemyMenu error={saveError} /> : null}
         </span>
+        {/* The split Copy: one click copies the whole page as markdown, the chevron offers plain text. */}
+        <TextCopySplit size="xs" label="Copy page" text={() => pageForAi().markdown} />
         <ShareMenu spaceId={doc.id} title={doc.title} onCopyLink={copyLink} />
         <button
           type="button"

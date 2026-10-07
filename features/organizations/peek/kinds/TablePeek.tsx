@@ -12,11 +12,15 @@ import React from "react";
 import { Table } from "lucide-react";
 import { locateTable } from "@/features/data-tables/data-source/locate-table";
 import { getTablePage, readTableDetails } from "@/features/data-tables/service";
+import { CopySplitButton, type SplitCopyFlavor } from "@ai-matrx/rich-content/copy/CopySplitButton";
+import { copyRichContent } from "@ai-matrx/rich-content/copy/copy-commands";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
 
 const PEEK_ROWS = 5;
 const PEEK_COLUMNS = 6;
+/** The copy takes the table, not just the five rows the peek draws. */
+const COPY_ROWS = 500;
 
 interface TableView {
   title: string | null;
@@ -26,6 +30,17 @@ interface TableView {
   total: number;
   /** The columns or rows could not be read: said on screen, never shown as "empty". */
   readError: string | null;
+}
+
+const oneLine = (value: unknown) => (value === null || value === undefined ? "" : typeof value === "object" ? JSON.stringify(value) : String(value)).replace(/\s+/g, " ").trim();
+
+/** The table as a markdown table (the person's default) or tab-separated plain text. */
+export function tableCopyText(view: TableView, flavor: SplitCopyFlavor): string {
+  const head = view.fields.map((f) => oneLine(f.label));
+  const body = view.rows.map((r) => view.fields.map((f) => oneLine(r.data[f.name])));
+  if (flavor === "text") return [head, ...body].map((cells) => cells.join("\t")).join("\n");
+  const cell = (c: string) => c.replace(/\|/g, "\\|");
+  return [`| ${head.map(cell).join(" | ")} |`, `| ${head.map(() => "---").join(" | ")} |`, ...body.map((cells) => `| ${cells.map(cell).join(" | ")} |`)].join("\n");
 }
 
 function cellText(value: unknown): string {
@@ -49,7 +64,7 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
         const fields = [...(details.fields ?? [])]
           .sort((a, b) => a.field_order - b.field_order)
           .map((f) => ({ name: f.field_name, label: f.display_name || f.field_name }));
-        const page = await getTablePage({ tableId: id, limit: PEEK_ROWS, offset: 0 });
+        const page = await getTablePage({ tableId: id, limit: COPY_ROWS, offset: 0 });
         next = {
           title: details.table.name || details.table.description || null,
           description: details.table.name ? details.table.description || null : null,
@@ -80,6 +95,15 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
       icon={<Table className="h-4 w-4 text-primary" />}
       href={`/data/${id}`}
       loading={loading}
+      headerActions={
+        view && view.rows.length > 0 ? (
+          <CopySplitButton
+            size="xs"
+            label="Copy table"
+            copy={(flavor) => copyRichContent(tableCopyText(view, flavor), flavor)}
+          />
+        ) : null
+      }
     >
       {!view ? (
         <p className="text-sm text-muted-foreground">Table not found.</p>
@@ -111,7 +135,7 @@ export default function TablePeek({ id, open, onClose }: PeekProps) {
                     </tr>
                   </thead>
                   <tbody>
-                    {view.rows.map((r) => (
+                    {view.rows.slice(0, PEEK_ROWS).map((r) => (
                       <tr key={r.id} className="border-t border-border">
                         {shown.map((f) => (
                           <td key={f.name} className="px-2 py-1 max-w-[12rem] truncate">

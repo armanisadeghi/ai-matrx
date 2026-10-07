@@ -35,6 +35,8 @@ import {
 } from "@/features/rag/api/derivations";
 import { Button } from "@/components/ui/button";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
+import { TextCopySplit } from "@/components/agent-copy/TextCopySplit";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import {
@@ -197,8 +199,17 @@ export function ChunkCard({
           )}
           </>
         )}
+        {!scope && (
+          // No provenance to hand an agent (a Source's chunk rail): still the split Copy of the chunk's text.
+          <TextCopySplit
+            size="xs"
+            className="ml-auto opacity-0 transition-opacity group-hover/chunk:opacity-100 focus-within:opacity-100"
+            label={`Copy chunk #${chunk.chunk_index ?? "?"}`}
+            text={() => chunk.content_text ?? ""}
+          />
+        )}
         {scope && (
-          <CopyButtons
+          <RichCopySplit
             size="xs"
             className="ml-auto opacity-0 transition-opacity group-hover/chunk:opacity-100 focus-within:opacity-100"
             label={`Chunk #${chunk.chunk_index ?? "?"}`}

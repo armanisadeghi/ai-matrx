@@ -15,7 +15,6 @@ import {
   SideMenu,
   SideMenuController,
   SuggestionMenuController,
-  useComponentsContext,
   useCreateBlockNote,
 } from "@blocknote/react";
 import { BlockNoteView } from "@blocknote/shadcn";

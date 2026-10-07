@@ -289,16 +289,46 @@ function repoFiles(root: string): Array<{ rel: string; src: string }> {
   return out;
 }
 
+const WRAPPER_NAME = /(Markdown|RichText|Prose)[A-Za-z]*$/;
+
+/**
+ * The components that render markdown through a wrapper: every component a markdown-rendering file
+ * exports. A host drawing `<TemplateRichText>` renders markdown as surely as one drawing `<MarkdownCore>`
+ * — the 2026-10-07 gap: the template page's old one-click copy sat beside `TemplateRichText`, and the
+ * census only knew the renderer names themselves.
+ */
+export function markdownWrappers(files: ReadonlyArray<{ rel: string; src: string }>): Set<string> {
+  const names = new Set<string>();
+  for (const { src } of files) {
+    if (!RENDERS_MARKDOWN.test(src)) continue;
+    for (const m of src.matchAll(/export\s+(?:default\s+)?(?:function|const)\s+([A-Z][A-Za-z0-9]*)/g)) {
+      // A wrapper whose NAME says it draws text (…Markdown, …RichText, …Prose); a page that also
+      // exports a table or a card is not a markdown wrapper.
+      if (WRAPPER_NAME.test(m[1]!)) names.add(m[1]!);
+    }
+  }
+  return names;
+}
+
+/** A file that renders markdown itself or through a wrapper component. */
+function rendersMarkdown(src: string, wrappers: ReadonlySet<string>): boolean {
+  if (RENDERS_MARKDOWN.test(src)) return true;
+  for (const m of src.matchAll(/<([A-Z][A-Za-z0-9]*)\b/g)) if (wrappers.has(m[1]!)) return true;
+  return false;
+}
+
 /** E1: the old Alchemy one-click trigger on markdown (declared, or a markdown renderer's `human`). */
 export function oldCopyOnMarkdown(root: string, allowed: Record<string, string>): string[] {
   const out: string[] = [];
-  for (const { rel, src } of repoFiles(root)) {
+  const files = repoFiles(root);
+  const wrappers = markdownWrappers(files);
+  for (const { rel, src } of files) {
     if (COPY_DEFINITIONS.test(rel) || allowed[rel]) continue;
     for (const match of src.matchAll(ALCHEMY_TRIGGER)) {
       const props = match[2] ?? "";
       if (/\btriggerHidden\b/.test(props)) continue;
       const declared = /contentFlavor=["{]+markdown/.test(props);
-      const renders = /\bhuman=/.test(props) && RENDERS_MARKDOWN.test(src);
+      const renders = /\bhuman=/.test(props) && rendersMarkdown(src, wrappers);
       if (declared || renders) out.push(`${rel} <${match[1]}>`);
     }
   }
@@ -307,8 +337,10 @@ export function oldCopyOnMarkdown(root: string, allowed: Record<string, string>)
 
 /** E2: a markdown renderer that writes the clipboard raw (one flavor, no choice). */
 export function rawCopyOnMarkdown(root: string, allowed: Record<string, string>): string[] {
-  return repoFiles(root)
-    .filter(({ rel, src }) => !COPY_DEFINITIONS.test(rel) && !allowed[rel] && RENDERS_MARKDOWN.test(src) && RAW_WRITE.test(src))
+  const files = repoFiles(root);
+  const wrappers = markdownWrappers(files);
+  return files
+    .filter(({ rel, src }) => !COPY_DEFINITIONS.test(rel) && !allowed[rel] && RAW_WRITE.test(src) && rendersMarkdown(src, wrappers))
     .map(({ rel }) => rel)
     .sort();
 }
@@ -320,7 +352,13 @@ const SPLIT_HOSTS = [
   "features/tasks/components/editor/TaskEditorCopyButtons.tsx",
   "features/transcripts/components/TranscriptViewer.tsx",
   "features/message-templates/components/TemplateActionDrawer.tsx",
+  "features/message-templates/components/TemplateViewPage.tsx",
   "features/documents/components/DocumentRecord.tsx",
+  // J (2026-10-07 final pass): the flashcard deck + study card, a Space, the org Tables peek.
+  "features/flashcards/components/set-detail/SetDetailView.tsx",
+  "features/flashcards/components/study/StudyDeck.tsx",
+  "features/spaces/page/SpacePage.tsx",
+  "features/organizations/peek/kinds/TablePeek.tsx",
 ];
 export function missingSplit(root: string, hosts: readonly string[]): string[] {
   return hosts
@@ -402,10 +440,78 @@ describe("consistency everywhere: markdown copy is the split Copy across the who
     expect(secondSplitBuild(tmp)).toEqual(["features/demo/Menu.tsx"]);
     fs.writeFileSync(planted, 'import { MarkdownCore } from "x";\nexport const R = () => <><MarkdownCore>{t}</MarkdownCore><RichCopySplit human={t} label="a" /></>;\nconst c = () => copyRichContent(t, "text");\n');
     fs.rmSync(path.join(dir, "Menu.tsx"));
+    // A host that renders markdown only through a wrapper component is still a markdown host.
+    fs.writeFileSync(path.join(dir, "BodyText.tsx"), 'import { MarkdownCore } from "x";\nexport function BodyRichText() { return <MarkdownCore>{t}</MarkdownCore>; }\n');
+    const page = path.join(dir, "Page.tsx");
+    fs.writeFileSync(page, 'export const P = () => <><BodyRichText /><CopyButtons human={t} label="a" /></>;\n');
+    expect(oldCopyOnMarkdown(tmp, {})).toEqual(["features/demo/Page.tsx <CopyButtons>"]);
+    fs.writeFileSync(page, 'export const P = () => <><BodyRichText /><RichCopySplit human={t} label="a" /></>;\n');
     expect(oldCopyOnMarkdown(tmp, {})).toEqual([]);
     expect(rawCopyOnMarkdown(tmp, {})).toEqual([]);
     expect(missingSplit(tmp, ["features/demo/Reader.tsx"])).toEqual([]);
     expect(secondSplitBuild(tmp)).toEqual([]);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GUARD (4), the 2026-10-07 final pass: surfaces the first sweeps missed.
+//   J. each named surface carries what makes it consistent: a selection zone (the ONE selection
+//      toolbar, Copy first) where text is read or edited, the split Copy where it copies, and the
+//      markup-carrying converter where the copy source is a snapshot, not text.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** file → [what it must contain (regex), why]. */
+const SURFACE_REQUIRES: Record<string, Array<[RegExp, string]>> = {
+  "features/flashcards/components/study/StudyDeck.tsx": [
+    [/<NonEditableContextMenu\b[\s\S]*?<FlashcardItem\b/, "the card face is a selection zone (selection toolbar, Copy first)"],
+    [/<TextCopySplit\b/, "the current card has the split Copy"],
+  ],
+  "features/spaces/editor/SpaceEditor.tsx": [
+    [/useSelectionZone\(/, "a Space is a selection zone of the one toolbar"],
+    [/selection:comment/, "Comment is a registered toolbar action, not a second bubble"],
+  ],
+  "features/documents/components/DocumentRecord.tsx": [
+    [/univerDocToMarkdown\(/, "a Univer document copies with its markup (headings, bold, lists, tables)"],
+  ],
+  "features/organizations/peek/kinds/TablePeek.tsx": [[/<CopySplitButton\b/, "the table peek copies the table"]],
+  "features/rag/components/library/ChunkList.tsx": [
+    [/<TextCopySplit\b/, "a chunk card without provenance still has the split Copy"],
+    [/<RichCopySplit\b/, "a chunk card with provenance has the split Copy over its palette"],
+  ],
+};
+/** Files that must NOT contain a pattern. */
+const SURFACE_FORBIDS: Record<string, Array<[RegExp, string]>> = {
+  "features/spaces/editor/SpaceEditor.tsx": [[/<FormattingToolbarController\b/, "BlockNote's own bubble is a second selection toolbar"]],
+};
+
+export function surfaceGaps(root: string, requires: typeof SURFACE_REQUIRES, forbids: typeof SURFACE_FORBIDS): string[] {
+  const out: string[] = [];
+  const read = (rel: string) => (fs.existsSync(path.join(root, rel)) ? fs.readFileSync(path.join(root, rel), "utf8") : null);
+  for (const [rel, rules] of Object.entries(requires)) {
+    const src = read(rel);
+    for (const [re, why] of rules) if (src === null || !re.test(src)) out.push(`${rel}: missing — ${why}`);
+  }
+  for (const [rel, rules] of Object.entries(forbids)) {
+    const src = read(rel);
+    for (const [re, why] of rules) if (src !== null && re.test(src)) out.push(`${rel}: forbidden — ${why}`);
+  }
+  return out.sort();
+}
+
+describe("J. the surfaces the first sweeps missed", () => {
+  test("each carries its selection zone, split Copy and converter", () => {
+    expect(surfaceGaps(REPO_ROOT, SURFACE_REQUIRES, SURFACE_FORBIDS)).toEqual([]);
+  });
+
+  test("the detector goes red on a bare surface and green once routed (self-proof)", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rich-copy-surface-"));
+    const rel = "features/spaces/editor/SpaceEditor.tsx";
+    fs.mkdirSync(path.dirname(path.join(tmp, rel)), { recursive: true });
+    fs.writeFileSync(path.join(tmp, rel), "<FormattingToolbarController />");
+    expect(surfaceGaps(tmp, { [rel]: SURFACE_REQUIRES[rel] }, SURFACE_FORBIDS)).toHaveLength(3);
+    fs.writeFileSync(path.join(tmp, rel), 'useSelectionZone(el, { host: { a: "selection:comment" } });');
+    expect(surfaceGaps(tmp, { [rel]: SURFACE_REQUIRES[rel] }, SURFACE_FORBIDS)).toEqual([]);
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });
