@@ -28,7 +28,7 @@ describe("agent browse authenticated read boundary", () => {
 
   it("does not dispatch the drift-alert read before auth is usable", () => {
     const source = fs.readFileSync(
-      path.join(packageAgentsRoot, "hooks/useDriftAlerts.ts"),
+      path.join(__dirname, "../hooks/useDriftAlerts.ts"),
       "utf8",
     );
 
