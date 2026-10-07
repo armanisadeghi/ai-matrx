@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1344,
+  "routeCount": 1345,
   "routes": [
     {
       "pattern": "/",
@@ -492,6 +492,11 @@
       "pattern": "/administration/automation/workflow-runs",
       "status": "live",
       "source": "app/(admin)/administration/automation/workflow-runs/page.tsx"
+    },
+    {
+      "pattern": "/administration/automation/workflows",
+      "status": "live",
+      "source": "app/(admin)/administration/automation/workflows/page.tsx"
     },
     {
       "pattern": "/administration/billing",

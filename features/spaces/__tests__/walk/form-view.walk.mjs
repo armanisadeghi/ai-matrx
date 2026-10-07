@@ -41,9 +41,13 @@ await act(page, async () => {
   await form.getByRole("textbox", { name: "How to ask for Name" }).fill("Your full name");
   await form.getByRole("textbox", { name: "Help text for Name" }).fill("First and last, as on your ID");
   const req = form.getByRole("checkbox", { name: "Name is required" });
-  if ((await req.getAttribute("data-state")) !== "checked") await req.click();
+  const hasReq = (await req.count()) > 0;
+  check("each question has its own Required box", hasReq);
+  if (hasReq && (await req.getAttribute("data-state")) !== "checked") await req.click();
   await page.screenshot({ path: `${SHOT}/form-view-built.png` });
-  await form.getByRole("button", { name: /^(Save and publish|Publish)$/ }).click();
+  const publish = form.getByRole("button", { name: /^(Save and publish|Publish)$/ });
+  if (await publish.count()) await publish.click();
+  else if (await form.getByRole("button", { name: "Save", exact: true }).isEnabled().catch(() => false)) await form.getByRole("button", { name: "Save", exact: true }).click();
   await form.getByRole("button", { name: /^(Copy link|Copied)$/ }).waitFor({ timeout: 30_000 });
   link = (await form.innerText()).match(/\/f\/[0-9a-f-]{36}/)?.[0] ?? null;
 });
@@ -56,11 +60,16 @@ if (link) {
   await p2.goto(`${originOf(page)}${link}`, { waitUntil: "domcontentloaded" });
   const box = p2.getByLabel(/Your full name/);
   await box.waitFor({ timeout: 60_000 });
+  await p2.waitForLoadState("networkidle").catch(() => {});
+  await p2.waitForTimeout(4000); // hydrated before typing (a first compile can take 10 s)
   check("the question reads in its own words, with its description", (await p2.content()).includes("First and last, as on your ID"));
   await p2.screenshot({ path: `${SHOT}/form-view-public.png` });
   await box.fill(answer);
+  const sent = p2.waitForResponse((r) => r.url().includes("/submit") && r.request().method() === "POST", { timeout: 60_000 }).catch(() => null);
   await p2.getByRole("button", { name: /^(Submit|Send)$/ }).click();
-  await p2.waitForTimeout(4000);
+  const res = await sent;
+  check("the answer is sent", !!res && res.ok(), { status: res?.status() });
+  await p2.waitForTimeout(2000);
   await p2.screenshot({ path: `${SHOT}/form-view-sent.png` });
   await anon.close();
   // Back on the page: the answer is a row of the table (switch the view to Table).

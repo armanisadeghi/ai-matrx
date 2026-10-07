@@ -44,7 +44,7 @@ function LiveBound({ organizationId, children }: { organizationId: string; child
   const ports = useRecordsUiPorts({ organizationId, dataSource: config.dataSource });
   return (
     // org-filter: write-target a data block reads and writes as the table's own organization
-    <RecordsMount letTheStoreDecideRights config={config} host={recordsUiHostFor({ ports, merged: false })}>
+    <RecordsMount letTheStoreDecideRights config={config} host={recordsUiHostFor({ ports, merged: true })}>
       {children}
     </RecordsMount>
   );
