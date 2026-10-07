@@ -125,3 +125,14 @@ describe("merge-field DOM", () => {
     expect(serializeFrom(root)).toBe("{{reply.body}}\nx");
   });
 });
+
+describe("a newline typed at the end gets its line", () => {
+  it("sees the trailing newline past the empty split an insertion leaves", () => {
+    // Inserting "\n" at the end of "a" splits the text node: "a", "\n", "".
+    const root = document.createElement("div");
+    root.append(document.createTextNode("a"), document.createTextNode("\n"), document.createTextNode(""));
+    expect(needsTrailingLine(root)).toBe(true);
+    root.append(document.createElement("br"));
+    expect(needsTrailingLine(root)).toBe(false);
+  });
+});

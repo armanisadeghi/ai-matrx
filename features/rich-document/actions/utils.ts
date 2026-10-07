@@ -8,6 +8,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { unwrapKindEnvelopes } from "@/lib/markdown/plain-text";
 import { hasKindKey } from "@/features/content-ir/surfaces/json-kind-signal";
 import { kindTextToMarkdown } from "@/features/content-ir/surfaces/kind-text-to-markdown";
+import { structuredAnswerTextOf } from "@/components/mardown-display/blocks/json/structured-answer-text";
 import { extractErrorMessage } from "@/utils/errors";
 import { selectConversationTitle } from "@ai-matrx/chat/agents/redux/execution-system/conversations/conversations.selectors";
 import { selectMessagePosition } from "@ai-matrx/chat/agents/redux/execution-system/messages/messages.selectors";
@@ -247,5 +248,7 @@ export function chatWriteBackBlocked(ctx: RichDocumentActionContext): boolean {
  * Guarded by `actions/__tests__/destinationContent.test.ts`.
  */
 export function contentForDestination(ctx: RichDocumentActionContext): string {
-  return kindTextToMarkdown(unwrapKindEnvelopes(ctx.content));
+  // A structured JSON answer arrives as what its block draws (prose, chips,
+  // tables), never its `{"summary": …}` payload.
+  return structuredAnswerTextOf(kindTextToMarkdown(unwrapKindEnvelopes(ctx.content)));
 }

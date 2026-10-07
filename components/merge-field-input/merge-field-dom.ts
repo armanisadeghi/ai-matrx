@@ -104,7 +104,13 @@ export function serializeFrom(root: HTMLElement): string {
 
 /** True when the drawing needs a trailing <br> to show a final empty line. */
 export function needsTrailingLine(root: HTMLElement): boolean {
-  const last = root.lastChild;
+  // Skip the empty text nodes an insertion leaves behind: inserting "\n" at
+  // the end of "a" splits it into "a", "\n", "" — the last child is then the
+  // empty split, and a check on it alone missed the trailing newline, so the
+  // new line was never given its <br> and the next keystroke landed back on
+  // the first line ("a", Enter, "b" saved "ab").
+  let last = root.lastChild;
+  while (last && last.nodeType === Node.TEXT_NODE && (last.textContent ?? "") === "") last = last.previousSibling;
   return (
     last !== null &&
     last.nodeType === Node.TEXT_NODE &&

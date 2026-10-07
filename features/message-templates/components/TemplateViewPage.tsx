@@ -679,7 +679,9 @@ export function TemplateViewPage({ template, canEdit, create = false }: Template
         onModeSelect={selectMode}
         modeSwitchOnPhone
         entityStatus={
-          mode === "edit" || isDirty ? (
+          // A new template has no saved state until its first save: an empty
+          // create form says nothing, never "Saved".
+          (mode === "edit" && (!create || created)) || isDirty || isSaving ? (
             // On a phone the pinned Save already says there are changes; the
             // words would only be clipped beside it.
             <span

@@ -1,6 +1,5 @@
 "use client";
 
-import { humanizeIdentifier } from "@ai-matrx/kit/text-case";
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
 import React from "react";
 import { Copy, Table2 } from "lucide-react";
@@ -12,16 +11,23 @@ import { useClipboard } from "@ai-matrx/kit/clipboard";
 import { toast } from "@/lib/toast";
 import { isJsonObject } from "@/types/json";
 import { valueCarriesKind } from "@/features/content-ir/surfaces/json-kind-signal";
-import { kindTextLabel } from "@/features/content-ir/surfaces/kind-text-label";
-import { kindOneLine } from "@/features/content-ir/surfaces/kind-one-line";
 import { AnswerValueView } from "@/components/official/structured-value/AnswerValueView";
 import { Button } from "@ai-matrx/design-system/controls";
 
-type StructuredValue = Record<string, unknown>;
+import {
+  cellText,
+  isRenderableStructuredAgentAnswer,
+  isSmallObjectArray,
+  isStringArray,
+  readableLabel,
+  selectNextStep,
+  selectProse,
+  selectStatus,
+  type StructuredValue,
+} from "./structured-answer-text";
 
-const PROSE_KEYS = ["answer", "summary", "text", "message"] as const;
-const NEXT_STEP_KEYS = ["next_step", "next_steps", "next_action"] as const;
-const MIN_FALLBACK_PROSE_LENGTH = 40;
+export { isRenderableStructuredAgentAnswer };
+
 
 export interface StructuredAgentAnswerProps {
   value: StructuredValue;
@@ -131,103 +137,6 @@ function SaveAnswerToTableButton({ value }: { value: StructuredValue }) {
       Save to a table
     </Button>
   );
-}
-
-function readableLabel(key: string): string {
-  return humanizeIdentifier(key) || key;
-}
-
-function nonEmptyString(value: unknown): string | null {
-  return typeof value === "string" && value.trim() ? value.trim() : null;
-}
-
-function selectProse(
-  value: StructuredValue,
-): { key: string; text: string } | null {
-  for (const key of PROSE_KEYS) {
-    const text = nonEmptyString(value[key]);
-    if (text) return { key, text };
-  }
-  for (const [key, candidate] of Object.entries(value)) {
-    const text = nonEmptyString(candidate);
-    if (text && text.length >= MIN_FALLBACK_PROSE_LENGTH) return { key, text };
-  }
-  return null;
-}
-
-function selectStatus(
-  value: StructuredValue,
-): { key: string; text: string } | null {
-  for (const key of ["state", "status"] as const) {
-    const text = nonEmptyString(value[key]);
-    if (text) return { key, text };
-  }
-  return null;
-}
-
-function selectNextStep(
-  value: StructuredValue,
-): { key: string; text: string } | null {
-  for (const key of NEXT_STEP_KEYS) {
-    const candidate = value[key];
-    const text = nonEmptyString(candidate);
-    if (text) return { key, text };
-    if (Array.isArray(candidate)) {
-      const steps = candidate
-        .map(nonEmptyString)
-        .filter((step): step is string => Boolean(step));
-      if (steps.length) return { key, text: steps.join("\n") };
-    }
-  }
-  return null;
-}
-
-function isStringArray(value: unknown): value is string[] {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.every((item) => typeof item === "string")
-  );
-}
-
-function isSmallObjectArray(value: unknown): value is StructuredValue[] {
-  return (
-    Array.isArray(value) &&
-    value.length > 0 &&
-    value.length <= 12 &&
-    value.every((item) => isJsonObject(item))
-  );
-}
-
-function hasMeaningfulContent(value: StructuredValue): boolean {
-  return (
-    Boolean(
-      selectProse(value) || selectStatus(value) || selectNextStep(value),
-    ) ||
-    Object.values(value).some(
-      (item) => isStringArray(item) || isSmallObjectArray(item),
-    )
-  );
-}
-
-export function isRenderableStructuredAgentAnswer(
-  value: StructuredValue,
-): boolean {
-  return hasMeaningfulContent(value);
-}
-
-/**
- * A cell or chip value as a person reads it: a kind (object, or JSON text in
- * any spelling) is its one-line label, never its JSON; everything else is
- * shown as before.
- */
-function cellText(cell: unknown): string {
-  if (valueCarriesKind(cell)) {
-    return typeof cell === "string"
-      ? kindTextLabel(cell)
-      : kindOneLine(cell, { plain: true });
-  }
-  return typeof cell === "string" ? cell : JSON.stringify(cell ?? "");
 }
 
 export function StructuredAgentAnswerBlock({

@@ -14,7 +14,6 @@ import { selectTaskById } from "@/features/agent-context/redux/tasksSlice";
 import { selectProjectById } from "@/features/agent-context/redux/projectsSlice";
 import { useNavTree } from "@/features/agent-context/hooks/useNavTree";
 import TaskEditor from "@/features/tasks/components/TaskEditor";
-import { TaskEditorCopyButtons } from "@/features/tasks/components/editor/TaskEditorCopyButtons";
 import { ReferenceCopyButton } from "@/features/matrx-envelope/components/ReferenceCopyButton";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import PageHeader from "@/features/shell/components/header/PageHeader";
@@ -91,7 +90,6 @@ export default function TaskPage() {
               toastLabel={task.title}
               size="sm"
             />
-            <TaskEditorCopyButtons location="Tasks — task page" size="sm" />
           </div>
         ) : null}
       </div>
