@@ -16,7 +16,7 @@
 import { useState } from "react";
 
 import { RichContent } from "@ai-matrx/rich-content/levels/RichContent";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
 import { useAppSelector } from "@/lib/redux/hooks";
 
@@ -86,7 +86,7 @@ export function TextView({ mapId, siteId }: MapViewProps) {
       ) : knobsLoading ? null : null}
       <div className="ml-auto">
         {markdown ? (
-          <CopyButtons
+          <RichCopySplit
             label={focus ? `Topical map — ${focus.name}` : "Topical map"}
             size="sm"
             human={() => markdown}

@@ -229,3 +229,157 @@ describe("one click: markdown or plain text, and the button equals the menu", ()
     fs.rmSync(tmp, { recursive: true, force: true });
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GUARD (3), Arman 2026-10-07 "consistency everywhere": GUARD (1) and (2) only
+// walked 11 host directories, so the old Alchemy `CopyButtons` kept living on
+// markdown in the flashcard app, the task editor, the transcript viewer, the
+// scraped-page block… This one walks the WHOLE source tree:
+//   E. no component that renders markdown/rich text offers the old one-click
+//      Alchemy copy or a raw clipboard write — it renders the split Copy;
+//   F. the named hosts carry the split Copy (and not the old trigger);
+//   G. there is ONE split-Copy build (the package's) — no second menu of our own;
+//   H. the split's palette does not repeat the split's own two rows;
+//   I. the sibling decisions of the same review hold (one template editor, the
+//      phone dock is measured chrome so toasts rest above it).
+// Proof against any tree: RICH_COPY_CENSUS_ROOT=<dir with the source folders>.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const REPO_DIRS = ["app", "components", "features", "packages", "lib", "providers", "hooks"];
+const REPO_ROOT = process.env.RICH_COPY_CENSUS_ROOT ? path.resolve(process.env.RICH_COPY_CENSUS_ROOT) : ROOT;
+
+/** A file that renders markdown or rich text. */
+const RENDERS_MARKDOWN =
+  /\b(MarkdownCore|MarkdownStream|EnhancedChatMarkdown|ChatMarkdownRenderer|BasicMarkdownContent|RichContent|RichDocument|ReactMarkdown|MarkdownRenderer)\b/;
+
+/** The copy module's own files — they define the menus the rule is about. */
+const COPY_DEFINITIONS = /^components\/agent-copy\//;
+
+/** Old Alchemy trigger / raw clipboard on a markdown host that is NOT markdown copy — file → why. */
+const NOT_MARKDOWN_COPY: Record<string, string> = {};
+
+function repoFiles(root: string): Array<{ rel: string; src: string }> {
+  const out: Array<{ rel: string; src: string }> = [];
+  const visit = (dir: string) => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (["__tests__", "node_modules", ".next", "dist"].includes(entry.name)) continue;
+        visit(full);
+      } else if (/\.(ts|tsx)$/.test(entry.name) && !/\.test\.|\.spec\.|\.d\.ts$/.test(entry.name)) {
+        out.push({ rel: path.relative(root, full).split(path.sep).join("/"), src: fs.readFileSync(full, "utf8") });
+      }
+    }
+  };
+  for (const dir of REPO_DIRS) visit(path.join(root, dir));
+  return out;
+}
+
+/** E1: the old Alchemy one-click trigger on markdown (declared, or a markdown renderer's `human`). */
+export function oldCopyOnMarkdown(root: string, allowed: Record<string, string>): string[] {
+  const out: string[] = [];
+  for (const { rel, src } of repoFiles(root)) {
+    if (COPY_DEFINITIONS.test(rel) || allowed[rel]) continue;
+    for (const match of src.matchAll(ALCHEMY_TRIGGER)) {
+      const props = match[2] ?? "";
+      if (/\btriggerHidden\b/.test(props)) continue;
+      const declared = /contentFlavor=["{]+markdown/.test(props);
+      const renders = /\bhuman=/.test(props) && RENDERS_MARKDOWN.test(src);
+      if (declared || renders) out.push(`${rel} <${match[1]}>`);
+    }
+  }
+  return out.sort();
+}
+
+/** E2: a markdown renderer that writes the clipboard raw (one flavor, no choice). */
+export function rawCopyOnMarkdown(root: string, allowed: Record<string, string>): string[] {
+  return repoFiles(root)
+    .filter(({ rel, src }) => !COPY_DEFINITIONS.test(rel) && !allowed[rel] && RENDERS_MARKDOWN.test(src) && RAW_WRITE.test(src))
+    .map(({ rel }) => rel)
+    .sort();
+}
+
+/** F: hosts that must carry the split Copy and not the old trigger. */
+const SPLIT_HOSTS = [
+  "components/mardown-display/MarkdownRenderer.tsx",
+  "components/mardown-display/blocks/scraper-kinds/ScrapedPageBlock.tsx",
+  "features/tasks/components/editor/TaskEditorCopyButtons.tsx",
+  "features/transcripts/components/TranscriptViewer.tsx",
+  "features/message-templates/components/TemplateActionDrawer.tsx",
+  "features/data-tables/components/DocumentRecord.tsx",
+];
+export function missingSplit(root: string, hosts: readonly string[]): string[] {
+  return hosts
+    .filter((rel) => {
+      const file = path.join(root, rel);
+      if (!fs.existsSync(file)) return true;
+      const src = fs.readFileSync(file, "utf8");
+      return !/<(RichCopySplit|TextCopySplit|CopySplitButton)\b/.test(src) || /<CopyButtons\b/.test(src);
+    })
+    .sort();
+}
+
+/** G: a second split-Copy build — only the package (node_modules) draws the split's menu. */
+export function secondSplitBuild(root: string): string[] {
+  return repoFiles(root)
+    .filter(({ src }) => /data-copy-split(?:-menu|-more|-main)?\b/.test(src))
+    .map(({ rel }) => rel)
+    .sort();
+}
+
+describe("consistency everywhere: markdown copy is the split Copy across the whole tree", () => {
+  test("E. no markdown/rich-text component offers the old Alchemy copy", () => {
+    expect(oldCopyOnMarkdown(REPO_ROOT, NOT_MARKDOWN_COPY)).toEqual([]);
+  });
+
+  test("E. no markdown/rich-text component writes the clipboard raw", () => {
+    expect(rawCopyOnMarkdown(REPO_ROOT, RAW_ON_MARKDOWN_OK)).toEqual([]);
+  });
+
+  test("F. the named hosts render the split Copy", () => {
+    expect(missingSplit(REPO_ROOT, SPLIT_HOSTS)).toEqual([]);
+  });
+
+  test("G. there is one split-Copy build (the package's), not a second of our own", () => {
+    expect(secondSplitBuild(REPO_ROOT)).toEqual([]);
+  });
+
+  test("H. the split's Alchemy palette does not repeat the split's own two rows", () => {
+    const src = fs.readFileSync(path.join(REPO_ROOT, "components/agent-copy/RichCopySplit.tsx"), "utf8");
+    expect(src).toMatch(/richCopyFlavors=\{\[\]\}/);
+  });
+
+  test("I. a saved template has one editor, and the phone note dock is measured floating chrome", () => {
+    const editRoute = fs.readFileSync(path.join(REPO_ROOT, "app/(core)/chat/message-templates/edit/[id]/page.tsx"), "utf8");
+    expect(editRoute).toMatch(/redirect\(/);
+    expect(editRoute).not.toMatch(/TemplateEditor/);
+    const editor = fs.readFileSync(path.join(REPO_ROOT, "features/message-templates/components/TemplateEditor.tsx"), "utf8");
+    expect(editor).not.toMatch(/updateTemplate/);
+    const dock = fs.readFileSync(path.join(REPO_ROOT, "features/notes/components/mobile/NoteEditorDock.tsx"), "utf8");
+    expect(dock).toMatch(/data-matrx-floating-bottom/);
+  });
+
+  test("E/F/G detectors go red on planted files and green once routed (self-proof)", () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "rich-copy-repo-"));
+    const dir = path.join(tmp, "features/demo");
+    fs.mkdirSync(dir, { recursive: true });
+    const planted = path.join(dir, "Reader.tsx");
+    fs.writeFileSync(planted, 'import { MarkdownCore } from "x";\nexport const R = () => <><MarkdownCore>{t}</MarkdownCore><CopyButtons human={t} label="a" /></>;\nconst c = () => navigator.clipboard.writeText(t);\n');
+    fs.writeFileSync(path.join(dir, "Menu.tsx"), '<div data-copy-split-menu="" />');
+    expect(oldCopyOnMarkdown(tmp, {})).toEqual(["features/demo/Reader.tsx <CopyButtons>"]);
+    expect(rawCopyOnMarkdown(tmp, {})).toEqual(["features/demo/Reader.tsx"]);
+    expect(missingSplit(tmp, ["features/demo/Reader.tsx"])).toEqual(["features/demo/Reader.tsx"]);
+    expect(secondSplitBuild(tmp)).toEqual(["features/demo/Menu.tsx"]);
+    fs.writeFileSync(planted, 'import { MarkdownCore } from "x";\nexport const R = () => <><MarkdownCore>{t}</MarkdownCore><RichCopySplit human={t} label="a" /></>;\nconst c = () => copyRichContent(t, "text");\n');
+    fs.rmSync(path.join(dir, "Menu.tsx"));
+    expect(oldCopyOnMarkdown(tmp, {})).toEqual([]);
+    expect(rawCopyOnMarkdown(tmp, {})).toEqual([]);
+    expect(missingSplit(tmp, ["features/demo/Reader.tsx"])).toEqual([]);
+    expect(secondSplitBuild(tmp)).toEqual([]);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});
+
+/** Markdown renderers whose raw clipboard write is not a copy of the markdown — file → why. */
+const RAW_ON_MARKDOWN_OK: Record<string, string> = {};

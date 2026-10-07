@@ -11,7 +11,7 @@ import { toast } from "@/lib/toast";
 
 import { BasicContentEditor } from "@/components/content-refine/BasicContentEditor";
 import { JsonViewer } from "@/components/ui/JsonComponents/JsonViewerComponent";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
+import { RichCopySplit } from "@/components/agent-copy/RichCopySplit";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -122,7 +122,7 @@ export default function ExtractionCellEditorWindow({
             {readOnly ? "Close" : "Cancel"}
           </Button>
           {readOnly && !structuredValue ? (
-            <CopyButtons
+            <RichCopySplit
               label={`Copy ${target.columnLabel}`}
               human={draft}
               contentFlavor="markdown"
