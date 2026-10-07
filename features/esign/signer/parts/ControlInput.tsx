@@ -8,7 +8,7 @@ import { Check, Eraser, PenLine } from "lucide-react";
 
 import { Button, Input, Select, Textarea } from "@ai-matrx/design-system/controls";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import type { FieldValue } from "../../contract/fieldModel";
 import { isMarkKind, isNameKind, type SField } from "../model";
@@ -102,34 +102,20 @@ export function ControlInput({
     );
   } else if (field.kind === "radio" && options) {
     body = (
-      <div role="radiogroup" aria-required={field.required} className="flex flex-col gap-1">
-        {options.map((o) => {
-          const on = optionValues?.[o.id] === true;
-          return (
-            <button
-              key={o.id}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => onChange(o.id, true)}
-              className={cn(
-                "flex min-h-11 items-center gap-3 rounded-md border px-3 text-left type-body",
-                on ? "border-primary bg-primary/10 text-foreground" : "border-border text-foreground",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex h-4 w-4 items-center justify-center rounded-full border",
-                  on ? "border-primary" : "border-muted-foreground",
-                )}
-              >
-                {on ? <span className="h-2 w-2 rounded-full bg-primary" /> : null}
-              </span>
-              {o.option_value ?? o.label}
-            </button>
-          );
-        })}
-      </div>
+      <RadioGroup
+        size="md"
+        aria-required={field.required}
+        value={options.find((o) => optionValues?.[o.id] === true)?.id ?? ""}
+        onValueChange={(id) => onChange(id, true)}
+        className="flex flex-col gap-1"
+      >
+        {options.map((o) => (
+          <label key={o.id} htmlFor={`esign-radio-${o.id}`} className="flex min-h-11 items-center gap-3 type-body text-foreground">
+            <RadioGroupItem id={`esign-radio-${o.id}`} value={o.id} />
+            {o.option_value ?? o.label}
+          </label>
+        ))}
+      </RadioGroup>
     );
   } else if (field.kind === "dropdown") {
     const opts = (field.options ?? []).map((o) => ({ value: o, label: o }));
@@ -171,7 +157,7 @@ export function ControlInput({
         maxLength={field.kind === "text" ? (field.max_length ?? 4000) : undefined}
         placeholder={field.placeholder ?? undefined}
         onChange={(e) => onChange(field.id, e.target.value)}
-        className="w-full text-base sm:text-sm"
+        className="w-full"
       />
     );
   }

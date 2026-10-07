@@ -99,7 +99,7 @@ export function TopBar(p: TopBarProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="quiet" icon={<MoreHorizontal />} aria-label="More actions" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
+      <DropdownMenuContent align="end">
         {p.mode !== "consent" && p.mode !== "viewer" ? (
           <DropdownMenuItem onSelect={p.onFinishLater}>
             <Clock className="h-4 w-4" /> Finish later

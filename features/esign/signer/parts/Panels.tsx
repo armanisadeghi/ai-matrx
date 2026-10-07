@@ -41,7 +41,7 @@ export function OrgMark({ name, logoUrl, size = 28 }: { name: string; logoUrl: s
     <span
       aria-hidden
       style={{ height: size, width: size }}
-      className="flex shrink-0 items-center justify-center rounded bg-primary/15 text-[11px] font-semibold text-primary"
+      className="flex shrink-0 items-center justify-center rounded bg-primary/15 text-xs font-semibold text-primary"
     >
       {letters || "AM"}
     </span>

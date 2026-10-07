@@ -288,7 +288,6 @@ export function OutsiderEntry() {
                 autoComplete="one-time-code"
                 autoFocus
                 onChange={(e) => setCode(phase.factor === "email_code" ? e.target.value.replace(/\D/g, "").slice(0, 6) : e.target.value)}
-                className="text-base sm:text-sm"
               />
               <Button
                 variant="primary"

@@ -6,7 +6,7 @@
 // bottom sheet by itself.
 
 import { useState } from "react";
-import { CheckCircle2, CircleHelp, History, Mail } from "lucide-react";
+import { CheckCircle2, Mail } from "lucide-react";
 
 import { Button, Field } from "@ai-matrx/design-system/controls";
 import {
@@ -51,7 +51,7 @@ export function FinishDialog({
   const [message, setMessage] = useState("");
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onEdit()}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Review and finish</DialogTitle>
           <DialogDescription>This is what will be recorded with your signature.</DialogDescription>
@@ -123,7 +123,7 @@ export function DeclineDialog({
   const [reason, setReason] = useState("");
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Decline to sign</DialogTitle>
           <DialogDescription>The request closes and the sender sees your reason.</DialogDescription>
@@ -176,7 +176,7 @@ export function AssignDialog({
   const valid = name.trim() !== "" && /^\S+@\S+\.\S+$/.test(email.trim());
   return (
     <Dialog open={open} onOpenChange={(next) => !next && !busy && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
           <DialogTitle>Assign to someone else</DialogTitle>
           <DialogDescription>They get your fields and an email; the sender is told.</DialogDescription>
@@ -227,11 +227,9 @@ export function HistoryDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <History className="h-4 w-4" /> History
-          </DialogTitle>
+          <DialogTitle>History</DialogTitle>
           <DialogDescription>What has happened to this document so far.</DialogDescription>
         </DialogHeader>
         {error ? (
@@ -276,11 +274,9 @@ export function HelpDialog({
   ] as const;
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CircleHelp className="h-4 w-4" /> Help with signing
-          </DialogTitle>
+          <DialogTitle>Help with signing</DialogTitle>
           <DialogDescription>Your signature here is legally binding, like ink.</DialogDescription>
         </DialogHeader>
         <ul className="flex flex-col gap-1.5">

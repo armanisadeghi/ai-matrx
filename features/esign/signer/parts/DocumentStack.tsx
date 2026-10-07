@@ -8,6 +8,7 @@
 
 import { lazy, Suspense } from "react";
 
+import { Button } from "@ai-matrx/design-system/controls";
 import { cn } from "@/lib/utils";
 
 const PdfDocumentRenderer = lazy(() => import("@/features/pdf/components/viewer/PdfDocumentRenderer"));
@@ -50,9 +51,9 @@ export function DocumentStack({
           {doc.failed ? (
             <div className="flex flex-col items-center gap-2 rounded-md border border-border bg-card p-6 text-center">
               <p className="type-body text-foreground">{doc.failed}</p>
-              <button type="button" className="type-secondary text-primary underline" onClick={() => onRetry(doc.id)}>
+              <Button variant="outline" onClick={() => onRetry(doc.id)}>
                 Try again
-              </button>
+              </Button>
             </div>
           ) : !doc.url ? (
             <PageSkeleton />
@@ -115,7 +116,7 @@ export function PageThumbnails({
                     onClick={() => onJump(doc.id, pageNumber)}
                     className="absolute inset-0 flex items-end justify-center pb-1 hover:bg-primary/10"
                   >
-                    <span className="rounded bg-black/60 px-1.5 text-[10px] font-medium text-white">{pageNumber}</span>
+                    <span className="rounded bg-black/60 px-1.5 text-xs font-medium text-white">{pageNumber}</span>
                   </button>
                 )}
               />
