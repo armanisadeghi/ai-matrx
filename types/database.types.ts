@@ -45973,7 +45973,6 @@ export type Database = {
           deleted_at: string | null
           domain: string
           id: string
-          is_deleted: boolean
           kind: string
           metadata: Json
           organization_id: string
@@ -45995,7 +45994,6 @@ export type Database = {
           deleted_at?: string | null
           domain: string
           id?: string
-          is_deleted?: boolean
           kind: string
           metadata?: Json
           organization_id: string
@@ -46017,7 +46015,6 @@ export type Database = {
           deleted_at?: string | null
           domain?: string
           id?: string
-          is_deleted?: boolean
           kind?: string
           metadata?: Json
           organization_id?: string
