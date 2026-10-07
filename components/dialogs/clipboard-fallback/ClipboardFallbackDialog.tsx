@@ -2,11 +2,11 @@
  * components/dialogs/clipboard-fallback/ClipboardFallbackDialog.tsx
  *
  * Last-resort dialog when both `navigator.share` AND
- * `navigator.clipboard.writeText` fail (older browsers, restricted
+ * the kit clipboard door fail (older browsers, restricted
  * iframes, non-HTTPS contexts, sandboxed environments). Shows the URL
  * in a read-only `<Input>` that auto-selects on open so the user can
  * press Cmd/Ctrl+C immediately. Also offers a "Copy" button that
- * retries the clipboard API — sometimes the user-gesture context
+ * retries through the same kit door — sometimes the user-gesture context
  * unblocks it.
  *
  * Drop-in replacement for `window.prompt(message, url)` — the legacy
@@ -40,6 +40,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useIsMobile } from "@ai-matrx/kit/media-query";
+import { copyText } from "@ai-matrx/kit/clipboard";
+import { toast } from "@/lib/toast";
 
 export interface ClipboardFallbackDialogProps {
   open: boolean;
@@ -78,16 +80,23 @@ export function ClipboardFallbackDialog({
     return () => window.clearTimeout(id);
   }, [open]);
 
+  // The retry goes through THE clipboard door (kit copyText: the async API, then the execCommand
+  // fallback). Its result is announced once: success on the button, a refusal in one toast.
   const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(url);
+    const ok = await copyText(url, {
+      notify: (message, kind) => {
+        if (kind === "error") toast.error(message);
+      },
+      failureMessage: "Still blocked. Press Cmd/Ctrl+C to copy.",
+    });
+    if (ok) {
       setCopied(true);
       window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Still failing — re-select so the user can use a keyboard shortcut.
-      inputRef.current?.focus();
-      inputRef.current?.select();
+      return;
     }
+    // Still refused — re-select so the keyboard shortcut works.
+    inputRef.current?.focus();
+    inputRef.current?.select();
   };
 
   const body = multiline ? (

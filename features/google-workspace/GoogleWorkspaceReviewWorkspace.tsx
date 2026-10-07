@@ -17,6 +17,7 @@ import {
   Unplug,
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
+import { sheetTextToValues, sheetValuesToText } from "@/features/google-workspace/sheetText";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -165,6 +166,7 @@ function connectionStatus(connection: GoogleConnectionSummary): string {
 interface GoogleWorkspaceReviewWorkspaceProps {
   pickerInitialQuery?: string;
 }
+
 
 export function GoogleWorkspaceReviewWorkspace({
   pickerInitialQuery,
@@ -435,7 +437,7 @@ export function GoogleWorkspaceReviewWorkspace({
         selectedResource.resource_ref,
         sheetRange.trim(),
       );
-      setSheetValues(result.values.map((row) => row.join("\t")).join("\n"));
+      setSheetValues(sheetValuesToText(result.values));
       toast.success(`Loaded ${result.range}.`);
     });
   };
@@ -530,7 +532,7 @@ export function GoogleWorkspaceReviewWorkspace({
       return;
     }
     void run("write-file", async () => {
-      const values = sheetValues.split("\n").map((row) => row.split("\t"));
+      const values = sheetTextToValues(sheetValues);
       const outcome = await writeGoogleSheet(
         activeConnection.id,
         selectedResource.resource_ref,
@@ -541,9 +543,7 @@ export function GoogleWorkspaceReviewWorkspace({
         sentForApproval(outcome.assistId);
         return;
       }
-      setSheetValues(
-        outcome.result.values.map((row) => row.join("\t")).join("\n"),
-      );
+      setSheetValues(sheetValuesToText(outcome.result.values));
       toast.success(`Updated ${outcome.result.range}.`);
     });
   };
