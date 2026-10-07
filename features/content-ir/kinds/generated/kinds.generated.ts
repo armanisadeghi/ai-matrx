@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 585 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 587 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "0a2ad116a7cb";
+export const KIND_REGISTRY_FINGERPRINT = "affcfa6d5e16";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -886,6 +886,86 @@ export interface ApparentCondition {
   damage_flags?: DamageFlag[];
   positive_flags?: PositiveFlag[];
   condition_notes?: string | null;
+}
+
+/**
+ * One source file of the Applet (plain JSX).
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface AppletFile {
+  name: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  source: string;
+}
+
+/**
+ * A job (mandate) the code runs by alias.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface AppletJob {
+  key: string;
+  alias: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+}
+
+/**
+ * One page: its path, the title on screen, and the file that renders it.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface AppletPage {
+  file: string;
+  path: string;
+  title: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  parent?: string | null;
+}
+
+/**
+ * The whole Applet record — never a diff.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface AppletRecord {
+  name: string;
+  slug: string;
+  entry: string;
+  files: AppletFile[];
+  pages: AppletPage[];
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  sources: AppletSource[];
+  mandates: AppletJob[];
+  description: string;
+}
+
+/**
+ * A data source the code reads by alias: one of her tables, or a platform entity type.
+ *  *
+ *  * From kind `applet_build_result`.
+ */
+export interface AppletSource {
+  alias: string;
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
+  entity?: string | null;
+  table_id?: string | null;
+  organization_id?: string | null;
 }
 
 /**
@@ -8890,6 +8970,18 @@ export interface AnswerGrade {
 }
 
 /**
+ * Kind `applet_build_result` (registry v2).
+ */
+export interface AppletBuildResult {
+  note: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "applet_build_result";
+  applet: AppletRecord;
+}
+
+/**
  * Kind `arman_video_prompt` (registry v7).
  */
 export interface ArmanVideoPrompt {
@@ -12358,6 +12450,110 @@ export interface IngestedSources {
   sources_failed?: number;
   sources_ingested?: number;
   sources_requested?: number;
+}
+
+/**
+ * Kind `instagram_concept_remix` (registry v3).
+ */
+export interface InstagramConceptRemix {
+  __kind: "instagram_concept_remix";
+  /**
+   * Level 1 - core message: visual execution concepts.
+   */
+  level_1: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    anchor?: string;
+    concepts?: ({
+    scene?: string;
+    title?: string;
+    __kind: "execution_concept";
+    format?: string;
+    number?: number;
+    subjects?: string;
+    text_overlay?: string;
+    mood_lighting?: string;
+    claims_to_verify?: string[];
+    emotional_register?: string;
+  })[];
+  };
+  /**
+   * Level 2 - parent theme: message concepts.
+   */
+  level_2: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    anchor?: string;
+    concepts?: ({
+    hook?: string;
+    angle?: string;
+    __kind: "message_concept";
+    format?: string;
+    number?: number;
+    message?: string;
+    claims_to_verify?: string[];
+    visual_direction?: string;
+    emotional_register?: string;
+  })[];
+  };
+  /**
+   * Level 3 - brand territory: message concepts.
+   */
+  level_3: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    anchor?: string;
+    concepts?: ({
+    hook?: string;
+    angle?: string;
+    __kind: "message_concept";
+    format?: string;
+    number?: number;
+    message?: string;
+    claims_to_verify?: string[];
+    visual_direction?: string;
+    emotional_register?: string;
+  })[];
+  };
+  /**
+   * How the brand frames the concept.
+   */
+  brand_lens?: {
+    /**
+     * The registered kind this payload is an instance of, when it is one.
+     */
+    __kind?: string;
+    /**
+     * Whether the brand lens was supplied or inferred.
+     */
+    source?: "provided" | "inferred";
+    summary?: string;
+    audience?: string;
+    core_offer?: string;
+  };
+  /**
+   * The central idea the whole plan is built around.
+   */
+  core_concept: string;
+  /**
+   * Ordered rungs from the core problem down to the brand.
+   */
+  concept_ladder?: ({
+    rung?: number;
+    level?: "L1" | "L2" | "L3" | null;
+    __kind: "concept_ladder_rung";
+    statement?: string;
+  })[];
+  /**
+   * The recurring creative device that ties the posts together.
+   */
+  original_signature_device?: string;
 }
 
 /**
@@ -25828,6 +26024,7 @@ export type GeneratedKindSlug =
   | "ai_visibility_panel_run_result"
   | "ai_visibility_result"
   | "answer_grade"
+  | "applet_build_result"
   | "arman_video_prompt"
   | "artisan_demo_reading_list"
   | "assertion_result"
@@ -25952,6 +26149,7 @@ export type GeneratedKindSlug =
   | "image_qc_verdict"
   | "ingest_source_request"
   | "ingested_sources"
+  | "instagram_concept_remix"
   | "intake_photo_grouping"
   | "interview_finalize_result"
   | "interview_gate_decision"
@@ -26416,6 +26614,7 @@ export interface KindPayloadBySlug {
   "ai_visibility_panel_run_result": AiVisibilityPanelRunResult;
   "ai_visibility_result": AiVisibilityResult;
   "answer_grade": AnswerGrade;
+  "applet_build_result": AppletBuildResult;
   "arman_video_prompt": ArmanVideoPrompt;
   "artisan_demo_reading_list": ArtisanDemoReadingList;
   "assertion_result": AssertionResult;
@@ -26540,6 +26739,7 @@ export interface KindPayloadBySlug {
   "image_qc_verdict": ImageQcVerdict;
   "ingest_source_request": IngestSourceRequest;
   "ingested_sources": IngestedSources;
+  "instagram_concept_remix": InstagramConceptRemix;
   "intake_photo_grouping": IntakePhotoGrouping;
   "interview_finalize_result": InterviewFinalizeResult;
   "interview_gate_decision": InterviewGateDecision;
@@ -27008,6 +27208,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "ai_visibility_panel_run_result",
   "ai_visibility_result",
   "answer_grade",
+  "applet_build_result",
   "arman_video_prompt",
   "artisan_demo_reading_list",
   "assertion_result",
@@ -27132,6 +27333,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "image_qc_verdict",
   "ingest_source_request",
   "ingested_sources",
+  "instagram_concept_remix",
   "intake_photo_grouping",
   "interview_finalize_result",
   "interview_gate_decision",
