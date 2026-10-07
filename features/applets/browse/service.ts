@@ -48,16 +48,18 @@ export interface AppletListRow {
   updated_at: string;
   /** A build is still running — the row opens the live build. */
   build_open: boolean;
+  /** Born at Build, no app saved yet — the row resumes the build; Archive is the usual door. */
+  unbuilt: boolean;
   archived: boolean;
   deleted_at: string | null;
 }
 
 const COLUMNS =
-  "id, slug, name, tagline, status, published_to_web, organization_id, created_by, total_executions, last_execution_at, created_at, updated_at, deleted_at, metadata";
+  "id, slug, name, tagline, status, published_to_web, organization_id, created_by, total_executions, last_execution_at, created_at, updated_at, deleted_at, metadata, entry";
 
-/** Where a row opens: the live build while one runs, else the Applet's own page. */
-export function appletRowHref(row: Pick<AppletListRow, "id" | "build_open">): string {
-  return row.build_open ? `/applets/build/${row.id}` : `/applets/manage/${row.id}`;
+/** Where a row opens: its build while one runs or no app is saved yet, else the Applet's own page. */
+export function appletRowHref(row: Pick<AppletListRow, "id" | "build_open" | "unbuilt">): string {
+  return row.build_open || row.unbuilt ? `/applets/build/${row.id}` : `/applets/manage/${row.id}`;
 }
 
 /** "Draft" / "Published" — the stored status, as a person says it. */
@@ -101,6 +103,7 @@ export async function listApplets(archived: ArchivedFilter): Promise<AppletListR
     created_at: r.created_at,
     updated_at: r.updated_at,
     build_open: isOpenEntry(readBuildRequests(r.metadata).at(-1)),
+    unbuilt: !r.entry,
     archived: r.deleted_at != null,
     deleted_at: r.deleted_at,
   }));

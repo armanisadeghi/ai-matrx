@@ -83,6 +83,8 @@ export default async function AppletRoute({ params, searchParams }: Props) {
   const view = await resolveAppletView(key, isAuthenticated);
   if (view.kind === "sign-in") redirect(loginHref(here));
   if (view.kind === "missing") notFound();
+  // A build that has not saved an app yet is still being built: open the build, never a broken Applet.
+  if (view.kind === "unbuilt") redirect(`/applets/build/${view.id}`);
   if (view.kind === "intro") {
     const { intro } = view;
     if (intro.slug !== key || path.length) permanentRedirect(appletHref(intro.slug));

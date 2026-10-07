@@ -17,7 +17,7 @@
  * npm). A row may use a new package export only once the deployed site has it; run this before writing any row.
  * Rows that would break on the live site get verdict `breaks_on_live`. See scripts/applets/against-live.mjs.
  *
- * Verdicts: ok · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
+ * Verdicts: ok · unbuilt (a build still in progress — not a failure) · unresolved (rendered with named stand-ins) · gate_refused · compile_error · render_threw ·
  * legacy_contract (still reads the old prop contract). Exit 1 on anything but ok.
  * Reads NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SECRET_KEY; all reads, no writes.
  */
@@ -41,7 +41,7 @@ for (const key of ["window", "document", "navigator", "HTMLElement", "Node", "ge
 g.matchMedia ??= () => ({ matches: false, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
 g.ResizeObserver ??= class { observe() {} unobserve() {} disconnect() {} };
 
-type Verdict = "ok" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
+type Verdict = "ok" | "unbuilt" | "unresolved" | "gate_refused" | "compile_error" | "render_threw" | "legacy_contract" | "breaks_on_live";
 type Row = Record<string, unknown> & { id: string; slug: string; files: Record<string, string> | null; entry: string | null };
 
 const LEGACY_PROPS = /export\s+default\s+function\s+\w*\s*\(\s*\{[^}]*\b(onExecute|response|isStreaming|isExecuting|rateLimitInfo)\b/;
@@ -71,6 +71,12 @@ async function main() {
     const files = { ...(row.files ?? {}) };
     if (override && existsSync(override)) files[entry] = readFileSync(override, "utf8");
     const verdict = (v: Verdict, detail = "") => results.push({ slug: row.slug, id: row.id, public: row.published_to_web === true, verdict: v, detail });
+    // A build is born as an empty draft the moment Build is pressed (features/applets-host/builder/build-session.ts):
+    // no entry, no files, until its first answer saves. That is a build in progress, not a broken Applet.
+    if (!row.entry && Object.keys(files).length === 0) {
+      verdict("unbuilt", "a build that has not saved an app yet (opens at /applets/build/<id>)");
+      continue;
+    }
     if (Object.values(files).some((src) => LEGACY_PROPS.test(src))) {
       verdict("legacy_contract", "the entry still takes the old prop contract");
       continue;
@@ -145,10 +151,10 @@ async function main() {
   writeFileSync(REPORT, JSON.stringify(results, null, 2));
   const count = (v: Verdict) => results.filter((r) => r.verdict === v).length;
   console.log(`applet render sweep — ${results.length} rows (${results.filter((r) => r.public).length} public)${FILES_DIR ? `, files from ${FILES_DIR}` : ""}${AGAINST_LIVE ? ", against the deployed site" : ""}`);
-  for (const v of ["ok", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
-  for (const r of results.filter((x) => x.verdict !== "ok")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
+  for (const v of ["ok", "unbuilt", "unresolved", "legacy_contract", "gate_refused", "compile_error", "render_threw", "breaks_on_live"] as const) console.log(`  ${v.padEnd(16)} ${count(v)}`);
+  for (const r of results.filter((x) => x.verdict !== "ok" && x.verdict !== "unbuilt")) console.log(`  x ${r.slug}: ${r.verdict} ${r.detail}`);
   console.log(`report: ${REPORT}`);
-  if (results.some((r) => r.verdict !== "ok")) process.exitCode = 1;
+  if (results.some((r) => r.verdict !== "ok" && r.verdict !== "unbuilt")) process.exitCode = 1;
 }
 
 main().catch((err) => {
